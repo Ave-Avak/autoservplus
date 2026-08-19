@@ -162,6 +162,24 @@ class InscriptionServiceTest {
 
             assertThat(membre.getLangue()).isEqualTo(Langue.fr);
         }
+        @Test
+        @DisplayName("refuse une adresse nulle")
+        void refuseUneAdresseNulle() {
+            assertThatThrownBy(() -> service.inscrire(
+                    null, "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr))
+                    .isInstanceOf(RegleMetierException.class)
+                    .hasMessageContaining("RM-01");
+        }
+        @Test
+        @DisplayName("refuse un mot de passe nul")
+        void refuseUnMotDePasseNul() {
+            when(repository.existsByEmailIgnoreCase(any())).thenReturn(false);
+
+            assertThatThrownBy(() -> service.inscrire(
+                    "marie@exemple.be", null, "Dupont", "Marie", Langue.fr))
+                    .isInstanceOf(RegleMetierException.class)
+                    .hasMessageContaining("RM-02");
+        }
     }
 
     @Nested
@@ -235,6 +253,15 @@ class InscriptionServiceTest {
             assertThatThrownBy(() -> service.renvoyerVerification("marie@exemple.be"))
                     .isInstanceOf(RegleMetierException.class)
                     .hasMessageContaining("RM-04");
+        }
+        @Test
+        @DisplayName("refuse une adresse inconnue")
+        void refuseUneAdresseInconnue() {
+            when(repository.findByEmailIgnoreCase("inconnu@exemple.be")).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.renvoyerVerification("inconnu@exemple.be"))
+                    .isInstanceOf(RessourceIntrouvableException.class)
+                    .hasMessageContaining("inconnu@exemple.be");
         }
     }
 
