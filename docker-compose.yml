@@ -1,4 +1,4 @@
-﻿# Base de donnees locale de developpement.
+# Base de donnees locale de developpement.
 # Demarrage : docker compose up -d
 # Arret     : docker compose down
 services:
