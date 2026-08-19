@@ -1,5 +1,6 @@
 package be.autoservplus.identite.service;
 
+import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Langue;
@@ -27,6 +28,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.contains;
+import static org.mockito.ArgumentMatchers.eq;
 
 /**
  * Tests unitaires du service d inscription.
@@ -42,7 +45,8 @@ class InscriptionServiceTest {
 
     @Mock
     private UtilisateurRepository repository;
-
+    @Mock
+    private ServiceCourriel courriel;
     private PasswordEncoder encodeur;
     private InscriptionService service;
 
@@ -50,7 +54,7 @@ class InscriptionServiceTest {
     void preparer() {
         encodeur = new BCryptPasswordEncoder(4); // cout reduit : les tests doivent rester rapides
         Clock horlogeFigee = Clock.fixed(MAINTENANT, ZoneOffset.UTC);
-        service = new InscriptionService(repository, encodeur, horlogeFigee);
+        service = new InscriptionService(repository, encodeur, horlogeFigee, courriel);
     }
 
     @Nested
@@ -179,6 +183,18 @@ class InscriptionServiceTest {
                     "marie@exemple.be", null, "Dupont", "Marie", Langue.fr))
                     .isInstanceOf(RegleMetierException.class)
                     .hasMessageContaining("RM-02");
+        }
+        @Test
+        @DisplayName("envoie le courriel de verification apres enregistrement")
+        void envoieLeCourrielDeVerification() {
+            when(repository.existsByEmailIgnoreCase(any())).thenReturn(false);
+            when(repository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
+
+            Utilisateur membre = service.inscrire(
+                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr);
+
+            verify(courriel).envoyerVerificationAdresse(
+                    eq(membre), contains(membre.getJetonVerification()));
         }
     }
 

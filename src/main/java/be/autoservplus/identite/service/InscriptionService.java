@@ -9,6 +9,7 @@ import be.autoservplus.identite.repository.UtilisateurRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import be.autoservplus.communication.service.ServiceCourriel;
 
 import java.security.SecureRandom;
 import java.time.Clock;
@@ -35,14 +36,17 @@ public class InscriptionService {
     private final UtilisateurRepository repository;
     private final PasswordEncoder encodeurMotDePasse;
     private final Clock horloge;
+    private final ServiceCourriel courriel;
     private final SecureRandom aleatoire = new SecureRandom();
 
     public InscriptionService(UtilisateurRepository repository,
                               PasswordEncoder encodeurMotDePasse,
-                              Clock horloge) {
+                              Clock horloge,
+                              ServiceCourriel courriel) {
         this.repository = repository;
         this.encodeurMotDePasse = encodeurMotDePasse;
         this.horloge = horloge;
+        this.courriel = courriel;
     }
 
     /**
@@ -77,7 +81,9 @@ public class InscriptionService {
         membre.setLangue(langue == null ? Langue.fr : langue);
         membre.enregistrerJetonVerification(genererJeton(), Instant.now(horloge).plus(VALIDITE_JETON));
 
-        return repository.save(membre);
+        Utilisateur enregistre = repository.save(membre);
+        courriel.envoyerVerificationAdresse(enregistre, lienVerification(enregistre));
+        return enregistre;
     }
 
     /**
@@ -112,9 +118,12 @@ public class InscriptionService {
         }
 
         membre.enregistrerJetonVerification(genererJeton(), Instant.now(horloge).plus(VALIDITE_JETON));
+        courriel.envoyerVerificationAdresse(membre, lienVerification(membre));
         return membre;
     }
-
+    private String lienVerification(Utilisateur membre) {
+        return "/inscription/verification?jeton=" + membre.getJetonVerification();
+    }
     private String normaliser(String email) {
         if (email == null || email.isBlank()) {
             throw new RegleMetierException("RM-01", "L adresse de courriel est obligatoire.");
