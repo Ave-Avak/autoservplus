@@ -27,9 +27,9 @@ CREATE TABLE utilisateur (
     numero_rue           VARCHAR(15),
     code_postal          VARCHAR(10),
     localite             VARCHAR(100),
-    pays                 VARCHAR(60)   NOT NULL DEFAULT ''Belgique'',
-    langue               VARCHAR(2)    NOT NULL DEFAULT ''fr'',
-    statut               VARCHAR(30)   NOT NULL DEFAULT ''EN_ATTENTE_VALIDATION'',
+    pays                 VARCHAR(60)   NOT NULL DEFAULT 'Belgique',
+    langue               VARCHAR(2)    NOT NULL DEFAULT 'fr',
+    statut               VARCHAR(30)   NOT NULL DEFAULT 'EN_ATTENTE_VALIDATION',
     email_verifie        BOOLEAN       NOT NULL DEFAULT FALSE,
     jeton_verification   VARCHAR(64),
     jeton_expiration     TIMESTAMPTZ,
@@ -45,13 +45,13 @@ CREATE TABLE utilisateur (
     deleted_by           VARCHAR(120),
     CONSTRAINT uq_utilisateur_reference UNIQUE (reference),
     CONSTRAINT uq_utilisateur_email     UNIQUE (email),
-    CONSTRAINT ck_utilisateur_type      CHECK (type_utilisateur IN (''MEMBRE'', ''ADMINISTRATEUR'')),
-    CONSTRAINT ck_utilisateur_statut    CHECK (statut IN (''EN_ATTENTE_VALIDATION'', ''ACTIF'', ''SUSPENDU'', ''SUPPRIME'')),
-    CONSTRAINT ck_utilisateur_langue    CHECK (langue IN (''fr'', ''nl'', ''en'')),
+    CONSTRAINT ck_utilisateur_type      CHECK (type_utilisateur IN ('MEMBRE', 'ADMINISTRATEUR')),
+    CONSTRAINT ck_utilisateur_statut    CHECK (statut IN ('EN_ATTENTE_VALIDATION', 'ACTIF', 'SUSPENDU', 'SUPPRIME')),
+    CONSTRAINT ck_utilisateur_langue    CHECK (langue IN ('fr', 'nl', 'en')),
     CONSTRAINT ck_utilisateur_tentatives CHECK (tentatives_echouees >= 0)
 );
-COMMENT ON TABLE  utilisateur IS ''Comptes de la plateforme. Heritage a table unique.'';
-COMMENT ON COLUMN utilisateur.mot_de_passe_hache IS ''Empreinte BCrypt facteur 12, longueur fixe de 60 caracteres.'';
+COMMENT ON TABLE  utilisateur IS 'Comptes de la plateforme. Heritage a table unique.';
+COMMENT ON COLUMN utilisateur.mot_de_passe_hache IS 'Empreinte BCrypt facteur 12, longueur fixe de 60 caracteres.';
 
 CREATE INDEX ix_utilisateur_email  ON utilisateur (email)  WHERE deleted_at IS NULL;
 CREATE INDEX ix_utilisateur_statut ON utilisateur (statut) WHERE deleted_at IS NULL;
@@ -71,9 +71,9 @@ CREATE TABLE consentement (
     updated_by        VARCHAR(120),
     CONSTRAINT fk_consentement_utilisateur FOREIGN KEY (utilisateur_id)
         REFERENCES utilisateur (id) ON DELETE CASCADE ON UPDATE CASCADE,
-    CONSTRAINT ck_consentement_type CHECK (type_document IN (''CGV'', ''POLITIQUE_CONFIDENTIALITE'', ''COOKIES'', ''NEWSLETTER''))
+    CONSTRAINT ck_consentement_type CHECK (type_document IN ('CGV', 'POLITIQUE_CONFIDENTIALITE', 'COOKIES', 'NEWSLETTER'))
 );
-COMMENT ON TABLE consentement IS ''Preuve horodatee des consentements RGPD. Jamais supprimee : sert de preuve.'';
+COMMENT ON TABLE consentement IS 'Preuve horodatee des consentements RGPD. Jamais supprimee : sert de preuve.';
 CREATE INDEX ix_consentement_utilisateur ON consentement (utilisateur_id);
 
 CREATE TABLE clef_api (
@@ -94,4 +94,5 @@ CREATE TABLE clef_api (
     CONSTRAINT uq_clef_api_hachee    UNIQUE (clef_hachee),
     CONSTRAINT ck_clef_api_quota     CHECK (quota_minute > 0)
 );
-COMMENT ON COLUMN clef_api.clef_hachee IS ''Empreinte SHA-256. La valeur en clair n est jamais stockee.'';
+COMMENT ON COLUMN clef_api.clef_hachee IS 'Empreinte SHA-256. La valeur en clair n est jamais stockee.';
+
