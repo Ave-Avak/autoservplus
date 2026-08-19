@@ -1,0 +1,177 @@
+/* =====================================================================================
+   AutoServ+ : variables de la charte graphique
+
+   Les couleurs employees pour du TEXTE respectent le ratio 4.5:1 exige par WCAG 2.1
+   niveau AA. Les teintes vives sont reservees aux fonds, bordures et icones : elles
+   ne doivent jamais servir de couleur de texte sur fond blanc.
+   ===================================================================================== */
+
+:root {
+    --bleu-marine:     #1F3864;  /* 11.62:1 sur blanc */
+    --bleu-secondaire: #2E75B6;  /*  4.84:1 */
+    --orange-cta:      #C2410C;  /*  5.18:1 */
+
+    --gris-900: #111827;
+    --gris-700: #374151;
+    --gris-500: #6B7280;  /* 4.83:1 — placeholders et metadonnees */
+    --gris-400: #9CA3AF;  /* 2.54:1 — elements DESACTIVES uniquement */
+    --gris-200: #E5E7EB;
+    --gris-50:  #F9FAFB;
+    --blanc:    #FFFFFF;
+
+    /* Couleurs semantiques pour du TEXTE, conformes AA */
+    --succes-texte: #047857;  /* 4.97:1 — remplace #10B981 (2.54:1, non conforme) */
+    --alerte-texte: #B45309;  /* 5.08:1 — remplace #F59E0B (2.15:1, non conforme) */
+    --info-texte:   #1D4ED8;  /* 6.31:1 — remplace #3B82F6 (3.68:1, non conforme) */
+    --erreur-texte: #DC2626;  /* 4.83:1 */
+
+    --police: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    --espace-s: 0.5rem;
+    --espace-m: 1rem;
+    --espace-l: 1.5rem;
+    --espace-xl: 3rem;
+    --rayon: 0.375rem;
+}
+
+* { box-sizing: border-box; }
+
+body {
+    margin: 0;
+    font-family: var(--police);
+    font-size: 1rem;
+    line-height: 1.6;
+    color: var(--gris-900);
+    background: var(--blanc);
+}
+
+/* Le focus clavier doit rester visible : critere WCAG 2.4.7 */
+:focus-visible {
+    outline: 3px solid var(--bleu-secondaire);
+    outline-offset: 2px;
+}
+
+/* Lien d evitement, premier element focusable : critere WCAG 2.4.1 */
+.lien-evitement {
+    position: absolute;
+    left: -9999px;
+    background: var(--bleu-marine);
+    color: var(--blanc);
+    padding: var(--espace-s) var(--espace-m);
+    z-index: 100;
+}
+.lien-evitement:focus { left: 0; }
+
+.entete {
+    background: var(--bleu-marine);
+    padding: var(--espace-m) var(--espace-l);
+}
+.entete nav {
+    display: flex;
+    align-items: center;
+    gap: var(--espace-l);
+    max-width: 1100px;
+    margin: 0 auto;
+}
+.marque {
+    color: var(--blanc);
+    font-weight: 700;
+    font-size: 1.25rem;
+    text-decoration: none;
+}
+.menu {
+    display: flex;
+    gap: var(--espace-m);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    align-items: center;
+}
+.menu-compte { margin-left: auto; }
+.menu a { color: var(--blanc); text-decoration: none; }
+.menu a:hover { text-decoration: underline; }
+.menu-langue a { font-size: 0.875rem; }
+
+.lien-bouton {
+    background: none;
+    border: none;
+    color: var(--blanc);
+    font: inherit;
+    cursor: pointer;
+    padding: 0;
+    text-decoration: underline;
+}
+
+main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: var(--espace-xl) var(--espace-l);
+    min-height: 60vh;
+}
+
+h1 { color: var(--bleu-marine); margin-top: 0; }
+
+.btn-cta {
+    display: inline-block;
+    background: var(--orange-cta);
+    color: var(--blanc);
+    border: none;
+    border-radius: var(--rayon);
+    padding: var(--espace-s) var(--espace-l);
+    font: inherit;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+}
+.btn-cta:hover { background: #9A3412; }
+
+.formulaire { max-width: 28rem; }
+.champ { margin-bottom: var(--espace-m); }
+.champ label { display: block; font-weight: 600; margin-bottom: 0.25rem; }
+.champ input, .champ select {
+    width: 100%;
+    padding: var(--espace-s);
+    border: 1px solid var(--gris-200);
+    border-radius: var(--rayon);
+    font: inherit;
+}
+.champ input:invalid { border-color: var(--erreur-texte); }
+
+.texte-succes { color: var(--succes-texte); }
+.texte-alerte { color: var(--alerte-texte); }
+.texte-info   { color: var(--info-texte); }
+.texte-erreur { color: var(--erreur-texte); }
+
+.message {
+    padding: var(--espace-m);
+    border-radius: var(--rayon);
+    border-left: 4px solid;
+    margin-bottom: var(--espace-l);
+    background: var(--gris-50);
+}
+.message-succes { border-color: var(--succes-texte); color: var(--succes-texte); }
+.message-erreur { border-color: var(--erreur-texte); color: var(--erreur-texte); }
+
+::placeholder { color: var(--gris-500); opacity: 1; }
+:disabled, [aria-disabled="true"] { color: var(--gris-400); }
+
+.pied {
+    background: var(--gris-50);
+    border-top: 1px solid var(--gris-200);
+    padding: var(--espace-l);
+    text-align: center;
+    color: var(--gris-700);
+    font-size: 0.875rem;
+}
+.pied ul {
+    list-style: none;
+    padding: 0;
+    display: flex;
+    gap: var(--espace-m);
+    justify-content: center;
+}
+.pied a { color: var(--gris-700); }
+
+@media (max-width: 640px) {
+    .entete nav { flex-wrap: wrap; gap: var(--espace-s); }
+    .menu-compte { margin-left: 0; }
+}
