@@ -1,0 +1,40 @@
+package be.autoservplus.communication.service;
+
+import be.autoservplus.identite.domain.Utilisateur;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Service;
+
+/**
+ * Implementation de developpement : le contenu du courriel est journalise plutot
+ * qu envoye. Le lien reste ainsi accessible sans dependre d un service externe.
+ */
+@Service
+@Profile("!prod")
+public class CourrielConsole implements ServiceCourriel {
+
+    private static final Logger JOURNAL = LoggerFactory.getLogger(CourrielConsole.class);
+
+    @Override
+    public void envoyerVerificationAdresse(Utilisateur destinataire, String lienVerification) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL SIMULE : verification d adresse ----------
+                Destinataire : {} <{}>
+                Lien         : {}
+                -------------------------------------------------------------
+                """, destinataire.nomComplet(), destinataire.getEmail(), lienVerification);
+    }
+
+    @Override
+    public void envoyerReinitialisationMotDePasse(Utilisateur destinataire, String lien) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL SIMULE : mot de passe oublie ----------
+                Destinataire : {} <{}>
+                Lien         : {}
+                ----------------------------------------------------------
+                """, destinataire.nomComplet(), destinataire.getEmail(), lien);
+    }
+}
