@@ -1,0 +1,24 @@
+﻿# Build Maven
+target/
+*.class
+
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# Systeme
+.DS_Store
+Thumbs.db
+
+# Secrets et environnement local : ne doivent JAMAIS etre versionnes
+.env
+.env.*
+application-local.yml
+application-secrets.yml
+
+# Journaux et fichiers generes
+*.log
+logs/
+factures/
+uploads/
