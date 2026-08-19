@@ -1,0 +1,24 @@
+﻿# Base de donnees locale de developpement.
+# Demarrage : docker compose up -d
+# Arret     : docker compose down
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: autoservplus-db
+    environment:
+      POSTGRES_DB: autoservplus
+      POSTGRES_USER: autoservplus
+      POSTGRES_PASSWORD: autoservplus
+      TZ: UTC
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U autoservplus -d autoservplus"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  pgdata:
