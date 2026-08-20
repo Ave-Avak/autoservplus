@@ -114,7 +114,7 @@ public class Rdv extends BaseEntity {
     }
 
     /** Arrondit une duree au multiple superieur du pas : 50 min sur un pas de 30 donne 60. */
-    static Duration dureeArrondie(int minutes, Duration pas) {
+    public static Duration dureeArrondie(int minutes, Duration pas) {
         long pasMinutes = pas.toMinutes();
         long blocs = Math.max(1, (minutes + pasMinutes - 1) / pasMinutes);
         return Duration.ofMinutes(blocs * pasMinutes);

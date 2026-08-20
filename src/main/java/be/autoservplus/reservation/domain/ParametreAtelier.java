@@ -62,7 +62,7 @@ public class ParametreAtelier {
     @Column(name = "updated_by", length = 120)
     private String updatedBy;
 
-    protected ParametreAtelier() {
+    public ParametreAtelier() {
         // requis par JPA ; la ligne est creee par la migration V13
     }
 
