@@ -28,5 +28,5 @@ jobs:
       - name: Compilation
         run: ./mvnw -B compile
 
-      - name: Tests unitaires
-        run: ./mvnw -B test
+      - name: Tests unitaires, integration et couverture
+        run: ./mvnw -B verify
