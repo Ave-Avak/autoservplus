@@ -93,9 +93,16 @@ public class Vehicule extends BaseEntity {
         return saisie.trim().toUpperCase().replace(" ", "");
     }
 
-    /** Verifie que le membre indique est bien le proprietaire du vehicule. */
+    /**
+     * Verifie que le membre indique est bien le proprietaire.
+     *
+     * <p>La comparaison porte sur l adresse et non sur l identifiant technique : deux
+     * entites non encore persistees ont un identifiant nul et ne seraient jamais
+     * reconnues comme egales, ce qui rendrait la regle intestable.</p>
+     */
     public boolean appartientA(Utilisateur candidat) {
-        return membre != null && membre.equals(candidat);
+        return membre != null && candidat != null
+                && membre.getEmail().equalsIgnoreCase(candidat.getEmail());
     }
 
     public String designation() {
