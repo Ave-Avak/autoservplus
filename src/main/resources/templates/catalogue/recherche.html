@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${terme != null ? 'Recherche : ' + terme : 'Recherche'} + ' — AutoServ+'">
+        Recherche — AutoServ+</title>
+    <!-- Une page de resultats n a pas vocation a etre indexee : son contenu depend
+         du terme saisi et n apporte rien aux moteurs de recherche. -->
+    <meta name="robots" content="noindex, follow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}">Prestations</a></li>
+            <li><a th:href="@{/pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}">Connexion</a></li>
+            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}">Mon compte</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1>Recherche</h1>
+
+    <form class="recherche" th:action="@{/recherche}" method="get" role="search">
+        <label for="q" class="visuellement-cache">Rechercher dans le catalogue</label>
+        <input type="search" id="q" name="q" th:value="${terme}"
+               placeholder="Vidange, plaquettes, filtre…" autofocus>
+        <button type="submit" class="btn-cta">Rechercher</button>
+    </form>
+
+    <p class="resultats-compte" th:if="${terme != null and !terme.isBlank()}"
+       role="status" aria-live="polite">
+        <span th:if="${total == 0}">
+            Aucun résultat pour « <strong th:text="${terme}">terme</strong> ».
+        </span>
+        <span th:if="${total == 1}">
+            1 résultat pour « <strong th:text="${terme}">terme</strong> ».
+        </span>
+        <span th:if="${total > 1}">
+            <strong th:text="${total}">0</strong> résultats pour
+            « <strong th:text="${terme}">terme</strong> ».
+        </span>
+    </p>
+
+    <p th:if="${total == 0 and terme != null and !terme.isBlank()}" class="message">
+        Vérifiez l'orthographe, ou essayez un terme plus général.
+        Vous pouvez aussi parcourir <a th:href="@{/services}">nos prestations</a>
+        ou <a th:href="@{/pieces}">nos pièces</a>.
+    </p>
+
+    <section th:if="${!prestations.isEmpty()}">
+        <h2>Prestations</h2>
+        <ul class="grille-articles">
+            <li class="carte" th:each="article : ${prestations}">
+                <h3>
+                    <a th:href="@{/services/{ref}(ref=${article.reference()})}"
+                       th:text="${article.libelle()}">Libellé</a>
+                </h3>
+                <p class="carte-categorie" th:text="${article.categorie()}">Catégorie</p>
+                <p class="carte-description" th:text="${article.description()}">Description</p>
+                <p class="carte-meta" th:if="${article.dureeMinutes() != null}">
+                    Durée : <span th:text="${article.dureeLisible()}">1 h</span>
+                </p>
+                <p class="carte-prix">
+                    <strong th:text="${#numbers.formatDecimal(article.prixTvac(), 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</strong>
+                    <span class="carte-htva"
+                          th:text="'(' + ${#numbers.formatDecimal(article.prixHtva(), 1, 'POINT', 2, 'COMMA')} + ' € HTVA)'">
+                        (0,00 € HTVA)</span>
+                </p>
+            </li>
+        </ul>
+    </section>
+
+    <section th:if="${!pieces.isEmpty()}">
+        <h2>Pièces détachées</h2>
+        <ul class="grille-articles">
+            <li class="carte" th:each="article : ${pieces}">
+                <h3>
+                    <a th:href="@{/pieces/{ref}(ref=${article.reference()})}"
+                       th:text="${article.libelle()}">Libellé</a>
+                </h3>
+                <p class="carte-categorie" th:text="${article.categorie()}">Catégorie</p>
+                <p class="carte-description" th:text="${article.description()}">Description</p>
+                <p class="carte-meta" th:if="${article.marque() != null}" th:text="${article.marque()}">Marque</p>
+                <p class="carte-prix">
+                    <strong th:text="${#numbers.formatDecimal(article.prixTvac(), 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</strong>
+                    <span class="carte-htva"
+                          th:text="'(' + ${#numbers.formatDecimal(article.prixHtva(), 1, 'POINT', 2, 'COMMA')} + ' € HTVA)'">
+                        (0,00 € HTVA)</span>
+                </p>
+                <p class="texte-erreur" th:unless="${article.disponible()}">Momentanément indisponible</p>
+            </li>
+        </ul>
+    </section>
+</main>
+
+<footer class="pied">
+    <ul>
+        <li><a th:href="@{/cgv}">CGV</a></li>
+        <li><a th:href="@{/mentions-legales}">Mentions légales</a></li>
+        <li><a th:href="@{/confidentialite}">Confidentialité</a></li>
+    </ul>
+    <p>&copy; 2026 AutoServ+</p>
+</footer>
+
+</body>
+</html>

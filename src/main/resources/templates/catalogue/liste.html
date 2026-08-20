@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${titre} + ' — AutoServ+'">Catalogue — AutoServ+</title>
+    <meta name="description"
+          th:content="${typeArticle == 'service'}
+              ? 'Découvrez les prestations proposées par notre garage : entretien, freinage, pneumatiques, diagnostic. Prix affichés TVA comprise.'
+              : 'Pièces détachées de marques reconnues, disponibles en stock. Prix affichés TVA comprise.'">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}">Prestations</a></li>
+            <li><a th:href="@{/pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}">Connexion</a></li>
+            <li sec:authorize="!isAuthenticated()">
+                <a class="btn-cta" th:href="@{/inscription}">Créer un compte</a></li>
+            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}">Mon compte</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1 th:text="${titre}">Nos prestations</h1>
+
+    <form class="recherche" th:action="@{/recherche}" method="get" role="search">
+        <label for="q" class="visuellement-cache">Rechercher dans le catalogue</label>
+        <input type="search" id="q" name="q" placeholder="Rechercher une prestation ou une pièce">
+        <button type="submit" class="btn-cta">Rechercher</button>
+    </form>
+
+    <nav class="filtres" aria-label="Filtrer par catégorie">
+        <a th:href="${typeArticle == 'service'} ? @{/services} : @{/pieces}"
+           th:classappend="${categorieActive == null} ? 'filtre-actif' : ''"
+           class="filtre">Toutes</a>
+        <a th:each="cat : ${categories}"
+           th:href="${typeArticle == 'service'} ? @{/services(categorie=${cat.code})} : @{/pieces(categorie=${cat.code})}"
+           th:classappend="${categorieActive == cat.code} ? 'filtre-actif' : ''"
+           th:text="${cat.libelle}"
+           class="filtre">Catégorie</a>
+    </nav>
+
+    <p th:if="${articles.isEmpty()}" class="message">
+        Aucun élément dans cette catégorie pour le moment.
+    </p>
+
+    <ul class="grille-articles" th:unless="${articles.isEmpty()}">
+        <li class="carte" th:each="article : ${articles}">
+            <h2>
+                <a th:href="${typeArticle == 'service'}
+                        ? @{/services/{ref}(ref=${article.reference})}
+                        : @{/pieces/{ref}(ref=${article.reference})}"
+                   th:text="${article.libelle}">Libellé</a>
+            </h2>
+            <p class="carte-categorie" th:text="${article.categorie}">Catégorie</p>
+            <p class="carte-description" th:text="${article.description}">Description</p>
+
+            <p class="carte-meta" th:if="${article.dureeMinutes != null}">
+                Durée : <span th:text="${article.dureeLisible()}">1 h</span>
+            </p>
+            <p class="carte-meta" th:if="${article.marque != null}" th:text="${article.marque}">Marque</p>
+
+            <p class="carte-prix">
+                <strong th:text="${#numbers.formatDecimal(article.prixTvac, 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</strong>
+                <span class="carte-htva"
+                      th:text="'(' + ${#numbers.formatDecimal(article.prixHtva, 1, 'POINT', 2, 'COMMA')} + ' € HTVA)'">
+                    (0,00 € HTVA)</span>
+            </p>
+
+            <p class="texte-erreur" th:if="${!article.disponible}">Momentanément indisponible</p>
+        </li>
+    </ul>
+</main>
+
+<footer class="pied">
+    <ul>
+        <li><a th:href="@{/cgv}">CGV</a></li>
+        <li><a th:href="@{/mentions-legales}">Mentions légales</a></li>
+        <li><a th:href="@{/confidentialite}">Confidentialité</a></li>
+    </ul>
+    <p>&copy; 2026 AutoServ+</p>
+</footer>
+
+</body>
+</html>

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${article.libelle()} + ' — AutoServ+'">Article — AutoServ+</title>
+    <meta name="description" th:content="${article.description()}">
+
+    <!--
+      Donnees structurees schema.org au format JSON-LD.
+      Elles indiquent explicitement aux moteurs de recherche la nature de la page,
+      son prix et sa disponibilite. Google peut alors afficher ces informations
+      directement dans ses resultats, ce qui ameliore le taux de clic sans depenser
+      en publicite. Le prix expose est le prix TVAC, conformement a la regle RM-30.
+    -->
+    <script type="application/ld+json" th:if="${typeArticle == 'service'}" th:inline="text">
+        {
+            "@context": "https://schema.org",
+            "@type": "Service",
+            "name": "[(${article.libelle()})]",
+            "description": "[(${article.description()})]",
+            "serviceType": "[(${article.categorie()})]",
+            "provider": {
+                "@type": "AutoRepair",
+                "name": "AutoServ+",
+                "address": {
+                    "@type": "PostalAddress",
+                    "addressCountry": "BE"
+                }
+            },
+            "offers": {
+                "@type": "Offer",
+                "price": "[(${article.prixTvac()})]",
+                "priceCurrency": "EUR",
+                "availability": "https://schema.org/InStock"
+            }
+        }
+    </script>
+
+    <script type="application/ld+json" th:if="${typeArticle == 'piece'}" th:inline="text">
+        {
+            "@context": "https://schema.org",
+            "@type": "Product",
+            "name": "[(${article.libelle()})]",
+            "description": "[(${article.description()})]",
+            "sku": "[(${article.code()})]",
+            "brand": {
+                "@type": "Brand",
+                "name": "[(${article.marque()})]"
+            },
+            "offers": {
+                "@type": "Offer",
+                "price": "[(${article.prixTvac()})]",
+                "priceCurrency": "EUR",
+                "availability": "[(${article.disponible()} ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock')]",
+                "seller": {
+                    "@type": "AutoRepair",
+                    "name": "AutoServ+"
+                }
+            }
+        }
+    </script>
+
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}">Prestations</a></li>
+            <li><a th:href="@{/pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}">Connexion</a></li>
+            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}">Mon compte</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+
+    <nav class="fil-ariane" aria-label="Fil d'Ariane">
+        <ol>
+            <li><a th:href="@{/}">Accueil</a></li>
+            <li><a th:href="${typeArticle == 'service'} ? @{/services} : @{/pieces}"
+                   th:text="${typeArticle == 'service'} ? 'Prestations' : 'Pièces'">Catalogue</a></li>
+            <li aria-current="page" th:text="${article.libelle()}">Article</li>
+        </ol>
+    </nav>
+
+    <article class="fiche">
+        <p class="fiche-categorie" th:text="${article.categorie()}">Catégorie</p>
+        <h1 th:text="${article.libelle()}">Libellé</h1>
+
+        <p class="fiche-description" th:text="${article.description()}">Description</p>
+
+        <dl class="fiche-details">
+            <div th:if="${article.dureeMinutes() != null}">
+                <dt>Durée estimée</dt>
+                <dd th:text="${article.dureeLisible()}">1 h</dd>
+            </div>
+            <div th:if="${article.marque() != null}">
+                <dt>Marque</dt>
+                <dd th:text="${article.marque()}">Marque</dd>
+            </div>
+            <div>
+                <dt>Référence</dt>
+                <dd th:text="${article.code()}">REF-001</dd>
+            </div>
+        </dl>
+
+        <div class="fiche-prix">
+            <p class="prix-principal">
+                <span th:text="${#numbers.formatDecimal(article.prixTvac(), 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</span>
+                <span class="prix-mention">TVA comprise</span>
+            </p>
+            <p class="prix-htva"
+               th:text="'Soit ' + ${#numbers.formatDecimal(article.prixHtva(), 1, 'POINT', 2, 'COMMA')} + ' € hors TVA'">
+                Soit 0,00 € hors TVA</p>
+        </div>
+
+        <p class="message message-erreur" th:unless="${article.disponible()}" role="status">
+            Cet article est momentanément indisponible.
+        </p>
+
+        <div class="fiche-actions" th:if="${article.disponible()}">
+            <a class="btn-cta" th:href="@{/rendez-vous/nouveau(article=${article.reference()})}"
+               th:if="${typeArticle == 'service'}">Prendre rendez-vous</a>
+            <a class="btn-cta" th:href="@{/panier/ajouter(article=${article.reference()})}"
+               th:if="${typeArticle == 'piece'}">Ajouter au panier</a>
+        </div>
+    </article>
+
+    <p><a th:href="${typeArticle == 'service'} ? @{/services} : @{/pieces}">Retour au catalogue</a></p>
+</main>
+
+<footer class="pied">
+    <ul>
+        <li><a th:href="@{/cgv}">CGV</a></li>
+        <li><a th:href="@{/mentions-legales}">Mentions légales</a></li>
+        <li><a th:href="@{/confidentialite}">Confidentialité</a></li>
+    </ul>
+    <p>&copy; 2026 AutoServ+</p>
+</footer>
+
+</body>
+</html>
