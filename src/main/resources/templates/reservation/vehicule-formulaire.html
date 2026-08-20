@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${titre} + ' — AutoServ+'">Véhicule — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mes-vehicules}">Mes véhicules</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1 th:text="${titre}">Ajouter un véhicule</h1>
+
+    <form class="formulaire"
+          th:action="${modeAjout}
+              ? @{/mes-vehicules/nouveau}
+              : @{/mes-vehicules/{ref}/modifier(ref=${reference})}"
+          th:object="${formulaire}" method="post" novalidate>
+
+        <div class="champ">
+            <label for="plaque">Plaque d'immatriculation</label>
+            <input type="text" id="plaque" th:field="*{plaque}"
+                   th:readonly="${!modeAjout}"
+                   placeholder="1-ABC-123" required
+                   aria-describedby="aide-plaque">
+            <p id="aide-plaque" class="texte-info" th:if="${modeAjout}">
+                Format belge : 1-ABC-123
+            </p>
+            <p class="texte-info" th:unless="${modeAjout}">
+                La plaque identifie le véhicule et ne peut pas être modifiée.
+            </p>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('plaque')}" th:errors="*{plaque}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="marque">Marque</label>
+            <input type="text" id="marque" th:field="*{marque}" placeholder="Volkswagen" required>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('marque')}" th:errors="*{marque}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="modele">Modèle</label>
+            <input type="text" id="modele" th:field="*{modele}" placeholder="Golf" required>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('modele')}" th:errors="*{modele}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="motorisation">Motorisation</label>
+            <select id="motorisation" th:field="*{motorisation}" required>
+                <option value="">Choisissez…</option>
+                <option th:each="m : ${motorisations}" th:value="${m}" th:text="${m}">Diesel</option>
+            </select>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('motorisation')}" th:errors="*{motorisation}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="annee">Année de mise en circulation</label>
+            <input type="number" id="annee" th:field="*{annee}" min="1900" max="2100" placeholder="2018">
+            <p class="texte-erreur" th:if="${#fields.hasErrors('annee')}" th:errors="*{annee}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="kilometrage">Kilométrage</label>
+            <input type="number" id="kilometrage" th:field="*{kilometrage}" min="0" placeholder="85000"
+                   aria-describedby="aide-kilometrage">
+            <p id="aide-kilometrage" class="texte-info">
+                Le kilométrage ne peut pas diminuer d'un relevé à l'autre.
+            </p>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('kilometrage')}" th:errors="*{kilometrage}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="numeroChassis">Numéro de châssis <span class="champ-facultatif">(facultatif)</span></label>
+            <input type="text" id="numeroChassis" th:field="*{numeroChassis}" maxlength="20">
+            <p class="texte-erreur" th:if="${#fields.hasErrors('numeroChassis')}" th:errors="*{numeroChassis}"></p>
+        </div>
+
+        <button type="submit" class="btn-cta"
+                th:text="${modeAjout} ? 'Ajouter le véhicule' : 'Enregistrer les modifications'">
+            Enregistrer</button>
+    </form>
+
+    <p><a th:href="@{/mes-vehicules}">Annuler</a></p>
+</main>
+
+<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+
+</body>
+</html>

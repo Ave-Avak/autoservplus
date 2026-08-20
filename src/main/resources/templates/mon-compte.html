@@ -22,6 +22,13 @@
 <main id="contenu">
     <h1>Mon compte</h1>
     <p>Connecté en tant que <strong th:text="${email}">adresse@exemple.be</strong>.</p>
+
+    <nav class="grille-articles" aria-label="Sections de mon compte">
+        <a class="carte carte-lien" th:href="@{/mes-vehicules}">
+            <h2>Mes véhicules</h2>
+            <p>Gérez votre parc et suivez le kilométrage de chaque véhicule.</p>
+        </a>
+    </nav>
 </main>
 <footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
 </body>

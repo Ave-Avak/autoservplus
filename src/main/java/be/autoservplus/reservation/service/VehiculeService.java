@@ -1,5 +1,6 @@
 package be.autoservplus.reservation.service;
 
+import be.autoservplus.reservation.web.dto.VehiculeVue;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -56,6 +57,14 @@ public class VehiculeService {
             throw new RessourceIntrouvableException("Vehicule", reference);
         }
         return vehicule;
+    }
+    /** Vues destinees a l affichage, converties dans la transaction. */
+    public List<VehiculeVue> vuesDuMembre(String email) {
+        return vehicules.findByMembre(email).stream().map(VehiculeVue::de).toList();
+    }
+
+    public VehiculeVue vue(UUID reference, String email) {
+        return VehiculeVue.de(vehiculeDuMembre(reference, email));
     }
 
     /**

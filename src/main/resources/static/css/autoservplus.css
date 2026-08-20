@@ -333,3 +333,39 @@ main section h2 {
 .carte h3 { font-size: 1.125rem; margin: 0 0 var(--espace-xs); }
 .carte h3 a { color: var(--bleu-marine); text-decoration: none; }
 .carte h3 a:hover { text-decoration: underline; }
+
+
+/* --- Vehicules ------------------------------------------------------------------ */
+
+.vehicule-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(7rem, 1fr));
+    gap: var(--espace-s);
+    margin: var(--espace-m) 0;
+}
+.vehicule-details dt {
+    font-size: 0.75rem;
+    color: var(--gris-500);
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+.vehicule-details dd { margin: 0; font-weight: 600; font-size: 0.9375rem; }
+
+.carte-actions {
+    display: flex;
+    gap: var(--espace-m);
+    align-items: center;
+    margin-top: auto;
+    padding-top: var(--espace-m);
+    border-top: 1px solid var(--gris-200);
+}
+.carte-actions a { color: var(--bleu-secondaire); font-size: 0.9375rem; }
+
+.actions-page { margin-top: var(--espace-xl); }
+.champ-facultatif { font-weight: 400; color: var(--gris-500); font-size: 0.875rem; }
+input[readonly] { background: var(--gris-50); color: var(--gris-700); }
+
+.carte-lien { text-decoration: none; color: inherit; }
+.carte-lien:hover { border-color: var(--bleu-secondaire); }
+.carte-lien h2 { color: var(--bleu-marine); font-size: 1.125rem; margin: 0 0 var(--espace-xs); }
+.carte-lien p { color: var(--gris-700); font-size: 0.9375rem; margin: 0; }

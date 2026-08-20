@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mes véhicules — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}">Prestations</a></li>
+            <li><a th:href="@{/pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1>Mes véhicules</h1>
+
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">
+        Message
+    </div>
+
+    <p th:if="${vehicules.isEmpty()}" class="message">
+        Vous n'avez pas encore enregistré de véhicule. Ajoutez-en un pour pouvoir
+        prendre rendez-vous et suivre son historique d'entretien.
+    </p>
+
+    <ul class="grille-articles" th:unless="${vehicules.isEmpty()}">
+        <li class="carte" th:each="v : ${vehicules}">
+            <h2 th:text="${v.marque()} + ' ' + ${v.modele()}">Marque Modèle</h2>
+            <p class="carte-categorie" th:text="${v.plaque()}">1-ABC-123</p>
+
+            <dl class="vehicule-details">
+                <div>
+                    <dt>Motorisation</dt>
+                    <dd th:text="${v.motorisationLisible()}">Diesel</dd>
+                </div>
+                <div th:if="${v.annee() != null}">
+                    <dt>Année</dt>
+                    <dd th:text="${v.annee()}">2018</dd>
+                </div>
+                <div>
+                    <dt>Kilométrage</dt>
+                    <dd th:text="${v.kilometrageLisible()}">85 000 km</dd>
+                </div>
+            </dl>
+
+            <div class="carte-actions">
+                <a th:href="@{/mes-vehicules/{ref}/modifier(ref=${v.reference()})}"
+                   th:aria-label="'Modifier ' + ${v.designation()}">Modifier</a>
+
+                <form th:action="@{/mes-vehicules/{ref}/supprimer(ref=${v.reference()})}"
+                      method="post"
+                      class="formulaire-suppression"
+                      th:data-designation="${v.designation()}">
+                    <button type="submit" class="lien-bouton texte-erreur"
+                            th:aria-label="'Retirer ' + ${v.designation()}">Retirer</button>
+                </form>
+            </div>
+        </li>
+    </ul>
+
+    <p class="actions-page">
+        <a class="btn-cta" th:href="@{/mes-vehicules/nouveau}">Ajouter un véhicule</a>
+    </p>
+
+    <p><a th:href="@{/mon-compte}">Retour à mon compte</a></p>
+</main>
+
+<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+
+<script th:src="@{/js/confirmation.js}"></script>
+</body>
+</html>
