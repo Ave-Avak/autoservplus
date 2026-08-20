@@ -136,6 +136,16 @@ public class Rdv extends BaseEntity {
         this.dateAnnulation = maintenant;
     }
 
+    /** Annulation a l initiative du garage, apres confirmation. Motif obligatoire. */
+    public void annulerParLeGarage(String motif, Instant maintenant) {
+        if (motif == null || motif.isBlank()) {
+            throw new IllegalArgumentException("Une annulation par le garage doit etre motivee.");
+        }
+        transitionVers(StatutRdv.ANNULE);
+        this.motifRefus = motif.trim();
+        this.dateAnnulation = maintenant;
+    }
+
     /**
      * Annulation par le membre, au plus tard {@code delaiAnnulation} avant le debut (RM-11).
      * Le delai est un parametre de l atelier, d ou son passage en argument.
