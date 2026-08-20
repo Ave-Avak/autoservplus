@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>AutoServ+ — Votre garage en quelques clics</title>
+    <meta name="description" content="Réservez votre entretien automobile en ligne, suivez votre intervention et recevez votre facture. Garage indépendant en Belgique.">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}">Connexion</a></li>
+            <li sec:authorize="!isAuthenticated()">
+                <a class="btn-cta" th:href="@{/inscription}">Créer un compte</a></li>
+            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}">Mon compte</a></li>
+            <li sec:authorize="isAuthenticated()">
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1>Votre garage en quelques clics</h1>
+    <p>Réservez votre entretien en ligne, suivez l'avancement de l'intervention
+        et recevez votre facture sans vous déplacer.</p>
+    <p sec:authorize="!isAuthenticated()">
+        <a class="btn-cta" th:href="@{/inscription}">Créer mon compte</a>
+    </p>
+</main>
+
+<footer class="pied">
+    <ul>
+        <li><a th:href="@{/cgv}">CGV</a></li>
+        <li><a th:href="@{/mentions-legales}">Mentions légales</a></li>
+        <li><a th:href="@{/confidentialite}">Confidentialité</a></li>
+    </ul>
+    <p>&copy; 2026 AutoServ+</p>
+</footer>
+
+</body>
+</html>

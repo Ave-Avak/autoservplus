@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Connexion — AutoServ+</title>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li><a class="btn-cta" th:href="@{/inscription}">Créer un compte</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1>Connexion</h1>
+
+    <div class="message message-erreur" th:if="${erreur}" role="alert">
+        <p>Identifiants incorrects, ou compte non encore vérifié.</p>
+    </div>
+
+    <div class="message message-succes" th:if="${deconnecte}" role="status">
+        <p>Vous avez été déconnecté.</p>
+    </div>
+
+    <form class="formulaire" th:action="@{/connexion}" method="post">
+        <div class="champ">
+            <label for="email">Adresse de courriel</label>
+            <input type="email" id="email" name="email" autocomplete="email" required autofocus>
+        </div>
+
+        <div class="champ">
+            <label for="password">Mot de passe</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
+        </div>
+
+        <button type="submit" class="btn-cta">Se connecter</button>
+    </form>
+
+    <p><a th:href="@{/mot-de-passe/oublie}">Mot de passe oublié ?</a></p>
+</main>
+
+<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+
+</body>
+</html>
