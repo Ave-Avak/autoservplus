@@ -37,4 +37,14 @@ public class CourrielConsole implements ServiceCourriel {
                 ----------------------------------------------------------
                 """, destinataire.nomComplet(), destinataire.getEmail(), lien);
     }
+    @Override
+    public void envoyerRappelVerification(Utilisateur destinataire, String lienVerification) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL SIMULE : compte jamais active ----------
+                Destinataire : {} <{}>
+                Lien         : {}
+                -----------------------------------------------------------
+                """, destinataire.nomComplet(), destinataire.getEmail(), lienVerification);
+    }
 }

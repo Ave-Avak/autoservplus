@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Nouveau mot de passe — AutoServ+</title>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<header class="entete">
+    <nav aria-label="Navigation principale"><a class="marque" th:href="@{/}">AutoServ+</a></nav>
+</header>
+<main id="contenu">
+    <h1>Choisissez un nouveau mot de passe</h1>
+
+    <form class="formulaire" th:action="@{/mot-de-passe/nouveau}" th:object="${formulaire}"
+          method="post" novalidate>
+        <input type="hidden" th:field="*{jeton}">
+
+        <div class="champ">
+            <label for="motDePasse">Nouveau mot de passe</label>
+            <input type="password" id="motDePasse" th:field="*{motDePasse}"
+                   autocomplete="new-password" minlength="12" required
+                   aria-describedby="aide-mdp" autofocus>
+            <p id="aide-mdp" class="texte-info">Douze caractères minimum.</p>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('motDePasse')}" th:errors="*{motDePasse}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="confirmation">Confirmez le mot de passe</label>
+            <input type="password" id="confirmation" th:field="*{confirmation}"
+                   autocomplete="new-password" required>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('confirmation')}" th:errors="*{confirmation}"></p>
+        </div>
+
+        <button type="submit" class="btn-cta">Enregistrer</button>
+    </form>
+</main>
+<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>

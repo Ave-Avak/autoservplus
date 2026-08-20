@@ -179,6 +179,21 @@ public class Utilisateur extends BaseEntity {
         this.tentativesEchouees = 0;
         this.verrouilleJusquA = null;
     }
+    /**
+     * Redefinit le mot de passe et leve le verrouillage.
+     *
+     * <p>Une personne qui prouve controler la boite de reception n est pas l attaquant
+     * que le verrouillage visait a arreter.</p>
+     */
+    public void reinitialiserMotDePasse(String nouvelleEmpreinte) {
+        changerMotDePasse(nouvelleEmpreinte);
+        this.jetonVerification = null;
+        this.jetonExpiration = null;
+        this.emailVerifie = true;
+        if (this.statut == StatutUtilisateur.EN_ATTENTE_VALIDATION) {
+            this.statut = StatutUtilisateur.ACTIF;
+        }
+    }
 
     // --- accesseurs -----------------------------------------------------------------
 

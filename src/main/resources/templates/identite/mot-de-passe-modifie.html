@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mot de passe modifié — AutoServ+</title>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+<header class="entete">
+    <nav><a class="marque" th:href="@{/}">AutoServ+</a></nav>
+</header>
+<main id="contenu">
+    <h1>Votre mot de passe est modifié</h1>
+    <div class="message message-succes" role="status">
+        <p>Votre compte est actif et vous pouvez vous connecter dès maintenant.</p>
+    </div>
+    <a class="btn-cta" th:href="@{/connexion}">Se connecter</a>
+</main>
+<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>

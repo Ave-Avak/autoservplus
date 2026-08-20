@@ -23,11 +23,15 @@
     <h1>Connexion</h1>
 
     <div class="message message-erreur" th:if="${erreur}" role="alert">
-        <p>Identifiants incorrects, ou compte non encore vérifié.</p>
+        <p>Identifiants incorrects.</p>
+        <p>Si vous avez oublié votre mot de passe, ou si vous n'avez jamais activé votre
+            compte, <a th:href="@{/mot-de-passe/oublie}">demandez un lien de réinitialisation</a>.</p>
     </div>
 
     <div class="message message-erreur" th:if="${bloque}" role="alert">
         <p>Trop de tentatives. Réessayez dans quelques minutes.</p>
+        <p>Vous pouvez aussi <a th:href="@{/mot-de-passe/oublie}">réinitialiser votre mot de
+            passe</a> pour retrouver l'accès immédiatement.</p>
     </div>
 
     <div class="message message-succes" th:if="${deconnecte}" role="status">

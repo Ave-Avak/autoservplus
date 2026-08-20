@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mot de passe oublié — AutoServ+</title>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<header class="entete">
+    <nav aria-label="Navigation principale"><a class="marque" th:href="@{/}">AutoServ+</a></nav>
+</header>
+<main id="contenu">
+    <h1>Mot de passe oublié</h1>
+    <p>Indiquez l'adresse associée à votre compte. Nous vous enverrons la marche à suivre.</p>
+
+    <form class="formulaire" th:action="@{/mot-de-passe/oublie}" method="post">
+        <div class="champ">
+            <label for="email">Adresse de courriel</label>
+            <input type="email" id="email" name="email" autocomplete="email" required autofocus>
+        </div>
+        <button type="submit" class="btn-cta">Envoyer</button>
+    </form>
+
+    <p><a th:href="@{/connexion}">Retour à la connexion</a></p>
+</main>
+<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>
