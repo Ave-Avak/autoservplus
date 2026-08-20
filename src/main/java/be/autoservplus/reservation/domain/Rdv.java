@@ -8,6 +8,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -16,22 +17,20 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
-import java.math.BigDecimal;
+
 /**
- * Demande de rendez-vous d un membre, sur un creneau, pour un de ses vehicules.
+ * Rendez-vous d un membre : un vehicule, un poste, un intervalle, des prestations.
  *
- * <p>La machine a etats est portee par l entite : aucune couche superieure ne peut
- * forcer une transition interdite. Le lien vers le creneau n est jamais rompu, la
- * colonne etant NOT NULL : une annulation rend le creneau disponible sans effacer la
- * trace de ce qui l avait occupe.</p>
+ * <p>La fin est deduite de la somme des durees des prestations, arrondie au pas de
+ * l atelier. La machine a etats est portee par l entite. Le non-chevauchement de deux
+ * rendez-vous actifs sur un meme poste est garanti par une contrainte d exclusion
+ * PostgreSQL ; {@code @Version} protege quant a lui les transitions d etat
+ * concurrentes (l admin confirme pendant que le membre annule).</p>
  */
 @Entity
 @Table(name = "rdv")
 @SQLRestriction("deleted_at IS NULL")
 public class Rdv extends BaseEntity {
-
-    /** Delai minimal d annulation par le membre (RM-11). */
-    public static final Duration DELAI_ANNULATION = Duration.ofHours(24);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -55,8 +54,16 @@ public class Rdv extends BaseEntity {
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "creneau_id", nullable = false)
-    private CreneauHoraire creneau;
+    @JoinColumn(name = "poste_id", nullable = false)
+    private PosteAtelier poste;
+
+    @NotNull
+    @Column(name = "debut", nullable = false)
+    private Instant debut;
+
+    @NotNull
+    @Column(name = "fin", nullable = false)
+    private Instant fin;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -85,13 +92,15 @@ public class Rdv extends BaseEntity {
         // requis par JPA
     }
 
-    public Rdv(String numero, Utilisateur membre, Vehicule vehicule, CreneauHoraire creneau,
-               Collection<Prestation> prestations, String commentaire) {
+    public Rdv(String numero, Utilisateur membre, Vehicule vehicule, PosteAtelier poste,
+               Instant debut, Duration pas, Collection<Prestation> prestations,
+               String commentaire) {
         this.reference = UUID.randomUUID();
         this.numero = Objects.requireNonNull(numero, "numero");
         this.membre = Objects.requireNonNull(membre, "membre");
         this.vehicule = Objects.requireNonNull(vehicule, "vehicule");
-        this.creneau = Objects.requireNonNull(creneau, "creneau");
+        this.poste = Objects.requireNonNull(poste, "poste");
+        this.debut = Objects.requireNonNull(debut, "debut");
         if (!vehicule.appartientA(membre)) {
             throw new IllegalArgumentException("Le vehicule n appartient pas au membre (RM-06).");
         }
@@ -100,27 +109,24 @@ public class Rdv extends BaseEntity {
         }
         prestations.stream().distinct()
                 .forEach(p -> this.lignes.add(new LigneRdv(this, p, (short) 1)));
+        this.fin = debut.plus(dureeArrondie(dureeEstimeeMinutes(), pas));
         this.commentaire = (commentaire == null || commentaire.isBlank()) ? null : commentaire.trim();
-        creneau.reserver();
+    }
+
+    /** Arrondit une duree au multiple superieur du pas : 50 min sur un pas de 30 donne 60. */
+    static Duration dureeArrondie(int minutes, Duration pas) {
+        long pasMinutes = pas.toMinutes();
+        long blocs = Math.max(1, (minutes + pasMinutes - 1) / pasMinutes);
+        return Duration.ofMinutes(blocs * pasMinutes);
     }
 
     // --- transitions ---------------------------------------------------------------
 
-    public void confirmer() {
-        transitionVers(StatutRdv.CONFIRME);
-    }
+    public void confirmer() { transitionVers(StatutRdv.CONFIRME); }
+    public void marquerHonore() { transitionVers(StatutRdv.HONORE); }
+    public void marquerAbsent() { transitionVers(StatutRdv.ABSENT); }
 
-    /** Le membre s est presente et l intervention a eu lieu. */
-    public void marquerHonore() {
-        transitionVers(StatutRdv.HONORE);
-    }
-
-    /** Le membre ne s est pas presente : le creneau reste consomme. */
-    public void marquerAbsent() {
-        transitionVers(StatutRdv.ABSENT);
-    }
-
-    /** Refus par le garage, motif obligatoire. Libere le creneau. */
+    /** Refus par le garage, motif obligatoire. */
     public void refuser(String motif, Instant maintenant) {
         if (motif == null || motif.isBlank()) {
             throw new IllegalArgumentException("Un refus doit etre motive.");
@@ -128,27 +134,24 @@ public class Rdv extends BaseEntity {
         transitionVers(StatutRdv.REFUSE);
         this.motifRefus = motif.trim();
         this.dateAnnulation = maintenant;
-        creneau.liberer();
     }
 
     /**
-     * Annulation par le membre, au plus tard 24 heures avant le creneau (RM-11).
-     *
-     * @param maintenant instant de reference, injecte pour rester testable
+     * Annulation par le membre, au plus tard {@code delaiAnnulation} avant le debut (RM-11).
+     * Le delai est un parametre de l atelier, d ou son passage en argument.
      */
-    public void annulerParLeMembre(Instant maintenant) {
-        if (!peutEtreAnnuleParLeMembre(maintenant)) {
+    public void annulerParLeMembre(Instant maintenant, Duration delaiAnnulation) {
+        if (!peutEtreAnnuleParLeMembre(maintenant, delaiAnnulation)) {
             throw new IllegalStateException(
-                    "L annulation n est plus possible a moins de 24 heures du rendez-vous (RM-11).");
+                    "L annulation n est plus possible a moins de %d heures du rendez-vous (RM-11)."
+                            .formatted(delaiAnnulation.toHours()));
         }
         transitionVers(StatutRdv.ANNULE);
         this.dateAnnulation = maintenant;
-        creneau.liberer();
     }
 
-    public boolean peutEtreAnnuleParLeMembre(Instant maintenant) {
-        return statut.estEnCours()
-                && !maintenant.plus(DELAI_ANNULATION).isAfter(creneau.getDebut());
+    public boolean peutEtreAnnuleParLeMembre(Instant maintenant, Duration delaiAnnulation) {
+        return statut.estEnCours() && !maintenant.plus(delaiAnnulation).isAfter(debut);
     }
 
     private void transitionVers(StatutRdv cible) {
@@ -159,25 +162,28 @@ public class Rdv extends BaseEntity {
         this.statut = cible;
     }
 
-    /** Duree totale estimee, somme des lignes (RM-09). */
+    // --- calculs -------------------------------------------------------------------
+
+    /** Somme des durees des lignes, avant arrondi (RM-09). */
     public int dureeEstimeeMinutes() {
         return lignes.stream().mapToInt(LigneRdv::dureeMinutes).sum();
     }
 
-    /** Montant hors taxe fige a la reservation. */
-    public BigDecimal montantHtva() {
-        return lignes.stream().map(LigneRdv::totalHtva)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    public Duration duree() {
+        return Duration.between(debut, fin);
     }
 
-    /** Montant taxe comprise, addition des lignes deja arrondies chacune au centime. */
+    public BigDecimal montantHtva() {
+        return lignes.stream().map(LigneRdv::totalHtva).reduce(BigDecimal.ZERO, BigDecimal::add);
+    }
+
     public BigDecimal montantTvac() {
-        return lignes.stream().map(LigneRdv::totalTvac)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        return lignes.stream().map(LigneRdv::totalTvac).reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     public boolean appartientA(Utilisateur candidat) {
-        return membre != null && membre.equals(candidat);
+        return membre != null && candidat != null
+                && membre.getEmail().equalsIgnoreCase(candidat.getEmail());
     }
 
     public Long getId() { return id; }
@@ -185,7 +191,9 @@ public class Rdv extends BaseEntity {
     public String getNumero() { return numero; }
     public Utilisateur getMembre() { return membre; }
     public Vehicule getVehicule() { return vehicule; }
-    public CreneauHoraire getCreneau() { return creneau; }
+    public PosteAtelier getPoste() { return poste; }
+    public Instant getDebut() { return debut; }
+    public Instant getFin() { return fin; }
     public StatutRdv getStatut() { return statut; }
     public String getCommentaire() { return commentaire; }
     public String getMotifRefus() { return motifRefus; }
