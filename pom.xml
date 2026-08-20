@@ -24,7 +24,9 @@
         <springdoc.version>2.8.6</springdoc.version>
         <jacoco.version>0.8.12</jacoco.version>
         <jacoco.version>0.8.12</jacoco.version>
-        <mockito.agent>${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar</mockito.agent>
+        <mockito.agent>
+            ${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
+        </mockito.agent>
     </properties>
 
     <dependencies>
@@ -131,7 +133,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
-                    <includes><include>**/*Test.java</include></includes>
+                    <includes>
+                        <include>**/*Test.java</include>
+                    </includes>
                     <argLine>@{argLine} -javaagent:${mockito.agent}</argLine>
                 </configuration>
             </plugin>
@@ -140,7 +144,10 @@
                 <artifactId>maven-failsafe-plugin</artifactId>
                 <executions>
                     <execution>
-                        <goals><goal>integration-test</goal><goal>verify</goal></goals>
+                        <goals>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
@@ -151,12 +158,46 @@
                 <executions>
                     <execution>
                         <id>prepare-agent</id>
-                        <goals><goal>prepare-agent</goal></goals>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
                     </execution>
                     <execution>
                         <id>report</id>
                         <phase>verify</phase>
-                        <goals><goal>report</goal></goals>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                    <execution>
+                        <id>check</id>
+                        <phase>verify</phase>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                        <configuration>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>INSTRUCTION</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>0.60</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                            <!-- Exclus du calcul : configuration Spring, classe de demarrage et
+                                 couche web. Ces classes se testent par des tests d integration
+                                 de bout en bout, pas par des tests unitaires, et leur inclusion
+                                 diluerait la mesure de la logique metier. -->
+                            <excludes>
+                                <exclude>be/autoservplus/AutoServPlusApplication.class</exclude>
+                                <exclude>be/autoservplus/config/**</exclude>
+                                <exclude>be/autoservplus/**/web/**</exclude>
+                            </excludes>
+                        </configuration>
                     </execution>
                 </executions>
             </plugin>
