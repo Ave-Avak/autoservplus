@@ -158,6 +158,11 @@ public class Utilisateur extends BaseEntity {
         }
     }
 
+    /** Verrouille immediatement le compte jusqu a la date indiquee. */
+    public void verrouillerJusqu(Instant echeance) {
+        this.verrouilleJusquA = echeance;
+    }
+
     public boolean estVerrouille(Instant maintenant) {
         return verrouilleJusquA != null && maintenant.isBefore(verrouilleJusquA);
     }
