@@ -17,10 +17,12 @@ public class ConnexionController {
 
     @GetMapping("/connexion")
     public String afficherFormulaire(@RequestParam(required = false) String erreur,
+                                     @RequestParam(required = false) String bloque,
                                      @RequestParam(required = false) String deconnecte,
                                      Model modele) {
         modele.addAttribute("titre", "Connexion");
         modele.addAttribute("erreur", erreur != null);
+        modele.addAttribute("bloque", bloque != null);
         modele.addAttribute("deconnecte", deconnecte != null);
         return "identite/connexion";
     }

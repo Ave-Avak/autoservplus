@@ -26,6 +26,10 @@
         <p>Identifiants incorrects, ou compte non encore vérifié.</p>
     </div>
 
+    <div class="message message-erreur" th:if="${bloque}" role="alert">
+        <p>Trop de tentatives. Réessayez dans quelques minutes.</p>
+    </div>
+
     <div class="message message-succes" th:if="${deconnecte}" role="status">
         <p>Vous avez été déconnecté.</p>
     </div>

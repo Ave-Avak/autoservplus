@@ -30,7 +30,8 @@ public class SecuriteConfig {
     }
 
     @Bean
-    public SecurityFilterChain chaineDeFiltres(HttpSecurity http) throws Exception {
+    public SecurityFilterChain chaineDeFiltres(HttpSecurity http,
+                                               EchecAuthentificationHandler echecHandler) throws Exception {
         http
                 .authorizeHttpRequests(acces -> acces
                         .requestMatchers("/", "/accueil", "/services/**", "/pieces/**",
@@ -46,7 +47,7 @@ public class SecuriteConfig {
                         .loginPage("/connexion")
                         .usernameParameter("email")
                         .defaultSuccessUrl("/mon-compte", true)
-                        .failureUrl("/connexion?erreur")
+                        .failureHandler(echecHandler)
                         .permitAll()
                 )
                 .logout(deconnexion -> deconnexion
