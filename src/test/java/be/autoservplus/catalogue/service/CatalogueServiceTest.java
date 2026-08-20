@@ -261,6 +261,33 @@ class CatalogueServiceTest {
 
             assertThat(service.piecesEnAlerteDeStock()).containsExactly(piece);
         }
+        @Test
+        @DisplayName("supprime logiquement une prestation sans appeler delete")
+        void supprimeUnePrestationLogiquement() {
+            Categorie entretien = new Categorie("ENTRETIEN", "Entretien", TypeCategorie.SERVICE);
+            Prestation prestation = new Prestation(entretien, "VID", "Vidange",
+                    new BigDecimal("75.00"), 60);
+            when(prestations.findByReference(prestation.getReference()))
+                    .thenReturn(Optional.of(prestation));
+
+            service.supprimerPrestation(prestation.getReference(), "admin@autoservplus.be");
+
+            assertThat(prestation.estSupprime()).isTrue();
+            assertThat(prestation.getDeletedBy()).isEqualTo("admin@autoservplus.be");
+            verify(prestations, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("supprime logiquement une piece sans appeler delete")
+        void supprimeUnePieceLogiquement() {
+            Piece piece = pieceAvecStock(5);
+            when(pieces.findByReference(piece.getReference())).thenReturn(Optional.of(piece));
+
+            service.supprimerPiece(piece.getReference(), "admin@autoservplus.be");
+
+            assertThat(piece.estSupprime()).isTrue();
+            verify(pieces, never()).delete(any());
+        }
     }
 
     private Piece pieceAvecStock(int quantite) {

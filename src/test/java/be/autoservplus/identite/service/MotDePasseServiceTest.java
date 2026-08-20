@@ -108,6 +108,14 @@ class MotDePasseServiceTest {
         }
 
         @Test
+        @DisplayName("ignore une adresse nulle sans consulter la base")
+        void ignoreUneAdresseNulle() {
+            service.demanderReinitialisation(null);
+
+            verifyNoInteractions(repository, courriel);
+        }
+
+        @Test
         @DisplayName("normalise l adresse avant la recherche")
         void normaliseLAdresse() {
             Utilisateur membre = membreActif();
@@ -143,6 +151,7 @@ class MotDePasseServiceTest {
         void leveLeVerrouillage() {
             Utilisateur membre = membreActif();
             membre.enregistrerEchecConnexion(5, MAINTENANT.plusSeconds(900));
+            membre.verrouillerJusqu(MAINTENANT.plusSeconds(900));
             membre.enregistrerJetonVerification("jeton-valide", MAINTENANT.plusSeconds(600));
             when(repository.findByJetonVerification("jeton-valide")).thenReturn(Optional.of(membre));
 
