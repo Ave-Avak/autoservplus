@@ -7,6 +7,7 @@ import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
+import be.autoservplus.catalogue.service.dto.ArticleVue;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import org.springframework.data.domain.Page;
@@ -55,30 +56,30 @@ public class CatalogueService {
         return categories.findByTypeAndActifTrueOrderByOrdreAsc(TypeCategorie.PIECE);
     }
 
-    public List<Prestation> prestationsActives() {
-        return prestations.findByActifTrueOrderByLibelleAsc();
+    public List<ArticleVue> prestationsActives() {
+        return prestations.findByActifTrueOrderByLibelleAsc().stream().map(ArticleVue::de).toList();
     }
 
-    public List<Prestation> prestationsDeCategorie(String codeCategorie) {
-        return prestations.findByCategorieCodeAndActifTrueOrderByLibelleAsc(codeCategorie);
+    public List<ArticleVue> prestationsDeCategorie(String codeCategorie) {
+        return prestations.findByCategorieCodeAndActifTrueOrderByLibelleAsc(codeCategorie)
+                .stream().map(ArticleVue::de).toList();
     }
 
-    public List<Piece> piecesActives() {
-        return pieces.findByActifTrueOrderByLibelleAsc();
+    public List<ArticleVue> piecesActives() {
+        return pieces.findByActifTrueOrderByLibelleAsc().stream().map(ArticleVue::de).toList();
     }
 
-    public List<Piece> piecesDeCategorie(String codeCategorie) {
-        return pieces.findByCategorieCodeAndActifTrueOrderByLibelleAsc(codeCategorie);
+    public List<ArticleVue> piecesDeCategorie(String codeCategorie) {
+        return pieces.findByCategorieCodeAndActifTrueOrderByLibelleAsc(codeCategorie)
+                .stream().map(ArticleVue::de).toList();
     }
 
-    public Prestation prestationParReference(UUID reference) {
-        return prestations.findByReference(reference)
-                .orElseThrow(() -> new RessourceIntrouvableException("Prestation", reference));
+    public ArticleVue vuePrestation(UUID reference) {
+        return ArticleVue.de(prestationParReference(reference));
     }
 
-    public Piece pieceParReference(UUID reference) {
-        return pieces.findByReference(reference)
-                .orElseThrow(() -> new RessourceIntrouvableException("Piece", reference));
+    public ArticleVue vuePiece(UUID reference) {
+        return ArticleVue.de(pieceParReference(reference));
     }
 
     /**
@@ -87,18 +88,30 @@ public class CatalogueService {
      * <p>Un terme trop court renvoie une page vide plutot que l integralite du catalogue :
      * une requete sur un seul caractere ramenerait presque tout et n aiderait personne.</p>
      */
-    public Page<Prestation> rechercherPrestations(String terme, int numeroPage) {
+    public Page<ArticleVue> rechercherPrestations(String terme, int numeroPage) {
         if (termeInsuffisant(terme)) {
             return Page.empty();
         }
-        return prestations.rechercher(terme.trim(), pagination(numeroPage));
+        return prestations.rechercher(terme.trim(), pagination(numeroPage)).map(ArticleVue::de);
     }
 
-    public Page<Piece> rechercherPieces(String terme, int numeroPage) {
+    public Page<ArticleVue> rechercherPieces(String terme, int numeroPage) {
         if (termeInsuffisant(terme)) {
             return Page.empty();
         }
-        return pieces.rechercher(terme.trim(), pagination(numeroPage));
+        return pieces.rechercher(terme.trim(), pagination(numeroPage)).map(ArticleVue::de);
+    }
+
+    /** Entite complete, reservee aux operations d administration. */
+    public Prestation prestationParReference(UUID reference) {
+        return prestations.findByReference(reference)
+                .orElseThrow(() -> new RessourceIntrouvableException("Prestation", reference));
+    }
+
+    /** Entite complete, reservee aux operations d administration. */
+    public Piece pieceParReference(UUID reference) {
+        return pieces.findByReference(reference)
+                .orElseThrow(() -> new RessourceIntrouvableException("Piece", reference));
     }
 
     // --- administration ---------------------------------------------------------------

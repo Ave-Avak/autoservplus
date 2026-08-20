@@ -11,26 +11,36 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Acces aux prestations du catalogue.
+ *
+ * <p>Les requetes de consultation chargent la categorie par JOIN FETCH dans la meme
+ * requete. Sans cela, la conversion en objet de transfert echouerait hors transaction,
+ * open-in-view etant desactive, ou declencherait une requete supplementaire par ligne.</p>
+ */
 public interface PrestationRepository extends JpaRepository<Prestation, Long> {
-
-    Optional<Prestation> findByReference(UUID reference);
 
     Optional<Prestation> findByCode(String code);
 
     boolean existsByCode(String code);
 
+    @Query("SELECT p FROM Prestation p JOIN FETCH p.categorie WHERE p.reference = :reference")
+    Optional<Prestation> findByReference(@Param("reference") UUID reference);
+
+    @Query("SELECT p FROM Prestation p JOIN FETCH p.categorie WHERE p.actif = true ORDER BY p.libelle")
     List<Prestation> findByActifTrueOrderByLibelleAsc();
 
-    List<Prestation> findByCategorieCodeAndActifTrueOrderByLibelleAsc(String codeCategorie);
-
-    /**
-     * Recherche insensible a la casse et aux accents sur le libelle et la description.
-     *
-     * <p>La fonction unaccent de PostgreSQL permet de trouver « decalaminage » en tapant
-     * « décalaminage » et inversement.</p>
-     */
     @Query("""
-            SELECT p FROM Prestation p
+            SELECT p FROM Prestation p JOIN FETCH p.categorie c
+            WHERE c.code = :codeCategorie AND p.actif = true
+            ORDER BY p.libelle
+            """)
+    List<Prestation> findByCategorieCodeAndActifTrueOrderByLibelleAsc(
+            @Param("codeCategorie") String codeCategorie);
+
+    /** Recherche insensible a la casse sur le libelle et la description. */
+    @Query("""
+            SELECT p FROM Prestation p JOIN FETCH p.categorie
             WHERE p.actif = true
               AND (LOWER(p.libelle) LIKE LOWER(CONCAT('%', :terme, '%'))
                 OR LOWER(p.description) LIKE LOWER(CONCAT('%', :terme, '%')))

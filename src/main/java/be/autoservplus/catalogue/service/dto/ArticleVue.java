@@ -1,4 +1,4 @@
-package be.autoservplus.catalogue.web.dto;
+package be.autoservplus.catalogue.service.dto;
 
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;

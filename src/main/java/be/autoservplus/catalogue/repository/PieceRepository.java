@@ -11,24 +11,44 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+/**
+ * Acces aux pieces detachees du catalogue.
+ *
+ * <p>Les requetes de consultation chargent la categorie par JOIN FETCH dans la meme
+ * requete. Sans cela, l affichage d une liste de n pieces declencherait n requetes
+ * supplementaires, une par categorie : c est le probleme dit N+1.</p>
+ */
 public interface PieceRepository extends JpaRepository<Piece, Long> {
-
-    Optional<Piece> findByReference(UUID reference);
 
     Optional<Piece> findByReferenceFabricant(String referenceFabricant);
 
     boolean existsByReferenceFabricant(String referenceFabricant);
 
+    @Query("SELECT p FROM Piece p JOIN FETCH p.categorie WHERE p.reference = :reference")
+    Optional<Piece> findByReference(@Param("reference") UUID reference);
+
+    @Query("SELECT p FROM Piece p JOIN FETCH p.categorie WHERE p.actif = true ORDER BY p.libelle")
     List<Piece> findByActifTrueOrderByLibelleAsc();
 
-    List<Piece> findByCategorieCodeAndActifTrueOrderByLibelleAsc(String codeCategorie);
+    @Query("""
+            SELECT p FROM Piece p JOIN FETCH p.categorie c
+            WHERE c.code = :codeCategorie AND p.actif = true
+            ORDER BY p.libelle
+            """)
+    List<Piece> findByCategorieCodeAndActifTrueOrderByLibelleAsc(
+            @Param("codeCategorie") String codeCategorie);
 
     /** Pieces dont le stock a atteint ou franchi le seuil d alerte. */
-    @Query("SELECT p FROM Piece p WHERE p.actif = true AND p.quantiteStock <= p.seuilAlerte")
+    @Query("""
+            SELECT p FROM Piece p JOIN FETCH p.categorie
+            WHERE p.actif = true AND p.quantiteStock <= p.seuilAlerte
+            ORDER BY p.libelle
+            """)
     List<Piece> enAlerteDeStock();
 
+    /** Recherche insensible a la casse sur le libelle, la marque et la reference fabricant. */
     @Query("""
-            SELECT p FROM Piece p
+            SELECT p FROM Piece p JOIN FETCH p.categorie
             WHERE p.actif = true
               AND (LOWER(p.libelle) LIKE LOWER(CONCAT('%', :terme, '%'))
                 OR LOWER(p.marque) LIKE LOWER(CONCAT('%', :terme, '%'))
