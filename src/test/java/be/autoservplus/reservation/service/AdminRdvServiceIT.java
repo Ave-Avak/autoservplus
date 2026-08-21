@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Exerce les requetes JPQL du tableau de bord admin contre un vrai PostgreSQL 16.
@@ -160,6 +161,18 @@ class AdminRdvServiceIT {
         // Relations chargees par JOIN FETCH accessibles ici :
         assertThat(vue.membreEmail()).isEqualTo("marie@exemple.be");
         assertThat(vue.vehicule()).contains("Golf");
+    }
+
+    @Test
+    @WithMockUser(username = "membre@exemple.be", roles = "MEMBRE")
+    @DisplayName("@PreAuthorize rejette un utilisateur sans role ADMINISTRATEUR")
+    void rejetteNonAdmin() {
+        // @WithMockUser au niveau methode surcharge celui de la classe (ADMINISTRATEUR).
+        // Le rejet vient specifiquement du @PreAuthorize(hasRole('ADMINISTRATEUR')) sur
+        // AdminRdvService, active par @EnableMethodSecurity dans SecuriteConfig charge
+        // par @SpringBootTest.
+        assertThatThrownBy(() -> service.demandesEnAttente())
+                .isInstanceOf(org.springframework.security.access.AccessDeniedException.class);
     }
 
     @Test
