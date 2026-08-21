@@ -24,6 +24,11 @@ public enum StatutIntervention {
      * par un EN_COURS explicite. Ecart vs le chemin nominal de l analyse UML V3,
      * documente en dette.</p>
      *
+     * <p>TERMINEE -> EN_COURS reouvre une intervention cloturee pour correction :
+     * FACTUREE est le seul etat de verrouillage definitif. Une fois facturee,
+     * l intervention releve du droit comptable et ne peut plus etre modifiee ;
+     * une correction passera par un avoir.</p>
+     *
      * <p>Les self-loops (EN_PAUSE -> EN_PAUSE, EN_COURS -> EN_COURS, etc.) restent
      * refuses : aucune branche ne retourne {@code cible == this}.</p>
      */
@@ -32,13 +37,18 @@ public enum StatutIntervention {
             case PLANIFIEE -> cible == EN_COURS || cible == TERMINEE;
             case EN_COURS  -> cible == EN_PAUSE || cible == TERMINEE;
             case EN_PAUSE  -> cible == EN_COURS || cible == TERMINEE;
-            case TERMINEE  -> cible == FACTUREE;
+            case TERMINEE  -> cible == EN_COURS || cible == FACTUREE;
             case FACTUREE  -> false;
         };
     }
 
-    /** L intervention est ouverte : ses lignes et son commentaire peuvent etre modifies. */
+    /**
+     * L intervention est modifiable (lignes, commentaire admin). Le seul etat
+     * verrouille est FACTUREE : une intervention TERMINEE reste editable pour
+     * corriger une erreur avant facturation, la reouverture n est necessaire que
+     * pour signaler au client (via le statut) que le travail continue.
+     */
     public boolean estEditable() {
-        return this == PLANIFIEE || this == EN_COURS || this == EN_PAUSE;
+        return this != FACTUREE;
     }
 }

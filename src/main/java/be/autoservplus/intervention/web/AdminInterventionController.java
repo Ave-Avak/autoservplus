@@ -90,6 +90,14 @@ public class AdminInterventionController {
                 () -> service.terminer(reference), "terminée");
     }
 
+    @PostMapping("/{reference}/rouvrir")
+    public String rouvrir(@AuthenticationPrincipal UserDetails admin,
+                          @PathVariable UUID reference,
+                          RedirectAttributes redirection) {
+        return appliquerTransition(reference, redirection,
+                () -> service.rouvrir(reference), "rouverte pour correction");
+    }
+
     // --- commentaire et lignes ------------------------------------------------------
 
     @PostMapping("/{reference}/commentaire")

@@ -129,6 +129,26 @@ public class Intervention extends BaseEntity {
         this.finReelle = instant;
     }
 
+    /**
+     * Reouverture d une intervention TERMINEE pour correction. La fin reelle
+     * est effacee : l intervention n est plus consideree comme cloturee, une
+     * nouvelle terminaison enregistrera un nouvel horodatage. Le debut reel
+     * est conserve.
+     *
+     * <p>Garde semantique : rouvrir n a de sens que depuis TERMINEE. Depuis
+     * EN_COURS ou EN_PAUSE, appeler {@code reprendre()} ou ne rien faire.
+     * Depuis PLANIFIEE, appeler {@code demarrer()}. Depuis FACTUREE,
+     * l intervention est verrouillee.</p>
+     */
+    public void rouvrir() {
+        if (statut != StatutIntervention.TERMINEE) {
+            throw new IllegalStateException(
+                    "Rouvrir n a de sens que depuis TERMINEE, statut actuel : %s.".formatted(statut));
+        }
+        transitionVers(StatutIntervention.EN_COURS);
+        this.finReelle = null;
+    }
+
     /** Hook du module facturation, non declenche en V1. */
     public void marquerFacturee() {
         transitionVers(StatutIntervention.FACTUREE);

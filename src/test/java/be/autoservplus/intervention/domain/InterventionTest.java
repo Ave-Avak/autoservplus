@@ -248,20 +248,34 @@ class InterventionTest {
         }
 
         @Test
-        @DisplayName("ajouterLigne refuse quand TERMINEE")
-        void ajouterLigneRefuseQuandTerminee() {
+        @DisplayName("ajouterLigne autorise en TERMINEE (correction avant facturation)")
+        void ajouterLigneEnTerminee() {
             Intervention it = interventionDepuis(vidange);
             it.demarrer(DEBUT);
             it.terminer(DEBUT.plus(Duration.ofHours(1)));
 
-            assertThatThrownBy(() -> it.ajouterLigneMainOeuvre(freins, (short) 1,
-                    new BigDecimal("89.00"), new BigDecimal("21.00")))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("TERMINEE");
+            it.ajouterLigneMainOeuvre(freins, (short) 1,
+                    new BigDecimal("89.00"), new BigDecimal("21.00"));
+
+            assertThat(it.getLignes()).hasSize(2);
         }
 
         @Test
-        @DisplayName("modifierCommentaireAdmin nettoie et refuse quand terminee")
+        @DisplayName("ajouterLigne refuse uniquement quand FACTUREE (seul etat verrouille)")
+        void ajouterLigneRefuseQuandFacturee() {
+            Intervention it = interventionDepuis(vidange);
+            it.demarrer(DEBUT);
+            it.terminer(DEBUT.plus(Duration.ofHours(1)));
+            it.marquerFacturee();
+
+            assertThatThrownBy(() -> it.ajouterLigneMainOeuvre(freins, (short) 1,
+                    new BigDecimal("89.00"), new BigDecimal("21.00")))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("FACTUREE");
+        }
+
+        @Test
+        @DisplayName("modifierCommentaireAdmin nettoie, autorise en TERMINEE, refuse en FACTUREE")
         void commentaireAdmin() {
             Intervention it = interventionDepuis(vidange);
             it.modifierCommentaireAdmin("  Piece commandee ");
@@ -272,8 +286,69 @@ class InterventionTest {
 
             it.demarrer(DEBUT);
             it.terminer(DEBUT.plus(Duration.ofHours(1)));
+            // TERMINEE reste editable : correction encore possible.
+            it.modifierCommentaireAdmin("Correction apres coup");
+            assertThat(it.getCommentaireAdmin()).isEqualTo("Correction apres coup");
+
+            it.marquerFacturee();
             assertThatThrownBy(() -> it.modifierCommentaireAdmin("trop tard"))
                     .isInstanceOf(IllegalStateException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("reouverture (TERMINEE -> EN_COURS)")
+    class Reouverture {
+
+        @Test
+        @DisplayName("rouvrir depuis TERMINEE efface finReelle et conserve debutReel")
+        void rouvrirDepuisTerminee() {
+            Intervention it = interventionDepuis(vidange);
+            it.demarrer(DEBUT);
+            Instant debutFige = it.getDebutReel();
+            it.terminer(DEBUT.plus(Duration.ofHours(1)));
+
+            it.rouvrir();
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+            assertThat(it.getDebutReel()).isEqualTo(debutFige);
+            assertThat(it.getFinReelle()).isNull();
+        }
+
+        @Test
+        @DisplayName("rouvrir refuse depuis un autre etat que TERMINEE")
+        void rouvrirRefuseAilleurs() {
+            Intervention it = interventionDepuis(vidange);
+            assertThatThrownBy(it::rouvrir).isInstanceOf(IllegalStateException.class);
+
+            it.demarrer(DEBUT);
+            assertThatThrownBy(it::rouvrir).isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("rouvrir refuse depuis FACTUREE : etat de verrouillage definitif")
+        void rouvrirRefuseDepuisFacturee() {
+            Intervention it = interventionDepuis(vidange);
+            it.demarrer(DEBUT);
+            it.terminer(DEBUT.plus(Duration.ofHours(1)));
+            it.marquerFacturee();
+
+            assertThatThrownBy(it::rouvrir).isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("terminer -> rouvrir -> terminer produit un nouveau finReelle")
+        void reboucler() {
+            Intervention it = interventionDepuis(vidange);
+            it.demarrer(DEBUT);
+            it.terminer(DEBUT.plus(Duration.ofHours(1)));
+            it.rouvrir();
+            Instant nouvelleFin = DEBUT.plus(Duration.ofHours(3));
+
+            it.terminer(nouvelleFin);
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.TERMINEE);
+            assertThat(it.getFinReelle()).isEqualTo(nouvelleFin);
         }
     }
 
@@ -291,15 +366,16 @@ class InterventionTest {
         }
 
         @Test
-        @DisplayName("retirerLigne refuse quand TERMINEE")
-        void retirerLigneRefuseQuandTerminee() {
+        @DisplayName("retirerLigne refuse uniquement quand FACTUREE")
+        void retirerLigneRefuseQuandFacturee() {
             Intervention it = interventionDepuis(vidange);
             it.demarrer(DEBUT);
             it.terminer(DEBUT.plus(Duration.ofHours(1)));
+            it.marquerFacturee();
 
             assertThatThrownBy(() -> it.retirerLigne(1L))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("TERMINEE");
+                    .hasMessageContaining("FACTUREE");
         }
     }
 }

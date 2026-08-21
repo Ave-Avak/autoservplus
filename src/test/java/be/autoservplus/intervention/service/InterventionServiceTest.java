@@ -145,6 +145,22 @@ class InterventionServiceTest {
     }
 
     @Test
+    @DisplayName("rouvrir remet TERMINEE en EN_COURS et efface la fin reelle")
+    void rouvrir() {
+        Intervention it = new Intervention("INT-2026-0001", rdv);
+        it.demarrer(MAINTENANT);
+        it.terminer(MAINTENANT.plus(java.time.Duration.ofHours(1)));
+        UUID ref = it.getReference();
+        when(interventions.findByReference(ref)).thenReturn(Optional.of(it));
+        when(interventions.saveAndFlush(it)).thenReturn(it);
+
+        Intervention resultat = service.rouvrir(ref);
+
+        assertThat(resultat.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+        assertThat(resultat.getFinReelle()).isNull();
+    }
+
+    @Test
     @DisplayName("modifierCommentaireAdmin trim et persiste")
     void commentaire() {
         Intervention it = new Intervention("INT-2026-0001", rdv);

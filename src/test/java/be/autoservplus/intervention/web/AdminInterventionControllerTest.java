@@ -92,7 +92,7 @@ class AdminInterventionControllerTest {
                 null, null, null,
                 List.of(),
                 "49,00 €", "59,29 €",
-                true, false, false, false, true);
+                true, false, false, false, false, true);
         interventionMock = mock(Intervention.class);
         when(interventionMock.getNumero()).thenReturn("INT-2026-0001");
     }
@@ -156,12 +156,26 @@ class AdminInterventionControllerTest {
         @WithMockUser(roles = "ADMINISTRATEUR")
         @DisplayName("transition interdite (IllegalState) -> flash erreur")
         void transitionInterdite() throws Exception {
-            doThrow(new IllegalStateException("Transition d intervention interdite : PLANIFIEE vers TERMINEE."))
+            doThrow(new IllegalStateException("Transition d intervention interdite : PLANIFIEE vers FACTUREE."))
                     .when(service).terminer(REF);
 
             mvc.perform(post("/admin/interventions/{ref}/terminer", REF).with(csrf()))
                     .andExpect(status().is3xxRedirection())
                     .andExpect(flash().attributeExists("erreur"));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        @DisplayName("rouvrir redirige avec flash message et appelle le service")
+        void rouvrir() throws Exception {
+            doReturn(interventionMock).when(service).rouvrir(REF);
+
+            mvc.perform(post("/admin/interventions/{ref}/rouvrir", REF).with(csrf()))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("/admin/interventions/" + REF))
+                    .andExpect(flash().attributeExists("message"));
+
+            verify(service).rouvrir(REF);
         }
     }
 

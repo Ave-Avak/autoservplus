@@ -33,6 +33,7 @@ public record InterventionVueAdmin(
         boolean peutMettreEnPause,
         boolean peutReprendre,
         boolean peutTerminer,
+        boolean peutRouvrir,
         boolean estEditable) {
 
     public static InterventionVueAdmin de(Intervention it, ZoneId zone) {
@@ -62,6 +63,7 @@ public record InterventionVueAdmin(
                 s.peutPasserA(StatutIntervention.EN_PAUSE),
                 s.peutPasserA(StatutIntervention.EN_COURS) && s == StatutIntervention.EN_PAUSE,
                 s.peutPasserA(StatutIntervention.TERMINEE),
+                s.peutPasserA(StatutIntervention.EN_COURS) && s == StatutIntervention.TERMINEE,
                 s.estEditable());
     }
 

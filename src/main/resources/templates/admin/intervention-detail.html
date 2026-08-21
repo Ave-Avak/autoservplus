@@ -92,6 +92,11 @@
               method="post" style="display:inline">
             <button type="submit" class="lien-bouton">Terminer</button>
         </form>
+        <form th:if="${intervention.peutRouvrir()}"
+              th:action="@{/admin/interventions/{ref}/rouvrir(ref=${intervention.reference()})}"
+              method="post" style="display:inline">
+            <button type="submit" class="lien-bouton">Rouvrir pour correction</button>
+        </form>
     </p>
 
     <h2>Lignes</h2>

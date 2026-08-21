@@ -99,6 +99,14 @@ public class InterventionService {
         return ecrire(it);
     }
 
+    /** Reouvre une intervention TERMINEE pour correction avant facturation. */
+    @Transactional
+    public Intervention rouvrir(UUID reference) {
+        Intervention it = charger(reference);
+        it.rouvrir();
+        return ecrire(it);
+    }
+
     // --- edition des lignes et du commentaire ----------------------------------------
 
     @Transactional
