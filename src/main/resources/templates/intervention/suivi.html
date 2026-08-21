@@ -52,9 +52,12 @@
          th:hx-trigger="${intervention.estTerminale()} ? null : 'every 10s'"
          th:hx-swap="${intervention.estTerminale()} ? null : 'outerHTML'">
 
+        <!-- Badge : le TEXTE affiche est le statut percu (RM-16, projection sur
+             4 valeurs pour le membre) ; la classe CSS reste derivee du statut
+             technique (invisible au membre, sert uniquement au styling). -->
         <p>
             <span th:class="'badge badge-' + ${#strings.toLowerCase(intervention.statut())}"
-                  th:text="${intervention.statutLisible()}">Planifiée</span>
+                  th:text="${intervention.statutPercu()}">En attente</span>
         </p>
 
         <dl class="vehicule-details">

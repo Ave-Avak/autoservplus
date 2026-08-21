@@ -1,5 +1,9 @@
 package be.autoservplus.intervention.domain;
 
+import java.util.Collections;
+import java.util.EnumMap;
+import java.util.Map;
+
 /**
  * Cycle de vie d une intervention en atelier, aligne sur le CdC
  * (dictionnaire de donnees, table 3.8).
@@ -57,5 +61,44 @@ public enum StatutIntervention {
      */
     public boolean estEditable() {
         return this != TERMINEE && this != ANNULEE;
+    }
+
+    /**
+     * Projection RM-16 : le membre ne voit pas la mecanique interne du garage.
+     * Les trois statuts nominaux (En attente, En cours, Terminee) resument le
+     * cycle percu par le client ; ANNULEE s ajoute comme cas terminal explicite
+     * pour ne pas laisser un membre devant une intervention qui « disparait ».
+     *
+     * <p>SUSPENDUE et ATTENTE_VALIDATION_MEMBRE relevent de la mecanique
+     * interne du garage : le membre les voit toutes deux comme « En cours »
+     * (le travail continue de son cote, meme s il est momentanement suspendu
+     * cote atelier). L accord/refus sur un depassement de devis (RM-15)
+     * lui sera demande via un canal dedie, pas via la lecture du statut.</p>
+     *
+     * <p>Le mapping est porte par un {@link EnumMap} immuable unique
+     * (une seule source de verite pour le lien statut technique -&gt; percu),
+     * verifie exhaustif au chargement de la classe : ajouter un statut sans
+     * l inclure ici fait echouer l initialisation.</p>
+     */
+    public String percuLabel() {
+        return LABELS_PERCU.get(this);
+    }
+
+    private static final Map<StatutIntervention, String> LABELS_PERCU;
+    static {
+        EnumMap<StatutIntervention, String> m = new EnumMap<>(StatutIntervention.class);
+        m.put(PLANIFIEE,                 "En attente");
+        m.put(EN_COURS,                  "En cours");
+        m.put(SUSPENDUE,                 "En cours");
+        m.put(ATTENTE_VALIDATION_MEMBRE, "En cours");
+        m.put(TERMINEE,                  "Terminée");
+        m.put(ANNULEE,                   "Annulée");
+        for (StatutIntervention s : values()) {
+            if (!m.containsKey(s)) {
+                throw new IllegalStateException(
+                        "StatutIntervention." + s + " n a pas de percuLabel — completer LABELS_PERCU.");
+            }
+        }
+        LABELS_PERCU = Collections.unmodifiableMap(m);
     }
 }

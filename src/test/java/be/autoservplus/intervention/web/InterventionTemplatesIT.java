@@ -127,4 +127,24 @@ class InterventionTemplatesIT {
                 .andExpect(content().string(not(containsString("hx-trigger"))))
                 .andExpect(content().string(not(containsString("hx-get"))));
     }
+
+    @Test
+    @DisplayName("intervention SUSPENDUE : le membre voit « En cours » (projection RM-16), pas « Suspendue »")
+    void statutPercuMasqueLaSuspension() throws Exception {
+        // Amener l intervention en SUSPENDUE : PLANIFIEE -> EN_COURS -> SUSPENDUE.
+        Intervention it = interventions.findByReference(reference).orElseThrow();
+        it.demarrer(java.time.Instant.parse("2026-12-01T09:00:00Z"));
+        it.suspendre();
+        interventions.saveAndFlush(it);
+
+        mvc.perform(get("/mes-interventions/{ref}/statut", reference))
+                .andExpect(status().isOk())
+                // Le texte affiche est le percu, pas le libelle technique.
+                .andExpect(content().string(containsString(">En cours<")))
+                // Le libelle technique « Suspendue » (majuscule initiale, tel
+                // qu affiche cote admin) ne doit pas apparaitre dans le rendu
+                // membre. La classe CSS badge-suspendue reste presente en
+                // minuscule (invisible, utile au styling) : c est acceptable.
+                .andExpect(content().string(not(containsString("Suspendue"))));
+    }
 }

@@ -240,6 +240,51 @@ class InterventionTest {
     }
 
     @Nested
+    @DisplayName("statut percu par le membre (RM-16)")
+    class Percu {
+
+        @Test
+        @DisplayName("PLANIFIEE -> En attente")
+        void planifieeEstEnAttente() {
+            assertThat(StatutIntervention.PLANIFIEE.percuLabel()).isEqualTo("En attente");
+        }
+
+        @Test
+        @DisplayName("EN_COURS, SUSPENDUE et ATTENTE_VALIDATION_MEMBRE -> En cours (mecanique interne masquee)")
+        void enCoursEtInternesSontEnCours() {
+            assertThat(StatutIntervention.EN_COURS.percuLabel()).isEqualTo("En cours");
+            assertThat(StatutIntervention.SUSPENDUE.percuLabel())
+                    .as("Le membre ne doit pas voir « Suspendue » : le travail continue de son cote")
+                    .isEqualTo("En cours");
+            assertThat(StatutIntervention.ATTENTE_VALIDATION_MEMBRE.percuLabel())
+                    .as("Le membre ne doit pas voir « ATTENTE_VALIDATION_MEMBRE » : notification via canal dedie")
+                    .isEqualTo("En cours");
+        }
+
+        @Test
+        @DisplayName("TERMINEE -> Terminée")
+        void termineeEstTerminee() {
+            assertThat(StatutIntervention.TERMINEE.percuLabel()).isEqualTo("Terminée");
+        }
+
+        @Test
+        @DisplayName("ANNULEE -> Annulée (cas terminal explicite pour le membre)")
+        void annuleeEstAnnulee() {
+            assertThat(StatutIntervention.ANNULEE.percuLabel()).isEqualTo("Annulée");
+        }
+
+        @Test
+        @DisplayName("percuLabel couvre les 6 statuts techniques sur 4 valeurs percues")
+        void projectionSurQuatreValeurs() {
+            java.util.Set<String> percus = new java.util.HashSet<>();
+            for (StatutIntervention s : StatutIntervention.values()) {
+                percus.add(s.percuLabel());
+            }
+            assertThat(percus).containsExactlyInAnyOrder("En attente", "En cours", "Terminée", "Annulée");
+        }
+    }
+
+    @Nested
     @DisplayName("machine a etats (niveau enum)")
     class MachineEnum {
 

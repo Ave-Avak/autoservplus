@@ -10,16 +10,26 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Vue d une intervention destinee au membre proprietaire. Ne contient que ce
- * que le client doit voir : etat d avancement, ligne de facturation prevue,
- * commentaire visible du garage. Pas de champs administratifs (diagnostic
- * interne, transitions autorisees, etc.).
+ * Vue d une intervention destinee au membre proprietaire.
+ *
+ * <p><b>Regle metier RM-16</b> : le membre ne voit pas la mecanique interne du
+ * garage. La chaine {@link #statutPercu()} projette les six statuts techniques
+ * sur les quatre statuts percus du CdC (« En attente », « En cours »,
+ * « Terminee », « Annulee ») et c est ce que le template affiche. Le champ
+ * {@link #statut()} conserve la valeur technique brute (« SUSPENDUE »,
+ * « ATTENTE_VALIDATION_MEMBRE »...) uniquement pour la logique interne du
+ * template (branchement de messages sur TERMINEE vs ANNULEE) ; il ne doit
+ * JAMAIS etre rendu comme texte visible du membre.</p>
  */
 public record InterventionVueMembre(
         UUID reference,
         String numero,
+        /** Statut technique brut (SUSPENDUE, ATTENTE_VALIDATION_MEMBRE...).
+         *  Usage interne du template UNIQUEMENT (branchement) — ne jamais afficher. */
         String statut,
-        String statutLisible,
+        /** Statut percu par le membre (RM-16) : « En attente », « En cours »,
+         *  « Terminee », « Annulee ». C est ce qui doit s afficher a l ecran. */
+        String statutPercu,
         String vehicule,
         String commentaireAdmin,
         String debutReel,
@@ -35,7 +45,7 @@ public record InterventionVueMembre(
                 it.getReference(),
                 it.getNumero(),
                 s.name(),
-                statutLisible(s),
+                s.percuLabel(),
                 vehicule.getMarque() + " " + vehicule.getModele() + " (" + vehicule.getPlaque() + ")",
                 it.getCommentaireAdmin(),
                 it.getDebutReel() != null
@@ -47,17 +57,6 @@ public record InterventionVueMembre(
                 it.getLignes().stream().map(LigneVue::de).toList(),
                 FormatageRdv.euros(it.totalTvac()),
                 s == StatutIntervention.TERMINEE || s == StatutIntervention.ANNULEE);
-    }
-
-    private static String statutLisible(StatutIntervention s) {
-        return switch (s) {
-            case PLANIFIEE -> "Planifiée, en attente de démarrage";
-            case EN_COURS -> "En cours au garage";
-            case SUSPENDUE -> "Travaux momentanément suspendus";
-            case ATTENTE_VALIDATION_MEMBRE -> "En attente de votre accord sur un dépassement";
-            case TERMINEE -> "Terminée, votre véhicule est prêt";
-            case ANNULEE -> "Annulée";
-        };
     }
 
     /**
