@@ -29,6 +29,10 @@
             <h2>Mes véhicules</h2>
             <p>Gérez votre parc et suivez le kilométrage de chaque véhicule.</p>
         </a>
+        <a class="carte carte-lien" th:href="@{/mes-rendez-vous}">
+            <h2>Mes rendez-vous</h2>
+            <p>Consultez vos rendez-vous et prenez-en un nouveau.</p>
+        </a>
         <a class="carte carte-lien" sec:authorize="hasRole('ADMINISTRATEUR')"
            th:href="@{/admin/rendez-vous}">
             <h2>Espace administration</h2>
