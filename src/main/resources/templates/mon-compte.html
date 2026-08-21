@@ -38,6 +38,11 @@
             <h2>Espace administration</h2>
             <p>Gérez les demandes de rendez-vous : confirmer, refuser, clôturer.</p>
         </a>
+        <a class="carte carte-lien" sec:authorize="hasRole('ADMINISTRATEUR')"
+           th:href="@{/admin/interventions}">
+            <h2>Interventions</h2>
+            <p>Suivez les interventions en cours : démarrer, mettre en pause, terminer.</p>
+        </a>
     </nav>
 </main>
 <footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>

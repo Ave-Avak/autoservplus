@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'Intervention ' + ${intervention.numero()} + ' — AutoServ+'">Intervention — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}">Prestations</a></li>
+            <li><a th:href="@{/pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <p><a th:href="@{/admin/interventions}">← Retour aux interventions</a></p>
+
+    <h1 th:text="'Intervention ' + ${intervention.numero()}">Intervention INT-2026-0001</h1>
+
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+
+    <p>
+        <span th:class="'badge badge-' + ${#strings.toLowerCase(intervention.statut())}"
+              th:text="${intervention.statutLisible()}">Planifiée</span>
+    </p>
+
+    <dl class="vehicule-details">
+        <div th:if="${intervention.membreNom() != null}">
+            <dt>Membre</dt>
+            <dd>
+                <span th:text="${intervention.membreNom()}">Marie Dupont</span>
+                (<a th:href="'mailto:' + ${intervention.membreEmail()}"
+                    th:text="${intervention.membreEmail()}">marie@exemple.be</a>)
+            </dd>
+        </div>
+        <div>
+            <dt>Véhicule</dt>
+            <dd th:text="${intervention.vehicule()}">VW Golf (1-ABC-123)</dd>
+        </div>
+        <div th:if="${intervention.rdvNumero() != null}">
+            <dt>Rendez-vous d'origine</dt>
+            <dd th:text="${intervention.rdvNumero()}">RDV-2026-0001</dd>
+        </div>
+        <div th:if="${intervention.debutReel() != null}">
+            <dt>Démarrée le</dt>
+            <dd th:text="${#strings.capitalize(intervention.debutReel())}">Lundi 14 septembre 2026 09:00</dd>
+        </div>
+        <div th:if="${intervention.finReelle() != null}">
+            <dt>Terminée le</dt>
+            <dd th:text="${#strings.capitalize(intervention.finReelle())}">Lundi 14 septembre 2026 10:00</dd>
+        </div>
+    </dl>
+
+    <!-- Transitions : boutons conditionnés par les flags calculés depuis la machine à états. -->
+    <p class="actions-page">
+        <form th:if="${intervention.peutDemarrer()}"
+              th:action="@{/admin/interventions/{ref}/demarrer(ref=${intervention.reference()})}"
+              method="post" style="display:inline">
+            <button type="submit" class="btn-cta">Démarrer</button>
+        </form>
+        <form th:if="${intervention.peutMettreEnPause()}"
+              th:action="@{/admin/interventions/{ref}/pause(ref=${intervention.reference()})}"
+              method="post" style="display:inline">
+            <button type="submit" class="lien-bouton">Mettre en pause</button>
+        </form>
+        <form th:if="${intervention.peutReprendre()}"
+              th:action="@{/admin/interventions/{ref}/reprendre(ref=${intervention.reference()})}"
+              method="post" style="display:inline">
+            <button type="submit" class="btn-cta">Reprendre</button>
+        </form>
+        <form th:if="${intervention.peutTerminer()}"
+              th:action="@{/admin/interventions/{ref}/terminer(ref=${intervention.reference()})}"
+              method="post" style="display:inline">
+            <button type="submit" class="lien-bouton">Terminer</button>
+        </form>
+    </p>
+
+    <h2>Lignes</h2>
+    <table class="tableau">
+        <thead>
+            <tr><th>Type</th><th>Libellé</th><th>Qté</th><th>PU HTVA</th><th>Total HTVA</th><th></th></tr>
+        </thead>
+        <tbody>
+            <tr th:each="l : ${intervention.lignes()}">
+                <td th:text="${l.type()}">MAIN_OEUVRE</td>
+                <td th:text="${l.libelle()}">Vidange</td>
+                <td th:text="${l.quantite()}">1</td>
+                <td th:text="${l.prixUnitaireHtva()}">49,00 €</td>
+                <td th:text="${l.totalHtva()}">49,00 €</td>
+                <td>
+                    <form th:if="${intervention.estEditable()}"
+                          th:action="@{/admin/interventions/{ref}/lignes/{id}/supprimer(ref=${intervention.reference()},id=${l.id()})}"
+                          method="post" style="display:inline">
+                        <button type="submit" class="lien-bouton texte-erreur">Retirer</button>
+                    </form>
+                </td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="4"><strong>Total</strong></td>
+                <td th:text="${intervention.totalHtva()}">49,00 €</td>
+                <td></td>
+            </tr>
+            <tr>
+                <td colspan="4"><strong>Total TVAC</strong></td>
+                <td th:text="${intervention.totalTvac()}">59,29 €</td>
+                <td></td>
+            </tr>
+        </tfoot>
+    </table>
+
+    <div th:if="${intervention.estEditable()}">
+        <h3>Ajouter une prestation</h3>
+        <form th:action="@{/admin/interventions/{ref}/lignes(ref=${intervention.reference()})}"
+              method="post" class="formulaire">
+            <div class="champ">
+                <label for="prestation">Prestation</label>
+                <select id="prestation" name="prestation" required>
+                    <option value="">— Choisir —</option>
+                    <option th:each="p : ${prestations}" th:value="${p.reference}"
+                            th:text="${p.libelle} + ' (' + ${p.dureeMinutes} + ' min)'">Vidange</option>
+                </select>
+            </div>
+            <div class="champ">
+                <label for="quantite">Quantité</label>
+                <input type="number" id="quantite" name="quantite" min="1" value="1" required>
+            </div>
+            <button type="submit" class="btn-cta">Ajouter</button>
+        </form>
+
+        <h3>Commentaire pour le client</h3>
+        <form th:action="@{/admin/interventions/{ref}/commentaire(ref=${intervention.reference()})}"
+              method="post" class="formulaire">
+            <div class="champ">
+                <label for="commentaire">Message visible du client</label>
+                <textarea id="commentaire" name="commentaire" rows="3" maxlength="1000"
+                          th:text="${intervention.commentaireAdmin()}"></textarea>
+                <p class="texte-info">
+                    Ce texte s'affiche sur l'écran de suivi du client.
+                </p>
+            </div>
+            <button type="submit" class="btn-cta">Enregistrer</button>
+        </form>
+    </div>
+
+    <div th:unless="${intervention.estEditable()}">
+        <p class="aide" th:if="${intervention.commentaireAdmin() != null}">
+            <strong>Commentaire figé :</strong>
+            <span th:text="${intervention.commentaireAdmin()}">…</span>
+        </p>
+    </div>
+</main>
+
+<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>

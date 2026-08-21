@@ -4,6 +4,7 @@ import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsRdvCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.intervention.service.InterventionService;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
@@ -54,13 +55,16 @@ public class AdminRdvService {
     private final RdvRepository rdvs;
     private final ParametreAtelierRepository parametres;
     private final ServiceCourriel courriel;
+    private final InterventionService interventions;
     private final Clock horloge;
 
     public AdminRdvService(RdvRepository rdvs, ParametreAtelierRepository parametres,
-                           ServiceCourriel courriel, Clock horloge) {
+                           ServiceCourriel courriel, InterventionService interventions,
+                           Clock horloge) {
         this.rdvs = rdvs;
         this.parametres = parametres;
         this.courriel = courriel;
+        this.interventions = interventions;
         this.horloge = horloge;
     }
 
@@ -123,7 +127,11 @@ public class AdminRdvService {
     public Rdv marquerHonore(UUID reference) {
         Rdv rdv = charger(reference);
         rdv.marquerHonore();
-        return ecrire(rdv, ignore -> { /* cloture interne, pas de notification */ });
+        // Cree l intervention correspondante DANS la meme transaction : le passage
+        // HONORE et l existence de l intervention sont atomiques. La methode
+        // creerDepuisRdv est idempotente : si une intervention existe deja, elle
+        // est reutilisee sans doublon.
+        return ecrire(rdv, enregistre -> interventions.creerDepuisRdv(enregistre));
     }
 
     @Transactional

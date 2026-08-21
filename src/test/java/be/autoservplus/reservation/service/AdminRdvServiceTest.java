@@ -59,6 +59,7 @@ class AdminRdvServiceTest {
     @Mock private RdvRepository rdvs;
     @Mock private ParametreAtelierRepository parametres;
     @Mock private ServiceCourriel courriel;
+    @Mock private be.autoservplus.intervention.service.InterventionService interventions;
 
     private Clock horloge;
     private AdminRdvService service;
@@ -71,7 +72,7 @@ class AdminRdvServiceTest {
     @BeforeEach
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
-        service = new AdminRdvService(rdvs, parametres, courriel, horloge);
+        service = new AdminRdvService(rdvs, parametres, courriel, interventions, horloge);
 
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         golf = new Vehicule(marie, "1-ABC-123", "Volkswagen", "Golf", Motorisation.DIESEL);
