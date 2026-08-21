@@ -65,6 +65,22 @@ class SchemaIT {
     }
 
     @Test
+    @DisplayName("le seed insere au moins un poste d atelier actif")
+    void leSeedPostesEstApplique() {
+        // V17 insere 3 postes. Sans au moins un poste actif, la capacite de
+        // l atelier est nulle et le calcul de disponibilite renvoie 0 creneau
+        // partout : la reservation devient impossible sans message d erreur.
+        // Ce test localise vite le manque quand le check de chaine (DisponibiliteIT)
+        // tombe rouge.
+        Integer nombre = jdbc.queryForObject(
+                "SELECT count(*) FROM poste_atelier WHERE actif = TRUE AND deleted_at IS NULL",
+                Integer.class);
+        assertThat(nombre)
+                .as("Sans poste actif, la reservation ne peut proposer aucun creneau")
+                .isGreaterThanOrEqualTo(1);
+    }
+
+    @Test
     @DisplayName("le seed catalogue insere au moins une prestation par categorie SERVICE")
     void leSeedCatalogueEstApplique() {
         // V16 insere le catalogue de demo (9 prestations sur 6 categories SERVICE).

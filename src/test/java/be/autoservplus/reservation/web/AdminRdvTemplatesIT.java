@@ -73,7 +73,7 @@ class AdminRdvTemplatesIT {
         Vehicule golf = vehicules.save(new Vehicule(marie, "1-ABC-123", "VW", "Golf", Motorisation.DIESEL));
         Categorie entretien = categories.save(new Categorie("IT-TPL", "Entretien", TypeCategorie.SERVICE));
         Prestation vidange = prestations.save(new Prestation(entretien, "IT-TPL-VID", "Vidange", new BigDecimal("49.00"), 30));
-        PosteAtelier pont = postes.save(new PosteAtelier("Pont 1"));
+        PosteAtelier pont = postes.save(new PosteAtelier("Pont de test"));
 
         Rdv rdv = new Rdv("RDV-TPL-0001", marie, golf, pont,
                 LocalDate.of(2026, 12, 1).atTime(10, 0).atZone(ZoneId.of("Europe/Brussels")).toInstant(),

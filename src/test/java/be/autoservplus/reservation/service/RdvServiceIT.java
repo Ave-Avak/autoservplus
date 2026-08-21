@@ -102,9 +102,12 @@ class RdvServiceIT {
 
     @BeforeEach
     void setUp() {
-        // Vide le seed V10 dans la transaction du test. Rollback la restaure pour le
-        // test suivant ; les autres tests de la classe ne comptaient pas sur ces plages.
+        // Vide les seeds V10 (plages) et V17 (postes) dans la transaction du test.
+        // Rollback les restaure pour le test suivant. Necessaire pour maitriser
+        // l unique poste de l atelier : les scenarios « un seul poste pris »
+        // supposent qu il n y en a effectivement qu un.
         plages.deleteAllInBatch();
+        postes.deleteAllInBatch();
 
         marie = utilisateurs.save(new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE));
         paul = utilisateurs.save(new Utilisateur("paul@exemple.be", "$2a$12$h", "Martin", "Paul", TypeUtilisateur.MEMBRE));
@@ -114,7 +117,7 @@ class RdvServiceIT {
         Categorie entretien = categories.save(new Categorie("IT-ENT", "Entretien", TypeCategorie.SERVICE));
         vidange = prestations.save(new Prestation(entretien, "IT-VID", "Vidange", new BigDecimal("49.00"), 60));
 
-        pont1 = postes.save(new PosteAtelier("Pont 1"));
+        pont1 = postes.save(new PosteAtelier("Pont de test"));
 
         dimanche10h = DIMANCHE_RESERVATION.atTime(10, 0).atZone(BRUXELLES).toInstant();
         plages.save(new PlageOuverture(DIMANCHE_RESERVATION.getDayOfWeek(),
@@ -177,7 +180,7 @@ class RdvServiceIT {
     @Test
     @DisplayName("avec deux postes, deux demandes simultanees obtiennent chacune un poste")
     void deuxPostesDeuxDemandes() {
-        PosteAtelier pont2 = postes.save(new PosteAtelier("Pont 2"));
+        PosteAtelier pont2 = postes.save(new PosteAtelier("Pont de test 2"));
 
         Rdv premier = service.reserver("marie@exemple.be", golf.getReference(), List.of(vidange.getReference()), dimanche10h, null);
         Rdv second = service.reserver("paul@exemple.be", clio.getReference(), List.of(vidange.getReference()), dimanche10h, null);

@@ -101,7 +101,7 @@ class AdminRdvServiceIT {
         golf = vehicules.save(new Vehicule(marie, "1-ABC-123", "VW", "Golf", Motorisation.DIESEL));
         Categorie entretien = categories.save(new Categorie("IT-ADM-ENT", "Entretien", TypeCategorie.SERVICE));
         vidange = prestations.save(new Prestation(entretien, "IT-ADM-VID", "Vidange", new BigDecimal("49.00"), 30));
-        pont = postes.save(new PosteAtelier("Pont 1"));
+        pont = postes.save(new PosteAtelier("Pont de test"));
         compteur = 1;
     }
 
