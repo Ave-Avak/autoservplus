@@ -1,5 +1,7 @@
 package be.autoservplus.infrastructure;
 
+import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.identite.repository.UtilisateurRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -7,6 +9,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -35,6 +38,9 @@ class SchemaIT {
     @Autowired
     private JdbcTemplate jdbc;
 
+    @Autowired
+    private UtilisateurRepository utilisateurs;
+
     @Test
     @DisplayName("installe l extension btree_gist requise par la contrainte d exclusion")
     void installeBtreeGist() {
@@ -56,6 +62,21 @@ class SchemaIT {
         String type = jdbc.queryForObject(
                 "SELECT contype FROM pg_constraint WHERE conname = 'ex_rdv_poste_intervalle'", String.class);
         assertThat(type).isEqualTo("x");
+    }
+
+    @Test
+    @DisplayName("le compte admin de seed est connectable avec le mot de passe documente")
+    void leCompteAdminDeSeedEstConnectable() {
+        // V10 insere l admin, V15 corrige son hash. Sans le test, un desaccord entre
+        // le hash et le mot de passe documente (comme c etait le cas avant V15) reste
+        // invisible jusqu au premier essai de connexion.
+        Utilisateur admin = utilisateurs.findByEmailIgnoreCase("admin@autoservplus.be")
+                .orElseThrow(() -> new AssertionError(
+                        "Le seed V10 doit inserer un compte admin@autoservplus.be"));
+
+        assertThat(new BCryptPasswordEncoder(12).matches("ChangezMoi2026!", admin.getMotDePasseHache()))
+                .as("Le hash BCrypt du seed doit correspondre au mot de passe documente \"ChangezMoi2026!\"")
+                .isTrue();
     }
 
     @Test
