@@ -108,4 +108,23 @@ class InterventionTemplatesIT {
                 .andExpect(content().string(not(containsString("<html"))))
                 .andExpect(content().string(not(containsString("<header"))));
     }
+
+    @Test
+    @DisplayName("intervention terminee : le fragment n'inclut plus hx-trigger (polling arrete)")
+    void pollingArreteEnTerminee() throws Exception {
+        // Amener l intervention en TERMINEE via l API domaine (l orphaned Rdv est
+        // conserve, le seul champ qui change est le statut).
+        Intervention it = interventions.findByReference(reference).orElseThrow();
+        it.demarrer(java.time.Instant.parse("2026-12-01T09:00:00Z"));
+        it.terminer(java.time.Instant.parse("2026-12-01T10:00:00Z"));
+        interventions.saveAndFlush(it);
+
+        mvc.perform(get("/mes-interventions/{ref}/statut", reference))
+                .andExpect(status().isOk())
+                // Statut affiche mais pas de trigger de polling : Thymeleaf omet
+                // les attributs a valeur null.
+                .andExpect(content().string(containsString("badge")))
+                .andExpect(content().string(not(containsString("hx-trigger"))))
+                .andExpect(content().string(not(containsString("hx-get"))));
+    }
 }

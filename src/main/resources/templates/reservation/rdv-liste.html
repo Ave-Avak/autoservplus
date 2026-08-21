@@ -53,6 +53,12 @@
             <div class="carte-actions">
                 <a th:href="@{/mes-rendez-vous/{ref}(ref=${r.reference()})}"
                    th:aria-label="'Détail du rendez-vous ' + ${r.numero()}">Détail</a>
+                <a th:if="${r.statut()} == 'HONORE'"
+                   th:href="@{/mes-interventions/depuis-rdv/{ref}(ref=${r.reference()})}"
+                   class="lien-bouton"
+                   th:aria-label="'Suivre l intervention du rendez-vous ' + ${r.numero()}">
+                    Suivre la réparation
+                </a>
             </div>
         </li>
     </ul>

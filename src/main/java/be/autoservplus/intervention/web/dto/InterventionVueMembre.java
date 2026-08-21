@@ -59,9 +59,17 @@ public record InterventionVueMembre(
         };
     }
 
-    public record LigneVue(String libelle, short quantite, String totalHtva) {
+    /**
+     * Lignes vues par le membre : libelle et quantite seulement, pas de prix
+     * par ligne. Alignement avec {@code RdvVue.prestations} qui expose la meme
+     * granularite (List<String> de libelles + montant total global uniquement).
+     * Le membre voit le meme niveau de detail sur ses RDV et sur ses
+     * interventions, aucune transparence tarifaire perdue puisque {@code totalTvac}
+     * reste expose au niveau intervention.
+     */
+    public record LigneVue(String libelle, short quantite) {
         public static LigneVue de(LigneIntervention l) {
-            return new LigneVue(l.getLibelleFige(), l.getQuantite(), FormatageRdv.euros(l.totalHtva()));
+            return new LigneVue(l.getLibelleFige(), l.getQuantite());
         }
     }
 }

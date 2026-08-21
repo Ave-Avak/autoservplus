@@ -41,13 +41,16 @@
     <!-- Fragment statut : rafraichi par polling HTMX toutes les 10 secondes.
          Le meme fragment est rendu par GET /mes-interventions/{ref}/statut. Le
          hx-swap="outerHTML" remplace tout le bloc (y compris son propre attribut
-         hx-get), donc le prochain polling reprend depuis la nouvelle version. -->
+         hx-get), donc le prochain polling reprend depuis la nouvelle version.
+         Quand l intervention est terminale (TERMINEE ou FACTUREE), les attributs
+         hx-* sont omis (Thymeleaf ne rend pas les attributs a valeur null) : plus
+         de polling, pas de trafic inutile. -->
     <div th:fragment="blocStatut"
          id="statut-intervention"
-         th:hx-get="@{/mes-interventions/{ref}/statut(ref=${intervention.reference()})}"
-         hx-trigger="every 10s"
-         hx-swap="outerHTML"
-         aria-live="polite">
+         aria-live="polite"
+         th:hx-get="${intervention.estTerminee()} ? null : @{/mes-interventions/{ref}/statut(ref=${intervention.reference()})}"
+         th:hx-trigger="${intervention.estTerminee()} ? null : 'every 10s'"
+         th:hx-swap="${intervention.estTerminee()} ? null : 'outerHTML'">
 
         <p>
             <span th:class="'badge badge-' + ${#strings.toLowerCase(intervention.statut())}"
@@ -78,18 +81,17 @@
     <h2>Travaux prévus</h2>
     <table class="tableau">
         <thead>
-            <tr><th>Prestation</th><th>Quantité</th><th>Total HTVA</th></tr>
+            <tr><th>Prestation</th><th>Quantité</th></tr>
         </thead>
         <tbody>
             <tr th:each="l : ${intervention.lignes()}">
                 <td th:text="${l.libelle()}">Vidange</td>
                 <td th:text="${l.quantite()}">1</td>
-                <td th:text="${l.totalHtva()}">49,00 €</td>
             </tr>
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="2"><strong>Total TVAC estimé</strong></td>
+                <td><strong>Total TVAC estimé</strong></td>
                 <td th:text="${intervention.totalTvac()}">59,29 €</td>
             </tr>
         </tfoot>
