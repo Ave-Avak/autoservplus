@@ -16,14 +16,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.reservation.service.dto.CreneauDisponible;
+import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.reservation.web.dto.CreneauVue;
 import be.autoservplus.reservation.web.dto.RdvVue;
-import java.text.NumberFormat;
 import java.time.LocalDate;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
-import java.util.Locale;
 import java.util.Map;
 
 import java.time.Clock;
@@ -156,10 +154,6 @@ public class RdvService {
 
     // --- vues pour l interface -------------------------------------------------------
 
-    private static final DateTimeFormatter FORMAT_JOUR =
-            DateTimeFormatter.ofPattern("EEEE d MMMM yyyy", Locale.FRENCH);
-    private static final DateTimeFormatter FORMAT_HEURE = DateTimeFormatter.ofPattern("HH:mm");
-
     /** Prestations reservables, groupees par categorie dans l ordre du catalogue. */
     public Map<Categorie, List<Prestation>> prestationsProposees() {
         Map<Categorie, List<Prestation>> parCategorie = new LinkedHashMap<>();
@@ -179,7 +173,7 @@ public class RdvService {
         return disponibilites.creneauxDuJour(jour, duree).stream()
                 .map(c -> new CreneauVue(
                         c.debut().toString(),
-                        FORMAT_HEURE.format(c.debut().atZone(zone)) + " – " + FORMAT_HEURE.format(c.fin().atZone(zone)),
+                        FormatageRdv.heureLisible(c.debut(), zone) + " – " + FormatageRdv.heureLisible(c.fin(), zone),
                         c.postesLibres()))
                 .toList();
     }
@@ -204,32 +198,20 @@ public class RdvService {
 
     private RdvVue versVue(Rdv rdv) {
         ZoneId zone = parametres.courants().zone();
-        NumberFormat euros = NumberFormat.getCurrencyInstance(Locale.forLanguageTag("fr-BE"));
         return new RdvVue(
                 rdv.getReference(),
                 rdv.getNumero(),
                 rdv.getStatut().name(),
-                statutLisible(rdv.getStatut()),
-                FORMAT_JOUR.format(rdv.getDebut().atZone(zone)),
-                FORMAT_HEURE.format(rdv.getDebut().atZone(zone)),
-                FORMAT_HEURE.format(rdv.getFin().atZone(zone)),
+                FormatageRdv.statutLisible(rdv.getStatut()),
+                FormatageRdv.jourLisible(rdv.getDebut(), zone),
+                FormatageRdv.heureLisible(rdv.getDebut(), zone),
+                FormatageRdv.heureLisible(rdv.getFin(), zone),
                 rdv.getVehicule().getMarque() + " " + rdv.getVehicule().getModele() + " (" + rdv.getVehicule().getPlaque() + ")",
                 rdv.getLignes().stream().map(l -> l.getPrestation().getLibelle()).toList(),
-                euros.format(rdv.montantTvac()),
+                FormatageRdv.euros(rdv.montantTvac()),
                 rdv.getCommentaire(),
                 rdv.getMotifRefus(),
                 peutEtreAnnule(rdv));
-    }
-
-    private static String statutLisible(StatutRdv statut) {
-        return switch (statut) {
-            case EN_ATTENTE -> "En attente de confirmation";
-            case CONFIRME -> "Confirmé";
-            case REFUSE -> "Refusé par le garage";
-            case ANNULE -> "Annulé";
-            case HONORE -> "Effectué";
-            case ABSENT -> "Non présenté";
-        };
     }
 
     // --- annulation par le membre ----------------------------------------------------
