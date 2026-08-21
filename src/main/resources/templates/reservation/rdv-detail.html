@@ -82,6 +82,13 @@
         Contactez directement le garage.
     </p>
 
+    <p th:if="${rdv.statut()} == 'HONORE'" class="actions-page">
+        <a class="btn-cta"
+           th:href="@{/mes-interventions/depuis-rdv/{ref}(ref=${rdv.reference()})}">
+            Suivre l'intervention
+        </a>
+    </p>
+
     <form th:if="${rdv.annulable()}"
           th:action="@{/mes-rendez-vous/{ref}/annuler(ref=${rdv.reference()})}"
           method="post" class="formulaire-suppression"

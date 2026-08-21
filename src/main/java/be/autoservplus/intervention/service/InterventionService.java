@@ -9,6 +9,7 @@ import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.intervention.repository.InterventionRepository;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
+import be.autoservplus.intervention.web.dto.InterventionVueMembre;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import org.springframework.dao.OptimisticLockingFailureException;
@@ -149,6 +150,42 @@ public class InterventionService {
     /** Prestations actives, pour peupler le formulaire d ajout de ligne. */
     public List<Prestation> prestationsActives() {
         return prestations.findByActifTrueOrderByLibelleAsc();
+    }
+
+    // --- vue membre (accessible a tout utilisateur authentifie, ownership verifie) ----
+
+    /**
+     * Vue destinee au membre proprietaire du RDV lie a l intervention. Le
+     * {@code @PreAuthorize} au niveau methode surcharge celui de la classe
+     * (ADMINISTRATEUR) : tout membre authentifie peut appeler, l ownership est
+     * verifie par comparaison d email. Une intervention d autrui remonte comme
+     * {@link RessourceIntrouvableException} (404, meme code qu une reference
+     * inconnue) pour ne pas confirmer l existence de la reference.
+     */
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public InterventionVueMembre interventionDuMembre(UUID reference, String email) {
+        Intervention it = interventions.findByReference(reference)
+                .orElseThrow(() -> new RessourceIntrouvableException("Intervention", reference));
+        if (it.getRdv() == null
+                || !it.getRdv().getMembre().getEmail().equalsIgnoreCase(email)) {
+            throw new RessourceIntrouvableException("Intervention", reference);
+        }
+        return InterventionVueMembre.de(it, parametres.courants().zone());
+    }
+
+    /**
+     * Resolution RDV -> intervention pour le lien depuis la fiche RDV membre.
+     * Renvoie la reference de l intervention si elle existe et appartient au membre,
+     * sinon {@link RessourceIntrouvableException} (404).
+     */
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public UUID referenceParRdvDuMembre(UUID rdvReference, String email) {
+        Intervention it = interventions.findByRdvReference(rdvReference)
+                .orElseThrow(() -> new RessourceIntrouvableException("Intervention pour RDV", rdvReference));
+        if (!it.getRdv().getMembre().getEmail().equalsIgnoreCase(email)) {
+            throw new RessourceIntrouvableException("Intervention pour RDV", rdvReference);
+        }
+        return it.getReference();
     }
 
     // --- helpers ---------------------------------------------------------------------

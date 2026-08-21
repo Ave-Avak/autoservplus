@@ -27,6 +27,13 @@ public interface InterventionRepository extends JpaRepository<Intervention, Long
     boolean existsByRdvId(Long rdvId);
 
     @Query("""
+            SELECT i FROM Intervention i
+            LEFT JOIN FETCH i.rdv r JOIN FETCH r.membre
+            WHERE r.reference = :rdvReference
+            """)
+    Optional<Intervention> findByRdvReference(@Param("rdvReference") UUID rdvReference);
+
+    @Query("""
             SELECT DISTINCT i FROM Intervention i
             LEFT JOIN FETCH i.rdv JOIN FETCH i.vehicule
             WHERE i.statut IN :statuts

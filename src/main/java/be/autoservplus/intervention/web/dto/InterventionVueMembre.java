@@ -1,0 +1,67 @@
+package be.autoservplus.intervention.web.dto;
+
+import be.autoservplus.intervention.domain.Intervention;
+import be.autoservplus.intervention.domain.LigneIntervention;
+import be.autoservplus.intervention.domain.StatutIntervention;
+import be.autoservplus.reservation.service.support.FormatageRdv;
+
+import java.time.ZoneId;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Vue d une intervention destinee au membre proprietaire. Ne contient que ce
+ * que le client doit voir : etat d avancement, ligne de facturation prevue,
+ * commentaire visible du garage. Pas de champs administratifs (diagnostic
+ * interne, transitions autorisees, etc.).
+ */
+public record InterventionVueMembre(
+        UUID reference,
+        String numero,
+        String statut,
+        String statutLisible,
+        String vehicule,
+        String commentaireAdmin,
+        String debutReel,
+        String finReelle,
+        List<LigneVue> lignes,
+        String totalTvac,
+        boolean estTerminee) {
+
+    public static InterventionVueMembre de(Intervention it, ZoneId zone) {
+        StatutIntervention s = it.getStatut();
+        var vehicule = it.getVehicule();
+        return new InterventionVueMembre(
+                it.getReference(),
+                it.getNumero(),
+                s.name(),
+                statutLisible(s),
+                vehicule.getMarque() + " " + vehicule.getModele() + " (" + vehicule.getPlaque() + ")",
+                it.getCommentaireAdmin(),
+                it.getDebutReel() != null
+                        ? FormatageRdv.jourLisible(it.getDebutReel(), zone) + " " + FormatageRdv.heureLisible(it.getDebutReel(), zone)
+                        : null,
+                it.getFinReelle() != null
+                        ? FormatageRdv.jourLisible(it.getFinReelle(), zone) + " " + FormatageRdv.heureLisible(it.getFinReelle(), zone)
+                        : null,
+                it.getLignes().stream().map(LigneVue::de).toList(),
+                FormatageRdv.euros(it.totalTvac()),
+                s == StatutIntervention.TERMINEE || s == StatutIntervention.FACTUREE);
+    }
+
+    private static String statutLisible(StatutIntervention s) {
+        return switch (s) {
+            case PLANIFIEE -> "Planifiée, en attente de démarrage";
+            case EN_COURS -> "En cours au garage";
+            case EN_PAUSE -> "Mise en pause temporairement";
+            case TERMINEE -> "Terminée, votre véhicule est prêt";
+            case FACTUREE -> "Facturée";
+        };
+    }
+
+    public record LigneVue(String libelle, short quantite, String totalHtva) {
+        public static LigneVue de(LigneIntervention l) {
+            return new LigneVue(l.getLibelleFige(), l.getQuantite(), FormatageRdv.euros(l.totalHtva()));
+        }
+    }
+}

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'Suivi ' + ${intervention.numero()} + ' — AutoServ+'">Suivi — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <!-- HTMX injecte par defaut une feuille de style en ligne pour ses indicateurs,
+         ce que la CSP interdit. On la desactive et on stylise nous-memes. -->
+    <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}">Prestations</a></li>
+            <li><a th:href="@{/pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <p><a th:href="@{/mes-rendez-vous}">← Mes rendez-vous</a></p>
+
+    <h1 th:text="'Intervention ' + ${intervention.numero()}">Intervention INT-2026-0001</h1>
+    <p th:text="${intervention.vehicule()}">VW Golf (1-ABC-123)</p>
+
+    <!-- Fragment statut : rafraichi par polling HTMX toutes les 10 secondes.
+         Le meme fragment est rendu par GET /mes-interventions/{ref}/statut. Le
+         hx-swap="outerHTML" remplace tout le bloc (y compris son propre attribut
+         hx-get), donc le prochain polling reprend depuis la nouvelle version. -->
+    <div th:fragment="blocStatut"
+         id="statut-intervention"
+         th:hx-get="@{/mes-interventions/{ref}/statut(ref=${intervention.reference()})}"
+         hx-trigger="every 10s"
+         hx-swap="outerHTML"
+         aria-live="polite">
+
+        <p>
+            <span th:class="'badge badge-' + ${#strings.toLowerCase(intervention.statut())}"
+                  th:text="${intervention.statutLisible()}">Planifiée</span>
+        </p>
+
+        <dl class="vehicule-details">
+            <div th:if="${intervention.debutReel() != null}">
+                <dt>Démarrée le</dt>
+                <dd th:text="${#strings.capitalize(intervention.debutReel())}">Lundi 14 septembre 2026 09:00</dd>
+            </div>
+            <div th:if="${intervention.finReelle() != null}">
+                <dt>Terminée le</dt>
+                <dd th:text="${#strings.capitalize(intervention.finReelle())}">Lundi 14 septembre 2026 10:00</dd>
+            </div>
+        </dl>
+
+        <div th:if="${intervention.commentaireAdmin() != null}" class="message" role="note">
+            <strong>Message du garage :</strong>
+            <span th:text="${intervention.commentaireAdmin()}">…</span>
+        </div>
+
+        <p th:if="${intervention.estTerminee()}" class="message message-succes" role="status">
+            Votre véhicule est prêt. Le garage vous contactera pour la reprise.
+        </p>
+    </div>
+
+    <h2>Travaux prévus</h2>
+    <table class="tableau">
+        <thead>
+            <tr><th>Prestation</th><th>Quantité</th><th>Total HTVA</th></tr>
+        </thead>
+        <tbody>
+            <tr th:each="l : ${intervention.lignes()}">
+                <td th:text="${l.libelle()}">Vidange</td>
+                <td th:text="${l.quantite()}">1</td>
+                <td th:text="${l.totalHtva()}">49,00 €</td>
+            </tr>
+        </tbody>
+        <tfoot>
+            <tr>
+                <td colspan="2"><strong>Total TVAC estimé</strong></td>
+                <td th:text="${intervention.totalTvac()}">59,29 €</td>
+            </tr>
+        </tfoot>
+    </table>
+</main>
+
+<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+
+<script th:src="@{/js/htmx.min.js}"></script>
+</body>
+</html>
