@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Annuler un rendez-vous — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}">Prestations</a></li>
+            <li><a th:href="@{/pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <p><a th:href="@{/admin/rendez-vous}">← Retour à la liste</a></p>
+
+    <h1>Annuler un rendez-vous</h1>
+
+    <dl class="vehicule-details">
+        <div>
+            <dt>Numéro</dt>
+            <dd th:text="${rdv.numero()}">RDV-2026-0001</dd>
+        </div>
+        <div>
+            <dt>Membre</dt>
+            <dd>
+                <span th:text="${rdv.membreNom()}">Marie Dupont</span>
+                (<a th:href="'mailto:' + ${rdv.membreEmail()}" th:text="${rdv.membreEmail()}">marie@exemple.be</a>)
+            </dd>
+        </div>
+        <div>
+            <dt>Date</dt>
+            <dd th:text="${#strings.capitalize(rdv.jourLisible())}">Dimanche 13 septembre 2026</dd>
+        </div>
+        <div>
+            <dt>Heure</dt>
+            <dd th:text="${rdv.heureDebut()} + ' – ' + ${rdv.heureFin()}">10:00 – 11:00</dd>
+        </div>
+        <div>
+            <dt>Véhicule</dt>
+            <dd th:text="${rdv.vehicule()}">VW Golf (1-ABC-123)</dd>
+        </div>
+    </dl>
+
+    <form class="formulaire"
+          th:action="@{/admin/rendez-vous/{ref}/annuler(ref=${rdv.reference()})}"
+          th:object="${formulaire}" method="post" novalidate>
+
+        <div class="champ">
+            <label for="motif">Motif de l'annulation</label>
+            <textarea id="motif" th:field="*{motif}" rows="4" maxlength="500" required
+                      aria-describedby="aide-motif"></textarea>
+            <p id="aide-motif" class="texte-info">
+                Le motif est communiqué au membre par courriel.
+            </p>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('motif')}" th:errors="*{motif}"></p>
+        </div>
+
+        <p class="actions-page">
+            <button type="submit" class="btn-cta">Annuler ce rendez-vous</button>
+            <a th:href="@{/admin/rendez-vous}">Retour à la liste</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>

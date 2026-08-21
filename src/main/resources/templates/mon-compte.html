@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -27,6 +28,11 @@
         <a class="carte carte-lien" th:href="@{/mes-vehicules}">
             <h2>Mes véhicules</h2>
             <p>Gérez votre parc et suivez le kilométrage de chaque véhicule.</p>
+        </a>
+        <a class="carte carte-lien" sec:authorize="hasRole('ADMINISTRATEUR')"
+           th:href="@{/admin/rendez-vous}">
+            <h2>Espace administration</h2>
+            <p>Gérez les demandes de rendez-vous : confirmer, refuser, clôturer.</p>
         </a>
     </nav>
 </main>
