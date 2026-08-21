@@ -22,4 +22,13 @@ public interface ServiceCourriel {
      * son inscription.
      */
     void envoyerRappelVerification(Utilisateur destinataire, String lienVerification);
+
+    /** Le garage a confirme la demande de rendez-vous du membre. */
+    void envoyerConfirmationRdv(Utilisateur destinataire, DetailsRdvCourriel rdv);
+
+    /** Le garage a refuse la demande de rendez-vous, avec un motif obligatoire. */
+    void envoyerRefusRdv(Utilisateur destinataire, DetailsRdvCourriel rdv, String motif);
+
+    /** Le garage annule un rendez-vous deja confirme (panne, imprevu), motif obligatoire. */
+    void envoyerAnnulationParLeGarage(Utilisateur destinataire, DetailsRdvCourriel rdv, String motif);
 }

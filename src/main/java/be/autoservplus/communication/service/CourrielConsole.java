@@ -47,4 +47,42 @@ public class CourrielConsole implements ServiceCourriel {
                 -----------------------------------------------------------
                 """, destinataire.nomComplet(), destinataire.getEmail(), lienVerification);
     }
+
+    @Override
+    public void envoyerConfirmationRdv(Utilisateur destinataire, DetailsRdvCourriel rdv) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL SIMULE : confirmation de rendez-vous ----------
+                Destinataire : {} <{}>
+                Rendez-vous  : {} le {} a {}
+                ------------------------------------------------------------------
+                """, destinataire.nomComplet(), destinataire.getEmail(),
+                rdv.numero(), rdv.jourLisible(), rdv.heureLisible());
+    }
+
+    @Override
+    public void envoyerRefusRdv(Utilisateur destinataire, DetailsRdvCourriel rdv, String motif) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL SIMULE : refus de rendez-vous ----------
+                Destinataire : {} <{}>
+                Rendez-vous  : {} le {} a {}
+                Motif        : {}
+                -----------------------------------------------------------
+                """, destinataire.nomComplet(), destinataire.getEmail(),
+                rdv.numero(), rdv.jourLisible(), rdv.heureLisible(), motif);
+    }
+
+    @Override
+    public void envoyerAnnulationParLeGarage(Utilisateur destinataire, DetailsRdvCourriel rdv, String motif) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL SIMULE : annulation par le garage ----------
+                Destinataire : {} <{}>
+                Rendez-vous  : {} le {} a {}
+                Motif        : {}
+                ----------------------------------------------------------------
+                """, destinataire.nomComplet(), destinataire.getEmail(),
+                rdv.numero(), rdv.jourLisible(), rdv.heureLisible(), motif);
+    }
 }
