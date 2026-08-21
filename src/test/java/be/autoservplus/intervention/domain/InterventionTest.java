@@ -163,6 +163,20 @@ class InterventionTest {
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.FACTUREE);
         }
+
+        @Test
+        @DisplayName("PLANIFIEE -> TERMINEE directement (prestation express)")
+        void terminerDepuisPlanifiee() {
+            Intervention it = interventionDepuis(vidange);
+            Instant fin = DEBUT.plus(Duration.ofMinutes(15));
+
+            it.terminer(fin);
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.TERMINEE);
+            assertThat(it.getFinReelle()).isEqualTo(fin);
+            // debutReel aligne sur finReelle pour eviter une trace incomplete.
+            assertThat(it.getDebutReel()).isEqualTo(fin);
+        }
     }
 
     @Nested
@@ -170,12 +184,22 @@ class InterventionTest {
     class TransitionsInterdites {
 
         @Test
-        @DisplayName("PLANIFIEE ne peut pas etre terminee directement")
-        void planifieeVersTerminee() {
+        @DisplayName("PLANIFIEE ne peut pas etre mise en pause directement")
+        void planifieeVersPause() {
             Intervention it = interventionDepuis(vidange);
-            assertThatThrownBy(() -> it.terminer(DEBUT))
+            assertThatThrownBy(it::mettreEnPause)
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("PLANIFIEE");
+        }
+
+        @Test
+        @DisplayName("self-loops refuses (PLANIFIEE -> PLANIFIEE, EN_COURS -> EN_COURS, ...)")
+        void selfLoopsRefuses() {
+            for (StatutIntervention s : StatutIntervention.values()) {
+                assertThat(s.peutPasserA(s))
+                        .as("Aucun statut ne doit pouvoir transiter vers lui-meme : " + s)
+                        .isFalse();
+            }
         }
 
         @Test

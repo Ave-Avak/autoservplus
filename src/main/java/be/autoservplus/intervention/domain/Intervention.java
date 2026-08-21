@@ -114,9 +114,19 @@ public class Intervention extends BaseEntity {
         transitionVers(StatutIntervention.EN_COURS);
     }
 
+    /**
+     * Terminaison de l intervention. Si l on vient directement de PLANIFIEE
+     * (raccourci express, pas de démarrage explicite), {@code debutReel} n a
+     * jamais ete pose : on l aligne sur {@code finReelle} pour ne pas laisser
+     * une trace incomplete.
+     */
     public void terminer(Instant maintenant) {
         transitionVers(StatutIntervention.TERMINEE);
-        this.finReelle = Objects.requireNonNull(maintenant, "maintenant");
+        Instant instant = Objects.requireNonNull(maintenant, "maintenant");
+        if (this.debutReel == null) {
+            this.debutReel = instant;
+        }
+        this.finReelle = instant;
     }
 
     /** Hook du module facturation, non declenche en V1. */
