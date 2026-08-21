@@ -229,6 +229,88 @@ class RdvTest {
     }
 
     @Nested
+    @DisplayName("annulation par le garage")
+    class AnnulationGarage {
+
+        @Test
+        @DisplayName("EN_ATTENTE devient ANNULE avec motif trim et date")
+        void depuisEnAttente() {
+            Rdv rdv = rdvDe(vidange);
+            Instant maintenant = DEBUT.minus(Duration.ofDays(2));
+
+            rdv.annulerParLeGarage("  Poste indisponible ", maintenant);
+
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.ANNULE);
+            assertThat(rdv.getMotifRefus()).isEqualTo("Poste indisponible");
+            assertThat(rdv.getDateAnnulation()).isEqualTo(maintenant);
+        }
+
+        @Test
+        @DisplayName("CONFIRME devient ANNULE avec motif trim et date")
+        void depuisConfirme() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.confirmer();
+            Instant maintenant = DEBUT.minus(Duration.ofHours(6));
+
+            rdv.annulerParLeGarage(" Panne du pont ", maintenant);
+
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.ANNULE);
+            assertThat(rdv.getMotifRefus()).isEqualTo("Panne du pont");
+            assertThat(rdv.getDateAnnulation()).isEqualTo(maintenant);
+        }
+
+        @Test
+        @DisplayName("refuse un motif blank")
+        void refuseMotifBlank() {
+            Rdv rdv = rdvDe(vidange);
+            assertThatThrownBy(() -> rdv.annulerParLeGarage("   ", DEBUT))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.EN_ATTENTE);
+        }
+
+        @Test
+        @DisplayName("refuse un motif null")
+        void refuseMotifNull() {
+            Rdv rdv = rdvDe(vidange);
+            assertThatThrownBy(() -> rdv.annulerParLeGarage(null, DEBUT))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.EN_ATTENTE);
+        }
+
+        @Test
+        @DisplayName("refuse depuis un etat final (RM-10)")
+        void refuseDepuisEtatFinal() {
+            Instant maintenant = DEBUT.minus(Duration.ofDays(2));
+
+            Rdv depuisRefuse = rdvDe(vidange);
+            depuisRefuse.refuser("motif", maintenant);
+            assertThatThrownBy(() -> depuisRefuse.annulerParLeGarage("motif", maintenant))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("RM-10");
+
+            Rdv depuisAnnule = rdvDe(vidange);
+            depuisAnnule.annulerParLeGarage("motif", maintenant);
+            assertThatThrownBy(() -> depuisAnnule.annulerParLeGarage("autre motif", maintenant))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("RM-10");
+
+            Rdv depuisHonore = rdvDe(vidange);
+            depuisHonore.confirmer();
+            depuisHonore.marquerHonore();
+            assertThatThrownBy(() -> depuisHonore.annulerParLeGarage("motif", maintenant))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("RM-10");
+
+            Rdv depuisAbsent = rdvDe(vidange);
+            depuisAbsent.confirmer();
+            depuisAbsent.marquerAbsent();
+            assertThatThrownBy(() -> depuisAbsent.annulerParLeGarage("motif", maintenant))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("RM-10");
+        }
+    }
+
+    @Nested
     @DisplayName("annulation par le membre (RM-11)")
     class Annulation {
 
