@@ -54,4 +54,19 @@ public interface RdvRepository extends JpaRepository<Rdv, Long> {
             ORDER BY r.debut
             """)
     List<Rdv> findByStatutOrderByDebut(@Param("statut") StatutRdv statut);
+
+    /**
+     * Rendez-vous d un statut donne dont la fin est passee. Sert au tableau de bord
+     * admin pour identifier les rendez-vous CONFIRME qui restent a cloturer (marquer
+     * honores ou absents) apres l heure de fin.
+     */
+    @Query("""
+            SELECT r FROM Rdv r
+            JOIN FETCH r.membre JOIN FETCH r.vehicule JOIN FETCH r.poste
+            WHERE r.statut = :statut AND r.fin < :maintenant
+            ORDER BY r.debut
+            """)
+    List<Rdv> findByStatutAndFinBeforeOrderByDebut(
+            @Param("statut") StatutRdv statut,
+            @Param("maintenant") Instant maintenant);
 }
