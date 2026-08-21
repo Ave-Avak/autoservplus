@@ -369,3 +369,32 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 .carte-lien:hover { border-color: var(--bleu-secondaire); }
 .carte-lien h2 { color: var(--bleu-marine); font-size: 1.125rem; margin: 0 0 var(--espace-xs); }
 .carte-lien p { color: var(--gris-700); font-size: 0.9375rem; margin: 0; }
+
+/* --- Rendez-vous ------------------------------------------------------------ */
+
+.formulaire-rdv fieldset { border: 1px solid var(--gris-200); border-radius: var(--rayon); padding: var(--espace-m) var(--espace-l); margin-bottom: var(--espace-l); }
+.formulaire-rdv legend { font-weight: 600; padding: 0 var(--espace-s); }
+.groupe-prestations h2 { font-size: 1rem; margin: var(--espace-m) 0 var(--espace-s); }
+.liste-cases { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--espace-s); grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
+.liste-cases li { display: flex; align-items: flex-start; gap: var(--espace-s); }
+.liste-cases label { display: flex; flex-direction: column; }
+.liste-cases small { color: var(--gris-500); }
+
+.grille-creneaux { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--espace-s); grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); }
+.grille-creneaux input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.creneau { position: relative; display: flex; flex-direction: column; align-items: center; padding: .6rem var(--espace-s); border: 2px solid var(--gris-200); border-radius: var(--rayon); cursor: pointer; }
+.creneau input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }
+.creneau small { color: var(--gris-500); }
+.creneau:has(input:checked) { border-color: var(--bleu-marine); background: var(--gris-50); font-weight: 600; }
+.creneau:has(input:focus-visible) { outline: 3px solid var(--orange-cta); outline-offset: 2px; }
+#creneaux.htmx-request { opacity: .5; }
+
+/* Badges de statut : texte semantique AA sur fond pale de la meme teinte. */
+.badge { display: inline-block; padding: .15rem .6rem; border-radius: 1rem; font-size: .85rem; font-weight: 600; }
+.badge-en_attente { background: #FEF3C7; color: var(--alerte-texte); }   /* 5.3:1 */
+.badge-confirme   { background: #DCFCE7; color: var(--succes-texte); }   /* 4.9:1 */
+.badge-honore     { background: #E0E7FF; color: var(--info-texte); }     /* 5.1:1 */
+.badge-refuse, .badge-annule, .badge-absent { background: var(--gris-200); color: var(--gris-700); } /* 9.4:1 */
+
+/* #DC2626 sur fond rose ne tient que 3.8:1 : on fonce le texte pour ce seul cas. */
+.message-erreur { background: #FEE2E2; color: #991B1B; }   /* 7.0:1 */

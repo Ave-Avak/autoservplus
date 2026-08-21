@@ -15,20 +15,21 @@ import java.util.UUID;
 public interface RdvRepository extends JpaRepository<Rdv, Long> {
 
     @Query("""
-            SELECT r FROM Rdv r
+            SELECT DISTINCT r FROM Rdv r
             JOIN FETCH r.membre JOIN FETCH r.vehicule JOIN FETCH r.poste
+            LEFT JOIN FETCH r.lignes l LEFT JOIN FETCH l.prestation
             WHERE r.reference = :reference
             """)
     Optional<Rdv> findByReference(@Param("reference") UUID reference);
 
     @Query("""
-            SELECT r FROM Rdv r
+            SELECT DISTINCT r FROM Rdv r
             JOIN FETCH r.vehicule JOIN FETCH r.poste
+            LEFT JOIN FETCH r.lignes l LEFT JOIN FETCH l.prestation
             WHERE r.membre.email = :email
             ORDER BY r.debut DESC
             """)
     List<Rdv> findByMembre(@Param("email") String email);
-
     /**
      * Rendez-vous actifs chevauchant la fenetre [debut, fin), tous postes confondus.
      * Sert au calcul des disponibilites : une seule requete pour toute la fenetre

@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!-- Fragment renvoye par GET /mes-rendez-vous/nouveau/creneaux et insere dans #creneaux.
+     Le modele fournit : creneaux (List<CreneauVue>), aucunePrestation (boolean),
+     erreurCreneaux (String, facultatif). -->
+<div th:fragment="liste">
+
+    <p class="aide" th:if="${aucunePrestation == true}">
+        Cochez au moins une prestation pour voir les heures disponibles.
+    </p>
+
+    <p class="erreur" th:if="${erreurCreneaux != null}" th:text="${erreurCreneaux}">Erreur</p>
+
+    <p class="message" th:if="${aucunePrestation != true and creneaux.isEmpty() and erreurCreneaux == null}">
+        Aucune heure disponible ce jour-là pour cette durée. Essayez un autre jour.
+    </p>
+
+    <ul class="grille-creneaux" th:unless="${creneaux.isEmpty()}">
+        <li th:each="c : ${creneaux}">
+            <label class="creneau">
+                <input type="radio" name="debut" th:value="${c.valeur()}"
+                       th:checked="${formulaire != null and formulaire.debut == c.valeur()}" required>
+                <span th:text="${c.libelle()}">10:00 – 11:00</span>
+                <small th:if="${c.postesLibres() > 1}"
+                       th:text="${c.postesLibres()} + ' places'">2 places</small>
+            </label>
+        </li>
+    </ul>
+
+</div>
+</body>
+</html>

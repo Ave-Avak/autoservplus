@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'Rendez-vous ' + ${rdv.numero()} + ' — AutoServ+'">Rendez-vous — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}">Prestations</a></li>
+            <li><a th:href="@{/pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <p><a th:href="@{/mes-rendez-vous}">← Mes rendez-vous</a></p>
+
+    <h1 th:text="'Rendez-vous ' + ${rdv.numero()}">Rendez-vous RDV-2026-0001</h1>
+
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+
+    <p>
+        <span th:class="'badge badge-' + ${#strings.toLowerCase(rdv.statut())}"
+              th:text="${rdv.statutLisible()}">En attente</span>
+    </p>
+
+    <dl class="vehicule-details">
+        <div>
+            <dt>Date</dt>
+            <dd th:text="${#strings.capitalize(rdv.jourLisible())}">Mercredi 16 septembre 2026</dd>
+        </div>
+        <div>
+            <dt>Heure</dt>
+            <dd th:text="${rdv.heureDebut()} + ' – ' + ${rdv.heureFin()}">10:00 – 11:00</dd>
+        </div>
+        <div>
+            <dt>Véhicule</dt>
+            <dd th:text="${rdv.vehicule()}">VW Golf (1-ABC-123)</dd>
+        </div>
+        <div>
+            <dt>Prestations</dt>
+            <dd>
+                <ul>
+                    <li th:each="p : ${rdv.prestations()}" th:text="${p}">Vidange</li>
+                </ul>
+            </dd>
+        </div>
+        <div>
+            <dt>Montant estimé TVAC</dt>
+            <dd th:text="${rdv.montantTvac()}">59,29 €</dd>
+        </div>
+        <div th:if="${rdv.commentaire()}">
+            <dt>Votre commentaire</dt>
+            <dd th:text="${rdv.commentaire()}">Bruit au freinage</dd>
+        </div>
+        <div th:if="${rdv.motifRefus()}">
+            <dt>Motif indiqué par le garage</dt>
+            <dd th:text="${rdv.motifRefus()}">Pièce indisponible</dd>
+        </div>
+    </dl>
+
+    <p class="aide" th:if="${rdv.estActif() and !rdv.annulable()}">
+        L'annulation en ligne n'est plus possible à moins de 24 heures du rendez-vous.
+        Contactez directement le garage.
+    </p>
+
+    <form th:if="${rdv.annulable()}"
+          th:action="@{/mes-rendez-vous/{ref}/annuler(ref=${rdv.reference()})}"
+          method="post" class="formulaire-suppression"
+          th:data-designation="'le rendez-vous ' + ${rdv.numero()}">
+        <button type="submit" class="lien-bouton texte-erreur">Annuler ce rendez-vous</button>
+    </form>
+</main>
+
+<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+
+<script th:src="@{/js/confirmation.js}"></script>
+</body>
+</html>

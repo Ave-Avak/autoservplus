@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Mes rendez-vous — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}">Prestations</a></li>
+            <li><a th:href="@{/pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1>Mes rendez-vous</h1>
+
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+
+    <p th:if="${rendezVous.isEmpty()}" class="message">
+        Vous n'avez pas encore de rendez-vous.
+    </p>
+
+    <ul class="grille-articles" th:unless="${rendezVous.isEmpty()}">
+        <li class="carte" th:each="r : ${rendezVous}">
+            <p class="carte-categorie">
+                <span th:class="'badge badge-' + ${#strings.toLowerCase(r.statut())}"
+                      th:text="${r.statutLisible()}">En attente</span>
+            </p>
+            <h2>
+                <span th:text="${#strings.capitalize(r.jourLisible())}">Mercredi 16 septembre 2026</span><br>
+                <span th:text="${r.heureDebut()} + ' – ' + ${r.heureFin()}">10:00 – 11:00</span>
+            </h2>
+            <p th:text="${r.vehicule()}">VW Golf (1-ABC-123)</p>
+            <p th:text="${#strings.listJoin(r.prestations(), ', ')}">Vidange, Plaquettes</p>
+            <div class="carte-actions">
+                <a th:href="@{/mes-rendez-vous/{ref}(ref=${r.reference()})}"
+                   th:aria-label="'Détail du rendez-vous ' + ${r.numero()}">Détail</a>
+            </div>
+        </li>
+    </ul>
+
+    <p class="actions-page">
+        <a class="btn-cta" th:href="@{/mes-rendez-vous/nouveau}">Prendre rendez-vous</a>
+    </p>
+
+    <p><a th:href="@{/mon-compte}">Retour à mon compte</a></p>
+</main>
+
+<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>
