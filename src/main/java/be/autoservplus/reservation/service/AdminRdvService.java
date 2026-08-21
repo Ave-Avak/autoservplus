@@ -82,6 +82,17 @@ public class AdminRdvService {
                 .toList();
     }
 
+    /**
+     * Vue detaillee d un rendez-vous, pour le contexte des ecrans de refus et
+     * d annulation par le garage. {@link RessourceIntrouvableException} si absent.
+     * On charge le RDV avant de consulter les parametres : sur reference inconnue,
+     * l exception remonte immediatement sans requete inutile en base.
+     */
+    public RdvVueAdmin vue(UUID reference) {
+        Rdv rdv = charger(reference);
+        return RdvVueAdmin.de(rdv, parametres.courants().zone());
+    }
+
     // --- transitions ------------------------------------------------------------------
 
     @Transactional

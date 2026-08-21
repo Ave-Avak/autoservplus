@@ -265,6 +265,35 @@ class AdminRdvServiceTest {
     }
 
     @Nested
+    @DisplayName("vue")
+    class Vue {
+
+        @Test
+        @DisplayName("charge le RDV et le mappe en RdvVueAdmin")
+        void vueDuRdv() {
+            Rdv rdv = rdvDans(StatutRdv.EN_ATTENTE);
+            stubLookup(rdv);
+            stubParametresCourants();
+
+            RdvVueAdmin vue = service.vue(rdv.getReference());
+
+            assertThat(vue.reference()).isEqualTo(rdv.getReference());
+            assertThat(vue.statut()).isEqualTo("EN_ATTENTE");
+            assertThat(vue.peutConfirmer()).isTrue();
+        }
+
+        @Test
+        @DisplayName("reference absente -> RessourceIntrouvableException")
+        void referenceAbsente() {
+            UUID ref = UUID.randomUUID();
+            when(rdvs.findByReference(ref)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.vue(ref))
+                    .isInstanceOf(RessourceIntrouvableException.class);
+        }
+    }
+
+    @Nested
     @DisplayName("tableau de bord")
     class TableauDeBord {
 
