@@ -5,12 +5,15 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Rejoue l ensemble des migrations sur un PostgreSQL neuf et verifie les elements de
@@ -62,5 +65,48 @@ class SchemaIT {
                 "SELECT count(*) FROM information_schema.tables WHERE table_name = 'creneau_horaire'",
                 Integer.class);
         assertThat(nombre).isZero();
+    }
+
+    // Les trois tests suivants operent sur jour_semaine = 7 (dimanche), jamais peuple
+    // par le seed V10. @Transactional garantit que les INSERT sont rollback en fin de
+    // test, ce qui evite d avoir a nettoyer manuellement et preserve l isolation.
+
+    @Test
+    @Transactional
+    @DisplayName("rejette deux plages d ouverture chevauchantes le meme jour")
+    void rejetteChevauchementPlageOuverture() {
+        jdbc.update("INSERT INTO plage_ouverture (jour_semaine, heure_debut, heure_fin) VALUES (7, '08:00', '12:00')");
+
+        assertThatThrownBy(() -> jdbc.update(
+                "INSERT INTO plage_ouverture (jour_semaine, heure_debut, heure_fin) VALUES (7, '09:00', '11:00')"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ex_plage_ouverture_chevauchement");
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("accepte deux plages adjacentes le meme jour grace a la borne demi-ouverte")
+    void accepteAdjacencesPlageOuverture() {
+        jdbc.update("INSERT INTO plage_ouverture (jour_semaine, heure_debut, heure_fin) VALUES (7, '12:00', '13:00')");
+        jdbc.update("INSERT INTO plage_ouverture (jour_semaine, heure_debut, heure_fin) VALUES (7, '13:00', '17:00')");
+
+        Integer nombre = jdbc.queryForObject(
+                "SELECT count(*) FROM plage_ouverture WHERE jour_semaine = 7", Integer.class);
+        assertThat(nombre).isEqualTo(2);
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("ignore les plages soft-deletees dans la contrainte d exclusion")
+    void ignoreSoftDeleteePlageOuverture() {
+        jdbc.update("INSERT INTO plage_ouverture (jour_semaine, heure_debut, heure_fin, deleted_at) " +
+                "VALUES (7, '08:00', '12:00', now())");
+        // Une plage active peut occuper l intervalle libere par la suppression logique.
+        jdbc.update("INSERT INTO plage_ouverture (jour_semaine, heure_debut, heure_fin) VALUES (7, '09:00', '11:00')");
+
+        Integer actives = jdbc.queryForObject(
+                "SELECT count(*) FROM plage_ouverture WHERE jour_semaine = 7 AND deleted_at IS NULL",
+                Integer.class);
+        assertThat(actives).isEqualTo(1);
     }
 }
