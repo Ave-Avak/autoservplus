@@ -77,10 +77,10 @@
               method="post" style="display:inline">
             <button type="submit" class="btn-cta">Démarrer</button>
         </form>
-        <form th:if="${intervention.peutMettreEnPause()}"
-              th:action="@{/admin/interventions/{ref}/pause(ref=${intervention.reference()})}"
+        <form th:if="${intervention.peutSuspendre()}"
+              th:action="@{/admin/interventions/{ref}/suspendre(ref=${intervention.reference()})}"
               method="post" style="display:inline">
-            <button type="submit" class="lien-bouton">Mettre en pause</button>
+            <button type="submit" class="lien-bouton">Suspendre</button>
         </form>
         <form th:if="${intervention.peutReprendre()}"
               th:action="@{/admin/interventions/{ref}/reprendre(ref=${intervention.reference()})}"
@@ -92,10 +92,11 @@
               method="post" style="display:inline">
             <button type="submit" class="lien-bouton">Terminer</button>
         </form>
-        <form th:if="${intervention.peutRouvrir()}"
-              th:action="@{/admin/interventions/{ref}/rouvrir(ref=${intervention.reference()})}"
-              method="post" style="display:inline">
-            <button type="submit" class="lien-bouton">Rouvrir pour correction</button>
+        <form th:if="${intervention.peutAnnuler()}"
+              th:action="@{/admin/interventions/{ref}/annuler(ref=${intervention.reference()})}"
+              method="post" style="display:inline"
+              onsubmit="return confirm('Annuler cette intervention ? Cette action est définitive.');">
+            <button type="submit" class="lien-bouton texte-erreur">Annuler l'intervention</button>
         </form>
     </p>
 

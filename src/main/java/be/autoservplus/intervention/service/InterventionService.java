@@ -79,9 +79,9 @@ public class InterventionService {
     }
 
     @Transactional
-    public Intervention mettreEnPause(UUID reference) {
+    public Intervention suspendre(UUID reference) {
         Intervention it = charger(reference);
-        it.mettreEnPause();
+        it.suspendre();
         return ecrire(it);
     }
 
@@ -99,11 +99,14 @@ public class InterventionService {
         return ecrire(it);
     }
 
-    /** Reouvre une intervention TERMINEE pour correction avant facturation. */
+    /**
+     * Annulation definitive. Depuis PLANIFIEE, EN_COURS, SUSPENDUE ou
+     * ATTENTE_VALIDATION_MEMBRE ; refusee si l intervention est deja terminale.
+     */
     @Transactional
-    public Intervention rouvrir(UUID reference) {
+    public Intervention annuler(UUID reference) {
         Intervention it = charger(reference);
-        it.rouvrir();
+        it.annuler();
         return ecrire(it);
     }
 
@@ -138,13 +141,18 @@ public class InterventionService {
 
     // --- vues ------------------------------------------------------------------------
 
-    /** Interventions ouvertes (PLANIFIEE, EN_COURS, EN_PAUSE) pour le tableau de bord. */
+    /**
+     * Interventions ouvertes (non terminales) pour le tableau de bord admin :
+     * PLANIFIEE, EN_COURS, SUSPENDUE et ATTENTE_VALIDATION_MEMBRE. Les TERMINEE
+     * et ANNULEE sortent de l ecran actif.
+     */
     public List<InterventionVueAdmin> interventionsEnCours() {
         ZoneId zone = parametres.courants().zone();
         return interventions.findByStatutIn(EnumSet.of(
                         StatutIntervention.PLANIFIEE,
                         StatutIntervention.EN_COURS,
-                        StatutIntervention.EN_PAUSE))
+                        StatutIntervention.SUSPENDUE,
+                        StatutIntervention.ATTENTE_VALIDATION_MEMBRE))
                 .stream()
                 .map(i -> InterventionVueAdmin.de(i, zone))
                 .toList();

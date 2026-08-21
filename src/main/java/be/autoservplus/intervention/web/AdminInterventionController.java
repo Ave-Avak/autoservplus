@@ -66,12 +66,12 @@ public class AdminInterventionController {
                 () -> service.demarrer(reference), "démarrée");
     }
 
-    @PostMapping("/{reference}/pause")
-    public String pause(@AuthenticationPrincipal UserDetails admin,
-                        @PathVariable UUID reference,
-                        RedirectAttributes redirection) {
+    @PostMapping("/{reference}/suspendre")
+    public String suspendre(@AuthenticationPrincipal UserDetails admin,
+                            @PathVariable UUID reference,
+                            RedirectAttributes redirection) {
         return appliquerTransition(reference, redirection,
-                () -> service.mettreEnPause(reference), "mise en pause");
+                () -> service.suspendre(reference), "suspendue");
     }
 
     @PostMapping("/{reference}/reprendre")
@@ -90,12 +90,12 @@ public class AdminInterventionController {
                 () -> service.terminer(reference), "terminée");
     }
 
-    @PostMapping("/{reference}/rouvrir")
-    public String rouvrir(@AuthenticationPrincipal UserDetails admin,
+    @PostMapping("/{reference}/annuler")
+    public String annuler(@AuthenticationPrincipal UserDetails admin,
                           @PathVariable UUID reference,
                           RedirectAttributes redirection) {
         return appliquerTransition(reference, redirection,
-                () -> service.rouvrir(reference), "rouverte pour correction");
+                () -> service.annuler(reference), "annulée");
     }
 
     // --- commentaire et lignes ------------------------------------------------------

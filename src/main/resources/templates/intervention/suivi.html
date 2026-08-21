@@ -42,15 +42,15 @@
          Le meme fragment est rendu par GET /mes-interventions/{ref}/statut. Le
          hx-swap="outerHTML" remplace tout le bloc (y compris son propre attribut
          hx-get), donc le prochain polling reprend depuis la nouvelle version.
-         Quand l intervention est terminale (TERMINEE ou FACTUREE), les attributs
+         Quand l intervention est terminale (TERMINEE ou ANNULEE), les attributs
          hx-* sont omis (Thymeleaf ne rend pas les attributs a valeur null) : plus
          de polling, pas de trafic inutile. -->
     <div th:fragment="blocStatut"
          id="statut-intervention"
          aria-live="polite"
-         th:hx-get="${intervention.estTerminee()} ? null : @{/mes-interventions/{ref}/statut(ref=${intervention.reference()})}"
-         th:hx-trigger="${intervention.estTerminee()} ? null : 'every 10s'"
-         th:hx-swap="${intervention.estTerminee()} ? null : 'outerHTML'">
+         th:hx-get="${intervention.estTerminale()} ? null : @{/mes-interventions/{ref}/statut(ref=${intervention.reference()})}"
+         th:hx-trigger="${intervention.estTerminale()} ? null : 'every 10s'"
+         th:hx-swap="${intervention.estTerminale()} ? null : 'outerHTML'">
 
         <p>
             <span th:class="'badge badge-' + ${#strings.toLowerCase(intervention.statut())}"
@@ -73,8 +73,11 @@
             <span th:text="${intervention.commentaireAdmin()}">…</span>
         </div>
 
-        <p th:if="${intervention.estTerminee()}" class="message message-succes" role="status">
+        <p th:if="${intervention.statut() == 'TERMINEE'}" class="message message-succes" role="status">
             Votre véhicule est prêt. Le garage vous contactera pour la reprise.
+        </p>
+        <p th:if="${intervention.statut() == 'ANNULEE'}" class="message message-erreur" role="status">
+            Cette intervention a été annulée.
         </p>
     </div>
 

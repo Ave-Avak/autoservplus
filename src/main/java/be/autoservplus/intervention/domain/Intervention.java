@@ -57,7 +57,7 @@ public class Intervention extends BaseEntity {
 
     @NotNull
     @Enumerated(EnumType.STRING)
-    @Column(name = "statut", nullable = false, length = 25)
+    @Column(name = "statut", nullable = false, length = 30)
     private StatutIntervention statut = StatutIntervention.PLANIFIEE;
 
     @Column(name = "commentaire_admin", columnDefinition = "text")
@@ -106,52 +106,35 @@ public class Intervention extends BaseEntity {
         }
     }
 
-    public void mettreEnPause() {
-        transitionVers(StatutIntervention.EN_PAUSE);
+    public void suspendre() {
+        transitionVers(StatutIntervention.SUSPENDUE);
     }
 
+    /**
+     * Reprend le travail depuis SUSPENDUE ou ATTENTE_VALIDATION_MEMBRE. La
+     * machine a etats garde les deux cas via {@code peutPasserA} ; le domaine
+     * n a pas besoin de distinguer, le service peut proposer deux boutons
+     * distincts a l ecran si necessaire.
+     */
     public void reprendre() {
         transitionVers(StatutIntervention.EN_COURS);
     }
 
     /**
-     * Terminaison de l intervention. Si l on vient directement de PLANIFIEE
-     * (raccourci express, pas de démarrage explicite), {@code debutReel} n a
-     * jamais ete pose : on l aligne sur {@code finReelle} pour ne pas laisser
-     * une trace incomplete.
+     * Terminaison de l intervention. Ne peut se faire qu apres passage par
+     * EN_COURS (la machine a etats interdit PLANIFIEE -> TERMINEE), donc
+     * {@code debutReel} est toujours pose lorsqu on arrive ici. Le module
+     * facturation (post-V1) branchera sa generation de facture sur cette
+     * transition (RM-17).
      */
     public void terminer(Instant maintenant) {
         transitionVers(StatutIntervention.TERMINEE);
-        Instant instant = Objects.requireNonNull(maintenant, "maintenant");
-        if (this.debutReel == null) {
-            this.debutReel = instant;
-        }
-        this.finReelle = instant;
+        this.finReelle = Objects.requireNonNull(maintenant, "maintenant");
     }
 
-    /**
-     * Reouverture d une intervention TERMINEE pour correction. La fin reelle
-     * est effacee : l intervention n est plus consideree comme cloturee, une
-     * nouvelle terminaison enregistrera un nouvel horodatage. Le debut reel
-     * est conserve.
-     *
-     * <p>Garde semantique : rouvrir n a de sens que depuis TERMINEE. Depuis
-     * EN_COURS ou EN_PAUSE, appeler {@code reprendre()} ou ne rien faire.
-     * Depuis PLANIFIEE, appeler {@code demarrer()}. Depuis FACTUREE,
-     * l intervention est verrouillee.</p>
-     */
-    public void rouvrir() {
-        if (statut != StatutIntervention.TERMINEE) {
-            throw new IllegalStateException(
-                    "Rouvrir n a de sens que depuis TERMINEE, statut actuel : %s.".formatted(statut));
-        }
-        transitionVers(StatutIntervention.EN_COURS);
-        this.finReelle = null;
-    }
-
-    /** Hook du module facturation, non declenche en V1. */
-    public void marquerFacturee() {
-        transitionVers(StatutIntervention.FACTUREE);
+    /** Annulation definitive de l intervention (avant, pendant, ou en pause). */
+    public void annuler() {
+        transitionVers(StatutIntervention.ANNULEE);
     }
 
     private void transitionVers(StatutIntervention cible) {

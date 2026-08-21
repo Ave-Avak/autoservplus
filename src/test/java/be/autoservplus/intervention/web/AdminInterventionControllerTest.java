@@ -156,7 +156,7 @@ class AdminInterventionControllerTest {
         @WithMockUser(roles = "ADMINISTRATEUR")
         @DisplayName("transition interdite (IllegalState) -> flash erreur")
         void transitionInterdite() throws Exception {
-            doThrow(new IllegalStateException("Transition d intervention interdite : PLANIFIEE vers FACTUREE."))
+            doThrow(new IllegalStateException("Transition d intervention interdite : PLANIFIEE vers TERMINEE."))
                     .when(service).terminer(REF);
 
             mvc.perform(post("/admin/interventions/{ref}/terminer", REF).with(csrf()))
@@ -166,16 +166,30 @@ class AdminInterventionControllerTest {
 
         @Test
         @WithMockUser(roles = "ADMINISTRATEUR")
-        @DisplayName("rouvrir redirige avec flash message et appelle le service")
-        void rouvrir() throws Exception {
-            doReturn(interventionMock).when(service).rouvrir(REF);
+        @DisplayName("suspendre redirige avec flash message et appelle le service")
+        void suspendre() throws Exception {
+            doReturn(interventionMock).when(service).suspendre(REF);
 
-            mvc.perform(post("/admin/interventions/{ref}/rouvrir", REF).with(csrf()))
+            mvc.perform(post("/admin/interventions/{ref}/suspendre", REF).with(csrf()))
                     .andExpect(status().is3xxRedirection())
                     .andExpect(redirectedUrl("/admin/interventions/" + REF))
                     .andExpect(flash().attributeExists("message"));
 
-            verify(service).rouvrir(REF);
+            verify(service).suspendre(REF);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        @DisplayName("annuler redirige avec flash message et appelle le service")
+        void annuler() throws Exception {
+            doReturn(interventionMock).when(service).annuler(REF);
+
+            mvc.perform(post("/admin/interventions/{ref}/annuler", REF).with(csrf()))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("/admin/interventions/" + REF))
+                    .andExpect(flash().attributeExists("message"));
+
+            verify(service).annuler(REF);
         }
     }
 

@@ -1,54 +1,61 @@
 package be.autoservplus.intervention.domain;
 
 /**
- * Cycle de vie d une intervention en atelier.
+ * Cycle de vie d une intervention en atelier, aligne sur le CdC
+ * (dictionnaire de donnees, table 3.8).
  *
- * <p>PLANIFIEE : creee lorsqu un rendez-vous est marque honore, en attente de
- * demarrage effectif au garage. EN_COURS : le mecanicien travaille, l heure de
- * debut est enregistree. EN_PAUSE : suspension temporaire (attente de piece,
- * autre urgence) sans cloture. TERMINEE : les travaux sont acheves, l heure de
- * fin est figee. FACTUREE : hook du module facturation, pas active en V1.</p>
+ * <p>PLANIFIEE : creee au marquage HONORE du RDV, en attente de demarrage.
+ * EN_COURS : le mecanicien travaille, {@code debutReel} enregistre.
+ * SUSPENDUE : suspension temporaire (attente de piece, autre urgence) sans
+ * cloture. ATTENTE_VALIDATION_MEMBRE : depassement de devis &gt; 10 % (RM-15),
+ * la poursuite exige l accord expres du membre. TERMINEE : travaux acheves,
+ * {@code finReelle} figee ; c est au passage vers cet etat que le module
+ * facturation (post-V1) declenchera la generation de la facture (RM-17).
+ * ANNULEE : arret definitif de l intervention sans passage a TERMINEE.</p>
+ *
+ * <p>La facturation n est PAS un statut du CdC : elle est modelisee comme une
+ * action deroulee au passage a TERMINEE. Aucun statut FACTUREE ici.</p>
  */
 public enum StatutIntervention {
     PLANIFIEE,
     EN_COURS,
-    EN_PAUSE,
+    SUSPENDUE,
+    ATTENTE_VALIDATION_MEMBRE,
     TERMINEE,
-    FACTUREE;
+    ANNULEE;
 
     /**
-     * Transitions autorisees. Toute autre est refusee par le domaine.
+     * Transitions autorisees par le CdC. Toute autre est refusee par le domaine.
      *
-     * <p>PLANIFIEE -> TERMINEE est un raccourci metier assume pour les prestations
-     * express (montage pneu, controle rapide) que le mecanicien execute sans passer
-     * par un EN_COURS explicite. Ecart vs le chemin nominal de l analyse UML V3,
-     * documente en dette.</p>
+     * <p>PLANIFIEE peut demarrer ou etre annulee (avant tout travail).
+     * EN_COURS peut se suspendre, passer en attente de validation membre,
+     * se terminer, ou etre annulee. SUSPENDUE et ATTENTE_VALIDATION_MEMBRE
+     * sont symetriques : elles reprennent en EN_COURS ou basculent en ANNULEE.
+     * TERMINEE et ANNULEE sont terminaux : aucune sortie, meme pour
+     * correction (une correction post-facturation passera par un avoir).</p>
      *
-     * <p>TERMINEE -> EN_COURS reouvre une intervention cloturee pour correction :
-     * FACTUREE est le seul etat de verrouillage definitif. Une fois facturee,
-     * l intervention releve du droit comptable et ne peut plus etre modifiee ;
-     * une correction passera par un avoir.</p>
-     *
-     * <p>Les self-loops (EN_PAUSE -> EN_PAUSE, EN_COURS -> EN_COURS, etc.) restent
-     * refuses : aucune branche ne retourne {@code cible == this}.</p>
+     * <p>Self-loops toujours refuses : aucune branche ne retourne
+     * {@code cible == this}.</p>
      */
     public boolean peutPasserA(StatutIntervention cible) {
         return switch (this) {
-            case PLANIFIEE -> cible == EN_COURS || cible == TERMINEE;
-            case EN_COURS  -> cible == EN_PAUSE || cible == TERMINEE;
-            case EN_PAUSE  -> cible == EN_COURS || cible == TERMINEE;
-            case TERMINEE  -> cible == EN_COURS || cible == FACTUREE;
-            case FACTUREE  -> false;
+            case PLANIFIEE                 -> cible == EN_COURS || cible == ANNULEE;
+            case EN_COURS                  -> cible == SUSPENDUE
+                                              || cible == ATTENTE_VALIDATION_MEMBRE
+                                              || cible == TERMINEE
+                                              || cible == ANNULEE;
+            case SUSPENDUE                 -> cible == EN_COURS || cible == ANNULEE;
+            case ATTENTE_VALIDATION_MEMBRE -> cible == EN_COURS || cible == ANNULEE;
+            case TERMINEE, ANNULEE         -> false;
         };
     }
 
     /**
-     * L intervention est modifiable (lignes, commentaire admin). Le seul etat
-     * verrouille est FACTUREE : une intervention TERMINEE reste editable pour
-     * corriger une erreur avant facturation, la reouverture n est necessaire que
-     * pour signaler au client (via le statut) que le travail continue.
+     * L intervention est modifiable (lignes, commentaire admin) tant qu elle
+     * n est pas terminale. Une fois TERMINEE (facturation branchee) ou
+     * ANNULEE, plus aucune ecriture n est autorisee.
      */
     public boolean estEditable() {
-        return this != FACTUREE;
+        return this != TERMINEE && this != ANNULEE;
     }
 }

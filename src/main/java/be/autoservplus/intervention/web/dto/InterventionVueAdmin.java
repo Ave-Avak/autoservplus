@@ -30,10 +30,10 @@ public record InterventionVueAdmin(
         String totalHtva,
         String totalTvac,
         boolean peutDemarrer,
-        boolean peutMettreEnPause,
+        boolean peutSuspendre,
         boolean peutReprendre,
         boolean peutTerminer,
-        boolean peutRouvrir,
+        boolean peutAnnuler,
         boolean estEditable) {
 
     public static InterventionVueAdmin de(Intervention it, ZoneId zone) {
@@ -59,11 +59,11 @@ public record InterventionVueAdmin(
                 it.getLignes().stream().map(LigneInterventionVue::de).toList(),
                 FormatageRdv.euros(it.totalHtva()),
                 FormatageRdv.euros(it.totalTvac()),
-                s.peutPasserA(StatutIntervention.EN_COURS) && s == StatutIntervention.PLANIFIEE,
-                s.peutPasserA(StatutIntervention.EN_PAUSE),
-                s.peutPasserA(StatutIntervention.EN_COURS) && s == StatutIntervention.EN_PAUSE,
+                s == StatutIntervention.PLANIFIEE,
+                s.peutPasserA(StatutIntervention.SUSPENDUE),
+                s == StatutIntervention.SUSPENDUE,
                 s.peutPasserA(StatutIntervention.TERMINEE),
-                s.peutPasserA(StatutIntervention.EN_COURS) && s == StatutIntervention.TERMINEE,
+                s.peutPasserA(StatutIntervention.ANNULEE),
                 s.estEditable());
     }
 
@@ -71,9 +71,10 @@ public record InterventionVueAdmin(
         return switch (s) {
             case PLANIFIEE -> "Planifiée";
             case EN_COURS -> "En cours";
-            case EN_PAUSE -> "En pause";
+            case SUSPENDUE -> "Suspendue";
+            case ATTENTE_VALIDATION_MEMBRE -> "En attente de validation du membre";
             case TERMINEE -> "Terminée";
-            case FACTUREE -> "Facturée";
+            case ANNULEE -> "Annulée";
         };
     }
 

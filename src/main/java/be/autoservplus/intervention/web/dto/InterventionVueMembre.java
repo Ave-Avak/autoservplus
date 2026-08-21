@@ -26,7 +26,7 @@ public record InterventionVueMembre(
         String finReelle,
         List<LigneVue> lignes,
         String totalTvac,
-        boolean estTerminee) {
+        boolean estTerminale) {
 
     public static InterventionVueMembre de(Intervention it, ZoneId zone) {
         StatutIntervention s = it.getStatut();
@@ -46,16 +46,17 @@ public record InterventionVueMembre(
                         : null,
                 it.getLignes().stream().map(LigneVue::de).toList(),
                 FormatageRdv.euros(it.totalTvac()),
-                s == StatutIntervention.TERMINEE || s == StatutIntervention.FACTUREE);
+                s == StatutIntervention.TERMINEE || s == StatutIntervention.ANNULEE);
     }
 
     private static String statutLisible(StatutIntervention s) {
         return switch (s) {
             case PLANIFIEE -> "Planifiée, en attente de démarrage";
             case EN_COURS -> "En cours au garage";
-            case EN_PAUSE -> "Mise en pause temporairement";
+            case SUSPENDUE -> "Travaux momentanément suspendus";
+            case ATTENTE_VALIDATION_MEMBRE -> "En attente de votre accord sur un dépassement";
             case TERMINEE -> "Terminée, votre véhicule est prêt";
-            case FACTUREE -> "Facturée";
+            case ANNULEE -> "Annulée";
         };
     }
 
