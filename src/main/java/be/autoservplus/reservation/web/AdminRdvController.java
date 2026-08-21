@@ -51,7 +51,7 @@ public class AdminRdvController {
     public String liste(Model modele) {
         modele.addAttribute("titre", "Rendez-vous à traiter");
         modele.addAttribute("demandesEnAttente", adminRdvs.demandesEnAttente());
-        modele.addAttribute("aTraiterApresRdv", adminRdvs.aTraiterApresRdv());
+        modele.addAttribute("rendezVousATraiter", adminRdvs.rendezVousATraiter());
         return "admin/rendez-vous";
     }
 
@@ -157,7 +157,8 @@ public class AdminRdvController {
         try {
             Rdv rdv = action.get();
             redirection.addFlashAttribute("message", messageSuccesPourNumero.apply(rdv.getNumero()));
-        } catch (RessourceIntrouvableException | ConflitConcurrenceException e) {
+        } catch (RessourceIntrouvableException | ConflitConcurrenceException
+                | be.autoservplus.common.exception.RegleMetierException e) {
             redirection.addFlashAttribute("erreur", e.getMessage());
         } catch (IllegalStateException e) {
             // machine a etats du domaine : transition interdite (RM-10)

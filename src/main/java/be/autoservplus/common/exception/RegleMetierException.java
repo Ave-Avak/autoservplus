@@ -15,6 +15,16 @@ public class RegleMetierException extends RuntimeException {
         this.codeRegle = codeRegle;
     }
 
+    /**
+     * Pour une regle metier sans code RM dans le CdC (ex. gardes temporelles
+     * de marquage). Le message doit se suffire a lui-meme. Ne pas fabriquer un
+     * pseudo-code : la tracabilite RM = exigence CdC ne doit pas etre polluee.
+     */
+    public RegleMetierException(String message) {
+        super(message);
+        this.codeRegle = null;
+    }
+
     public String getCodeRegle() {
         return codeRegle;
     }

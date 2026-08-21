@@ -227,10 +227,19 @@ class AdminRdvServiceTest {
     @DisplayName("marquerHonore")
     class MarquerHonore {
 
+        /** RDV CONFIRME commence il y a 2h : debut atteint, honore autorise. */
+        private Rdv rdvCommenceIlYA(java.time.Duration duree) {
+            Rdv rdv = new Rdv("RDV-2026-0001", marie, golf, pont,
+                    MAINTENANT.minus(duree), java.time.Duration.ofMinutes(30),
+                    List.of(vidange), null);
+            rdv.confirmer();
+            return rdv;
+        }
+
         @Test
         @DisplayName("passe le RDV en HONORE, sauvegarde, NE notifie PAS le membre")
         void honoreSansMail() {
-            Rdv rdv = rdvDans(StatutRdv.CONFIRME);
+            Rdv rdv = rdvCommenceIlYA(java.time.Duration.ofHours(2));
             stubLookup(rdv);
             when(rdvs.saveAndFlush(rdv)).thenReturn(rdv);
 
@@ -242,16 +251,47 @@ class AdminRdvServiceTest {
             verify(courriel, never()).envoyerRefusRdv(any(), any(), any());
             verify(courriel, never()).envoyerAnnulationParLeGarage(any(), any(), any());
         }
+
+        @Test
+        @DisplayName("refuse un marquage avant l'heure de debut (RegleMetier temporelle)")
+        void refuseAvantLeDebut() {
+            // RDV commencant dans 3h : debut > maintenant → refus.
+            Rdv futur = new Rdv("RDV-2026-0002", marie, golf, pont,
+                    MAINTENANT.plus(java.time.Duration.ofHours(3)), java.time.Duration.ofMinutes(30),
+                    List.of(vidange), null);
+            futur.confirmer();
+            stubLookup(futur);
+
+            assertThatThrownBy(() -> service.marquerHonore(futur.getReference()))
+                    .isInstanceOf(be.autoservplus.common.exception.RegleMetierException.class)
+                    .hasMessageContaining("avant l'heure de début");
+
+            assertThat(futur.getStatut())
+                    .as("Le statut ne doit pas avoir bascule en HONORE")
+                    .isEqualTo(StatutRdv.CONFIRME);
+            verify(rdvs, never()).saveAndFlush(any());
+            verify(interventions, never()).creerDepuisRdv(any());
+        }
     }
 
     @Nested
     @DisplayName("marquerAbsent")
     class MarquerAbsent {
 
+        /** RDV CONFIRME dont le creneau s est termine il y a {@code depuis} : fin passee. */
+        private Rdv rdvTermineIlYA(java.time.Duration depuis) {
+            java.time.Duration duree = java.time.Duration.ofMinutes(30);
+            Rdv rdv = new Rdv("RDV-2026-0001", marie, golf, pont,
+                    MAINTENANT.minus(depuis).minus(duree), duree,
+                    List.of(vidange), null);
+            rdv.confirmer();
+            return rdv;
+        }
+
         @Test
         @DisplayName("passe le RDV en ABSENT, sauvegarde, NE notifie PAS le membre")
         void absentSansMail() {
-            Rdv rdv = rdvDans(StatutRdv.CONFIRME);
+            Rdv rdv = rdvTermineIlYA(java.time.Duration.ofMinutes(15));
             stubLookup(rdv);
             when(rdvs.saveAndFlush(rdv)).thenReturn(rdv);
 
@@ -262,6 +302,26 @@ class AdminRdvServiceTest {
             verify(courriel, never()).envoyerConfirmationRdv(any(), any());
             verify(courriel, never()).envoyerRefusRdv(any(), any(), any());
             verify(courriel, never()).envoyerAnnulationParLeGarage(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("refuse un marquage avant la fin du creneau (RegleMetier temporelle)")
+        void refuseAvantLaFin() {
+            // RDV commence il y a 10 min, fin 20 min dans le futur : creneau en cours.
+            Rdv enCours = new Rdv("RDV-2026-0003", marie, golf, pont,
+                    MAINTENANT.minus(java.time.Duration.ofMinutes(10)), java.time.Duration.ofMinutes(30),
+                    List.of(vidange), null);
+            enCours.confirmer();
+            stubLookup(enCours);
+
+            assertThatThrownBy(() -> service.marquerAbsent(enCours.getReference()))
+                    .isInstanceOf(be.autoservplus.common.exception.RegleMetierException.class)
+                    .hasMessageContaining("avant la fin");
+
+            assertThat(enCours.getStatut())
+                    .as("Le statut ne doit pas avoir bascule en ABSENT")
+                    .isEqualTo(StatutRdv.CONFIRME);
+            verify(rdvs, never()).saveAndFlush(any());
         }
     }
 
@@ -316,14 +376,19 @@ class AdminRdvServiceTest {
         }
 
         @Test
-        @DisplayName("aTraiterApresRdv passe l instant de l horloge et mappe en RdvVueAdmin")
-        void listeATraiterApresRdv() {
-            Rdv rdv = rdvDans(StatutRdv.CONFIRME);
-            when(rdvs.findByStatutAndFinBeforeOrderByDebut(StatutRdv.CONFIRME, MAINTENANT))
-                    .thenReturn(List.of(rdv));
+        @DisplayName("rendezVousATraiter mappe en RdvVueAdmin ; flags temporels calcules depuis maintenant")
+        void listeRendezVousATraiter() {
+            // RDV commence il y a 2h, fin 90 min avant maintenant : debut atteint
+            // ET fin passee -> les deux flags temporels sont vrais.
+            Rdv passe = new Rdv("RDV-PASSE", marie, golf, pont,
+                    MAINTENANT.minus(Duration.ofHours(2)), Duration.ofMinutes(30),
+                    List.of(vidange), null);
+            passe.confirmer();
+            when(rdvs.findATraiter(StatutRdv.CONFIRME, MAINTENANT))
+                    .thenReturn(List.of(passe));
             stubParametresCourants();
 
-            List<RdvVueAdmin> vues = service.aTraiterApresRdv();
+            List<RdvVueAdmin> vues = service.rendezVousATraiter();
 
             assertThat(vues).hasSize(1);
             RdvVueAdmin vue = vues.get(0);
@@ -331,6 +396,29 @@ class AdminRdvServiceTest {
             assertThat(vue.peutMarquerHonore()).isTrue();
             assertThat(vue.peutMarquerAbsent()).isTrue();
             assertThat(vue.peutConfirmer()).isFalse();
+        }
+
+        @Test
+        @DisplayName("peutMarquerAbsent est faux si le creneau n est pas encore ecoule")
+        void absentInterditPendantLeCreneau() {
+            // RDV commence il y a 10 min, fin 20 min DANS LE FUTUR : debut atteint
+            // (peutMarquerHonore=true) mais creneau pas ecoule (peutMarquerAbsent=false).
+            Rdv enCours = new Rdv("RDV-EN-COURS", marie, golf, pont,
+                    MAINTENANT.minus(Duration.ofMinutes(10)), Duration.ofMinutes(30),
+                    List.of(vidange), null);
+            enCours.confirmer();
+            when(rdvs.findATraiter(StatutRdv.CONFIRME, MAINTENANT))
+                    .thenReturn(List.of(enCours));
+            stubParametresCourants();
+
+            RdvVueAdmin vue = service.rendezVousATraiter().get(0);
+
+            assertThat(vue.peutMarquerHonore())
+                    .as("Debut atteint : le client peut etre marque present")
+                    .isTrue();
+            assertThat(vue.peutMarquerAbsent())
+                    .as("Creneau en cours : on ne declare pas absent tant que la fin n est pas passee")
+                    .isFalse();
         }
     }
 }

@@ -56,17 +56,23 @@ public interface RdvRepository extends JpaRepository<Rdv, Long> {
     List<Rdv> findByStatutOrderByDebut(@Param("statut") StatutRdv statut);
 
     /**
-     * Rendez-vous d un statut donne dont la fin est passee. Sert au tableau de bord
-     * admin pour identifier les rendez-vous CONFIRME qui restent a cloturer (marquer
-     * honores ou absents) apres l heure de fin.
+     * Rendez-vous d un statut donne dont le debut est atteint ou passe (debut <=
+     * maintenant). Sert au tableau de bord admin pour identifier les rendez-vous
+     * CONFIRME en cours ou passes qui restent a marquer (honore ou absent).
+     *
+     * <p>Le predicat est {@code debut <= maintenant} et non {@code fin <
+     * maintenant} : le garage marque le client honore des qu il se presente au
+     * debut du creneau, pas apres la fin. Le temps reel du travail est capture
+     * separement par {@code date_debut_reelle} / {@code date_fin_reelle} de
+     * l Intervention creee au marquage.</p>
      */
     @Query("""
             SELECT r FROM Rdv r
             JOIN FETCH r.membre JOIN FETCH r.vehicule JOIN FETCH r.poste
-            WHERE r.statut = :statut AND r.fin < :maintenant
+            WHERE r.statut = :statut AND r.debut <= :maintenant
             ORDER BY r.debut
             """)
-    List<Rdv> findByStatutAndFinBeforeOrderByDebut(
+    List<Rdv> findATraiter(
             @Param("statut") StatutRdv statut,
             @Param("maintenant") Instant maintenant);
 }

@@ -1,6 +1,7 @@
 package be.autoservplus.reservation.service;
 
 import be.autoservplus.common.exception.ConflitConcurrenceException;
+import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsRdvCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
@@ -73,16 +74,23 @@ public class AdminRdvService {
     /** Demandes en attente de decision par le garage, du plus ancien au plus recent. */
     public List<RdvVueAdmin> demandesEnAttente() {
         ZoneId zone = parametres.courants().zone();
+        var maintenant = horloge.instant();
         return rdvs.findByStatutOrderByDebut(StatutRdv.EN_ATTENTE).stream()
-                .map(r -> RdvVueAdmin.de(r, zone))
+                .map(r -> RdvVueAdmin.de(r, zone, maintenant))
                 .toList();
     }
 
-    /** Rendez-vous confirmes dont l heure de fin est passee, a cloturer honore/absent. */
-    public List<RdvVueAdmin> aTraiterApresRdv() {
+    /**
+     * Rendez-vous confirmes deja commences (debut &lt;= maintenant), a traiter
+     * par le garage : marquer honore des l accueil du client, ou absent une fois
+     * le creneau ecoule (le flag correspondant sur {@link RdvVueAdmin} exige
+     * respectivement debut atteint et fin passee).
+     */
+    public List<RdvVueAdmin> rendezVousATraiter() {
         ZoneId zone = parametres.courants().zone();
-        return rdvs.findByStatutAndFinBeforeOrderByDebut(StatutRdv.CONFIRME, horloge.instant()).stream()
-                .map(r -> RdvVueAdmin.de(r, zone))
+        var maintenant = horloge.instant();
+        return rdvs.findATraiter(StatutRdv.CONFIRME, maintenant).stream()
+                .map(r -> RdvVueAdmin.de(r, zone, maintenant))
                 .toList();
     }
 
@@ -94,7 +102,7 @@ public class AdminRdvService {
      */
     public RdvVueAdmin vue(UUID reference) {
         Rdv rdv = charger(reference);
-        return RdvVueAdmin.de(rdv, parametres.courants().zone());
+        return RdvVueAdmin.de(rdv, parametres.courants().zone(), horloge.instant());
     }
 
     // --- transitions ------------------------------------------------------------------
@@ -126,6 +134,14 @@ public class AdminRdvService {
     @Transactional
     public Rdv marquerHonore(UUID reference) {
         Rdv rdv = charger(reference);
+        // Garde temporelle avant transition : on n'accueille pas un client avant
+        // l'heure de debut du RDV. Symetrique du filtre d'affichage
+        // (findATraiter WHERE debut <= maintenant) : les deux seuils se
+        // correspondent, un POST direct hors-delai est rejete au meme point.
+        if (rdv.getDebut().isAfter(horloge.instant())) {
+            throw new RegleMetierException(
+                    "Un rendez-vous ne peut être marqué honoré avant l'heure de début.");
+        }
         rdv.marquerHonore();
         // Cree l intervention correspondante DANS la meme transaction : le passage
         // HONORE et l existence de l intervention sont atomiques. La methode
@@ -137,6 +153,14 @@ public class AdminRdvService {
     @Transactional
     public Rdv marquerAbsent(UUID reference) {
         Rdv rdv = charger(reference);
+        // Garde temporelle : on ne declare pas absent tant que le creneau n'est
+        // pas ecoule, le client peut encore arriver en retard. Refus si
+        // fin >= maintenant. Symetrique du flag d'affichage peutMarquerAbsent
+        // (fin < maintenant).
+        if (!rdv.getFin().isBefore(horloge.instant())) {
+            throw new RegleMetierException(
+                    "Un rendez-vous ne peut être marqué absent avant la fin de son créneau.");
+        }
         rdv.marquerAbsent();
         return ecrire(rdv, ignore -> { /* cloture interne, pas de notification */ });
     }

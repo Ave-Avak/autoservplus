@@ -88,7 +88,7 @@ class AdminRdvTemplatesIT {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Administration des rendez-vous")))
                 .andExpect(content().string(containsString("Demandes en attente")))
-                .andExpect(content().string(containsString("À clôturer")));
+                .andExpect(content().string(containsString("Rendez-vous du jour à traiter")));
     }
 
     @Test

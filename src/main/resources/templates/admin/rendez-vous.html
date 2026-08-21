@@ -79,15 +79,15 @@
         </ul>
     </section>
 
-    <section aria-labelledby="titre-a-cloturer">
-        <h2 id="titre-a-cloturer">À clôturer après le rendez-vous</h2>
+    <section aria-labelledby="titre-a-traiter">
+        <h2 id="titre-a-traiter">Rendez-vous du jour à traiter</h2>
 
-        <p th:if="${aTraiterApresRdv.isEmpty()}" class="message">
-            Aucun rendez-vous à clôturer.
+        <p th:if="${rendezVousATraiter.isEmpty()}" class="message">
+            Aucun rendez-vous en cours ou passé à traiter.
         </p>
 
-        <ul class="grille-articles" th:unless="${aTraiterApresRdv.isEmpty()}">
-            <li class="carte" th:each="r : ${aTraiterApresRdv}">
+        <ul class="grille-articles" th:unless="${rendezVousATraiter.isEmpty()}">
+            <li class="carte" th:each="r : ${rendezVousATraiter}">
                 <p class="carte-categorie">
                     <span th:class="'badge badge-' + ${#strings.toLowerCase(r.statut())}"
                           th:text="${r.statutLisible()}">Confirmé</span>

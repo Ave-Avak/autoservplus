@@ -68,7 +68,7 @@ class AdminRdvServiceIT {
     private static final ZoneId BRUXELLES = ZoneId.of("Europe/Brussels");
     // Dimanche 13 septembre 2026 a 12:00 Bruxelles. Les RDV termines a 09:30 sont
     // dans le passe, ceux commencant a 14:00 sont dans le futur : la frontiere
-    // temporelle de aTraiterApresRdv est nette et deterministe.
+    // temporelle de rendezVousATraiter est nette et deterministe.
     private static final Instant INSTANT_FIGE =
             LocalDate.of(2026, 9, 13).atTime(12, 0).atZone(BRUXELLES).toInstant();
 
@@ -140,28 +140,45 @@ class AdminRdvServiceIT {
     }
 
     @Test
-    @DisplayName("aTraiterApresRdv ne renvoie que les CONFIRME dont fin < maintenant")
-    void aTraiterApresRdvFiltreParStatutEtFinPassee() {
-        // CONFIRME 09:00-09:30 : fin < INSTANT_FIGE (12:00) → doit apparaitre.
-        Rdv aCloturer = insererRdv(LocalDate.of(2026, 9, 13).atTime(9, 0).atZone(BRUXELLES).toInstant(),
+    @DisplayName("rendezVousATraiter ne renvoie que les CONFIRME dont debut <= maintenant")
+    void rendezVousATraiterFiltreParStatutEtDebutAtteint() {
+        // CONFIRME 09:00-09:30 : debut passe, fin passee -> apparait, honore ET absent OK.
+        Rdv passe = insererRdv(LocalDate.of(2026, 9, 13).atTime(9, 0).atZone(BRUXELLES).toInstant(),
                 StatutRdv.CONFIRME);
-        // CONFIRME 14:00-14:30 : fin > INSTANT_FIGE → ne doit PAS apparaitre.
+        // CONFIRME 11:30-12:00 : debut passe (INSTANT_FIGE 12:00), fin pile a 12:00 -> apparait,
+        // honore OK mais absent PAS ENCORE (fin n est pas < maintenant, elle est ==).
+        Rdv enCours = insererRdv(LocalDate.of(2026, 9, 13).atTime(11, 30).atZone(BRUXELLES).toInstant(),
+                StatutRdv.CONFIRME);
+        // CONFIRME 14:00-14:30 : debut > INSTANT_FIGE -> ne doit PAS apparaitre.
         insererRdv(LocalDate.of(2026, 9, 13).atTime(14, 0).atZone(BRUXELLES).toInstant(),
                 StatutRdv.CONFIRME);
-        // EN_ATTENTE 07:00-07:30 : fin < INSTANT_FIGE mais mauvais statut → ne doit PAS apparaitre.
+        // EN_ATTENTE 07:00-07:30 : debut passe mais mauvais statut -> ne doit PAS apparaitre.
         insererRdv(LocalDate.of(2026, 9, 13).atTime(7, 0).atZone(BRUXELLES).toInstant(),
                 StatutRdv.EN_ATTENTE);
 
-        List<RdvVueAdmin> vues = service.aTraiterApresRdv();
+        List<RdvVueAdmin> vues = service.rendezVousATraiter();
 
-        assertThat(vues).extracting(RdvVueAdmin::reference).containsExactly(aCloturer.getReference());
-        RdvVueAdmin vue = vues.get(0);
-        assertThat(vue.statut()).isEqualTo("CONFIRME");
-        assertThat(vue.peutMarquerHonore()).isTrue();
-        assertThat(vue.peutMarquerAbsent()).isTrue();
+        // Le filtre remonte les deux CONFIRME au debut atteint, dans l ordre chronologique.
+        assertThat(vues).extracting(RdvVueAdmin::reference)
+                .containsExactly(passe.getReference(), enCours.getReference());
+
+        RdvVueAdmin vuePasse = vues.get(0);
+        assertThat(vuePasse.peutMarquerHonore()).isTrue();
+        assertThat(vuePasse.peutMarquerAbsent())
+                .as("Fin passee : le RDV peut aussi etre marque absent")
+                .isTrue();
+
+        RdvVueAdmin vueEnCours = vues.get(1);
+        assertThat(vueEnCours.peutMarquerHonore())
+                .as("Debut atteint : marquage present possible")
+                .isTrue();
+        assertThat(vueEnCours.peutMarquerAbsent())
+                .as("Fin non depassee (==) : on ne declare pas absent tant que le creneau n est pas ecoule")
+                .isFalse();
+
         // Relations chargees par JOIN FETCH accessibles ici :
-        assertThat(vue.membreEmail()).isEqualTo("marie@exemple.be");
-        assertThat(vue.vehicule()).contains("Golf");
+        assertThat(vuePasse.membreEmail()).isEqualTo("marie@exemple.be");
+        assertThat(vuePasse.vehicule()).contains("Golf");
     }
 
     @Test
@@ -195,9 +212,10 @@ class AdminRdvServiceIT {
     @Test
     @DisplayName("marquerHonore cree automatiquement une intervention PLANIFIEE, atomiquement")
     void marquerHonoreCreeIntervention() {
-        // Fixture : un RDV CONFIRME sur un jour dans la fenetre reservable.
+        // Fixture : un RDV CONFIRME dont debut est ANTERIEUR a INSTANT_FIGE (12:00),
+        // sinon la garde temporelle du service refuse le marquage honore.
         Rdv confirme = insererRdv(
-                LocalDate.of(2026, 9, 14).atTime(10, 0).atZone(BRUXELLES).toInstant(),
+                LocalDate.of(2026, 9, 13).atTime(10, 0).atZone(BRUXELLES).toInstant(),
                 StatutRdv.CONFIRME);
         UUID reference = confirme.getReference();
         Long rdvId = confirme.getId();
@@ -221,8 +239,9 @@ class AdminRdvServiceIT {
     @Test
     @DisplayName("marquerHonore appele deux fois n'ecrase pas l'intervention (idempotence)")
     void marquerHonoreIdempotent() {
+        // Debut anterieur a INSTANT_FIGE pour satisfaire la garde temporelle.
         Rdv confirme = insererRdv(
-                LocalDate.of(2026, 9, 14).atTime(11, 0).atZone(BRUXELLES).toInstant(),
+                LocalDate.of(2026, 9, 13).atTime(11, 0).atZone(BRUXELLES).toInstant(),
                 StatutRdv.CONFIRME);
         UUID reference = confirme.getReference();
         Long rdvId = confirme.getId();

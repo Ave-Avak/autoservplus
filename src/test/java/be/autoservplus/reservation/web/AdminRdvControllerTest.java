@@ -117,17 +117,17 @@ class AdminRdvControllerTest {
     class Liste {
 
         @Test
-        @DisplayName("expose demandesEnAttente et aTraiterApresRdv dans le modele")
+        @DisplayName("expose demandesEnAttente et rendezVousATraiter dans le modele")
         @WithMockUser(roles = "ADMINISTRATEUR")
         void afficheLesDeuxSections() throws Exception {
             when(adminRdvs.demandesEnAttente()).thenReturn(List.of(vueEnAttente));
-            when(adminRdvs.aTraiterApresRdv()).thenReturn(List.of());
+            when(adminRdvs.rendezVousATraiter()).thenReturn(List.of());
 
             mvc.perform(get("/admin/rendez-vous"))
                     .andExpect(status().isOk())
                     .andExpect(view().name("admin/rendez-vous"))
                     .andExpect(model().attribute("demandesEnAttente", List.of(vueEnAttente)))
-                    .andExpect(model().attribute("aTraiterApresRdv", List.of()));
+                    .andExpect(model().attribute("rendezVousATraiter", List.of()));
         }
 
         @Test

@@ -4,6 +4,7 @@ import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 
+import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
@@ -13,9 +14,13 @@ import java.util.UUID;
  *
  * <p>Contient les memes champs de presentation que {@link RdvVue}, plus le nom et
  * l email du membre (l admin voit qui a reserve) et cinq flags de transitions
- * possibles depuis l etat courant. Les flags sont derives directement de la machine
- * a etats ({@code statut.peutPasserA(...)}), le DTO ne peut donc pas diverger du
- * domaine : si {@link StatutRdv#peutPasserA} change demain, cette vue suit.</p>
+ * possibles depuis l etat courant. Les flags de transition sont derives de la
+ * machine a etats, avec deux gardes temporelles supplementaires :
+ * {@code peutMarquerHonore} exige aussi que le RDV ait commence
+ * ({@code debut <= maintenant} : on n accueille pas un client avant l heure),
+ * et {@code peutMarquerAbsent} exige que le creneau soit ecoule
+ * ({@code fin < maintenant} : on ne declare absent qu apres la fin, sinon le
+ * client peut encore arriver en retard).</p>
  */
 public record RdvVueAdmin(
         UUID reference,
@@ -38,8 +43,10 @@ public record RdvVueAdmin(
         boolean peutMarquerHonore,
         boolean peutMarquerAbsent) {
 
-    public static RdvVueAdmin de(Rdv rdv, ZoneId zone) {
+    public static RdvVueAdmin de(Rdv rdv, ZoneId zone, Instant maintenant) {
         StatutRdv s = rdv.getStatut();
+        boolean debutAtteint = !rdv.getDebut().isAfter(maintenant);
+        boolean finPassee = rdv.getFin().isBefore(maintenant);
         return new RdvVueAdmin(
                 rdv.getReference(),
                 rdv.getNumero(),
@@ -59,7 +66,7 @@ public record RdvVueAdmin(
                 s.peutPasserA(StatutRdv.CONFIRME),
                 s.peutPasserA(StatutRdv.REFUSE),
                 s.peutPasserA(StatutRdv.ANNULE),
-                s.peutPasserA(StatutRdv.HONORE),
-                s.peutPasserA(StatutRdv.ABSENT));
+                s.peutPasserA(StatutRdv.HONORE) && debutAtteint,
+                s.peutPasserA(StatutRdv.ABSENT) && finPassee);
     }
 }
