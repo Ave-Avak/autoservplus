@@ -65,6 +65,25 @@ class SchemaIT {
     }
 
     @Test
+    @DisplayName("le seed catalogue insere au moins une prestation par categorie SERVICE")
+    void leSeedCatalogueEstApplique() {
+        // V16 insere le catalogue de demo (9 prestations sur 6 categories SERVICE).
+        // Sans ce test, la suppression accidentelle de V16 ou une regression de FK
+        // resterait invisible jusqu au premier essai de reservation.
+        Integer nombreServices = jdbc.queryForObject(
+                "SELECT count(*) FROM service WHERE actif = TRUE", Integer.class);
+        assertThat(nombreServices)
+                .as("Le seed doit inserer au moins 6 prestations actives (une par categorie SERVICE)")
+                .isGreaterThanOrEqualTo(6);
+
+        Integer categoriesCouvertes = jdbc.queryForObject(
+                "SELECT count(DISTINCT s.categorie_id) FROM service s WHERE s.actif = TRUE", Integer.class);
+        assertThat(categoriesCouvertes)
+                .as("Chaque categorie SERVICE doit avoir au moins une prestation")
+                .isGreaterThanOrEqualTo(6);
+    }
+
+    @Test
     @DisplayName("le compte admin de seed est connectable avec le mot de passe documente")
     void leCompteAdminDeSeedEstConnectable() {
         // V10 insere l admin, V15 corrige son hash. Sans le test, un desaccord entre
