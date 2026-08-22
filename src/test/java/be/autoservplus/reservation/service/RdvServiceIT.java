@@ -5,7 +5,6 @@ import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
-import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -157,8 +156,10 @@ class RdvServiceIT {
 
         assertThatThrownBy(() -> service.reserver("paul@exemple.be", clio.getReference(),
                 List.of(vidange.getReference()), dimanche10h, null))
-                .isInstanceOf(RegleMetierException.class)
-                .hasMessageContaining("RM-08");
+                .isInstanceOf(CreneauIndisponibleException.class)
+                .hasMessageContaining("vient d etre pris")
+                // Le membre recoit le message nu : le code RM-08 vit en Javadoc, pas ici.
+                .hasMessageNotContaining("[RM-");
     }
 
     @Test
@@ -169,7 +170,7 @@ class RdvServiceIT {
         // 11:00 : le precedent finit a 11:00, mais le tampon de 10 min l interdit encore.
         assertThatThrownBy(() -> service.reserver("paul@exemple.be", clio.getReference(),
                 List.of(vidange.getReference()), dimanche10h.plus(Duration.ofHours(1)), null))
-                .isInstanceOf(RegleMetierException.class);
+                .isInstanceOf(CreneauIndisponibleException.class);
 
         // 11:30 : libre.
         Rdv suivant = service.reserver("paul@exemple.be", clio.getReference(),
@@ -226,8 +227,8 @@ class RdvServiceIT {
 
         assertThatThrownBy(() -> service.reserver("marie@exemple.be", golf.getReference(),
                 List.of(vidange.getReference()), apresFermeture, null))
-                .isInstanceOf(RegleMetierException.class)
-                .hasMessageContaining("RM-08");
+                .isInstanceOf(CreneauIndisponibleException.class)
+                .hasMessageContaining("pas ouvert a la reservation");
     }
 
     @Test

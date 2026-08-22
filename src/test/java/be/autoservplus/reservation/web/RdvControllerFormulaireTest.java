@@ -1,5 +1,7 @@
 package be.autoservplus.reservation.web;
 
+import be.autoservplus.reservation.service.CreneauIndisponibleException;
+import be.autoservplus.reservation.service.PrestationIndisponibleException;
 import be.autoservplus.reservation.service.RdvService;
 import be.autoservplus.reservation.service.VehiculeService;
 import be.autoservplus.reservation.web.dto.VehiculeVue;
@@ -17,9 +19,14 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -57,5 +64,63 @@ class RdvControllerFormulaireTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("min=\"2026-09-15\"")))
                 .andExpect(content().string(containsString("max=\"2026-11-14\"")));
+    }
+
+    // --- routage des refus metier vers les champs du formulaire -----------------------
+    //
+    // Le routage se fait par TYPE d exception, plus par le code de regle : chaque
+    // branche est testee contre le rendu reel du template, prefixe [RM-xx] banni.
+
+    /** Stubs necessaires au re-rendu du formulaire apres un refus (retourFormulaire). */
+    private void stubsFormulaire() {
+        when(rdvs.premierJourReservable()).thenReturn(LocalDate.of(2026, 9, 15));
+        when(rdvs.dernierJourReservable()).thenReturn(LocalDate.of(2026, 11, 14));
+        when(rdvs.prestationsProposees()).thenReturn(Map.of());
+        when(rdvs.creneauxPour(any(), any())).thenReturn(List.of());
+        // Au moins un vehicule : sans lui, le template court-circuite le formulaire
+        // (« enregistrez d'abord un vehicule ») et aucune erreur de champ ne s affiche.
+        when(vehicules.vuesDuMembre("membre@exemple.be")).thenReturn(List.of(
+                new VehiculeVue(UUID.randomUUID(), "1-ABC-123", "VW", "Golf",
+                        "DIESEL", (short) 2020, 100000, null, "VW Golf (1-ABC-123)")));
+    }
+
+    private org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder
+            postReservation() {
+        return post("/mes-rendez-vous/nouveau").with(csrf())
+                .param("vehicule", UUID.randomUUID().toString())
+                .param("prestations", UUID.randomUUID().toString())
+                .param("date", "2026-09-15")
+                .param("debut", "2026-09-15T08:00:00Z");
+    }
+
+    @Test
+    @WithMockUser(username = "membre@exemple.be")
+    @DisplayName("prestation indisponible : erreur sous « prestations », message sans prefixe [RM-…]")
+    void prestationIndisponibleSousLeChampPrestations() throws Exception {
+        stubsFormulaire();
+        when(rdvs.reserver(any(), any(), any(), any(), any()))
+                .thenThrow(new PrestationIndisponibleException("Vidange"));
+
+        mvc.perform(postReservation())
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("formulaire", "prestations"))
+                .andExpect(content().string(containsString("La prestation Vidange n est plus proposee.")))
+                .andExpect(content().string(not(containsString("[RM-"))));
+    }
+
+    @Test
+    @WithMockUser(username = "membre@exemple.be")
+    @DisplayName("creneau indisponible : erreur sous « debut », message sans prefixe [RM-…]")
+    void creneauIndisponibleSousLeChampDebut() throws Exception {
+        stubsFormulaire();
+        when(rdvs.reserver(any(), any(), any(), any(), any()))
+                .thenThrow(new CreneauIndisponibleException(
+                        "Ce creneau vient d etre pris. Choisissez-en un autre."));
+
+        mvc.perform(postReservation())
+                .andExpect(status().isOk())
+                .andExpect(model().attributeHasFieldErrors("formulaire", "debut"))
+                .andExpect(content().string(containsString("Ce creneau vient d etre pris. Choisissez-en un autre.")))
+                .andExpect(content().string(not(containsString("[RM-"))));
     }
 }

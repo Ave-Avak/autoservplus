@@ -101,19 +101,17 @@ public class RdvService {
 
         long enAttente = rdvs.countByMembreEmailAndStatut(email, StatutRdv.EN_ATTENTE);
         if (enAttente >= p.getMaxRdvEnAttenteParMembre()) {
-            throw new RegleMetierException("RM-07",
-                    "Vous avez deja %d demandes en attente de confirmation.".formatted(enAttente));
+            throw new LimiteDemandesEnAttenteException(enAttente);
         }
 
         int dureeMinutes = choisies.stream().mapToInt(Prestation::getDureeMinutes).sum();
         Instant fin = debut.plus(Rdv.dureeArrondie(dureeMinutes, p.pas()));
 
         if (!disponibilites.estReservable(debut, fin)) {
-            throw new RegleMetierException("RM-08",
-                    "Ce creneau n est pas ouvert a la reservation.");
+            throw new CreneauIndisponibleException("Ce creneau n est pas ouvert a la reservation.");
         }
         PosteAtelier poste = disponibilites.premierPosteLibre(debut, fin)
-                .orElseThrow(() -> new RegleMetierException("RM-08",
+                .orElseThrow(() -> new CreneauIndisponibleException(
                         "Ce creneau vient d etre pris. Choisissez-en un autre."));
 
         Rdv rdv = new Rdv(numeros.prochain(), membre, vehicule, poste, debut, p.pas(), choisies, commentaire);
@@ -130,22 +128,21 @@ public class RdvService {
             return enregistre;
         } catch (DataIntegrityViolationException e) {
             log.info("Collision de reservation sur {} a {} : {}", poste.getLibelle(), debut, e.getMostSpecificCause().getMessage());
-            throw new RegleMetierException("RM-08",
+            throw new CreneauIndisponibleException(
                     "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.");
         }
     }
 
     private List<Prestation> prestationsActives(List<UUID> references) {
         if (references == null || references.isEmpty()) {
-            throw new RegleMetierException("RM-07", "Choisissez au moins une prestation.");
+            throw new AucunePrestationChoisieException();
         }
         List<Prestation> resultat = new ArrayList<>();
         for (UUID reference : references.stream().distinct().toList()) {
             Prestation prestation = prestations.findByReference(reference)
                     .orElseThrow(() -> new RessourceIntrouvableException("Prestation", reference));
             if (!prestation.isActif()) {
-                throw new RegleMetierException("RM-28",
-                        "La prestation %s n est plus proposee.".formatted(prestation.getLibelle()));
+                throw new PrestationIndisponibleException(prestation.getLibelle());
             }
             resultat.add(prestation);
         }

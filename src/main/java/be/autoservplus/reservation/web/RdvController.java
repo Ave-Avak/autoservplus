@@ -1,6 +1,9 @@
 package be.autoservplus.reservation.web;
 
 import be.autoservplus.common.exception.RegleMetierException;
+import be.autoservplus.reservation.service.AucunePrestationChoisieException;
+import be.autoservplus.reservation.service.LimiteDemandesEnAttenteException;
+import be.autoservplus.reservation.service.PrestationIndisponibleException;
 import be.autoservplus.reservation.service.RdvService;
 import be.autoservplus.reservation.service.VehiculeService;
 import be.autoservplus.reservation.web.dto.RdvForm;
@@ -97,13 +100,20 @@ public class RdvController {
             redirection.addFlashAttribute("message",
                     "Votre demande " + rdv.getNumero() + " a bien été enregistrée. Le garage vous confirmera le rendez-vous.");
             return "redirect:/mes-rendez-vous";
+        } catch (PrestationIndisponibleException | AucunePrestationChoisieException
+                 | LimiteDemandesEnAttenteException e) {
+            // Le refus porte sur le choix de prestations : l erreur s ancre sous ce
+            // champ. Le plafond de demandes en attente y est ancre aussi — mapping
+            // historique conserve tel quel, a reevaluer separement.
+            erreurs.addError(new FieldError("formulaire", "prestations", e.getMessage()));
+            return retourFormulaire(membre, formulaire, modele);
         } catch (RegleMetierException e) {
-            String champ = switch (e.getCodeRegle()) {
-                case "RM-06" -> "vehicule";
-                case "RM-07", "RM-28" -> "prestations";
-                default -> "debut";
-            };
-            erreurs.addError(new FieldError("formulaire", champ, e.getMessage()));
+            // Creneau indisponible (RM-08) et tout refus metier futur : sous le champ
+            // date, comme l ancien default. Le routage par TYPE remplace le switch sur
+            // getCodeRegle() : plus de NPE possible sur un code null, et le case
+            // « RM-06 -> vehicule » disparait — aucune exception ne portait ce code,
+            // le controle d appartenance du vehicule repond deja 404 en amont.
+            erreurs.addError(new FieldError("formulaire", "debut", e.getMessage()));
             return retourFormulaire(membre, formulaire, modele);
         }
     }
