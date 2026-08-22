@@ -10,7 +10,7 @@ import be.autoservplus.communication.service.DetailsDepassementCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
-import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.identite.service.AuteurCourant;
 import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
@@ -23,7 +23,6 @@ import be.autoservplus.reservation.domain.PosteAtelier;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -34,8 +33,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
-import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -67,7 +64,7 @@ class InterventionServiceTest {
     @Mock private HistoriqueStatutInterventionRepository historiques;
     @Mock private PrestationRepository prestations;
     @Mock private ParametreAtelierRepository parametres;
-    @Mock private UtilisateurRepository utilisateurs;
+    @Mock private AuteurCourant auteurCourant;
     @Mock private GenerateurNumeroIntervention numeros;
     @Mock private ServiceCourriel courriel;
     @Mock private ApplicationEventPublisher evenements;
@@ -85,7 +82,7 @@ class InterventionServiceTest {
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
         service = new InterventionService(interventions, historiques, prestations, parametres,
-                utilisateurs, numeros, courriel, evenements, horloge);
+                auteurCourant, numeros, courriel, evenements, horloge);
 
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         golf = new Vehicule(marie, "1-ABC-123", "VW", "Golf", Motorisation.DIESEL);
@@ -94,13 +91,6 @@ class InterventionServiceTest {
         vidange = new Prestation(entretien, "VID", "Vidange", new BigDecimal("49.00"), 30);
         rdv = new Rdv("RDV-2026-0001", marie, golf, pont, MAINTENANT,
                 Duration.ofMinutes(30), List.of(vidange), null);
-    }
-
-    @AfterEach
-    void tearDown() {
-        // Le contexte de securite est un ThreadLocal : le nettoyer evite qu un test
-        // qui pose un principal (resolution de l auteur) ne contamine les suivants.
-        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -520,14 +510,13 @@ class InterventionServiceTest {
         }
 
         @Test
-        @DisplayName("l'auteur est resolu depuis le contexte de securite, jamais d'un parametre")
+        @DisplayName("l'auteur de l'entree vient du resolveur, jamais d'un parametre")
         void auteurResoluDepuisLeContexte() {
             Utilisateur admin = new Utilisateur("admin@garage.be", "$2a$12$h", "Garage", "Paul",
                     TypeUtilisateur.ADMINISTRATEUR);
-            when(utilisateurs.findByEmailIgnoreCase("admin@garage.be"))
-                    .thenReturn(Optional.of(admin));
-            SecurityContextHolder.getContext().setAuthentication(
-                    new UsernamePasswordAuthenticationToken("admin@garage.be", "n/a", List.of()));
+            // La resolution elle-meme (contexte de securite, anonyme, compte absent)
+            // est prouvee par AuteurCourantTest : ici on verifie le raccordement.
+            when(auteurCourant.resoudre()).thenReturn(admin);
             Intervention it = interventionChargee();
 
             service.demarrer(it.getReference());

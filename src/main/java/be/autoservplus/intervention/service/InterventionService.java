@@ -7,8 +7,7 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsDepassementCourriel;
 import be.autoservplus.communication.service.DetailsRdvCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
-import be.autoservplus.identite.domain.Utilisateur;
-import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.identite.service.AuteurCourant;
 import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
@@ -26,8 +25,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -58,7 +55,7 @@ public class InterventionService {
     private final HistoriqueStatutInterventionRepository historiques;
     private final PrestationRepository prestations;
     private final ParametreAtelierRepository parametres;
-    private final UtilisateurRepository utilisateurs;
+    private final AuteurCourant auteurCourant;
     private final GenerateurNumeroIntervention numeros;
     private final ServiceCourriel courriel;
     private final ApplicationEventPublisher evenements;
@@ -68,7 +65,7 @@ public class InterventionService {
                                HistoriqueStatutInterventionRepository historiques,
                                PrestationRepository prestations,
                                ParametreAtelierRepository parametres,
-                               UtilisateurRepository utilisateurs,
+                               AuteurCourant auteurCourant,
                                GenerateurNumeroIntervention numeros,
                                ServiceCourriel courriel,
                                ApplicationEventPublisher evenements,
@@ -77,7 +74,7 @@ public class InterventionService {
         this.historiques = historiques;
         this.prestations = prestations;
         this.parametres = parametres;
-        this.utilisateurs = utilisateurs;
+        this.auteurCourant = auteurCourant;
         this.numeros = numeros;
         this.courriel = courriel;
         this.evenements = evenements;
@@ -318,28 +315,14 @@ public class InterventionService {
 
     /**
      * Ecrit une ligne de chronologie (F17) : la transition telle qu elle vient de se
-     * produire, horodatee par l horloge injectee. L auteur est resolu depuis le
-     * contexte de securite — jamais d un parametre de requete — et vaut {@code null}
-     * pour un traitement sans utilisateur authentifie (systeme, webhook futur).
+     * produire, horodatee par l horloge injectee. L auteur vient de
+     * {@link AuteurCourant}, donc du contexte de securite — jamais d un parametre de
+     * requete — et vaut {@code null} pour un traitement sans utilisateur authentifie.
      */
     private void historiser(Intervention it, StatutIntervention avant,
                             StatutIntervention apres, String motif) {
         historiques.save(new HistoriqueStatutIntervention(
-                it, avant, apres, horloge.instant(), auteurCourant(), motif));
-    }
-
-    /**
-     * Utilisateur derriere la transition, resolu depuis le contexte de securite —
-     * memes gardes que {@code JpaAuditingConfig#auditorProvider}, qui alimente
-     * {@code created_by} avec le meme principal. La difference : ici on remonte a
-     * l entite pour poser une vraie FK, la ou l audit se contente du nom.
-     */
-    private Utilisateur auteurCourant() {
-        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
-            return null;
-        }
-        return utilisateurs.findByEmailIgnoreCase(auth.getName()).orElse(null);
+                it, avant, apres, horloge.instant(), auteurCourant.resoudre(), motif));
     }
 
     private Intervention charger(UUID reference) {
