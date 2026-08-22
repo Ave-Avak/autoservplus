@@ -106,24 +106,55 @@ public enum StatutIntervention {
      * l inclure ici fait echouer l initialisation.</p>
      */
     public String percuLabel() {
-        return LABELS_PERCU.get(this);
+        return PERCUS.get(this).label;
     }
 
-    private static final Map<StatutIntervention, String> LABELS_PERCU;
+    /**
+     * Cle i18n du statut percu (RM-16), pour les templates qui passent par le
+     * {@code MessageSource} ({@code #{...}}) plutot que par le libelle francais
+     * pre-formate de {@link #percuLabel()}. Meme projection, meme source de
+     * verite : les deux lectures sortent du meme {@link Percu}.
+     */
+    public String clePercue() {
+        return PERCUS.get(this).clef;
+    }
+
+    /**
+     * Les quatre etats percus du CdC. Chaque valeur porte les deux representations
+     * d un meme percu — le libelle francais historique et la cle i18n — pour que la
+     * projection statut technique -&gt; percu reste definie a un seul endroit,
+     * {@link #PERCUS}, quel que soit le canal d affichage.
+     */
+    private enum Percu {
+        EN_ATTENTE("En attente", "statut.percu.attente"),
+        EN_COURS("En cours", "statut.percu.en_cours"),
+        TERMINEE("Terminée", "statut.percu.terminee"),
+        ANNULEE("Annulée", "statut.percu.annulee");
+
+        private final String label;
+        private final String clef;
+
+        Percu(String label, String clef) {
+            this.label = label;
+            this.clef = clef;
+        }
+    }
+
+    private static final Map<StatutIntervention, Percu> PERCUS;
     static {
-        EnumMap<StatutIntervention, String> m = new EnumMap<>(StatutIntervention.class);
-        m.put(PLANIFIEE,                 "En attente");
-        m.put(EN_COURS,                  "En cours");
-        m.put(SUSPENDUE,                 "En cours");
-        m.put(ATTENTE_VALIDATION_MEMBRE, "En cours");
-        m.put(TERMINEE,                  "Terminée");
-        m.put(ANNULEE,                   "Annulée");
+        EnumMap<StatutIntervention, Percu> m = new EnumMap<>(StatutIntervention.class);
+        m.put(PLANIFIEE,                 Percu.EN_ATTENTE);
+        m.put(EN_COURS,                  Percu.EN_COURS);
+        m.put(SUSPENDUE,                 Percu.EN_COURS);
+        m.put(ATTENTE_VALIDATION_MEMBRE, Percu.EN_COURS);
+        m.put(TERMINEE,                  Percu.TERMINEE);
+        m.put(ANNULEE,                   Percu.ANNULEE);
         for (StatutIntervention s : values()) {
             if (!m.containsKey(s)) {
                 throw new IllegalStateException(
-                        "StatutIntervention." + s + " n a pas de percuLabel — completer LABELS_PERCU.");
+                        "StatutIntervention." + s + " n a pas de statut percu — completer PERCUS.");
             }
         }
-        LABELS_PERCU = Collections.unmodifiableMap(m);
+        PERCUS = Collections.unmodifiableMap(m);
     }
 }

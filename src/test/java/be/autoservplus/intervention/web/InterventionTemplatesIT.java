@@ -8,7 +8,10 @@ import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
+import be.autoservplus.intervention.domain.StatutIntervention;
+import be.autoservplus.intervention.repository.HistoriqueStatutInterventionRepository;
 import be.autoservplus.intervention.repository.InterventionRepository;
 import be.autoservplus.intervention.service.GenerateurNumeroIntervention;
 import be.autoservplus.reservation.domain.*;
@@ -66,6 +69,7 @@ class InterventionTemplatesIT {
     @Autowired private PosteAtelierRepository postes;
     @Autowired private RdvRepository rdvs;
     @Autowired private InterventionRepository interventions;
+    @Autowired private HistoriqueStatutInterventionRepository historiques;
     @Autowired private GenerateurNumeroIntervention numeros;
 
     private UUID reference;
@@ -194,6 +198,34 @@ class InterventionTemplatesIT {
                 // elle vit sur l'ecran de validation, pas dans le recapitulatif.
                 .andExpect(content().string(not(containsString("<td>Plaquettes avant</td>"))))
                 .andExpect(content().string(containsString("59,29")));
+    }
+
+    // --- F17 : chronologie horodatee des changements de statut ------------------------
+
+    @Test
+    @DisplayName("F17 : la chronologie s'affiche en percu, les transitions internes fusionnees (RM-16)")
+    void chronologieVisibleEnPercu() throws Exception {
+        Intervention it = interventions.findByReference(reference).orElseThrow();
+        java.time.Instant t0 = java.time.Instant.parse("2026-12-01T08:00:00Z");
+        historiques.save(new HistoriqueStatutIntervention(it, null,
+                StatutIntervention.PLANIFIEE, t0, null, null));
+        historiques.save(new HistoriqueStatutIntervention(it, StatutIntervention.PLANIFIEE,
+                StatutIntervention.EN_COURS, t0.plusSeconds(3600), null, null));
+        // Suspension : percue « En cours » comme l entree precedente, elle ne doit
+        // produire aucune etape supplementaire dans la chronologie du membre.
+        historiques.save(new HistoriqueStatutIntervention(it, StatutIntervention.EN_COURS,
+                StatutIntervention.SUSPENDUE, t0.plusSeconds(7200), null, null));
+
+        mvc.perform(get("/mes-interventions/{ref}", reference).locale(java.util.Locale.FRENCH))
+                .andExpect(status().isOk())
+                // Titre et libelles resolus par le MessageSource (cles i18n, locale fr).
+                .andExpect(content().string(containsString("Chronologie")))
+                // 08:00Z le 1er decembre = 09:00 a Bruxelles ; date pre-formatee cote DTO.
+                .andExpect(content().string(containsString("Mardi 1 décembre 2026 09:00")))
+                .andExpect(content().string(containsString("En attente")))
+                .andExpect(content().string(containsString("En cours")))
+                // RM-16 : aucun statut technique ne fuit dans la chronologie.
+                .andExpect(content().string(not(containsString("SUSPENDUE"))));
     }
 
     @Test

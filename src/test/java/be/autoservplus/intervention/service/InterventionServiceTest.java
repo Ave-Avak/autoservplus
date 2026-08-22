@@ -10,23 +10,31 @@ import be.autoservplus.communication.service.DetailsDepassementCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
+import be.autoservplus.intervention.repository.HistoriqueStatutInterventionRepository;
 import be.autoservplus.intervention.repository.InterventionRepository;
+import be.autoservplus.intervention.web.dto.InterventionVueMembre;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.ParametreAtelier;
 import be.autoservplus.reservation.domain.PosteAtelier;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -55,8 +63,10 @@ class InterventionServiceTest {
     private static final Instant MAINTENANT = Instant.parse("2026-09-14T09:00:00Z");
 
     @Mock private InterventionRepository interventions;
+    @Mock private HistoriqueStatutInterventionRepository historiques;
     @Mock private PrestationRepository prestations;
     @Mock private ParametreAtelierRepository parametres;
+    @Mock private UtilisateurRepository utilisateurs;
     @Mock private GenerateurNumeroIntervention numeros;
     @Mock private ServiceCourriel courriel;
 
@@ -72,8 +82,8 @@ class InterventionServiceTest {
     @BeforeEach
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
-        service = new InterventionService(interventions, prestations, parametres, numeros,
-                courriel, horloge);
+        service = new InterventionService(interventions, historiques, prestations, parametres,
+                utilisateurs, numeros, courriel, horloge);
 
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         golf = new Vehicule(marie, "1-ABC-123", "VW", "Golf", Motorisation.DIESEL);
@@ -82,6 +92,13 @@ class InterventionServiceTest {
         vidange = new Prestation(entretien, "VID", "Vidange", new BigDecimal("49.00"), 30);
         rdv = new Rdv("RDV-2026-0001", marie, golf, pont, MAINTENANT,
                 Duration.ofMinutes(30), List.of(vidange), null);
+    }
+
+    @AfterEach
+    void tearDown() {
+        // Le contexte de securite est un ThreadLocal : le nettoyer evite qu un test
+        // qui pose un principal (resolution de l auteur) ne contamine les suivants.
+        SecurityContextHolder.clearContext();
     }
 
     @Test
@@ -340,6 +357,228 @@ class InterventionServiceTest {
 
             assertThatThrownBy(() -> service.demandeValidation(ref, "marie@exemple.be"))
                     .isInstanceOf(RessourceIntrouvableException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("chronologie des statuts (F17)")
+    class Chronologie {
+
+        /** Derniere ligne d historique ecrite par le service. */
+        private HistoriqueStatutIntervention derniereEntree() {
+            ArgumentCaptor<HistoriqueStatutIntervention> captor =
+                    ArgumentCaptor.forClass(HistoriqueStatutIntervention.class);
+            verify(historiques).save(captor.capture());
+            return captor.getValue();
+        }
+
+        private Intervention interventionChargee() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            doReturn(Optional.of(it)).when(interventions).findByReference(it.getReference());
+            doReturn(it).when(interventions).saveAndFlush(it);
+            return it;
+        }
+
+        @Test
+        @DisplayName("creerDepuisRdv ecrit exactement une entree null -> PLANIFIEE")
+        void creationHistorisee() {
+            when(interventions.findByRdvId(any())).thenReturn(Optional.empty());
+            when(numeros.prochain()).thenReturn("INT-2026-0001");
+            when(interventions.saveAndFlush(any(Intervention.class)))
+                    .thenAnswer(inv -> inv.getArgument(0));
+
+            service.creerDepuisRdv(rdv);
+
+            HistoriqueStatutIntervention entree = derniereEntree();
+            assertThat(entree.getStatutAvant())
+                    .as("La naissance du dossier n a pas d etat anterieur")
+                    .isNull();
+            assertThat(entree.getStatutApres()).isEqualTo(StatutIntervention.PLANIFIEE);
+            assertThat(entree.getHorodatage()).isEqualTo(MAINTENANT);
+            assertThat(entree.getAuteur())
+                    .as("Sans contexte de securite, la transition est systeme")
+                    .isNull();
+        }
+
+        @Test
+        @DisplayName("creerDepuisRdv idempotent : aucune entree au second appel")
+        void idempotenceSansEntree() {
+            Intervention existante = new Intervention("INT-2026-0001", rdv);
+            when(interventions.findByRdvId(any())).thenReturn(Optional.of(existante));
+
+            service.creerDepuisRdv(rdv);
+
+            verify(historiques, never()).save(any());
+        }
+
+        @Test
+        @DisplayName("demarrer historise PLANIFIEE -> EN_COURS a l'instant de l'horloge")
+        void demarrerHistorise() {
+            Intervention it = interventionChargee();
+
+            service.demarrer(it.getReference());
+
+            HistoriqueStatutIntervention entree = derniereEntree();
+            assertThat(entree.getStatutAvant()).isEqualTo(StatutIntervention.PLANIFIEE);
+            assertThat(entree.getStatutApres()).isEqualTo(StatutIntervention.EN_COURS);
+            assertThat(entree.getHorodatage()).isEqualTo(MAINTENANT);
+        }
+
+        @Test
+        @DisplayName("suspendre historise EN_COURS -> SUSPENDUE")
+        void suspendreHistorise() {
+            Intervention it = interventionChargee();
+            it.demarrer(MAINTENANT);
+
+            service.suspendre(it.getReference());
+
+            HistoriqueStatutIntervention entree = derniereEntree();
+            assertThat(entree.getStatutAvant()).isEqualTo(StatutIntervention.EN_COURS);
+            assertThat(entree.getStatutApres()).isEqualTo(StatutIntervention.SUSPENDUE);
+        }
+
+        @Test
+        @DisplayName("reprendre historise SUSPENDUE -> EN_COURS")
+        void reprendreHistorise() {
+            Intervention it = interventionChargee();
+            it.demarrer(MAINTENANT);
+            it.suspendre();
+
+            service.reprendre(it.getReference());
+
+            HistoriqueStatutIntervention entree = derniereEntree();
+            assertThat(entree.getStatutAvant()).isEqualTo(StatutIntervention.SUSPENDUE);
+            assertThat(entree.getStatutApres()).isEqualTo(StatutIntervention.EN_COURS);
+        }
+
+        @Test
+        @DisplayName("terminer historise EN_COURS -> TERMINEE")
+        void terminerHistorise() {
+            Intervention it = interventionChargee();
+            it.demarrer(MAINTENANT);
+
+            service.terminer(it.getReference());
+
+            HistoriqueStatutIntervention entree = derniereEntree();
+            assertThat(entree.getStatutAvant()).isEqualTo(StatutIntervention.EN_COURS);
+            assertThat(entree.getStatutApres()).isEqualTo(StatutIntervention.TERMINEE);
+            assertThat(entree.getHorodatage()).isEqualTo(MAINTENANT);
+        }
+
+        @Test
+        @DisplayName("annuler historise PLANIFIEE -> ANNULEE")
+        void annulerHistorise() {
+            Intervention it = interventionChargee();
+
+            service.annuler(it.getReference());
+
+            HistoriqueStatutIntervention entree = derniereEntree();
+            assertThat(entree.getStatutAvant()).isEqualTo(StatutIntervention.PLANIFIEE);
+            assertThat(entree.getStatutApres()).isEqualTo(StatutIntervention.ANNULEE);
+        }
+
+        @Test
+        @DisplayName("valider/refuser un depassement historise aussi : l'historique n'a pas de trou")
+        void reponseMembreHistorisee() {
+            when(parametres.courants()).thenReturn(new ParametreAtelier());
+            Intervention it = interventionChargee();
+            it.demarrer(MAINTENANT);
+            Categorie c = new Categorie("REP", "Reparation", TypeCategorie.SERVICE);
+            Prestation chere = new Prestation(c, "REP-1", "Plaquettes", new BigDecimal("89.00"), 60);
+            when(prestations.findByReference(chere.getReference())).thenReturn(Optional.of(chere));
+
+            // L ajout au-dela du seuil bascule l entite : premiere entree historisee.
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            // La reponse du membre fait repartir le travail : seconde entree.
+            service.validerDepassement(it.getReference(), "marie@exemple.be");
+
+            ArgumentCaptor<HistoriqueStatutIntervention> captor =
+                    ArgumentCaptor.forClass(HistoriqueStatutIntervention.class);
+            verify(historiques, org.mockito.Mockito.times(2)).save(captor.capture());
+            assertThat(captor.getAllValues().get(0).getStatutApres())
+                    .isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+            assertThat(captor.getAllValues().get(1).getStatutAvant())
+                    .isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+            assertThat(captor.getAllValues().get(1).getStatutApres())
+                    .isEqualTo(StatutIntervention.EN_COURS);
+        }
+
+        @Test
+        @DisplayName("transition illegale : l'exception sort du domaine, aucune entree ecrite")
+        void transitionIllegaleSansEntree() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            doReturn(Optional.of(it)).when(interventions).findByReference(it.getReference());
+
+            // PLANIFIEE -> TERMINEE est interdit par la machine a etats.
+            assertThatThrownBy(() -> service.terminer(it.getReference()))
+                    .isInstanceOf(IllegalStateException.class);
+
+            verify(historiques, never()).save(any());
+            verify(interventions, never()).saveAndFlush(any());
+        }
+
+        @Test
+        @DisplayName("l'auteur est resolu depuis le contexte de securite, jamais d'un parametre")
+        void auteurResoluDepuisLeContexte() {
+            Utilisateur admin = new Utilisateur("admin@garage.be", "$2a$12$h", "Garage", "Paul",
+                    TypeUtilisateur.ADMINISTRATEUR);
+            when(utilisateurs.findByEmailIgnoreCase("admin@garage.be"))
+                    .thenReturn(Optional.of(admin));
+            SecurityContextHolder.getContext().setAuthentication(
+                    new UsernamePasswordAuthenticationToken("admin@garage.be", "n/a", List.of()));
+            Intervention it = interventionChargee();
+
+            service.demarrer(it.getReference());
+
+            assertThat(derniereEntree().getAuteur()).isSameAs(admin);
+        }
+
+        @Test
+        @DisplayName("la vue membre projette la chronologie sur les percus : les internes fusionnent (RM-16)")
+        void vueMembreProjetteLesPercus() {
+            when(parametres.courants()).thenReturn(new ParametreAtelier());
+            // Pas de stub saveAndFlush ici : lecture pure, Mockito strict le refuserait.
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            doReturn(Optional.of(it)).when(interventions).findByReference(it.getReference());
+            List<HistoriqueStatutIntervention> journal = List.of(
+                    new HistoriqueStatutIntervention(it, null,
+                            StatutIntervention.PLANIFIEE, MAINTENANT, null, null),
+                    new HistoriqueStatutIntervention(it, StatutIntervention.PLANIFIEE,
+                            StatutIntervention.EN_COURS, MAINTENANT.plusSeconds(600), null, null),
+                    // Suspension et reprise : percues « En cours » toutes les deux,
+                    // elles ne doivent produire aucune entree supplementaire.
+                    new HistoriqueStatutIntervention(it, StatutIntervention.EN_COURS,
+                            StatutIntervention.SUSPENDUE, MAINTENANT.plusSeconds(1200), null, null),
+                    new HistoriqueStatutIntervention(it, StatutIntervention.SUSPENDUE,
+                            StatutIntervention.EN_COURS, MAINTENANT.plusSeconds(1800), null, null),
+                    new HistoriqueStatutIntervention(it, StatutIntervention.EN_COURS,
+                            StatutIntervention.TERMINEE, MAINTENANT.plusSeconds(2400), null, null));
+            when(historiques.findByInterventionOrderByHorodatageAscIdAsc(it)).thenReturn(journal);
+
+            InterventionVueMembre vue = service.interventionDuMembre(
+                    it.getReference(), "marie@exemple.be");
+
+            assertThat(vue.chronologie())
+                    .extracting(InterventionVueMembre.EntreeChronologieVue::statutApres)
+                    .as("5 transitions techniques, 3 etapes percues, dans l ordre")
+                    .containsExactly(StatutIntervention.PLANIFIEE, StatutIntervention.EN_COURS,
+                            StatutIntervention.TERMINEE);
+            assertThat(vue.chronologie().get(0).horodatage())
+                    .as("La date arrive pre-formatee, fuseau applique")
+                    .contains("septembre 2026");
+        }
+
+        @Test
+        @DisplayName("chronologie d'autrui : 404, le journal n'est meme pas lu")
+        void chronologieOwnership() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            doReturn(Optional.of(it)).when(interventions).findByReference(it.getReference());
+
+            assertThatThrownBy(() -> service.interventionDuMembre(
+                    it.getReference(), "intrus@exemple.be"))
+                    .isInstanceOf(RessourceIntrouvableException.class);
+
+            verify(historiques, never()).findByInterventionOrderByHorodatageAscIdAsc(any());
         }
     }
 

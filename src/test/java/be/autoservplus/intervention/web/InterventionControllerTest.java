@@ -83,7 +83,7 @@ class InterventionControllerTest {
                 "VW Golf (1-ABC-123)",
                 "Piece commandee, livraison mardi",
                 "Lundi 14 septembre 2026 09:00", null,
-                List.of(), "59,29 €", false, false);
+                List.of(), "59,29 €", List.of(), false, false);
     }
 
     @Test

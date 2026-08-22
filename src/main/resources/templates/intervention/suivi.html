@@ -101,6 +101,21 @@
         <p th:if="${intervention.statut() == 'ANNULEE'}" class="message message-erreur" role="status">
             Cette intervention a été annulée.
         </p>
+
+        <!-- F17 : chronologie horodatee des changements de statut. Dans le fragment
+             polle, donc mise a jour en direct comme le badge. Les libelles affiches
+             sont les statuts percus (RM-16) resolus par cle i18n : le DTO a deja
+             ecarte les transitions internes qui ne changent pas le percu. -->
+        <section th:if="${not #lists.isEmpty(intervention.chronologie())}">
+            <h2 th:text="#{intervention.chronologie.titre}">Chronologie</h2>
+            <ol class="chronologie">
+                <li th:each="e : ${intervention.chronologie()}">
+                    <span th:text="${#strings.capitalize(e.horodatage())}">Lundi 14 septembre 2026 09:00</span>
+                    <strong th:text="#{${e.statutApres().clePercue()}}">En cours</strong>
+                    <span th:if="${e.motif() != null}" th:text="${e.motif()}">Motif</span>
+                </li>
+            </ol>
+        </section>
     </div>
 
     <h2>Travaux prévus</h2>

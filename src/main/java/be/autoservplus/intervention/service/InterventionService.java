@@ -7,9 +7,13 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsDepassementCourriel;
 import be.autoservplus.communication.service.DetailsRdvCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
+import be.autoservplus.intervention.repository.HistoriqueStatutInterventionRepository;
 import be.autoservplus.intervention.repository.InterventionRepository;
 import be.autoservplus.intervention.web.dto.DemandeValidationVue;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
@@ -21,6 +25,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -48,21 +54,27 @@ public class InterventionService {
     private static final Logger log = LoggerFactory.getLogger(InterventionService.class);
 
     private final InterventionRepository interventions;
+    private final HistoriqueStatutInterventionRepository historiques;
     private final PrestationRepository prestations;
     private final ParametreAtelierRepository parametres;
+    private final UtilisateurRepository utilisateurs;
     private final GenerateurNumeroIntervention numeros;
     private final ServiceCourriel courriel;
     private final Clock horloge;
 
     public InterventionService(InterventionRepository interventions,
+                               HistoriqueStatutInterventionRepository historiques,
                                PrestationRepository prestations,
                                ParametreAtelierRepository parametres,
+                               UtilisateurRepository utilisateurs,
                                GenerateurNumeroIntervention numeros,
                                ServiceCourriel courriel,
                                Clock horloge) {
         this.interventions = interventions;
+        this.historiques = historiques;
         this.prestations = prestations;
         this.parametres = parametres;
+        this.utilisateurs = utilisateurs;
         this.numeros = numeros;
         this.courriel = courriel;
         this.horloge = horloge;
@@ -78,36 +90,56 @@ public class InterventionService {
     @Transactional
     public Intervention creerDepuisRdv(Rdv rdv) {
         return interventions.findByRdvId(rdv.getId())
-                .orElseGet(() -> ecrire(new Intervention(numeros.prochain(), rdv)));
+                .orElseGet(() -> {
+                    Intervention creee = ecrire(new Intervention(numeros.prochain(), rdv));
+                    // Ligne de naissance de la chronologie (F17) : pas d etat anterieur.
+                    // Dans la branche orElseGet uniquement — un second appel idempotent
+                    // ne doit pas inventer une seconde naissance.
+                    historiser(creee, null, StatutIntervention.PLANIFIEE, null);
+                    return creee;
+                });
     }
 
     // --- transitions -----------------------------------------------------------------
+    //
+    // Chaque transition ecrit sa ligne de chronologie (F17) dans la meme transaction :
+    // l etat AVANT est capture avant l appel au domaine, qui peut refuser (auquel cas
+    // rien n est historise — l exception sort avant historiser). Un echec ulterieur de
+    // l ecriture annule transition ET chronologie ensemble : elles ne divergent jamais.
 
     @Transactional
     public Intervention demarrer(UUID reference) {
         Intervention it = charger(reference);
+        StatutIntervention avant = it.getStatut();
         it.demarrer(horloge.instant());
+        historiser(it, avant, it.getStatut(), null);
         return ecrire(it);
     }
 
     @Transactional
     public Intervention suspendre(UUID reference) {
         Intervention it = charger(reference);
+        StatutIntervention avant = it.getStatut();
         it.suspendre();
+        historiser(it, avant, it.getStatut(), null);
         return ecrire(it);
     }
 
     @Transactional
     public Intervention reprendre(UUID reference) {
         Intervention it = charger(reference);
+        StatutIntervention avant = it.getStatut();
         it.reprendre();
+        historiser(it, avant, it.getStatut(), null);
         return ecrire(it);
     }
 
     @Transactional
     public Intervention terminer(UUID reference) {
         Intervention it = charger(reference);
+        StatutIntervention avant = it.getStatut();
         it.terminer(horloge.instant());
+        historiser(it, avant, it.getStatut(), null);
         return ecrire(it);
     }
 
@@ -118,7 +150,9 @@ public class InterventionService {
     @Transactional
     public Intervention annuler(UUID reference) {
         Intervention it = charger(reference);
+        StatutIntervention avant = it.getStatut();
         it.annuler();
+        historiser(it, avant, it.getStatut(), null);
         return ecrire(it);
     }
 
@@ -145,6 +179,12 @@ public class InterventionService {
         StatutIntervention avant = it.getStatut();
         LigneIntervention ligne = it.ajouterLigneMainOeuvre(prestation, quantite,
                 prestation.getPrixHtva(), prestation.getTauxTva());
+        // La bascule RM-15 est une transition comme une autre : si l entite a change
+        // d etat d elle-meme, la chronologie (F17) le consigne — sinon l historique
+        // aurait des trous (un EN_COURS -> EN_COURS apparent) et perdrait sa coherence.
+        if (it.getStatut() != avant) {
+            historiser(it, avant, it.getStatut(), null);
+        }
         Intervention enregistre = ecrire(it);
         if (avant != StatutIntervention.ATTENTE_VALIDATION_MEMBRE
                 && enregistre.getStatut() == StatutIntervention.ATTENTE_VALIDATION_MEMBRE) {
@@ -203,7 +243,11 @@ public class InterventionService {
      */
     @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
     public InterventionVueMembre interventionDuMembre(UUID reference, String email) {
-        return InterventionVueMembre.de(chargerPourMembre(reference, email),
+        Intervention it = chargerPourMembre(reference, email);
+        // La chronologie (F17) est chargee ici, dans la transaction readOnly, et
+        // convertie par le DTO : meme controle d ownership que le reste de la vue.
+        return InterventionVueMembre.de(it,
+                historiques.findByInterventionOrderByHorodatageAscIdAsc(it),
                 parametres.courants().zone());
     }
 
@@ -226,7 +270,9 @@ public class InterventionService {
     @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
     public Intervention validerDepassement(UUID reference, String email) {
         Intervention it = chargerPourMembre(reference, email);
+        StatutIntervention avant = it.getStatut();
         it.validerDepassement();
+        historiser(it, avant, it.getStatut(), null);
         return ecrire(it);
     }
 
@@ -234,7 +280,9 @@ public class InterventionService {
     @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
     public Intervention refuserDepassement(UUID reference, String email) {
         Intervention it = chargerPourMembre(reference, email);
+        StatutIntervention avant = it.getStatut();
         it.refuserDepassement();
+        historiser(it, avant, it.getStatut(), null);
         return ecrire(it);
     }
 
@@ -254,6 +302,32 @@ public class InterventionService {
     }
 
     // --- helpers ---------------------------------------------------------------------
+
+    /**
+     * Ecrit une ligne de chronologie (F17) : la transition telle qu elle vient de se
+     * produire, horodatee par l horloge injectee. L auteur est resolu depuis le
+     * contexte de securite — jamais d un parametre de requete — et vaut {@code null}
+     * pour un traitement sans utilisateur authentifie (systeme, webhook futur).
+     */
+    private void historiser(Intervention it, StatutIntervention avant,
+                            StatutIntervention apres, String motif) {
+        historiques.save(new HistoriqueStatutIntervention(
+                it, avant, apres, horloge.instant(), auteurCourant(), motif));
+    }
+
+    /**
+     * Utilisateur derriere la transition, resolu depuis le contexte de securite —
+     * memes gardes que {@code JpaAuditingConfig#auditorProvider}, qui alimente
+     * {@code created_by} avec le meme principal. La difference : ici on remonte a
+     * l entite pour poser une vraie FK, la ou l audit se contente du nom.
+     */
+    private Utilisateur auteurCourant() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated() || "anonymousUser".equals(auth.getPrincipal())) {
+            return null;
+        }
+        return utilisateurs.findByEmailIgnoreCase(auth.getName()).orElse(null);
+    }
 
     private Intervention charger(UUID reference) {
         return interventions.findByReference(reference)

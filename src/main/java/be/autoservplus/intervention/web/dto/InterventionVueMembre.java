@@ -1,11 +1,13 @@
 package be.autoservplus.intervention.web.dto;
 
+import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
@@ -36,13 +38,19 @@ public record InterventionVueMembre(
         String finReelle,
         List<LigneVue> lignes,
         String totalTvac,
+        /** Chronologie des changements de statut (F17), deja projetee sur les statuts
+         *  percus (RM-16) : les transitions internes qui ne changent pas le percu
+         *  (suspension, attente de validation, reprise) n y figurent pas. */
+        List<EntreeChronologieVue> chronologie,
         boolean estTerminale,
         /** RM-15 : une reponse du membre est attendue sur un depassement de devis.
          *  Expose comme drapeau plutot que par lecture du statut technique, pour que
          *  le template n ait jamais a tester « ATTENTE_VALIDATION_MEMBRE » (RM-16). */
         boolean validationRequise) {
 
-    public static InterventionVueMembre de(Intervention it, ZoneId zone) {
+    public static InterventionVueMembre de(Intervention it,
+                                           List<HistoriqueStatutIntervention> historique,
+                                           ZoneId zone) {
         StatutIntervention s = it.getStatut();
         var vehicule = it.getVehicule();
         return new InterventionVueMembre(
@@ -65,8 +73,32 @@ public record InterventionVueMembre(
                         .filter(LigneIntervention::estFacturable)
                         .map(LigneVue::de).toList(),
                 FormatageRdv.euros(it.totalFacturableTvac()),
+                chronologiePercue(historique, zone),
                 s == StatutIntervention.TERMINEE || s == StatutIntervention.ANNULEE,
                 s == StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+    }
+
+    /**
+     * Projette la chronologie technique (F17) sur les statuts percus (RM-16) : une
+     * entree n apparait que si son statut percu differe de la derniere entree
+     * affichee. EN_COURS -&gt; SUSPENDUE -&gt; EN_COURS, tous percus « En cours »,
+     * donnerait sinon trois lignes identiques — exposant au membre le rythme de la
+     * mecanique interne que RM-16 masque justement. Le journal complet reste en
+     * base, seul l affichage membre est filtre.
+     */
+    private static List<EntreeChronologieVue> chronologiePercue(
+            List<HistoriqueStatutIntervention> historique, ZoneId zone) {
+        List<EntreeChronologieVue> entrees = new ArrayList<>();
+        String percuPrecedent = null;
+        for (HistoriqueStatutIntervention h : historique) {
+            String percu = h.getStatutApres().clePercue();
+            if (percu.equals(percuPrecedent)) {
+                continue;
+            }
+            entrees.add(EntreeChronologieVue.de(h, zone));
+            percuPrecedent = percu;
+        }
+        return List.copyOf(entrees);
     }
 
     /**
@@ -80,6 +112,30 @@ public record InterventionVueMembre(
     public record LigneVue(String libelle, short quantite) {
         public static LigneVue de(LigneIntervention l) {
             return new LigneVue(l.getLibelleFige(), l.getQuantite());
+        }
+    }
+
+    /**
+     * Une etape de la chronologie vue par le membre (F17). Les statuts restent les
+     * enums techniques — le template affiche leur cle i18n percue via
+     * {@link StatutIntervention#clePercue()}, jamais leur nom brut (RM-16). La date
+     * arrive pre-formatee, comme {@code debutReel} et {@code finReelle} : le DTO
+     * connait le fuseau, le template non. L auteur n est volontairement pas expose
+     * cote membre.
+     */
+    public record EntreeChronologieVue(
+            StatutIntervention statutAvant,
+            StatutIntervention statutApres,
+            String horodatage,
+            String motif) {
+
+        public static EntreeChronologieVue de(HistoriqueStatutIntervention h, ZoneId zone) {
+            return new EntreeChronologieVue(
+                    h.getStatutAvant(),
+                    h.getStatutApres(),
+                    FormatageRdv.jourLisible(h.getHorodatage(), zone)
+                            + " " + FormatageRdv.heureLisible(h.getHorodatage(), zone),
+                    h.getMotif());
         }
     }
 }
