@@ -16,9 +16,11 @@ import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.PosteAtelier;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.Vehicule;
+import be.autoservplus.rgpd.repository.AjoutAuPanier;
 import be.autoservplus.rgpd.repository.CommandeExportRepository;
 import be.autoservplus.rgpd.repository.ConsentementExportRepository;
 import be.autoservplus.rgpd.repository.InterventionExportRepository;
+import be.autoservplus.rgpd.repository.PanierExportRepository;
 import be.autoservplus.rgpd.repository.RdvExportRepository;
 import be.autoservplus.rgpd.repository.VehiculeExportRepository;
 import be.autoservplus.rgpd.service.dto.ExportDonnees;
@@ -26,6 +28,7 @@ import be.autoservplus.rgpd.service.dto.FichierExport;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Panier;
+import be.autoservplus.vente.repository.PanierRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -79,6 +82,8 @@ class ExportDonneesServiceTest {
     @Mock private InterventionExportRepository interventions;
     @Mock private CommandeExportRepository commandes;
     @Mock private ConsentementExportRepository consentements;
+    @Mock private PanierRepository paniers;
+    @Mock private PanierExportRepository panierExport;
     @Mock private PasswordEncoder encodeur;
 
     private ExportDonneesService service;
@@ -100,8 +105,8 @@ class ExportDonneesServiceTest {
         Clock horloge = Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels"));
         registre = new RegistreExportsRecents(horloge);
         service = new ExportDonneesService(utilisateurs, vehicules, rendezVous, interventions,
-                commandes, consentements, new CatalogueTraitements(messages), serialiseur,
-                registre, encodeur, horloge);
+                commandes, consentements, paniers, panierExport,
+                new CatalogueTraitements(messages), serialiseur, registre, encodeur, horloge);
 
         marie = new Utilisateur(EMAIL, EMPREINTE, "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         marie.setTelephone("+32470000000");
@@ -140,6 +145,7 @@ class ExportDonneesServiceTest {
         lenient().when(interventions.pourMembre(EMAIL)).thenReturn(List.of());
         lenient().when(commandes.pourMembre(EMAIL)).thenReturn(List.of());
         lenient().when(consentements.pourMembre(EMAIL)).thenReturn(List.of());
+        lenient().when(paniers.findByMembreEmail(EMAIL)).thenReturn(Optional.empty());
     }
 
     private Rdv rdvDeMarie() {
@@ -289,6 +295,72 @@ class ExportDonneesServiceTest {
 
             assertThat(service.assembler(EMAIL).donneesPersonnelles().commandes()).isEmpty();
             verify(commandes, never()).lignesDe(any());
+        }
+
+        @Test
+        @DisplayName("restitue le panier en cours : lignes, prix figes et date d'ajout")
+        void panierEnCours() {
+            compteSansDonnees();
+            Panier panier = new Panier(marie);
+            ReflectionTestUtils.setField(panier, "createdAt", CREATION_COMPTE);
+            LignePanier ligne = panier.ajouterPiece(plaquettes, 2);
+            ReflectionTestUtils.setField(ligne, "id", 7L);
+            when(paniers.findByMembreEmail(EMAIL)).thenReturn(Optional.of(panier));
+            when(panierExport.datesAjout(any())).thenReturn(
+                    List.of(new AjoutAuPanier(7L, Instant.parse("2026-08-20T09:00:00Z"))));
+
+            ExportDonnees.PanierExport exporte =
+                    service.assembler(EMAIL).donneesPersonnelles().panierEnCours();
+
+            assertThat(exporte.dateCreation()).isEqualTo(CREATION_COMPTE);
+            assertThat(exporte.nombreArticles()).isEqualTo(2);
+            assertThat(exporte.totalHtva()).isEqualByComparingTo("39.98");
+            assertThat(exporte.totalTva()).isEqualByComparingTo("8.40");
+            assertThat(exporte.totalTvac()).isEqualByComparingTo("48.38");
+            assertThat(exporte.lignes()).singleElement().satisfies(l -> {
+                assertThat(l.libelle()).isEqualTo("Plaquettes avant");
+                assertThat(l.quantite()).isEqualTo((short) 2);
+                // Prix et taux figes a l'ajout (RM-30), pas ceux du catalogue courant.
+                assertThat(l.prixUnitaireHtva()).isEqualByComparingTo("19.99");
+                assertThat(l.tauxTva()).isEqualByComparingTo("21.00");
+                assertThat(l.totalTvac()).isEqualByComparingTo("48.38");
+                assertThat(l.dateAjout()).isEqualTo(Instant.parse("2026-08-20T09:00:00Z"));
+            });
+        }
+
+        @Test
+        @DisplayName("le panier en cours figure dans le document JSON livre")
+        void panierDansLeJson() {
+            compteSansDonnees();
+            Panier panier = new Panier(marie);
+            LignePanier ligne = panier.ajouterPiece(plaquettes, 1);
+            ReflectionTestUtils.setField(ligne, "id", 7L);
+            when(paniers.findByMembreEmail(EMAIL)).thenReturn(Optional.of(panier));
+            when(panierExport.datesAjout(any())).thenReturn(
+                    List.of(new AjoutAuPanier(7L, Instant.parse("2026-08-20T09:00:00Z"))));
+
+            assertThat(documentJson(service.assembler(EMAIL)))
+                    .contains("\"panier_en_cours\"")
+                    .contains("\"date_ajout\" : \"2026-08-20T09:00:00Z\"")
+                    .contains("Plaquettes avant");
+        }
+
+        @Test
+        @DisplayName("sans panier, la section existe et annonce zero article")
+        void panierAbsent() {
+            compteSansDonnees();
+
+            ExportDonnees.PanierExport exporte =
+                    service.assembler(EMAIL).donneesPersonnelles().panierEnCours();
+
+            // Une section vide affirme que rien n'est detenu ; l'absence de
+            // section laisserait planer un doute sur un oubli.
+            assertThat(exporte.lignes()).isEmpty();
+            assertThat(exporte.nombreArticles()).isZero();
+            assertThat(exporte.totalTvac()).isEqualByComparingTo("0.00");
+            assertThat(exporte.dateCreation()).isNull();
+            // RM-19 : une lecture ne provoque aucune creation de panier.
+            verify(panierExport, never()).datesAjout(any());
         }
 
         @Test

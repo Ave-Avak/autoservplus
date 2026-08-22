@@ -4,15 +4,19 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.rgpd.repository.AjoutAuPanier;
 import be.autoservplus.rgpd.repository.CommandeExportRepository;
 import be.autoservplus.rgpd.repository.ConsentementExportRepository;
 import be.autoservplus.rgpd.repository.InterventionExportRepository;
+import be.autoservplus.rgpd.repository.PanierExportRepository;
 import be.autoservplus.rgpd.repository.RdvExportRepository;
 import be.autoservplus.rgpd.repository.VehiculeExportRepository;
 import be.autoservplus.rgpd.service.dto.ExportDonnees;
 import be.autoservplus.rgpd.service.dto.FichierExport;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
+import be.autoservplus.vente.domain.Panier;
+import be.autoservplus.vente.repository.PanierRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -89,6 +93,8 @@ public class ExportDonneesService {
     private final InterventionExportRepository interventions;
     private final CommandeExportRepository commandes;
     private final ConsentementExportRepository consentements;
+    private final PanierRepository paniers;
+    private final PanierExportRepository panierExport;
     private final CatalogueTraitements catalogue;
     private final SerialiseurExportJson serialiseur;
     private final RegistreExportsRecents registre;
@@ -101,6 +107,8 @@ public class ExportDonneesService {
                                 InterventionExportRepository interventions,
                                 CommandeExportRepository commandes,
                                 ConsentementExportRepository consentements,
+                                PanierRepository paniers,
+                                PanierExportRepository panierExport,
                                 CatalogueTraitements catalogue,
                                 SerialiseurExportJson serialiseur,
                                 RegistreExportsRecents registre,
@@ -112,6 +120,8 @@ public class ExportDonneesService {
         this.interventions = interventions;
         this.commandes = commandes;
         this.consentements = consentements;
+        this.paniers = paniers;
+        this.panierExport = panierExport;
         this.catalogue = catalogue;
         this.serialiseur = serialiseur;
         this.registre = registre;
@@ -209,6 +219,7 @@ public class ExportDonneesService {
                         ExportDonnees.ProfilExport.de(membre, preuves),
                         vehicules.pourMembre(email).stream()
                                 .map(ExportDonnees.VehiculeExport::de).toList(),
+                        panierEnCours(email),
                         commandesAvecLignes(email),
                         rendezVous.pourMembre(email).stream()
                                 .map(ExportDonnees.RdvExport::de).toList(),
@@ -218,6 +229,30 @@ public class ExportDonneesService {
                         ExportDonnees.ConnexionExport.de(membre)),
                 catalogue.informationsTraitement(langue),
                 catalogue.exclusions(langue));
+    }
+
+    /**
+     * Panier en cours du membre, lignes comprises.
+     *
+     * <p>Le contenu vient du repository du module {@code vente}, dont la requete
+     * charge deja panier, lignes et pieces d un coup. La date d ajout de chaque
+     * ligne, elle, passe par une projection du module {@code rgpd} : l entite
+     * mappe {@code created_at} mais ne l expose pas, et lui ajouter un accesseur
+     * modifierait {@code vente}.
+     *
+     * <p>Une lecture ne cree jamais de panier — RM-19 reserve le trouve-ou-cree aux
+     * chemins d ecriture. Un membre sans panier obtient une section vide, pas une
+     * ligne en base.
+     */
+    private ExportDonnees.PanierExport panierEnCours(String email) {
+        return paniers.findByMembreEmail(email)
+                .map(panier -> ExportDonnees.PanierExport.de(panier, datesAjout(panier)))
+                .orElseGet(ExportDonnees.PanierExport::vide);
+    }
+
+    private Map<Long, Instant> datesAjout(Panier panier) {
+        return panierExport.datesAjout(panier.getId()).stream()
+                .collect(Collectors.toMap(AjoutAuPanier::ligneId, AjoutAuPanier::dateAjout));
     }
 
     /**

@@ -38,6 +38,7 @@ class SerialiseurExportJsonTest {
                                         "Bruxelles", "Belgique"),
                                 "fr", true, "ACTIF", Instant.parse("2026-01-05T10:00:00Z")),
                         List.of(),
+                        ExportDonnees.PanierExport.vide(),
                         List.of(new ExportDonnees.CommandeExport("CMD-2026-0001", "PAYEE",
                                 Instant.parse("2026-03-01T08:00:00Z"),
                                 Instant.parse("2026-03-01T08:05:00Z"), null, null,

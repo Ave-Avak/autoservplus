@@ -28,6 +28,8 @@ import be.autoservplus.vente.repository.CommandeRepository;
 import be.autoservplus.vente.repository.PanierRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -95,6 +97,8 @@ class ExportDonneesIT {
     private static final String MDP_MARIE = "MotDePasseDeMarie2026";
     private static final String MDP_JEAN = "MotDePasseDeJean2026";
 
+    @PersistenceContext private EntityManager entites;
+
     @Autowired private MockMvc mvc;
     @Autowired private PasswordEncoder encodeur;
     @Autowired private UtilisateurRepository utilisateurs;
@@ -112,6 +116,7 @@ class ExportDonneesIT {
     private final ObjectMapper lecteur = new ObjectMapper();
 
     private Piece plaquettes;
+    private Piece ampoule;
     private Prestation vidange;
     private PosteAtelier poste;
 
@@ -123,6 +128,10 @@ class ExportDonneesIT {
                 new BigDecimal("19.99"));
         plaquettes.setQuantiteStock(50);
         plaquettes = pieces.save(plaquettes);
+        ampoule = new Piece(freinage, "IT-RGPD-002", "Ampoule H7", new BigDecimal("10.01"));
+        ampoule.setTauxTva(new BigDecimal("6.00"));
+        ampoule.setQuantiteStock(50);
+        ampoule = pieces.save(ampoule);
 
         Categorie entretien = categories.save(
                 new Categorie("IT-RGPD-ENT", "Entretien", TypeCategorie.SERVICE));
@@ -162,10 +171,24 @@ class ExportDonneesIT {
         // pousse ce changement de cle etrangere avant que l'export ne relise.
         paniers.flush();
 
+        // Article laisse au panier apres la commande : une piece DIFFERENTE, sinon
+        // l'ajout retrouverait la ligne deja rattachee a la commande (la collection
+        // du panier n'est pas purgee) et se heurterait a son immuabilite comptable.
+        panier.ajouterPiece(ampoule, 3);
+        paniers.flush();
+
         Rdv rdv = rdvs.save(new Rdv("RDV-" + numeroDossier, membre, vehicule, poste,
                 debutRdv, Duration.ofMinutes(30), List.of(vidange), "Bruit a l avant"));
         interventions.save(new Intervention("INT-" + numeroDossier, rdv));
-        return membre;
+
+        // Le contexte de persistance est vide avant l'export : en production celui-ci
+        // s'execute dans sa propre transaction et relit tout depuis la base. Sans ce
+        // clear, les collections deja chargees ici (les lignes deplacees du panier
+        // vers la commande, notamment) masqueraient ce que les requetes rendent
+        // vraiment.
+        entites.flush();
+        entites.clear();
+        return utilisateurs.findByEmailIgnoreCase(email).orElseThrow();
     }
 
     private void deuxMembres() {
@@ -222,6 +245,17 @@ class ExportDonneesIT {
         assertThat(donnees.path("interventions").size()).isEqualTo(1);
         assertThat(donnees.path("consentements").size()).isEqualTo(1);
         assertThat(donnees.path("connexion_et_securite").has("derniere_connexion")).isTrue();
+
+        // Panier en cours : articles choisis, jamais commandes, mais detenus.
+        JsonNode panier = donnees.path("panier_en_cours");
+        assertThat(panier.path("nombre_articles").asInt()).isEqualTo(3);
+        assertThat(panier.path("lignes").size()).isEqualTo(1);
+        assertThat(panier.path("lignes").get(0).path("libelle").asText()).isEqualTo("Ampoule H7");
+        assertThat(panier.path("lignes").get(0).path("taux_tva").decimalValue())
+                .isEqualByComparingTo("6.00");
+        // La date d'ajout vient de ligne_panier.created_at, que l'entite n'expose pas.
+        assertThat(panier.path("lignes").get(0).path("date_ajout").asText()).endsWith("Z");
+        assertThat(panier.path("total_tvac").decimalValue()).isEqualByComparingTo("31.83");
 
         // Les lignes suivent leurs parents : le JOIN FETCH et le regroupement des
         // lignes de commande fonctionnent contre une vraie base.

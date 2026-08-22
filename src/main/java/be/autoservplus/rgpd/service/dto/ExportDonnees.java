@@ -10,10 +10,12 @@ import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
+import be.autoservplus.vente.domain.Panier;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Contenu de l export du droit d acces (F22, article 15 RGPD), destine a etre
@@ -52,6 +54,7 @@ public record ExportDonnees(
     public record DonneesPersonnelles(
             ProfilExport profil,
             List<VehiculeExport> vehicules,
+            PanierExport panierEnCours,
             List<CommandeExport> commandes,
             List<RdvExport> rendezVous,
             List<InterventionExport> interventions,
@@ -151,6 +154,81 @@ public record ExportDonnees(
                     vehicule.getNumeroChassis(),
                     vehicule.isActif(),
                     vehicule.getCreatedAt());
+        }
+    }
+
+    /**
+     * Panier en cours du membre : des articles choisis, jamais commandes, mais
+     * <b>detenus</b> — l article 15 ne s arrete pas aux donnees qui ont abouti a une
+     * transaction. C est aussi la seule section de l export qui puisse encore
+     * changer d une minute a l autre, d ou l horodatage du document en tete de
+     * fichier.
+     *
+     * <p>Un membre sans panier obtient une section vide plutot que rien : la
+     * plateforme affirme ainsi ne rien detenir, au lieu de laisser une absence
+     * ambigue. Meme raisonnement que les notes d {@link Exclusions}.
+     *
+     * <p>Les totaux viennent de l entite ({@code RM-30} : somme des montants de
+     * ligne deja arrondis, jamais un calcul sur un total global) — les recalculer
+     * ici creerait une seconde implementation d une regle delicate.
+     */
+    public record PanierExport(
+            Instant dateCreation,
+            int nombreArticles,
+            BigDecimal totalHtva,
+            BigDecimal totalTva,
+            BigDecimal totalTvac,
+            List<LignePanierExport> lignes) {
+
+        public static PanierExport de(Panier panier, Map<Long, Instant> datesAjout) {
+            return new PanierExport(
+                    panier.getCreatedAt(),
+                    panier.nombreArticles(),
+                    panier.totalHtva(),
+                    panier.totalTva(),
+                    panier.totalTvac(),
+                    panier.getLignes().stream()
+                            .map(ligne -> LignePanierExport.de(ligne,
+                                    datesAjout.get(ligne.getId())))
+                            .toList());
+        }
+
+        /** Aucun panier en cours : la section existe, elle est vide. */
+        public static PanierExport vide() {
+            BigDecimal zero = new BigDecimal("0.00");
+            return new PanierExport(null, 0, zero, zero, zero, List.of());
+        }
+    }
+
+    /**
+     * Ligne du panier, aux conditions figees a l ajout (RM-30).
+     *
+     * <p>{@code dateAjout} vient d une requete distincte : la colonne
+     * {@code ligne_panier.created_at} existe et est mappee, mais l entite n en
+     * expose aucun accesseur — et l ajouter modifierait le module {@code vente}.
+     * Savoir depuis quand une donnee est detenue releve pourtant de l information
+     * de la personne, la valeur est donc lue par le chemin qui ne touche a rien.
+     */
+    public record LignePanierExport(
+            String libelle,
+            short quantite,
+            BigDecimal prixUnitaireHtva,
+            BigDecimal tauxTva,
+            BigDecimal totalHtva,
+            BigDecimal totalTva,
+            BigDecimal totalTvac,
+            Instant dateAjout) {
+
+        public static LignePanierExport de(LignePanier ligne, Instant dateAjout) {
+            return new LignePanierExport(
+                    ligne.getLibelleFige(),
+                    ligne.getQuantite(),
+                    ligne.getPrixUnitaireHtva(),
+                    ligne.getTauxTva(),
+                    ligne.totalHtva(),
+                    ligne.totalTva(),
+                    ligne.totalTvac(),
+                    dateAjout);
         }
     }
 
