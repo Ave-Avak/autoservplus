@@ -101,6 +101,25 @@ public class Prestation extends BaseEntity {
         this.prixHtva = nouveauPrixHtva;
     }
 
+    public void renommer(String nouveauLibelle) {
+        this.libelle = Objects.requireNonNull(nouveauLibelle, "libelle");
+    }
+
+    /**
+     * Deplace la prestation vers une autre categorie.
+     *
+     * @throws IllegalArgumentException si la categorie visee est destinee aux pieces
+     */
+    public void changerCategorie(Categorie nouvelleCategorie) {
+        Objects.requireNonNull(nouvelleCategorie, "categorie");
+        if (nouvelleCategorie.getType() != TypeCategorie.SERVICE) {
+            throw new IllegalArgumentException(
+                    "La categorie « %s » est destinee aux pieces, pas aux prestations."
+                            .formatted(nouvelleCategorie.getCode()));
+        }
+        this.categorie = nouvelleCategorie;
+    }
+
     public void activer() { this.actif = true; }
     public void desactiver() { this.actif = false; }
 
@@ -113,7 +132,7 @@ public class Prestation extends BaseEntity {
     public void setDescription(String description) { this.description = description; }
     public BigDecimal getPrixHtva() { return prixHtva; }
     public BigDecimal getTauxTva() { return tauxTva; }
-    public void setTauxTva(BigDecimal tauxTva) { this.tauxTva = tauxTva; }
+    public void setTauxTva(BigDecimal tauxTva) { this.tauxTva = TauxTvaBelge.verifier(tauxTva); }
     public int getDureeMinutes() { return dureeMinutes; }
     public void setDureeMinutes(int dureeMinutes) { this.dureeMinutes = dureeMinutes; }
     public boolean isActif() { return actif; }

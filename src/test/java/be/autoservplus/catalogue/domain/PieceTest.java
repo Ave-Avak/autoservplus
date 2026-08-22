@@ -85,4 +85,47 @@ class PieceTest {
     void calculeLePrixTvac() {
         assertThat(filtre().prixTvac()).isEqualByComparingTo(new BigDecimal("15.13"));
     }
+
+    @Test
+    @DisplayName("accepte un taux de TVA belge et refuse un taux hors liste")
+    void verrouilleLeTauxDeTva() {
+        Piece piece = filtre();
+
+        piece.setTauxTva(new BigDecimal("6.00"));
+        assertThat(piece.getTauxTva()).isEqualByComparingTo(new BigDecimal("6.00"));
+
+        assertThatThrownBy(() -> piece.setTauxTva(new BigDecimal("19.00")))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Taux de TVA");
+
+        // Le dernier taux valide reste en place : le refus n a rien modifie.
+        assertThat(piece.getTauxTva()).isEqualByComparingTo(new BigDecimal("6.00"));
+    }
+
+    @Test
+    @DisplayName("renomme la piece")
+    void renommeLaPiece() {
+        Piece piece = filtre();
+
+        piece.renommer("Filtre à huile longue durée");
+
+        assertThat(piece.getLibelle()).isEqualTo("Filtre à huile longue durée");
+    }
+
+    @Test
+    @DisplayName("change de categorie mais refuse une categorie de prestations")
+    void changeDeCategorieAvecGardeDeType() {
+        Piece piece = filtre();
+        Categorie eclairage = new Categorie("P_ECLAIRAGE", "Éclairage", TypeCategorie.PIECE);
+        Categorie entretien = new Categorie("ENTRETIEN", "Entretien", TypeCategorie.SERVICE);
+
+        piece.changerCategorie(eclairage);
+        assertThat(piece.getCategorie()).isEqualTo(eclairage);
+
+        assertThatThrownBy(() -> piece.changerCategorie(entretien))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("destinee aux prestations");
+
+        assertThat(piece.getCategorie()).isEqualTo(eclairage);
+    }
 }

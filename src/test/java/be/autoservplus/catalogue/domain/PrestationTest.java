@@ -53,6 +53,70 @@ class PrestationTest {
                 .isInstanceOf(IllegalArgumentException.class);
     }
 
+    @ParameterizedTest(name = "accepte le taux belge {0} %")
+    @CsvSource({"0.00", "6.00", "12.00", "21.00", "21"})
+    @DisplayName("accepte les quatre taux de TVA belges, quelle que soit l echelle")
+    void accepteLesTauxBelges(String taux) {
+        Prestation prestation = new Prestation(entretien, "VID", "Vidange",
+                new BigDecimal("75.00"), 60);
+
+        prestation.setTauxTva(new BigDecimal(taux));
+
+        assertThat(prestation.getTauxTva()).isEqualByComparingTo(new BigDecimal(taux));
+    }
+
+    @ParameterizedTest(name = "refuse le taux {0} %")
+    @CsvSource({"19.00", "21.50", "-6.00", "100.00"})
+    @DisplayName("refuse tout taux de TVA hors de la liste belge 0/6/12/21")
+    void refuseUnTauxHorsListe(String taux) {
+        Prestation prestation = new Prestation(entretien, "VID", "Vidange",
+                new BigDecimal("75.00"), 60);
+
+        assertThatThrownBy(() -> prestation.setTauxTva(new BigDecimal(taux)))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("Taux de TVA");
+
+        // Le taux d origine (21 %) reste en place : le refus n a rien modifie.
+        assertThat(prestation.getTauxTva()).isEqualByComparingTo(new BigDecimal("21.00"));
+    }
+
+    @Test
+    @DisplayName("renomme la prestation")
+    void renommeLaPrestation() {
+        Prestation prestation = new Prestation(entretien, "VID", "Vidange",
+                new BigDecimal("75.00"), 60);
+
+        prestation.renommer("Vidange complète");
+
+        assertThat(prestation.getLibelle()).isEqualTo("Vidange complète");
+    }
+
+    @Test
+    @DisplayName("change de categorie vers une autre categorie de services")
+    void changeDeCategorie() {
+        Prestation prestation = new Prestation(entretien, "VID", "Vidange",
+                new BigDecimal("75.00"), 60);
+        Categorie freinage = new Categorie("FREINAGE", "Freinage", TypeCategorie.SERVICE);
+
+        prestation.changerCategorie(freinage);
+
+        assertThat(prestation.getCategorie()).isEqualTo(freinage);
+    }
+
+    @Test
+    @DisplayName("refuse le deplacement vers une categorie de pieces")
+    void refuseUneCategorieDePieces() {
+        Prestation prestation = new Prestation(entretien, "VID", "Vidange",
+                new BigDecimal("75.00"), 60);
+        Categorie filtres = new Categorie("P_FILTRES", "Filtres", TypeCategorie.PIECE);
+
+        assertThatThrownBy(() -> prestation.changerCategorie(filtres))
+                .isInstanceOf(IllegalArgumentException.class)
+                .hasMessageContaining("destinee aux pieces");
+
+        assertThat(prestation.getCategorie()).isEqualTo(entretien);
+    }
+
     @Test
     @DisplayName("desactive puis reactive la prestation")
     void basculeLActivation() {
