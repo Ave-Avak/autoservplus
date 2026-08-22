@@ -23,6 +23,7 @@ import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
@@ -60,6 +61,7 @@ public class InterventionService {
     private final UtilisateurRepository utilisateurs;
     private final GenerateurNumeroIntervention numeros;
     private final ServiceCourriel courriel;
+    private final ApplicationEventPublisher evenements;
     private final Clock horloge;
 
     public InterventionService(InterventionRepository interventions,
@@ -69,6 +71,7 @@ public class InterventionService {
                                UtilisateurRepository utilisateurs,
                                GenerateurNumeroIntervention numeros,
                                ServiceCourriel courriel,
+                               ApplicationEventPublisher evenements,
                                Clock horloge) {
         this.interventions = interventions;
         this.historiques = historiques;
@@ -77,6 +80,7 @@ public class InterventionService {
         this.utilisateurs = utilisateurs;
         this.numeros = numeros;
         this.courriel = courriel;
+        this.evenements = evenements;
         this.horloge = horloge;
     }
 
@@ -134,13 +138,22 @@ public class InterventionService {
         return ecrire(it);
     }
 
+    /**
+     * Terminaison des travaux. Publie {@link InterventionTermineeEvent} : le courriel
+     * « venez recuperer votre vehicule » (F17) part apres commit, via le listener
+     * {@code AFTER_COMMIT} — jamais pendant la transaction, ou un rollback annoncerait
+     * une cloture qui n a pas eu lieu. Seule cette transition publie : c est la seule
+     * qui appelle le membre a se deplacer.
+     */
     @Transactional
     public Intervention terminer(UUID reference) {
         Intervention it = charger(reference);
         StatutIntervention avant = it.getStatut();
         it.terminer(horloge.instant());
         historiser(it, avant, it.getStatut(), null);
-        return ecrire(it);
+        Intervention enregistre = ecrire(it);
+        evenements.publishEvent(new InterventionTermineeEvent(enregistre.getReference()));
+        return enregistre;
     }
 
     /**

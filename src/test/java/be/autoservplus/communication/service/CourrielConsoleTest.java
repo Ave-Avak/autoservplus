@@ -47,4 +47,12 @@ class CourrielConsoleTest {
         assertThatCode(() -> courriel.envoyerAnnulationParLeGarage(marie, rdv, "Panne du pont"))
                 .doesNotThrowAnyException();
     }
+
+    @Test
+    @DisplayName("envoie l invitation a recuperer le vehicule sans jeter")
+    void envoieInterventionTerminee() {
+        assertThatCode(() -> courriel.envoyerInterventionTerminee(new DetailsInterventionTerminee(
+                "marie@exemple.be", "Marie", "INT-2026-0001", "VW Golf", "1-ABC-123")))
+                .doesNotThrowAnyException();
+    }
 }

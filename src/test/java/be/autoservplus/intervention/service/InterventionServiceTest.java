@@ -32,6 +32,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -69,6 +70,7 @@ class InterventionServiceTest {
     @Mock private UtilisateurRepository utilisateurs;
     @Mock private GenerateurNumeroIntervention numeros;
     @Mock private ServiceCourriel courriel;
+    @Mock private ApplicationEventPublisher evenements;
 
     private Clock horloge;
     private InterventionService service;
@@ -83,7 +85,7 @@ class InterventionServiceTest {
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
         service = new InterventionService(interventions, historiques, prestations, parametres,
-                utilisateurs, numeros, courriel, horloge);
+                utilisateurs, numeros, courriel, evenements, horloge);
 
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         golf = new Vehicule(marie, "1-ABC-123", "VW", "Golf", Motorisation.DIESEL);
@@ -579,6 +581,56 @@ class InterventionServiceTest {
                     .isInstanceOf(RessourceIntrouvableException.class);
 
             verify(historiques, never()).findByInterventionOrderByHorodatageAscIdAsc(any());
+        }
+    }
+
+    @Nested
+    @DisplayName("evenement de cloture (F17)")
+    class EvenementCloture {
+
+        private Intervention interventionChargee() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            doReturn(Optional.of(it)).when(interventions).findByReference(it.getReference());
+            doReturn(it).when(interventions).saveAndFlush(it);
+            return it;
+        }
+
+        @Test
+        @DisplayName("terminer publie exactement un InterventionTermineeEvent avec la reference")
+        void terminerPublie() {
+            Intervention it = interventionChargee();
+            it.demarrer(MAINTENANT);
+
+            service.terminer(it.getReference());
+
+            verify(evenements).publishEvent(new InterventionTermineeEvent(it.getReference()));
+            org.mockito.Mockito.verifyNoMoreInteractions(evenements);
+        }
+
+        @Test
+        @DisplayName("demarrer, suspendre, reprendre et annuler ne publient rien")
+        void autresTransitionsSansEvenement() {
+            Intervention it = interventionChargee();
+
+            service.demarrer(it.getReference());
+            service.suspendre(it.getReference());
+            service.reprendre(it.getReference());
+            service.annuler(it.getReference());
+
+            org.mockito.Mockito.verifyNoInteractions(evenements);
+        }
+
+        @Test
+        @DisplayName("terminer refuse par le domaine : aucun evenement ne part")
+        void transitionRefuseeSansEvenement() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            doReturn(Optional.of(it)).when(interventions).findByReference(it.getReference());
+
+            // PLANIFIEE -> TERMINEE est interdit : l exception sort avant la publication.
+            assertThatThrownBy(() -> service.terminer(it.getReference()))
+                    .isInstanceOf(IllegalStateException.class);
+
+            org.mockito.Mockito.verifyNoInteractions(evenements);
         }
     }
 

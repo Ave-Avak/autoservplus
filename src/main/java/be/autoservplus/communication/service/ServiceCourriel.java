@@ -41,4 +41,12 @@ public interface ServiceCourriel {
     void envoyerDemandeValidationDepassement(Utilisateur destinataire,
                                              DetailsRdvCourriel rdv,
                                              DetailsDepassementCourriel depassement);
+
+    /**
+     * L intervention est terminee (F17) : le membre est invite a venir recuperer son
+     * vehicule aux heures d ouverture, et a deposer un avis. Envoye apres commit de
+     * la transition TERMINEE, jamais pendant — un courriel ne doit pas annoncer un
+     * etat qui pourrait encore etre annule par un rollback.
+     */
+    void envoyerInterventionTerminee(DetailsInterventionTerminee details);
 }
