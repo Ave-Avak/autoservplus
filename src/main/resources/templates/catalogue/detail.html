@@ -77,6 +77,8 @@
         </ul>
         <ul class="menu menu-compte">
             <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}">Connexion</a></li>
+            <li sec:authorize="isAuthenticated()">
+                <a th:href="@{/panier}" th:text="#{panier.nav(${nombreArticlesPanier})}">Panier (0)</a></li>
             <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}">Mon compte</a></li>
         </ul>
     </nav>
@@ -131,8 +133,15 @@
         <div class="fiche-actions" th:if="${article.disponible()}">
             <a class="btn-cta" th:href="@{/rendez-vous/nouveau(article=${article.reference()})}"
                th:if="${typeArticle == 'service'}">Prendre rendez-vous</a>
-            <a class="btn-cta" th:href="@{/panier/ajouter(article=${article.reference()})}"
-               th:if="${typeArticle == 'piece'}">Ajouter au panier</a>
+            <!-- F13 : ajout au panier en POST (jeton CSRF injecte par th:action), avec
+                 quantite choisie ici. Un GET mutateur — l'ancien lien — contournerait
+                 la protection CSRF et le pattern PRG. -->
+            <form th:action="@{/panier/ajouter}" method="post" th:if="${typeArticle == 'piece'}">
+                <input type="hidden" name="reference" th:value="${article.reference()}">
+                <label for="quantite" th:text="#{panier.ajout.quantite}">Quantité</label>
+                <input type="number" id="quantite" name="quantite" value="1" min="1" max="32767" required>
+                <button type="submit" class="btn-cta" th:text="#{panier.ajout.bouton}">Ajouter au panier</button>
+            </form>
         </div>
     </article>
 

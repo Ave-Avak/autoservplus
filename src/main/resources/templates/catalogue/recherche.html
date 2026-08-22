@@ -24,6 +24,8 @@
         </ul>
         <ul class="menu menu-compte">
             <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}">Connexion</a></li>
+            <li sec:authorize="isAuthenticated()">
+                <a th:href="@{/panier}" th:text="#{panier.nav(${nombreArticlesPanier})}">Panier (0)</a></li>
             <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}">Mon compte</a></li>
         </ul>
     </nav>

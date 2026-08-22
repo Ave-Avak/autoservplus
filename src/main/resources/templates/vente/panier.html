@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{panier.titre} + ' — AutoServ+'">Mon panier — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}" th:text="#{nav.prestations}">Prestations</a></li>
+            <li><a th:href="@{/pieces}" th:text="#{nav.pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/panier}" th:text="#{panier.nav(${nombreArticlesPanier})}">Panier (0)</a></li>
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <p><a th:href="@{/pieces}" th:text="'← ' + #{panier.continuer}">← Continuer mes achats</a></p>
+
+    <h1 th:text="#{panier.titre}">Mon panier</h1>
+
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+
+    <p th:if="${panier.estVide()}" th:text="#{panier.vide}">Votre panier est vide.</p>
+
+    <div th:unless="${panier.estVide()}">
+
+        <!-- RM-28 : une piece devenue inactive apres son ajout reste listee (trace),
+             mais le recapitulatif previent qu'elle ne pourra pas etre commandee. -->
+        <div class="message message-erreur" th:if="${panier.contientPieceInactive()}" role="alert"
+             th:text="#{panier.avertissement.piece-inactive}">Certains articles ne sont plus vendus.</div>
+
+        <!-- RM-30 : detail HTVA / TVA / TVAC par ligne et en totaux, sur les valeurs
+             FIGEES a l'ajout — le catalogue du jour n'a pas voix au chapitre ici. -->
+        <table class="tableau">
+            <thead>
+            <tr>
+                <th th:text="#{panier.colonne.article}">Article</th>
+                <th th:text="#{panier.colonne.quantite}">Quantité</th>
+                <th th:text="#{panier.colonne.prix-unitaire}">Prix unitaire HTVA</th>
+                <th th:text="#{panier.colonne.taux}">Taux TVA</th>
+                <th th:text="#{panier.colonne.total-htva}">Total HTVA</th>
+                <th th:text="#{panier.colonne.tva}">TVA</th>
+                <th th:text="#{panier.colonne.total-tvac}">Total TVAC</th>
+                <th><span class="visuellement-cache" th:text="#{panier.colonne.actions}">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="l : ${panier.lignes()}">
+                <td>
+                    <a th:href="@{/pieces/{ref}(ref=${l.referencePiece()})}" th:text="${l.libelle()}">Plaquettes avant</a>
+                    <span class="texte-erreur" th:unless="${l.pieceActive()}"
+                          th:text="#{panier.piece-inactive}">N'est plus vendu</span>
+                </td>
+                <td>
+                    <form th:action="@{/panier/lignes/{id}/quantite(id=${l.id()})}" method="post">
+                        <label th:for="'quantite-' + ${l.id()}" class="visuellement-cache"
+                               th:text="#{panier.colonne.quantite}">Quantité</label>
+                        <input type="number" th:id="'quantite-' + ${l.id()}" name="quantite"
+                               th:value="${l.quantite()}" min="1" max="32767" required>
+                        <button type="submit" class="lien-bouton" th:text="#{panier.action.modifier}">Modifier</button>
+                    </form>
+                </td>
+                <td th:text="${l.prixUnitaireHtva()}">19,99 €</td>
+                <td th:text="${l.tauxTva()} + ' %'">21 %</td>
+                <td th:text="${l.totalHtva()}">39,98 €</td>
+                <td th:text="${l.totalTva()}">8,40 €</td>
+                <td th:text="${l.totalTvac()}">48,38 €</td>
+                <td>
+                    <form th:action="@{/panier/lignes/{id}/retirer(id=${l.id()})}" method="post">
+                        <button type="submit" class="lien-bouton" th:text="#{panier.action.retirer}">Retirer</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+            <tfoot>
+            <tr>
+                <td colspan="4"><strong th:text="#{panier.total.libelle}">Totaux</strong></td>
+                <td th:text="${panier.totalHtva()}">70,01 €</td>
+                <td th:text="${panier.totalTva()}">10,20 €</td>
+                <td th:text="${panier.totalTvac()}">80,21 €</td>
+                <td></td>
+            </tr>
+            </tfoot>
+        </table>
+
+        <p class="actions-page">
+            <a class="btn-cta" th:href="@{/panier/vider}" th:text="#{panier.action.vider}">Vider le panier</a>
+        </p>
+    </div>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>
