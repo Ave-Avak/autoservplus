@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{rgpd.donnees.titre} + ' — AutoServ+'">Mes données personnelles — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}" th:text="#{nav.prestations}">Prestations</a></li>
+            <li><a th:href="@{/pieces}" th:text="#{nav.pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <p><a th:href="@{/mon-compte}" th:text="'← ' + #{rgpd.donnees.retour}">← Retour à mon compte</a></p>
+
+    <h1 th:text="#{rgpd.donnees.titre}">Mes données personnelles</h1>
+
+    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+
+    <p th:text="#{rgpd.donnees.intro}">
+        Le règlement général sur la protection des données vous donne le droit d'obtenir
+        une copie des données que nous détenons sur vous.
+    </p>
+
+    <h2 th:text="#{rgpd.donnees.contenu.titre}">Ce que contient le fichier</h2>
+    <ul>
+        <li th:text="#{rgpd.donnees.contenu.profil}">Votre profil.</li>
+        <li th:text="#{rgpd.donnees.contenu.vehicules}">Vos véhicules.</li>
+        <li th:text="#{rgpd.donnees.contenu.panier}">Votre panier en cours.</li>
+        <li th:text="#{rgpd.donnees.contenu.atelier}">Vos rendez-vous et interventions.</li>
+        <li th:text="#{rgpd.donnees.contenu.commandes}">Vos commandes.</li>
+        <li th:text="#{rgpd.donnees.contenu.consentements}">Vos consentements.</li>
+        <li th:text="#{rgpd.donnees.contenu.connexion}">Vos données de connexion.</li>
+        <li th:text="#{rgpd.donnees.contenu.traitement}">Les informations sur le traitement.</li>
+    </ul>
+
+    <!-- Enoncer les exclusions evite qu'une absence ne se lise comme un oubli :
+         la meme liste figure dans le fichier lui-meme. -->
+    <h2 th:text="#{rgpd.donnees.exclusions.titre}">Ce que le fichier ne contient pas</h2>
+    <ul>
+        <li th:text="#{rgpd.donnees.exclusions.mot-de-passe}">Votre mot de passe.</li>
+        <li th:text="#{rgpd.donnees.exclusions.carte}">Vos données de carte bancaire.</li>
+        <li th:text="#{rgpd.donnees.exclusions.secrets}">Les jetons de session.</li>
+    </ul>
+
+    <!-- Re-authentification : une session ouverte ne suffit pas a rassembler tout
+         le dossier d'une personne en un seul fichier. -->
+    <h2 th:text="#{rgpd.donnees.confirmation.titre}">Confirmez votre mot de passe</h2>
+    <form th:action="@{/mes-donnees/export}" method="post" class="formulaire">
+        <div class="champ">
+            <label for="motDePasse" th:text="#{rgpd.donnees.champ.mot-de-passe}">Mot de passe</label>
+            <input type="password" id="motDePasse" name="motDePasse" required
+                   autocomplete="current-password" aria-describedby="aide-mot-de-passe">
+            <p id="aide-mot-de-passe" class="aide" th:text="#{rgpd.donnees.confirmation.aide}">
+                Votre mot de passe est redemandé pour qu'une session laissée ouverte ne
+                suffise pas à télécharger l'ensemble de vos données.
+            </p>
+        </div>
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:disabled="${!exportPossible}"
+                    th:text="#{rgpd.donnees.bouton}">Exporter mes données</button>
+        </p>
+        <p class="aide" th:text="#{rgpd.donnees.limite.rappel}">
+            Un export est possible une fois par 24 heures.
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>

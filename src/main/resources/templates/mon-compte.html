@@ -33,6 +33,13 @@
             <h2>Mes rendez-vous</h2>
             <p>Consultez vos rendez-vous et prenez-en un nouveau.</p>
         </a>
+        <!-- F22 : droit d'accès (art. 15 RGPD). Libellés en i18n, contrairement au
+             reste de cette page encore en français figé (dette documentée). -->
+        <a class="carte carte-lien" th:href="@{/mes-donnees}">
+            <h2 th:text="#{rgpd.donnees.titre}">Mes données personnelles</h2>
+            <p th:text="#{rgpd.donnees.carte.description}">Consultez le droit d'accès et
+                exportez les données que nous détenons sur vous.</p>
+        </a>
         <a class="carte carte-lien" sec:authorize="hasRole('ADMINISTRATEUR')"
            th:href="@{/admin/rendez-vous}">
             <h2>Espace administration</h2>
