@@ -20,7 +20,8 @@ import org.springframework.web.bind.annotation.ModelAttribute;
  * {@code PanierService} — le provider rend l advice inerte (compteur a 0) plutot
  * que de faire echouer leur contexte.</p>
  */
-@ControllerAdvice(assignableTypes = {CatalogueController.class, PanierController.class})
+@ControllerAdvice(assignableTypes = {CatalogueController.class, PanierController.class,
+        CommandeController.class})
 public class PanierModelAdvice {
 
     private final ObjectProvider<PanierService> panierService;
