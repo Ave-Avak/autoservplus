@@ -78,11 +78,12 @@ public class Intervention extends BaseEntity {
      * aucun depassement ne serait jamais atteint.
      *
      * <p>Colonne {@code montant_devis_htva} posee des V5 (dictionnaire, RM-15) et
-     * restee vide jusqu ici faute de mapping. Nullable en base (le CdC la prevoit
-     * ainsi pour une entree directe au garage, hors V1) ; {@link #devisReferenceHtva()}
-     * fournit un repli pour que la regle ne puisse pas se desactiver silencieusement.</p>
+     * restee vide jusqu au mapping de ce lot. V21 la passe NOT NULL : une intervention
+     * sans devis rendrait le seuil incalculable, et la regle s eteindrait sans bruit.
+     * {@link #devisReferenceHtva()} conserve un repli pour l instance encore transiente,
+     * avant que la base n ait son mot a dire.</p>
      */
-    @Column(name = "montant_devis_htva", precision = 10, scale = 2)
+    @Column(name = "montant_devis_htva", nullable = false, precision = 10, scale = 2)
     private BigDecimal montantDevisInitialHtva;
 
     @Column(name = "debut_reel")

@@ -123,6 +123,110 @@ class SchemaIT {
         assertThat(nombre).isZero();
     }
 
+    // --- RM-15 : le devis initial est structurellement obligatoire (V20 + V21) --------
+
+    @Test
+    @DisplayName("aucune intervention ne reste sans devis initial apres les migrations")
+    void aucunDevisInitialNull() {
+        Integer sansDevis = jdbc.queryForObject(
+                "SELECT count(*) FROM intervention WHERE montant_devis_htva IS NULL", Integer.class);
+        assertThat(sansDevis)
+                .as("Le backfill V20 puis le NOT NULL de V21 doivent ne laisser aucun NULL")
+                .isZero();
+    }
+
+    @Test
+    @DisplayName("montant_devis_htva est NOT NULL : l invariant RM-15 est porte par la base")
+    void devisInitialObligatoire() {
+        String nullable = jdbc.queryForObject(
+                "SELECT is_nullable FROM information_schema.columns "
+                        + "WHERE table_name = 'intervention' AND column_name = 'montant_devis_htva'",
+                String.class);
+        assertThat(nullable)
+                .as("Sans NOT NULL, une intervention pourrait exister sans base de comparaison")
+                .isEqualTo("NO");
+    }
+
+    /**
+     * Verifie que la colonne porte bien du HORS TVA. Le montant insere est la somme
+     * {@code prix_unitaire_htva * quantite} des lignes ; le test echouerait si une
+     * evolution y rangeait un TVAC, puisque le total TVAC (121 % au taux belge normal)
+     * s ecarte necessairement de cette somme.
+     */
+    @Test
+    @Transactional
+    @DisplayName("le devis initial stocke est bien du HTVA, pas du TVAC")
+    void devisInitialEstDuHorsTva() {
+        Long vehiculeId = jdbc.queryForObject(
+                "INSERT INTO vehicule (membre_id, plaque, marque, modele, motorisation) "
+                        + "SELECT id, 'IT-SCH-1', 'VW', 'Golf', 'DIESEL' FROM utilisateur "
+                        + "WHERE email = 'admin@autoservplus.be' RETURNING id", Long.class);
+        Long interventionId = jdbc.queryForObject(
+                "INSERT INTO intervention (numero, vehicule_id, statut, montant_devis_htva) "
+                        + "VALUES ('INT-SCHEMA-IT', ?, 'PLANIFIEE', 138.00) RETURNING id",
+                Long.class, vehiculeId);
+        Long serviceId = jdbc.queryForObject("SELECT id FROM service LIMIT 1", Long.class);
+        jdbc.update("INSERT INTO ligne_intervention "
+                        + "(intervention_id, service_id, libelle_fige, quantite, prix_unitaire_htva, taux_tva) "
+                        + "VALUES (?, ?, 'Vidange', 1, 49.00, 21.00), (?, ?, 'Plaquettes', 1, 89.00, 21.00)",
+                interventionId, serviceId, interventionId, serviceId);
+
+        java.math.BigDecimal devis = jdbc.queryForObject(
+                "SELECT montant_devis_htva FROM intervention WHERE id = ?",
+                java.math.BigDecimal.class, interventionId);
+        java.math.BigDecimal sommeHt = jdbc.queryForObject(
+                "SELECT SUM(prix_unitaire_htva * quantite) FROM ligne_intervention WHERE intervention_id = ?",
+                java.math.BigDecimal.class, interventionId);
+        java.math.BigDecimal sommeTvac = jdbc.queryForObject(
+                "SELECT SUM(prix_unitaire_htva * quantite * (1 + taux_tva / 100)) "
+                        + "FROM ligne_intervention WHERE intervention_id = ?",
+                java.math.BigDecimal.class, interventionId);
+
+        assertThat(devis).isEqualByComparingTo(sommeHt);
+        assertThat(devis)
+                .as("Un devis egal au TVAC decalerait le seuil RM-15 de 21 %%")
+                .isNotEqualByComparingTo(sommeTvac);
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("une intervention sans devis initial est rejetee par la base")
+    void interventionSansDevisRejetee() {
+        Long vehiculeId = jdbc.queryForObject(
+                "INSERT INTO vehicule (membre_id, plaque, marque, modele, motorisation) "
+                        + "SELECT id, 'IT-SCH-2', 'VW', 'Polo', 'ESSENCE' FROM utilisateur "
+                        + "WHERE email = 'admin@autoservplus.be' RETURNING id", Long.class);
+
+        assertThatThrownBy(() -> jdbc.update(
+                "INSERT INTO intervention (numero, vehicule_id, statut) "
+                        + "VALUES ('INT-SANS-DEVIS', ?, 'PLANIFIEE')", vehiculeId))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("montant_devis_htva");
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("une ligne ne peut etre a la fois validee et refusee (ck_ligne_interv_validation)")
+    void ligneValideeEtRefuseeRejetee() {
+        Long vehiculeId = jdbc.queryForObject(
+                "INSERT INTO vehicule (membre_id, plaque, marque, modele, motorisation) "
+                        + "SELECT id, 'IT-SCH-3', 'VW', 'Up', 'ESSENCE' FROM utilisateur "
+                        + "WHERE email = 'admin@autoservplus.be' RETURNING id", Long.class);
+        Long interventionId = jdbc.queryForObject(
+                "INSERT INTO intervention (numero, vehicule_id, statut, montant_devis_htva) "
+                        + "VALUES ('INT-SCHEMA-IT-2', ?, 'PLANIFIEE', 0) RETURNING id",
+                Long.class, vehiculeId);
+        Long serviceId = jdbc.queryForObject("SELECT id FROM service LIMIT 1", Long.class);
+
+        assertThatThrownBy(() -> jdbc.update(
+                "INSERT INTO ligne_intervention (intervention_id, service_id, libelle_fige, "
+                        + "quantite, prix_unitaire_htva, taux_tva, validee, refusee) "
+                        + "VALUES (?, ?, 'Incoherente', 1, 10.00, 21.00, true, true)",
+                interventionId, serviceId))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ck_ligne_interv_validation");
+    }
+
     // Les trois tests suivants operent sur jour_semaine = 7 (dimanche), jamais peuple
     // par le seed V10. @Transactional garantit que les INSERT sont rollback en fin de
     // test, ce qui evite d avoir a nettoyer manuellement et preserve l isolation.
