@@ -44,6 +44,30 @@ management:
 autoservplus:
   tva:
     taux-standard: 21.00
+
+  # Identification legale de l'emetteur des factures (mentions obligatoires :
+  # Code TVA art. 53, AR n°1 art. 5). Mono-tenant V1 : un seul garage, donc en
+  # configuration plutot qu'en base. Les valeurs livrees sont des valeurs de
+  # DEMONSTRATION : chacune doit etre surchargee en production par sa variable
+  # d'environnement — une facture portant un faux numero de TVA n'est pas une facture.
+  garage:
+    raison-sociale: ${GARAGE_RAISON_SOCIALE:AutoServ+ SRL}
+    rue: ${GARAGE_RUE:Rue de l'Atelier}
+    numero-rue: ${GARAGE_NUMERO_RUE:12}
+    code-postal: ${GARAGE_CODE_POSTAL:1000}
+    localite: ${GARAGE_LOCALITE:Bruxelles}
+    pays: ${GARAGE_PAYS:Belgique}
+    numero-bce: ${GARAGE_BCE:0123.456.789}
+    numero-tva: ${GARAGE_TVA:BE0123456789}
+    iban: ${GARAGE_IBAN:BE68 5390 0754 7034}
+    telephone: ${GARAGE_TELEPHONE:+32 2 000 00 00}
+    courriel: ${GARAGE_COURRIEL:facturation@autoservplus.be}
+
+  facturation:
+    # Racine de l'archive des factures PDF, conservees SEPT ANS (Code TVA art. 60).
+    # En production : un volume sauvegarde, distinct du repertoire de deploiement —
+    # une archive legale ne peut pas disparaitre avec un redeploiement.
+    archive: ${FACTURES_ARCHIVE:./data/factures}
   retractation:
     delai-jours: 14
   securite:
