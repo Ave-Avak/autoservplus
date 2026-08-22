@@ -104,14 +104,31 @@ public class LignePanier {
 
     /** Fusion d un doublon (F13) : la quantite s ajoute, les conditions figees restent. */
     void augmenterQuantite(int supplement) {
+        exigerHorsCommande();
         exigerQuantiteValide(supplement);
         exigerQuantiteValide(this.quantite + supplement);
         this.quantite = (short) (this.quantite + supplement);
     }
 
     void changerQuantite(int nouvelleQuantite) {
+        exigerHorsCommande();
         exigerQuantiteValide(nouvelleQuantite);
         this.quantite = (short) nouvelleQuantite;
+    }
+
+    /**
+     * <b>Immuabilite comptable</b> : une ligne rattachee a une commande est une piece
+     * comptable (conservee 7 ans), plus une ligne de panier. Toute mutation est
+     * refusee ICI, dans l entite — pas par convention d appel : meme un appelant qui
+     * tiendrait encore une reference (la collection du panier n est pas purgee dans
+     * la transaction de conversion, voir {@link #rattacherA}) se heurte a la garde.
+     */
+    private void exigerHorsCommande() {
+        if (commande != null) {
+            throw new IllegalStateException(
+                    "La ligne appartient a la commande %s : une piece comptable est immuable."
+                            .formatted(commande.getNumero()));
+        }
     }
 
     /**
@@ -125,6 +142,7 @@ public class LignePanier {
      * comprise. Seul ce changement de FK fait foi ; le panier se recharge vide.</p>
      */
     void rattacherA(Commande commande) {
+        exigerHorsCommande(); // definitif : une ligne ne change jamais de commande
         this.commande = Objects.requireNonNull(commande, "commande");
         this.panier = null;
     }

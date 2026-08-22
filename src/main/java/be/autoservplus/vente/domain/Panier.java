@@ -111,13 +111,19 @@ public class Panier extends BaseEntity {
         return true;
     }
 
+    // Les deux retraits ci-dessous EPARGNENT toute ligne deja rattachee a une
+    // commande : la retirer de la collection la marquerait orpheline et Hibernate
+    // supprimerait physiquement une piece comptable. En production le cas est
+    // inatteignable (une ligne de commande n'est plus chargee avec le panier),
+    // mais l'immuabilite ne repose pas sur cette hypothese de chargement.
+
     public boolean retirerLigne(Long ligneId) {
         Objects.requireNonNull(ligneId, "ligneId");
-        return this.lignes.removeIf(l -> ligneId.equals(l.getId()));
+        return this.lignes.removeIf(l -> ligneId.equals(l.getId()) && l.getCommande() == null);
     }
 
     public void vider() {
-        this.lignes.clear();
+        this.lignes.removeIf(l -> l.getCommande() == null);
     }
 
     public boolean estVide() {

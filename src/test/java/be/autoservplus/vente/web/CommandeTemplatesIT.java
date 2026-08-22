@@ -12,8 +12,10 @@ import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.ConsentementRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.vente.domain.Commande;
+import be.autoservplus.vente.domain.Panier;
 import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.vente.repository.CommandeRepository;
+import be.autoservplus.vente.repository.PanierRepository;
 import be.autoservplus.vente.service.PanierService;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,6 +68,7 @@ class CommandeTemplatesIT {
     @Autowired private CategorieRepository categories;
     @Autowired private PieceRepository pieces;
     @Autowired private PanierService panierService;
+    @Autowired private PanierRepository paniers;
     @Autowired private CommandeRepository commandes;
     @Autowired private ConsentementRepository consentements;
     @Autowired private EntityManager entityManager;
@@ -161,7 +164,15 @@ class CommandeTemplatesIT {
         assertThat(preuves.get(0).isAccorde()).isTrue();
         assertThat(preuves.get(0).getAdresseIp()).isEqualTo("127.0.0.1");
 
-        // Les lignes ont ete DEPLACEES : le panier survit mais se recharge vide.
+        // Les lignes ont ete DEPLACEES : preuve COTE BASE, apres vidage de la session
+        // (le clear ci-dessus) — le panier RECHARGE depuis PostgreSQL n'a plus aucune
+        // ligne, ce n'est pas un etat d'instance en memoire. La gestion du piege
+        // orphanRemoval est donc verifiee la ou elle compte : sur les FK.
+        Panier recharge = paniers.findByMembreEmail("marie@exemple.be").orElseThrow();
+        assertThat(recharge.getLignes())
+                .as("Le panier-contenant survit mais ne contient plus de ligne active")
+                .isEmpty();
+
         mvc.perform(get("/panier").locale(Locale.FRENCH))
                 .andExpect(content().string(containsString("Votre panier est vide.")))
                 .andExpect(content().string(containsString("Panier (0)")));
