@@ -127,6 +127,25 @@ public class Piece extends BaseEntity {
         this.prixHtva = nouveauPrixHtva;
     }
 
+    public void renommer(String nouveauLibelle) {
+        this.libelle = Objects.requireNonNull(nouveauLibelle, "libelle");
+    }
+
+    /**
+     * Deplace la piece vers une autre categorie.
+     *
+     * @throws IllegalArgumentException si la categorie visee est destinee aux prestations
+     */
+    public void changerCategorie(Categorie nouvelleCategorie) {
+        Objects.requireNonNull(nouvelleCategorie, "categorie");
+        if (nouvelleCategorie.getType() != TypeCategorie.PIECE) {
+            throw new IllegalArgumentException(
+                    "La categorie « %s » est destinee aux prestations, pas aux pieces."
+                            .formatted(nouvelleCategorie.getCode()));
+        }
+        this.categorie = nouvelleCategorie;
+    }
+
     public void activer() { this.actif = true; }
     public void desactiver() { this.actif = false; }
 
@@ -141,7 +160,7 @@ public class Piece extends BaseEntity {
     public void setMarque(String marque) { this.marque = marque; }
     public BigDecimal getPrixHtva() { return prixHtva; }
     public BigDecimal getTauxTva() { return tauxTva; }
-    public void setTauxTva(BigDecimal tauxTva) { this.tauxTva = tauxTva; }
+    public void setTauxTva(BigDecimal tauxTva) { this.tauxTva = TauxTvaBelge.verifier(tauxTva); }
     public int getQuantiteStock() { return quantiteStock; }
     public void setQuantiteStock(int quantiteStock) { this.quantiteStock = quantiteStock; }
     public int getSeuilAlerte() { return seuilAlerte; }
