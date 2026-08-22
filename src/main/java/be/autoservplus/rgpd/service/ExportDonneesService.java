@@ -140,14 +140,14 @@ public class ExportDonneesService {
         return new FichierExport(nomDuFichier(), contenu);
     }
 
-    /** Temps restant avant un nouvel export ; vide si le membre peut exporter. */
+    /**
+     * Temps restant avant un nouvel export ; vide si le membre peut exporter.
+     *
+     * <p>Expose au controleur ce que la garde utilise elle-meme : l ecran annonce
+     * l echeance avant la tentative, il ne la decouvre pas par un refus.
+     */
     public Optional<Duration> attenteRestante(String email) {
         return registre.attenteRestante(email);
-    }
-
-    /** Instant du dernier export encore dans la fenetre de 24 heures, s il existe. */
-    public Optional<Instant> dernierExport(String email) {
-        return registre.dernierExport(email);
     }
 
     /**

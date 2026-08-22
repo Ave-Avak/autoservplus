@@ -608,14 +608,15 @@ class ExportDonneesServiceTest {
         }
 
         @Test
-        @DisplayName("expose la date du dernier export pour l'affichage de confirmation")
-        void dernierExportExpose() {
+        @DisplayName("expose l'echeance a l'ecran avant meme la tentative")
+        void echeanceExposee() {
             compteSansDonnees();
             motDePasseValide();
 
-            assertThat(service.dernierExport(EMAIL)).isEmpty();
+            assertThat(service.attenteRestante(EMAIL)).isEmpty();
             service.exporter(EMAIL, "MotDePasseDeMarie!");
-            assertThat(service.dernierExport(EMAIL)).contains(MAINTENANT);
+            assertThat(service.attenteRestante(EMAIL))
+                    .contains(RegistreExportsRecents.DELAI_ENTRE_EXPORTS);
         }
     }
 }
