@@ -1,24 +1,37 @@
 package be.autoservplus.catalogue.service;
 
 import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.catalogue.domain.HistoriqueModificationCatalogue;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
+import be.autoservplus.catalogue.domain.TypeEntiteCatalogue;
 import be.autoservplus.catalogue.repository.CategorieRepository;
+import be.autoservplus.catalogue.repository.HistoriqueModificationCatalogueRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.catalogue.service.dto.ArticleVueAdmin;
 import be.autoservplus.catalogue.service.dto.DonneesPiece;
 import be.autoservplus.catalogue.service.dto.DonneesPrestation;
+import be.autoservplus.catalogue.service.dto.ModificationCatalogueVue;
 import be.autoservplus.catalogue.service.dto.PropositionSuppression;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.identite.service.AuteurCourant;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import java.time.Clock;
+import java.time.Instant;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -36,6 +49,12 @@ import java.util.UUID;
  * chapitre sur l historique. Le service s appuie sur cette recopie, il n a donc
  * aucune precaution supplementaire a prendre ici — l invariant est prouve par
  * {@code AdminCatalogueServiceIT}.</p>
+ *
+ * <p>A2/A5 exigent aussi que les modifications soient <b>historisees (qui, quand,
+ * quoi)</b> : chaque champ metier reellement modifie ecrit une ligne de
+ * {@code historique_modification_catalogue}, dans la meme transaction que la
+ * modification. Ce journal trace l evolution du <b>catalogue</b> et rien d autre —
+ * il ne dit rien des documents deja emis, qui par construction n ont pas bouge.</p>
  */
 @Service
 @Transactional(readOnly = true)
@@ -45,13 +64,22 @@ public class AdminCatalogueService {
     private final CategorieRepository categories;
     private final PrestationRepository prestations;
     private final PieceRepository pieces;
+    private final HistoriqueModificationCatalogueRepository historiques;
+    private final AuteurCourant auteurCourant;
+    private final Clock horloge;
 
     public AdminCatalogueService(CategorieRepository categories,
                                  PrestationRepository prestations,
-                                 PieceRepository pieces) {
+                                 PieceRepository pieces,
+                                 HistoriqueModificationCatalogueRepository historiques,
+                                 AuteurCourant auteurCourant,
+                                 Clock horloge) {
         this.categories = categories;
         this.prestations = prestations;
         this.pieces = pieces;
+        this.historiques = historiques;
+        this.auteurCourant = auteurCourant;
+        this.horloge = horloge;
     }
 
     // --- vues back-office --------------------------------------------------------------
@@ -177,6 +205,9 @@ public class AdminCatalogueService {
             throw new DoublonCatalogueException("libelle", donnees.libelle(),
                     "Une prestation nommee « %s » existe deja.".formatted(donnees.libelle()));
         }
+        // Photo AVANT prise apres les refus : une modification rejetee n a rien change,
+        // elle n a donc rien a historiser.
+        Map<String, String> avant = etatDe(prestation);
         prestation.changerCategorie(categorieDeType(donnees.codeCategorie(), TypeCategorie.SERVICE));
         prestation.renommer(donnees.libelle());
         prestation.setDescription(donnees.description());
@@ -188,6 +219,7 @@ public class AdminCatalogueService {
         } else {
             prestation.desactiver();
         }
+        historiser(TypeEntiteCatalogue.PRESTATION, prestation.getId(), avant, etatDe(prestation));
         return prestation;
     }
 
@@ -200,6 +232,7 @@ public class AdminCatalogueService {
     @Transactional
     public Piece modifierPiece(UUID reference, DonneesPiece donnees) {
         Piece piece = chargerPiece(reference);
+        Map<String, String> avant = etatDe(piece);
         piece.changerCategorie(categorieDeType(donnees.codeCategorie(), TypeCategorie.PIECE));
         piece.renommer(donnees.libelle());
         piece.setMarque(donnees.marque());
@@ -213,7 +246,26 @@ public class AdminCatalogueService {
         } else {
             piece.desactiver();
         }
+        historiser(TypeEntiteCatalogue.PIECE, piece.getId(), avant, etatDe(piece));
         return piece;
+    }
+
+    // --- historique des modifications (A2, A5) -----------------------------------------
+
+    /** Historique des modifications d une prestation, du plus recent au plus ancien (A2). */
+    public List<ModificationCatalogueVue> historiquePrestation(UUID reference) {
+        return historique(TypeEntiteCatalogue.PRESTATION, chargerPrestation(reference).getId());
+    }
+
+    /** Historique des modifications d une piece, du plus recent au plus ancien (A5). */
+    public List<ModificationCatalogueVue> historiquePiece(UUID reference) {
+        return historique(TypeEntiteCatalogue.PIECE, chargerPiece(reference).getId());
+    }
+
+    private List<ModificationCatalogueVue> historique(TypeEntiteCatalogue type, Long entiteId) {
+        return historiques.historiqueDe(type, entiteId).stream()
+                .map(ModificationCatalogueVue::de)
+                .toList();
     }
 
     // --- suppression ou desactivation (A3, A6) -----------------------------------------
@@ -314,6 +366,83 @@ public class AdminCatalogueService {
     }
 
     // --- helpers -----------------------------------------------------------------------
+
+    /**
+     * Ecrit l historique d une modification (A2, A5) : <b>une ligne par champ
+     * reellement modifie</b>, dans la meme transaction que la modification elle-meme.
+     * Un echec ulterieur annule le changement et sa trace ensemble — le journal ne
+     * peut ni manquer une modification ni en inventer une.
+     *
+     * <p>Le diff se fait sur deux photos <b>textuelles</b> de l entite plutot que
+     * champ a champ en Java. Deux consequences voulues : la normalisation (echelle des
+     * montants notamment) a lieu une seule fois, si bien qu un prix re-soumis
+     * « 75.0 » contre « 75.00 » stocke ne produit aucune ligne fantome ; et la valeur
+     * comparee est exactement celle qui sera stockee, sans traduction intermediaire.</p>
+     *
+     * <p>Une seule lecture de l horloge et une seule resolution de l auteur pour tout
+     * le lot : les lignes d une meme modification partagent leur horodatage, ce qui les
+     * rend reconnaissables comme un seul geste d administration.</p>
+     */
+    private void historiser(TypeEntiteCatalogue type, Long entiteId,
+                            Map<String, String> avant, Map<String, String> apres) {
+        Instant maintenant = horloge.instant();
+        Utilisateur auteur = auteurCourant.resoudre();
+        avant.forEach((champ, valeurAvant) -> {
+            String valeurApres = apres.get(champ);
+            if (!Objects.equals(valeurAvant, valeurApres)) {
+                historiques.save(new HistoriqueModificationCatalogue(
+                        type, entiteId, champ, valeurAvant, valeurApres, maintenant, auteur));
+            }
+        });
+    }
+
+    /**
+     * Photo des champs <b>metier</b> d une prestation, dans l ordre du formulaire.
+     * Les colonnes d audit ({@code created_*}, {@code updated_*}) en sont exclues :
+     * elles decrivent l ecriture, pas la decision de gestion — les historiser
+     * reviendrait a journaliser le journal. Le code n y figure pas non plus : identite
+     * technique immuable, la modification ne peut pas le changer.
+     *
+     * <p>{@code LinkedHashMap} et non {@code Map.of} : l ordre d insertion determine
+     * l ordre des lignes ecrites pour une meme modification, et les valeurs sont
+     * nullables (une description peut ne pas exister).</p>
+     */
+    private static Map<String, String> etatDe(Prestation prestation) {
+        Map<String, String> etat = new LinkedHashMap<>();
+        etat.put("categorie", prestation.getCategorie().getCode());
+        etat.put("libelle", prestation.getLibelle());
+        etat.put("description", prestation.getDescription());
+        etat.put("prixHtva", montant(prestation.getPrixHtva()));
+        etat.put("tauxTva", montant(prestation.getTauxTva()));
+        etat.put("dureeMinutes", String.valueOf(prestation.getDureeMinutes()));
+        etat.put("actif", String.valueOf(prestation.isActif()));
+        return etat;
+    }
+
+    /** Photo des champs metier d une piece ; la reference fabricant, immuable, en est exclue. */
+    private static Map<String, String> etatDe(Piece piece) {
+        Map<String, String> etat = new LinkedHashMap<>();
+        etat.put("categorie", piece.getCategorie().getCode());
+        etat.put("libelle", piece.getLibelle());
+        etat.put("marque", piece.getMarque());
+        etat.put("description", piece.getDescription());
+        etat.put("prixHtva", montant(piece.getPrixHtva()));
+        etat.put("tauxTva", montant(piece.getTauxTva()));
+        etat.put("quantiteStock", String.valueOf(piece.getQuantiteStock()));
+        etat.put("seuilAlerte", String.valueOf(piece.getSeuilAlerte()));
+        etat.put("actif", String.valueOf(piece.isActif()));
+        return etat;
+    }
+
+    /**
+     * Forme canonique d un montant ou d un taux : deux decimales, comme les colonnes
+     * {@code numeric(_, 2)} du schema. Sans cette normalisation, la comparaison
+     * textuelle prendrait « 21 » et « 21.00 » pour deux valeurs differentes et
+     * inventerait une modification a chaque re-soumission du formulaire.
+     */
+    private static String montant(BigDecimal valeur) {
+        return valeur == null ? null : valeur.setScale(2, RoundingMode.HALF_UP).toPlainString();
+    }
 
     /**
      * Execute le DELETE avec flush immediat : si une reference est apparue entre le

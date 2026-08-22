@@ -9,10 +9,13 @@ import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
 import be.autoservplus.catalogue.service.dto.DonneesPiece;
+import be.autoservplus.catalogue.service.dto.DonneesPrestation;
+import be.autoservplus.catalogue.service.dto.ModificationCatalogueVue;
 import be.autoservplus.catalogue.service.dto.PropositionSuppression;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.intervention.service.InterventionService;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.PosteAtelier;
 import be.autoservplus.reservation.domain.Rdv;
@@ -43,16 +46,19 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 
 /**
  * RM-29 et RM-28 contre un vrai PostgreSQL 16 : les references d historique sont
  * de vraies lignes {@code rdv_service} et {@code ligne_panier}, comptees par les
  * requetes natives des repositories — un JPQL mocke ne prouverait rien ici.
  *
- * <p>Prouve aussi les deux invariants transverses du lot : la suppression
- * definitive est bien <b>physique</b> (verification JDBC, car {@code @SQLRestriction}
- * masquerait un simple soft delete), et une modification de prix catalogue (A5)
- * ne reecrit pas les lignes figees d une commande deja passee.</p>
+ * <p>Prouve aussi les invariants transverses du lot : la suppression definitive est
+ * bien <b>physique</b> (verification JDBC, car {@code @SQLRestriction} masquerait un
+ * simple soft delete), une modification de prix catalogue ne reecrit ni les lignes
+ * figees d une commande deja passee (A5) ni celles d une intervention deja ouverte
+ * (A2), et l historisation des modifications (A2, A5) est ecrite en base, requetable
+ * et triee.</p>
  */
 @SpringBootTest
 @Testcontainers
@@ -76,6 +82,7 @@ class AdminCatalogueServiceIT {
     @Autowired private RdvRepository rdvs;
     @Autowired private PanierService panierService;
     @Autowired private CommandeService commandeService;
+    @Autowired private InterventionService interventions;
     @Autowired private JdbcTemplate jdbc;
 
     private Categorie entretien;
@@ -95,14 +102,24 @@ class AdminCatalogueServiceIT {
         plaquettes = pieces.save(plaquettes);
         marie = utilisateurs.save(new Utilisateur(
                 "marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE));
+        // Le compte derriere le @WithMockUser de classe : sans lui en base, le « qui »
+        // du journal des modifications resterait nul faute de cible pour la FK.
+        utilisateurs.save(new Utilisateur(
+                "admin@garage.be", "$2a$12$h", "Garage", "Paul", TypeUtilisateur.ADMINISTRATEUR));
     }
 
-    private void referencerLaPrestationParUnRdv() {
+    private Rdv referencerLaPrestationParUnRdv() {
         Vehicule golf = vehicules.save(new Vehicule(marie, "1-ABC-123", "VW", "Golf", Motorisation.DIESEL));
         PosteAtelier pont = postes.save(new PosteAtelier("Pont de test"));
-        rdvs.saveAndFlush(new Rdv("RDV-IT-CAT-0001", marie, golf, pont,
+        return rdvs.saveAndFlush(new Rdv("RDV-IT-CAT-0001", marie, golf, pont,
                 Instant.parse("2026-09-14T08:00:00Z"), Duration.ofMinutes(30),
                 List.of(vidange), null));
+    }
+
+    /** Les donnees de la vidange du setUp, avec les seules valeurs passees en parametre. */
+    private DonneesPrestation vidangeAvec(String libelle, String prixHtva, int dureeMinutes) {
+        return new DonneesPrestation("IT-CAT-ENT", "IT-CAT-VID", libelle, null,
+                new BigDecimal(prixHtva), new BigDecimal("21.00"), dureeMinutes, true);
     }
 
     @Test
@@ -208,5 +225,102 @@ class AdminCatalogueServiceIT {
         // Le catalogue, lui, est bien a jour.
         assertThat(pieces.findByReference(plaquettes.getReference()).orElseThrow().getPrixHtva())
                 .isEqualByComparingTo(new BigDecimal("25.00"));
+    }
+
+    @Test
+    @DisplayName("A2 : modifier le catalogue ne reecrit pas les lignes d une intervention ouverte")
+    void modificationSansEffetSurLInterventionEmise() {
+        Rdv rdv = referencerLaPrestationParUnRdv();
+        interventions.creerDepuisRdv(rdv);
+
+        admin.modifierPrestation(vidange.getReference(), vidangeAvec("Vidange complete", "79.00", 45));
+        prestations.flush();
+
+        // La ligne d intervention garde le prix et le libelle figes a l ouverture du
+        // dossier : le catalogue du jour n a pas voix au chapitre sur un devis emis.
+        assertThat(jdbc.queryForObject(
+                "SELECT prix_unitaire_htva FROM ligne_intervention WHERE service_id = ?",
+                BigDecimal.class, vidange.getId()))
+                .isEqualByComparingTo(new BigDecimal("49.00"));
+        assertThat(jdbc.queryForObject(
+                "SELECT libelle_fige FROM ligne_intervention WHERE service_id = ?",
+                String.class, vidange.getId()))
+                .isEqualTo("Vidange");
+        // Le devis initial, fige a la creation de l intervention, ne bouge pas non plus.
+        assertThat(jdbc.queryForObject(
+                "SELECT montant_devis_htva FROM intervention WHERE rdv_id = ?",
+                BigDecimal.class, rdv.getId()))
+                .isEqualByComparingTo(new BigDecimal("49.00"));
+
+        // Le catalogue, lui, est bien a jour : c est la seule chose qui a change.
+        assertThat(prestations.findByReference(vidange.getReference()).orElseThrow().getPrixHtva())
+                .isEqualByComparingTo(new BigDecimal("79.00"));
+    }
+
+    @Test
+    @DisplayName("A2 : l historique est requetable, du plus recent au plus ancien, avec son auteur")
+    void historiqueRequetableEtTrie() {
+        admin.modifierPrestation(vidange.getReference(), vidangeAvec("Vidange", "59.00", 30));
+        admin.modifierPrestation(vidange.getReference(), vidangeAvec("Vidange express", "59.00", 30));
+
+        List<ModificationCatalogueVue> historique = admin.historiquePrestation(vidange.getReference());
+
+        assertThat(historique)
+                .extracting(ModificationCatalogueVue::champ,
+                        ModificationCatalogueVue::valeurAvant,
+                        ModificationCatalogueVue::valeurApres)
+                .as("Le plus recent en tete : le renommage, puis le changement de prix")
+                .containsExactly(
+                        tuple("libelle", "Vidange", "Vidange express"),
+                        tuple("prixHtva", "49.00", "59.00"));
+
+        // « Qui » : resolu depuis le contexte de securite du @WithMockUser de classe,
+        // puis remonte a l entite pour poser une vraie cle etrangere.
+        assertThat(historique).extracting(ModificationCatalogueVue::auteur)
+                .containsOnly("Paul Garage");
+        assertThat(historique).allSatisfy(vue -> assertThat(vue.horodatage()).isNotNull());
+    }
+
+    @Test
+    @DisplayName("A5 : l historique d une piece est bien ecrit en base, une ligne par champ")
+    void historiqueDeLaPieceEnBase() {
+        admin.modifierPiece(plaquettes.getReference(), new DonneesPiece(
+                "IT-CAT-FRE", "IT-CAT-001", "Plaquettes avant", "Brembo", null,
+                new BigDecimal("24.99"), new BigDecimal("21.00"), 10, 0, true));
+        pieces.flush();
+
+        // Lecture JDBC : les lignes existent vraiment en base, pas seulement dans le
+        // contexte de persistance. Seuls la marque et le prix ont change.
+        assertThat(jdbc.queryForList(
+                "SELECT champ_modifie, valeur_avant, valeur_apres, auteur_id"
+                        + " FROM historique_modification_catalogue"
+                        + " WHERE type_entite = 'PIECE' AND entite_id = ?"
+                        + " ORDER BY champ_modifie", plaquettes.getId()))
+                .extracting(ligne -> ligne.get("champ_modifie"),
+                        ligne -> ligne.get("valeur_avant"),
+                        ligne -> ligne.get("valeur_apres"))
+                .containsExactly(
+                        tuple("marque", null, "Brembo"),
+                        tuple("prixHtva", "19.99", "24.99"));
+
+        assertThat(admin.historiquePiece(plaquettes.getReference())).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("le journal survit a la suppression physique de ce qu il trace (A3, A6)")
+    void journalSurvitALaSuppression() {
+        admin.modifierPiece(plaquettes.getReference(), new DonneesPiece(
+                "IT-CAT-FRE", "IT-CAT-001", "Plaquettes renforcees", null, null,
+                new BigDecimal("19.99"), new BigDecimal("21.00"), 10, 0, true));
+        Long idSupprime = plaquettes.getId();
+
+        // RM-29 : jamais referencee, la piece part physiquement. L absence de FK sur
+        // entite_id est ce qui permet a la trace de lui survivre.
+        admin.supprimerDefinitivementPiece(plaquettes.getReference());
+
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM historique_modification_catalogue WHERE entite_id = ?"
+                        + " AND type_entite = 'PIECE'", Integer.class, idSupprime))
+                .isEqualTo(1);
     }
 }

@@ -1,38 +1,53 @@
 package be.autoservplus.catalogue.service;
 
 import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.catalogue.domain.HistoriqueModificationCatalogue;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
+import be.autoservplus.catalogue.domain.TypeEntiteCatalogue;
 import be.autoservplus.catalogue.repository.CategorieRepository;
+import be.autoservplus.catalogue.repository.HistoriqueModificationCatalogueRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.catalogue.service.dto.ArticleVueAdmin;
 import be.autoservplus.catalogue.service.dto.DonneesPiece;
 import be.autoservplus.catalogue.service.dto.DonneesPrestation;
+import be.autoservplus.catalogue.service.dto.ModificationCatalogueVue;
 import be.autoservplus.catalogue.service.dto.PropositionSuppression;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.identite.domain.TypeUtilisateur;
+import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.identite.service.AuteurCourant;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -47,14 +62,34 @@ import static org.mockito.Mockito.when;
 @DisplayName("AdminCatalogueService")
 class AdminCatalogueServiceTest {
 
+    private static final Instant MAINTENANT = Instant.parse("2026-08-22T10:15:00Z");
+
     @Mock private CategorieRepository categories;
     @Mock private PrestationRepository prestations;
     @Mock private PieceRepository pieces;
+    @Mock private HistoriqueModificationCatalogueRepository historiques;
+    @Mock private AuteurCourant auteurCourant;
 
-    @InjectMocks private AdminCatalogueService service;
+    private AdminCatalogueService service;
 
     private final Categorie entretien = new Categorie("ENTRETIEN", "Entretien", TypeCategorie.SERVICE);
     private final Categorie filtres = new Categorie("P_FILTRES", "Filtres", TypeCategorie.PIECE);
+
+    @BeforeEach
+    void setUp() {
+        // Horloge figee : l horodatage du journal des modifications (A2, A5) est une
+        // valeur attendue du test, pas un instant subi.
+        service = new AdminCatalogueService(categories, prestations, pieces, historiques,
+                auteurCourant, Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
+    }
+
+    /** Les lignes d historique ecrites par l appel qui vient de se produire, dans l ordre. */
+    private List<HistoriqueModificationCatalogue> lignesHistorisees() {
+        ArgumentCaptor<HistoriqueModificationCatalogue> capture =
+                ArgumentCaptor.forClass(HistoriqueModificationCatalogue.class);
+        verify(historiques, atLeast(0)).save(capture.capture());
+        return capture.getAllValues();
+    }
 
     private DonneesPrestation donneesVidange() {
         return new DonneesPrestation("ENTRETIEN", "VID", "Vidange", "Huile et filtre",
@@ -212,6 +247,10 @@ class AdminCatalogueServiceTest {
         private Prestation vidangeExistante() {
             Prestation prestation = new Prestation(entretien, "VID", "Vidange",
                     new BigDecimal("75.00"), 60);
+            // Le journal des modifications designe sa cible par son id : une entite
+            // chargee depuis la base en a toujours un, une entite de test doit se le
+            // voir poser.
+            ReflectionTestUtils.setField(prestation, "id", 7L);
             when(prestations.findByReference(prestation.getReference()))
                     .thenReturn(Optional.of(prestation));
             return prestation;
@@ -355,6 +394,7 @@ class AdminCatalogueServiceTest {
         @DisplayName("applique tous les champs modifiables, reference fabricant exclue")
         void modifieLesChamps() {
             Piece piece = new Piece(filtres, "F-001", "Filtre a huile", new BigDecimal("12.50"));
+            ReflectionTestUtils.setField(piece, "id", 9L);
             when(pieces.findByReference(piece.getReference())).thenReturn(Optional.of(piece));
             Categorie eclairage = new Categorie("P_ECLAIRAGE", "Eclairage", TypeCategorie.PIECE);
             when(categories.findByCode("P_ECLAIRAGE")).thenReturn(Optional.of(eclairage));
@@ -374,6 +414,199 @@ class AdminCatalogueServiceTest {
             assertThat(piece.isActif()).isFalse();
             // La reference fabricant est l ancre d unicite de la piece : inchangee.
             assertThat(piece.getReferenceFabricant()).isEqualTo("F-001");
+        }
+    }
+
+    @Nested
+    @DisplayName("historisation des modifications (A2, A5)")
+    class Historisation {
+
+        private final Utilisateur paul = new Utilisateur("admin@garage.be", "$2a$12$h",
+                "Garage", "Paul", TypeUtilisateur.ADMINISTRATEUR);
+
+        private Prestation vidangePersistee() {
+            Prestation prestation = new Prestation(entretien, "VID", "Vidange",
+                    new BigDecimal("75.00"), 60);
+            prestation.setTauxTva(new BigDecimal("21.00"));
+            prestation.setDescription("Huile et filtre");
+            ReflectionTestUtils.setField(prestation, "id", 7L);
+            when(prestations.findByReference(prestation.getReference()))
+                    .thenReturn(Optional.of(prestation));
+            when(categories.findByCode("ENTRETIEN")).thenReturn(Optional.of(entretien));
+            return prestation;
+        }
+
+        private Piece filtrePersiste() {
+            Piece piece = new Piece(filtres, "F-001", "Filtre a huile", new BigDecimal("12.50"));
+            piece.setTauxTva(new BigDecimal("21.00"));
+            piece.setMarque("Bosch");
+            piece.setDescription("Visserie comprise");
+            piece.setQuantiteStock(8);
+            piece.setSeuilAlerte(2);
+            ReflectionTestUtils.setField(piece, "id", 9L);
+            when(pieces.findByReference(piece.getReference())).thenReturn(Optional.of(piece));
+            return piece;
+        }
+
+        /** Les donnees de la prestation persistee, avec le seul prix modifie. */
+        private DonneesPrestation vidangeAvecPrix(String prixHtva) {
+            return new DonneesPrestation("ENTRETIEN", "VID", "Vidange", "Huile et filtre",
+                    new BigDecimal(prixHtva), new BigDecimal("21.00"), 60, true);
+        }
+
+        @Test
+        @DisplayName("A2 : un seul champ modifie ecrit exactement une ligne (qui, quand, quoi)")
+        void unChampUneLigne() {
+            Prestation prestation = vidangePersistee();
+            when(auteurCourant.resoudre()).thenReturn(paul);
+
+            service.modifierPrestation(prestation.getReference(), vidangeAvecPrix("89.00"));
+
+            assertThat(lignesHistorisees()).singleElement().satisfies(ligne -> {
+                assertThat(ligne.getTypeEntite()).isEqualTo(TypeEntiteCatalogue.PRESTATION);
+                assertThat(ligne.getEntiteId()).isEqualTo(7L);
+                assertThat(ligne.getChampModifie()).isEqualTo("prixHtva");
+                assertThat(ligne.getValeurAvant()).isEqualTo("75.00");
+                assertThat(ligne.getValeurApres()).isEqualTo("89.00");
+                // Le « quand » vient de l horloge injectee, jamais d un Instant.now().
+                assertThat(ligne.getHorodatage()).isEqualTo(MAINTENANT);
+                // Le « qui » vient du contexte de securite, jamais d un parametre de requete.
+                assertThat(ligne.getAuteur()).isSameAs(paul);
+            });
+        }
+
+        @Test
+        @DisplayName("A2 : chaque champ change produit sa propre ligne")
+        void uneLigneParChampChange() {
+            Prestation prestation = vidangePersistee();
+
+            service.modifierPrestation(prestation.getReference(), new DonneesPrestation(
+                    "ENTRETIEN", "VID", "Vidange longue duree", "Huile et filtre",
+                    new BigDecimal("89.00"), new BigDecimal("21.00"), 45, true));
+
+            assertThat(lignesHistorisees())
+                    .extracting(HistoriqueModificationCatalogue::getChampModifie,
+                            HistoriqueModificationCatalogue::getValeurAvant,
+                            HistoriqueModificationCatalogue::getValeurApres)
+                    .containsExactly(
+                            tuple("libelle", "Vidange", "Vidange longue duree"),
+                            tuple("prixHtva", "75.00", "89.00"),
+                            tuple("dureeMinutes", "60", "45"));
+        }
+
+        @Test
+        @DisplayName("A2 : une modification qui ne change rien n ecrit aucune ligne")
+        void aucuneLigneSansChangement() {
+            Prestation prestation = vidangePersistee();
+
+            service.modifierPrestation(prestation.getReference(), vidangeAvecPrix("75.00"));
+
+            verifyNoInteractions(historiques);
+        }
+
+        @Test
+        @DisplayName("A2 : le meme prix a une autre echelle n invente pas de modification")
+        void aucuneLignePourUneEchelleDifferente() {
+            Prestation prestation = vidangePersistee();
+
+            // Le formulaire renvoie « 75 » la ou la base stocke « 75.00 » : meme montant.
+            service.modifierPrestation(prestation.getReference(), vidangeAvecPrix("75"));
+
+            verifyNoInteractions(historiques);
+        }
+
+        @Test
+        @DisplayName("A2 : une valeur qui disparait est tracee comme telle")
+        void traceLesValeursNulles() {
+            Prestation prestation = vidangePersistee();
+
+            service.modifierPrestation(prestation.getReference(), new DonneesPrestation(
+                    "ENTRETIEN", "VID", "Vidange", null,
+                    new BigDecimal("75.00"), new BigDecimal("21.00"), 60, true));
+
+            assertThat(lignesHistorisees()).singleElement().satisfies(ligne -> {
+                assertThat(ligne.getChampModifie()).isEqualTo("description");
+                assertThat(ligne.getValeurAvant()).isEqualTo("Huile et filtre");
+                assertThat(ligne.getValeurApres()).isNull();
+            });
+        }
+
+        @Test
+        @DisplayName("A2 : une modification refusee ne laisse aucune trace")
+        void aucuneLigneSurRefus() {
+            Prestation prestation = new Prestation(entretien, "VID", "Vidange",
+                    new BigDecimal("75.00"), 60);
+            ReflectionTestUtils.setField(prestation, "id", 7L);
+            when(prestations.findByReference(prestation.getReference()))
+                    .thenReturn(Optional.of(prestation));
+            when(prestations.existsByLibelleIgnoreCaseAndReferenceNot(
+                    "Diagnostic", prestation.getReference())).thenReturn(true);
+
+            assertThatThrownBy(() -> service.modifierPrestation(prestation.getReference(),
+                    new DonneesPrestation("ENTRETIEN", "VID", "Diagnostic", null,
+                            new BigDecimal("75.00"), new BigDecimal("21.00"), 60, true)))
+                    .isInstanceOf(DoublonCatalogueException.class);
+
+            verifyNoInteractions(historiques);
+        }
+
+        @Test
+        @DisplayName("A5 : la piece historise ses champs propres, stock et seuil compris")
+        void historisationDeLaPiece() {
+            Piece piece = filtrePersiste();
+            Categorie eclairage = new Categorie("P_ECLAIRAGE", "Eclairage", TypeCategorie.PIECE);
+            when(categories.findByCode("P_ECLAIRAGE")).thenReturn(Optional.of(eclairage));
+
+            service.modifierPiece(piece.getReference(), new DonneesPiece(
+                    "P_ECLAIRAGE", "F-001", "Ampoule H7", "Philips", "Visserie comprise",
+                    new BigDecimal("9.90"), new BigDecimal("6.00"), 20, 5, false));
+
+            assertThat(lignesHistorisees())
+                    .allSatisfy(ligne -> {
+                        assertThat(ligne.getTypeEntite()).isEqualTo(TypeEntiteCatalogue.PIECE);
+                        assertThat(ligne.getEntiteId()).isEqualTo(9L);
+                    })
+                    .extracting(HistoriqueModificationCatalogue::getChampModifie)
+                    // La description, seule inchangee, est absente ; la reference
+                    // fabricant est immuable, elle n est jamais comparee.
+                    .containsExactly("categorie", "libelle", "marque", "prixHtva", "tauxTva",
+                            "quantiteStock", "seuilAlerte", "actif");
+        }
+
+        @Test
+        @DisplayName("sans utilisateur identifiable, la trace existe quand meme sans auteur")
+        void traceSansAuteur() {
+            Prestation prestation = vidangePersistee();
+            when(auteurCourant.resoudre()).thenReturn(null);
+
+            service.modifierPrestation(prestation.getReference(), vidangeAvecPrix("89.00"));
+
+            assertThat(lignesHistorisees()).singleElement()
+                    .extracting(HistoriqueModificationCatalogue::getAuteur).isNull();
+        }
+
+        @Test
+        @DisplayName("l historique est expose en DTO : l entite ne franchit pas le service")
+        void historiqueExposeEnDto() {
+            Prestation prestation = new Prestation(entretien, "VID", "Vidange",
+                    new BigDecimal("75.00"), 60);
+            ReflectionTestUtils.setField(prestation, "id", 7L);
+            when(prestations.findByReference(prestation.getReference()))
+                    .thenReturn(Optional.of(prestation));
+            when(historiques.historiqueDe(TypeEntiteCatalogue.PRESTATION, 7L)).thenReturn(List.of(
+                    new HistoriqueModificationCatalogue(TypeEntiteCatalogue.PRESTATION, 7L,
+                            "prixHtva", "75.00", "89.00", MAINTENANT, paul)));
+
+            List<ModificationCatalogueVue> historique =
+                    service.historiquePrestation(prestation.getReference());
+
+            assertThat(historique).singleElement().satisfies(vue -> {
+                assertThat(vue.champ()).isEqualTo("prixHtva");
+                assertThat(vue.valeurAvant()).isEqualTo("75.00");
+                assertThat(vue.valeurApres()).isEqualTo("89.00");
+                assertThat(vue.horodatage()).isEqualTo(MAINTENANT);
+                assertThat(vue.auteur()).isEqualTo("Paul Garage");
+            });
         }
     }
 
