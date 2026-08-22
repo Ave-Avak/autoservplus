@@ -8,7 +8,6 @@ import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
-import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -16,16 +15,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
 /**
- * Consultation et administration du catalogue.
+ * Consultation publique du catalogue.
  *
- * <p>Couvre les fonctionnalites F3, F4 et F5 du cote public, ainsi que A1 a A6 du cote
- * back-office. Seuls les elements actifs sont exposes au visiteur : desactiver une
- * prestation la retire des surfaces publiques sans effacer son historique de vente.</p>
+ * <p>Couvre les fonctionnalites F3, F4 et F5. Seuls les elements actifs sont exposes
+ * au visiteur : desactiver une prestation la retire des surfaces publiques sans
+ * effacer son historique de vente. Le back-office (A1 a A6) vit dans
+ * {@link AdminCatalogueService}, protege par role.</p>
  */
 @Service
 @Transactional(readOnly = true)
@@ -115,79 +114,9 @@ public class CatalogueService {
     }
 
     // --- administration ---------------------------------------------------------------
-
-    /**
-     * Cree une categorie.
-     *
-     * @throws RegleMetierException si le code est deja utilise
-     */
-    @Transactional
-    public Categorie creerCategorie(String code, String libelle, TypeCategorie type) {
-        // Unicite du code : invariant technique, aucun code RM du CdC ne la couvre.
-        if (categories.existsByCode(code)) {
-            throw new RegleMetierException(
-                    "Le code de categorie « %s » est deja utilise.".formatted(code));
-        }
-        return categories.save(new Categorie(code, libelle, type));
-    }
-
-    /**
-     * Cree une prestation rattachee a une categorie de type SERVICE.
-     *
-     * @throws RegleMetierException si le code existe deja ou si la categorie est du mauvais type
-     */
-    @Transactional
-    public Prestation creerPrestation(String codeCategorie, String code, String libelle,
-                                      BigDecimal prixHtva, int dureeMinutes) {
-        // Unicite du code : invariant technique, sans code RM.
-        if (prestations.existsByCode(code)) {
-            throw new RegleMetierException(
-                    "Le code de prestation « %s » est deja utilise.".formatted(code));
-        }
-        Categorie categorie = categorieParCode(codeCategorie);
-        // Coherence de type (une prestation vit dans une categorie SERVICE) :
-        // autre famille d invariant que l unicite, elle non plus sans code RM.
-        if (categorie.getType() != TypeCategorie.SERVICE) {
-            throw new RegleMetierException(
-                    "La categorie « %s » est destinee aux pieces, pas aux prestations."
-                            .formatted(codeCategorie));
-        }
-        return prestations.save(new Prestation(categorie, code, libelle, prixHtva, dureeMinutes));
-    }
-
-    /**
-     * Cree une piece rattachee a une categorie de type PIECE.
-     *
-     * @throws RegleMetierException si la reference fabricant existe deja ou si la
-     *                              categorie est du mauvais type
-     */
-    @Transactional
-    public Piece creerPiece(String codeCategorie, String referenceFabricant,
-                            String libelle, BigDecimal prixHtva) {
-        // Unicite de la reference fabricant : invariant technique, sans code RM.
-        if (pieces.existsByReferenceFabricant(referenceFabricant)) {
-            throw new RegleMetierException(
-                    "La reference fabricant « %s » est deja enregistree.".formatted(referenceFabricant));
-        }
-        Categorie categorie = categorieParCode(codeCategorie);
-        // Coherence de type (une piece vit dans une categorie PIECE), sans code RM.
-        if (categorie.getType() != TypeCategorie.PIECE) {
-            throw new RegleMetierException(
-                    "La categorie « %s » est destinee aux prestations, pas aux pieces."
-                            .formatted(codeCategorie));
-        }
-        return pieces.save(new Piece(categorie, referenceFabricant, libelle, prixHtva));
-    }
-
-    /** Pieces dont le stock a atteint le seuil d alerte, pour le tableau de bord du gerant. */
-    public List<Piece> piecesEnAlerteDeStock() {
-        return pieces.enAlerteDeStock();
-    }
-
-    @Transactional
-    public void reapprovisionner(UUID reference, int quantite) {
-        pieceParReference(reference).ajouterAuStock(quantite);
-    }
+    // La creation et la modification (A1, A2, A4, A5) vivent dans AdminCatalogueService,
+    // protege par @PreAuthorize. Ne restent ici que les suppressions logiques, en
+    // attendant leur remplacement par la suppression conditionnelle RM-29.
 
     /** Retire une prestation du catalogue par suppression logique. */
     @Transactional

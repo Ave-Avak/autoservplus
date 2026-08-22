@@ -24,6 +24,16 @@ public interface PrestationRepository extends JpaRepository<Prestation, Long> {
 
     boolean existsByCode(String code);
 
+    /** Unicite du nom de service (A1), verifiee sans tenir compte de la casse. */
+    boolean existsByLibelleIgnoreCase(String libelle);
+
+    /** Variante pour la modification (A2) : la prestation editee ne se bloque pas elle-meme. */
+    boolean existsByLibelleIgnoreCaseAndReferenceNot(String libelle, UUID reference);
+
+    /** Catalogue complet pour le back-office, actifs et inactifs confondus. */
+    @Query("SELECT p FROM Prestation p JOIN FETCH p.categorie ORDER BY p.libelle")
+    List<Prestation> catalogueComplet();
+
     @Query("SELECT p FROM Prestation p JOIN FETCH p.categorie WHERE p.reference = :reference")
     Optional<Prestation> findByReference(@Param("reference") UUID reference);
 

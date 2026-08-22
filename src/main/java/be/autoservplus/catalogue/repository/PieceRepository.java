@@ -24,6 +24,10 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
 
     boolean existsByReferenceFabricant(String referenceFabricant);
 
+    /** Catalogue complet pour le back-office, actifs et inactifs confondus. */
+    @Query("SELECT p FROM Piece p JOIN FETCH p.categorie ORDER BY p.libelle")
+    List<Piece> catalogueComplet();
+
     @Query("SELECT p FROM Piece p JOIN FETCH p.categorie WHERE p.reference = :reference")
     Optional<Piece> findByReference(@Param("reference") UUID reference);
 
