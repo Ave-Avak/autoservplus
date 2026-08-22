@@ -4,6 +4,7 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.rgpd.repository.AjoutAuPanier;
 import be.autoservplus.rgpd.repository.CommandeExportRepository;
 import be.autoservplus.rgpd.repository.ConsentementExportRepository;
@@ -66,6 +67,16 @@ import java.util.stream.Collectors;
  * charge d avance ce que la conversion en objet de transfert lira. Le cout est
  * borne — une requete par section, deux pour les commandes et leurs lignes —
  * independamment du volume : aucun N+1.
+ *
+ * <p><b>Suppressions logiques</b> : une ligne masquee par {@code deleted_at} est
+ * toujours detenue, l article 15 la vise donc. Le parc du membre est lu par
+ * requete native pour passer outre le {@code @SQLRestriction} de {@code Vehicule}
+ * — seule entite que l application supprime effectivement de facon logique — et
+ * chaque vehicule sort marque {@code supprime} avec sa date. Les sections atelier
+ * en dependent : joindre {@code Vehicule} y aurait fait disparaitre les
+ * rendez-vous et interventions d un vehicule retire du parc, alors que la
+ * suppression est logique precisement pour preserver cet historique. La plaque y
+ * est donc rapprochee depuis ce parc, jamais lue sur la relation.
  *
  * <p><b>Perimetre non couvert en V1</b>, faute d entite JPA (les tables existent
  * au schema mais aucun code ne les alimente) : avis, messagerie, notifications.
@@ -213,22 +224,59 @@ public class ExportDonneesService {
         Locale langue = Locale.forLanguageTag(membre.getLangue().name());
         List<Consentement> preuves = consentements.pourMembre(email);
 
+        // Parc complet du membre, suppressions logiques comprises : c'est la seule
+        // liste qui dise ce qui est reellement detenu, et elle sert de reference
+        // aux sections atelier — dont les jointures vers Vehicule auraient filtre
+        // les dossiers d'un vehicule retire du parc.
+        List<Vehicule> parc = vehicules.pourMembre(membre.getId());
+        Map<Long, String> plaques = parc.stream()
+                .collect(Collectors.toMap(Vehicule::getId, Vehicule::getPlaque));
+
         return new ExportDonnees(
                 Instant.now(horloge),
                 new ExportDonnees.DonneesPersonnelles(
                         ExportDonnees.ProfilExport.de(membre, preuves),
-                        vehicules.pourMembre(email).stream()
-                                .map(ExportDonnees.VehiculeExport::de).toList(),
+                        parc.stream().map(ExportDonnees.VehiculeExport::de).toList(),
                         panierEnCours(email),
                         commandesAvecLignes(email),
                         rendezVous.pourMembre(email).stream()
-                                .map(ExportDonnees.RdvExport::de).toList(),
-                        interventions.pourMembre(email).stream()
-                                .map(ExportDonnees.InterventionExport::de).toList(),
+                                .map(rdv -> ExportDonnees.RdvExport.de(rdv, plaque(plaques, rdv.getVehicule())))
+                                .toList(),
+                        interventionsDuParc(plaques),
                         preuves.stream().map(ExportDonnees.ConsentementExport::de).toList(),
                         ExportDonnees.ConnexionExport.de(membre)),
                 catalogue.informationsTraitement(langue),
                 catalogue.exclusions(langue));
+    }
+
+    /**
+     * Interventions portant sur les vehicules du membre, y compris ceux qu il a
+     * retires de son parc.
+     *
+     * <p>Sans vehicule, pas d intervention possible : le cas sort avant la requete
+     * plutot que de soumettre un {@code IN ()} vide a la base.
+     */
+    private List<ExportDonnees.InterventionExport> interventionsDuParc(Map<Long, String> plaques) {
+        if (plaques.isEmpty()) {
+            return List.of();
+        }
+        return interventions.pourVehicules(plaques.keySet()).stream()
+                .map(intervention -> ExportDonnees.InterventionExport.de(intervention,
+                        plaque(plaques, intervention.getVehicule())))
+                .toList();
+    }
+
+    /**
+     * Plaque du vehicule, rapprochee par identifiant.
+     *
+     * <p>Lire {@code vehicule.getPlaque()} directement ferait initialiser le proxy
+     * paresseux, et l initialisation par identifiant applique le
+     * {@code @SQLRestriction} : un vehicule supprime leverait
+     * {@code EntityNotFoundException}. Seul l identifiant est lu sur le proxy — il
+     * vient de la cle etrangere, sans acces a la base.
+     */
+    private static String plaque(Map<Long, String> plaques, Vehicule vehicule) {
+        return vehicule == null ? null : plaques.get(vehicule.getId());
     }
 
     /**

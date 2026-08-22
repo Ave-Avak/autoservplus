@@ -8,33 +8,40 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 /**
- * Lecture des vehicules d un membre pour l export du droit d acces (F22).
+ * Lecture des vehicules d un membre pour l export du droit d acces (F22),
+ * <b>suppressions logiques comprises</b>.
  *
- * <p>Repository <b>propre au module rgpd</b> plutot qu une methode ajoutee a
- * {@code VehiculeRepository}. Deux raisons, et la seconde est la vraie :
- * <ul>
- *   <li>le perimetre differe — {@code VehiculeRepository.findByMembre} filtre sur
- *       {@code actif = true} parce qu il alimente le formulaire de reservation,
- *       alors qu un vehicule desactive reste une donnee detenue et doit sortir ;</li>
- *   <li>l export est une obligation legale dont la <b>completude doit s auditer en
- *       un seul endroit</b> : toutes ses requetes vivent ici, et une evolution des
- *       repositories metier ne peut pas retrecir silencieusement ce qui est
- *       communique a la personne.</li>
- * </ul>
+ * <p>Repository propre au module rgpd plutot qu une methode ajoutee a
+ * {@code VehiculeRepository} : le perimetre n est pas le meme.
+ * {@code VehiculeRepository.findByMembre} alimente le formulaire de reservation et
+ * ne rend que les vehicules actifs et non supprimes ; l article 15 porte sur les
+ * donnees <i>detenues</i>, pas sur celles qui restent utilisables.
  *
- * <p>Il etend {@link Repository} et non {@code JpaRepository} : aucune methode
- * d ecriture n est heritee, l export ne peut structurellement rien modifier.
+ * <p><b>Requete native, et pourquoi.</b> Le {@code @SQLRestriction} de l entite
+ * ajoute {@code deleted_at IS NULL} a toute requete HQL et a tout chargement par
+ * identifiant ; il ne se desactive pas a la demande, contrairement a un
+ * {@code @Filter} Hibernate. Passer l entite en {@code @Filter} aurait exige de
+ * l activer dans <i>chaque</i> session du reste de l application, sous peine de
+ * faire reapparaitre les vehicules supprimes dans le parc du membre et dans la
+ * reservation : un risque disproportionne pour un besoin de lecture. Une requete
+ * native ecrit son propre SQL, la restriction ne s y applique pas, et le
+ * changement reste confine a ce fichier — le filtrage normal de l application est
+ * intact.
  *
- * <p><b>Limite connue</b> : le {@code @SQLRestriction} de l entite masque les
- * vehicules supprimes logiquement. Ils restent detenus en base et echappent donc a
- * l export — point a documenter au rapport ecrit.
+ * <p>La lecture reste sans danger : {@link Repository} n herite d aucune methode
+ * d ecriture et le service est {@code readOnly}. Les entites rendues sont bien
+ * gerees par la session, mais rien ne les modifie et aucun {@code flush} n a lieu.
+ *
+ * <p>Le filtre porte sur {@code membre_id} et non sur l adresse de courriel : le
+ * SQL natif eviterait sinon une jointure vers {@code utilisateur}, elle-meme
+ * soumise a sa propre suppression logique.
  */
 public interface VehiculeExportRepository extends Repository<Vehicule, Long> {
 
-    @Query("""
-            SELECT v FROM Vehicule v
-            WHERE LOWER(v.membre.email) = LOWER(:email)
+    @Query(value = """
+            SELECT v.* FROM vehicule v
+            WHERE v.membre_id = :membreId
             ORDER BY v.id
-            """)
-    List<Vehicule> pourMembre(@Param("email") String email);
+            """, nativeQuery = true)
+    List<Vehicule> pourMembre(@Param("membreId") Long membreId);
 }

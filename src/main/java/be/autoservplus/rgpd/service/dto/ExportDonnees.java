@@ -131,6 +131,18 @@ public record ExportDonnees(
      * ({@code updated_by}, versions) decrivent l exploitation de la plateforme, pas
      * la personne. {@code dateAjout} fait exception — savoir depuis quand une donnee
      * est detenue releve de l information du membre.
+     *
+     * <p><b>Deux etats distincts</b>, souvent confondus :
+     * <ul>
+     *   <li>{@code actif} : le vehicule ne circule plus, le membre ne le propose
+     *       plus a la reservation. Drapeau metier ;</li>
+     *   <li>{@code supprime} : le membre a retire le vehicule de son parc. La ligne
+     *       reste en base — l effacer reviendrait a effacer des factures deja
+     *       emises — donc la donnee est toujours <b>detenue</b> et l article 15
+     *       impose de la restituer. Elle est marquee comme telle, avec sa date :
+     *       la sortir sans marqueur laisserait croire au membre qu il possede
+     *       encore ce vehicule.</li>
+     * </ul>
      */
     public record VehiculeExport(
             String plaque,
@@ -141,6 +153,8 @@ public record ExportDonnees(
             Integer kilometrage,
             String numeroChassis,
             boolean actif,
+            boolean supprime,
+            Instant dateSuppression,
             Instant dateAjout) {
 
         public static VehiculeExport de(Vehicule vehicule) {
@@ -153,6 +167,8 @@ public record ExportDonnees(
                     vehicule.getKilometrage(),
                     vehicule.getNumeroChassis(),
                     vehicule.isActif(),
+                    vehicule.estSupprime(),
+                    vehicule.getDeletedAt(),
                     vehicule.getCreatedAt());
         }
     }
@@ -285,6 +301,11 @@ public record ExportDonnees(
     /**
      * Rendez-vous du membre. Le poste d atelier affecte n est pas restitue : c est
      * une ressource d organisation du garage, elle ne decrit pas la personne.
+     *
+     * <p>La plaque arrive en argument plutot que d etre lue sur la relation : le
+     * vehicule porte un {@code @SQLRestriction}, et le rendez-vous d un vehicule
+     * retire du parc doit rester dans l export. Le service la rapproche depuis la
+     * liste complete des vehicules, suppressions logiques comprises.
      */
     public record RdvExport(
             String numero,
@@ -299,13 +320,13 @@ public record ExportDonnees(
             BigDecimal montantTvac,
             List<PrestationRdvExport> prestations) {
 
-        public static RdvExport de(Rdv rdv) {
+        public static RdvExport de(Rdv rdv, String plaque) {
             return new RdvExport(
                     rdv.getNumero(),
                     rdv.getStatut().name(),
                     rdv.getDebut(),
                     rdv.getFin(),
-                    rdv.getVehicule().getPlaque(),
+                    plaque,
                     rdv.getCommentaire(),
                     rdv.getMotifRefus(),
                     rdv.getDateAnnulation(),
@@ -343,6 +364,10 @@ public record ExportDonnees(
      *
      * <p>Le commentaire restitue est {@code commentaireAdmin}, deja visible du
      * membre dans son suivi ; il n existe pas de diagnostic technique separe en V1.
+     *
+     * <p>La plaque arrive en argument, pour la meme raison que dans
+     * {@link RdvExport} : l historique d atelier d un vehicule retire du parc reste
+     * detenu, il doit rester exporte.
      */
     public record InterventionExport(
             String numero,
@@ -357,12 +382,12 @@ public record ExportDonnees(
             BigDecimal totalFacturableTvac,
             List<LigneInterventionExport> lignes) {
 
-        public static InterventionExport de(Intervention intervention) {
+        public static InterventionExport de(Intervention intervention, String plaque) {
             return new InterventionExport(
                     intervention.getNumero(),
                     intervention.getStatut().percuLabel(),
                     intervention.getRdv() == null ? null : intervention.getRdv().getNumero(),
-                    intervention.getVehicule().getPlaque(),
+                    plaque,
                     intervention.getDebutReel(),
                     intervention.getFinReelle(),
                     intervention.getCommentaireAdmin(),

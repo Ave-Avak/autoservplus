@@ -48,6 +48,7 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -75,6 +76,8 @@ class ExportDonneesServiceTest {
             "$2a$12$abcdefghijklmnopqrstuvOQ0RvNbYQ6cUqf6mE1nGxU8rWJl3Xy";
     private static final Instant MAINTENANT = Instant.parse("2026-08-22T07:30:00Z");
     private static final Instant CREATION_COMPTE = Instant.parse("2026-01-05T10:00:00Z");
+    private static final Long ID_MARIE = 1L;
+    private static final Long ID_GOLF = 10L;
 
     @Mock private UtilisateurRepository utilisateurs;
     @Mock private VehiculeExportRepository vehicules;
@@ -115,14 +118,17 @@ class ExportDonneesServiceTest {
         marie.setCodePostal("1000");
         marie.setLocalite("Bruxelles");
         marie.setLangue(Langue.fr);
-        // created_at est pose par l auditing JPA, absent d un test unitaire.
+        // created_at est pose par l auditing JPA, et l identifiant par la base :
+        // ni l un ni l autre n existe dans un test unitaire.
         ReflectionTestUtils.setField(marie, "createdAt", CREATION_COMPTE);
+        ReflectionTestUtils.setField(marie, "id", ID_MARIE);
 
         golf = new Vehicule(marie, "1-ABC-123", "VW", "Golf", Motorisation.DIESEL);
         golf.setAnnee((short) 2019);
         golf.mettreAJourKilometrage(120_000);
         golf.setNumeroChassis("WVWZZZ1KZAW000001");
         ReflectionTestUtils.setField(golf, "createdAt", CREATION_COMPTE);
+        ReflectionTestUtils.setField(golf, "id", ID_GOLF);
 
         Categorie entretien = new Categorie("ENT", "Entretien", TypeCategorie.SERVICE);
         vidange = new Prestation(entretien, "VID", "Vidange", new BigDecimal("49.00"), 30);
@@ -140,12 +146,20 @@ class ExportDonneesServiceTest {
      */
     private void compteSansDonnees() {
         lenient().when(utilisateurs.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(marie));
-        lenient().when(vehicules.pourMembre(EMAIL)).thenReturn(List.of());
+        lenient().when(vehicules.pourMembre(ID_MARIE)).thenReturn(List.of());
         lenient().when(rendezVous.pourMembre(EMAIL)).thenReturn(List.of());
-        lenient().when(interventions.pourMembre(EMAIL)).thenReturn(List.of());
         lenient().when(commandes.pourMembre(EMAIL)).thenReturn(List.of());
         lenient().when(consentements.pourMembre(EMAIL)).thenReturn(List.of());
         lenient().when(paniers.findByMembreEmail(EMAIL)).thenReturn(Optional.empty());
+    }
+
+    /**
+     * Ajoute la Golf au parc du membre. Necessaire des qu un rendez-vous ou une
+     * intervention est attendu : la plaque y est rapprochee depuis le parc, et les
+     * interventions sont cherchees par identifiant de vehicule.
+     */
+    private void avecLaGolfAuParc() {
+        lenient().when(vehicules.pourMembre(ID_MARIE)).thenReturn(List.of(golf));
     }
 
     private Rdv rdvDeMarie() {
@@ -222,7 +236,7 @@ class ExportDonneesServiceTest {
         @DisplayName("restitue les vehicules avec leurs champs metier")
         void vehicules() {
             compteSansDonnees();
-            when(vehicules.pourMembre(EMAIL)).thenReturn(List.of(golf));
+            avecLaGolfAuParc();
 
             List<ExportDonnees.VehiculeExport> exportes =
                     service.assembler(EMAIL).donneesPersonnelles().vehicules();
@@ -236,6 +250,8 @@ class ExportDonneesServiceTest {
                 assertThat(vehicule.kilometrage()).isEqualTo(120_000);
                 assertThat(vehicule.numeroChassis()).isEqualTo("WVWZZZ1KZAW000001");
                 assertThat(vehicule.dateAjout()).isEqualTo(CREATION_COMPTE);
+                assertThat(vehicule.supprime()).isFalse();
+                assertThat(vehicule.dateSuppression()).isNull();
             });
         }
 
@@ -243,6 +259,7 @@ class ExportDonneesServiceTest {
         @DisplayName("restitue les rendez-vous avec leurs prestations et leurs montants")
         void rendezVous() {
             compteSansDonnees();
+            avecLaGolfAuParc();
             when(rendezVous.pourMembre(EMAIL)).thenReturn(List.of(rdvDeMarie()));
 
             List<ExportDonnees.RdvExport> exportes =
@@ -295,6 +312,58 @@ class ExportDonneesServiceTest {
 
             assertThat(service.assembler(EMAIL).donneesPersonnelles().commandes()).isEmpty();
             verify(commandes, never()).lignesDe(any());
+        }
+
+        @Test
+        @DisplayName("restitue un vehicule supprime logiquement, marque comme tel")
+        void vehiculeSupprime() {
+            compteSansDonnees();
+            golf.marquerSupprime(EMAIL);
+            avecLaGolfAuParc();
+
+            List<ExportDonnees.VehiculeExport> exportes =
+                    service.assembler(EMAIL).donneesPersonnelles().vehicules();
+
+            // La ligne reste en base — l'effacer effacerait l'historique d'atelier —
+            // donc la donnee est detenue et l'article 15 impose de la restituer.
+            assertThat(exportes).singleElement().satisfies(vehicule -> {
+                assertThat(vehicule.plaque()).isEqualTo("1-ABC-123");
+                assertThat(vehicule.supprime()).isTrue();
+                // Sans marqueur, le membre croirait posseder encore ce vehicule.
+                assertThat(vehicule.dateSuppression()).isNotNull();
+            });
+        }
+
+        @Test
+        @DisplayName("l'historique d'atelier d'un vehicule supprime reste exporte")
+        void historiqueDUnVehiculeSupprime() {
+            compteSansDonnees();
+            golf.marquerSupprime(EMAIL);
+            avecLaGolfAuParc();
+            when(rendezVous.pourMembre(EMAIL)).thenReturn(List.of(rdvDeMarie()));
+            Intervention intervention = new Intervention("INT-2026-0001", rdvDeMarie());
+            when(interventions.pourVehicules(Set.of(ID_GOLF))).thenReturn(List.of(intervention));
+
+            ExportDonnees.DonneesPersonnelles donnees =
+                    service.assembler(EMAIL).donneesPersonnelles();
+
+            // Retirer un vehicule du parc ne doit pas faire disparaitre ses dossiers
+            // de l'export : la suppression est logique precisement pour les garder.
+            // La plaque est rapprochee depuis le parc, pas lue sur la relation.
+            assertThat(donnees.rendezVous()).singleElement()
+                    .satisfies(rdv -> assertThat(rdv.vehicule()).isEqualTo("1-ABC-123"));
+            assertThat(donnees.interventions()).singleElement()
+                    .satisfies(interv -> assertThat(interv.vehicule()).isEqualTo("1-ABC-123"));
+        }
+
+        @Test
+        @DisplayName("sans vehicule, aucune intervention n'est cherchee")
+        void aucunVehicule() {
+            compteSansDonnees();
+
+            assertThat(service.assembler(EMAIL).donneesPersonnelles().interventions()).isEmpty();
+            // Un IN () vide n'a pas de sens et n'a pas a etre soumis a la base.
+            verify(interventions, never()).pourVehicules(any());
         }
 
         @Test
@@ -367,10 +436,11 @@ class ExportDonneesServiceTest {
         @DisplayName("restitue les interventions au statut percu par le membre (RM-16)")
         void interventions() {
             compteSansDonnees();
+            avecLaGolfAuParc();
             Intervention intervention = new Intervention("INT-2026-0001", rdvDeMarie());
             intervention.demarrer(MAINTENANT);
             intervention.suspendre();
-            when(interventions.pourMembre(EMAIL)).thenReturn(List.of(intervention));
+            when(interventions.pourVehicules(Set.of(ID_GOLF))).thenReturn(List.of(intervention));
 
             List<ExportDonnees.InterventionExport> exportees =
                     service.assembler(EMAIL).donneesPersonnelles().interventions();
@@ -553,6 +623,7 @@ class ExportDonneesServiceTest {
         @DisplayName("interroge chaque source avec la seule adresse du membre connecte")
         void toutesLesRequetesPortentSurLeMembreConnecte() {
             compteSansDonnees();
+            avecLaGolfAuParc();
 
             service.assembler(EMAIL);
 
@@ -561,11 +632,14 @@ class ExportDonneesServiceTest {
             // applique apres coup. L'etancheite reelle, cote SQL, est prouvee par
             // ExportDonneesIT sur deux membres en base.
             verify(utilisateurs).findByEmailIgnoreCase(EMAIL);
-            verify(vehicules).pourMembre(EMAIL);
+            verify(vehicules).pourMembre(ID_MARIE);
             verify(rendezVous).pourMembre(EMAIL);
-            verify(interventions).pourMembre(EMAIL);
             verify(commandes).pourMembre(EMAIL);
             verify(consentements).pourMembre(EMAIL);
+            verify(paniers).findByMembreEmail(EMAIL);
+            // Les interventions sont cherchees par les vehicules du membre, seule
+            // liste qui inclue ceux qu'il a retires de son parc.
+            verify(interventions).pourVehicules(Set.of(ID_GOLF));
         }
 
         @Test

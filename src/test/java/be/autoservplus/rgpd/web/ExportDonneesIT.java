@@ -240,6 +240,7 @@ class ExportDonneesIT {
         assertThat(donnees.path("profil").path("email").asText()).isEqualTo("paul@exemple.be");
         assertThat(donnees.path("profil").path("adresse").has("code_postal")).isTrue();
         assertThat(donnees.path("vehicules").size()).isEqualTo(1);
+        assertThat(donnees.path("vehicules").get(0).path("supprime").asBoolean()).isFalse();
         assertThat(donnees.path("commandes").size()).isEqualTo(1);
         assertThat(donnees.path("rendez_vous").size()).isEqualTo(1);
         assertThat(donnees.path("interventions").size()).isEqualTo(1);
@@ -304,6 +305,37 @@ class ExportDonneesIT {
         // cle de la note d'exclusion qui explique pourquoi il n'y figure pas.
         assertThat(lecteur.readTree(document).path("exclusions").path("mot_de_passe").asText())
                 .isNotBlank();
+    }
+
+    @Test
+    @WithMockUser(username = "chloe@exemple.be")
+    @DisplayName("un vehicule supprime du parc reste exporte, marque, avec son historique")
+    void vehiculeSupprimeResteExporte() throws Exception {
+        membreComplet("chloe@exemple.be", MDP_MARIE, "8-CHL-001", "Fiat",
+                "CHLOE", "81.240.10.14", Instant.parse("2026-06-17T08:00:00Z"));
+        Vehicule fiat = vehicules.findByMembre("chloe@exemple.be").get(0);
+        fiat.marquerSupprime("chloe@exemple.be");
+        entites.flush();
+        entites.clear();
+
+        JsonNode donnees = lecteur.readTree(exporter(MDP_MARIE)).path("donnees_personnelles");
+
+        // Le vehicule sort malgre le @SQLRestriction de l'entite : la ligne est
+        // toujours en base, donc la donnee est toujours detenue.
+        JsonNode vehicule = donnees.path("vehicules").get(0);
+        assertThat(donnees.path("vehicules").size()).isEqualTo(1);
+        assertThat(vehicule.path("plaque").asText()).isEqualTo("8-CHL-001");
+        assertThat(vehicule.path("supprime").asBoolean()).isTrue();
+        assertThat(vehicule.path("date_suppression").asText()).endsWith("Z");
+
+        // Et son historique d'atelier ne disparait pas avec lui : c'est tout
+        // l'interet d'une suppression logique.
+        assertThat(donnees.path("rendez_vous").size()).isEqualTo(1);
+        assertThat(donnees.path("rendez_vous").get(0).path("vehicule").asText())
+                .isEqualTo("8-CHL-001");
+        assertThat(donnees.path("interventions").size()).isEqualTo(1);
+        assertThat(donnees.path("interventions").get(0).path("vehicule").asText())
+                .isEqualTo("8-CHL-001");
     }
 
     @Test
