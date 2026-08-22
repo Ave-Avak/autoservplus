@@ -18,8 +18,9 @@ import java.util.Objects;
 /**
  * Article facturable d une intervention : main d oeuvre (prestation du catalogue)
  * ou piece detachee. Le libelle et les prix sont figes a la creation, pour que
- * l historique reste stable meme si le catalogue evolue (RM-30, meme regle que
- * {@link be.autoservplus.reservation.domain.LigneRdv}).
+ * l historique reste stable meme si le catalogue evolue — invariant de conception
+ * sans numero de regle au CdC, meme recopie que
+ * {@link be.autoservplus.reservation.domain.LigneRdv}.
  *
  * <p>Pas de suppression logique : la ligne n existe que par son intervention,
  * un retrait passe par {@code orphanRemoval} de la relation parente.</p>
