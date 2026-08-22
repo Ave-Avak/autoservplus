@@ -123,8 +123,9 @@ public class CatalogueService {
      */
     @Transactional
     public Categorie creerCategorie(String code, String libelle, TypeCategorie type) {
+        // Unicite du code : invariant technique, aucun code RM du CdC ne la couvre.
         if (categories.existsByCode(code)) {
-            throw new RegleMetierException("RM-28",
+            throw new RegleMetierException(
                     "Le code de categorie « %s » est deja utilise.".formatted(code));
         }
         return categories.save(new Categorie(code, libelle, type));
@@ -138,13 +139,16 @@ public class CatalogueService {
     @Transactional
     public Prestation creerPrestation(String codeCategorie, String code, String libelle,
                                       BigDecimal prixHtva, int dureeMinutes) {
+        // Unicite du code : invariant technique, sans code RM.
         if (prestations.existsByCode(code)) {
-            throw new RegleMetierException("RM-29",
+            throw new RegleMetierException(
                     "Le code de prestation « %s » est deja utilise.".formatted(code));
         }
         Categorie categorie = categorieParCode(codeCategorie);
+        // Coherence de type (une prestation vit dans une categorie SERVICE) :
+        // autre famille d invariant que l unicite, elle non plus sans code RM.
         if (categorie.getType() != TypeCategorie.SERVICE) {
-            throw new RegleMetierException("RM-29",
+            throw new RegleMetierException(
                     "La categorie « %s » est destinee aux pieces, pas aux prestations."
                             .formatted(codeCategorie));
         }
@@ -160,13 +164,15 @@ public class CatalogueService {
     @Transactional
     public Piece creerPiece(String codeCategorie, String referenceFabricant,
                             String libelle, BigDecimal prixHtva) {
+        // Unicite de la reference fabricant : invariant technique, sans code RM.
         if (pieces.existsByReferenceFabricant(referenceFabricant)) {
-            throw new RegleMetierException("RM-29",
+            throw new RegleMetierException(
                     "La reference fabricant « %s » est deja enregistree.".formatted(referenceFabricant));
         }
         Categorie categorie = categorieParCode(codeCategorie);
+        // Coherence de type (une piece vit dans une categorie PIECE), sans code RM.
         if (categorie.getType() != TypeCategorie.PIECE) {
-            throw new RegleMetierException("RM-29",
+            throw new RegleMetierException(
                     "La categorie « %s » est destinee aux prestations, pas aux pieces."
                             .formatted(codeCategorie));
         }

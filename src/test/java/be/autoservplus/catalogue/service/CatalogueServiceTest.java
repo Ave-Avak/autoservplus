@@ -67,7 +67,7 @@ class CatalogueServiceTest {
 
             assertThatThrownBy(() -> service.creerCategorie("FREINAGE", "Freinage", TypeCategorie.SERVICE))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-28");
+                    .hasMessageContaining("deja utilise");
 
             verify(categories, never()).save(any());
         }
@@ -104,7 +104,7 @@ class CatalogueServiceTest {
             assertThatThrownBy(() -> service.creerPrestation(
                     "P_FILTRES", "VID", "Vidange", new BigDecimal("75.00"), 60))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-29");
+                    .hasMessageContaining("destinee aux pieces");
 
             verify(prestations, never()).save(any());
         }
@@ -117,7 +117,7 @@ class CatalogueServiceTest {
             assertThatThrownBy(() -> service.creerPrestation(
                     "ENTRETIEN", "VID", "Vidange", new BigDecimal("75.00"), 60))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-29");
+                    .hasMessageContaining("deja utilise");
         }
 
         @Test
@@ -161,7 +161,7 @@ class CatalogueServiceTest {
             assertThatThrownBy(() -> service.creerPiece("ENTRETIEN", "F-001", "Filtre",
                     new BigDecimal("12.50")))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-29");
+                    .hasMessageContaining("destinee aux prestations");
         }
 
         @Test
@@ -172,7 +172,7 @@ class CatalogueServiceTest {
             assertThatThrownBy(() -> service.creerPiece("P_FILTRES", "F-001", "Filtre",
                     new BigDecimal("12.50")))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-29");
+                    .hasMessageContaining("deja enregistree");
         }
     }
 
