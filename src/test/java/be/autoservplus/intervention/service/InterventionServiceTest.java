@@ -94,6 +94,28 @@ class InterventionServiceTest {
     }
 
     @Test
+    @DisplayName("creerDepuisRdv fige le devis initial en HTVA depuis les lignes du RDV (RM-15)")
+    void creationRenseigneLeDevisInitial() {
+        when(interventions.findByRdvId(any())).thenReturn(Optional.empty());
+        when(numeros.prochain()).thenReturn("INT-2026-0001");
+        when(interventions.saveAndFlush(any(Intervention.class)))
+                .thenAnswer(inv -> inv.getArgument(0));
+
+        Intervention creee = service.creerDepuisRdv(rdv);
+
+        // La vidange vaut 49.00 HTVA ; le devis doit valoir le HT, pas le TVAC (59.29).
+        assertThat(creee.getMontantDevisInitialHtva())
+                .as("Sans devis fige, RM-15 n'a aucune base de comparaison")
+                .isNotNull()
+                .isEqualByComparingTo("49.00");
+        assertThat(creee.devisReferenceHtva()).isEqualByComparingTo("49.00");
+        assertThat(creee.getLignes()).allSatisfy(l -> {
+            assertThat(l.isAjouteeEnCours()).isFalse();
+            assertThat(l.isValidee()).isTrue();
+        });
+    }
+
+    @Test
     @DisplayName("creerDepuisRdv est idempotent : retourne l'existante sans doublon")
     void idempotence() {
         Intervention existante = new Intervention("INT-2026-0001", rdv);

@@ -27,6 +27,7 @@ public record InterventionVueAdmin(
         String debutReel,
         String finReelle,
         List<LigneInterventionVue> lignes,
+        /** Total reellement facturable : hors lignes refusees et hors lignes en attente. */
         String totalHtva,
         String totalTvac,
         boolean peutDemarrer,
@@ -57,8 +58,8 @@ public record InterventionVueAdmin(
                         ? FormatageRdv.jourLisible(it.getFinReelle(), zone) + " " + FormatageRdv.heureLisible(it.getFinReelle(), zone)
                         : null,
                 it.getLignes().stream().map(LigneInterventionVue::de).toList(),
-                FormatageRdv.euros(it.totalHtva()),
-                FormatageRdv.euros(it.totalTvac()),
+                FormatageRdv.euros(it.totalFacturableHtva()),
+                FormatageRdv.euros(it.totalFacturableTvac()),
                 s == StatutIntervention.PLANIFIEE,
                 s.peutPasserA(StatutIntervention.SUSPENDUE),
                 s == StatutIntervention.SUSPENDUE,

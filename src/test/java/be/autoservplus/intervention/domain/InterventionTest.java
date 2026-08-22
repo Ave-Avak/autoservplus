@@ -391,8 +391,89 @@ class InterventionTest {
         void additionneLesLignes() {
             Intervention it = interventionDepuis(vidange, freins);
 
-            assertThat(it.totalHtva()).isEqualByComparingTo("138.00");
-            assertThat(it.totalTvac()).isEqualByComparingTo("166.98");
+            assertThat(it.totalFacturableHtva()).isEqualByComparingTo("138.00");
+            assertThat(it.totalFacturableTvac()).isEqualByComparingTo("166.98");
+        }
+
+        @Test
+        @DisplayName("le devis initial est fige a la creation, en HTVA, depuis les lignes du RDV")
+        void devisInitialFigeEnHtva() {
+            Intervention it = interventionDepuis(vidange, freins);
+
+            // 49.00 + 89.00, hors TVA : le seuil RM-15 se calcule sur le HT.
+            assertThat(it.getMontantDevisInitialHtva()).isEqualByComparingTo("138.00");
+            assertThat(it.totalDevisInitialHtva()).isEqualByComparingTo("138.00");
+            assertThat(it.devisReferenceHtva()).isEqualByComparingTo("138.00");
+            assertThat(it.getMontantDevisInitialHtva())
+                    .as("Le devis doit etre du HTVA, jamais du TVAC")
+                    .isNotEqualByComparingTo(it.totalFacturableTvac());
+        }
+
+        @Test
+        @DisplayName("les lignes du RDV naissent validees, non refusees, non ajoutees en cours")
+        void lignesDuRdvValideesDOffice() {
+            Intervention it = interventionDepuis(vidange, freins);
+
+            assertThat(it.getLignes()).allSatisfy(l -> {
+                assertThat(l.isAjouteeEnCours()).isFalse();
+                assertThat(l.isValidee()).isTrue();
+                assertThat(l.isRefusee()).isFalse();
+                assertThat(l.estFacturable()).isTrue();
+            });
+        }
+
+        @Test
+        @DisplayName("une ligne ajoutee par le garage naît ajouteeEnCours, validee (avant RM-15)")
+        void ligneAjouteeEnCoursValideeParDefaut() {
+            Intervention it = interventionDepuis(vidange);
+            it.demarrer(DEBUT);
+
+            LigneIntervention ajoutee = it.ajouterLigneMainOeuvre(freins, (short) 1,
+                    new BigDecimal("89.00"), new BigDecimal("21.00"));
+
+            assertThat(ajoutee.isAjouteeEnCours()).isTrue();
+            assertThat(ajoutee.isValidee()).isTrue();
+            assertThat(ajoutee.isRefusee()).isFalse();
+        }
+
+        @Test
+        @DisplayName("le devis initial ne bouge pas quand le garage ajoute une ligne")
+        void devisInitialInsensibleAuxAjouts() {
+            Intervention it = interventionDepuis(vidange);
+            it.demarrer(DEBUT);
+            it.ajouterLigneMainOeuvre(freins, (short) 1,
+                    new BigDecimal("89.00"), new BigDecimal("21.00"));
+
+            assertThat(it.devisReferenceHtva())
+                    .as("La base de comparaison RM-15 doit rester le devis d origine")
+                    .isEqualByComparingTo("49.00");
+            assertThat(it.totalFacturableHtva()).isEqualByComparingTo("138.00");
+        }
+
+        @Test
+        @DisplayName("une ligne refusee reste dans le dossier mais sort du total facturable")
+        void ligneRefuseeConserveeHorsTotal() {
+            Intervention it = interventionDepuis(vidange);
+            it.demarrer(DEBUT);
+            LigneIntervention ajoutee = it.ajouterLigneMainOeuvre(freins, (short) 1,
+                    new BigDecimal("89.00"), new BigDecimal("21.00"));
+            assertThat(it.totalFacturableHtva()).isEqualByComparingTo("138.00");
+
+            ajoutee.refuser();
+
+            assertThat(it.getLignes())
+                    .as("La ligne refusee reste en base : trace du defaut constate")
+                    .hasSize(2)
+                    .contains(ajoutee);
+            assertThat(ajoutee.isRefusee()).isTrue();
+            assertThat(ajoutee.isValidee())
+                    .as("Exclusion mutuelle : refusee implique non validee (ck_ligne_interv_validation)")
+                    .isFalse();
+            assertThat(ajoutee.estFacturable()).isFalse();
+            assertThat(it.totalFacturableHtva())
+                    .as("Le perimetre facturable revient au devis initial")
+                    .isEqualByComparingTo("49.00");
+            assertThat(it.totalFacturableTvac()).isEqualByComparingTo("59.29");
         }
 
         @Test

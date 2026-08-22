@@ -55,7 +55,7 @@ public record InterventionVueMembre(
                         ? FormatageRdv.jourLisible(it.getFinReelle(), zone) + " " + FormatageRdv.heureLisible(it.getFinReelle(), zone)
                         : null,
                 it.getLignes().stream().map(LigneVue::de).toList(),
-                FormatageRdv.euros(it.totalTvac()),
+                FormatageRdv.euros(it.totalFacturableTvac()),
                 s == StatutIntervention.TERMINEE || s == StatutIntervention.ANNULEE);
     }
 

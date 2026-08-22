@@ -23,6 +23,14 @@ import java.util.Objects;
  *
  * <p>Pas de suppression logique : la ligne n existe que par son intervention,
  * un retrait passe par {@code orphanRemoval} de la relation parente.</p>
+ *
+ * <p><b>Marqueurs RM-15</b> : {@code ajouteeEnCours} distingue les lignes issues
+ * du rendez-vous (le devis initial, accepte par le membre a la reservation) de
+ * celles ajoutees par le garage pendant le travail. {@code validee} dit si la
+ * ligne entre dans le total facturable, {@code refusee} si le membre l a ecartee.
+ * Une ligne refusee reste en base — elle documente le defaut constate — mais
+ * sort du total et n est pas executee. Les deux drapeaux sont exclusifs
+ * (CHECK {@code ck_ligne_interv_validation}).</p>
  */
 @Entity
 @Table(name = "ligne_intervention")
@@ -60,6 +68,15 @@ public class LigneIntervention {
     @Column(name = "taux_tva", nullable = false, precision = 5, scale = 2)
     private BigDecimal tauxTva;
 
+    @Column(name = "ajoutee_en_cours", nullable = false)
+    private boolean ajouteeEnCours;
+
+    @Column(name = "validee", nullable = false)
+    private boolean validee = true;
+
+    @Column(name = "refusee", nullable = false)
+    private boolean refusee;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -80,9 +97,14 @@ public class LigneIntervention {
         // requis par JPA
     }
 
-    /** Ligne de main d oeuvre creee depuis une prestation du catalogue. */
+    /**
+     * Ligne de main d oeuvre creee depuis une prestation du catalogue.
+     *
+     * @param ajouteeEnCours {@code false} pour une ligne issue du RDV (devis initial),
+     *                       {@code true} pour un ajout du garage pendant l intervention.
+     */
     LigneIntervention(Intervention intervention, Prestation prestation, short quantite,
-                      BigDecimal prixUnitaireHtva, BigDecimal tauxTva) {
+                      BigDecimal prixUnitaireHtva, BigDecimal tauxTva, boolean ajouteeEnCours) {
         this.intervention = Objects.requireNonNull(intervention, "intervention");
         this.prestation = Objects.requireNonNull(prestation, "prestation");
         exigerQuantitePositive(quantite);
@@ -90,10 +112,12 @@ public class LigneIntervention {
         this.quantite = quantite;
         this.prixUnitaireHtva = Objects.requireNonNull(prixUnitaireHtva, "prixUnitaireHtva");
         this.tauxTva = Objects.requireNonNull(tauxTva, "tauxTva");
+        this.ajouteeEnCours = ajouteeEnCours;
     }
 
     /** Ligne de piece detachee prelevee du catalogue. Les prix figent ceux du catalogue. */
-    public LigneIntervention(Intervention intervention, Piece piece, short quantite) {
+    public LigneIntervention(Intervention intervention, Piece piece, short quantite,
+                             boolean ajouteeEnCours) {
         this.intervention = Objects.requireNonNull(intervention, "intervention");
         this.piece = Objects.requireNonNull(piece, "piece");
         exigerQuantitePositive(quantite);
@@ -101,6 +125,7 @@ public class LigneIntervention {
         this.quantite = quantite;
         this.prixUnitaireHtva = piece.getPrixHtva();
         this.tauxTva = piece.getTauxTva();
+        this.ajouteeEnCours = ajouteeEnCours;
     }
 
     private static void exigerQuantitePositive(short quantite) {
@@ -126,6 +151,27 @@ public class LigneIntervention {
         return totalHtva().multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
     }
 
+    /**
+     * Le membre ecarte cette ligne. Elle reste dans le dossier — elle documente le
+     * defaut constate par le garage — mais sort definitivement du total facturable
+     * et ne sera pas executee. {@code validee} retombe a false pour respecter
+     * l exclusion mutuelle imposee par {@code ck_ligne_interv_validation}.
+     */
+    void refuser() {
+        this.validee = false;
+        this.refusee = true;
+    }
+
+    /**
+     * La ligne entre-t-elle dans le total facturable ? Vrai uniquement si elle est
+     * validee et non refusee. Une ligne en attente d accord du membre et une ligne
+     * refusee sont toutes deux exclues, pour des raisons differentes : la premiere
+     * n est pas encore acquise, la seconde ne le sera jamais.
+     */
+    public boolean estFacturable() {
+        return validee && !refusee;
+    }
+
     public Long getId() { return id; }
     public Intervention getIntervention() { return intervention; }
     public Prestation getPrestation() { return prestation; }
@@ -134,6 +180,9 @@ public class LigneIntervention {
     public short getQuantite() { return quantite; }
     public BigDecimal getPrixUnitaireHtva() { return prixUnitaireHtva; }
     public BigDecimal getTauxTva() { return tauxTva; }
+    public boolean isAjouteeEnCours() { return ajouteeEnCours; }
+    public boolean isValidee() { return validee; }
+    public boolean isRefusee() { return refusee; }
 
     @Override
     public boolean equals(Object autre) {

@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -63,6 +64,20 @@ public class Intervention extends BaseEntity {
     @Column(name = "commentaire_admin", columnDefinition = "text")
     private String commentaireAdmin;
 
+    /**
+     * Devis initial HTVA, fige a la creation depuis les lignes du RDV. Reference de
+     * comparaison de RM-15 : le seuil se calcule sur ce montant, jamais sur un total
+     * recalcule apres coup — sinon chaque ajout deplacerait la base de comparaison et
+     * aucun depassement ne serait jamais atteint.
+     *
+     * <p>Colonne {@code montant_devis_htva} posee des V5 (dictionnaire, RM-15) et
+     * restee vide jusqu ici faute de mapping. Nullable en base (le CdC la prevoit
+     * ainsi pour une entree directe au garage, hors V1) ; {@link #devisReferenceHtva()}
+     * fournit un repli pour que la regle ne puisse pas se desactiver silencieusement.</p>
+     */
+    @Column(name = "montant_devis_htva", precision = 10, scale = 2)
+    private BigDecimal montantDevisInitialHtva;
+
     @Column(name = "debut_reel")
     private Instant debutReel;
 
@@ -85,6 +100,12 @@ public class Intervention extends BaseEntity {
      * Cree une intervention PLANIFIEE liee au rendez-vous fourni, avec une ligne
      * de main d oeuvre pre-remplie par prestation reservee. Prix et taux sont
      * recopies de la ligne du RDV, ils ont deja ete figes a la reservation.
+     *
+     * <p>Les lignes naissent {@code ajouteeEnCours = false} et validees : le membre
+     * les a acceptees en reservant, elles constituent le devis initial. Ce devis est
+     * fige ici dans {@link #montantDevisInitialHtva} — c est l invariant que RM-15
+     * compare. Le figer dans l entite plutot que dans le service garantit qu aucun
+     * chemin de creation ne puisse produire une intervention sans devis de reference.</p>
      */
     public Intervention(String numero, Rdv rdv) {
         this.reference = UUID.randomUUID();
@@ -93,8 +114,9 @@ public class Intervention extends BaseEntity {
         this.vehicule = Objects.requireNonNull(rdv.getVehicule(), "rdv.vehicule");
         for (LigneRdv l : rdv.getLignes()) {
             this.lignes.add(new LigneIntervention(this, l.getPrestation(),
-                    l.getQuantite(), l.getPrixUnitaireHtva(), l.getTauxTva()));
+                    l.getQuantite(), l.getPrixUnitaireHtva(), l.getTauxTva(), false));
         }
+        this.montantDevisInitialHtva = totalDevisInitialHtva();
     }
 
     // --- transitions ---------------------------------------------------------------
@@ -158,7 +180,7 @@ public class Intervention extends BaseEntity {
                                                     BigDecimal tauxTva) {
         exigerEditable();
         LigneIntervention ligne = new LigneIntervention(this, prestation, quantite,
-                prixUnitaireHtva, tauxTva);
+                prixUnitaireHtva, tauxTva, true);
         this.lignes.add(ligne);
         return ligne;
     }
@@ -166,7 +188,7 @@ public class Intervention extends BaseEntity {
     public LigneIntervention ajouterLignePiece(be.autoservplus.catalogue.domain.Piece piece,
                                                short quantite) {
         exigerEditable();
-        LigneIntervention ligne = new LigneIntervention(this, piece, quantite);
+        LigneIntervention ligne = new LigneIntervention(this, piece, quantite, true);
         this.lignes.add(ligne);
         return ligne;
     }
@@ -186,14 +208,48 @@ public class Intervention extends BaseEntity {
 
     // --- calculs -----------------------------------------------------------------
 
-    public BigDecimal totalHtva() {
-        return lignes.stream().map(LigneIntervention::totalHtva)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    /**
+     * Devis initial recalcule : somme HTVA des seules lignes issues du RDV.
+     * Sert a figer {@link #montantDevisInitialHtva} a la creation et de repli pour
+     * les interventions anterieures au mapping de la colonne.
+     */
+    public BigDecimal totalDevisInitialHtva() {
+        return sommeHtva(l -> !l.isAjouteeEnCours());
     }
 
-    public BigDecimal totalTvac() {
-        return lignes.stream().map(LigneIntervention::totalTvac)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
+    /**
+     * Montant de reference de RM-15 : le devis fige, ou a defaut le devis recalcule
+     * depuis les lignes d origine. Le repli couvre les interventions creees avant que
+     * la colonne ne soit mappee ; sans lui, un {@code null} rendrait tout seuil
+     * incalculable et desactiverait la regle sans que personne ne le voie.
+     */
+    public BigDecimal devisReferenceHtva() {
+        return montantDevisInitialHtva != null ? montantDevisInitialHtva : totalDevisInitialHtva();
+    }
+
+    /**
+     * Ce qui sera reellement facture : lignes validees et non refusees. Exclut donc
+     * a la fois les lignes en attente d accord du membre et celles qu il a refusees.
+     * C est ce total — et lui seul — qui s affiche au membre comme au garage.
+     */
+    public BigDecimal totalFacturableHtva() {
+        return sommeHtva(LigneIntervention::estFacturable);
+    }
+
+    public BigDecimal totalFacturableTvac() {
+        return lignes.stream()
+                .filter(LigneIntervention::estFacturable)
+                .map(LigneIntervention::totalTvac)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    private BigDecimal sommeHtva(java.util.function.Predicate<LigneIntervention> filtre) {
+        return lignes.stream()
+                .filter(filtre)
+                .map(LigneIntervention::totalHtva)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
     }
 
     // --- getters -----------------------------------------------------------------
@@ -207,6 +263,7 @@ public class Intervention extends BaseEntity {
     public String getCommentaireAdmin() { return commentaireAdmin; }
     public Instant getDebutReel() { return debutReel; }
     public Instant getFinReelle() { return finReelle; }
+    public BigDecimal getMontantDevisInitialHtva() { return montantDevisInitialHtva; }
     public List<LigneIntervention> getLignes() { return Collections.unmodifiableList(lignes); }
     public long getVersion() { return version; }
 
