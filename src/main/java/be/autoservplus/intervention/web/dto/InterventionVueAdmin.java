@@ -35,7 +35,11 @@ public record InterventionVueAdmin(
         boolean peutReprendre,
         boolean peutTerminer,
         boolean peutAnnuler,
-        boolean estEditable) {
+        boolean estEditable,
+        /** RM-15 : le garage attend la reponse du membre, il ne peut pas reprendre. */
+        boolean enAttenteValidationMembre,
+        String devisInitialHtva,
+        String totalProposeHtva) {
 
     public static InterventionVueAdmin de(Intervention it, ZoneId zone) {
         StatutIntervention s = it.getStatut();
@@ -62,10 +66,16 @@ public record InterventionVueAdmin(
                 FormatageRdv.euros(it.totalFacturableTvac()),
                 s == StatutIntervention.PLANIFIEE,
                 s.peutPasserA(StatutIntervention.SUSPENDUE),
-                s == StatutIntervention.SUSPENDUE,
+                // Reprendre reste possible depuis SUSPENDUE, jamais tant qu une ligne
+                // attend la reponse du membre (RM-15) : le domaine refuse de toute
+                // facon la transition, le DTO evite d afficher un bouton condamne.
+                s == StatutIntervention.SUSPENDUE && !it.aDesLignesEnAttente(),
                 s.peutPasserA(StatutIntervention.TERMINEE),
                 s.peutPasserA(StatutIntervention.ANNULEE),
-                s.estEditable());
+                s.estEditable(),
+                s == StatutIntervention.ATTENTE_VALIDATION_MEMBRE,
+                FormatageRdv.euros(it.devisReferenceHtva()),
+                FormatageRdv.euros(it.totalProposeHtva()));
     }
 
     private static String statutLisible(StatutIntervention s) {
@@ -79,9 +89,15 @@ public record InterventionVueAdmin(
         };
     }
 
+    /**
+     * Le garage voit TOUTES les lignes, y compris celles en attente et celles que le
+     * membre a refusees : c est son dossier de travail. {@code etat} porte la mention
+     * a afficher, {@code compteDansLeTotal} permet de griser celles qui n y entrent pas.
+     */
     public record LigneInterventionVue(
             Long id, String type, String libelle, short quantite,
-            String prixUnitaireHtva, String totalHtva) {
+            String prixUnitaireHtva, String totalHtva,
+            String etat, boolean compteDansLeTotal) {
 
         public static LigneInterventionVue de(LigneIntervention l) {
             return new LigneInterventionVue(
@@ -90,7 +106,15 @@ public record InterventionVueAdmin(
                     l.getLibelleFige(),
                     l.getQuantite(),
                     FormatageRdv.euros(l.getPrixUnitaireHtva()),
-                    FormatageRdv.euros(l.totalHtva()));
+                    FormatageRdv.euros(l.totalHtva()),
+                    etatLisible(l),
+                    l.estFacturable());
+        }
+
+        private static String etatLisible(LigneIntervention l) {
+            if (l.isRefusee()) return "Refusée par le membre";
+            if (l.estEnAttente()) return "En attente d'accord";
+            return l.isAjouteeEnCours() ? "Ajoutée en cours" : "Devis initial";
         }
     }
 }

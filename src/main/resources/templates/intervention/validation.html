@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="'Validation des travaux ' + ${demande.numero()} + ' — AutoServ+'">Validation — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}">Prestations</a></li>
+            <li><a th:href="@{/pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <p><a th:href="@{/mes-interventions/{ref}(ref=${demande.reference()})}">← Retour au suivi</a></p>
+
+    <h1>Travaux supplémentaires à valider</h1>
+    <p>
+        Intervention <span th:text="${demande.numero()}">INT-2026-0001</span> —
+        <span th:text="${demande.vehicule()}">VW Golf (1-ABC-123)</span>
+    </p>
+
+    <div class="message" role="note">
+        Le garage a constaté des travaux non prévus à votre devis initial. Parce qu'ils
+        le dépassent de plus de 10 %, ils ne peuvent être réalisés qu'avec votre accord.
+        Tant que vous n'avez pas répondu, l'intervention est à l'arrêt.
+    </div>
+
+    <div th:if="${demande.commentaireAdmin() != null}" class="message" role="note">
+        <strong>Message du garage :</strong>
+        <span th:text="${demande.commentaireAdmin()}">…</span>
+    </div>
+
+    <h2>Travaux soumis à votre accord</h2>
+    <table class="tableau">
+        <caption class="texte-info">Montants hors TVA, comme votre devis initial.</caption>
+        <thead>
+            <tr><th scope="col">Désignation</th><th scope="col">Quantité</th><th scope="col">Montant HTVA</th></tr>
+        </thead>
+        <tbody>
+            <tr th:each="l : ${demande.lignesEnAttente()}">
+                <td th:text="${l.libelle()}">Remplacement plaquettes</td>
+                <td th:text="${l.quantite()}">1</td>
+                <td th:text="${l.totalHtva()}">89,00 €</td>
+            </tr>
+        </tbody>
+    </table>
+
+    <h2>Récapitulatif</h2>
+    <dl class="vehicule-details">
+        <div>
+            <dt>Devis initial (accepté à la réservation)</dt>
+            <dd th:text="${demande.devisInitial()}">49,00 €</dd>
+        </div>
+        <div>
+            <dt>Supplément proposé</dt>
+            <dd th:text="${demande.ecart()}">89,00 €</dd>
+        </div>
+        <div>
+            <dt>Nouveau total si vous acceptez</dt>
+            <dd><strong th:text="${demande.totalPropose()}">138,00 €</strong></dd>
+        </div>
+    </dl>
+
+    <p class="actions-page">
+        <form th:action="@{/mes-interventions/{ref}/valider(ref=${demande.reference()})}"
+              method="post" style="display:inline">
+            <button type="submit" class="btn-cta">J'accepte ces travaux</button>
+        </form>
+        <form th:action="@{/mes-interventions/{ref}/refuser(ref=${demande.reference()})}"
+              method="post" style="display:inline"
+              onsubmit="return confirm('Refuser ces travaux ? Seul le devis initial sera réalisé.');">
+            <button type="submit" class="lien-bouton texte-erreur">Je refuse</button>
+        </form>
+    </p>
+
+    <p class="texte-info">
+        En cas de refus, le garage réalisera uniquement les travaux de votre devis initial.
+        Les travaux refusés restent notés à votre dossier : ils documentent ce que le
+        garage a constaté sur votre véhicule, mais ne vous seront pas facturés.
+    </p>
+</main>
+
+<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>

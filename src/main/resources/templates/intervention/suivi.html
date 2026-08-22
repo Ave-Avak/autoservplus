@@ -38,6 +38,9 @@
     <h1 th:text="'Intervention ' + ${intervention.numero()}">Intervention INT-2026-0001</h1>
     <p th:text="${intervention.vehicule()}">VW Golf (1-ABC-123)</p>
 
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+
     <!-- Fragment statut : rafraichi par polling HTMX toutes les 10 secondes.
          Le meme fragment est rendu par GET /mes-interventions/{ref}/statut. Le
          hx-swap="outerHTML" remplace tout le bloc (y compris son propre attribut
@@ -59,6 +62,22 @@
             <span th:class="'badge badge-' + ${#strings.toLowerCase(intervention.statut())}"
                   th:text="${intervention.statutPercu()}">En attente</span>
         </p>
+
+        <!-- RM-15 : l encart vit DANS le fragment rafraichi. Le membre reste sur son
+             suivi, le garage chiffre un depassement, l appel a validation apparait au
+             polling suivant sans qu il ait a recharger. Le statut affiche reste « En
+             cours » (RM-16) : c est l encart, pas le badge, qui porte la demande. -->
+        <div th:if="${intervention.validationRequise()}" class="message message-erreur" role="alert">
+            <strong>Validation requise</strong>
+            <p>
+                Le garage a constaté des travaux supplémentaires qui dépassent votre devis
+                de plus de 10 %. Ils ne seront pas réalisés sans votre accord.
+            </p>
+            <a class="btn-cta"
+               th:href="@{/mes-interventions/{ref}/validation(ref=${intervention.reference()})}">
+                Voir le détail et répondre
+            </a>
+        </div>
 
         <dl class="vehicule-details">
             <div th:if="${intervention.debutReel() != null}">

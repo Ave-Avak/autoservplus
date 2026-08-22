@@ -141,6 +141,15 @@ h1 { color: var(--bleu-marine); margin-top: 0; }
 .texte-info   { color: var(--info-texte); }
 .texte-erreur { color: var(--erreur-texte); }
 
+/* Ligne d intervention hors total facturable : en attente d accord du membre ou
+   refusee par lui (RM-15). --gris-500 tient le 4.83:1 requis en AA ; l italique
+   double l information pour ne pas la porter par la seule couleur (WCAG 1.4.1),
+   et la colonne « Etat » l ecrit en toutes lettres. */
+.ligne-hors-total td {
+    color: var(--gris-500);
+    font-style: italic;
+}
+
 .message {
     padding: var(--espace-m);
     border-radius: var(--rayon);

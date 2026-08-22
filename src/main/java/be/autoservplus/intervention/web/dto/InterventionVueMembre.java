@@ -36,7 +36,11 @@ public record InterventionVueMembre(
         String finReelle,
         List<LigneVue> lignes,
         String totalTvac,
-        boolean estTerminale) {
+        boolean estTerminale,
+        /** RM-15 : une reponse du membre est attendue sur un depassement de devis.
+         *  Expose comme drapeau plutot que par lecture du statut technique, pour que
+         *  le template n ait jamais a tester « ATTENTE_VALIDATION_MEMBRE » (RM-16). */
+        boolean validationRequise) {
 
     public static InterventionVueMembre de(Intervention it, ZoneId zone) {
         StatutIntervention s = it.getStatut();
@@ -54,9 +58,15 @@ public record InterventionVueMembre(
                 it.getFinReelle() != null
                         ? FormatageRdv.jourLisible(it.getFinReelle(), zone) + " " + FormatageRdv.heureLisible(it.getFinReelle(), zone)
                         : null,
-                it.getLignes().stream().map(LigneVue::de).toList(),
+                // Seules les lignes acquises figurent dans « Travaux prevus » : une ligne
+                // en attente n est pas encore due (elle s affiche sur l ecran de
+                // validation, avec son prix), une ligne refusee ne sera pas executee.
+                it.getLignes().stream()
+                        .filter(LigneIntervention::estFacturable)
+                        .map(LigneVue::de).toList(),
                 FormatageRdv.euros(it.totalFacturableTvac()),
-                s == StatutIntervention.TERMINEE || s == StatutIntervention.ANNULEE);
+                s == StatutIntervention.TERMINEE || s == StatutIntervention.ANNULEE,
+                s == StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
     }
 
     /**

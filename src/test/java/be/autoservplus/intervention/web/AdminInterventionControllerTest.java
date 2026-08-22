@@ -92,7 +92,8 @@ class AdminInterventionControllerTest {
                 null, null, null,
                 List.of(),
                 "49,00 €", "59,29 €",
-                true, false, false, false, false, true);
+                true, false, false, false, false, true,
+                false, "49,00 €", "49,00 €");
         interventionMock = mock(Intervention.class);
         when(interventionMock.getNumero()).thenReturn("INT-2026-0001");
     }

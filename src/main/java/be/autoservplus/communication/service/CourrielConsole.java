@@ -85,4 +85,26 @@ public class CourrielConsole implements ServiceCourriel {
                 """, destinataire.nomComplet(), destinataire.getEmail(),
                 rdv.numero(), rdv.jourLisible(), rdv.heureLisible(), motif);
     }
+
+    @Override
+    public void envoyerDemandeValidationDepassement(Utilisateur destinataire,
+                                                    DetailsRdvCourriel rdv,
+                                                    DetailsDepassementCourriel depassement) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL SIMULE : accord requis sur un depassement de devis ----------
+                Destinataire  : {} <{}>
+                Intervention  : {} (rendez-vous {} du {})
+                Devis initial : {}
+                Total propose : {}
+                Travaux soumis a votre accord :
+                {}
+                Repondre ici  : {}
+                --------------------------------------------------------------------------------
+                """, destinataire.nomComplet(), destinataire.getEmail(),
+                depassement.numeroIntervention(), rdv.numero(), rdv.jourLisible(),
+                depassement.montantInitial(), depassement.montantPropose(),
+                String.join("\n", depassement.lignesEnAttente()),
+                depassement.lienValidation());
+    }
 }

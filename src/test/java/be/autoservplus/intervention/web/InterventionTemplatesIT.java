@@ -128,6 +128,74 @@ class InterventionTemplatesIT {
                 .andExpect(content().string(not(containsString("hx-get"))));
     }
 
+    // --- RM-15 : encart de validation et ecran de decision ---------------------------
+
+    /**
+     * Amene l intervention au-dela du seuil : devis initial 49,00 € HTVA, seuil a
+     * 53,90 €, on ajoute 89,00 €. L entite bascule d elle-meme.
+     */
+    private void provoquerDepassement() {
+        Prestation plaquettes = prestations.save(new Prestation(
+                categories.findAll().get(0), "IT-SUIVI-FRE", "Plaquettes avant",
+                new BigDecimal("89.00"), 60));
+        Intervention it = interventions.findByReference(reference).orElseThrow();
+        it.demarrer(java.time.Instant.parse("2026-12-01T09:00:00Z"));
+        it.ajouterLigneMainOeuvre(plaquettes, (short) 1,
+                plaquettes.getPrixHtva(), plaquettes.getTauxTva());
+        interventions.saveAndFlush(it);
+    }
+
+    @Test
+    @DisplayName("depassement : l'encart « Validation requise » apparait dans le fragment poll")
+    void encartValidationDansLeFragment() throws Exception {
+        provoquerDepassement();
+
+        mvc.perform(get("/mes-interventions/{ref}/statut", reference))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Validation requise")))
+                .andExpect(content().string(containsString("/validation")))
+                // RM-16 : le badge continue d'afficher le percu, pas le statut technique.
+                .andExpect(content().string(containsString(">En cours<")))
+                .andExpect(content().string(not(containsString("ATTENTE_VALIDATION_MEMBRE"))));
+    }
+
+    @Test
+    @DisplayName("GET /validation rend l'ecran de decision avec les prix des lignes proposees")
+    void ecranValidation() throws Exception {
+        provoquerDepassement();
+
+        mvc.perform(get("/mes-interventions/{ref}/validation", reference))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Travaux supplémentaires à valider")))
+                .andExpect(content().string(containsString("Plaquettes avant")))
+                // C'est la seule vue membre qui expose un prix a la ligne : sans lui,
+                // l'accord ne serait pas eclaire.
+                .andExpect(content().string(containsString("89,00")))
+                .andExpect(content().string(containsString("J'accepte ces travaux")))
+                .andExpect(content().string(containsString("Je refuse")));
+    }
+
+    @Test
+    @DisplayName("GET /validation hors depassement : 404, pas d'ecran de decision vide")
+    void ecranValidationHorsDepassement() throws Exception {
+        mvc.perform(get("/mes-interventions/{ref}/validation", reference))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("la ligne en attente ne figure pas dans « Travaux prévus » ni dans le total")
+    void ligneEnAttenteHorsSuivi() throws Exception {
+        provoquerDepassement();
+
+        mvc.perform(get("/mes-interventions/{ref}", reference))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Vidange")))
+                // Tant que le membre n'a pas repondu, la ligne n'est ni due ni prevue :
+                // elle vit sur l'ecran de validation, pas dans le recapitulatif.
+                .andExpect(content().string(not(containsString("<td>Plaquettes avant</td>"))))
+                .andExpect(content().string(containsString("59,29")));
+    }
+
     @Test
     @DisplayName("intervention SUSPENDUE : le membre voit « En cours » (projection RM-16), pas « Suspendue »")
     void statutPercuMasqueLaSuspension() throws Exception {

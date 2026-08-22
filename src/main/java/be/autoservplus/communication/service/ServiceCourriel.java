@@ -31,4 +31,14 @@ public interface ServiceCourriel {
 
     /** Le garage annule un rendez-vous deja confirme (panne, imprevu), motif obligatoire. */
     void envoyerAnnulationParLeGarage(Utilisateur destinataire, DetailsRdvCourriel rdv, String motif);
+
+    /**
+     * Le garage a chiffre des travaux qui portent l intervention a plus de 10 % du
+     * devis initial : RM-15 exige l accord expres du membre avant de poursuivre.
+     * C est le canal dedie annonce par RM-16 — le statut percu reste « En cours »,
+     * la demande passe par ce courriel et par l ecran de validation.
+     */
+    void envoyerDemandeValidationDepassement(Utilisateur destinataire,
+                                             DetailsRdvCourriel rdv,
+                                             DetailsDepassementCourriel depassement);
 }

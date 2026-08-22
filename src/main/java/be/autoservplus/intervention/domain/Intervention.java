@@ -35,6 +35,13 @@ import java.util.UUID;
 @SQLRestriction("deleted_at IS NULL")
 public class Intervention extends BaseEntity {
 
+    /**
+     * Coefficient de RM-15 : « un depassement de plus de dix pour cent du devis
+     * exige un accord expres du client avant poursuite » (dictionnaire, commentaire
+     * de {@code intervention.depassement_notifie}).
+     */
+    private static final BigDecimal SEUIL_RM15 = new BigDecimal("1.10");
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -137,8 +144,16 @@ public class Intervention extends BaseEntity {
      * machine a etats garde les deux cas via {@code peutPasserA} ; le domaine
      * n a pas besoin de distinguer, le service peut proposer deux boutons
      * distincts a l ecran si necessaire.
+     *
+     * <p><b>RM-15</b> : le garage ne peut pas reprendre la main tant qu une ligne
+     * attend la reponse du membre. La garde vit ici, pas dans le DTO qui masque
+     * deja le bouton : masquer un bouton n empeche pas un POST direct.</p>
      */
     public void reprendre() {
+        if (aDesLignesEnAttente()) {
+            throw new IllegalStateException(
+                    "Le membre doit d abord se prononcer sur le depassement de devis (RM-15).");
+        }
         transitionVers(StatutIntervention.EN_COURS);
     }
 
@@ -182,6 +197,7 @@ public class Intervention extends BaseEntity {
         LigneIntervention ligne = new LigneIntervention(this, prestation, quantite,
                 prixUnitaireHtva, tauxTva, true);
         this.lignes.add(ligne);
+        appliquerSeuilDepassement(ligne);
         return ligne;
     }
 
@@ -190,7 +206,87 @@ public class Intervention extends BaseEntity {
         exigerEditable();
         LigneIntervention ligne = new LigneIntervention(this, piece, quantite, true);
         this.lignes.add(ligne);
+        appliquerSeuilDepassement(ligne);
         return ligne;
+    }
+
+    // --- RM-15 : depassement de devis -----------------------------------------------
+
+    /**
+     * Applique RM-15 a la ligne qui vient d etre ajoutee.
+     *
+     * <p>Trois issues. Si l intervention attend deja une reponse du membre, la ligne
+     * rejoint simplement le lot en attente — on ne redemande pas un accord deja
+     * demande. Si le travail n a pas commence (PLANIFIEE), la regle ne s applique
+     * pas : le CdC garde la « poursuite » des travaux, et le garage ajuste encore
+     * son chiffrage. Sinon on compare le total facturable au devis majore : au-dela,
+     * la ligne bascule en attente et l intervention avec elle.</p>
+     *
+     * <p>La comparaison est <b>cumulative</b> et porte sur le total, pas sur l apport
+     * de la ligne seule : trois ajouts de 4 % chacun declenchent la regle, alors
+     * qu aucun ne la declencherait isolement.</p>
+     */
+    private void appliquerSeuilDepassement(LigneIntervention nouvelle) {
+        if (statut == StatutIntervention.ATTENTE_VALIDATION_MEMBRE) {
+            nouvelle.mettreEnAttente();
+            return;
+        }
+        if (statut != StatutIntervention.EN_COURS && statut != StatutIntervention.SUSPENDUE) {
+            return;
+        }
+        if (totalFacturableHtva().compareTo(seuilDepassementHtva()) <= 0) {
+            return;
+        }
+        nouvelle.mettreEnAttente();
+        transitionVers(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+    }
+
+    /**
+     * Devis de reference majore de 10 %, en HTVA. Le depassement est franchi
+     * <b>strictement au-dela</b> : le CdC parle d un depassement « de plus de dix
+     * pour cent », donc un total pile a 110 % du devis ne declenche rien. La
+     * comparaison passe par {@code compareTo} et non {@code equals}, qui tiendrait
+     * compte de l echelle et distinguerait a tort 53.90 de 53.900.
+     */
+    public BigDecimal seuilDepassementHtva() {
+        return devisReferenceHtva().multiply(SEUIL_RM15).setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
+     * Le membre accepte le depassement : les lignes en attente entrent dans le
+     * total facturable et le garage reprend la main.
+     */
+    public void validerDepassement() {
+        exigerAttenteValidation();
+        lignesEnAttente().forEach(LigneIntervention::valider);
+        transitionVers(StatutIntervention.EN_COURS);
+    }
+
+    /**
+     * Le membre refuse le depassement : les lignes proposees sont marquees refusees
+     * — conservees comme trace du defaut constate, hors total, non executees — et le
+     * travail reprend sur le perimetre initial.
+     */
+    public void refuserDepassement() {
+        exigerAttenteValidation();
+        lignesEnAttente().forEach(LigneIntervention::refuser);
+        transitionVers(StatutIntervention.EN_COURS);
+    }
+
+    private void exigerAttenteValidation() {
+        if (statut != StatutIntervention.ATTENTE_VALIDATION_MEMBRE) {
+            throw new IllegalStateException(
+                    "Aucun depassement de devis n est en attente de reponse (statut %s)."
+                            .formatted(statut));
+        }
+    }
+
+    public List<LigneIntervention> lignesEnAttente() {
+        return lignes.stream().filter(LigneIntervention::estEnAttente).toList();
+    }
+
+    public boolean aDesLignesEnAttente() {
+        return lignes.stream().anyMatch(LigneIntervention::estEnAttente);
     }
 
     public boolean retirerLigne(Long ligneId) {
@@ -234,6 +330,14 @@ public class Intervention extends BaseEntity {
      */
     public BigDecimal totalFacturableHtva() {
         return sommeHtva(LigneIntervention::estFacturable);
+    }
+
+    /**
+     * Total HTVA si le membre accepte tout ce qui lui est propose : facturable +
+     * lignes en attente. Sert a lui presenter le montant sur lequel il se prononce.
+     */
+    public BigDecimal totalProposeHtva() {
+        return sommeHtva(l -> !l.isRefusee());
     }
 
     public BigDecimal totalFacturableTvac() {

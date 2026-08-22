@@ -152,6 +152,22 @@ public class LigneIntervention {
     }
 
     /**
+     * La ligne sort du total facturable en attendant l accord du membre (RM-15).
+     * Elle reste ni validee ni refusee : le troisieme etat, celui de la question
+     * posee au client.
+     */
+    void mettreEnAttente() {
+        this.validee = false;
+        this.refusee = false;
+    }
+
+    /** Le membre accepte cette ligne : elle rejoint le total facturable. */
+    void valider() {
+        this.validee = true;
+        this.refusee = false;
+    }
+
+    /**
      * Le membre ecarte cette ligne. Elle reste dans le dossier — elle documente le
      * defaut constate par le garage — mais sort definitivement du total facturable
      * et ne sera pas executee. {@code validee} retombe a false pour respecter
@@ -170,6 +186,11 @@ public class LigneIntervention {
      */
     public boolean estFacturable() {
         return validee && !refusee;
+    }
+
+    /** La ligne attend une reponse du membre : ni acquise, ni ecartee. */
+    public boolean estEnAttente() {
+        return !validee && !refusee;
     }
 
     public Long getId() { return id; }

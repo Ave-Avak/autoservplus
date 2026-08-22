@@ -308,6 +308,18 @@ class InterventionTest {
         }
 
         @Test
+        @DisplayName("SUSPENDUE peut basculer vers ATTENTE_VALIDATION_MEMBRE (depassement chiffre a l'arret)")
+        void suspendueVersAttenteValidation() {
+            StatutIntervention s = StatutIntervention.SUSPENDUE;
+            assertThat(s.peutPasserA(StatutIntervention.ATTENTE_VALIDATION_MEMBRE)).isTrue();
+            assertThat(s.peutPasserA(StatutIntervention.EN_COURS)).isTrue();
+            assertThat(s.peutPasserA(StatutIntervention.ANNULEE)).isTrue();
+            assertThat(s.peutPasserA(StatutIntervention.TERMINEE))
+                    .as("On ne termine pas une intervention suspendue sans la reprendre")
+                    .isFalse();
+        }
+
+        @Test
         @DisplayName("PLANIFIEE -> ANNULEE autorise, PLANIFIEE -> SUSPENDUE / TERMINEE / ATTENTE... refuses")
         void planifieeTransitions() {
             StatutIntervention s = StatutIntervention.PLANIFIEE;
@@ -326,17 +338,22 @@ class InterventionTest {
         @Test
         @DisplayName("ajouterLigneMainOeuvre possible en PLANIFIEE, EN_COURS, SUSPENDUE")
         void ajouterLigneQuandEditable() {
+            // Montants volontairement faibles : ce test porte sur l editabilite par
+            // statut, pas sur le seuil RM-15 (couvert par DepassementDevis). Un montant
+            // eleve basculerait en ATTENTE_VALIDATION_MEMBRE et masquerait l intention.
+            BigDecimal petitPrix = new BigDecimal("1.00");
             Intervention it = interventionDepuis(vidange);
-            it.ajouterLigneMainOeuvre(freins, (short) 1, new BigDecimal("89.00"), new BigDecimal("21.00"));
+            it.ajouterLigneMainOeuvre(freins, (short) 1, petitPrix, new BigDecimal("21.00"));
             assertThat(it.getLignes()).hasSize(2);
 
             it.demarrer(DEBUT);
-            it.ajouterLigneMainOeuvre(freins, (short) 1, new BigDecimal("89.00"), new BigDecimal("21.00"));
+            it.ajouterLigneMainOeuvre(freins, (short) 1, petitPrix, new BigDecimal("21.00"));
             assertThat(it.getLignes()).hasSize(3);
 
             it.suspendre();
-            it.ajouterLigneMainOeuvre(freins, (short) 1, new BigDecimal("89.00"), new BigDecimal("21.00"));
+            it.ajouterLigneMainOeuvre(freins, (short) 1, petitPrix, new BigDecimal("21.00"));
             assertThat(it.getLignes()).hasSize(4);
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.SUSPENDUE);
         }
 
         @Test
@@ -382,6 +399,205 @@ class InterventionTest {
         }
     }
 
+    /**
+     * RM-15 : « un depassement de PLUS DE dix pour cent du devis exige un accord
+     * expres du client avant poursuite ». Le devis de reference est la vidange seule
+     * (49,00 € HTVA), le seuil vaut donc 53,90 € — la borne exacte est testee dans les
+     * deux sens, c est elle qui distingue une lecture stricte d une lecture large.
+     */
+    @Nested
+    @DisplayName("depassement de devis (RM-15)")
+    class DepassementDevis {
+
+        private static final BigDecimal TVA = new BigDecimal("21.00");
+
+        private Intervention enCoursAvecDevisDe49() {
+            Intervention it = interventionDepuis(vidange);
+            it.demarrer(DEBUT);
+            return it;
+        }
+
+        private LigneIntervention ajouter(Intervention it, String prixHtva) {
+            return it.ajouterLigneMainOeuvre(freins, (short) 1, new BigDecimal(prixHtva), TVA);
+        }
+
+        @Test
+        @DisplayName("le seuil vaut le devis majore de 10 %, en HTVA")
+        void seuilCalcule() {
+            assertThat(enCoursAvecDevisDe49().seuilDepassementHtva()).isEqualByComparingTo("53.90");
+        }
+
+        @Test
+        @DisplayName("total PILE a 110 % du devis : PAS de validation requise (« plus de » = strict)")
+        void seuilExactNeDeclenchePas() {
+            Intervention it = enCoursAvecDevisDe49();
+
+            LigneIntervention ligne = ajouter(it, "4.90"); // 49.00 + 4.90 = 53.90 = seuil exact
+
+            assertThat(it.totalFacturableHtva())
+                    .as("Le total doit tomber exactement sur le seuil")
+                    .isEqualByComparingTo(it.seuilDepassementHtva())
+                    .isEqualByComparingTo("53.90");
+            assertThat(it.getStatut())
+                    .as("A 110 % pile on n'est pas « au-dela de 10 % » : le garage continue")
+                    .isEqualTo(StatutIntervention.EN_COURS);
+            assertThat(ligne.isValidee()).isTrue();
+            assertThat(it.aDesLignesEnAttente()).isFalse();
+        }
+
+        @Test
+        @DisplayName("un centime au-dessus du seuil : bascule en ATTENTE_VALIDATION_MEMBRE")
+        void unCentimeAuDessusDeclenche() {
+            Intervention it = enCoursAvecDevisDe49();
+
+            LigneIntervention ligne = ajouter(it, "4.91"); // 53.91 > 53.90
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+            assertThat(ligne.estEnAttente()).isTrue();
+            assertThat(it.totalFacturableHtva())
+                    .as("Tant que le membre n'a pas repondu, la ligne ne compte pas")
+                    .isEqualByComparingTo("49.00");
+            assertThat(it.totalProposeHtva()).isEqualByComparingTo("53.91");
+        }
+
+        @Test
+        @DisplayName("petit ajout sous le seuil : ligne validee d office, aucune friction")
+        void ajoutSousLeSeuil() {
+            Intervention it = enCoursAvecDevisDe49();
+
+            LigneIntervention ligne = ajouter(it, "2.00"); // 51.00 <= 53.90
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+            assertThat(ligne.isValidee()).isTrue();
+            assertThat(it.totalFacturableHtva()).isEqualByComparingTo("51.00");
+        }
+
+        @Test
+        @DisplayName("cumulatif : trois ajouts sous le seuil chacun finissent par le franchir")
+        void seuilCumulatif() {
+            Intervention it = enCoursAvecDevisDe49();
+
+            ajouter(it, "2.00");  // 51.00
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+            ajouter(it, "2.00");  // 53.00
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+            ajouter(it, "2.00");  // 55.00 > 53.90
+
+            assertThat(it.getStatut())
+                    .as("La comparaison porte sur le total cumule, pas sur l'apport de la ligne")
+                    .isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+        }
+
+        @Test
+        @DisplayName("le membre accepte : lignes validees, EN_COURS, total facturable elargi")
+        void membreAccepte() {
+            Intervention it = enCoursAvecDevisDe49();
+            LigneIntervention ligne = ajouter(it, "89.00");
+
+            it.validerDepassement();
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+            assertThat(ligne.isValidee()).isTrue();
+            assertThat(ligne.isRefusee()).isFalse();
+            assertThat(it.totalFacturableHtva()).isEqualByComparingTo("138.00");
+            assertThat(it.aDesLignesEnAttente()).isFalse();
+        }
+
+        @Test
+        @DisplayName("le membre refuse : lignes conservees, hors total, EN_COURS sur le perimetre initial")
+        void membreRefuse() {
+            Intervention it = enCoursAvecDevisDe49();
+            LigneIntervention ligne = ajouter(it, "89.00");
+
+            it.refuserDepassement();
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+            assertThat(it.getLignes())
+                    .as("La ligne refusee reste au dossier : trace du defaut constate")
+                    .hasSize(2)
+                    .contains(ligne);
+            assertThat(ligne.isRefusee()).isTrue();
+            assertThat(ligne.estFacturable()).isFalse();
+            assertThat(it.totalFacturableHtva())
+                    .as("Retour au perimetre du devis initial")
+                    .isEqualByComparingTo("49.00");
+            assertThat(it.totalProposeHtva())
+                    .as("Une ligne refusee sort aussi du total propose")
+                    .isEqualByComparingTo("49.00");
+            assertThat(it.aDesLignesEnAttente()).isFalse();
+        }
+
+        @Test
+        @DisplayName("le garage ne peut pas reprendre tant que le membre n'a pas repondu")
+        void garageBloquePendantAttente() {
+            Intervention it = enCoursAvecDevisDe49();
+            ajouter(it, "89.00");
+
+            assertThatThrownBy(it::reprendre)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("RM-15");
+
+            // ... et redevient possible des que le membre a tranche.
+            it.refuserDepassement();
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+        }
+
+        @Test
+        @DisplayName("une ligne ajoutee pendant l'attente rejoint le lot, sans nouvelle bascule")
+        void ajoutPendantAttenteRejointLeLot() {
+            Intervention it = enCoursAvecDevisDe49();
+            ajouter(it, "89.00");
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+
+            LigneIntervention seconde = ajouter(it, "10.00");
+
+            assertThat(seconde.estEnAttente()).isTrue();
+            assertThat(it.lignesEnAttente()).hasSize(2);
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+            assertThat(it.totalProposeHtva()).isEqualByComparingTo("148.00");
+        }
+
+        @Test
+        @DisplayName("depassement constate en suspension : bascule aussi depuis SUSPENDUE")
+        void depassementDepuisSuspendue() {
+            Intervention it = enCoursAvecDevisDe49();
+            it.suspendre();
+
+            ajouter(it, "89.00");
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+        }
+
+        @Test
+        @DisplayName("PLANIFIEE hors dispositif : rien n'a commence, aucune « poursuite » a garder")
+        void planifieeHorsDispositif() {
+            Intervention it = interventionDepuis(vidange); // reste PLANIFIEE
+
+            LigneIntervention ligne = ajouter(it, "500.00");
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.PLANIFIEE);
+            assertThat(ligne.isValidee()).isTrue();
+        }
+
+        @Test
+        @DisplayName("repondre hors ATTENTE_VALIDATION_MEMBRE est refuse (double soumission)")
+        void reponseHorsContexteRefusee() {
+            Intervention it = enCoursAvecDevisDe49();
+
+            assertThatThrownBy(it::validerDepassement)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("EN_COURS");
+            assertThatThrownBy(it::refuserDepassement)
+                    .isInstanceOf(IllegalStateException.class);
+
+            ajouter(it, "89.00");
+            it.validerDepassement();
+            // deuxieme envoi (retour arriere du navigateur) : la demande est tranchee.
+            assertThatThrownBy(it::validerDepassement)
+                    .isInstanceOf(IllegalStateException.class);
+        }
+    }
+
     @Nested
     @DisplayName("totaux")
     class Totaux {
@@ -423,13 +639,14 @@ class InterventionTest {
         }
 
         @Test
-        @DisplayName("une ligne ajoutee par le garage naît ajouteeEnCours, validee (avant RM-15)")
-        void ligneAjouteeEnCoursValideeParDefaut() {
+        @DisplayName("une ligne ajoutee par le garage est marquee ajouteeEnCours")
+        void ligneAjouteeEnCoursMarquee() {
             Intervention it = interventionDepuis(vidange);
             it.demarrer(DEBUT);
 
+            // Montant sous le seuil RM-15 : on teste ici le marquage, pas la bascule.
             LigneIntervention ajoutee = it.ajouterLigneMainOeuvre(freins, (short) 1,
-                    new BigDecimal("89.00"), new BigDecimal("21.00"));
+                    new BigDecimal("2.00"), new BigDecimal("21.00"));
 
             assertThat(ajoutee.isAjouteeEnCours()).isTrue();
             assertThat(ajoutee.isValidee()).isTrue();
@@ -442,39 +659,17 @@ class InterventionTest {
             Intervention it = interventionDepuis(vidange);
             it.demarrer(DEBUT);
             it.ajouterLigneMainOeuvre(freins, (short) 1,
-                    new BigDecimal("89.00"), new BigDecimal("21.00"));
+                    new BigDecimal("2.00"), new BigDecimal("21.00"));
 
             assertThat(it.devisReferenceHtva())
                     .as("La base de comparaison RM-15 doit rester le devis d origine")
                     .isEqualByComparingTo("49.00");
-            assertThat(it.totalFacturableHtva()).isEqualByComparingTo("138.00");
+            assertThat(it.totalFacturableHtva()).isEqualByComparingTo("51.00");
         }
 
-        @Test
-        @DisplayName("une ligne refusee reste dans le dossier mais sort du total facturable")
-        void ligneRefuseeConserveeHorsTotal() {
-            Intervention it = interventionDepuis(vidange);
-            it.demarrer(DEBUT);
-            LigneIntervention ajoutee = it.ajouterLigneMainOeuvre(freins, (short) 1,
-                    new BigDecimal("89.00"), new BigDecimal("21.00"));
-            assertThat(it.totalFacturableHtva()).isEqualByComparingTo("138.00");
-
-            ajoutee.refuser();
-
-            assertThat(it.getLignes())
-                    .as("La ligne refusee reste en base : trace du defaut constate")
-                    .hasSize(2)
-                    .contains(ajoutee);
-            assertThat(ajoutee.isRefusee()).isTrue();
-            assertThat(ajoutee.isValidee())
-                    .as("Exclusion mutuelle : refusee implique non validee (ck_ligne_interv_validation)")
-                    .isFalse();
-            assertThat(ajoutee.estFacturable()).isFalse();
-            assertThat(it.totalFacturableHtva())
-                    .as("Le perimetre facturable revient au devis initial")
-                    .isEqualByComparingTo("49.00");
-            assertThat(it.totalFacturableTvac()).isEqualByComparingTo("59.29");
-        }
+        // L exclusion d une ligne refusee du total est desormais verifiee de bout en
+        // bout par DepassementDevis.membreRefuse, qui passe par le chemin reel
+        // (ajout > seuil, puis refus du membre) plutot que par un marquage direct.
 
         @Test
         @DisplayName("retirerLigne refuse en TERMINEE")

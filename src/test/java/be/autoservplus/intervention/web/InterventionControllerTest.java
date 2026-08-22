@@ -2,6 +2,7 @@ package be.autoservplus.intervention.web;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.intervention.service.InterventionService;
+import be.autoservplus.intervention.web.dto.DemandeValidationVue;
 import be.autoservplus.intervention.web.dto.InterventionVueMembre;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -25,7 +26,11 @@ import java.util.UUID;
 
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -78,7 +83,7 @@ class InterventionControllerTest {
                 "VW Golf (1-ABC-123)",
                 "Piece commandee, livraison mardi",
                 "Lundi 14 septembre 2026 09:00", null,
-                List.of(), "59,29 €", false);
+                List.of(), "59,29 €", false, false);
     }
 
     @Test
@@ -114,6 +119,100 @@ class InterventionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("intervention/suivi :: blocStatut"))
                 .andExpect(model().attribute("intervention", vueDemo));
+    }
+
+    // --- RM-15 : ecran de validation du depassement -----------------------------------
+
+    @Test
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("GET /validation rend l'ecran de decision pour le proprietaire")
+    void ecranValidation() throws Exception {
+        DemandeValidationVue demande = new DemandeValidationVue(REF, "INT-2026-0001",
+                "VW Golf (1-ABC-123)", "49,00 €", "138,00 €", "89,00 €", null,
+                List.of(new DemandeValidationVue.LigneProposeeVue("Plaquettes", (short) 1, "89,00 €")));
+        doReturn(demande).when(service).demandeValidation(REF, "marie@exemple.be");
+
+        mvc.perform(get("/mes-interventions/{ref}/validation", REF))
+                .andExpect(status().isOk())
+                .andExpect(view().name("intervention/validation"))
+                .andExpect(model().attribute("demande", demande));
+    }
+
+    @Test
+    @WithMockUser(username = "intrus@exemple.be")
+    @DisplayName("GET /validation d'un autre membre -> 404")
+    void ecranValidationOwnership() throws Exception {
+        doThrow(new RessourceIntrouvableException("Intervention", REF))
+                .when(service).demandeValidation(REF, "intrus@exemple.be");
+
+        mvc.perform(get("/mes-interventions/{ref}/validation", REF))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("POST /valider delegue au service et redirige vers le suivi")
+    void postValider() throws Exception {
+        mvc.perform(post("/mes-interventions/{ref}/valider", REF).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/mes-interventions/" + REF))
+                .andExpect(flash().attributeExists("message"));
+
+        verify(service).validerDepassement(REF, "marie@exemple.be");
+    }
+
+    @Test
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("POST /refuser delegue au service et redirige vers le suivi")
+    void postRefuser() throws Exception {
+        mvc.perform(post("/mes-interventions/{ref}/refuser", REF).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/mes-interventions/" + REF))
+                .andExpect(flash().attributeExists("message"));
+
+        verify(service).refuserDepassement(REF, "marie@exemple.be");
+    }
+
+    @Test
+    @WithMockUser(username = "intrus@exemple.be")
+    @DisplayName("POST /valider sur l'intervention d'autrui -> 404, aucune ecriture")
+    void postValiderOwnership() throws Exception {
+        doThrow(new RessourceIntrouvableException("Intervention", REF))
+                .when(service).validerDepassement(REF, "intrus@exemple.be");
+
+        mvc.perform(post("/mes-interventions/{ref}/valider", REF).with(csrf()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "intrus@exemple.be")
+    @DisplayName("POST /refuser sur l'intervention d'autrui -> 404, aucune ecriture")
+    void postRefuserOwnership() throws Exception {
+        doThrow(new RessourceIntrouvableException("Intervention", REF))
+                .when(service).refuserDepassement(REF, "intrus@exemple.be");
+
+        mvc.perform(post("/mes-interventions/{ref}/refuser", REF).with(csrf()))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("double soumission : message d'erreur lisible, pas une 500")
+    void doubleSoumission() throws Exception {
+        doThrow(new IllegalStateException("Aucun depassement en attente"))
+                .when(service).validerDepassement(REF, "marie@exemple.be");
+
+        mvc.perform(post("/mes-interventions/{ref}/valider", REF).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attributeExists("erreur"));
+    }
+
+    @Test
+    @DisplayName("POST sans jeton CSRF est rejete")
+    @WithMockUser(username = "marie@exemple.be")
+    void postSansCsrfRejete() throws Exception {
+        mvc.perform(post("/mes-interventions/{ref}/valider", REF))
+                .andExpect(status().isForbidden());
     }
 
     @Test

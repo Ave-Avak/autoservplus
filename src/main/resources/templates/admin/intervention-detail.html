@@ -70,6 +70,22 @@
         </div>
     </dl>
 
+    <!-- RM-15 : tant que le membre n'a pas répondu, le garage est à l'arrêt. Le flag
+         peutReprendre est déjà faux dans ce cas, l'encart explique pourquoi le bouton
+         a disparu plutôt que de laisser l'écran muet. -->
+    <div th:if="${intervention.enAttenteValidationMembre()}" class="message message-erreur" role="alert">
+        <strong>En attente de validation du client</strong>
+        <p>
+            Le total dépasse le devis initial de plus de 10 %. Le client a été prévenu
+            et doit accepter ou refuser les travaux ajoutés. L'intervention ne peut pas
+            reprendre avant sa réponse.
+        </p>
+        <p>
+            Devis initial : <span th:text="${intervention.devisInitialHtva()}">49,00 €</span> —
+            total proposé : <span th:text="${intervention.totalProposeHtva()}">138,00 €</span> (HTVA).
+        </p>
+    </div>
+
     <!-- Transitions : boutons conditionnés par les flags calculés depuis la machine à états. -->
     <p class="actions-page">
         <form th:if="${intervention.peutDemarrer()}"
@@ -103,12 +119,16 @@
     <h2>Lignes</h2>
     <table class="tableau">
         <thead>
-            <tr><th>Type</th><th>Libellé</th><th>Qté</th><th>PU HTVA</th><th>Total HTVA</th><th></th></tr>
+            <tr><th>Type</th><th>Libellé</th><th>État</th><th>Qté</th><th>PU HTVA</th><th>Total HTVA</th><th></th></tr>
         </thead>
         <tbody>
-            <tr th:each="l : ${intervention.lignes()}">
+            <!-- Une ligne hors total (en attente ou refusée) reste affichée : c'est le
+                 dossier de travail du garage, pas la facture. La classe la distingue. -->
+            <tr th:each="l : ${intervention.lignes()}"
+                th:classappend="${l.compteDansLeTotal()} ? null : 'ligne-hors-total'">
                 <td th:text="${l.type()}">MAIN_OEUVRE</td>
                 <td th:text="${l.libelle()}">Vidange</td>
+                <td th:text="${l.etat()}">Devis initial</td>
                 <td th:text="${l.quantite()}">1</td>
                 <td th:text="${l.prixUnitaireHtva()}">49,00 €</td>
                 <td th:text="${l.totalHtva()}">49,00 €</td>
@@ -123,12 +143,12 @@
         </tbody>
         <tfoot>
             <tr>
-                <td colspan="4"><strong>Total</strong></td>
+                <td colspan="5"><strong>Total facturable</strong></td>
                 <td th:text="${intervention.totalHtva()}">49,00 €</td>
                 <td></td>
             </tr>
             <tr>
-                <td colspan="4"><strong>Total TVAC</strong></td>
+                <td colspan="5"><strong>Total facturable TVAC</strong></td>
                 <td th:text="${intervention.totalTvac()}">59,29 €</td>
                 <td></td>
             </tr>

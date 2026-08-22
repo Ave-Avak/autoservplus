@@ -33,10 +33,20 @@ public enum StatutIntervention {
      *
      * <p>PLANIFIEE peut demarrer ou etre annulee (avant tout travail).
      * EN_COURS peut se suspendre, passer en attente de validation membre,
-     * se terminer, ou etre annulee. SUSPENDUE et ATTENTE_VALIDATION_MEMBRE
-     * sont symetriques : elles reprennent en EN_COURS ou basculent en ANNULEE.
+     * se terminer, ou etre annulee. SUSPENDUE reprend en EN_COURS, bascule en
+     * ANNULEE, ou passe en ATTENTE_VALIDATION_MEMBRE si le garage chiffre un
+     * depassement pendant la suspension (cas courant : le devis explose une fois
+     * la piece diagnostiquee, travail a l arret). ATTENTE_VALIDATION_MEMBRE
+     * reprend en EN_COURS ou bascule en ANNULEE.
      * TERMINEE et ANNULEE sont terminaux : aucune sortie, meme pour
      * correction (une correction post-facturation passera par un avoir).</p>
+     *
+     * <p>Note d ecart : le CdC (table 3.8) ne liste pas explicitement
+     * SUSPENDUE -&gt; ATTENTE_VALIDATION_MEMBRE. Elle est ajoutee ici parce que
+     * {@link #estEditable()} autorise le garage a chiffrer une ligne en
+     * suspension : sans cette transition, un depassement constate a l arret
+     * echapperait a RM-15. PLANIFIEE reste volontairement hors du dispositif :
+     * la regle garde la « poursuite » des travaux, or rien n a commence.</p>
      *
      * <p>Self-loops toujours refuses : aucune branche ne retourne
      * {@code cible == this}.</p>
@@ -48,7 +58,9 @@ public enum StatutIntervention {
                                               || cible == ATTENTE_VALIDATION_MEMBRE
                                               || cible == TERMINEE
                                               || cible == ANNULEE;
-            case SUSPENDUE                 -> cible == EN_COURS || cible == ANNULEE;
+            case SUSPENDUE                 -> cible == EN_COURS
+                                              || cible == ATTENTE_VALIDATION_MEMBRE
+                                              || cible == ANNULEE;
             case ATTENTE_VALIDATION_MEMBRE -> cible == EN_COURS || cible == ANNULEE;
             case TERMINEE, ANNULEE         -> false;
         };
