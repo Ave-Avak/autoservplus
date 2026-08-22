@@ -12,7 +12,14 @@ import be.autoservplus.common.exception.RegleMetierException;
  */
 public class PieceInactiveException extends RegleMetierException {
 
+    private final String libelle;
+
     public PieceInactiveException(String libelle) {
         super("La piece « %s » n est plus proposee a la vente.".formatted(libelle));
+        this.libelle = libelle;
+    }
+
+    public String getLibelle() {
+        return libelle;
     }
 }

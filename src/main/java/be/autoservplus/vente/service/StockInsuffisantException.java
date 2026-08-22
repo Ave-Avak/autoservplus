@@ -16,12 +16,18 @@ import be.autoservplus.common.exception.RegleMetierException;
  */
 public class StockInsuffisantException extends RegleMetierException {
 
+    private final String libelle;
     private final int quantiteDisponible;
 
     public StockInsuffisantException(String libelle, int quantiteDemandee, int quantiteDisponible) {
         super("Stock insuffisant pour « %s » : %d demandee(s), %d disponible(s)."
                 .formatted(libelle, quantiteDemandee, quantiteDisponible));
+        this.libelle = libelle;
         this.quantiteDisponible = quantiteDisponible;
+    }
+
+    public String getLibelle() {
+        return libelle;
     }
 
     public int getQuantiteDisponible() {
