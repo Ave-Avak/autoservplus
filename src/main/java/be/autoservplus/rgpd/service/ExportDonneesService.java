@@ -7,6 +7,7 @@ import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.rgpd.repository.AjoutAuPanier;
 import be.autoservplus.rgpd.repository.CommandeExportRepository;
+import be.autoservplus.rgpd.repository.FactureExportRepository;
 import be.autoservplus.rgpd.repository.ConsentementExportRepository;
 import be.autoservplus.rgpd.repository.InterventionExportRepository;
 import be.autoservplus.rgpd.repository.PanierExportRepository;
@@ -81,8 +82,14 @@ import java.util.stream.Collectors;
  * <p><b>Perimetre non couvert en V1</b>, faute d entite JPA (les tables existent
  * au schema mais aucun code ne les alimente) : avis, messagerie, notifications.
  * L export ne comporte donc pas ces sections plutot que des tableaux vides
- * trompeurs. Les factures suivront le module facturation ; les commandes payees,
- * montants compris, sont deja restituees ici.
+ * trompeurs.
+ *
+ * <p><b>Factures</b> : restituees depuis l entite {@code Facture} du module
+ * facturation, et non deduites des commandes payees. Une commande payee n est pas
+ * une facture — cette derniere porte un numero legal d une suite continue, sa
+ * propre date d emission et des montants figes a l emission. Les deux sections
+ * coexistent : une commande annulee n a pas de facture, et la commande reste une
+ * donnee detenue a part entiere.
  */
 @Service
 @Transactional(readOnly = true)
@@ -103,6 +110,7 @@ public class ExportDonneesService {
     private final RdvExportRepository rendezVous;
     private final InterventionExportRepository interventions;
     private final CommandeExportRepository commandes;
+    private final FactureExportRepository factures;
     private final ConsentementExportRepository consentements;
     private final PanierRepository paniers;
     private final PanierExportRepository panierExport;
@@ -117,6 +125,7 @@ public class ExportDonneesService {
                                 RdvExportRepository rendezVous,
                                 InterventionExportRepository interventions,
                                 CommandeExportRepository commandes,
+                                FactureExportRepository factures,
                                 ConsentementExportRepository consentements,
                                 PanierRepository paniers,
                                 PanierExportRepository panierExport,
@@ -130,6 +139,7 @@ public class ExportDonneesService {
         this.rendezVous = rendezVous;
         this.interventions = interventions;
         this.commandes = commandes;
+        this.factures = factures;
         this.consentements = consentements;
         this.paniers = paniers;
         this.panierExport = panierExport;
@@ -239,6 +249,9 @@ public class ExportDonneesService {
                         parc.stream().map(ExportDonnees.VehiculeExport::de).toList(),
                         panierEnCours(email),
                         commandesAvecLignes(email),
+                        factures.pourMembre(email).stream()
+                                .map(ExportDonnees.FactureExport::de)
+                                .toList(),
                         rendezVous.pourMembre(email).stream()
                                 .map(rdv -> ExportDonnees.RdvExport.de(rdv, plaque(plaques, rdv.getVehicule())))
                                 .toList(),

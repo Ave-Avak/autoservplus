@@ -44,6 +44,10 @@ class SerialiseurExportJsonTest {
                                 Instant.parse("2026-03-01T08:05:00Z"), null, null,
                                 new BigDecimal("39.98"), new BigDecimal("8.40"),
                                 new BigDecimal("48.38"), List.of())),
+                        List.of(new ExportDonnees.FactureExport("2026-0007",
+                                Instant.parse("2026-03-01T08:05:00Z"),
+                                new BigDecimal("39.98"), new BigDecimal("8.40"),
+                                new BigDecimal("48.38"), "CMD-2026-0001", false)),
                         List.of(), List.of(), List.of(),
                         new ExportDonnees.ConnexionExport(
                                 Instant.parse("2026-08-20T06:00:00Z"), true, (short) 0, null)),
@@ -98,6 +102,20 @@ class SerialiseurExportJsonTest {
         assertThat(commande.path("montant_htva").decimalValue()).isEqualByComparingTo("39.98");
         assertThat(commande.path("montant_tva").decimalValue()).isEqualByComparingTo("8.40");
         assertThat(commande.path("montant_tvac").decimalValue()).isEqualByComparingTo("48.38");
+    }
+
+    @Test
+    @DisplayName("ecrit la facture avec son numero legal, sans chemin de fichier")
+    void factureSansBinaire() throws Exception {
+        JsonNode facture = arbre().path("donnees_personnelles").path("factures").get(0);
+
+        assertThat(facture.path("numero").asText()).isEqualTo("2026-0007");
+        assertThat(facture.path("date_emission").asText()).isEqualTo("2026-03-01T08:05:00Z");
+        assertThat(facture.path("numero_commande").asText()).isEqualTo("CMD-2026-0001");
+        assertThat(facture.path("montant_tvac").decimalValue()).isEqualByComparingTo("48.38");
+        assertThat(facture.path("pdf_archive").asBoolean()).isFalse();
+        // Metadonnees seulement : ni binaire encode, ni emplacement sur le serveur.
+        assertThat(texte()).doesNotContain(".pdf");
     }
 
     @Test

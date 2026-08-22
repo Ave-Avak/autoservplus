@@ -2,6 +2,7 @@ package be.autoservplus.rgpd.service.dto;
 
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
+import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
@@ -56,6 +57,7 @@ public record ExportDonnees(
             List<VehiculeExport> vehicules,
             PanierExport panierEnCours,
             List<CommandeExport> commandes,
+            List<FactureExport> factures,
             List<RdvExport> rendezVous,
             List<InterventionExport> interventions,
             List<ConsentementExport> consentements,
@@ -295,6 +297,58 @@ public record ExportDonnees(
                     ligne.totalHtva(),
                     ligne.totalTva(),
                     ligne.totalTvac());
+        }
+    }
+
+    /**
+     * Facture emise au nom du membre (F31).
+     *
+     * <p>Section distincte des commandes, et non un doublon : une commande est un
+     * acte d achat, une facture est un document <b>comptable</b> qui l atteste,
+     * porte son propre numero legal et sa propre date d emission. Une commande
+     * annulee n a pas de facture ; une facture, elle, ne disparait jamais. Les
+     * deux sont detenues, l article 15 vise les deux.
+     *
+     * <p>{@code numero} est le numero legal, d une suite continue par exercice
+     * (AR n°1, art. 5) : c est sous ce numero que le document existe pour
+     * l administration, et c est lui que la personne doit pouvoir citer.
+     *
+     * <p>Les montants sont ceux <b>figes a l emission</b>, recopies de la commande.
+     * Ils peuvent differer de ceux du catalogue courant, et c est le propos : la
+     * facture atteste ce qui a ete encaisse, pas ce que l article coute aujourd hui.
+     *
+     * <p>{@code numeroCommande} rattache la facture a la section commandes du meme
+     * fichier — le numero fonctionnel plutot que la reference technique, pour que
+     * la personne puisse faire le rapprochement elle-meme. {@code null} pour une
+     * facture d intervention (RM-17, bloc futur).
+     *
+     * <p><b>Le PDF n est pas inclus.</b> L export est un document de donnees, pas
+     * une archive de fichiers : y embarquer des binaires encodes le rendrait
+     * illisible et ferait doublon avec un telechargement deja offert au membre,
+     * facture par facture. {@code pdfArchive} dit seulement si un fichier PDF est
+     * <b>actuellement conserve</b> pour cette facture — une donnee sur ce qui est
+     * detenu. Il vaut {@code false} tant que personne ne l a demande, le document
+     * etant fabrique a la premiere demande ; il reste telechargeable dans tous les
+     * cas depuis « Mes commandes ».
+     */
+    public record FactureExport(
+            String numero,
+            Instant dateEmission,
+            BigDecimal montantHtva,
+            BigDecimal montantTva,
+            BigDecimal montantTvac,
+            String numeroCommande,
+            boolean pdfArchive) {
+
+        public static FactureExport de(Facture facture) {
+            return new FactureExport(
+                    facture.getNumero(),
+                    facture.getDateEmission(),
+                    facture.getMontantHtva(),
+                    facture.getMontantTva(),
+                    facture.getMontantTvac(),
+                    facture.getCommande() == null ? null : facture.getCommande().getNumero(),
+                    facture.estArchivee());
         }
     }
 

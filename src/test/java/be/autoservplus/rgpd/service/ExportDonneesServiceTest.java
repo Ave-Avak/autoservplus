@@ -17,7 +17,9 @@ import be.autoservplus.reservation.domain.PosteAtelier;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.rgpd.repository.AjoutAuPanier;
+import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.rgpd.repository.CommandeExportRepository;
+import be.autoservplus.rgpd.repository.FactureExportRepository;
 import be.autoservplus.rgpd.repository.ConsentementExportRepository;
 import be.autoservplus.rgpd.repository.InterventionExportRepository;
 import be.autoservplus.rgpd.repository.PanierExportRepository;
@@ -76,6 +78,7 @@ class ExportDonneesServiceTest {
             "$2a$12$abcdefghijklmnopqrstuvOQ0RvNbYQ6cUqf6mE1nGxU8rWJl3Xy";
     private static final Instant MAINTENANT = Instant.parse("2026-08-22T07:30:00Z");
     private static final Instant CREATION_COMPTE = Instant.parse("2026-01-05T10:00:00Z");
+    private static final Instant EMISSION_FACTURE = Instant.parse("2026-03-01T09:15:00Z");
     private static final Long ID_MARIE = 1L;
     private static final Long ID_GOLF = 10L;
 
@@ -84,6 +87,7 @@ class ExportDonneesServiceTest {
     @Mock private RdvExportRepository rendezVous;
     @Mock private InterventionExportRepository interventions;
     @Mock private CommandeExportRepository commandes;
+    @Mock private FactureExportRepository factures;
     @Mock private ConsentementExportRepository consentements;
     @Mock private PanierRepository paniers;
     @Mock private PanierExportRepository panierExport;
@@ -108,7 +112,7 @@ class ExportDonneesServiceTest {
         Clock horloge = Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels"));
         registre = new RegistreExportsRecents(horloge);
         service = new ExportDonneesService(utilisateurs, vehicules, rendezVous, interventions,
-                commandes, consentements, paniers, panierExport,
+                commandes, factures, consentements, paniers, panierExport,
                 new CatalogueTraitements(messages), serialiseur, registre, encodeur, horloge);
 
         marie = new Utilisateur(EMAIL, EMPREINTE, "Dupont", "Marie", TypeUtilisateur.MEMBRE);
@@ -138,6 +142,17 @@ class ExportDonneesServiceTest {
     }
 
     /**
+     * Facture emise pour la commande, telle que le module facturation la produit.
+     * Les montants ne sont pas re-saisis : ils sont recopies de la commande par la
+     * fabrique de l entite, exactement comme a l emission reelle.
+     */
+    private Facture factureDe(Commande commande) {
+        commande.confirmerPaiement(EMISSION_FACTURE.minusSeconds(60));
+        return Facture.pourCommande("2026-0007", (short) 2026, 7, commande,
+                new BigDecimal("21.00"), EMISSION_FACTURE);
+    }
+
+    /**
      * Compte trouve, toutes les sections vides : le socle de la plupart des cas.
      *
      * <p>Bouchons {@code lenient} a dessein : chaque test remplace la ou les
@@ -149,6 +164,7 @@ class ExportDonneesServiceTest {
         lenient().when(vehicules.pourMembre(ID_MARIE)).thenReturn(List.of());
         lenient().when(rendezVous.pourMembre(EMAIL)).thenReturn(List.of());
         lenient().when(commandes.pourMembre(EMAIL)).thenReturn(List.of());
+        lenient().when(factures.pourMembre(EMAIL)).thenReturn(List.of());
         lenient().when(consentements.pourMembre(EMAIL)).thenReturn(List.of());
         lenient().when(paniers.findByMembreEmail(EMAIL)).thenReturn(Optional.empty());
     }
@@ -312,6 +328,67 @@ class ExportDonneesServiceTest {
 
             assertThat(service.assembler(EMAIL).donneesPersonnelles().commandes()).isEmpty();
             verify(commandes, never()).lignesDe(any());
+        }
+
+        @Test
+        @DisplayName("restitue les vraies factures, avec leur numero legal et leurs montants figes")
+        void factures() {
+            compteSansDonnees();
+            when(factures.pourMembre(EMAIL)).thenReturn(List.of(factureDe(commandeAvecLignes())));
+
+            List<ExportDonnees.FactureExport> exportees =
+                    service.assembler(EMAIL).donneesPersonnelles().factures();
+
+            assertThat(exportees).singleElement().satisfies(facture -> {
+                // Le numero legal, d une suite continue par exercice : pas le
+                // numero de commande, pas un identifiant technique.
+                assertThat(facture.numero()).isEqualTo("2026-0007");
+                assertThat(facture.dateEmission()).isEqualTo(EMISSION_FACTURE);
+                assertThat(facture.montantHtva()).isEqualByComparingTo("39.98");
+                assertThat(facture.montantTva()).isEqualByComparingTo("8.40");
+                assertThat(facture.montantTvac()).isEqualByComparingTo("48.38");
+                // Rattachement a la section commandes du meme fichier.
+                assertThat(facture.numeroCommande()).isEqualTo("CMD-2026-0001");
+                // Aucun PDF encore fabrique : il l est a la premiere demande.
+                assertThat(facture.pdfArchive()).isFalse();
+            });
+        }
+
+        @Test
+        @DisplayName("signale qu'un PDF est conserve une fois la facture archivee")
+        void facturePdfArchive() {
+            compteSansDonnees();
+            Facture facture = factureDe(commandeAvecLignes());
+            facture.archiverPdf("2026/2026-0007.pdf");
+            when(factures.pourMembre(EMAIL)).thenReturn(List.of(facture));
+
+            assertThat(service.assembler(EMAIL).donneesPersonnelles().factures())
+                    .singleElement()
+                    .extracting(ExportDonnees.FactureExport::pdfArchive).isEqualTo(true);
+        }
+
+        @Test
+        @DisplayName("le binaire du PDF ne figure jamais dans l'export")
+        void aucunBinaireDePdf() {
+            compteSansDonnees();
+            Facture facture = factureDe(commandeAvecLignes());
+            facture.archiverPdf("2026/2026-0007.pdf");
+            when(factures.pourMembre(EMAIL)).thenReturn(List.of(facture));
+
+            // L export est un document de donnees : il dit qu un PDF est conserve,
+            // il ne le transporte pas — ni le fichier, ni son emplacement sur le
+            // serveur, qui ne decrit pas la personne.
+            ExportDonnees.FactureExport exportee =
+                    service.assembler(EMAIL).donneesPersonnelles().factures().get(0);
+            assertThat(exportee.toString()).doesNotContain("2026/2026-0007.pdf");
+        }
+
+        @Test
+        @DisplayName("un membre sans facture obtient une section vide, pas d'invention")
+        void aucuneFacture() {
+            compteSansDonnees();
+
+            assertThat(service.assembler(EMAIL).donneesPersonnelles().factures()).isEmpty();
         }
 
         @Test

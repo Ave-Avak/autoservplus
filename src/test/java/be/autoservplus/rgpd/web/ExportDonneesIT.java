@@ -7,6 +7,8 @@ import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
+import be.autoservplus.facturation.domain.Facture;
+import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.identite.domain.TypeUtilisateur;
@@ -49,8 +51,10 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
@@ -112,8 +116,12 @@ class ExportDonneesIT {
     @Autowired private PosteAtelierRepository postes;
     @Autowired private RdvRepository rdvs;
     @Autowired private InterventionRepository interventions;
+    @Autowired private FactureService facturation;
 
     private final ObjectMapper lecteur = new ObjectMapper();
+
+    /** Numero legal attribue a la facture de chaque membre, releve a la creation. */
+    private final Map<String, String> numerosFactures = new HashMap<>();
 
     private Piece plaquettes;
     private Piece ampoule;
@@ -171,6 +179,13 @@ class ExportDonneesIT {
         // pousse ce changement de cle etrangere avant que l'export ne relise.
         paniers.flush();
 
+        // Commande payee puis facturee par le vrai service : la facture porte un
+        // numero legal attribue par le compteur, que le test ne fabrique pas.
+        commande.confirmerPaiement(Instant.parse("2026-03-01T08:05:00Z"));
+        commandes.saveAndFlush(commande);
+        numerosFactures.put(email,
+                facturation.emettrePourCommande(commande.getReference()).getNumero());
+
         // Article laisse au panier apres la commande : une piece DIFFERENTE, sinon
         // l'ajout retrouverait la ligne deja rattachee a la commande (la collection
         // du panier n'est pas purgee) et se heurterait a son immuabilite comptable.
@@ -218,12 +233,15 @@ class ExportDonneesIT {
         assertThat(document)
                 .contains("1-ABC-123").contains("Volkswagen")
                 .contains("CMD-MARIE").contains("RDV-MARIE").contains("INT-MARIE")
-                .contains("81.240.10.7");
-        // Rien de Jean : ni vehicule, ni dossier, ni adresse IP de consentement.
+                .contains("81.240.10.7")
+                .contains(numerosFactures.get("marie@exemple.be"));
+        // Rien de Jean : ni vehicule, ni dossier, ni adresse IP de consentement,
+        // ni surtout sa facture — un document comptable nominatif.
         assertThat(document)
                 .doesNotContain("2-XYZ-789").doesNotContain("Renault")
                 .doesNotContain("CMD-JEAN").doesNotContain("RDV-JEAN").doesNotContain("INT-JEAN")
-                .doesNotContain("195.130.1.1").doesNotContain("jean@exemple.be");
+                .doesNotContain("195.130.1.1").doesNotContain("jean@exemple.be")
+                .doesNotContain(numerosFactures.get("jean@exemple.be"));
     }
 
     @Test
@@ -242,6 +260,7 @@ class ExportDonneesIT {
         assertThat(donnees.path("vehicules").size()).isEqualTo(1);
         assertThat(donnees.path("vehicules").get(0).path("supprime").asBoolean()).isFalse();
         assertThat(donnees.path("commandes").size()).isEqualTo(1);
+        assertThat(donnees.path("factures").size()).isEqualTo(1);
         assertThat(donnees.path("rendez_vous").size()).isEqualTo(1);
         assertThat(donnees.path("interventions").size()).isEqualTo(1);
         assertThat(donnees.path("consentements").size()).isEqualTo(1);
@@ -265,6 +284,20 @@ class ExportDonneesIT {
                 .path("total_tvac").decimalValue()).isEqualByComparingTo("48.38");
         assertThat(donnees.path("rendez_vous").get(0).path("prestations").size()).isEqualTo(1);
         assertThat(donnees.path("interventions").get(0).path("lignes").size()).isEqualTo(1);
+
+        // Facture : la vraie, celle du module facturation, avec le numero legal
+        // attribue par le compteur — et non un decalque de la commande payee.
+        JsonNode facture = donnees.path("factures").get(0);
+        assertThat(facture.path("numero").asText())
+                .isEqualTo(numerosFactures.get("paul@exemple.be"))
+                .matches("\\d{4}-\\d{4}");
+        assertThat(facture.path("numero_commande").asText()).isEqualTo("CMD-PAUL");
+        assertThat(facture.path("montant_htva").decimalValue()).isEqualByComparingTo("39.98");
+        assertThat(facture.path("montant_tva").decimalValue()).isEqualByComparingTo("8.40");
+        assertThat(facture.path("montant_tvac").decimalValue()).isEqualByComparingTo("48.38");
+        assertThat(facture.path("date_emission").asText()).endsWith("Z");
+        // Metadonnees seulement : aucun binaire, aucun chemin de fichier.
+        assertThat(facture.path("pdf_archive").asBoolean()).isFalse();
 
         // L'IP du consentement est une donnee du membre : elle sort.
         assertThat(donnees.path("consentements").get(0).path("adresse_ip").asText())
