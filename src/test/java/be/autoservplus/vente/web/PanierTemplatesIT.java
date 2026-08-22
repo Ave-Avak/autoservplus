@@ -141,7 +141,7 @@ class PanierTemplatesIT {
     }
 
     @Test
-    @DisplayName("une piece devenue inactive apres ajout est signalee dans le recapitulatif (RM-28)")
+    @DisplayName("une piece devenue inactive apres ajout est signalee dans le recapitulatif (contrainte F13)")
     void pieceInactiveSignalee() throws Exception {
         remplirLePanier();
         plaquettes.desactiver();

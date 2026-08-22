@@ -17,7 +17,8 @@ public interface PanierRepository extends JpaRepository<Panier, Long> {
 
     /**
      * Panier du membre avec lignes et pieces chargees d un coup : l ecran du panier
-     * lit chaque ligne et le drapeau {@code actif} de sa piece (RM-28), un fetch
+     * lit chaque ligne et le drapeau {@code actif} de sa piece (contrainte F13,
+     * signalement des pieces desactivees), un fetch
      * paresseux declencherait une requete par ligne (probleme N+1).
      */
     @Query("""

@@ -17,8 +17,9 @@ import java.util.Objects;
 /**
  * Ligne d un panier : une piece detachee et sa quantite, aux conditions <b>figees
  * a l ajout</b> (libelle, prix unitaire HTVA, taux TVA copies depuis la piece) —
- * un changement de catalogue ulterieur ne touche pas un panier existant (RM-30,
- * meme regle que {@code LigneRdv} et {@code LigneIntervention}).
+ * un changement de catalogue ulterieur ne touche pas un panier existant. Invariant
+ * de conception, meme recopie que {@code LigneRdv} et {@code LigneIntervention} ;
+ * aucun numero de regle au CdC ne couvre le figeage lui-meme.
  *
  * <p>Pas de suppression logique : la ligne n existe que par son panier, un retrait
  * passe par {@code orphanRemoval} de la relation parente.</p>

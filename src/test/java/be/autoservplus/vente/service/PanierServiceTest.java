@@ -215,14 +215,14 @@ class PanierServiceTest {
         }
 
         @Test
-        @DisplayName("une piece inactive est refusee (RM-28), rien n'est ecrit")
+        @DisplayName("une piece inactive est refusee (contrainte F13), rien n'est ecrit")
         void pieceInactiveRefusee() {
             plaquettes.desactiver();
             pieceConnue(plaquettes);
 
             assertThatThrownBy(() -> service.ajouterPiece(EMAIL, plaquettes.getReference(), 1))
                     .isInstanceOf(PieceInactiveException.class)
-                    .hasMessageContaining("RM-28");
+                    .hasMessageContaining("n est plus proposee");
             verify(paniers, never()).saveAndFlush(any());
         }
 
@@ -285,7 +285,7 @@ class PanierServiceTest {
         }
 
         @Test
-        @DisplayName("piece devenue inactive : reduire reste permis, augmenter est refuse (RM-28)")
+        @DisplayName("piece devenue inactive : reduire reste permis, augmenter est refuse (contrainte F13)")
         void ligneInactiveNAugmentePas() {
             Panier panier = panierAvecLigne();
             avecEcriture();
@@ -412,7 +412,7 @@ class PanierServiceTest {
         }
 
         @Test
-        @DisplayName("une piece inactive au panier est signalee dans la vue (RM-28)")
+        @DisplayName("une piece inactive au panier est signalee dans la vue (contrainte F13)")
         void pieceInactiveSignalee() {
             Panier panier = new Panier(marie);
             panier.ajouterPiece(plaquettes, 1);

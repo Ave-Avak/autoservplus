@@ -42,8 +42,9 @@
 
     <div th:unless="${panier.estVide()}">
 
-        <!-- RM-28 : une piece devenue inactive apres son ajout reste listee (trace),
-             mais le recapitulatif previent qu'elle ne pourra pas etre commandee. -->
+        <!-- Contrainte F13 : une piece devenue inactive apres son ajout reste listee
+             (trace), mais le recapitulatif previent qu'elle ne pourra pas etre
+             commandee. -->
         <div class="message message-erreur" th:if="${panier.contientPieceInactive()}" role="alert"
              th:text="#{panier.avertissement.piece-inactive}">Certains articles ne sont plus vendus.</div>
 

@@ -16,9 +16,10 @@ import java.util.UUID;
  * connait la locale monetaire, le template non). Les montants viennent des valeurs
  * <b>figees</b> des lignes, jamais du catalogue courant.</p>
  *
- * <p><b>RM-28</b> : une piece devenue inactive apres son ajout reste listee — le
- * drapeau {@code pieceActive} de la ligne et {@code contientPieceInactive} du
- * panier permettent au recapitulatif de la signaler.</p>
+ * <p>Contrainte de <b>F13</b> : une piece devenue inactive apres son ajout reste
+ * listee — le drapeau {@code pieceActive} de la ligne et
+ * {@code contientPieceInactive} du panier permettent au recapitulatif de la
+ * signaler.</p>
  */
 public record PanierVue(
         List<LignePanierVue> lignes,

@@ -118,7 +118,7 @@ class PanierControllerTest {
 
     @Test
     @WithMockUser(username = "marie@exemple.be")
-    @DisplayName("piece inactive (RM-28) : message d'erreur, pas une 500")
+    @DisplayName("piece inactive (contrainte F13) : message d'erreur, pas une 500")
     void pieceInactiveEnMessage() throws Exception {
         doThrow(new PieceInactiveException("Plaquettes"))
                 .when(service).ajouterPiece("marie@exemple.be", REF_PIECE, 1);

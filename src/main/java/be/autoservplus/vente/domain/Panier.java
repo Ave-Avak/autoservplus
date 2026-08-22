@@ -24,14 +24,16 @@ import java.util.function.Function;
  * de trouver-ou-creer.
  *
  * <p>Les prix, libelles et taux TVA des lignes sont <b>figes a l ajout</b>, copies
- * depuis la piece : une evolution du catalogue ne reecrit jamais un panier existant
- * (meme principe que {@code LigneRdv} et {@code LigneIntervention}, RM-30).</p>
+ * depuis la piece : une evolution du catalogue ne reecrit jamais un panier existant.
+ * Invariant de conception partage avec {@code LigneRdv} et {@code LigneIntervention}
+ * — la recopie a l ajout preserve l integrite historique — sans numero de regle
+ * au CdC.</p>
  *
  * <p>L entite porte les calculs (RM-30 : totaux ligne a ligne, jamais sur un total
  * global d abord) et la mecanique des lignes (fusion des doublons, quantites
  * positives). Les regles qui dependent de l etat du <i>catalogue</i> — piece active
- * (RM-28), stock disponible (F13) — vivent dans le service : le panier n a pas a
- * interroger le stock, il recoit des ajouts deja arbitres.</p>
+ * et stock disponible, contraintes de F13 — vivent dans le service : le panier n a
+ * pas a interroger le stock, il recoit des ajouts deja arbitres.</p>
  *
  * <p>Colonnes non mappees en V1 : {@code date_expiration} appartient a la
  * reservation virtuelle de stock (RM-21, documentee V2).</p>

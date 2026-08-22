@@ -97,7 +97,8 @@ public class PanierService {
 
     /**
      * Change la quantite d une ligne. Le stock est controle sur la <b>nouvelle
-     * quantite totale</b> de la ligne ; une piece devenue inactive (RM-28) ne peut
+     * quantite totale</b> de la ligne ; une piece devenue inactive (contrainte F13)
+     * ne peut
      * plus voir sa quantite augmenter — la reduire reste permis, on peut toujours
      * renoncer a un article, pas en acquerir davantage.
      */
