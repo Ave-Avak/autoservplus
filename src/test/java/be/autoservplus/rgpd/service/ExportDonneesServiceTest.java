@@ -22,6 +22,7 @@ import be.autoservplus.rgpd.repository.InterventionExportRepository;
 import be.autoservplus.rgpd.repository.RdvExportRepository;
 import be.autoservplus.rgpd.repository.VehiculeExportRepository;
 import be.autoservplus.rgpd.service.dto.ExportDonnees;
+import be.autoservplus.rgpd.service.dto.FichierExport;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Panier;
@@ -33,6 +34,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -77,8 +79,10 @@ class ExportDonneesServiceTest {
     @Mock private InterventionExportRepository interventions;
     @Mock private CommandeExportRepository commandes;
     @Mock private ConsentementExportRepository consentements;
+    @Mock private PasswordEncoder encodeur;
 
     private ExportDonneesService service;
+    private RegistreExportsRecents registre;
     private final SerialiseurExportJson serialiseur = new SerialiseurExportJson();
 
     private Utilisateur marie;
@@ -93,9 +97,11 @@ class ExportDonneesServiceTest {
         messages.setDefaultEncoding("UTF-8");
         messages.setFallbackToSystemLocale(false);
 
+        Clock horloge = Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels"));
+        registre = new RegistreExportsRecents(horloge);
         service = new ExportDonneesService(utilisateurs, vehicules, rendezVous, interventions,
-                commandes, consentements, new CatalogueTraitements(messages),
-                Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
+                commandes, consentements, new CatalogueTraitements(messages), serialiseur,
+                registre, encodeur, horloge);
 
         marie = new Utilisateur(EMAIL, EMPREINTE, "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         marie.setTelephone("+32470000000");
@@ -498,6 +504,118 @@ class ExportDonneesServiceTest {
 
             assertThatThrownBy(() -> service.assembler("inconnu@exemple.be"))
                     .isInstanceOf(RessourceIntrouvableException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("Gardes de l'export")
+    class Gardes {
+
+        private void motDePasseValide() {
+            lenient().when(encodeur.matches("MotDePasseDeMarie!", EMPREINTE)).thenReturn(true);
+        }
+
+        @Test
+        @DisplayName("produit un fichier JSON date du jour quand les deux gardes passent")
+        void exportNominal() {
+            compteSansDonnees();
+            motDePasseValide();
+
+            FichierExport fichier = service.exporter(EMAIL, "MotDePasseDeMarie!");
+
+            assertThat(fichier.nom()).isEqualTo("mes-donnees-2026-08-22.json");
+            assertThat(new String(fichier.contenu(), StandardCharsets.UTF_8))
+                    .contains("\"donnees_personnelles\"")
+                    .contains("\"informations_traitement\"");
+        }
+
+        @Test
+        @DisplayName("verifie le mot de passe par l'encodeur, jamais par egalite de chaines")
+        void reauthentificationParEncodeur() {
+            compteSansDonnees();
+            motDePasseValide();
+
+            service.exporter(EMAIL, "MotDePasseDeMarie!");
+
+            verify(encodeur).matches("MotDePasseDeMarie!", EMPREINTE);
+        }
+
+        @Test
+        @DisplayName("mauvais mot de passe : refus, et aucun octet produit")
+        void mauvaisMotDePasse() {
+            compteSansDonnees();
+            when(encodeur.matches("mauvais", EMPREINTE)).thenReturn(false);
+
+            assertThatThrownBy(() -> service.exporter(EMAIL, "mauvais"))
+                    .isInstanceOf(ReauthentificationEchoueeException.class);
+            // Aucune source n'est meme interrogee : la garde precede l'agregation.
+            verify(vehicules, never()).pourMembre(any());
+        }
+
+        @Test
+        @DisplayName("mot de passe absent : refus sans solliciter l'encodeur")
+        void motDePasseAbsent() {
+            compteSansDonnees();
+
+            assertThatThrownBy(() -> service.exporter(EMAIL, null))
+                    .isInstanceOf(ReauthentificationEchoueeException.class);
+            assertThatThrownBy(() -> service.exporter(EMAIL, ""))
+                    .isInstanceOf(ReauthentificationEchoueeException.class);
+            // BCrypt leve sur un mot de passe nul : la garde le traite comme un
+            // echec metier, pas comme une panne technique.
+            verify(encodeur, never()).matches(any(), any());
+        }
+
+        @Test
+        @DisplayName("un echec de mot de passe ne consomme pas le quota de 24 heures")
+        void echecNeConsommePasLeQuota() {
+            compteSansDonnees();
+            motDePasseValide();
+            when(encodeur.matches("mauvais", EMPREINTE)).thenReturn(false);
+
+            assertThatThrownBy(() -> service.exporter(EMAIL, "mauvais"))
+                    .isInstanceOf(ReauthentificationEchoueeException.class);
+
+            // Le membre reste en droit d'exporter : sinon, un tiers pourrait le
+            // priver de son droit d'acces en saisissant un mot de passe au hasard.
+            assertThat(service.attenteRestante(EMAIL)).isEmpty();
+            assertThat(service.exporter(EMAIL, "MotDePasseDeMarie!").contenu()).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("un second export dans les 24 heures est refuse, avec le temps restant")
+        void secondExportRefuse() {
+            compteSansDonnees();
+            motDePasseValide();
+            service.exporter(EMAIL, "MotDePasseDeMarie!");
+
+            assertThatThrownBy(() -> service.exporter(EMAIL, "MotDePasseDeMarie!"))
+                    .isInstanceOf(ExportTropRecentException.class)
+                    .satisfies(refus -> assertThat(
+                            ((ExportTropRecentException) refus).getAttenteRestante())
+                            .isEqualTo(RegistreExportsRecents.DELAI_ENTRE_EXPORTS));
+        }
+
+        @Test
+        @DisplayName("la limite est propre a chaque membre")
+        void limitePropreAuMembre() {
+            compteSansDonnees();
+            motDePasseValide();
+            service.exporter(EMAIL, "MotDePasseDeMarie!");
+
+            assertThat(service.attenteRestante(EMAIL)).isPresent();
+            assertThat(service.attenteRestante("jean@exemple.be")).isEmpty();
+        }
+
+        @Test
+        @DisplayName("expose la date du dernier export pour l'affichage de confirmation")
+        void dernierExportExpose() {
+            compteSansDonnees();
+            motDePasseValide();
+
+            assertThat(service.dernierExport(EMAIL)).isEmpty();
+            service.exporter(EMAIL, "MotDePasseDeMarie!");
+            assertThat(service.dernierExport(EMAIL)).contains(MAINTENANT);
         }
     }
 }

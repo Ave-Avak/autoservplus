@@ -10,17 +10,24 @@ import be.autoservplus.rgpd.repository.InterventionExportRepository;
 import be.autoservplus.rgpd.repository.RdvExportRepository;
 import be.autoservplus.rgpd.repository.VehiculeExportRepository;
 import be.autoservplus.rgpd.service.dto.ExportDonnees;
+import be.autoservplus.rgpd.service.dto.FichierExport;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -30,7 +37,19 @@ import java.util.stream.Collectors;
  * <p>Service d agregation <b>strictement en lecture</b> : {@code readOnly = true}
  * sur toute la classe, et les repositories du module etendent
  * {@code Repository} sans methode d ecriture. Exercer un droit d acces ne modifie
- * rien.
+ * rien — la seule trace laissee est l horodatage en memoire de
+ * {@link RegistreExportsRecents}, qui sert la limite de frequence et ne touche pas
+ * au dossier de la personne.
+ *
+ * <p><b>Deux gardes</b> avant qu un octet ne soit produit, dans cet ordre :
+ * <ol>
+ *   <li>le mot de passe est reconfirme — une session ouverte ne suffit pas a
+ *       rassembler tout le dossier d une personne en un seul fichier ;</li>
+ *   <li>la limite d un export par 24 heures est verifiee.</li>
+ * </ol>
+ * L ordre n est pas indifferent : une mauvaise saisie de mot de passe ne doit ni
+ * consommer le quota, ni renseigner sur la frequence des exports d un compte dont
+ * on ne detient pas le mot de passe.
  *
  * <p><b>Etancheite</b> : l identite vient du contexte de securite, transmise en
  * adresse de courriel par le controleur ({@code @AuthenticationPrincipal}), jamais
@@ -55,6 +74,15 @@ import java.util.stream.Collectors;
 @PreAuthorize("isAuthenticated()")
 public class ExportDonneesService {
 
+    private static final Logger JOURNAL = LoggerFactory.getLogger(ExportDonneesService.class);
+
+    /**
+     * Nom du fichier remis, date du jour incluse. Volontairement non traduit : ce
+     * n est pas un libelle d interface mais l identite d un document que la
+     * personne archivera, et qui doit rester reconnaissable d un export a l autre.
+     */
+    private static final String MOTIF_NOM_FICHIER = "mes-donnees-%s.json";
+
     private final UtilisateurRepository utilisateurs;
     private final VehiculeExportRepository vehicules;
     private final RdvExportRepository rendezVous;
@@ -62,6 +90,9 @@ public class ExportDonneesService {
     private final CommandeExportRepository commandes;
     private final ConsentementExportRepository consentements;
     private final CatalogueTraitements catalogue;
+    private final SerialiseurExportJson serialiseur;
+    private final RegistreExportsRecents registre;
+    private final PasswordEncoder encodeur;
     private final Clock horloge;
 
     public ExportDonneesService(UtilisateurRepository utilisateurs,
@@ -71,6 +102,9 @@ public class ExportDonneesService {
                                 CommandeExportRepository commandes,
                                 ConsentementExportRepository consentements,
                                 CatalogueTraitements catalogue,
+                                SerialiseurExportJson serialiseur,
+                                RegistreExportsRecents registre,
+                                PasswordEncoder encodeur,
                                 Clock horloge) {
         this.utilisateurs = utilisateurs;
         this.vehicules = vehicules;
@@ -79,7 +113,41 @@ public class ExportDonneesService {
         this.commandes = commandes;
         this.consentements = consentements;
         this.catalogue = catalogue;
+        this.serialiseur = serialiseur;
+        this.registre = registre;
+        this.encodeur = encodeur;
         this.horloge = horloge;
+    }
+
+    /**
+     * Produit le fichier d export apres les deux gardes de F22.
+     *
+     * <p>Le quota n est consomme qu une fois le document reellement produit : une
+     * serialisation qui echouerait ne doit pas priver le membre de son droit
+     * pendant vingt-quatre heures.
+     *
+     * @throws ReauthentificationEchoueeException si le mot de passe ne correspond pas
+     * @throws ExportTropRecentException          si un export date de moins de 24 heures
+     */
+    public FichierExport exporter(String email, String motDePasse) {
+        Utilisateur membre = charger(email);
+        exigerMotDePasse(membre, motDePasse);
+        exigerDelaiEcoule(email);
+
+        byte[] contenu = serialiseur.enJson(assembler(membre, email));
+        registre.enregistrer(email);
+        JOURNAL.info("Export RGPD produit pour le compte {}", membre.getReference());
+        return new FichierExport(nomDuFichier(), contenu);
+    }
+
+    /** Temps restant avant un nouvel export ; vide si le membre peut exporter. */
+    public Optional<Duration> attenteRestante(String email) {
+        return registre.attenteRestante(email);
+    }
+
+    /** Instant du dernier export encore dans la fenetre de 24 heures, s il existe. */
+    public Optional<Instant> dernierExport(String email) {
+        return registre.dernierExport(email);
     }
 
     /**
@@ -95,8 +163,43 @@ public class ExportDonneesService {
      *         ne se construit pas sur un titulaire suppose
      */
     public ExportDonnees assembler(String email) {
-        Utilisateur membre = utilisateurs.findByEmailIgnoreCase(email)
+        return assembler(charger(email), email);
+    }
+
+    /**
+     * Refus si le mot de passe fourni ne correspond pas a l empreinte du compte.
+     *
+     * <p>La comparaison passe par l encodeur du projet ({@code BCrypt}, cout 12),
+     * jamais par une egalite de chaines : l empreinte ne se compare pas, elle se
+     * verifie. Le {@code null} est ecarte avant l appel — {@code BCrypt} ne
+     * l accepte pas — et vaut echec, pas exception technique.
+     */
+    private void exigerMotDePasse(Utilisateur membre, String motDePasse) {
+        if (motDePasse == null || motDePasse.isEmpty()
+                || !encodeur.matches(motDePasse, membre.getMotDePasseHache())) {
+            JOURNAL.warn("Export RGPD refuse : re-authentification echouee pour {}",
+                    membre.getReference());
+            throw new ReauthentificationEchoueeException();
+        }
+    }
+
+    private void exigerDelaiEcoule(String email) {
+        registre.attenteRestante(email).ifPresent(attente -> {
+            throw new ExportTropRecentException(attente);
+        });
+    }
+
+    private Utilisateur charger(String email) {
+        return utilisateurs.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
+    }
+
+    /** Date du jour a l horloge injectee : le nom du fichier reste testable. */
+    private String nomDuFichier() {
+        return MOTIF_NOM_FICHIER.formatted(LocalDate.now(horloge));
+    }
+
+    private ExportDonnees assembler(Utilisateur membre, String email) {
         Locale langue = Locale.forLanguageTag(membre.getLangue().name());
         List<Consentement> preuves = consentements.pourMembre(email);
 
