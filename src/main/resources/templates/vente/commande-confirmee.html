@@ -51,6 +51,9 @@
     <form th:action="@{/commande/{ref}/payer(ref=${commande.reference()})}" method="post">
         <p class="actions-page">
             <button type="submit" class="btn-cta" th:text="#{commande.payer}">Procéder au paiement</button>
+            <!-- Une fois payee, la facture se telecharge depuis l'historique : elle
+                 doit rester atteignable des annees apres l'achat, pas seulement ici. -->
+            <a th:href="@{/commandes}" th:text="#{commandes.nav}">Mes commandes</a>
             <a th:href="@{/pieces}" th:text="#{panier.continuer}">Continuer mes achats</a>
         </p>
     </form>

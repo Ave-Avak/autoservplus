@@ -10,8 +10,9 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 
 /**
  * Expose le compteur d articles du panier ({@code nombreArticlesPanier}) aux pages
- * du parcours d achat : catalogue et panier. Volontairement limite a ces deux
- * controleurs — etendre le compteur a toute la navigation suppose d abord le
+ * du parcours d achat : catalogue, panier, commande et historique des commandes.
+ * Volontairement limite a ces controleurs — etendre le compteur a toute la
+ * navigation suppose d abord le
  * fragment d en-tete commun (dette documentee), sans quoi chaque page devrait etre
  * editee une a une.
  *
@@ -21,7 +22,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
  * que de faire echouer leur contexte.</p>
  */
 @ControllerAdvice(assignableTypes = {CatalogueController.class, PanierController.class,
-        CommandeController.class})
+        CommandeController.class, HistoriqueCommandeController.class})
 public class PanierModelAdvice {
 
     private final ObjectProvider<PanierService> panierService;

@@ -10,12 +10,14 @@ import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Panier;
 import be.autoservplus.vente.repository.CommandeRepository;
 import be.autoservplus.vente.repository.PanierRepository;
+import be.autoservplus.vente.web.dto.CommandeHistoriqueVue;
 import be.autoservplus.vente.web.dto.ConfirmationCommandeVue;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
@@ -124,5 +126,17 @@ public class CommandeService {
             throw new RessourceIntrouvableException("Commande", reference);
         }
         return ConfirmationCommandeVue.de(commande);
+    }
+
+    /**
+     * Historique des commandes du membre connecte (F32), de la plus recente a la
+     * plus ancienne. Les champs de facture des vues restent nuls : le module vente
+     * ignore la facturation, c est le controleur qui les complete.
+     */
+    public List<CommandeHistoriqueVue> historiqueDuMembre(String email) {
+        ZoneId zone = ZoneId.of(horloge.getZone().getId());
+        return commandes.historiqueDuMembre(email).stream()
+                .map(commande -> CommandeHistoriqueVue.de(commande, zone))
+                .toList();
     }
 }

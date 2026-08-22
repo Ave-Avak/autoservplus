@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{commandes.titre} + ' — AutoServ+'">Mes commandes — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}" th:text="#{nav.prestations}">Prestations</a></li>
+            <li><a th:href="@{/pieces}" th:text="#{nav.pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/panier}" th:text="#{panier.nav(${nombreArticlesPanier})}">Panier (0)</a></li>
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{commandes.titre}">Mes commandes</h1>
+
+    <p th:if="${#lists.isEmpty(commandes)}" th:text="#{commandes.aucune}">
+        Vous n'avez encore passé aucune commande.
+    </p>
+
+    <table class="tableau" th:unless="${#lists.isEmpty(commandes)}">
+        <caption th:text="#{commandes.legende}">Historique de vos commandes, de la plus récente à la plus ancienne</caption>
+        <thead>
+        <tr>
+            <th scope="col" th:text="#{commandes.colonne.numero}">Numéro</th>
+            <th scope="col" th:text="#{commandes.colonne.date}">Date</th>
+            <th scope="col" th:text="#{commandes.colonne.montant}">Montant TVAC</th>
+            <th scope="col" th:text="#{commandes.colonne.statut}">Statut</th>
+            <th scope="col" th:text="#{commandes.colonne.facture}">Facture</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="commande : ${commandes}">
+            <td th:text="${commande.numero()}">CMD-2026-0001</td>
+            <td th:text="${commande.date()}">22 août 2026</td>
+            <td th:text="${commande.totalTvac()}">48,38 €</td>
+            <td th:text="#{'commande.statut.' + ${commande.statut().name()}}">Payée</td>
+            <td>
+                <!-- Le lien n'apparait que si la facture existe : une commande non
+                     payee n'a pas de facture, et n'en aura pas tant qu'elle ne l'est pas. -->
+                <a th:if="${commande.estFacturee()}"
+                   th:href="@{/factures/{ref}/pdf(ref=${commande.referenceFacture()})}"
+                   th:text="#{commandes.telecharger(${commande.numeroFacture()})}">
+                    Télécharger la facture 2026-0001
+                </a>
+                <span th:unless="${commande.estFacturee()}" class="carte-meta"
+                      th:text="#{commandes.sans-facture}">—</span>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p class="actions-page">
+        <a th:href="@{/pieces}" th:text="#{panier.continuer}">Continuer mes achats</a>
+    </p>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>

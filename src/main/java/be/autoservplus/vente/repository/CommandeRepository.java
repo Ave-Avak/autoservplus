@@ -34,6 +34,18 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
     @Query("SELECT c FROM Commande c WHERE c.id = :id")
     Optional<Commande> verrouillerParId(@Param("id") Long id);
 
+    /**
+     * Historique des commandes d un membre, de la plus recente a la plus ancienne
+     * (F32). Le membre est identifie par son courriel, comme partout ailleurs a
+     * partir du contexte de securite — jamais par un identifiant de requete.
+     */
+    @Query("""
+            SELECT c FROM Commande c
+            WHERE lower(c.membre.email) = lower(:email)
+            ORDER BY c.dateCommande DESC, c.id DESC
+            """)
+    List<Commande> historiqueDuMembre(@Param("email") String email);
+
     /** Candidates du job RM-21 : en attente de paiement depuis avant la limite. */
     @Query("""
             SELECT c FROM Commande c

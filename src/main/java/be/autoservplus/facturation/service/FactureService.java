@@ -4,6 +4,7 @@ import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.repository.FactureRepository;
+import be.autoservplus.facturation.service.dto.FactureVue;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.StatutCommande;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -78,8 +80,28 @@ public class FactureService {
     }
 
     /** Facture d une commande, si elle a deja ete emise. */
-    public java.util.Optional<Facture> factureDe(UUID referenceCommande) {
+    public Optional<Facture> factureDe(UUID referenceCommande) {
         return commandes.findByReference(referenceCommande).flatMap(factures::findByCommande);
+    }
+
+    /** Factures du membre connecte, pour rattacher un lien a chaque commande facturee. */
+    public List<FactureVue> facturesDuMembre(String email) {
+        return factures.facturesDuMembre(email).stream().map(FactureVue::de).toList();
+    }
+
+    /**
+     * Charge une facture en verifiant qu elle appartient bien au membre. La facture
+     * d autrui remonte comme {@link RessourceIntrouvableException} — donc 404, le
+     * meme code qu une reference inconnue : confirmer l existence d une facture a un
+     * tiers serait deja une fuite, s agissant d un document nominatif.
+     */
+    public Facture pourMembre(UUID reference, String email) {
+        Facture facture = factures.findByReference(reference)
+                .orElseThrow(() -> new RessourceIntrouvableException("Facture", reference));
+        if (!facture.getMembre().getEmail().equalsIgnoreCase(email)) {
+            throw new RessourceIntrouvableException("Facture", reference);
+        }
+        return facture;
     }
 
     private Facture emettre(Commande commande) {
