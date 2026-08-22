@@ -123,4 +123,19 @@ public class CourrielConsole implements ServiceCourriel {
                 details.numeroIntervention(), details.prenom(),
                 details.libelleVehicule(), details.immatriculation());
     }
+
+    @Override
+    public void envoyerConfirmationPaiement(DetailsPaiementCourriel details) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL SIMULE : paiement confirme ----------
+                Destinataire : {} <{}>
+                Commande     : {}
+                Bonjour {}, votre paiement de {} est bien recu.
+                Le garage prepare votre commande ; vous serez prevenu(e)
+                lorsqu'elle sera prete.
+                ---------------------------------------------------------
+                """, details.prenom(), details.adresseEmail(),
+                details.numeroCommande(), details.prenom(), details.montantTvac());
+    }
 }

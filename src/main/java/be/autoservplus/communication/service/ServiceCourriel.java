@@ -49,4 +49,10 @@ public interface ServiceCourriel {
      * etat qui pourrait encore etre annule par un rollback.
      */
     void envoyerInterventionTerminee(DetailsInterventionTerminee details);
+
+    /**
+     * Le paiement de la commande est confirme (F14) : recu adresse au membre,
+     * envoye apres commit du passage a PAYEE — jamais pendant la transaction.
+     */
+    void envoyerConfirmationPaiement(DetailsPaiementCourriel details);
 }

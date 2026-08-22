@@ -55,4 +55,12 @@ class CourrielConsoleTest {
                 "marie@exemple.be", "Marie", "INT-2026-0001", "VW Golf", "1-ABC-123")))
                 .doesNotThrowAnyException();
     }
+
+    @Test
+    @DisplayName("envoie le recu de paiement sans jeter")
+    void envoieConfirmationPaiement() {
+        assertThatCode(() -> courriel.envoyerConfirmationPaiement(new DetailsPaiementCourriel(
+                "marie@exemple.be", "Marie", "CMD-2026-0001", "80,21 €")))
+                .doesNotThrowAnyException();
+    }
 }
