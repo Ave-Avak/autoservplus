@@ -1,0 +1,175 @@
+package be.autoservplus.vente.domain;
+
+import jakarta.persistence.*;
+import jakarta.validation.constraints.NotNull;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Objects;
+import java.util.UUID;
+
+/**
+ * Tentative de paiement d une commande aupres du prestataire (F14).
+ *
+ * <p>La machine a etats est portee par l entite ({@link StatutPaiement#peutPasserA}) ;
+ * {@code @Version} (V24) protege la course entre le webhook et le job d expiration.
+ * La cle d idempotence, generee a la creation et unique en base, accompagne l appel
+ * au prestataire pour qu une requete rejouee ne debite pas deux fois.</p>
+ *
+ * <p>Un echec ou une expiration est terminal : re-essayer, c est creer un NOUVEAU
+ * paiement pour la meme commande. Colonnes non mappees : {@code methode} (nullable,
+ * renseignee par le prestataire reel, hors bloc) ; pas de soft delete en base.</p>
+ */
+@Entity
+@Table(name = "paiement")
+@EntityListeners(AuditingEntityListener.class)
+public class Paiement {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Column(name = "reference", nullable = false, updatable = false)
+    private UUID reference;
+
+    // commande_id est nullable en base (un paiement pourra couvrir une reservation
+    // de parking) ; dans ce bloc, le constructeur la pose toujours.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "commande_id")
+    private Commande commande;
+
+    @Column(name = "reference_mollie", length = 64)
+    private String referenceMollie;
+
+    @NotNull
+    @Column(name = "cle_idempotence", nullable = false, updatable = false, length = 64)
+    private String cleIdempotence;
+
+    @NotNull
+    @Column(name = "montant", nullable = false, precision = 10, scale = 2)
+    private BigDecimal montant;
+
+    @NotNull
+    @Column(name = "devise", nullable = false, length = 3)
+    private String devise = "EUR";
+
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "statut", nullable = false, length = 25)
+    private StatutPaiement statut = StatutPaiement.INITIE;
+
+    @Column(name = "date_initiation", nullable = false, updatable = false)
+    private Instant dateInitiation;
+
+    @Column(name = "date_finalisation")
+    private Instant dateFinalisation;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private long version;
+
+    @CreatedDate
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt;
+
+    @LastModifiedDate
+    @Column(name = "updated_at", nullable = false)
+    private Instant updatedAt;
+
+    @CreatedBy
+    @Column(name = "created_by", length = 120, updatable = false)
+    private String createdBy;
+
+    @LastModifiedBy
+    @Column(name = "updated_by", length = 120)
+    private String updatedBy;
+
+    protected Paiement() {
+        // requis par JPA
+    }
+
+    public Paiement(Commande commande, BigDecimal montant, Instant dateInitiation) {
+        this.reference = UUID.randomUUID();
+        this.commande = Objects.requireNonNull(commande, "commande");
+        this.montant = Objects.requireNonNull(montant, "montant");
+        this.dateInitiation = Objects.requireNonNull(dateInitiation, "dateInitiation");
+        this.cleIdempotence = UUID.randomUUID().toString();
+    }
+
+    /**
+     * Reference attribuee par le prestataire, posee UNE fois a l initiation.
+     * Elle identifie le paiement dans les notifications entrantes ; la reecrire
+     * casserait ce lien.
+     */
+    public void enregistrerReferencePrestataire(String referencePrestataire) {
+        if (this.referenceMollie != null) {
+            throw new IllegalStateException(
+                    "La reference prestataire est deja posee : " + this.referenceMollie);
+        }
+        this.referenceMollie = Objects.requireNonNull(referencePrestataire, "referencePrestataire");
+    }
+
+    // --- transitions -----------------------------------------------------------------
+
+    public void mettreEnCours() {
+        transitionVers(StatutPaiement.EN_COURS);
+    }
+
+    /** Paiement encaisse : irreversible, le remboursement sera un Refund distinct. */
+    public void confirmer(Instant maintenant) {
+        transitionVers(StatutPaiement.REUSSI);
+        this.dateFinalisation = Objects.requireNonNull(maintenant, "maintenant");
+    }
+
+    public void echouer(Instant maintenant) {
+        transitionVers(StatutPaiement.ECHOUE);
+        this.dateFinalisation = Objects.requireNonNull(maintenant, "maintenant");
+    }
+
+    public void expirer(Instant maintenant) {
+        transitionVers(StatutPaiement.EXPIRE);
+        this.dateFinalisation = Objects.requireNonNull(maintenant, "maintenant");
+    }
+
+    private void transitionVers(StatutPaiement cible) {
+        if (!statut.peutPasserA(cible)) {
+            throw new IllegalStateException(
+                    "Transition de paiement interdite : %s vers %s.".formatted(statut, cible));
+        }
+        this.statut = cible;
+    }
+
+    public boolean estTermine() {
+        return statut == StatutPaiement.REUSSI || statut == StatutPaiement.ECHOUE
+                || statut == StatutPaiement.EXPIRE || statut == StatutPaiement.REMBOURSE;
+    }
+
+    public Long getId() { return id; }
+    public UUID getReference() { return reference; }
+    public Commande getCommande() { return commande; }
+    public String getReferenceMollie() { return referenceMollie; }
+    public String getCleIdempotence() { return cleIdempotence; }
+    public BigDecimal getMontant() { return montant; }
+    public String getDevise() { return devise; }
+    public StatutPaiement getStatut() { return statut; }
+    public Instant getDateInitiation() { return dateInitiation; }
+    public Instant getDateFinalisation() { return dateFinalisation; }
+    public long getVersion() { return version; }
+
+    @Override
+    public boolean equals(Object autre) {
+        if (this == autre) return true;
+        if (!(autre instanceof Paiement paiement)) return false;
+        return id != null && id.equals(paiement.id);
+    }
+
+    @Override
+    public int hashCode() {
+        return Paiement.class.hashCode();
+    }
+}

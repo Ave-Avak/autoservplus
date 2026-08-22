@@ -24,11 +24,11 @@ import java.util.UUID;
  * a {@code commande_id} via {@link #reprendreLignes} (reaffectation prevue au
  * dictionnaire, CHECK {@code ck_ligne_rattachement_unique}).</p>
  *
- * <p>Colonnes non mappees dans ce bloc : {@code date_paiement} (nullable, bloc
- * paiement a venir). {@code motif_annulation} et {@code date_annulation} du
- * dictionnaire n existent pas en base — ecart consigne, a lever avec le bloc
- * paiement/annulation. Pas de collection de lignes cote commande : aucun ecran
- * n en a besoin ici, la facture la mappera le moment venu.</p>
+ * <p>Machine a etats minimale ({@link StatutCommande#peutPasserA}) : PAYEE par le
+ * webhook confirme, ANNULEE par le timeout RM-21. Une PAYEE ne redevient jamais
+ * ANNULEE et inversement — c est la garde qui tranche la course entre le job
+ * d expiration et un webhook tardif. Pas de collection de lignes cote commande :
+ * la facture la mappera le moment venu.</p>
  */
 @Entity
 @Table(name = "commande")
@@ -66,6 +66,25 @@ public class Commande extends BaseEntity {
 
     @Column(name = "date_commande", nullable = false, updatable = false)
     private Instant dateCommande;
+
+    @Column(name = "date_paiement")
+    private Instant datePaiement;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "motif_annulation", length = 30)
+    private MotifAnnulationCommande motifAnnulation;
+
+    @Column(name = "date_annulation")
+    private Instant dateAnnulation;
+
+    /**
+     * Regle (a) du paiement : le stock est devenu insuffisant entre la conversion et
+     * le paiement confirme. La commande est payee malgre tout (on n annule pas un
+     * paiement encaisse), le garage honore la rupture hors ligne — le detail des
+     * lignes concernees est journalise a la detection.
+     */
+    @Column(name = "rupture_a_honorer", nullable = false)
+    private boolean ruptureAHonorer;
 
     protected Commande() {
         // requis par JPA
@@ -106,6 +125,34 @@ public class Commande extends BaseEntity {
         }
     }
 
+    // --- transitions -----------------------------------------------------------------
+
+    /** Le prestataire a confirme l encaissement : la commande est PAYEE (RM-22 suivra). */
+    public void confirmerPaiement(Instant maintenant) {
+        transitionVers(StatutCommande.PAYEE);
+        this.datePaiement = Objects.requireNonNull(maintenant, "maintenant");
+    }
+
+    /** Annulation avec motif obligatoire (CHECK ck_commande_annulation en base). */
+    public void annuler(MotifAnnulationCommande motif, Instant maintenant) {
+        transitionVers(StatutCommande.ANNULEE);
+        this.motifAnnulation = Objects.requireNonNull(motif, "motif");
+        this.dateAnnulation = Objects.requireNonNull(maintenant, "maintenant");
+    }
+
+    /** Regle (a) : rupture constatee au paiement, a honorer hors ligne par le garage. */
+    public void signalerRupture() {
+        this.ruptureAHonorer = true;
+    }
+
+    private void transitionVers(StatutCommande cible) {
+        if (!statut.peutPasserA(cible)) {
+            throw new IllegalStateException(
+                    "Transition de commande interdite : %s vers %s.".formatted(statut, cible));
+        }
+        this.statut = cible;
+    }
+
     public Long getId() { return id; }
     public UUID getReference() { return reference; }
     public String getNumero() { return numero; }
@@ -115,6 +162,10 @@ public class Commande extends BaseEntity {
     public BigDecimal getMontantTva() { return montantTva; }
     public BigDecimal getMontantTvac() { return montantTvac; }
     public Instant getDateCommande() { return dateCommande; }
+    public Instant getDatePaiement() { return datePaiement; }
+    public MotifAnnulationCommande getMotifAnnulation() { return motifAnnulation; }
+    public Instant getDateAnnulation() { return dateAnnulation; }
+    public boolean isRuptureAHonorer() { return ruptureAHonorer; }
 
     @Override
     public boolean equals(Object autre) {

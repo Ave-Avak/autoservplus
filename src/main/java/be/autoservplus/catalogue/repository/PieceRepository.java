@@ -46,6 +46,16 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
             """)
     List<Piece> enAlerteDeStock();
 
+    /**
+     * Verrou pessimiste (SELECT FOR UPDATE) pour le decrement du stock au paiement
+     * confirme : la table piece n a pas de colonne version, et deux webhooks payes
+     * portant sur la meme piece doivent se serialiser plutot que se perdre. Verrouiller
+     * les pieces dans un ordre deterministe (id croissant) — voir CommandeRepository#lignesDe.
+     */
+    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
+    @Query("SELECT p FROM Piece p WHERE p.id = :id")
+    Optional<Piece> verrouillerParId(@Param("id") Long id);
+
     /** Recherche insensible a la casse sur le libelle, la marque et la reference fabricant. */
     @Query("""
             SELECT p FROM Piece p JOIN FETCH p.categorie
