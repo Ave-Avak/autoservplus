@@ -33,6 +33,8 @@
 <main id="contenu">
     <h1 th:text="#{commande.confirmation.titre}">Commande enregistrée</h1>
 
+    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+
     <div class="message message-succes" role="status"
          th:text="#{commande.confirmation.numero(${commande.numero()})}">
         Votre commande CMD-2026-0001 est enregistrée.
@@ -40,15 +42,18 @@
 
     <p th:text="#{commande.confirmation.total(${commande.totalTvac()})}">Montant à régler : 80,21 €</p>
 
-    <!-- Placeholder assume : le paiement Mollie est le bloc suivant, aucun appel ici. -->
     <p th:text="#{commande.confirmation.paiement}">
-        Le paiement en ligne sera proposé à la prochaine étape.
+        Votre commande sera préparée dès réception du paiement.
     </p>
 
-    <p class="actions-page">
-        <a class="btn-cta" th:href="@{/pieces}" th:text="#{panier.continuer}">Continuer mes achats</a>
-        <a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a>
-    </p>
+    <!-- Le POST part vers la passerelle de paiement : URL factice hors production,
+         Mollie en production (frontiere MollieGateway). -->
+    <form th:action="@{/commande/{ref}/payer(ref=${commande.reference()})}" method="post">
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{commande.payer}">Procéder au paiement</button>
+            <a th:href="@{/pieces}" th:text="#{panier.continuer}">Continuer mes achats</a>
+        </p>
+    </form>
 </main>
 
 <footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>

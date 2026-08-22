@@ -3,6 +3,8 @@ package be.autoservplus.vente.web;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.vente.service.CgvNonAccepteesException;
 import be.autoservplus.vente.service.CommandeService;
+import be.autoservplus.vente.service.PaiementImpossibleException;
+import be.autoservplus.vente.service.PaiementService;
 import be.autoservplus.vente.service.PanierService;
 import be.autoservplus.vente.service.StockInsuffisantException;
 import be.autoservplus.vente.web.dto.ConfirmationCommandeVue;
@@ -56,6 +58,7 @@ class CommandeControllerTest {
     @Autowired private MockMvc mvc;
     @MockitoBean private CommandeService service;
     @MockitoBean private PanierService paniers;
+    @MockitoBean private PaiementService paiements;
 
     @TestConfiguration
     static class SecuriteTest {
@@ -80,7 +83,7 @@ class CommandeControllerTest {
 
     @BeforeEach
     void setUp() {
-        org.mockito.Mockito.reset(service, paniers);
+        org.mockito.Mockito.reset(service, paniers, paiements);
         panierNonVide = new PanierVue(List.of(), 5, "70,01 €", "10,20 €", "80,21 €",
                 false, false);
     }
@@ -173,6 +176,31 @@ class CommandeControllerTest {
 
         mvc.perform(get("/commande/{ref}/confirmation", REF))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("POST /payer redirige vers l'URL du prestataire rendue par le service")
+    void payerRedirigeVersLePrestataire() throws Exception {
+        doReturn("/paiement-fictif/tr_fictif_0001")
+                .when(paiements).initierPaiement(REF, "marie@exemple.be");
+
+        mvc.perform(post("/commande/{ref}/payer", REF).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/paiement-fictif/tr_fictif_0001"));
+    }
+
+    @Test
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("POST /payer sur une commande qui n'attend plus : retour confirmation avec message")
+    void payerImpossible() throws Exception {
+        doThrow(new PaiementImpossibleException())
+                .when(paiements).initierPaiement(REF, "marie@exemple.be");
+
+        mvc.perform(post("/commande/{ref}/payer", REF).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/commande/" + REF + "/confirmation"))
+                .andExpect(flash().attributeExists("erreur"));
     }
 
     @Test

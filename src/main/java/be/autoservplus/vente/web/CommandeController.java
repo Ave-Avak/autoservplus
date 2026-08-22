@@ -2,6 +2,8 @@ package be.autoservplus.vente.web;
 
 import be.autoservplus.vente.service.CgvNonAccepteesException;
 import be.autoservplus.vente.service.CommandeService;
+import be.autoservplus.vente.service.PaiementImpossibleException;
+import be.autoservplus.vente.service.PaiementService;
 import be.autoservplus.vente.service.PanierService;
 import be.autoservplus.vente.service.PanierVideException;
 import be.autoservplus.vente.service.PieceInactiveException;
@@ -45,12 +47,14 @@ public class CommandeController {
 
     private final CommandeService service;
     private final PanierService paniers;
+    private final PaiementService paiements;
     private final MessageSource messages;
 
     public CommandeController(CommandeService service, PanierService paniers,
-                              MessageSource messages) {
+                              PaiementService paiements, MessageSource messages) {
         this.service = service;
         this.paniers = paniers;
+        this.paiements = paiements;
         this.messages = messages;
     }
 
@@ -89,6 +93,22 @@ public class CommandeController {
         } catch (PanierVideException e) {
             redirection.addFlashAttribute("erreur", msg("commande.erreur.panier-vide"));
             return "redirect:/panier";
+        }
+    }
+
+    /**
+     * Depart vers la page de paiement du prestataire (F14). L URL de redirection
+     * vient de la passerelle — factice hors production, Mollie en production.
+     */
+    @PostMapping("/{reference}/payer")
+    public String payer(@AuthenticationPrincipal UserDetails membre,
+                        @PathVariable UUID reference,
+                        RedirectAttributes redirection) {
+        try {
+            return "redirect:" + paiements.initierPaiement(reference, membre.getUsername());
+        } catch (PaiementImpossibleException e) {
+            redirection.addFlashAttribute("erreur", msg("commande.erreur.paiement-impossible"));
+            return "redirect:/commande/" + reference + "/confirmation";
         }
     }
 

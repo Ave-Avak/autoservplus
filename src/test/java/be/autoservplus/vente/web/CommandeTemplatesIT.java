@@ -149,7 +149,8 @@ class CommandeTemplatesIT {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("CMD-")))
                 .andExpect(content().string(containsString("80,21")))
-                .andExpect(content().string(containsString("paiement en ligne")));
+                // Le module paiement a remplace le placeholder par le vrai depart.
+                .andExpect(content().string(containsString("Procéder au paiement")));
 
         List<Commande> enBase = commandes.findAll();
         assertThat(enBase).hasSize(1);

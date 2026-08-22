@@ -40,9 +40,15 @@ public class SecuriteConfig {
                         .permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
+                        // Webhook du prestataire de paiement : appel serveur a serveur,
+                        // sans session. L authenticite ne vient pas d un jeton mais de
+                        // la strategie securite §11 — le payload n est jamais cru, le
+                        // statut est relu aupres du prestataire via la passerelle.
+                        .requestMatchers("/webhooks/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMINISTRATEUR")
                         .anyRequest().authenticated()
                 )
+                .csrf(csrf -> csrf.ignoringRequestMatchers("/webhooks/**"))
                 .formLogin(formulaire -> formulaire
                         .loginPage("/connexion")
                         .usernameParameter("email")
