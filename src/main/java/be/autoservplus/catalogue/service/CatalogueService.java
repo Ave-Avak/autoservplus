@@ -113,28 +113,7 @@ public class CatalogueService {
                 .orElseThrow(() -> new RessourceIntrouvableException("Piece", reference));
     }
 
-    // --- administration ---------------------------------------------------------------
-    // La creation et la modification (A1, A2, A4, A5) vivent dans AdminCatalogueService,
-    // protege par @PreAuthorize. Ne restent ici que les suppressions logiques, en
-    // attendant leur remplacement par la suppression conditionnelle RM-29.
-
-    /** Retire une prestation du catalogue par suppression logique. */
-    @Transactional
-    public void supprimerPrestation(UUID reference, String auteur) {
-        prestationParReference(reference).marquerSupprime(auteur);
-    }
-
-    @Transactional
-    public void supprimerPiece(UUID reference, String auteur) {
-        pieceParReference(reference).marquerSupprime(auteur);
-    }
-
     // --- utilitaires -------------------------------------------------------------------
-
-    private Categorie categorieParCode(String code) {
-        return categories.findByCode(code)
-                .orElseThrow(() -> new RessourceIntrouvableException("Categorie", code));
-    }
 
     private boolean termeInsuffisant(String terme) {
         return terme == null || terme.trim().length() < LONGUEUR_MINIMALE_RECHERCHE;

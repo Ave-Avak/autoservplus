@@ -28,6 +28,22 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
     @Query("SELECT p FROM Piece p JOIN FETCH p.categorie ORDER BY p.libelle")
     List<Piece> catalogueComplet();
 
+    /**
+     * Nombre de lignes d historique referencant la piece (RM-29) : lignes de panier
+     * ou de commande ({@code ligne_panier}) et lignes d intervention. Requete native :
+     * elle est le miroir applicatif exact des FK {@code ON DELETE RESTRICT}
+     * ({@code fk_ligne_panier_piece}, {@code fk_ligne_interv_piece}) sans imposer au
+     * module catalogue de dependre des entites des modules vente et intervention.
+     * La table {@code photo}, en CASCADE, est une illustration propre a la piece et
+     * ne bloque pas. Toute nouvelle table referencant {@code piece} doit s ajouter
+     * ici — en cas d oubli, le RESTRICT en base refuse quand meme la suppression.
+     */
+    @Query(value = """
+            SELECT (SELECT count(*) FROM ligne_panier WHERE piece_id = :id)
+                 + (SELECT count(*) FROM ligne_intervention WHERE piece_id = :id)
+            """, nativeQuery = true)
+    long nombreReferencesHistoriques(@Param("id") Long id);
+
     @Query("SELECT p FROM Piece p JOIN FETCH p.categorie WHERE p.reference = :reference")
     Optional<Piece> findByReference(@Param("reference") UUID reference);
 

@@ -34,6 +34,23 @@ public interface PrestationRepository extends JpaRepository<Prestation, Long> {
     @Query("SELECT p FROM Prestation p JOIN FETCH p.categorie ORDER BY p.libelle")
     List<Prestation> catalogueComplet();
 
+    /**
+     * Nombre de lignes d historique referencant la prestation (RM-29) : reservations
+     * ({@code rdv_service}), lignes de panier ou de commande et lignes d intervention.
+     * Requete native, miroir applicatif exact des FK {@code ON DELETE RESTRICT}
+     * ({@code fk_rdv_service_svc}, {@code fk_ligne_panier_service},
+     * {@code fk_ligne_interv_service}) sans dependance inverse vers les autres
+     * modules. La table {@code photo}, en CASCADE, ne bloque pas. Toute nouvelle
+     * table referencant {@code service} doit s ajouter ici — en cas d oubli, le
+     * RESTRICT en base refuse quand meme la suppression.
+     */
+    @Query(value = """
+            SELECT (SELECT count(*) FROM rdv_service WHERE service_id = :id)
+                 + (SELECT count(*) FROM ligne_panier WHERE service_id = :id)
+                 + (SELECT count(*) FROM ligne_intervention WHERE service_id = :id)
+            """, nativeQuery = true)
+    long nombreReferencesHistoriques(@Param("id") Long id);
+
     @Query("SELECT p FROM Prestation p JOIN FETCH p.categorie WHERE p.reference = :reference")
     Optional<Prestation> findByReference(@Param("reference") UUID reference);
 

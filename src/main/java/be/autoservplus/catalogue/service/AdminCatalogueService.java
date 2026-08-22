@@ -10,8 +10,10 @@ import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.catalogue.service.dto.ArticleVueAdmin;
 import be.autoservplus.catalogue.service.dto.DonneesPiece;
 import be.autoservplus.catalogue.service.dto.DonneesPrestation;
+import be.autoservplus.catalogue.service.dto.PropositionSuppression;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -214,6 +216,89 @@ public class AdminCatalogueService {
         return piece;
     }
 
+    // --- suppression ou desactivation (A3, A6) -----------------------------------------
+
+    /** Diagnostic RM-29 pour l ecran de confirmation : l action adequate est proposee. */
+    public PropositionSuppression propositionSuppressionPrestation(UUID reference) {
+        Prestation prestation = chargerPrestation(reference);
+        return new PropositionSuppression(prestation.getReference(), prestation.getCode(),
+                prestation.getLibelle(), prestations.nombreReferencesHistoriques(prestation.getId()));
+    }
+
+    /** Diagnostic RM-29 pour l ecran de confirmation : l action adequate est proposee. */
+    public PropositionSuppression propositionSuppressionPiece(UUID reference) {
+        Piece piece = chargerPiece(reference);
+        return new PropositionSuppression(piece.getReference(), piece.getReferenceFabricant(),
+                piece.getLibelle(), pieces.nombreReferencesHistoriques(piece.getId()));
+    }
+
+    /**
+     * Supprime definitivement une prestation (A3), sous la garde <b>RM-29</b> : refuse
+     * des qu un historique (reservation, panier, commande, intervention) la reference —
+     * seule la desactivation est alors permise.
+     *
+     * <p>Divergence assumee avec le principe « aucune suppression physique » du socle
+     * ({@code BaseEntity}) : pour un element jamais reference, la suppression definitive
+     * du CdC est prise au pied de la lettre. Il n y a aucun historique a proteger, et un
+     * simple soft delete gelerait a jamais son code ou sa reference fabricant, les
+     * contraintes d unicite n etant pas partielles sur {@code deleted_at}.</p>
+     *
+     * @throws SuppressionRefuseeException si au moins une reference existe
+     */
+    @Transactional
+    public void supprimerDefinitivementPrestation(UUID reference) {
+        Prestation prestation = chargerPrestation(reference);
+        long referencesHistoriques = prestations.nombreReferencesHistoriques(prestation.getId());
+        if (referencesHistoriques > 0) {
+            throw new SuppressionRefuseeException(prestation.getLibelle(), referencesHistoriques);
+        }
+        supprimerEnBase(prestation.getLibelle(), () -> {
+            prestations.delete(prestation);
+            prestations.flush();
+        });
+    }
+
+    /**
+     * Supprime definitivement une piece (A6), sous la meme garde <b>RM-29</b> que la
+     * prestation.
+     *
+     * @throws SuppressionRefuseeException si au moins une reference existe
+     */
+    @Transactional
+    public void supprimerDefinitivementPiece(UUID reference) {
+        Piece piece = chargerPiece(reference);
+        long referencesHistoriques = pieces.nombreReferencesHistoriques(piece.getId());
+        if (referencesHistoriques > 0) {
+            throw new SuppressionRefuseeException(piece.getLibelle(), referencesHistoriques);
+        }
+        supprimerEnBase(piece.getLibelle(), () -> {
+            pieces.delete(piece);
+            pieces.flush();
+        });
+    }
+
+    /** Desactivation RM-28 : disparait du catalogue public, reste lisible des historiques. */
+    @Transactional
+    public void desactiverPrestation(UUID reference) {
+        chargerPrestation(reference).desactiver();
+    }
+
+    @Transactional
+    public void activerPrestation(UUID reference) {
+        chargerPrestation(reference).activer();
+    }
+
+    /** Desactivation RM-28 : disparait du catalogue public, reste lisible des historiques. */
+    @Transactional
+    public void desactiverPiece(UUID reference) {
+        chargerPiece(reference).desactiver();
+    }
+
+    @Transactional
+    public void activerPiece(UUID reference) {
+        chargerPiece(reference).activer();
+    }
+
     // --- stock -------------------------------------------------------------------------
 
     /** Pieces dont le stock a atteint le seuil d alerte, pour le tableau de bord du gerant. */
@@ -227,6 +312,20 @@ public class AdminCatalogueService {
     }
 
     // --- helpers -----------------------------------------------------------------------
+
+    /**
+     * Execute le DELETE avec flush immediat : si une reference est apparue entre le
+     * comptage et la suppression, la FK {@code ON DELETE RESTRICT} refuse — seconde
+     * ligne de defense de RM-29, la course est traduite en refus metier plutot qu en
+     * erreur 500 au commit.
+     */
+    private void supprimerEnBase(String libelle, Runnable suppression) {
+        try {
+            suppression.run();
+        } catch (DataIntegrityViolationException e) {
+            throw new SuppressionRefuseeException(libelle, 1);
+        }
+    }
 
     private Prestation chargerPrestation(UUID reference) {
         return prestations.findByReference(reference)

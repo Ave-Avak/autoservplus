@@ -10,6 +10,7 @@ import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.catalogue.service.dto.ArticleVueAdmin;
 import be.autoservplus.catalogue.service.dto.DonneesPiece;
 import be.autoservplus.catalogue.service.dto.DonneesPrestation;
+import be.autoservplus.catalogue.service.dto.PropositionSuppression;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import org.junit.jupiter.api.DisplayName;
@@ -19,6 +20,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -28,6 +30,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -391,6 +394,123 @@ class AdminCatalogueServiceTest {
             assertThat(vues).hasSize(1);
             assertThat(vues.get(0).actif()).isFalse();
             assertThat(vues.get(0).identifiant()).isEqualTo("VID");
+        }
+    }
+
+    @Nested
+    @DisplayName("suppression ou desactivation (A3, A6, RM-29)")
+    class SuppressionOuDesactivation {
+
+        private Prestation vidangePersistee() {
+            Prestation prestation = new Prestation(entretien, "VID", "Vidange",
+                    new BigDecimal("75.00"), 60);
+            when(prestations.findByReference(prestation.getReference()))
+                    .thenReturn(Optional.of(prestation));
+            return prestation;
+        }
+
+        @Test
+        @DisplayName("RM-29 : refuse la suppression definitive d une prestation referencee")
+        void refuseLaSuppressionDUnePrestationReferencee() {
+            Prestation prestation = vidangePersistee();
+            when(prestations.nombreReferencesHistoriques(any())).thenReturn(3L);
+
+            assertThatThrownBy(() -> service.supprimerDefinitivementPrestation(prestation.getReference()))
+                    .isInstanceOf(SuppressionRefuseeException.class)
+                    .hasMessageContaining("RM-29")
+                    .hasMessageContaining("desactivation");
+
+            // Jamais de suppression physique d une entite referencee.
+            verify(prestations, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("RM-29 : supprime definitivement une prestation sans aucune reference")
+        void supprimeUnePrestationLibre() {
+            Prestation prestation = vidangePersistee();
+            when(prestations.nombreReferencesHistoriques(any())).thenReturn(0L);
+
+            service.supprimerDefinitivementPrestation(prestation.getReference());
+
+            verify(prestations).delete(prestation);
+        }
+
+        @Test
+        @DisplayName("RM-29 : refuse la suppression definitive d une piece referencee")
+        void refuseLaSuppressionDUnePieceReferencee() {
+            Piece piece = new Piece(filtres, "F-001", "Filtre a huile", new BigDecimal("12.50"));
+            when(pieces.findByReference(piece.getReference())).thenReturn(Optional.of(piece));
+            when(pieces.nombreReferencesHistoriques(any())).thenReturn(1L);
+
+            assertThatThrownBy(() -> service.supprimerDefinitivementPiece(piece.getReference()))
+                    .isInstanceOf(SuppressionRefuseeException.class)
+                    .extracting("nombreReferences").isEqualTo(1L);
+
+            verify(pieces, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("RM-29 : supprime definitivement une piece sans aucune reference")
+        void supprimeUnePieceLibre() {
+            Piece piece = new Piece(filtres, "F-001", "Filtre a huile", new BigDecimal("12.50"));
+            when(pieces.findByReference(piece.getReference())).thenReturn(Optional.of(piece));
+            when(pieces.nombreReferencesHistoriques(any())).thenReturn(0L);
+
+            service.supprimerDefinitivementPiece(piece.getReference());
+
+            verify(pieces).delete(piece);
+        }
+
+        @Test
+        @DisplayName("RM-29 : une reference apparue pendant la suppression est traduite en refus metier")
+        void traduitLaCourseEnRefusMetier() {
+            Prestation prestation = vidangePersistee();
+            when(prestations.nombreReferencesHistoriques(any())).thenReturn(0L);
+            // La FK ON DELETE RESTRICT joue son role de seconde ligne au flush.
+            doThrow(new DataIntegrityViolationException("fk_rdv_service_svc"))
+                    .when(prestations).flush();
+
+            assertThatThrownBy(() -> service.supprimerDefinitivementPrestation(prestation.getReference()))
+                    .isInstanceOf(SuppressionRefuseeException.class);
+        }
+
+        @Test
+        @DisplayName("RM-28 : la desactivation reste possible pour un element reference")
+        void desactiveSansSupprimer() {
+            Prestation prestation = vidangePersistee();
+
+            service.desactiverPrestation(prestation.getReference());
+
+            assertThat(prestation.isActif()).isFalse();
+            assertThat(prestation.estSupprime()).isFalse();
+            verify(prestations, never()).delete(any());
+        }
+
+        @Test
+        @DisplayName("reactive un element desactive")
+        void reactive() {
+            Piece piece = new Piece(filtres, "F-001", "Filtre a huile", new BigDecimal("12.50"));
+            piece.desactiver();
+            when(pieces.findByReference(piece.getReference())).thenReturn(Optional.of(piece));
+
+            service.activerPiece(piece.getReference());
+
+            assertThat(piece.isActif()).isTrue();
+        }
+
+        @Test
+        @DisplayName("le diagnostic expose le nombre de references et l action possible")
+        void proposeLActionAdequate() {
+            Prestation prestation = vidangePersistee();
+            when(prestations.nombreReferencesHistoriques(any())).thenReturn(2L);
+
+            PropositionSuppression proposition =
+                    service.propositionSuppressionPrestation(prestation.getReference());
+
+            assertThat(proposition.nombreReferences()).isEqualTo(2);
+            assertThat(proposition.suppressionPossible()).isFalse();
+            assertThat(proposition.libelle()).isEqualTo("Vidange");
+            assertThat(proposition.identifiant()).isEqualTo("VID");
         }
     }
 
