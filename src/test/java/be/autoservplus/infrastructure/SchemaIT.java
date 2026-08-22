@@ -204,10 +204,17 @@ class SchemaIT {
                 .hasMessageContaining("montant_devis_htva");
     }
 
+    /**
+     * V22 a remplace le couple validee/refusee par le seul {@code accord_membre}
+     * nullable du dictionnaire. L etat « acceptee ET refusee » n a plus besoin d etre
+     * interdit : il est devenu inexprimable. Ce qui reste a verrouiller est l autre
+     * incoherence, celle que deux booleens ne savaient pas dire — une ligne du devis
+     * initial qui porterait un accord alors qu on ne lui en a jamais demande.
+     */
     @Test
     @Transactional
-    @DisplayName("une ligne ne peut etre a la fois validee et refusee (ck_ligne_interv_validation)")
-    void ligneValideeEtRefuseeRejetee() {
+    @DisplayName("une ligne du devis initial ne peut porter d accord (ck_ligne_interv_accord)")
+    void accordSurLigneDuDevisInitialRejete() {
         Long vehiculeId = jdbc.queryForObject(
                 "INSERT INTO vehicule (membre_id, plaque, marque, modele, motorisation) "
                         + "SELECT id, 'IT-SCH-3', 'VW', 'Up', 'ESSENCE' FROM utilisateur "
@@ -218,13 +225,27 @@ class SchemaIT {
                 Long.class, vehiculeId);
         Long serviceId = jdbc.queryForObject("SELECT id FROM service LIMIT 1", Long.class);
 
+        // Les quatre combinaisons legitimes de l encodage passent. Elles s inserent
+        // AVANT la violation : une contrainte violee avorte la transaction PostgreSQL,
+        // et tout ordre suivant y serait rejete en 25P02 sans rien prouver.
+        jdbc.update("INSERT INTO ligne_intervention (intervention_id, service_id, libelle_fige, "
+                        + "quantite, prix_unitaire_htva, taux_tva, ajoutee_en_cours, accord_membre) "
+                        + "VALUES (?, ?, 'Devis initial', 1, 10.00, 21.00, false, NULL)",
+                interventionId, serviceId);
+        for (String accord : new String[] {"NULL", "true", "false"}) {
+            jdbc.update("INSERT INTO ligne_intervention (intervention_id, service_id, libelle_fige, "
+                            + "quantite, prix_unitaire_htva, taux_tva, ajoutee_en_cours, accord_membre) "
+                            + "VALUES (?, ?, 'Ajout', 1, 10.00, 21.00, true, " + accord + ")",
+                    interventionId, serviceId);
+        }
+
         assertThatThrownBy(() -> jdbc.update(
                 "INSERT INTO ligne_intervention (intervention_id, service_id, libelle_fige, "
-                        + "quantite, prix_unitaire_htva, taux_tva, validee, refusee) "
-                        + "VALUES (?, ?, 'Incoherente', 1, 10.00, 21.00, true, true)",
+                        + "quantite, prix_unitaire_htva, taux_tva, ajoutee_en_cours, accord_membre) "
+                        + "VALUES (?, ?, 'Incoherente', 1, 10.00, 21.00, false, true)",
                 interventionId, serviceId))
                 .isInstanceOf(DataIntegrityViolationException.class)
-                .hasMessageContaining("ck_ligne_interv_validation");
+                .hasMessageContaining("ck_ligne_interv_accord");
     }
 
     // Les trois tests suivants operent sur jour_semaine = 7 (dimanche), jamais peuple

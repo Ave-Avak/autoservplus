@@ -35,7 +35,14 @@ public record InterventionVueAdmin(
         boolean peutReprendre,
         boolean peutTerminer,
         boolean peutAnnuler,
+        /** Commentaire admin et retrait de ligne : tant que l intervention n est pas terminale. */
         boolean estEditable,
+        /**
+         * RM-14 : le formulaire d ajout de ligne n a de sens qu en EN_COURS. Le
+         * domaine refuse deja l ajout ailleurs ; ce flag evite d afficher un
+         * formulaire condamne, il ne le remplace pas.
+         */
+        boolean peutAjouterLigne,
         /** RM-15 : le garage attend la reponse du membre, il ne peut pas reprendre. */
         boolean enAttenteValidationMembre,
         String devisInitialHtva,
@@ -73,6 +80,7 @@ public record InterventionVueAdmin(
                 s.peutPasserA(StatutIntervention.TERMINEE),
                 s.peutPasserA(StatutIntervention.ANNULEE),
                 s.estEditable(),
+                s.accepteAjoutDeLigne(),
                 s == StatutIntervention.ATTENTE_VALIDATION_MEMBRE,
                 FormatageRdv.euros(it.devisReferenceHtva()),
                 FormatageRdv.euros(it.totalProposeHtva()));
@@ -112,9 +120,9 @@ public record InterventionVueAdmin(
         }
 
         private static String etatLisible(LigneIntervention l) {
-            if (l.isRefusee()) return "Refusée par le membre";
-            if (l.estEnAttente()) return "En attente d'accord";
-            return l.isAjouteeEnCours() ? "Ajoutée en cours" : "Devis initial";
+            if (l.estRefusee()) return "Refusée par le membre";
+            if (l.estEnAttenteValidation()) return "En attente d'accord";
+            return l.estDuDevisInitial() ? "Devis initial" : "Ajoutée en cours";
         }
     }
 }

@@ -24,13 +24,21 @@ import java.util.Objects;
  * <p>Pas de suppression logique : la ligne n existe que par son intervention,
  * un retrait passe par {@code orphanRemoval} de la relation parente.</p>
  *
- * <p><b>Marqueurs RM-15</b> : {@code ajouteeEnCours} distingue les lignes issues
- * du rendez-vous (le devis initial, accepte par le membre a la reservation) de
- * celles ajoutees par le garage pendant le travail. {@code validee} dit si la
- * ligne entre dans le total facturable, {@code refusee} si le membre l a ecartee.
- * Une ligne refusee reste en base — elle documente le defaut constate — mais
- * sort du total et n est pas executee. Les deux drapeaux sont exclusifs
- * (CHECK {@code ck_ligne_interv_validation}).</p>
+ * <p><b>Marqueurs RM-15</b> : l etat d une ligne se lit sur le <b>couple</b>
+ * {@code (ajouteeEnCours, accordMembre)}, aligne sur le dictionnaire de donnees
+ * (Livrable 09) :</p>
+ * <table>
+ *   <caption>Encodage des quatre etats</caption>
+ *   <tr><td>{@code (false, null)}</td><td>ligne du RDV : le devis initial, hors RM-15</td></tr>
+ *   <tr><td>{@code (true,  null)}</td><td>ajout du garage, en attente de reponse</td></tr>
+ *   <tr><td>{@code (true,  true)}</td><td>ajout accepte : facturable</td></tr>
+ *   <tr><td>{@code (true, false)}</td><td>ajout refuse : conserve, hors total, non execute</td></tr>
+ * </table>
+ *
+ * <p>Un champ a trois valeurs plutot que deux booleens : l etat absurde
+ * « acceptee ET refusee » devient <b>inexprimable</b> au lieu d etre interdit par
+ * un CHECK. Le seul CHECK restant, {@code ck_ligne_interv_accord}, verrouille la
+ * premiere ligne du tableau — une ligne du devis initial ne porte aucun accord.</p>
  */
 @Entity
 @Table(name = "ligne_intervention")
@@ -71,11 +79,17 @@ public class LigneIntervention {
     @Column(name = "ajoutee_en_cours", nullable = false)
     private boolean ajouteeEnCours;
 
-    @Column(name = "validee", nullable = false)
-    private boolean validee = true;
-
-    @Column(name = "refusee", nullable = false)
-    private boolean refusee;
+    /**
+     * Reponse du membre sur une ligne ajoutee en cours (RM-15). {@code null} vaut
+     * « pas de reponse » : soit la ligne n en attend aucune (devis initial), soit
+     * elle attend celle du membre. C est le couple avec {@link #ajouteeEnCours} qui
+     * tranche — voir les predicats derives plus bas.
+     *
+     * <p>{@link Boolean} et non {@code boolean} : le troisieme etat est porteur de
+     * sens metier, pas un trou de donnee. Aucun DEFAULT en base pour la meme raison.</p>
+     */
+    @Column(name = "accord_membre")
+    private Boolean accordMembre;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
@@ -152,45 +166,68 @@ public class LigneIntervention {
     }
 
     /**
-     * La ligne sort du total facturable en attendant l accord du membre (RM-15).
-     * Elle reste ni validee ni refusee : le troisieme etat, celui de la question
-     * posee au client.
+     * La ligne sort du total facturable en attendant l accord du membre (RM-15) :
+     * la question est posee, aucune reponse n est encore donnee.
      */
     void mettreEnAttente() {
-        this.validee = false;
-        this.refusee = false;
+        this.accordMembre = null;
     }
 
     /** Le membre accepte cette ligne : elle rejoint le total facturable. */
-    void valider() {
-        this.validee = true;
-        this.refusee = false;
+    void accepter() {
+        this.accordMembre = Boolean.TRUE;
     }
 
     /**
      * Le membre ecarte cette ligne. Elle reste dans le dossier — elle documente le
      * defaut constate par le garage — mais sort definitivement du total facturable
-     * et ne sera pas executee. {@code validee} retombe a false pour respecter
-     * l exclusion mutuelle imposee par {@code ck_ligne_interv_validation}.
+     * et ne sera pas executee.
      */
     void refuser() {
-        this.validee = false;
-        this.refusee = true;
+        this.accordMembre = Boolean.FALSE;
+    }
+
+    // --- etats derives du couple (ajouteeEnCours, accordMembre) ---------------------
+    //
+    // Aucun de ces quatre etats n est stocke : ils se lisent tous du couple, ce qui
+    // rend impossible la divergence entre un drapeau et la realite. Ils sont exclusifs
+    // et exhaustifs — toute ligne est dans exactement un des quatre.
+
+    /**
+     * Ligne issue du rendez-vous : elle compose le devis initial, accepte par le
+     * membre a la reservation. Hors dispositif RM-15 — on ne redemande pas un accord
+     * sur ce qui a deja ete commande. Le CHECK {@code ck_ligne_interv_accord}
+     * garantit qu une telle ligne ne porte jamais d accord.
+     */
+    public boolean estDuDevisInitial() {
+        return !ajouteeEnCours;
+    }
+
+    /** Ajout du garage soumis au membre, sans reponse a ce jour. */
+    public boolean estEnAttenteValidation() {
+        return ajouteeEnCours && accordMembre == null;
+    }
+
+    /** Ajout du garage accepte par le membre. */
+    public boolean estAcceptee() {
+        return ajouteeEnCours && Boolean.TRUE.equals(accordMembre);
+    }
+
+    /** Ajout du garage refuse par le membre : conserve au dossier, hors total. */
+    public boolean estRefusee() {
+        return ajouteeEnCours && Boolean.FALSE.equals(accordMembre);
     }
 
     /**
-     * La ligne entre-t-elle dans le total facturable ? Vrai uniquement si elle est
-     * validee et non refusee. Une ligne en attente d accord du membre et une ligne
-     * refusee sont toutes deux exclues, pour des raisons differentes : la premiere
-     * n est pas encore acquise, la seconde ne le sera jamais.
+     * La ligne entre-t-elle dans le total facturable ? Le devis initial y entre
+     * toujours ; un ajout n y entre qu une fois accepte.
+     *
+     * <p>Sont donc exclues les lignes <b>en attente</b> et les lignes <b>refusees</b>,
+     * pour des raisons differentes : la premiere n est pas encore acquise, la seconde
+     * ne le sera jamais.</p>
      */
     public boolean estFacturable() {
-        return validee && !refusee;
-    }
-
-    /** La ligne attend une reponse du membre : ni acquise, ni ecartee. */
-    public boolean estEnAttente() {
-        return !validee && !refusee;
+        return estDuDevisInitial() || estAcceptee();
     }
 
     public Long getId() { return id; }
@@ -202,8 +239,7 @@ public class LigneIntervention {
     public BigDecimal getPrixUnitaireHtva() { return prixUnitaireHtva; }
     public BigDecimal getTauxTva() { return tauxTva; }
     public boolean isAjouteeEnCours() { return ajouteeEnCours; }
-    public boolean isValidee() { return validee; }
-    public boolean isRefusee() { return refusee; }
+    public Boolean getAccordMembre() { return accordMembre; }
 
     @Override
     public boolean equals(Object autre) {

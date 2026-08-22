@@ -308,15 +308,28 @@ class InterventionTest {
         }
 
         @Test
-        @DisplayName("SUSPENDUE peut basculer vers ATTENTE_VALIDATION_MEMBRE (depassement chiffre a l'arret)")
-        void suspendueVersAttenteValidation() {
+        @DisplayName("SUSPENDUE ne reprend qu'en EN_COURS ou s'annule")
+        void suspendueTransitions() {
             StatutIntervention s = StatutIntervention.SUSPENDUE;
-            assertThat(s.peutPasserA(StatutIntervention.ATTENTE_VALIDATION_MEMBRE)).isTrue();
             assertThat(s.peutPasserA(StatutIntervention.EN_COURS)).isTrue();
             assertThat(s.peutPasserA(StatutIntervention.ANNULEE)).isTrue();
+            assertThat(s.peutPasserA(StatutIntervention.ATTENTE_VALIDATION_MEMBRE))
+                    .as("Aucun ajout n'est possible a l'arret (RM-14) : rien ne peut y "
+                            + "declencher un depassement, la transition n'a pas lieu d'etre")
+                    .isFalse();
             assertThat(s.peutPasserA(StatutIntervention.TERMINEE))
                     .as("On ne termine pas une intervention suspendue sans la reprendre")
                     .isFalse();
+        }
+
+        @Test
+        @DisplayName("l'ajout de ligne n'est ouvert qu'en EN_COURS (RM-14)")
+        void ajoutDeLigneUniquementEnCours() {
+            for (StatutIntervention s : StatutIntervention.values()) {
+                assertThat(s.accepteAjoutDeLigne())
+                        .as("accepteAjoutDeLigne pour %s", s)
+                        .isEqualTo(s == StatutIntervention.EN_COURS);
+            }
         }
 
         @Test
@@ -336,24 +349,60 @@ class InterventionTest {
     class Editions {
 
         @Test
-        @DisplayName("ajouterLigneMainOeuvre possible en PLANIFIEE, EN_COURS, SUSPENDUE")
-        void ajouterLigneQuandEditable() {
-            // Montants volontairement faibles : ce test porte sur l editabilite par
+        @DisplayName("ajouterLigneMainOeuvre possible en EN_COURS, et seulement la (RM-14)")
+        void ajouterLigneUniquementEnCours() {
+            // Montants volontairement faibles : ce test porte sur l autorisation par
             // statut, pas sur le seuil RM-15 (couvert par DepassementDevis). Un montant
             // eleve basculerait en ATTENTE_VALIDATION_MEMBRE et masquerait l intention.
             BigDecimal petitPrix = new BigDecimal("1.00");
             Intervention it = interventionDepuis(vidange);
-            it.ajouterLigneMainOeuvre(freins, (short) 1, petitPrix, new BigDecimal("21.00"));
-            assertThat(it.getLignes()).hasSize(2);
 
             it.demarrer(DEBUT);
             it.ajouterLigneMainOeuvre(freins, (short) 1, petitPrix, new BigDecimal("21.00"));
+            assertThat(it.getLignes()).hasSize(2);
+            it.ajouterLigneMainOeuvre(freins, (short) 1, petitPrix, new BigDecimal("21.00"));
             assertThat(it.getLignes()).hasSize(3);
 
+            // Le travail s arrete : l ajout s arrete avec lui. Le garage reprend d abord.
             it.suspendre();
+            assertThatThrownBy(() -> it.ajouterLigneMainOeuvre(freins, (short) 1,
+                    petitPrix, new BigDecimal("21.00")))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("RM-14")
+                    .hasMessageContaining("SUSPENDUE");
+            assertThat(it.getLignes())
+                    .as("Un ajout refuse ne doit rien laisser derriere lui")
+                    .hasSize(3);
+
+            it.reprendre();
             it.ajouterLigneMainOeuvre(freins, (short) 1, petitPrix, new BigDecimal("21.00"));
             assertThat(it.getLignes()).hasSize(4);
-            assertThat(it.getStatut()).isEqualTo(StatutIntervention.SUSPENDUE);
+        }
+
+        /**
+         * Le trou de RM-15, verrouille a l envers : tant que l ajout etait ouvert en
+         * PLANIFIEE, il echappait au controle de seuil ({@code appliquerSeuilDepassement}
+         * exemptait ce statut) et le devis pouvait grossir sans accord du membre. Le
+         * refus a la source rend l exemption sans objet.
+         */
+        @Test
+        @DisplayName("ajouterLigne refuse en PLANIFIEE : rien n'a commence (RM-14)")
+        void ajouterLigneRefuseQuandPlanifiee() {
+            Intervention it = interventionDepuis(vidange); // reste PLANIFIEE
+
+            assertThatThrownBy(() -> it.ajouterLigneMainOeuvre(freins, (short) 1,
+                    new BigDecimal("500.00"), new BigDecimal("21.00")))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("RM-14")
+                    .hasMessageContaining("Démarrez l'intervention");
+
+            assertThat(it.getLignes())
+                    .as("Seul le devis initial subsiste : aucune ligne n'a ete ajoutee")
+                    .hasSize(1);
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.PLANIFIEE);
+            assertThat(it.totalFacturableHtva())
+                    .as("Le devis reste celui accepte a la reservation")
+                    .isEqualByComparingTo("49.00");
         }
 
         @Test
@@ -441,7 +490,10 @@ class InterventionTest {
             assertThat(it.getStatut())
                     .as("A 110 % pile on n'est pas « au-dela de 10 % » : le garage continue")
                     .isEqualTo(StatutIntervention.EN_COURS);
-            assertThat(ligne.isValidee()).isTrue();
+            assertThat(ligne.estAcceptee())
+                    .as("Sous le seuil, le garage tranche d office : accord_membre = true")
+                    .isTrue();
+            assertThat(ligne.getAccordMembre()).isTrue();
             assertThat(it.aDesLignesEnAttente()).isFalse();
         }
 
@@ -453,7 +505,11 @@ class InterventionTest {
             LigneIntervention ligne = ajouter(it, "4.91"); // 53.91 > 53.90
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
-            assertThat(ligne.estEnAttente()).isTrue();
+            assertThat(ligne.estEnAttenteValidation()).isTrue();
+            assertThat(ligne.getAccordMembre())
+                    .as("Au-dela du seuil, aucune reponse n'est encore donnee")
+                    .isNull();
+            assertThat(ligne.estFacturable()).isFalse();
             assertThat(it.totalFacturableHtva())
                     .as("Tant que le membre n'a pas repondu, la ligne ne compte pas")
                     .isEqualByComparingTo("49.00");
@@ -461,14 +517,15 @@ class InterventionTest {
         }
 
         @Test
-        @DisplayName("petit ajout sous le seuil : ligne validee d office, aucune friction")
+        @DisplayName("petit ajout sous le seuil : ligne acceptee d office, aucune friction")
         void ajoutSousLeSeuil() {
             Intervention it = enCoursAvecDevisDe49();
 
             LigneIntervention ligne = ajouter(it, "2.00"); // 51.00 <= 53.90
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
-            assertThat(ligne.isValidee()).isTrue();
+            assertThat(ligne.estAcceptee()).isTrue();
+            assertThat(ligne.estFacturable()).isTrue();
             assertThat(it.totalFacturableHtva()).isEqualByComparingTo("51.00");
         }
 
@@ -489,7 +546,7 @@ class InterventionTest {
         }
 
         @Test
-        @DisplayName("le membre accepte : lignes validees, EN_COURS, total facturable elargi")
+        @DisplayName("le membre accepte : accord_membre = true, EN_COURS, total facturable elargi")
         void membreAccepte() {
             Intervention it = enCoursAvecDevisDe49();
             LigneIntervention ligne = ajouter(it, "89.00");
@@ -497,8 +554,10 @@ class InterventionTest {
             it.validerDepassement();
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
-            assertThat(ligne.isValidee()).isTrue();
-            assertThat(ligne.isRefusee()).isFalse();
+            assertThat(ligne.getAccordMembre()).isTrue();
+            assertThat(ligne.estAcceptee()).isTrue();
+            assertThat(ligne.estRefusee()).isFalse();
+            assertThat(ligne.estFacturable()).isTrue();
             assertThat(it.totalFacturableHtva()).isEqualByComparingTo("138.00");
             assertThat(it.aDesLignesEnAttente()).isFalse();
         }
@@ -516,8 +575,11 @@ class InterventionTest {
                     .as("La ligne refusee reste au dossier : trace du defaut constate")
                     .hasSize(2)
                     .contains(ligne);
-            assertThat(ligne.isRefusee()).isTrue();
-            assertThat(ligne.estFacturable()).isFalse();
+            assertThat(ligne.getAccordMembre()).isFalse();
+            assertThat(ligne.estRefusee()).isTrue();
+            assertThat(ligne.estFacturable())
+                    .as("Refusee : conservee au dossier, mais hors total facturable")
+                    .isFalse();
             assertThat(it.totalFacturableHtva())
                     .as("Retour au perimetre du devis initial")
                     .isEqualByComparingTo("49.00");
@@ -543,40 +605,44 @@ class InterventionTest {
         }
 
         @Test
-        @DisplayName("une ligne ajoutee pendant l'attente rejoint le lot, sans nouvelle bascule")
-        void ajoutPendantAttenteRejointLeLot() {
+        @DisplayName("aucun ajout pendant l'attente : on n'empile pas une seconde question")
+        void ajoutRefusePendantLAttente() {
             Intervention it = enCoursAvecDevisDe49();
             ajouter(it, "89.00");
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
 
-            LigneIntervention seconde = ajouter(it, "10.00");
+            assertThatThrownBy(() -> ajouter(it, "10.00"))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("RM-14")
+                    .hasMessageContaining("ATTENTE_VALIDATION_MEMBRE");
 
-            assertThat(seconde.estEnAttente()).isTrue();
-            assertThat(it.lignesEnAttente()).hasSize(2);
-            assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
-            assertThat(it.totalProposeHtva()).isEqualByComparingTo("148.00");
+            assertThat(it.lignesEnAttente())
+                    .as("Le membre se prononce sur le lot qui lui a ete presente, pas sur un lot mouvant")
+                    .hasSize(1);
+            assertThat(it.totalProposeHtva()).isEqualByComparingTo("138.00");
+
+            // Une fois la reponse donnee, le garage reprend la main et peut chiffrer a nouveau.
+            it.validerDepassement();
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+            ajouter(it, "10.00");
+            assertThat(it.getLignes()).hasSize(3);
         }
 
         @Test
-        @DisplayName("depassement constate en suspension : bascule aussi depuis SUSPENDUE")
-        void depassementDepuisSuspendue() {
+        @DisplayName("aucun ajout a l'arret : le garage reprend avant de chiffrer (RM-14)")
+        void ajoutRefuseDepuisSuspendue() {
             Intervention it = enCoursAvecDevisDe49();
             it.suspendre();
 
+            assertThatThrownBy(() -> ajouter(it, "89.00"))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("RM-14");
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.SUSPENDUE);
+
+            // Le depassement se chiffre apres reprise, et declenche alors normalement.
+            it.reprendre();
             ajouter(it, "89.00");
-
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
-        }
-
-        @Test
-        @DisplayName("PLANIFIEE hors dispositif : rien n'a commence, aucune « poursuite » a garder")
-        void planifieeHorsDispositif() {
-            Intervention it = interventionDepuis(vidange); // reste PLANIFIEE
-
-            LigneIntervention ligne = ajouter(it, "500.00");
-
-            assertThat(it.getStatut()).isEqualTo(StatutIntervention.PLANIFIEE);
-            assertThat(ligne.isValidee()).isTrue();
         }
 
         @Test
@@ -611,6 +677,51 @@ class InterventionTest {
             assertThat(it.totalFacturableTvac()).isEqualByComparingTo("166.98");
         }
 
+        /**
+         * Les quatre etats de l encodage {@code (ajoutee_en_cours, accord_membre)}
+         * reunis sur une meme intervention, pour prouver en un seul point ce que
+         * {@code totalFacturableHtva} retient et ce qu il ecarte.
+         */
+        @Test
+        @DisplayName("totalFacturable = devis initial + ajouts acceptes, hors en-attente et hors refuses")
+        void totalFacturableSurLesQuatreEtats() {
+            BigDecimal tva = new BigDecimal("21.00");
+            Intervention it = interventionDepuis(vidange);   // (false, null) : 49,00
+            it.demarrer(DEBUT);
+
+            // (true, true) : sous le seuil, accepte d office. 49 + 2 = 51,00 <= 53,90.
+            LigneIntervention acceptee = it.ajouterLigneMainOeuvre(freins, (short) 1,
+                    new BigDecimal("2.00"), tva);
+
+            // (true, false) : franchit le seuil, le membre refuse.
+            LigneIntervention refusee = it.ajouterLigneMainOeuvre(freins, (short) 1,
+                    new BigDecimal("89.00"), tva);
+            it.refuserDepassement();
+
+            // (true, null) : nouveau franchissement, sans reponse a ce jour.
+            LigneIntervention enAttente = it.ajouterLigneMainOeuvre(freins, (short) 1,
+                    new BigDecimal("89.00"), tva);
+
+            LigneIntervention devisInitial = it.getLignes().get(0);
+            assertThat(devisInitial.estDuDevisInitial()).isTrue();
+            assertThat(acceptee.estAcceptee()).isTrue();
+            assertThat(refusee.estRefusee()).isTrue();
+            assertThat(enAttente.estEnAttenteValidation()).isTrue();
+
+            assertThat(it.getLignes())
+                    .as("Les quatre lignes restent au dossier, y compris la refusee")
+                    .hasSize(4);
+            assertThat(it.getLignes()).filteredOn(LigneIntervention::estFacturable)
+                    .containsExactly(devisInitial, acceptee);
+
+            assertThat(it.totalFacturableHtva())
+                    .as("49,00 (devis) + 2,00 (accepte) : ni les 89,00 refuses, ni les 89,00 en attente")
+                    .isEqualByComparingTo("51.00");
+            assertThat(it.totalProposeHtva())
+                    .as("Ce sur quoi le membre se prononce : facturable + en attente, hors refuse")
+                    .isEqualByComparingTo("140.00");
+        }
+
         @Test
         @DisplayName("le devis initial est fige a la creation, en HTVA, depuis les lignes du RDV")
         void devisInitialFigeEnHtva() {
@@ -626,14 +737,18 @@ class InterventionTest {
         }
 
         @Test
-        @DisplayName("les lignes du RDV naissent validees, non refusees, non ajoutees en cours")
+        @DisplayName("les lignes du RDV : ajoutee_en_cours = false, accord_membre = null")
         void lignesDuRdvValideesDOffice() {
             Intervention it = interventionDepuis(vidange, freins);
 
             assertThat(it.getLignes()).allSatisfy(l -> {
                 assertThat(l.isAjouteeEnCours()).isFalse();
-                assertThat(l.isValidee()).isTrue();
-                assertThat(l.isRefusee()).isFalse();
+                assertThat(l.estDuDevisInitial()).isTrue();
+                assertThat(l.getAccordMembre())
+                        .as("Le devis initial est hors RM-15 : aucun accord ne lui est demande")
+                        .isNull();
+                assertThat(l.estEnAttenteValidation()).isFalse();
+                assertThat(l.estRefusee()).isFalse();
                 assertThat(l.estFacturable()).isTrue();
             });
         }
@@ -649,8 +764,9 @@ class InterventionTest {
                     new BigDecimal("2.00"), new BigDecimal("21.00"));
 
             assertThat(ajoutee.isAjouteeEnCours()).isTrue();
-            assertThat(ajoutee.isValidee()).isTrue();
-            assertThat(ajoutee.isRefusee()).isFalse();
+            assertThat(ajoutee.estDuDevisInitial()).isFalse();
+            assertThat(ajoutee.estAcceptee()).isTrue();
+            assertThat(ajoutee.estRefusee()).isFalse();
         }
 
         @Test

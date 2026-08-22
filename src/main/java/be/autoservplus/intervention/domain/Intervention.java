@@ -109,8 +109,9 @@ public class Intervention extends BaseEntity {
      * de main d oeuvre pre-remplie par prestation reservee. Prix et taux sont
      * recopies de la ligne du RDV, ils ont deja ete figes a la reservation.
      *
-     * <p>Les lignes naissent {@code ajouteeEnCours = false} et validees : le membre
-     * les a acceptees en reservant, elles constituent le devis initial. Ce devis est
+     * <p>Les lignes naissent {@code ajouteeEnCours = false}, donc {@code accordMembre}
+     * a {@code null} et pour toujours : le membre les a acceptees en reservant, on ne
+     * lui redemande pas un accord sur ce qu il a commande. Ce devis est
      * fige ici dans {@link #montantDevisInitialHtva} — c est l invariant que RM-15
      * compare. Le figer dans l entite plutot que dans le service garantit qu aucun
      * chemin de creation ne puisse produire une intervention sans devis de reference.</p>
@@ -190,11 +191,15 @@ public class Intervention extends BaseEntity {
         this.commentaireAdmin = (texte == null || texte.isBlank()) ? null : texte.trim();
     }
 
+    /**
+     * Ajoute une prestation au dossier. Refuse hors EN_COURS (RM-14) : voir
+     * {@link #exigerAjoutEnCours()}.
+     */
     public LigneIntervention ajouterLigneMainOeuvre(be.autoservplus.catalogue.domain.Prestation prestation,
                                                     short quantite,
                                                     BigDecimal prixUnitaireHtva,
                                                     BigDecimal tauxTva) {
-        exigerEditable();
+        exigerAjoutEnCours();
         LigneIntervention ligne = new LigneIntervention(this, prestation, quantite,
                 prixUnitaireHtva, tauxTva, true);
         this.lignes.add(ligne);
@@ -202,40 +207,73 @@ public class Intervention extends BaseEntity {
         return ligne;
     }
 
+    /** Ajoute une piece detachee au dossier. Meme garde que la main d oeuvre (RM-14). */
     public LigneIntervention ajouterLignePiece(be.autoservplus.catalogue.domain.Piece piece,
                                                short quantite) {
-        exigerEditable();
+        exigerAjoutEnCours();
         LigneIntervention ligne = new LigneIntervention(this, piece, quantite, true);
         this.lignes.add(ligne);
         appliquerSeuilDepassement(ligne);
         return ligne;
     }
 
+    /**
+     * <b>RM-14</b> : le CdC n autorise l ajout d une ligne que « en cours de
+     * realisation ». La garde est ici, et non dans le service, pour la meme raison
+     * que le blocage de {@link #reprendre()} : un invariant metier ne se defend pas
+     * a la couche web.
+     *
+     * <p>Elle est plus stricte que {@link StatutIntervention#estEditable()}, qui
+     * reste la regle du commentaire admin et du retrait de ligne. Trois etats
+     * editables perdent donc le droit d ajout, chacun pour une raison propre :</p>
+     * <ul>
+     *   <li>PLANIFIEE : rien n a commence. C etait le trou de RM-15 — un ajout ici
+     *       echappait au controle de seuil (voir {@link #appliquerSeuilDepassement}),
+     *       et le devis pouvait grossir sans que le membre ne soit jamais consulte.</li>
+     *   <li>SUSPENDUE : le travail est a l arret, le garage reprend d abord.</li>
+     *   <li>ATTENTE_VALIDATION_MEMBRE : une question est deja posee au membre ; on
+     *       n en empile pas une seconde avant sa reponse.</li>
+     * </ul>
+     *
+     * <p>Consequence structurelle : la seule facon d obtenir une ligne hors EN_COURS
+     * est le devis initial, pose par le constructeur depuis les lignes du RDV. Toute
+     * ligne passee par {@code ajouterLigne*} l a donc ete en EN_COURS, ou le seuil
+     * RM-15 est evalue sans exception. Le controle couvre tous les cas par
+     * construction, pas par enumeration.</p>
+     */
+    private void exigerAjoutEnCours() {
+        if (!statut.accepteAjoutDeLigne()) {
+            throw new IllegalStateException(
+                    "Une ligne ne peut être ajoutée qu'en cours d'intervention (RM-14). "
+                            + (statut == StatutIntervention.PLANIFIEE
+                                    ? "Démarrez l'intervention d'abord."
+                                    : "Statut actuel : %s.".formatted(statut)));
+        }
+    }
+
     // --- RM-15 : depassement de devis -----------------------------------------------
 
     /**
-     * Applique RM-15 a la ligne qui vient d etre ajoutee.
+     * Applique RM-15 a la ligne qui vient d etre ajoutee : le total facturable est
+     * compare au devis majore, et au-dela la ligne bascule en attente d accord,
+     * l intervention avec elle.
      *
-     * <p>Trois issues. Si l intervention attend deja une reponse du membre, la ligne
-     * rejoint simplement le lot en attente — on ne redemande pas un accord deja
-     * demande. Si le travail n a pas commence (PLANIFIEE), la regle ne s applique
-     * pas : le CdC garde la « poursuite » des travaux, et le garage ajuste encore
-     * son chiffrage. Sinon on compare le total facturable au devis majore : au-dela,
-     * la ligne bascule en attente et l intervention avec elle.</p>
+     * <p>Aucune garde de statut ici : {@link #exigerAjoutEnCours()} a deja etabli
+     * que l intervention est EN_COURS. C est ce qui ferme le trou de RM-15 — tant
+     * que l ajout etait ouvert a PLANIFIEE, une exemption de statut vivait dans
+     * cette methode et laissait passer un devis gonfle sans accord du membre.</p>
      *
      * <p>La comparaison est <b>cumulative</b> et porte sur le total, pas sur l apport
      * de la ligne seule : trois ajouts de 4 % chacun declenchent la regle, alors
      * qu aucun ne la declencherait isolement.</p>
      */
     private void appliquerSeuilDepassement(LigneIntervention nouvelle) {
-        if (statut == StatutIntervention.ATTENTE_VALIDATION_MEMBRE) {
-            nouvelle.mettreEnAttente();
-            return;
-        }
-        if (statut != StatutIntervention.EN_COURS && statut != StatutIntervention.SUSPENDUE) {
-            return;
-        }
-        if (totalFacturableHtva().compareTo(seuilDepassementHtva()) <= 0) {
+        // La ligne naît sans réponse. Sous le seuil, le garage tranche d office : le
+        // membre a accepte cette marge en acceptant le devis, on ne l interrompt pas
+        // pour 2 %. Au-dela, la ligne reste sans reponse — c est la question posee.
+        // Aucune ligne ne sort d ici indecise par omission : les deux cas ecrivent.
+        if (totalProposeHtva().compareTo(seuilDepassementHtva()) <= 0) {
+            nouvelle.accepter();
             return;
         }
         nouvelle.mettreEnAttente();
@@ -254,19 +292,20 @@ public class Intervention extends BaseEntity {
     }
 
     /**
-     * Le membre accepte le depassement : les lignes en attente entrent dans le
-     * total facturable et le garage reprend la main.
+     * Le membre accepte le depassement : les lignes en attente passent
+     * {@code accordMembre = true}, entrent dans le total facturable, et le garage
+     * reprend la main.
      */
     public void validerDepassement() {
         exigerAttenteValidation();
-        lignesEnAttente().forEach(LigneIntervention::valider);
+        lignesEnAttente().forEach(LigneIntervention::accepter);
         transitionVers(StatutIntervention.EN_COURS);
     }
 
     /**
-     * Le membre refuse le depassement : les lignes proposees sont marquees refusees
-     * — conservees comme trace du defaut constate, hors total, non executees — et le
-     * travail reprend sur le perimetre initial.
+     * Le membre refuse le depassement : les lignes proposees passent
+     * {@code accordMembre = false} — conservees comme trace du defaut constate, hors
+     * total, non executees — et le travail reprend sur le perimetre initial.
      */
     public void refuserDepassement() {
         exigerAttenteValidation();
@@ -283,11 +322,11 @@ public class Intervention extends BaseEntity {
     }
 
     public List<LigneIntervention> lignesEnAttente() {
-        return lignes.stream().filter(LigneIntervention::estEnAttente).toList();
+        return lignes.stream().filter(LigneIntervention::estEnAttenteValidation).toList();
     }
 
     public boolean aDesLignesEnAttente() {
-        return lignes.stream().anyMatch(LigneIntervention::estEnAttente);
+        return lignes.stream().anyMatch(LigneIntervention::estEnAttenteValidation);
     }
 
     public boolean retirerLigne(Long ligneId) {
@@ -325,9 +364,11 @@ public class Intervention extends BaseEntity {
     }
 
     /**
-     * Ce qui sera reellement facture : lignes validees et non refusees. Exclut donc
-     * a la fois les lignes en attente d accord du membre et celles qu il a refusees.
-     * C est ce total — et lui seul — qui s affiche au membre comme au garage.
+     * Ce qui sera reellement facture : le devis initial, plus les seuls ajouts que le
+     * membre a acceptes. Exclut donc a la fois les lignes <b>en attente</b> de sa
+     * reponse et celles qu il a <b>refusees</b> — la premiere n est pas encore acquise,
+     * la seconde ne le sera jamais. C est ce total, et lui seul, qui s affiche au
+     * membre comme au garage.
      */
     public BigDecimal totalFacturableHtva() {
         return sommeHtva(LigneIntervention::estFacturable);
@@ -338,7 +379,7 @@ public class Intervention extends BaseEntity {
      * lignes en attente. Sert a lui presenter le montant sur lequel il se prononce.
      */
     public BigDecimal totalProposeHtva() {
-        return sommeHtva(l -> !l.isRefusee());
+        return sommeHtva(l -> !l.estRefusee());
     }
 
     public BigDecimal totalFacturableTvac() {

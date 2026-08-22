@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -103,5 +104,36 @@ class AdminInterventionTemplatesIT {
                 .andExpect(content().string(containsString("marie@exemple.be")))
                 .andExpect(content().string(containsString("Vidange")))
                 .andExpect(content().string(containsString("Démarrer")));
+    }
+
+    /**
+     * RM-14, defense en profondeur : le domaine refuse l ajout hors EN_COURS, l ecran
+     * ne doit pas y inviter. On verifie sur le rendu reel, pas sur le flag du DTO —
+     * c est le template qui decide ce que le garage voit.
+     */
+    @Test
+    @DisplayName("PLANIFIEE : pas de formulaire d'ajout de ligne, mais l'explication (RM-14)")
+    void ajoutDeLigneMasqueEnPlanifiee() throws Exception {
+        mvc.perform(get("/admin/interventions/{ref}", reference))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("Ajouter une prestation"))))
+                .andExpect(content().string(containsString(
+                        "Démarrez l'intervention pour pouvoir y ajouter des prestations")))
+                // Le commentaire client reste editable : il ne peut pas gonfler le devis.
+                .andExpect(content().string(containsString("Commentaire pour le client")));
+    }
+
+    @Test
+    @DisplayName("EN_COURS : le formulaire d'ajout de ligne apparait")
+    void ajoutDeLigneVisibleEnCours() throws Exception {
+        Intervention it = interventions.findByReference(reference).orElseThrow();
+        it.demarrer(java.time.Instant.parse("2026-12-01T09:00:00Z"));
+        interventions.saveAndFlush(it);
+
+        mvc.perform(get("/admin/interventions/{ref}", reference))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Ajouter une prestation")))
+                .andExpect(content().string(not(containsString(
+                        "Démarrez l'intervention pour pouvoir y ajouter des prestations"))));
     }
 }

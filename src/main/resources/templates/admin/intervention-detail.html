@@ -155,7 +155,11 @@
         </tfoot>
     </table>
 
-    <div th:if="${intervention.estEditable()}">
+    <!-- RM-14 : l'ajout n'est ouvert qu'en cours de réalisation. Le domaine le refuse
+         ailleurs (exigerAjoutEnCours) ; on n'invite pas à une action condamnée.
+         Le formulaire est donc conditionné à peutAjouterLigne, plus étroit que
+         estEditable qui régit encore le commentaire et le retrait de ligne. -->
+    <div th:if="${intervention.peutAjouterLigne()}">
         <h3>Ajouter une prestation</h3>
         <form th:action="@{/admin/interventions/{ref}/lignes(ref=${intervention.reference()})}"
               method="post" class="formulaire">
@@ -173,7 +177,23 @@
             </div>
             <button type="submit" class="btn-cta">Ajouter</button>
         </form>
+    </div>
 
+    <!-- L'écran reste explicite plutôt que muet : le garage doit comprendre pourquoi
+         le formulaire n'est pas là, et quoi faire pour l'obtenir. -->
+    <p class="aide" th:if="${intervention.estEditable() and !intervention.peutAjouterLigne()}">
+        <span th:if="${intervention.statut() == 'PLANIFIEE'}">
+            Démarrez l'intervention pour pouvoir y ajouter des prestations (RM-14).
+        </span>
+        <span th:if="${intervention.statut() == 'SUSPENDUE'}">
+            Reprenez l'intervention pour pouvoir y ajouter des prestations (RM-14).
+        </span>
+        <span th:if="${intervention.statut() == 'ATTENTE_VALIDATION_MEMBRE'}">
+            Aucun ajout tant que le client n'a pas répondu sur le dépassement en cours (RM-15).
+        </span>
+    </p>
+
+    <div th:if="${intervention.estEditable()}">
         <h3>Commentaire pour le client</h3>
         <form th:action="@{/admin/interventions/{ref}/commentaire(ref=${intervention.reference()})}"
               method="post" class="formulaire">

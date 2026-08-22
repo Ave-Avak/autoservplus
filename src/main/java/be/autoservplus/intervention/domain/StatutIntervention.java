@@ -33,20 +33,16 @@ public enum StatutIntervention {
      *
      * <p>PLANIFIEE peut demarrer ou etre annulee (avant tout travail).
      * EN_COURS peut se suspendre, passer en attente de validation membre,
-     * se terminer, ou etre annulee. SUSPENDUE reprend en EN_COURS, bascule en
-     * ANNULEE, ou passe en ATTENTE_VALIDATION_MEMBRE si le garage chiffre un
-     * depassement pendant la suspension (cas courant : le devis explose une fois
-     * la piece diagnostiquee, travail a l arret). ATTENTE_VALIDATION_MEMBRE
-     * reprend en EN_COURS ou bascule en ANNULEE.
-     * TERMINEE et ANNULEE sont terminaux : aucune sortie, meme pour
+     * se terminer, ou etre annulee. SUSPENDUE reprend en EN_COURS ou bascule en
+     * ANNULEE. ATTENTE_VALIDATION_MEMBRE reprend en EN_COURS ou bascule en
+     * ANNULEE. TERMINEE et ANNULEE sont terminaux : aucune sortie, meme pour
      * correction (une correction post-facturation passera par un avoir).</p>
      *
-     * <p>Note d ecart : le CdC (table 3.8) ne liste pas explicitement
-     * SUSPENDUE -&gt; ATTENTE_VALIDATION_MEMBRE. Elle est ajoutee ici parce que
-     * {@link #estEditable()} autorise le garage a chiffrer une ligne en
-     * suspension : sans cette transition, un depassement constate a l arret
-     * echapperait a RM-15. PLANIFIEE reste volontairement hors du dispositif :
-     * la regle garde la « poursuite » des travaux, or rien n a commence.</p>
+     * <p>Aucun ecart avec le CdC (table 3.8). ATTENTE_VALIDATION_MEMBRE n a
+     * qu une seule entree, depuis EN_COURS, parce que c est le seul etat ou
+     * {@link #accepteAjoutDeLigne()} laisse chiffrer une ligne : la seule cause
+     * d un depassement est un ajout, donc la seule origine possible de la bascule
+     * est l etat ou l ajout est permis.</p>
      *
      * <p>Self-loops toujours refuses : aucune branche ne retourne
      * {@code cible == this}.</p>
@@ -58,21 +54,38 @@ public enum StatutIntervention {
                                               || cible == ATTENTE_VALIDATION_MEMBRE
                                               || cible == TERMINEE
                                               || cible == ANNULEE;
-            case SUSPENDUE                 -> cible == EN_COURS
-                                              || cible == ATTENTE_VALIDATION_MEMBRE
-                                              || cible == ANNULEE;
+            case SUSPENDUE                 -> cible == EN_COURS || cible == ANNULEE;
             case ATTENTE_VALIDATION_MEMBRE -> cible == EN_COURS || cible == ANNULEE;
             case TERMINEE, ANNULEE         -> false;
         };
     }
 
     /**
-     * L intervention est modifiable (lignes, commentaire admin) tant qu elle
-     * n est pas terminale. Une fois TERMINEE (facturation branchee) ou
+     * L intervention est modifiable (commentaire admin, retrait de ligne) tant
+     * qu elle n est pas terminale. Une fois TERMINEE (facturation branchee) ou
      * ANNULEE, plus aucune ecriture n est autorisee.
+     *
+     * <p>Ne couvre <b>pas</b> l ajout de ligne, plus restrictif : voir
+     * {@link #accepteAjoutDeLigne()}.</p>
      */
     public boolean estEditable() {
         return this != TERMINEE && this != ANNULEE;
+    }
+
+    /**
+     * Le dossier accepte-t-il une nouvelle ligne ? <b>RM-14</b> : uniquement
+     * pendant la realisation. Le CdC ouvre l ajout « en cours d intervention »
+     * et nulle part ailleurs — ni avant le demarrage, ni a l arret, ni pendant
+     * qu une question est posee au membre.
+     *
+     * <p>Source de verite unique de la regle : l entite la fait respecter, le DTO
+     * admin s en sert pour n afficher le formulaire d ajout que la ou il aboutira.
+     * Retirer une ligne ou commenter reste regi par {@link #estEditable()} : ces
+     * deux actions ne peuvent pas gonfler le devis, elles n ont pas a etre gardees
+     * aussi etroitement.</p>
+     */
+    public boolean accepteAjoutDeLigne() {
+        return this == EN_COURS;
     }
 
     /**

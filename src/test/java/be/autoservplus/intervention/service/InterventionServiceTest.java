@@ -118,7 +118,7 @@ class InterventionServiceTest {
         assertThat(creee.devisReferenceHtva()).isEqualByComparingTo("49.00");
         assertThat(creee.getLignes()).allSatisfy(l -> {
             assertThat(l.isAjouteeEnCours()).isFalse();
-            assertThat(l.isValidee()).isTrue();
+            assertThat(l.estFacturable()).isTrue();
         });
     }
 
@@ -305,6 +305,30 @@ class InterventionServiceTest {
                     .isInstanceOf(RessourceIntrouvableException.class);
             assertThatThrownBy(() -> service.demandeValidation(ref, "intrus@exemple.be"))
                     .isInstanceOf(RessourceIntrouvableException.class);
+        }
+
+        /**
+         * RM-14 vu du service : le trou de RM-15 se refermait a la source. Un ajout en
+         * PLANIFIEE ne passait par aucun controle de seuil ; il est desormais refuse,
+         * donc toute ligne parvenue au dossier a franchi le controle. Rien n est
+         * persiste, et aucun courriel de depassement ne part.
+         */
+        @Test
+        @DisplayName("ajout en PLANIFIEE : refuse, rien n'est ecrit, aucun courriel (RM-14)")
+        void ajoutRefuseAvantDemarrage() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            when(interventions.findByReference(it.getReference())).thenReturn(Optional.of(it));
+            Prestation chere = prestationA("500.00");
+
+            assertThatThrownBy(() -> service.ajouterLigneMainOeuvre(
+                    it.getReference(), chere.getReference(), (short) 1))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("RM-14");
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.PLANIFIEE);
+            assertThat(it.getLignes()).hasSize(1);
+            verify(interventions, never()).saveAndFlush(any());
+            verify(courriel, never()).envoyerDemandeValidationDepassement(any(), any(), any());
         }
 
         @Test
