@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${titre} + ' — AutoServ+'">Nouvelle prestation — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}" th:text="#{nav.prestations}">Prestations</a></li>
+            <li><a th:href="@{/pieces}" th:text="#{nav.pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <p><a th:href="@{/admin/catalogue/prestations}"
+          th:text="'← ' + #{admin.catalogue.retour}">← Retour à la liste</a></p>
+
+    <h1 th:text="${titre}">Nouvelle prestation</h1>
+
+    <form class="formulaire" method="post" th:object="${formulaire}" novalidate
+          th:action="${edition}
+              ? @{/admin/catalogue/prestations/{ref}/modifier(ref=${reference})}
+              : @{/admin/catalogue/prestations}">
+
+        <div class="champ">
+            <label for="codeCategorie" th:text="#{admin.catalogue.champ.categorie}">Catégorie</label>
+            <select id="codeCategorie" th:field="*{codeCategorie}" required>
+                <option value="" th:text="#{admin.catalogue.champ.categorie-choisir}">— Choisir —</option>
+                <option th:each="c : ${categories}" th:value="${c.code}"
+                        th:text="${c.libelle}">Entretien</option>
+            </select>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('codeCategorie')}"
+               th:errors="*{codeCategorie}"></p>
+        </div>
+
+        <!-- Le code identifie techniquement la prestation : saisissable a la creation,
+             affiche mais fige a l'edition (champ cache pour la validation, ignore par
+             le service). -->
+        <div class="champ" th:unless="${edition}">
+            <label for="code" th:text="#{admin.catalogue.champ.code}">Code</label>
+            <input type="text" id="code" th:field="*{code}" maxlength="40" required>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('code')}" th:errors="*{code}"></p>
+        </div>
+        <div class="champ" th:if="${edition}">
+            <label for="code" th:text="#{admin.catalogue.champ.code}">Code</label>
+            <input type="text" id="code" th:value="${formulaire.code}" disabled
+                   aria-describedby="aide-code">
+            <input type="hidden" th:field="*{code}">
+            <p id="aide-code" class="texte-info"
+               th:text="#{admin.catalogue.champ.code-immuable}">Le code est définitif.</p>
+        </div>
+
+        <div class="champ">
+            <label for="libelle" th:text="#{admin.catalogue.champ.nom}">Nom</label>
+            <input type="text" id="libelle" th:field="*{libelle}" maxlength="150" required>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('libelle')}" th:errors="*{libelle}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="description">
+                <span th:text="#{admin.catalogue.champ.description}">Description</span>
+                <span class="champ-facultatif" th:text="#{admin.catalogue.champ.facultatif}">(facultatif)</span>
+            </label>
+            <textarea id="description" th:field="*{description}" rows="4"></textarea>
+        </div>
+
+        <div class="champ">
+            <label for="prixHtva" th:text="#{admin.catalogue.champ.prix}">Prix HTVA (€)</label>
+            <input type="number" id="prixHtva" th:field="*{prixHtva}" min="0" step="0.01" required>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('prixHtva')}" th:errors="*{prixHtva}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="tauxTva" th:text="#{admin.catalogue.champ.taux}">Taux de TVA (%)</label>
+            <select id="tauxTva" th:field="*{tauxTva}" required>
+                <option th:each="t : ${tauxAdmis}" th:value="${t}" th:text="${t} + ' %'">21 %</option>
+            </select>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('tauxTva')}" th:errors="*{tauxTva}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="dureeMinutes" th:text="#{admin.catalogue.champ.duree}">Durée estimée (minutes)</label>
+            <input type="number" id="dureeMinutes" th:field="*{dureeMinutes}" min="1" step="1" required>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('dureeMinutes')}" th:errors="*{dureeMinutes}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="actif">
+                <input type="checkbox" id="actif" th:field="*{actif}">
+                <span th:text="#{admin.catalogue.champ.actif}">Visible au catalogue public (actif)</span>
+            </label>
+        </div>
+
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{admin.catalogue.enregistrer}">Enregistrer</button>
+            <a th:href="@{/admin/catalogue/prestations}" th:text="#{admin.catalogue.retour}">Retour à la liste</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>

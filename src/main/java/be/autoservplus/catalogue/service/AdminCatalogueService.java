@@ -222,14 +222,16 @@ public class AdminCatalogueService {
     public PropositionSuppression propositionSuppressionPrestation(UUID reference) {
         Prestation prestation = chargerPrestation(reference);
         return new PropositionSuppression(prestation.getReference(), prestation.getCode(),
-                prestation.getLibelle(), prestations.nombreReferencesHistoriques(prestation.getId()));
+                prestation.getLibelle(), prestations.nombreReferencesHistoriques(prestation.getId()),
+                prestation.isActif());
     }
 
     /** Diagnostic RM-29 pour l ecran de confirmation : l action adequate est proposee. */
     public PropositionSuppression propositionSuppressionPiece(UUID reference) {
         Piece piece = chargerPiece(reference);
         return new PropositionSuppression(piece.getReference(), piece.getReferenceFabricant(),
-                piece.getLibelle(), pieces.nombreReferencesHistoriques(piece.getId()));
+                piece.getLibelle(), pieces.nombreReferencesHistoriques(piece.getId()),
+                piece.isActif());
     }
 
     /**

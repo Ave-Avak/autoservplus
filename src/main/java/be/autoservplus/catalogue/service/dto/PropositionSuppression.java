@@ -14,7 +14,8 @@ public record PropositionSuppression(
         UUID reference,
         String identifiant,
         String libelle,
-        long nombreReferences) {
+        long nombreReferences,
+        boolean actif) {
 
     public boolean suppressionPossible() {
         return nombreReferences == 0;

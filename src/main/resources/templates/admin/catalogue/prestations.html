@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.catalogue.prestations.titre} + ' — AutoServ+'">Catalogue — prestations — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}" th:text="#{nav.prestations}">Prestations</a></li>
+            <li><a th:href="@{/pieces}" th:text="#{nav.pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <p>
+        <strong th:text="#{admin.catalogue.nav.prestations}">Gérer les prestations</strong>
+        ·
+        <a th:href="@{/admin/catalogue/pieces}" th:text="#{admin.catalogue.nav.pieces}">Gérer les pièces</a>
+    </p>
+
+    <h1 th:text="#{admin.catalogue.prestations.titre}">Catalogue — prestations</h1>
+
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+
+    <p class="actions-page">
+        <a class="btn-cta" th:href="@{/admin/catalogue/prestations/nouvelle}"
+           th:text="#{admin.catalogue.action.nouvelle-prestation}">Nouvelle prestation</a>
+    </p>
+
+    <p th:if="${prestations.isEmpty()}" class="message" th:text="#{admin.catalogue.vide}">
+        Aucun élément dans le catalogue.
+    </p>
+
+    <table class="tableau" th:unless="${prestations.isEmpty()}">
+        <thead>
+        <tr>
+            <th th:text="#{admin.catalogue.colonne.code}">Code</th>
+            <th th:text="#{admin.catalogue.colonne.nom}">Nom</th>
+            <th th:text="#{admin.catalogue.colonne.categorie}">Catégorie</th>
+            <th th:text="#{admin.catalogue.colonne.prix}">Prix HTVA</th>
+            <th th:text="#{admin.catalogue.colonne.taux}">TVA</th>
+            <th th:text="#{admin.catalogue.colonne.duree}">Durée</th>
+            <th th:text="#{admin.catalogue.colonne.statut}">Statut</th>
+            <th><span class="visuellement-cache" th:text="#{admin.catalogue.colonne.actions}">Actions</span></th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="p : ${prestations}">
+            <td th:text="${p.identifiant()}">VID</td>
+            <td th:text="${p.libelle()}">Vidange</td>
+            <td th:text="${p.categorieLibelle()}">Entretien</td>
+            <td th:text="${p.prixHtva()} + ' €'">75,00 €</td>
+            <td th:text="${p.tauxTva()} + ' %'">21 %</td>
+            <td th:text="${p.dureeMinutes()} + ' min'">60 min</td>
+            <td>
+                <span th:if="${p.actif()}" class="badge badge-confirme"
+                      th:text="#{admin.catalogue.statut.actif}">Actif</span>
+                <span th:unless="${p.actif()}" class="badge badge-annule"
+                      th:text="#{admin.catalogue.statut.inactif}">Inactif</span>
+            </td>
+            <td>
+                <a th:href="@{/admin/catalogue/prestations/{ref}/modifier(ref=${p.reference()})}"
+                   th:text="#{admin.catalogue.action.modifier}">Modifier</a>
+                <a th:href="@{/admin/catalogue/prestations/{ref}/supprimer(ref=${p.reference()})}"
+                   th:text="#{admin.catalogue.action.retirer}">Retirer</a>
+                <form th:if="${p.actif()}" method="post"
+                      th:action="@{/admin/catalogue/prestations/{ref}/desactiver(ref=${p.reference()})}">
+                    <button type="submit" class="lien-bouton"
+                            th:text="#{admin.catalogue.action.desactiver}">Désactiver</button>
+                </form>
+                <form th:unless="${p.actif()}" method="post"
+                      th:action="@{/admin/catalogue/prestations/{ref}/activer(ref=${p.reference()})}">
+                    <button type="submit" class="lien-bouton"
+                            th:text="#{admin.catalogue.action.activer}">Réactiver</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>
