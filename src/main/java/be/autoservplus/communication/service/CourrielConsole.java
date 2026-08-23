@@ -138,4 +138,34 @@ public class CourrielConsole implements ServiceCourriel {
                 """, details.prenom(), details.adresseEmail(),
                 details.numeroCommande(), details.prenom(), details.montantTvac());
     }
+
+    @Override
+    public void envoyerDecisionRetractation(DetailsRetractationCourriel details) {
+        if (details.acceptee()) {
+            JOURNAL.info("""
+
+                    ---------- COURRIEL SIMULE : retractation acceptee ----------
+                    Destinataire : {} <{}>
+                    Commande     : {}
+                    Bonjour {}, votre demande d'annulation est acceptee.
+                    Un remboursement de {} a ete demande a notre prestataire
+                    de paiement ; il apparaitra sur le compte ayant servi a payer.
+                    Note de credit : {} — telechargeable depuis « Mes commandes ».
+                    -------------------------------------------------------------
+                    """, details.prenom(), details.adresseEmail(),
+                    details.numeroCommande(), details.prenom(),
+                    details.montantTvac(), details.numeroAvoir());
+            return;
+        }
+        JOURNAL.info("""
+
+                ---------- COURRIEL SIMULE : retractation refusee ----------
+                Destinataire : {} <{}>
+                Commande     : {}
+                Bonjour {}, votre demande d'annulation n'a pas pu etre acceptee.
+                Motif : {}
+                -----------------------------------------------------------
+                """, details.prenom(), details.adresseEmail(),
+                details.numeroCommande(), details.prenom(), details.motifRefus());
+    }
 }

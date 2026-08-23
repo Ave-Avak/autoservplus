@@ -55,4 +55,20 @@ public interface ServiceCourriel {
      * envoye apres commit du passage a PAYEE — jamais pendant la transaction.
      */
     void envoyerConfirmationPaiement(DetailsPaiementCourriel details);
+
+    /**
+     * Le garage a tranche une demande de retractation (F30, RM-23), en l acceptant
+     * ou en la refusant. Envoye apres commit de la decision.
+     *
+     * <p>Le refus est notifie autant que l acceptation : le professionnel qui oppose
+     * une exception au droit de retractation doit en informer le consommateur, et un
+     * membre laisse sans reponse ne saurait pas que son dossier a ete traite.</p>
+     *
+     * <p>Le message <b>lie</b> vers le telechargement de la note de credit, il n en
+     * attache pas le binaire — meme choix que pour la facture : un PDF en piece
+     * jointe echappe a l authentification, se retrouve dans les sauvegardes de
+     * messagerie du destinataire, et alourdit un envoi que le membre relira peut-etre
+     * jamais.</p>
+     */
+    void envoyerDecisionRetractation(DetailsRetractationCourriel details);
 }
