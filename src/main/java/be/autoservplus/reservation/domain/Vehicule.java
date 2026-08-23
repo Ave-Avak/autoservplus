@@ -136,6 +136,32 @@ public class Vehicule extends BaseEntity {
         this.numeroChassis = numeroChassis;
     }
 
+    /**
+     * Vide le vehicule de ses donnees identifiantes et le retire du parc (F23).
+     *
+     * <p>Applique aux vehicules qu un historique conserve empeche de supprimer
+     * physiquement (rendez-vous, intervention, reservation de parking, toutes en
+     * {@code ON DELETE RESTRICT}). La plaque est une donnee a caractere personnel :
+     * elle identifie indirectement une personne aupres de la DIV. Le numero de
+     * chassis en est une autre, et le kilometrage renseigne sur les habitudes de
+     * deplacement — les trois partent.</p>
+     *
+     * <p>Marque, modele et motorisation restent : ils decrivent un objet technique,
+     * ne designent personne, et sont ce qui rend l historique d atelier encore
+     * lisible pour le garage.</p>
+     *
+     * <p>La plaque de substitution doit rester unique : {@code uq_vehicule_plaque_active}
+     * s applique a tout vehicule non supprime logiquement, y compris anonymise.
+     * L appelant la derive de l identifiant technique.</p>
+     */
+    public void anonymiser(String plaqueMarqueur) {
+        this.plaque = Objects.requireNonNull(plaqueMarqueur, "plaqueMarqueur");
+        this.numeroChassis = null;
+        this.kilometrage = null;
+        this.annee = null;
+        this.actif = false;
+    }
+
     public Long getId() { return id; }
     public UUID getReference() { return reference; }
     public Utilisateur getMembre() { return membre; }

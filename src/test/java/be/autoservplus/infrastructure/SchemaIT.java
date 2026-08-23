@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -14,6 +15,8 @@ import org.springframework.transaction.annotation.Transactional;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -121,6 +124,153 @@ class SchemaIT {
                 "SELECT count(*) FROM information_schema.tables WHERE table_name = 'creneau_horaire'",
                 Integer.class);
         assertThat(nombre).isZero();
+    }
+
+    // --- F23 : suppression de compte par anonymisation (V28) --------------------------
+
+    @Test
+    @DisplayName("anonymise_le existe et est NULLABLE : c'est un marqueur, pas un etat force")
+    void marqueurDAnonymisation() {
+        String nullable = jdbc.queryForObject(
+                "SELECT is_nullable FROM information_schema.columns "
+                        + "WHERE table_name = 'utilisateur' AND column_name = 'anonymise_le'",
+                String.class);
+        assertThat(nullable)
+                .as("Un compte vivant n a pas de date d anonymisation")
+                .isEqualTo("YES");
+    }
+
+    @Test
+    @DisplayName("SUPPRIME etait deja admis par ck_utilisateur_statut : rien n a ete elargi")
+    void statutSupprimeDejaAdmis() {
+        // Verification faite avant d ecrire V28 : le socle V1 portait deja la valeur,
+        // il n y avait pas de valeur ANONYMISE a inventer.
+        assertThat(jdbc.queryForObject(
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint "
+                        + "WHERE conname = 'ck_utilisateur_statut'", String.class))
+                .contains("SUPPRIME");
+    }
+
+    @Test
+    @DisplayName("la liste des colonnes balayees couvre TOUT le schema : une table oubliee casse la build")
+    void listeDesTracesExhaustive() {
+        // C est la garde anti-peremption de la liste enumeree. Elle remplace la
+        // derivation au runtime : celle-ci couvrait tout automatiquement mais ne
+        // s enoncait pas, alors qu un effacement legal doit pouvoir dire exactement
+        // ce qu il ecrase. Ici la liste est ecrite noir sur blanc dans V28, et ce
+        // test echoue le jour ou une table arrive sans y etre ajoutee — au moment ou
+        // l on peut encore agir, pas au moment de l effacement.
+        List<String> oubliees = jdbc.queryForList("""
+                SELECT c.table_name || '.' || c.column_name
+                FROM information_schema.columns c
+                WHERE c.table_schema = 'public'
+                  AND c.column_name IN ('created_by', 'updated_by')
+                  AND NOT EXISTS (
+                      SELECT 1 FROM fn_tables_traces_audit() d
+                      WHERE d.nom_table = c.table_name AND d.nom_colonne = c.column_name)
+                ORDER BY 1
+                """, String.class);
+
+        assertThat(oubliees)
+                .as("Colonnes d audit absentes de fn_tables_traces_audit() : "
+                        + "les ajouter a V28, sinon l adresse du membre y survivrait")
+                .isEmpty();
+    }
+
+    @Test
+    @DisplayName("la liste ne declare aucune colonne fantome")
+    void listeSansColonneFantome() {
+        // L inverse du test precedent : une entree qui ne correspond a rien ferait
+        // echouer le balayage a l execution, c est-a-dire pendant une suppression de
+        // compte — le pire moment pour decouvrir une faute de frappe.
+        List<String> fantomes = jdbc.queryForList("""
+                SELECT d.nom_table || '.' || d.nom_colonne
+                FROM fn_tables_traces_audit() d
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM information_schema.columns c
+                    WHERE c.table_schema = 'public'
+                      AND c.table_name = d.nom_table AND c.column_name = d.nom_colonne)
+                ORDER BY 1
+                """, String.class);
+
+        assertThat(fantomes).isEmpty();
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("le balayage remplace l'adresse par le jeton, pas par NULL")
+    void balayageDesTracesDAudit() {
+        jdbc.update("INSERT INTO categorie (code, libelle, type, created_by, updated_by) "
+                + "VALUES ('IT-ANON', 'Test', 'PIECE', 'cible@exemple.be', 'cible@exemple.be')");
+
+        Integer modifiees = jdbc.queryForObject(
+                "SELECT fn_anonymiser_traces_audit('cible@exemple.be', 'anonyme-0@supprime.invalid')",
+                Integer.class);
+
+        assertThat(modifiees).isGreaterThanOrEqualTo(2);
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM categorie WHERE created_by = 'cible@exemple.be' "
+                        + "OR updated_by = 'cible@exemple.be'", Integer.class)).isZero();
+        // Le jeton et non NULL : les colonnes sont nullables, mais savoir QUE la ligne
+        // a ete creee par un compte desormais anonymise reste de la tracabilite.
+        assertThat(jdbc.queryForObject(
+                "SELECT created_by FROM categorie WHERE code = 'IT-ANON'", String.class))
+                .isEqualTo("anonyme-0@supprime.invalid");
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("sur une facture, le balayage passe mais le trigger protege toujours le comptable")
+    void balayageCompatibleAvecLImmuabilite() {
+        // La reponse a « vous disiez ne jamais toucher une facture » : on ne touche
+        // que des metadonnees techniques d audit. Le contenu comptable, lui, reste
+        // aussi verrouille qu avant — les deux assertions le prouvent cote a cote.
+        Long membreId = jdbc.queryForObject(
+                "SELECT id FROM utilisateur WHERE email = 'admin@autoservplus.be'", Long.class);
+        Long commandeId = jdbc.queryForObject("""
+                INSERT INTO commande (numero, membre_id, statut, montant_htva, montant_tva, montant_tvac)
+                VALUES ('CMD-IT-ANON', ?, 'PAYEE', 10.00, 2.10, 12.10) RETURNING id
+                """, Long.class, membreId);
+        Long factureId = jdbc.queryForObject("""
+                INSERT INTO facture (numero, exercice, sequence_annuelle, commande_id, membre_id,
+                                     montant_htva, montant_tva, montant_tvac, created_by, updated_by)
+                VALUES ('2026-9001', 2026, 9001, ?, ?, 10.00, 2.10, 12.10,
+                        'cible@exemple.be', 'cible@exemple.be') RETURNING id
+                """, Long.class, commandeId, membreId);
+
+        jdbc.queryForObject(
+                "SELECT fn_anonymiser_traces_audit('cible@exemple.be', 'anonyme-0@supprime.invalid')",
+                Integer.class);
+
+        // La trace d audit a bien ete anonymisee...
+        assertThat(jdbc.queryForObject(
+                "SELECT created_by FROM facture WHERE id = ?", String.class, factureId))
+                .isEqualTo("anonyme-0@supprime.invalid");
+        // ... et le montant, lui, reste intouchable.
+        assertThat(jdbc.queryForObject(
+                "SELECT montant_tvac FROM facture WHERE id = ?",
+                java.math.BigDecimal.class, factureId)).isEqualByComparingTo("12.10");
+        // Le trigger leve un RAISE EXCEPTION plpgsql (SQLSTATE P0001), que Spring ne
+        // classe pas en violation d integrite comme un CHECK : c est le message qui
+        // fait foi, et il vient bien de fn_facture_immuable.
+        assertThatThrownBy(() -> jdbc.update(
+                "UPDATE facture SET montant_tvac = 99.99 WHERE id = ?", factureId))
+                .isInstanceOf(DataAccessException.class)
+                .hasMessageContaining("immuable");
+    }
+
+    @Test
+    @DisplayName("le balayage ne fait rien sur une adresse absente ou identique au jeton")
+    void balayageSansEffet() {
+        assertThat(jdbc.queryForObject(
+                "SELECT fn_anonymiser_traces_audit('inconnu@exemple.be', 'jeton')", Integer.class))
+                .isZero();
+        assertThat(jdbc.queryForObject(
+                "SELECT fn_anonymiser_traces_audit('meme', 'meme')", Integer.class))
+                .isZero();
+        assertThat(jdbc.queryForObject(
+                "SELECT fn_anonymiser_traces_audit(NULL, 'jeton')", Integer.class))
+                .isZero();
     }
 
     // --- F30 : retractation et note de credit (V27) -----------------------------------

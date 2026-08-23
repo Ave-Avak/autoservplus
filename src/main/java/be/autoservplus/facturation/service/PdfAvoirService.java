@@ -10,6 +10,7 @@ import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -47,15 +48,17 @@ public class PdfAvoirService {
     private final FactureService factureService;
     private final GenerateurPdfAvoir generateur;
     private final ArchiveComptable archive;
+    private final MessageSource messages;
 
     public PdfAvoirService(AvoirRepository avoirs, AvoirService avoirService,
                            FactureService factureService, GenerateurPdfAvoir generateur,
-                           ArchiveComptable archive) {
+                           ArchiveComptable archive, MessageSource messages) {
         this.avoirs = avoirs;
         this.avoirService = avoirService;
         this.factureService = factureService;
         this.generateur = generateur;
         this.archive = archive;
+        this.messages = messages;
     }
 
     /**
@@ -97,6 +100,7 @@ public class PdfAvoirService {
         Facture facture = avoir.getFacture();
         Commande commande = avoirService.commandeDe(avoir);
         Utilisateur membre = facture.getMembre();
+        Locale langue = Locale.forLanguageTag(membre.getLangue().name());
         List<DocumentFacture.LigneFacture> lignes = factureService.lignesDe(facture).stream()
                 .map(PdfAvoirService::ligneDe)
                 .toList();
@@ -108,7 +112,10 @@ public class PdfAvoirService {
                 commande.getNumero(),
                 avoir.getMotif(),
                 new DocumentFacture.ClientFacture(
-                        membre.getPrenom(), membre.getNom(),
+                        // Marqueur traduit si le compte a ete anonymise (F23) : le
+                        // document est emis dans la langue du client, meme regenere
+                        // apres son depart.
+                        membre.nomComplet(messages, langue),
                         membre.getRue(), membre.getNumeroRue(),
                         membre.getCodePostal(), membre.getLocalite(), membre.getPays(),
                         membre.getEmail()),
@@ -117,7 +124,7 @@ public class PdfAvoirService {
                 avoir.getMontantHtva(),
                 avoir.getMontantTva(),
                 avoir.getMontantTvac(),
-                Locale.forLanguageTag(membre.getLangue().name()));
+                langue);
     }
 
     private static DocumentFacture.LigneFacture ligneDe(LignePanier ligne) {

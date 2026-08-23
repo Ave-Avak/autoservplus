@@ -45,7 +45,7 @@ class GenerateurPdfFactureTest {
     }
 
     private static DocumentFacture.ClientFacture marie() {
-        return new DocumentFacture.ClientFacture("Marie", "Dupont", "Avenue Louise", "250",
+        return new DocumentFacture.ClientFacture("Marie Dupont", "Avenue Louise", "250",
                 "1050", "Ixelles", "Belgique", "marie@exemple.be");
     }
 
@@ -176,7 +176,7 @@ class GenerateurPdfFactureTest {
         DocumentFacture sansAdresse = new DocumentFacture("2026-0043",
                 Instant.parse("2026-08-22T14:30:00Z"), "CMD-2026-0108",
                 Instant.parse("2026-08-22T14:28:00Z"),
-                new DocumentFacture.ClientFacture("Jean", "Sansadresse", null, null, null, null,
+                new DocumentFacture.ClientFacture("Jean Sansadresse", null, null, null, null,
                         "Belgique", "jean@exemple.be"),
                 List.of(new DocumentFacture.LigneFacture("Ampoule H7", 2,
                         new BigDecimal("9.90"), new BigDecimal("21.00"), new BigDecimal("19.80"))),

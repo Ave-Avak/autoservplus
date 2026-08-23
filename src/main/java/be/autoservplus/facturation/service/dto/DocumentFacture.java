@@ -31,20 +31,22 @@ public record DocumentFacture(
         BigDecimal totalTvac,
         Locale locale) {
 
-    /** Coordonnees du client telles qu elles etaient a l emission. */
+    /**
+     * Coordonnees du client telles qu elles etaient a l emission.
+     *
+     * <p>Le nom arrive <b>compose</b> plutot qu en prenom et nom separes : le document
+     * ne les affiche jamais separement, et un compte anonymise n a pas de prenom ni de
+     * nom mais un marqueur unique, traduit dans la langue du document (F23). Deux
+     * champs auraient force a couper ce marqueur en deux.</p>
+     */
     public record ClientFacture(
-            String prenom,
-            String nom,
+            String nomComplet,
             String rue,
             String numeroRue,
             String codePostal,
             String localite,
             String pays,
             String courriel) {
-
-        public String nomComplet() {
-            return "%s %s".formatted(prenom, nom);
-        }
 
         /**
          * Adresse sur une ligne, ou {@code null} si le membre n en a pas renseigne :

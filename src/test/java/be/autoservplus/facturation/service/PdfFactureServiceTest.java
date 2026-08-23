@@ -53,6 +53,7 @@ class PdfFactureServiceTest {
     @Mock private FactureService factureService;
     @Mock private GenerateurPdfFacture generateur;
     @Mock private ArchiveComptable archive;
+    @Mock private org.springframework.context.MessageSource messages;
 
     private PdfFactureService service;
 
@@ -62,7 +63,7 @@ class PdfFactureServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PdfFactureService(factures, factureService, generateur, archive);
+        service = new PdfFactureService(factures, factureService, generateur, archive, messages);
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie",
                 TypeUtilisateur.MEMBRE);
         marie.setLangue(Langue.nl);

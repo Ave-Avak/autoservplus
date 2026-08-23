@@ -6,8 +6,10 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.SQLRestriction;
+import org.springframework.context.MessageSource;
 
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -111,6 +113,14 @@ public class Utilisateur extends BaseEntity {
     @Column(name = "fonction", length = 80)
     private String fonction;
 
+    /**
+     * Horodatage de l anonymisation (F23, art. 17 RGPD). Marqueur d etat, <b>pas</b>
+     * une suppression logique : {@code deleted_at} reste vide pour que la ligne
+     * demeure jointe par les factures conservees.
+     */
+    @Column(name = "anonymise_le")
+    private Instant anonymiseLe;
+
     protected Utilisateur() {
         // requis par JPA
     }
@@ -179,6 +189,120 @@ public class Utilisateur extends BaseEntity {
         return prenom + " " + nom;
     }
 
+    /**
+     * Nom affichable dans la langue d un document.
+     *
+     * <p>Un compte anonymise rend le marqueur <b>traduit</b> ; un compte ordinaire rend
+     * son vrai nom, qui ne se traduit pas. Utile partout ou le document a une langue
+     * propre : une facture est emise dans celle du client, pas dans celle de la session
+     * qui la telecharge, et le PDF regenere apres anonymisation doit suivre la meme
+     * regle — un client neerlandophone ne doit pas recevoir « Client supprime ».</p>
+     *
+     * <p>Le {@link MessageSource} arrive en <b>parametre</b> et non en champ : l entite
+     * reste un POJO, sans dependance vers le contexte Spring. C est l appelant, qui
+     * connait deja la langue du document, qui fournit les deux.</p>
+     */
+    public String nomComplet(MessageSource messages, Locale locale) {
+        return estAnonymise()
+                ? messages.getMessage(CLE_MARQUEUR_ANONYME, null, locale)
+                : nomComplet();
+    }
+
+    // --- anonymisation (F23, article 17 RGPD) ---------------------------------------
+
+    /**
+     * Prenom et nom stockes pour un compte anonymise. Ils composent le marqueur dans la
+     * langue <b>par defaut</b> du projet (le francais), qui est celle du back-office :
+     * {@code nomComplet()} rend « Client supprimé ». Les documents multilingues, eux,
+     * passent par {@link #nomComplet(MessageSource, Locale)} et resolvent
+     * {@value #CLE_MARQUEUR_ANONYME}.
+     *
+     * <p>Un test verifie que ces deux constantes composent exactement la valeur
+     * francaise de la cle : les deux representations du marqueur ne peuvent pas
+     * diverger sans casser la build.</p>
+     */
+    public static final String PRENOM_ANONYME = "Client";
+    public static final String NOM_ANONYME = "supprimé";
+
+    /** Cle i18n du marqueur, pour les documents qui ont une langue propre. */
+    public static final String CLE_MARQUEUR_ANONYME = "compte.anonyme.nom-complet";
+
+    /**
+     * Pays d un compte anonymise. Marqueur d absence, et non un pays de substitution :
+     * reecrire « Belgique » sur le dossier d une personne qui resida ailleurs
+     * n anonymise pas, cela <b>affirme</b> une donnee peut-etre fausse. La colonne est
+     * NOT NULL, d ou un marqueur plutot que NULL — c est le meme tiret cadratin que les
+     * gabarits emploient deja pour dire « rien ».
+     */
+    public static final String PAYS_ANONYME = "—";
+
+    /**
+     * Vide le compte de toute donnee personnelle et le marque anonymise.
+     *
+     * <p><b>La ligne survit.</b> {@code deleted_at} n est deliberement pas renseigne :
+     * le {@code @SQLRestriction} de cette entite masquerait sinon la ligne de toutes
+     * les requetes, et une facture conservee sept ans ne pourrait plus resoudre son
+     * titulaire. L anonymisation vide, elle ne fait pas disparaitre.</p>
+     *
+     * <p><b>Les champs NOT NULL recoivent un marqueur, pas du vide.</b> {@code nom} et
+     * {@code prenom} portent {@code @NotBlank} : une chaine vide echouerait a la
+     * validation. Le couple retenu compose « Client supprime » par
+     * {@link #nomComplet()}, ce qui est exactement ce qu affichent les ecrans du
+     * back-office. {@code pays} recoit un marqueur d <b>absence</b> et non un pays de
+     * substitution : y remettre « Belgique » n anonymiserait pas, cela affirmerait une
+     * residence peut-etre fausse sur le dossier d une personne qui ne peut plus la
+     * corriger.</p>
+     *
+     * <p><b>Le hachage reste un vrai BCrypt.</b> L appelant fournit l empreinte d un
+     * secret aleatoire jete aussitot : la colonne fait 60 caracteres et la
+     * verification du mot de passe passe par l encodeur, une constante hors format
+     * ferait echouer la comparaison sur une exception au lieu d un refus propre.
+     * Aucune connexion n est possible, et personne ne connait le secret.</p>
+     *
+     * <p>Les traces de connexion (derniere connexion, tentatives, verrouillage) sont
+     * effacees avec le reste : ce sont des donnees comportementales, pas des donnees
+     * comptables.</p>
+     *
+     * @param jetonEmail     adresse de substitution, unique et non routable
+     * @param hachageInerte  empreinte BCrypt d un secret aleatoire perdu
+     * @throws IllegalStateException si le compte est deja anonymise, ou s il s agit
+     *         d un administrateur — F23 est un droit du membre sur son propre compte,
+     *         et anonymiser un administrateur romprait la tracabilite des decisions
+     *         qu il a signees (validations de retractation, historiques de catalogue)
+     */
+    public void anonymiser(String jetonEmail, String hachageInerte, Instant maintenant) {
+        if (anonymiseLe != null) {
+            throw new IllegalStateException("Ce compte est deja anonymise.");
+        }
+        if (estAdministrateur()) {
+            throw new IllegalStateException(
+                    "Un compte administrateur ne s anonymise pas : ses decisions sont tracees.");
+        }
+        this.email = Objects.requireNonNull(jetonEmail, "jetonEmail");
+        this.motDePasseHache = Objects.requireNonNull(hachageInerte, "hachageInerte");
+        this.anonymiseLe = Objects.requireNonNull(maintenant, "maintenant");
+        this.prenom = PRENOM_ANONYME;
+        this.nom = NOM_ANONYME;
+        this.telephone = null;
+        this.rue = null;
+        this.numeroRue = null;
+        this.codePostal = null;
+        this.localite = null;
+        this.pays = PAYS_ANONYME;
+        this.statut = StatutUtilisateur.SUPPRIME;
+        this.emailVerifie = false;
+        this.jetonVerification = null;
+        this.jetonExpiration = null;
+        this.derniereConnexion = null;
+        this.tentativesEchouees = 0;
+        this.verrouilleJusquA = null;
+        this.fonction = null;
+    }
+
+    public boolean estAnonymise() {
+        return anonymiseLe != null;
+    }
+
     public void changerMotDePasse(String nouvelleEmpreinte) {
         this.motDePasseHache = Objects.requireNonNull(nouvelleEmpreinte, "nouvelleEmpreinte");
         this.tentativesEchouees = 0;
@@ -234,6 +358,7 @@ public class Utilisateur extends BaseEntity {
     public void setLangue(Langue langue) { this.langue = langue; }
     public void setStatut(StatutUtilisateur statut) { this.statut = statut; }
     public void setFonction(String fonction) { this.fonction = fonction; }
+    public Instant getAnonymiseLe() { return anonymiseLe; }
 
     @Override
     public boolean equals(Object autre) {
