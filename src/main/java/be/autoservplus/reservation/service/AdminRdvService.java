@@ -14,6 +14,7 @@ import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.reservation.web.dto.RdvVueAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -57,15 +58,18 @@ public class AdminRdvService {
     private final ParametreAtelierRepository parametres;
     private final ServiceCourriel courriel;
     private final InterventionService interventions;
+    private final ApplicationEventPublisher evenements;
     private final Clock horloge;
 
     public AdminRdvService(RdvRepository rdvs, ParametreAtelierRepository parametres,
                            ServiceCourriel courriel, InterventionService interventions,
+                           ApplicationEventPublisher evenements,
                            Clock horloge) {
         this.rdvs = rdvs;
         this.parametres = parametres;
         this.courriel = courriel;
         this.interventions = interventions;
+        this.evenements = evenements;
         this.horloge = horloge;
     }
 
@@ -176,11 +180,19 @@ public class AdminRdvService {
      * Flush explicite pour observer l {@link OptimisticLockingFailureException} ici et
      * la traduire, plutot qu a la fermeture de transaction ou l on ne pourrait plus le
      * faire. La notification s execute apres ecriture reussie.
+     *
+     * <p>Point d ecriture <b>unique</b> des transitions : c est donc ici, et nulle part
+     * ailleurs, qu est publie {@link RdvStatutModifieEvent} (BL-6). Toute transition
+     * ajoutee plus tard a la machine a etats notifiera le membre sans qu on ait a y
+     * penser — l oubli n est pas possible. L evenement part meme si le courriel a
+     * echoue : les deux canaux sont independants, et {@code notifierSansEchouer} a deja
+     * absorbe l echec avant ce point.</p>
      */
     private Rdv ecrire(Rdv rdv, Consumer<Rdv> apresEcriture) {
         try {
             Rdv enregistre = rdvs.saveAndFlush(rdv);
             apresEcriture.accept(enregistre);
+            evenements.publishEvent(new RdvStatutModifieEvent(enregistre.getReference()));
             return enregistre;
         } catch (OptimisticLockingFailureException e) {
             throw new ConflitConcurrenceException(
