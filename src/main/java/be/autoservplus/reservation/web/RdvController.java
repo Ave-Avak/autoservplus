@@ -100,11 +100,17 @@ public class RdvController {
             redirection.addFlashAttribute("message",
                     "Votre demande " + rdv.getNumero() + " a bien été enregistrée. Le garage vous confirmera le rendez-vous.");
             return "redirect:/mes-rendez-vous";
-        } catch (PrestationIndisponibleException | AucunePrestationChoisieException
-                 | LimiteDemandesEnAttenteException e) {
-            // Le refus porte sur le choix de prestations : l erreur s ancre sous ce
-            // champ. Le plafond de demandes en attente y est ancre aussi — mapping
-            // historique conserve tel quel, a reevaluer separement.
+        } catch (LimiteDemandesEnAttenteException e) {
+            // Erreur GLOBALE, et non sous « prestations » ou elle etait ancree par
+            // heritage du refactor reservation. Le plafond porte sur le COMPTE : le
+            // membre a trop de demandes en attente, quelles que soient les
+            // prestations choisies. L ancrer sous un champ lui disait de corriger un
+            // choix qui n est pas en cause, et changer ce choix n aurait rien change.
+            erreurs.reject("rdv.limite-demandes", e.getMessage());
+            return retourFormulaire(membre, formulaire, modele);
+        } catch (PrestationIndisponibleException | AucunePrestationChoisieException e) {
+            // Ces deux-la visent bien le choix de prestations : l erreur s ancre sous
+            // ce champ, ou le membre peut agir.
             erreurs.addError(new FieldError("formulaire", "prestations", e.getMessage()));
             return retourFormulaire(membre, formulaire, modele);
         } catch (RegleMetierException e) {

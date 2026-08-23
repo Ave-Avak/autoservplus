@@ -1,6 +1,8 @@
 package be.autoservplus.reservation.web;
 
 import be.autoservplus.reservation.service.CreneauIndisponibleException;
+import org.springframework.validation.BindingResult;
+import be.autoservplus.reservation.service.LimiteDemandesEnAttenteException;
 import be.autoservplus.reservation.service.PrestationIndisponibleException;
 import be.autoservplus.reservation.service.RdvService;
 import be.autoservplus.reservation.service.VehiculeService;
@@ -18,6 +20,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
@@ -106,6 +109,30 @@ class RdvControllerFormulaireTest {
                 .andExpect(model().attributeHasFieldErrors("formulaire", "prestations"))
                 .andExpect(content().string(containsString("La prestation Vidange n est plus proposee.")))
                 .andExpect(content().string(not(containsString("[RM-"))));
+    }
+
+    @Test
+    @WithMockUser(username = "membre@exemple.be")
+    @DisplayName("plafond de demandes : erreur GLOBALE, pas sous « prestations »")
+    void plafondDemandesEnErreurGlobale() throws Exception {
+        stubsFormulaire();
+        when(rdvs.reserver(any(), any(), any(), any(), any()))
+                .thenThrow(new LimiteDemandesEnAttenteException(3));
+
+        mvc.perform(postReservation())
+                .andExpect(status().isOk())
+                // Le plafond porte sur le COMPTE : l'ancrer sous « prestations »
+                // disait au membre de corriger un choix qui n'est pas en cause.
+                // Zero erreur de CHAMP, exactement une erreur GLOBALE.
+                .andExpect(resultat -> {
+                    BindingResult liaison = (BindingResult) resultat.getModelAndView()
+                            .getModel().get(BindingResult.MODEL_KEY_PREFIX + "formulaire");
+                    assertThat(liaison.getFieldErrorCount()).isZero();
+                    assertThat(liaison.getGlobalErrorCount()).isEqualTo(1);
+                })
+                // ... et le message doit rester visible : le gabarit ne rendait
+                // aucune erreur globale avant cette correction.
+                .andExpect(content().string(containsString("3 demandes en attente")));
     }
 
     @Test

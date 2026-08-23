@@ -44,6 +44,14 @@
           th:action="@{/mes-rendez-vous/nouveau}" th:object="${formulaire}" method="post"
           class="formulaire formulaire-rdv" novalidate>
 
+        <!-- Erreurs qui ne visent aucun champ : un plafond de demandes en attente
+             porte sur le compte, pas sur le vehicule ni sur les prestations. Les
+             ancrer sous un champ dirait au membre de corriger un choix qui n'est
+             pas en cause. role=alert : l'erreur survient apres coup, un lecteur
+             d'ecran doit l'annoncer sans qu'on ait a lui redonner le focus. -->
+        <p class="erreur" role="alert" th:if="${#fields.hasGlobalErrors()}"
+           th:each="erreur : ${#fields.globalErrors()}" th:text="${erreur}">Erreur</p>
+
         <fieldset>
             <legend>1. Votre véhicule</legend>
             <div class="champ">
