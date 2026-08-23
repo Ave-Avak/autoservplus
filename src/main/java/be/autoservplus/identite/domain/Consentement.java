@@ -16,10 +16,10 @@ import java.util.Objects;
  *
  * <p><b>Append-only</b> : une ligne s ecrit, ne se modifie jamais et ne se
  * supprime jamais — c est une preuve (pas de soft delete en base, aucun setter
- * ici). Un retrait futur s exprimera par une <i>nouvelle</i> ligne
- * {@code accorde = false}, jamais en retouchant celle-ci : la fabrique
- * {@link #acceptation} laisse la place a une fabrique {@code retrait} le moment
- * venu.</p>
+ * ici). Un refus ou un retrait s exprime par une <i>nouvelle</i> ligne
+ * {@code accorde = false}, jamais en retouchant celle-ci : voir la fabrique
+ * {@link #decision}, employee par le consentement aux cookies (F25) ou l on
+ * change d avis autant de fois qu on veut.</p>
  *
  * <p>Pour les CGV a la commande (F24), il s agit d une preuve <b>contractuelle</b>
  * — l acceptation des conditions exigee avant la vente (execution du contrat,
@@ -40,6 +40,26 @@ public class Consentement {
      * evolution ; d ici la, cette constante est l unique source de la version.
      */
     public static final String CGV_VERSION_COURANTE = "CGV-2026-01";
+
+    /**
+     * Version de la politique cookies en vigueur, figee sur chaque preuve de choix
+     * (F25).
+     *
+     * <p><b>F24 n est pas ici une dette de confort : c est un prerequis de
+     * conformite.</b> Un consentement ne vaut que pour les finalites effectivement
+     * presentees au moment ou il a ete donne. Le jour ou une finalite sera ajoutee ou
+     * elargie, les choix recueillis sur l ancienne liste cesseront de couvrir la
+     * nouvelle, et il faudra <b>reposer la question</b> — sans quoi un traceur serait
+     * charge sur la foi d un accord qui ne le visait pas, c est-a-dire sans
+     * consentement. Le declencheur de cette redemande est le changement de version,
+     * donc precisement ce que cette constante devra cesser d etre.</p>
+     *
+     * <p>En V1 le risque est nul et le raccourci tenable, parce qu <b>aucun traceur
+     * optionnel n est installe</b> : rien ne se charge, quel que soit le choix. La
+     * contrainte devient bloquante au moment ou un traceur reel sera cable — le
+     * versionnage des documents doit alors etre livre <b>avant</b>, pas apres.</p>
+     */
+    public static final String COOKIES_VERSION_COURANTE = "COOKIES-2026-01";
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -109,7 +129,26 @@ public class Consentement {
                                            String versionAcceptee,
                                            String adresseIp,
                                            Instant dateConsentement) {
-        return new Consentement(utilisateur, typeDocument, versionAcceptee, true,
+        return decision(utilisateur, typeDocument, versionAcceptee, true,
+                adresseIp, dateConsentement);
+    }
+
+    /**
+     * Preuve d un choix, accorde ou refuse (F25).
+     *
+     * <p>Distincte de {@link #acceptation} parce que les deux issues sont ici
+     * legitimes et doivent toutes deux se prouver : demontrer qu un consentement a
+     * ete recueilli suppose de pouvoir montrer aussi bien le oui que le non, faute
+     * de quoi l absence de ligne resterait ambigue — refus explicite ou visiteur
+     * jamais interroge ? Un refus s enregistre donc, il ne s omet pas.</p>
+     */
+    public static Consentement decision(Utilisateur utilisateur,
+                                        TypeDocumentConsentement typeDocument,
+                                        String versionAcceptee,
+                                        boolean accorde,
+                                        String adresseIp,
+                                        Instant dateConsentement) {
+        return new Consentement(utilisateur, typeDocument, versionAcceptee, accorde,
                 adresseIp, dateConsentement);
     }
 
