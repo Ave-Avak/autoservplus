@@ -185,6 +185,12 @@ public class AdminPrestationController {
         modele.addAttribute("reference", reference);
         modele.addAttribute("categories", service.categoriesDePrestations());
         modele.addAttribute("tauxAdmis", TauxTvaBelge.TAUX_ADMIS);
+        // BL-7 : historique des modifications de CET article. La methode existait depuis
+        // l historisation A2/A5 (V25) sans aucun appelant de production ; c est ici
+        // qu elle sert, au plus pres de ce qu elle decrit.
+        if (edition) {
+            modele.addAttribute("historique", service.historiquePrestation(reference));
+        }
         return FORMULAIRE;
     }
 

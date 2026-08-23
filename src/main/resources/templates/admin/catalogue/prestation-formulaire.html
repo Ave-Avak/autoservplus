@@ -114,6 +114,29 @@
             <a th:href="@{/admin/catalogue/prestations}" th:text="#{admin.catalogue.retour}">Retour à la liste</a>
         </p>
     </form>
+
+    <!-- BL-7 : historique des modifications de cet article, en consultation seule.
+         Affiche uniquement en edition : un article qu'on cree n'a pas de passe. -->
+    <section th:if="${edition and historique != null and !#lists.isEmpty(historique)}">
+        <h2 th:text="#{admin.journal.article.titre}">Historique des modifications</h2>
+        <table class="tableau">
+            <caption th:text="#{admin.journal.article.legende}">Modifications de cet article, de la plus recente a la plus ancienne.</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.journal.colonne.date}">Date</th>
+                <th scope="col" th:text="#{admin.journal.colonne.acteur}">Acteur</th>
+                <th scope="col" th:text="#{admin.journal.colonne.detail}">Changement</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="h : ${historique}">
+                <td th:text="${#temporals.format(h.horodatage(), 'dd/MM/yyyy HH:mm')}">23/08/2026 09:12</td>
+                <td th:text="${h.auteur() != null} ? ${h.auteur()} : #{admin.journal.acteur-inconnu}">Marie Dupont</td>
+                <td th:text="${h.champ()} + ' : ' + (${h.valeurAvant()} ?: #{admin.journal.valeur-vide}) + ' -> ' + (${h.valeurApres()} ?: #{admin.journal.valeur-vide})">prix : 40,00 -> 45,00</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
 </main>
 
 <footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>

@@ -171,6 +171,10 @@ public class AdminPieceController {
         modele.addAttribute("reference", reference);
         modele.addAttribute("categories", service.categoriesDePieces());
         modele.addAttribute("tauxAdmis", TauxTvaBelge.TAUX_ADMIS);
+        // BL-7 : voir AdminPrestationController, meme raison.
+        if (edition) {
+            modele.addAttribute("historique", service.historiquePiece(reference));
+        }
         return FORMULAIRE;
     }
 
