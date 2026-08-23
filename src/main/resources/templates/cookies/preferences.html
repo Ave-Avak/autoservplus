@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{cookies.page.titre} + ' — AutoServ+'">Gérer mes cookies — AutoServ+</title>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}" th:text="#{nav.connexion}">Connexion</a></li>
+            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{cookies.page.titre}">Gérer mes cookies</h1>
+
+    <div th:if="${choixEnregistre}" class="message message-succes" role="status"
+         th:text="#{cookies.page.enregistre}">
+        Votre choix a bien été enregistré.
+    </div>
+
+    <p th:text="#{cookies.page.introduction}">
+        Vous pouvez modifier votre choix à tout moment. Il s'appliquera immédiatement.
+    </p>
+
+    <!-- Même formulaire et mêmes catégories que le bandeau : un seul chemin d'écriture
+         côté serveur, donc aucun risque que « gérer » et « accepter » n'enregistrent
+         pas la même chose. Les cases reflètent le choix courant, relu du cookie. -->
+    <form method="post" th:action="@{/cookies/preferences}" class="formulaire-cookies">
+        <input type="hidden" name="retour" value="/cookies?enregistre">
+
+        <div th:replace="~{fragments/cookies :: categories}"></div>
+
+        <!-- Les trois mêmes actions qu'au bandeau, au même niveau visuel. -->
+        <div class="bandeau-cookies__actions">
+            <button type="submit" name="action" value="accepter" class="btn-cookies"
+                    th:text="#{cookies.action.accepter}">Tout accepter</button>
+            <button type="submit" name="action" value="refuser" class="btn-cookies"
+                    th:text="#{cookies.action.refuser}">Tout refuser</button>
+            <button type="submit" name="action" value="personnaliser" class="btn-cookies"
+                    th:text="#{cookies.action.enregistrer}">Enregistrer mes choix</button>
+        </div>
+    </form>
+
+    <p class="actions-page">
+        <a th:href="@{/}" th:text="#{cookies.page.retour}">Retour à l'accueil</a>
+    </p>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

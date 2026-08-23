@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Fragments cookies</title></head>
+<body>
+
+<!--
+  Bandeau de consentement aux cookies (F25) et lien permanent de gestion.
+
+  Un seul point d'insertion par page — <div th:replace="~{fragments/cookies :: bandeau}">
+  juste avant </body> — porte les deux, parce que le pied de page n'a pas la même
+  structure d'un écran à l'autre : depuis la suppression de layout/base.html, chaque
+  template recopie son propre <footer>. Greffer le lien dans quarante-cinq pieds de
+  page différents multiplierait les variantes ; le rattacher au bandeau n'en demande
+  qu'une, visuellement rendue comme la continuation du pied par la classe .pied.
+
+  Aucun JavaScript : le bandeau est un formulaire, « Personnaliser » un <details>
+  natif. La politique de sécurité du contenu n'a donc pas eu à être touchée.
+-->
+<th:block th:fragment="bandeau">
+
+    <!-- Le bandeau ne s'affiche qu'en l'absence de choix connu. La condition est
+         évaluée au serveur : aucun bandeau n'est envoyé puis masqué, donc aucun
+         clignotement pour qui a déjà répondu. -->
+    <section th:if="${!choixCookiesExprime}" class="bandeau-cookies"
+             th:attr="aria-label=#{cookies.bandeau.aria}" aria-label="Consentement aux cookies">
+        <form method="post" th:action="@{/cookies/preferences}" class="bandeau-cookies__corps">
+            <input type="hidden" name="retour" th:value="${uriRetourCookies}">
+
+            <div class="bandeau-cookies__texte">
+                <h2 th:text="#{cookies.bandeau.titre}">Nous respectons votre choix</h2>
+                <p th:text="#{cookies.bandeau.texte}">
+                    Ce site dépose des cookies strictement nécessaires à son fonctionnement.
+                </p>
+            </div>
+
+            <!-- Les trois actions partagent la même classe, donc les mêmes dimensions,
+                 le même contraste et le même niveau visuel : refuser doit être aussi
+                 simple qu'accepter (recommandation de l'Autorité de Protection des
+                 Données). Ne pas différencier ces boutons par le style. -->
+            <div class="bandeau-cookies__actions">
+                <button type="submit" name="action" value="accepter" class="btn-cookies"
+                        th:text="#{cookies.action.accepter}">Tout accepter</button>
+                <button type="submit" name="action" value="refuser" class="btn-cookies"
+                        th:text="#{cookies.action.refuser}">Tout refuser</button>
+
+                <details class="cookies-personnalisation">
+                    <summary class="btn-cookies" th:text="#{cookies.action.personnaliser}">Personnaliser</summary>
+                    <div class="cookies-personnalisation__panneau">
+                        <div th:replace="~{fragments/cookies :: categories}"></div>
+                        <button type="submit" name="action" value="personnaliser" class="btn-cookies"
+                                th:text="#{cookies.action.enregistrer}">Enregistrer mes choix</button>
+                    </div>
+                </details>
+            </div>
+        </form>
+    </section>
+
+    <!-- Lien permanent : le consentement se retire aussi facilement qu'il se donne
+         (art. 7.3 RGPD), donc il doit rester atteignable de n'importe quelle page. -->
+    <p class="pied pied-cookies">
+        <a th:href="@{/cookies}" th:text="#{cookies.gerer}">Gérer mes cookies</a>
+    </p>
+</th:block>
+
+
+<!--
+  Catégories, partagées par le bandeau et l'écran /cookies pour qu'une finalité
+  ajoutée ne puisse pas apparaître à un endroit et manquer à l'autre.
+-->
+<th:block th:fragment="categories">
+
+    <!-- Strictement nécessaires : présentés, jamais négociables. La case est cochée
+         et désactivée, et le formulaire ne lit aucun paramètre pour eux — l'état
+         affiché ne peut donc pas diverger de l'état réel. -->
+    <fieldset class="cookies-categorie">
+        <legend th:text="#{cookies.necessaires.nom}">Strictement nécessaires</legend>
+        <label>
+            <input type="checkbox" checked disabled aria-disabled="true">
+            <span th:text="#{cookies.necessaires.obligatoire}">Toujours actifs</span>
+        </label>
+        <p class="cookies-categorie__finalite" th:text="#{cookies.necessaires.finalite}">
+            Maintien de votre session, panier et protection des formulaires.
+        </p>
+        <p class="cookies-categorie__duree" th:text="#{cookies.necessaires.duree}">Durée : la session.</p>
+    </fieldset>
+
+    <!-- Optionnels : décochés tant qu'aucun choix n'a été exprimé. Aucune case n'est
+         pré-cochée — un consentement supposé n'est pas un consentement. -->
+    <fieldset class="cookies-categorie">
+        <legend th:text="#{cookies.analytique.nom}">Mesure d'audience</legend>
+        <label>
+            <input type="checkbox" name="analytique" value="true"
+                   th:checked="${preferencesCookies.analytique()}">
+            <span th:text="#{cookies.analytique.activer}">Autoriser la mesure d'audience</span>
+        </label>
+        <p class="cookies-categorie__finalite" th:text="#{cookies.analytique.finalite}">
+            Comprendre quelles pages sont consultées, afin d'améliorer le site.
+        </p>
+        <p class="cookies-categorie__duree" th:text="#{cookies.analytique.duree}">Durée : 13 mois maximum.</p>
+    </fieldset>
+
+    <fieldset class="cookies-categorie">
+        <legend th:text="#{cookies.marketing.nom}">Marketing</legend>
+        <label>
+            <input type="checkbox" name="marketing" value="true"
+                   th:checked="${preferencesCookies.marketing()}">
+            <span th:text="#{cookies.marketing.activer}">Autoriser la publicité ciblée</span>
+        </label>
+        <p class="cookies-categorie__finalite" th:text="#{cookies.marketing.finalite}">
+            Vous proposer des offres du garage adaptées à vos consultations.
+        </p>
+        <p class="cookies-categorie__duree" th:text="#{cookies.marketing.duree}">Durée : 13 mois maximum.</p>
+    </fieldset>
+
+    <!-- Dire l'état réel de la version 1 plutôt que de laisser croire à un suivi qui
+         n'existe pas : le mécanisme de consentement est complet, les traceurs
+         optionnels ne sont pas encore installés. -->
+    <p class="cookies-note" th:text="#{cookies.note.aucun-traceur}">
+        À ce jour, AutoServ+ n'installe aucun cookie de mesure d'audience ni de marketing.
+    </p>
+    <p class="cookies-note" th:text="#{cookies.note.duree-memorisation}">
+        Votre choix est conservé six mois, puis la question vous est reposée.
+    </p>
+</th:block>
+
+</body>
+</html>

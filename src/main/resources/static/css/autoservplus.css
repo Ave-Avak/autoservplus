@@ -407,3 +407,133 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 
 /* #DC2626 sur fond rose ne tient que 3.8:1 : on fonce le texte pour ce seul cas. */
 .message-erreur { background: #FEE2E2; color: #991B1B; }   /* 7.0:1 */
+/* --- Consentement aux cookies (F25) ---------------------------------------------- */
+
+/* Barre fixe en bas de fenêtre. Elle ne capture pas le focus et ne recouvre pas le
+   contenu principal : le visiteur peut lire et naviguer sans y répondre, comme
+   l'exige le cahier des charges (P410). Ce n'est délibérément pas une boîte modale. */
+.bandeau-cookies {
+    position: fixed;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 100;
+    background: var(--blanc);
+    border-top: 2px solid var(--bleu-marine);
+    padding: var(--espace-m) var(--espace-l);
+    box-shadow: 0 -2px 8px rgba(17, 24, 39, 0.15);
+}
+.bandeau-cookies__corps {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--espace-m);
+    max-width: 70rem;
+    margin: 0 auto;
+}
+.bandeau-cookies__texte { flex: 1 1 20rem; }
+.bandeau-cookies__texte h2 {
+    margin: 0 0 0.25rem;
+    font-size: 1rem;
+    color: var(--bleu-marine);
+}
+.bandeau-cookies__texte p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: var(--gris-700);  /* 10.31:1 sur blanc */
+}
+
+.bandeau-cookies__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: stretch;
+    gap: var(--espace-s);
+}
+
+/* Les trois actions — « Tout accepter », « Tout refuser », « Personnaliser » —
+   partagent CE seul style, donc les mêmes dimensions, la même couleur et le même
+   contraste : blanc sur --bleu-marine, soit 11.62:1, très au-delà du 4.5:1 exigé
+   en AA. Peindre « Tout accepter » avec la couleur d'appel --orange-cta rendrait le
+   refus visuellement secondaire ; l'Autorité de Protection des Données y voit un
+   consentement qui n'est plus librement donné. Ne pas introduire de variante par
+   action : c'est une exigence de conformité, pas une préférence graphique. */
+.btn-cookies {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bleu-marine);
+    color: var(--blanc);
+    border: 2px solid var(--bleu-marine);
+    border-radius: var(--rayon);
+    padding: var(--espace-s) var(--espace-l);
+    font: inherit;
+    font-weight: 600;
+    text-align: center;
+    cursor: pointer;
+    /* <summary> : sans cela le marqueur triangulaire distinguerait « Personnaliser »
+       des deux boutons, et l'égalité visuelle serait rompue. */
+    list-style: none;
+}
+.btn-cookies::-webkit-details-marker { display: none; }
+.btn-cookies:hover { background: #16294A; border-color: #16294A; }
+
+/* Le panneau s'ouvre au-dessus de la barre : vers le bas il sortirait de la fenêtre.
+   Le conteneur positionné est .bandeau-cookies lui-même (position: fixed). */
+.cookies-personnalisation__panneau {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 100%;
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: var(--espace-l);
+    background: var(--blanc);
+    border-top: 1px solid var(--gris-200);
+    box-shadow: 0 -2px 8px rgba(17, 24, 39, 0.15);
+    text-align: left;
+}
+
+.cookies-categorie {
+    border: 1px solid var(--gris-200);
+    border-radius: var(--rayon);
+    padding: var(--espace-m);
+    margin: 0 0 var(--espace-m);
+}
+.cookies-categorie legend {
+    font-weight: 600;
+    color: var(--bleu-marine);
+    padding: 0 var(--espace-s);
+}
+.cookies-categorie label {
+    display: flex;
+    align-items: center;
+    gap: var(--espace-s);
+    font-weight: 600;
+}
+.cookies-categorie__finalite,
+.cookies-categorie__duree {
+    margin: var(--espace-s) 0 0;
+    font-size: 0.875rem;
+    color: var(--gris-700);
+}
+.cookies-note {
+    font-size: 0.875rem;
+    color: var(--gris-700);
+}
+
+/* Ligne « Gérer mes cookies » : rendue comme la continuation du pied de page. Elle
+   est rattachée au fragment du bandeau plutôt qu'à chaque <footer>, dont la structure
+   varie d'un écran à l'autre depuis la suppression de layout/base.html. */
+.pied-cookies {
+    margin: 0;
+    border-top: none;
+    padding-top: 0;
+}
+
+.formulaire-cookies { max-width: 40rem; }
+
+@media (max-width: 640px) {
+    .bandeau-cookies__actions { width: 100%; }
+    .btn-cookies { flex: 1 1 100%; }
+}

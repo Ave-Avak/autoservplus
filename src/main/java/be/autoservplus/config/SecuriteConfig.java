@@ -36,7 +36,13 @@ public class SecuriteConfig {
                 .authorizeHttpRequests(acces -> acces
                         .requestMatchers("/", "/accueil", "/services/**", "/pieces/**",
                                 "/inscription/**", "/connexion", "/mot-de-passe/**",
-                                "/cgv", "/mentions-legales", "/confidentialite", "/cookies",
+                                "/cgv", "/mentions-legales", "/confidentialite",
+                                // Bandeau et gestion des cookies (F25) : la question du
+                                // consentement se pose des la premiere visite, donc avant
+                                // toute connexion. Exiger une authentification pour y
+                                // repondre rendrait le refus impossible au visiteur, qui
+                                // est justement celui a qui l on demande.
+                                "/cookies", "/cookies/**",
                                 // Confirmation de suppression de compte (F23) : a
                                 // l instant ou elle s affiche, la session vient d etre
                                 // invalidee et le compte n existe plus. Une page
