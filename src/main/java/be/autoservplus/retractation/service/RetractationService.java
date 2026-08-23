@@ -1,6 +1,8 @@
 package be.autoservplus.retractation.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.intervention.domain.StatutIntervention;
+import be.autoservplus.intervention.repository.InterventionRepository;
 import be.autoservplus.retractation.domain.DemandeAnnulation;
 import be.autoservplus.retractation.domain.StatutDemandeAnnulation;
 import be.autoservplus.retractation.repository.DemandeAnnulationRepository;
@@ -60,13 +62,16 @@ public class RetractationService {
 
     private final CommandeRepository commandes;
     private final DemandeAnnulationRepository demandes;
+    private final InterventionRepository interventions;
     private final Clock horloge;
 
     public RetractationService(CommandeRepository commandes,
                                DemandeAnnulationRepository demandes,
+                               InterventionRepository interventions,
                                Clock horloge) {
         this.commandes = commandes;
         this.demandes = demandes;
+        this.interventions = interventions;
         this.horloge = horloge;
     }
 
@@ -170,6 +175,38 @@ public class RetractationService {
      * le delai, pour qu une commande jamais payee reponde « non payee » et non
      * « delai expire » deux semaines plus tard.</p>
      */
+    /**
+     * Le service a-t-il ete pleinement execute apres que le client y a renonce (F12-b) ?
+     *
+     * <p><b>Les deux conditions ensemble, jamais l une seule.</b> L article VI.53, 1° CDE
+     * ne fait perdre le droit de retractation que si le service est <b>pleinement
+     * execute</b> ET que le consommateur avait donne son accord prealable expres. Une
+     * renonciation cochee sur un service pas encore commence ne prive de rien : le
+     * client garde son droit tant que rien n a ete fait pour lui.</p>
+     *
+     * <p><b>Critere retenu pour « pleinement execute »</b> : la commande a un dossier
+     * d atelier et il est en statut TERMINEE. Une commande ne portant qu une seule
+     * intervention (creation idempotente, F12-b), « toutes les lignes executees »
+     * revient exactement a « cette intervention est terminee ».</p>
+     *
+     * <p><b>Limites du critere</b>, a assumer : il repose sur la declaration du garage,
+     * qui marque lui-meme TERMINEE — le systeme ne constate pas l execution, il
+     * l enregistre. Et une commande de services SANS dossier ouvert reste retractable,
+     * ce qui est le comportement voulu : rien ne prouve qu on a travaille.</p>
+     *
+     * <p><b>On lit l ETAT, jamais la preuve.</b> {@code commande.renonciation_vi53} est
+     * la donnee de decision ; la ligne {@code consentement} est la trace juridique, qui
+     * n a pas a etre interrogee pour trancher.</p>
+     */
+    private boolean serviceExecuteApresRenonciation(Commande commande) {
+        if (!commande.isRenonciationVi53()) {
+            return false;
+        }
+        return interventions.findByCommandeId(commande.getId())
+                .filter(it -> it.getStatut() == StatutIntervention.TERMINEE)
+                .isPresent();
+    }
+
     private MotifRefusRetractation refusEventuel(Commande commande, Instant maintenant) {
         if (commande.getStatut() == StatutCommande.REMBOURSEE
                 || commande.getStatut() == StatutCommande.ANNULEE) {
@@ -183,6 +220,11 @@ public class RetractationService {
         }
         if (demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE)) {
             return MotifRefusRetractation.DEMANDE_DEJA_EN_COURS;
+        }
+        // F12-b, en DERNIER : les gardes precedentes sont moins couteuses (aucune
+        // requete pour le statut et le delai) et repondent a la majorite des cas.
+        if (serviceExecuteApresRenonciation(commande)) {
+            return MotifRefusRetractation.SERVICE_EXECUTE_APRES_RENONCIATION;
         }
         return null;
     }

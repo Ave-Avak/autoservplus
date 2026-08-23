@@ -52,6 +52,7 @@ class RetractationServiceTest {
 
     @Mock private CommandeRepository commandes;
     @Mock private DemandeAnnulationRepository demandes;
+    @Mock private be.autoservplus.intervention.repository.InterventionRepository interventionsRepo;
 
     private RetractationService service;
 
@@ -60,7 +61,7 @@ class RetractationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RetractationService(commandes, demandes,
+        service = new RetractationService(commandes, demandes, interventionsRepo,
                 Clock.fixed(MAINTENANT, BRUXELLES));
     }
 

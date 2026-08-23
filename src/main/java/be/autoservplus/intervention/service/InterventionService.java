@@ -151,9 +151,7 @@ public class InterventionService {
                 throw new RegleMetierException(
                         "Une intervention ne se cree que depuis une commande payée.");
             }
-            List<LignePanier> services = commandes.lignesDe(commande).stream()
-                    .filter(LignePanier::estService)
-                    .toList();
+            List<LignePanier> services = commandes.lignesServiceDe(commande);
             if (services.isEmpty()) {
                 throw new RegleMetierException(
                         "Cette commande ne contient aucune prestation à exécuter.");

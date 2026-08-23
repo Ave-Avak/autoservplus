@@ -193,9 +193,10 @@ public class PaiementService {
         List<LignePanier> lignes = commandes.lignesDe(commande);
         List<String> ruptures = new ArrayList<>();
         for (LignePanier ligne : lignes) {
-            // Une prestation ne consomme aucun stock (F12) : rien a verrouiller, rien
-            // a decrementer. Sans ce garde, le paiement d une commande de services
-            // levait une NPE sur getPiece().
+            // Ceinture et bretelles. lignesDe ne rend deja QUE les lignes de piece —
+            // son JOIN FETCH est une jointure interne — donc ce garde n est pas
+            // atteint aujourd hui. Il protege d un elargissement futur de la requete,
+            // qui ferait sinon lever une NPE sur getPiece() au moment du paiement.
             if (ligne.estService()) {
                 continue;
             }

@@ -55,8 +55,14 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
                                          @Param("limite") Instant limite);
 
     /**
-     * Lignes d une commande, pieces chargees, triees par id de piece : l ordre de
-     * verrouillage des pieces au decrement est ainsi deterministe (anti-interblocage).
+     * Lignes de PIECE d une commande, pieces chargees, triees par id de piece : l ordre
+     * de verrouillage au decrement est ainsi deterministe (anti-interblocage).
+     *
+     * <p><b>Ne rend QUE les lignes de piece.</b> Le {@code JOIN FETCH} est une jointure
+     * interne : une ligne de service, dont {@code piece} est nul, en est exclue. C est
+     * voulu — cette requete sert le decrement de stock, qui ne concerne que des pieces,
+     * et son tri par identifiant de piece n aurait pas de sens autrement. Pour les
+     * prestations, voir {@link #lignesServiceDe}.</p>
      */
     @Query("""
             SELECT l FROM LignePanier l
@@ -65,6 +71,22 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
             ORDER BY p.id
             """)
     List<LignePanier> lignesDe(@Param("commande") Commande commande);
+
+    /**
+     * Lignes de SERVICE d une commande (F12-b), prestations chargees.
+     *
+     * <p>Requete distincte plutot qu un elargissement de {@link #lignesDe} : cette
+     * derniere trie par identifiant de piece pour garantir un ordre de verrouillage
+     * deterministe au decrement de stock, propriete qu un {@code LEFT JOIN} melant les
+     * deux natures ferait perdre pour un besoin qui n en a pas.</p>
+     */
+    @Query("""
+            SELECT l FROM LignePanier l
+            JOIN FETCH l.prestation
+            WHERE l.commande = :commande
+            ORDER BY l.id
+            """)
+    List<LignePanier> lignesServiceDe(@Param("commande") Commande commande);
 
     /**
      * Commandes payees comportant au moins une ligne de service (F12-b).

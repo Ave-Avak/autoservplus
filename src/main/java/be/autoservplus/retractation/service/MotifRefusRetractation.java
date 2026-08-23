@@ -30,5 +30,17 @@ public enum MotifRefusRetractation {
     DEMANDE_DEJA_EN_COURS,
 
     /** La commande a deja ete remboursee, ou annulee faute de paiement : plus rien a retracter. */
-    COMMANDE_CLOTUREE
+    COMMANDE_CLOTUREE,
+
+    /**
+     * Service pleinement execute apres renonciation VI.53 (F12-b).
+     *
+     * <p>Les DEUX conditions sont requises, et c est tout l objet de ce motif :
+     * l article VI.53, 1° du Code de droit economique fait perdre le droit de
+     * retractation seulement quand le service a ete <b>pleinement execute</b> ET que le
+     * consommateur avait donne son accord prealable expres. Une renonciation cochee sur
+     * un service pas encore execute ne suffit pas — le client garde son droit tant que
+     * rien n a ete fait.</p>
+     */
+    SERVICE_EXECUTE_APRES_RENONCIATION
 }

@@ -79,8 +79,7 @@ public class PlanificationCommandeService {
                 commande.getNumero(),
                 FormatageRdv.jourLisible(commande.getDateCommande(), zone),
                 commande.getMembre().getPrenom() + " " + commande.getMembre().getNom(),
-                commandes.lignesDe(commande).stream()
-                        .filter(LignePanier::estService)
+                commandes.lignesServiceDe(commande).stream()
                         .map(LignePanier::getLibelleFige)
                         .toList(),
                 vehicules.findByMembre(commande.getMembre().getEmail()).stream()
