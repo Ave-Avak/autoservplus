@@ -86,7 +86,7 @@ class VehiculeServiceTest {
             assertThatThrownBy(() -> service.ajouter(MARIE, "1-ABC-123", "Volkswagen", "Golf",
                     Motorisation.DIESEL, null, null))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-12");
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-12");
 
             verify(vehicules, never()).save(any());
         }
@@ -100,7 +100,7 @@ class VehiculeServiceTest {
             assertThatThrownBy(() -> service.ajouter(MARIE, "1-ABC-123", "Volkswagen", "Golf",
                     Motorisation.DIESEL, null, null))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-13");
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-13");
         }
 
         @Test

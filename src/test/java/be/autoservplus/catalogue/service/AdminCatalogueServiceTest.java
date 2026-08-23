@@ -650,7 +650,7 @@ class AdminCatalogueServiceTest {
 
             assertThatThrownBy(() -> service.supprimerDefinitivementPrestation(prestation.getReference()))
                     .isInstanceOf(SuppressionRefuseeException.class)
-                    .hasMessageContaining("RM-29")
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-29")
                     .hasMessageContaining("desactivation");
 
             // Jamais de suppression physique d une entite referencee.

@@ -145,7 +145,7 @@ class AdminCatalogueServiceIT {
 
         assertThatThrownBy(() -> admin.supprimerDefinitivementPrestation(vidange.getReference()))
                 .isInstanceOf(SuppressionRefuseeException.class)
-                .hasMessageContaining("RM-29");
+                .hasFieldOrPropertyWithValue("codeRegle", "RM-29");
 
         // RM-28 : la desactivation, elle, passe — et la prestation disparait du
         // catalogue public tout en restant chargee par reference pour les historiques.

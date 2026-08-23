@@ -340,7 +340,10 @@ class RdvTest {
             Rdv rdv = rdvDe(vidange);
             assertThatThrownBy(() -> rdv.annulerParLeMembre(DEBUT.minus(Duration.ofHours(23)), DELAI_24H))
                     .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining("RM-11");
+                    // Le code RM-11 n'est plus dans la phrase : elle est affichee telle
+                    // quelle au membre. Il est porte par le RegleMetierException que
+                    // RdvService pose autour (voir RdvServiceIT).
+                    .hasMessageContaining("n est plus possible");
             assertThat(rdv.getStatut()).isEqualTo(StatutRdv.EN_ATTENTE);
         }
 

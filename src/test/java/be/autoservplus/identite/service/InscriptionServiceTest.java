@@ -128,7 +128,7 @@ class InscriptionServiceTest {
             assertThatThrownBy(() -> service.inscrire(
                     "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-01");
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-01");
 
             verify(repository, never()).save(any());
         }
@@ -141,7 +141,7 @@ class InscriptionServiceTest {
             assertThatThrownBy(() -> service.inscrire(
                     "marie@exemple.be", "court", "Dupont", "Marie", Langue.fr))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-02");
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-02");
 
             verify(repository, never()).save(any());
         }
@@ -152,7 +152,7 @@ class InscriptionServiceTest {
             assertThatThrownBy(() -> service.inscrire(
                     "   ", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-01");
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-01");
         }
 
         @Test
@@ -172,7 +172,7 @@ class InscriptionServiceTest {
             assertThatThrownBy(() -> service.inscrire(
                     null, "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-01");
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-01");
         }
         @Test
         @DisplayName("refuse un mot de passe nul")
@@ -182,7 +182,7 @@ class InscriptionServiceTest {
             assertThatThrownBy(() -> service.inscrire(
                     "marie@exemple.be", null, "Dupont", "Marie", Langue.fr))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-02");
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-02");
         }
         @Test
         @DisplayName("envoie le courriel de verification apres enregistrement")
@@ -226,7 +226,7 @@ class InscriptionServiceTest {
 
             assertThatThrownBy(() -> service.confirmerAdresse("jeton-perime"))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-03");
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-03");
 
             assertThat(membre.isEmailVerifie()).isFalse();
         }
@@ -268,7 +268,7 @@ class InscriptionServiceTest {
 
             assertThatThrownBy(() -> service.renvoyerVerification("marie@exemple.be"))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-04");
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-04");
         }
         @Test
         @DisplayName("refuse une adresse inconnue")

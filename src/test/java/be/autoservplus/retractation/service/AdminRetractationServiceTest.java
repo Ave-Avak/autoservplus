@@ -196,7 +196,7 @@ class AdminRetractationServiceTest {
             assertThatThrownBy(() -> service.valider(
                     demande.getReference(), "admin@autoservplus.be"))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-23");
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-23");
             verify(prestataire, never()).rembourser(any());
             verify(avoirs, never()).contrePasser(any(), any());
         }

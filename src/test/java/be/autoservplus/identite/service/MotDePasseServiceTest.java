@@ -170,7 +170,7 @@ class MotDePasseServiceTest {
 
             assertThatThrownBy(() -> service.reinitialiser("jeton-perime", "NouveauMotDePasse2026"))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-05");
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-05");
         }
 
         @Test
@@ -191,7 +191,7 @@ class MotDePasseServiceTest {
 
             assertThatThrownBy(() -> service.reinitialiser("jeton-valide", "court"))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-02");
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-02");
         }
 
         @Test
@@ -203,7 +203,7 @@ class MotDePasseServiceTest {
 
             assertThatThrownBy(() -> service.reinitialiser("jeton-valide", null))
                     .isInstanceOf(RegleMetierException.class)
-                    .hasMessageContaining("RM-02");
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-02");
         }
     }
 

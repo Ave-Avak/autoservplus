@@ -167,7 +167,9 @@ public class Rdv extends BaseEntity {
     public void annulerParLeMembre(Instant maintenant, Duration delaiAnnulation) {
         if (!peutEtreAnnuleParLeMembre(maintenant, delaiAnnulation)) {
             throw new IllegalStateException(
-                    "L annulation n est plus possible a moins de %d heures du rendez-vous (RM-11)."
+                    // Message affiche tel quel au membre (RdvController.annuler) : le code RM
+                    // reste porte par le RegleMetierException qui enveloppe, jamais par la phrase.
+                    "L annulation n est plus possible a moins de %d heures du rendez-vous."
                             .formatted(delaiAnnulation.toHours()));
         }
         transitionVers(StatutRdv.ANNULE);
