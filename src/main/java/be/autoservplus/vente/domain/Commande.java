@@ -86,6 +86,27 @@ public class Commande extends BaseEntity {
     @Column(name = "rupture_a_honorer", nullable = false)
     private boolean ruptureAHonorer;
 
+    /**
+     * Le client a renonce a son droit de retractation pour execution immediate du
+     * service (art. VI.53 CDE, F12).
+     *
+     * <p><b>C est l ETAT sur lequel F30 decide</b>, jamais la preuve : celle-ci est
+     * une ligne append-only de {@code consentement}, type
+     * {@code RENONCIATION_RETRACTATION}, ecrite dans la meme transaction. La table
+     * {@code consentement} n a aucune FK vers la commande — rapprocher les deux par
+     * horodatage serait faux des qu un membre commande deux fois dans la minute.</p>
+     *
+     * <p><b>Pose a la creation, jamais modifie ensuite</b> ({@code updatable = false}) :
+     * une renonciation est un fait daté, et la revoir apres coup changerait
+     * retroactivement les droits du client sur une commande deja conclue.</p>
+     *
+     * <p>{@code false} pour toute commande de pieces et toute commande anterieure a
+     * F12 — le droit de retractation s applique alors pleinement, defaut le plus
+     * protecteur et le seul qui se lise sans ambiguite.</p>
+     */
+    @Column(name = "renonciation_vi53", nullable = false, updatable = false)
+    private boolean renonciationVi53;
+
     protected Commande() {
         // requis par JPA
     }
@@ -96,9 +117,25 @@ public class Commande extends BaseEntity {
      * incoherent plutot que d attendre le CHECK de la base — le meme invariant,
      * defendu aux deux etages.
      */
+    /**
+     * Commande de pieces, ou commande anterieure a F12 : aucune renonciation.
+     * Surcharge de commodite qui evite de repeter {@code false} partout.
+     */
     public Commande(String numero, Utilisateur membre,
                     BigDecimal montantHtva, BigDecimal montantTva, BigDecimal montantTvac,
                     Instant dateCommande) {
+        this(numero, membre, montantHtva, montantTva, montantTvac, dateCommande, false);
+    }
+
+    /**
+     * @param renonciationVi53 le client a renoncé a son droit de retractation pour
+     *                         execution immediate du service (F12). Pose ICI et
+     *                         jamais ensuite : une renonciation est un fait date.
+     */
+    public Commande(String numero, Utilisateur membre,
+                    BigDecimal montantHtva, BigDecimal montantTva, BigDecimal montantTvac,
+                    Instant dateCommande, boolean renonciationVi53) {
+        this.renonciationVi53 = renonciationVi53;
         this.reference = UUID.randomUUID();
         this.numero = Objects.requireNonNull(numero, "numero");
         this.membre = Objects.requireNonNull(membre, "membre");
@@ -185,6 +222,9 @@ public class Commande extends BaseEntity {
     public Instant getDatePaiement() { return datePaiement; }
     public MotifAnnulationCommande getMotifAnnulation() { return motifAnnulation; }
     public Instant getDateAnnulation() { return dateAnnulation; }
+    /** Voir le champ : ETAT lu par F30, la preuve est dans consentement. */
+    public boolean isRenonciationVi53() { return renonciationVi53; }
+
     public boolean isRuptureAHonorer() { return ruptureAHonorer; }
 
     @Override

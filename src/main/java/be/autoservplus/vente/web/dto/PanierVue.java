@@ -28,7 +28,9 @@ public record PanierVue(
         String totalTva,
         String totalTvac,
         boolean estVide,
-        boolean contientPieceInactive) {
+        boolean contientPieceInactive,
+        /** F12 : le panier ne contient que des prestations. Conditionne la case VI.53. */
+        boolean contientService) {
 
     public static PanierVue de(Panier panier) {
         return new PanierVue(
@@ -38,13 +40,18 @@ public record PanierVue(
                 FormatageRdv.euros(panier.totalTva()),
                 FormatageRdv.euros(panier.totalTvac()),
                 panier.estVide(),
-                panier.getLignes().stream().anyMatch(l -> !l.getPiece().isActif()));
+                // Ne porte que sur les pieces : une ligne de service n a pas de piece,
+                // et l interroger levait une NPE.
+                panier.getLignes().stream()
+                        .filter(ligne -> !ligne.estService())
+                        .anyMatch(ligne -> !ligne.getPiece().isActif()),
+                panier.estPanierDeServices());
     }
 
     /** Panier jamais cree : la lecture ne provoque aucune ecriture, elle rend du vide. */
     public static PanierVue vide() {
         String zero = FormatageRdv.euros(BigDecimal.ZERO);
-        return new PanierVue(List.of(), 0, zero, zero, zero, true, false);
+        return new PanierVue(List.of(), 0, zero, zero, zero, true, false, false);
     }
 
     public record LignePanierVue(
@@ -63,7 +70,9 @@ public record PanierVue(
         public static LignePanierVue de(LignePanier ligne) {
             return new LignePanierVue(
                     ligne.getId(),
-                    ligne.getPiece().getReference(),
+                    ligne.estService()
+                            ? ligne.getPrestation().getReference()
+                            : ligne.getPiece().getReference(),
                     ligne.getLibelleFige(),
                     ligne.getQuantite(),
                     FormatageRdv.euros(ligne.getPrixUnitaireHtva()),
@@ -71,7 +80,11 @@ public record PanierVue(
                     FormatageRdv.euros(ligne.totalHtva()),
                     FormatageRdv.euros(ligne.totalTva()),
                     FormatageRdv.euros(ligne.totalTvac()),
-                    ligne.getPiece().isActif());
+                    // Un service inactif se signale comme une piece inactive : meme
+                    // colonne a l ecran, meme sens pour le membre.
+                    ligne.estService()
+                            ? ligne.getPrestation().isActif()
+                            : ligne.getPiece().isActif());
         }
     }
 }

@@ -85,7 +85,7 @@ class CommandeControllerTest {
     void setUp() {
         org.mockito.Mockito.reset(service, paniers, paiements);
         panierNonVide = new PanierVue(List.of(), 5, "70,01 €", "10,20 €", "80,21 €",
-                false, false);
+                false, false, false);
     }
 
     @Test
@@ -117,13 +117,13 @@ class CommandeControllerTest {
     @DisplayName("POST avec CGV cochees : delegation (identite, case, IP) puis PRG vers la confirmation")
     void validationNominale() throws Exception {
         doReturn(new ConfirmationCommandeVue(REF, "CMD-2026-0001", "80,21 €"))
-                .when(service).passerCommande("marie@exemple.be", true, "127.0.0.1");
+                .when(service).passerCommande("marie@exemple.be", true, false, "127.0.0.1");
 
         mvc.perform(post("/commande").with(csrf()).param("cgv", "true"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/commande/" + REF + "/confirmation"));
 
-        verify(service).passerCommande("marie@exemple.be", true, "127.0.0.1");
+        verify(service).passerCommande("marie@exemple.be", true, false, "127.0.0.1");
     }
 
     @Test
@@ -131,7 +131,7 @@ class CommandeControllerTest {
     @DisplayName("POST sans case CGV : le serveur refuse, recapitulatif reaffiche avec l'erreur CGV")
     void validationSansCgv() throws Exception {
         doThrow(new CgvNonAccepteesException())
-                .when(service).passerCommande("marie@exemple.be", false, "127.0.0.1");
+                .when(service).passerCommande("marie@exemple.be", false, false, "127.0.0.1");
         doReturn(panierNonVide).when(paniers).panierDuMembre("marie@exemple.be");
 
         mvc.perform(post("/commande").with(csrf()))
@@ -145,7 +145,7 @@ class CommandeControllerTest {
     @DisplayName("stock insuffisant a la conversion : recapitulatif reaffiche, message cote lignes")
     void validationStockInsuffisant() throws Exception {
         doThrow(new StockInsuffisantException("Plaquettes avant", 2, 1))
-                .when(service).passerCommande("marie@exemple.be", true, "127.0.0.1");
+                .when(service).passerCommande("marie@exemple.be", true, false, "127.0.0.1");
         doReturn(panierNonVide).when(paniers).panierDuMembre("marie@exemple.be");
 
         mvc.perform(post("/commande").with(csrf()).param("cgv", "true"))

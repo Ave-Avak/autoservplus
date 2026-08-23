@@ -104,7 +104,7 @@ class CommandeServiceTest {
             panierRempli();
             conversionPossible();
 
-            ConfirmationCommandeVue vue = service.passerCommande(EMAIL, true, IP);
+            ConfirmationCommandeVue vue = service.passerCommande(EMAIL, true, false, IP);
 
             assertThat(vue.numero()).isEqualTo("CMD-2026-0001");
             assertThat(vue.totalTvac()).isEqualTo(FormatageRdv.euros(new BigDecimal("80.21")));
@@ -126,7 +126,7 @@ class CommandeServiceTest {
             Panier panier = panierRempli();
             conversionPossible();
 
-            service.passerCommande(EMAIL, true, IP);
+            service.passerCommande(EMAIL, true, false, IP);
 
             assertThat(panier.getLignes())
                     .as("Memes lignes, nouveau rattachement : pas de recopie")
@@ -148,7 +148,7 @@ class CommandeServiceTest {
             plaquettes.modifierPrix(new BigDecimal("999.99"));
             ampoule.modifierPrix(new BigDecimal("999.99"));
 
-            service.passerCommande(EMAIL, true, IP);
+            service.passerCommande(EMAIL, true, false, IP);
 
             ArgumentCaptor<Commande> captor = ArgumentCaptor.forClass(Commande.class);
             verify(commandes).saveAndFlush(captor.capture());
@@ -161,7 +161,7 @@ class CommandeServiceTest {
             panierRempli();
             conversionPossible();
 
-            service.passerCommande(EMAIL, true, IP);
+            service.passerCommande(EMAIL, true, false, IP);
 
             ArgumentCaptor<Consentement> captor = ArgumentCaptor.forClass(Consentement.class);
             verify(consentements).save(captor.capture());
@@ -182,7 +182,7 @@ class CommandeServiceTest {
         @Test
         @DisplayName("CGV non acceptees : rien n'est lu ni ecrit, pas meme le panier")
         void cgvNonAcceptees() {
-            assertThatThrownBy(() -> service.passerCommande(EMAIL, false, IP))
+            assertThatThrownBy(() -> service.passerCommande(EMAIL, false, false, IP))
                     .isInstanceOf(CgvNonAccepteesException.class);
 
             verifyNoInteractions(paniers, commandes, consentements, numeros);
@@ -193,7 +193,7 @@ class CommandeServiceTest {
         void panierInexistant() {
             when(paniers.findByMembreEmail(EMAIL)).thenReturn(Optional.empty());
 
-            assertThatThrownBy(() -> service.passerCommande(EMAIL, true, IP))
+            assertThatThrownBy(() -> service.passerCommande(EMAIL, true, false, IP))
                     .isInstanceOf(PanierVideException.class);
 
             verifyNoInteractions(commandes, consentements);
@@ -204,7 +204,7 @@ class CommandeServiceTest {
         void panierVide() {
             when(paniers.findByMembreEmail(EMAIL)).thenReturn(Optional.of(new Panier(marie)));
 
-            assertThatThrownBy(() -> service.passerCommande(EMAIL, true, IP))
+            assertThatThrownBy(() -> service.passerCommande(EMAIL, true, false, IP))
                     .isInstanceOf(PanierVideException.class);
 
             verifyNoInteractions(commandes, consentements);
@@ -221,7 +221,7 @@ class CommandeServiceTest {
             Panier panier = panierRempli();
             plaquettes.setQuantiteStock(1); // 2 demandees au panier
 
-            assertThatThrownBy(() -> service.passerCommande(EMAIL, true, IP))
+            assertThatThrownBy(() -> service.passerCommande(EMAIL, true, false, IP))
                     .isInstanceOf(StockInsuffisantException.class)
                     .satisfies(e -> {
                         StockInsuffisantException stock = (StockInsuffisantException) e;
@@ -246,7 +246,7 @@ class CommandeServiceTest {
             panierRempli();
             ampoule.desactiver();
 
-            assertThatThrownBy(() -> service.passerCommande(EMAIL, true, IP))
+            assertThatThrownBy(() -> service.passerCommande(EMAIL, true, false, IP))
                     .isInstanceOf(PieceInactiveException.class)
                     .satisfies(e -> assertThat(((PieceInactiveException) e).getLibelle())
                             .isEqualTo("Ampoule H7"));

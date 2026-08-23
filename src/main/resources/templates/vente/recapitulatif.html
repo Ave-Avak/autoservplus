@@ -95,6 +95,22 @@
             <p id="cgv-erreur" class="texte-erreur" th:if="${erreurCgv}" role="alert"
                th:text="${erreurCgv}">Erreur</p>
         </div>
+
+        <!-- F12 / art. VI.53 CDE : présentée UNIQUEMENT si le panier contient un
+             service, et JAMAIS pré-cochée — une case pré-cochée vaudrait consentement
+             implicite. Elle n'est pas non plus « required » : le client reste libre de
+             conserver son droit de rétractation. Son état est enregistré dans les DEUX
+             cas, sans quoi l'absence de trace serait ambiguë entre « a refusé » et
+             « jamais interrogé ». La présentation est revalidée côté serveur. -->
+        <div class="champ" th:if="${panier.contientService()}">
+            <input type="checkbox" id="renonciationVi53" name="renonciationVi53" value="true">
+            <label for="renonciationVi53" th:text="#{commande.vi53.libelle}">
+                Je demande l'exécution immédiate et renonce à mon droit de rétractation.
+            </label>
+            <p class="carte-meta" th:text="#{commande.vi53.explication}">
+                Sans cette case, vous conservez 14 jours pour vous rétracter.
+            </p>
+        </div>
         <p class="actions-page">
             <button type="submit" class="btn-cta"
                     th:text="#{commande.bouton}">Commande avec obligation de paiement</button>

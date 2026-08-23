@@ -205,7 +205,7 @@ class AdminCatalogueServiceIT {
     @DisplayName("A5 : modifier le prix catalogue ne reecrit pas les lignes d une commande passee")
     void modificationSansEffetSurLaCommandeEmise() {
         panierService.ajouterPiece("marie@exemple.be", plaquettes.getReference(), 2);
-        commandeService.passerCommande("marie@exemple.be", true, null);
+        commandeService.passerCommande("marie@exemple.be", true, false, null);
 
         admin.modifierPiece(plaquettes.getReference(), new DonneesPiece(
                 "IT-CAT-FRE", "IT-CAT-001", "Plaquettes avant renforcees", "Brembo", null,

@@ -61,6 +61,16 @@ public class Consentement {
      */
     public static final String COOKIES_VERSION_COURANTE = "COOKIES-2026-01";
 
+    /**
+     * Version du texte de renonciation VI.53 presente au client (F12).
+     *
+     * <p>Meme dette que {@link #CGV_VERSION_COURANTE} : une constante, pas une table
+     * de versions. Elle deviendra bloquante avec F24 — une renonciation ne vaut que
+     * pour le texte reellement montre, et changer ce texte sans changer la version
+     * ferait couvrir le nouveau libelle par des accords donnes sur l ancien.</p>
+     */
+    public static final String RENONCIATION_VERSION_COURANTE = "VI53-2026-01";
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

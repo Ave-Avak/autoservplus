@@ -82,6 +82,7 @@ public class CommandeService {
      */
     @Transactional
     public ConfirmationCommandeVue passerCommande(String email, boolean cgvAcceptees,
+                                                  boolean renonciationVi53,
                                                   String adresseIp) {
         if (!cgvAcceptees) {
             throw new CgvNonAccepteesException();
@@ -93,9 +94,17 @@ public class CommandeService {
         }
         List<LignePanier> lignes = panier.getLignes();
         for (LignePanier ligne : lignes) {
+            // Contrainte F13 prolongee a la conversion : on ne commande pas un article
+            // retire de la vente depuis son ajout. Vrai des deux natures.
+            if (ligne.estService()) {
+                // Une prestation n a pas de stock : c est du temps d atelier, pas un
+                // article denombrable. Seule son activite se reverifie.
+                if (!ligne.getPrestation().isActif()) {
+                    throw new PrestationInactiveException(ligne.getLibelleFige());
+                }
+                continue;
+            }
             Piece piece = ligne.getPiece();
-            // Contrainte F13 prolongee a la conversion : on ne commande pas un
-            // article retire de la vente depuis son ajout.
             if (!piece.isActif()) {
                 throw new PieceInactiveException(ligne.getLibelleFige());
             }
@@ -107,10 +116,16 @@ public class CommandeService {
 
         // Montants figes (RM-30) : sommes ligne a ligne des valeurs figees du panier,
         // TVA = TVAC - HTVA par construction — le CHECK ck_commande_coherence passera.
+        // VI.53 (F12) : la renonciation n a de sens que pour un panier de services.
+        // Sur un panier de pieces, une case cochee par un client bricolant le
+        // formulaire est IGNOREE — validation serveur, jamais confiance au client.
+        boolean panierDeServices = panier.estPanierDeServices();
+        boolean renonciationRetenue = panierDeServices && renonciationVi53;
+
         Commande commande = commandes.saveAndFlush(new Commande(
                 numeros.prochain(), panier.getMembre(),
                 panier.totalHtva(), panier.totalTva(), panier.totalTvac(),
-                horloge.instant()));
+                horloge.instant(), renonciationRetenue));
         commande.reprendreLignes(lignes);
 
         // Preuve contractuelle F24, dans la MEME transaction : un rollback de la
@@ -118,6 +133,21 @@ public class CommandeService {
         consentements.save(Consentement.acceptation(panier.getMembre(),
                 TypeDocumentConsentement.CGV, Consentement.CGV_VERSION_COURANTE,
                 adresseIp, horloge.instant()));
+
+        // Preuve VI.53 (F12), ecrite UNIQUEMENT si la question a ete posee — donc si
+        // le panier contient des services. Le refus s enregistre autant que l accord :
+        // sans ligne, l absence serait ambigue entre « a refuse » et « jamais
+        // interroge », exactement le raisonnement tenu pour les cookies en V29.
+        //
+        // Meme transaction que la commande et que l etat : jamais d etat sans preuve,
+        // jamais de preuve sans etat. On DECIDE sur commande.renonciation_vi53, on
+        // PROUVE par cette ligne.
+        if (panierDeServices) {
+            consentements.save(Consentement.decision(panier.getMembre(),
+                    TypeDocumentConsentement.RENONCIATION_RETRACTATION,
+                    Consentement.RENONCIATION_VERSION_COURANTE,
+                    renonciationRetenue, adresseIp, horloge.instant()));
+        }
 
         return ConfirmationCommandeVue.de(commande);
     }

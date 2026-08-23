@@ -193,6 +193,12 @@ public class PaiementService {
         List<LignePanier> lignes = commandes.lignesDe(commande);
         List<String> ruptures = new ArrayList<>();
         for (LignePanier ligne : lignes) {
+            // Une prestation ne consomme aucun stock (F12) : rien a verrouiller, rien
+            // a decrementer. Sans ce garde, le paiement d une commande de services
+            // levait une NPE sur getPiece().
+            if (ligne.estService()) {
+                continue;
+            }
             Piece piece = pieces.verrouillerParId(ligne.getPiece().getId())
                     .orElseThrow(() -> new RessourceIntrouvableException(
                             "Piece", ligne.getPiece().getId()));

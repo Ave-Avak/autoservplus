@@ -28,5 +28,12 @@ public enum TypeDocumentConsentement {
     COOKIES_ANALYTIQUE,
 
     /** Publicite ciblee. Finalite optionnelle, refusee par defaut comme la precedente. */
-    COOKIES_MARKETING
+    COOKIES_MARKETING,
+
+    /**
+     * Renonciation au droit de retractation pour un service pleinement execute avant
+     * la fin des quatorze jours (F12, art. VI.53 CDE). C est la PREUVE ; l etat lu par
+     * F30 pour decider est {@code commande.renonciation_vi53}.
+     */
+    RENONCIATION_RETRACTATION
 }

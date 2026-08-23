@@ -75,12 +75,13 @@ public class CommandeController {
     @PostMapping
     public String valider(@AuthenticationPrincipal UserDetails membre,
                           @RequestParam(defaultValue = "false") boolean cgv,
+                          @RequestParam(defaultValue = "false") boolean renonciationVi53,
                           HttpServletRequest requete,
                           Model modele,
                           RedirectAttributes redirection) {
         try {
             ConfirmationCommandeVue confirmation = service.passerCommande(
-                    membre.getUsername(), cgv, requete.getRemoteAddr());
+                    membre.getUsername(), cgv, renonciationVi53, requete.getRemoteAddr());
             return "redirect:/commande/" + confirmation.reference() + "/confirmation";
         } catch (CgvNonAccepteesException e) {
             return recapAvecErreur(membre, modele, "erreurCgv", msg("commande.erreur.cgv"));
