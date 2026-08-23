@@ -5,7 +5,8 @@ package be.autoservplus.reservation.domain;
  *
  * <p>EN_ATTENTE : demande par le membre, pas encore validee par le garage.
  * CONFIRME : accepte par le garage. REFUSE : decline avec motif.
- * ANNULE : retire par le membre. HONORE : le membre s est presente.
+ * ANNULE : retire par le membre, ou par le garage qui ne peut plus tenir le creneau
+ * (depuis EN_ATTENTE comme depuis CONFIRME). HONORE : le membre s est presente.
  * ABSENT : le membre ne s est pas presente.</p>
  */
 public enum StatutRdv {

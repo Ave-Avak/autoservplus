@@ -136,7 +136,21 @@ public class Rdv extends BaseEntity {
         this.dateAnnulation = maintenant;
     }
 
-    /** Annulation a l initiative du garage, apres confirmation. Motif obligatoire. */
+    /**
+     * Annulation a l initiative du garage, motif obligatoire.
+     *
+     * <p><b>Depuis EN_ATTENTE comme depuis CONFIRME</b>, la machine a etats autorisant
+     * les deux (RM-10). Ce Javadoc disait « apres confirmation » : il decrivait une
+     * restriction que le code n a jamais eue, et
+     * {@code RdvTest$AnnulationGarage.depuisEnAttente} prouve le contraire depuis le
+     * debut. Le cas est reel — le garage peut fermer un jour donne et annuler des
+     * demandes qu il n avait pas encore tranchees.</p>
+     *
+     * <p>A ne pas confondre avec {@link #refuser} : refuser, c est decliner une demande
+     * que l on n accepte pas ; annuler, c est revenir sur un creneau que l on ne peut
+     * plus tenir. Les deux liberent le creneau, mais ne disent pas la meme chose au
+     * membre et n aboutissent pas au meme statut.</p>
+     */
     public void annulerParLeGarage(String motif, Instant maintenant) {
         if (motif == null || motif.isBlank()) {
             throw new IllegalArgumentException("Une annulation par le garage doit etre motivee.");
