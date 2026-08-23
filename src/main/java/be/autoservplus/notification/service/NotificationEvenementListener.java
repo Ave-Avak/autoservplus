@@ -104,7 +104,13 @@ public class NotificationEvenementListener {
             if (intervention == null) {
                 return false;
             }
-            notifications.deposer(intervention.getRdv().getMembre(),
+            // titulaire() et non getRdv().getMembre() : depuis F12-b une intervention
+            // peut naitre d une commande de services, sans aucun rendez-vous.
+            var titulaire = intervention.titulaire();
+            if (titulaire == null) {
+                return false;
+            }
+            notifications.deposer(titulaire,
                     TypeNotification.INTERVENTION_TERMINEE, intervention.getNumero());
             return true;
         });

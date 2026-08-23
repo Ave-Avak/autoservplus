@@ -59,13 +59,15 @@ public class NotificationInterventionListener {
                         evenement.referenceIntervention());
                 return;
             }
-            if (it.getRdv() == null) {
-                // Entree directe au garage (hors V1) : aucun membre a prevenir.
-                log.warn("Intervention {} terminee sans RDV lie : aucun membre a notifier.",
+            // titulaire() couvre les deux origines depuis F12-b : un service achete en
+            // ligne a un titulaire, meme sans rendez-vous. Seule l entree directe au
+            // garage n en a aucun.
+            Utilisateur membre = it.titulaire();
+            if (membre == null) {
+                log.warn("Intervention {} terminee sans titulaire : aucun membre a notifier.",
                         it.getNumero());
                 return;
             }
-            Utilisateur membre = it.getRdv().getMembre();
             Vehicule vehicule = it.getVehicule();
             courriel.envoyerInterventionTerminee(new DetailsInterventionTerminee(
                     membre.getEmail(),

@@ -65,4 +65,19 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
             ORDER BY p.id
             """)
     List<LignePanier> lignesDe(@Param("commande") Commande commande);
+
+    /**
+     * Commandes payees comportant au moins une ligne de service (F12-b).
+     *
+     * <p>{@code DISTINCT} : une commande de plusieurs prestations remonterait autant de
+     * fois qu elle a de lignes.</p>
+     */
+    @Query("""
+            SELECT DISTINCT c FROM Commande c
+            JOIN LignePanier l ON l.commande = c
+            WHERE c.statut = be.autoservplus.vente.domain.StatutCommande.PAYEE
+              AND l.prestation IS NOT NULL
+            ORDER BY c.dateCommande DESC
+            """)
+    List<Commande> payeesAvecService();
 }

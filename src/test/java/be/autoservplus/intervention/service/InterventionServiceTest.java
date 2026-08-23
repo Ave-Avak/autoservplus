@@ -63,6 +63,8 @@ class InterventionServiceTest {
     @Mock private InterventionRepository interventions;
     @Mock private HistoriqueStatutInterventionRepository historiques;
     @Mock private PrestationRepository prestations;
+    @Mock private be.autoservplus.vente.repository.CommandeRepository commandes;
+    @Mock private be.autoservplus.reservation.repository.VehiculeRepository vehicules;
     @Mock private ParametreAtelierRepository parametres;
     @Mock private AuteurCourant auteurCourant;
     @Mock private GenerateurNumeroIntervention numeros;
@@ -81,7 +83,8 @@ class InterventionServiceTest {
     @BeforeEach
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
-        service = new InterventionService(interventions, historiques, prestations, parametres,
+        service = new InterventionService(interventions, historiques, prestations,
+                commandes, vehicules, parametres,
                 auteurCourant, numeros, courriel, evenements, horloge);
 
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);

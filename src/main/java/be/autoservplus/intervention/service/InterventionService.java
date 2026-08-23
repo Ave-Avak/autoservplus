@@ -3,6 +3,7 @@ package be.autoservplus.intervention.service;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
+import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsDepassementCourriel;
 import be.autoservplus.communication.service.DetailsRdvCourriel;
@@ -18,6 +19,12 @@ import be.autoservplus.intervention.web.dto.DemandeValidationVue;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
 import be.autoservplus.intervention.web.dto.InterventionVueMembre;
 import be.autoservplus.reservation.domain.Rdv;
+import be.autoservplus.reservation.repository.VehiculeRepository;
+import be.autoservplus.reservation.domain.Vehicule;
+import be.autoservplus.vente.repository.CommandeRepository;
+import be.autoservplus.vente.domain.StatutCommande;
+import be.autoservplus.vente.domain.LignePanier;
+import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import org.slf4j.Logger;
@@ -54,6 +61,8 @@ public class InterventionService {
     private final InterventionRepository interventions;
     private final HistoriqueStatutInterventionRepository historiques;
     private final PrestationRepository prestations;
+    private final CommandeRepository commandes;
+    private final VehiculeRepository vehicules;
     private final ParametreAtelierRepository parametres;
     private final AuteurCourant auteurCourant;
     private final GenerateurNumeroIntervention numeros;
@@ -64,6 +73,8 @@ public class InterventionService {
     public InterventionService(InterventionRepository interventions,
                                HistoriqueStatutInterventionRepository historiques,
                                PrestationRepository prestations,
+                               CommandeRepository commandes,
+                               VehiculeRepository vehicules,
                                ParametreAtelierRepository parametres,
                                AuteurCourant auteurCourant,
                                GenerateurNumeroIntervention numeros,
@@ -73,6 +84,8 @@ public class InterventionService {
         this.interventions = interventions;
         this.historiques = historiques;
         this.prestations = prestations;
+        this.commandes = commandes;
+        this.vehicules = vehicules;
         this.parametres = parametres;
         this.auteurCourant = auteurCourant;
         this.numeros = numeros;
@@ -107,6 +120,57 @@ public class InterventionService {
     // l etat AVANT est capture avant l appel au domaine, qui peut refuser (auquel cas
     // rien n est historise — l exception sort avant historiser). Un echec ulterieur de
     // l ecriture annule transition ET chronologie ensemble : elles ne divergent jamais.
+
+    /**
+     * Cree une intervention depuis une commande de SERVICES payee (F12-b).
+     *
+     * <p><b>Seconde origine, qui ne remplace pas la premiere.</b>
+     * {@link #creerDepuisRdv} et son invariant de creation atomique au marquage HONORE
+     * restent inchanges ; celle-ci s ajoute a cote. La machine a etats est la meme, les
+     * statuts ne sont pas dedoubles, et la chronologie F17 s ouvre de la meme facon.</p>
+     *
+     * <p><b>Idempotent</b>, comme {@code creerDepuisRdv} : un second appel sur la meme
+     * commande rend l intervention existante plutot que d en creer une seconde. Un
+     * double-clic de l administrateur ne doit pas dedoubler un dossier d atelier.</p>
+     *
+     * <p><b>Le vehicule est choisi par le garage</b> : {@code intervention.vehicule_id}
+     * est {@code NOT NULL} et une prestation achetee en ligne n est rattachee a aucun
+     * vehicule au moment de l achat. Le vehicule doit appartenir au titulaire de la
+     * commande — sinon on creerait un dossier d atelier sur la voiture d un tiers.</p>
+     *
+     * @throws RegleMetierException commande non payee, sans ligne de service, ou
+     *                              vehicule n appartenant pas au titulaire
+     */
+    @Transactional
+    public Intervention creerDepuisCommande(UUID referenceCommande, UUID referenceVehicule) {
+        Commande commande = commandes.findByReference(referenceCommande)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        "Commande", referenceCommande));
+        return interventions.findByCommandeId(commande.getId()).orElseGet(() -> {
+            if (commande.getStatut() != StatutCommande.PAYEE) {
+                throw new RegleMetierException(
+                        "Une intervention ne se cree que depuis une commande payée.");
+            }
+            List<LignePanier> services = commandes.lignesDe(commande).stream()
+                    .filter(LignePanier::estService)
+                    .toList();
+            if (services.isEmpty()) {
+                throw new RegleMetierException(
+                        "Cette commande ne contient aucune prestation à exécuter.");
+            }
+            Vehicule vehicule = vehicules.findByReference(referenceVehicule)
+                    .orElseThrow(() -> new RessourceIntrouvableException(
+                            "Vehicule", referenceVehicule));
+            if (!vehicule.getMembre().getId().equals(commande.getMembre().getId())) {
+                throw new RegleMetierException(
+                        "Ce véhicule n'appartient pas au client de cette commande.");
+            }
+            Intervention creee = ecrire(
+                    Intervention.pourCommande(numeros.prochain(), commande, vehicule, services));
+            historiser(creee, null, StatutIntervention.PLANIFIEE, null);
+            return creee;
+        });
+    }
 
     @Transactional
     public Intervention demarrer(UUID reference) {
@@ -338,8 +402,11 @@ public class InterventionService {
      */
     private Intervention chargerPourMembre(UUID reference, String email) {
         Intervention it = charger(reference);
-        if (it.getRdv() == null
-                || !it.getRdv().getMembre().getEmail().equalsIgnoreCase(email)) {
+        // titulaire() couvre les DEUX origines : rendez-vous honore et commande de
+        // services payee (F12-b). Tester getRdv() seul privait le membre qui a achete
+        // une prestation en ligne de l acces a sa propre intervention.
+        var titulaire = it.titulaire();
+        if (titulaire == null || !titulaire.getEmail().equalsIgnoreCase(email)) {
             throw new RessourceIntrouvableException("Intervention", reference);
         }
         return it;

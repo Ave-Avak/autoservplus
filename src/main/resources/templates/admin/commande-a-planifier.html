@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${titre} + ' — AutoServ+'">Ouvrir un dossier — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/admin/commandes-a-planifier}"
+                   th:text="#{admin.planification.titre}">Prestations à planifier</a></li>
+            <li><form th:action="@{/deconnexion}" method="post">
+                <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+            </form></li>
+        </ul>
+    </nav>
+</header>
+<main id="contenu">
+    <h1 th:text="${titre}">Ouvrir un dossier d'atelier</h1>
+
+    <p class="erreur" th:if="${erreur}" th:text="${erreur}">Erreur.</p>
+
+    <dl>
+        <dt th:text="#{admin.planification.colonne.client}">Client</dt>
+        <dd th:text="${commande.client()}">Marie Dupont</dd>
+        <dt th:text="#{admin.planification.colonne.date}">Date</dt>
+        <dd th:text="${commande.date()}">23 août 2026</dd>
+        <dt th:text="#{admin.planification.colonne.prestations}">Prestations</dt>
+        <dd>
+            <ul>
+                <li th:each="p : ${commande.prestations()}" th:text="${p}">Vidange</li>
+            </ul>
+        </dd>
+    </dl>
+
+    <p th:if="${commande.dejaPlanifiee()}"
+       th:text="#{admin.planification.deja(${commande.numeroIntervention()})}">
+        Un dossier existe déjà : ITV-2026-0011.
+    </p>
+
+    <!-- Le véhicule est demandé ICI parce que intervention.vehicule_id est NOT NULL et
+         qu'une prestation achetée en ligne n'est rattachée à aucun véhicule au moment
+         de l'achat. C'est aussi le bon moment : l'atelier sait sur quoi il travaille. -->
+    <p th:if="${!commande.dejaPlanifiee() and commande.sansVehicule()}"
+       th:text="#{admin.planification.sans-vehicule}">
+        Ce client n'a aucun véhicule enregistré : il doit en ajouter un avant l'ouverture du dossier.
+    </p>
+
+    <form th:unless="${commande.dejaPlanifiee() or commande.sansVehicule()}"
+          th:action="@{/admin/commandes-a-planifier/{ref}(ref=${commande.reference()})}"
+          method="post">
+        <p>
+            <label for="vehicule" th:text="#{admin.planification.vehicule}">Véhicule concerné</label>
+            <select id="vehicule" name="vehicule" required>
+                <option th:each="v : ${commande.vehicules()}"
+                        th:value="${v.reference()}" th:text="${v.libelle()}">Volkswagen Golf</option>
+            </select>
+        </p>
+        <p>
+            <button type="submit" class="btn-cta"
+                    th:text="#{admin.planification.ouvrir}">Ouvrir le dossier d'atelier</button>
+        </p>
+    </form>
+
+    <p><a th:href="@{/admin/commandes-a-planifier}"
+          th:text="#{admin.planification.retour}">Retour à la liste</a></p>
+</main>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

@@ -24,6 +24,9 @@ public interface InterventionRepository extends JpaRepository<Intervention, Long
     /** Sert a l idempotence de la creation depuis un RDV (un seul RDV -> une intervention). */
     Optional<Intervention> findByRdvId(Long rdvId);
 
+    /** Seconde origine (F12-b) : garantit l idempotence de la creation par commande. */
+    Optional<Intervention> findByCommandeId(Long commandeId);
+
     boolean existsByRdvId(Long rdvId);
 
     @Query("""

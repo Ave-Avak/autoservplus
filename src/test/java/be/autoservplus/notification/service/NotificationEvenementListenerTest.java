@@ -153,12 +153,12 @@ class NotificationEvenementListenerTest {
         }
 
         @Test
-        @DisplayName("une intervention terminee notifie le membre du rendez-vous")
+        @DisplayName("une intervention terminee notifie son titulaire, quelle que soit l origine")
         void interventionTerminee() {
-            Rdv rdv = mock(Rdv.class);
-            when(rdv.getMembre()).thenReturn(marie);
+            // titulaire() couvre les deux origines (F12-b) : rendez-vous honore ou
+            // commande de services payee.
             Intervention intervention = mock(Intervention.class);
-            when(intervention.getRdv()).thenReturn(rdv);
+            when(intervention.titulaire()).thenReturn(marie);
             when(intervention.getNumero()).thenReturn("ITV-2026-0011");
             when(interventions.findByReference(REFERENCE)).thenReturn(Optional.of(intervention));
 

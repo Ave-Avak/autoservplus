@@ -2,7 +2,11 @@ package be.autoservplus.intervention.domain;
 
 import be.autoservplus.common.entity.BaseEntity;
 import be.autoservplus.reservation.domain.LigneRdv;
+import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.reservation.domain.Rdv;
+import be.autoservplus.reservation.domain.Vehicule;
+import be.autoservplus.vente.domain.Commande;
+import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.reservation.domain.Vehicule;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -57,6 +61,19 @@ public class Intervention extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "rdv_id")
     private Rdv rdv;
+
+    /**
+     * Commande de services payee dont cette intervention execute les lignes (F12-b).
+     *
+     * <p><b>Seconde origine, exclusive de {@link #rdv}</b> — CHECK
+     * {@code ck_intervention_origine_unique}. Les deux nuls restent admis : c est
+     * l entree directe au garage que le socle prevoit. Ce lien est ce qui permet a F30
+     * de savoir si un service vendu sous renonciation VI.53 a ete pleinement
+     * execute.</p>
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "commande_id")
+    private Commande commande;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -126,6 +143,65 @@ public class Intervention extends BaseEntity {
                     l.getQuantite(), l.getPrixUnitaireHtva(), l.getTauxTva(), false));
         }
         this.montantDevisInitialHtva = totalDevisInitialHtva();
+    }
+
+    /**
+     * Intervention nee d une commande de services payee (F12-b).
+     *
+     * <p><b>S ajoute a la creation depuis un RDV, ne la remplace pas.</b> Le constructeur
+     * public reste celui du rendez-vous honore, et son invariant de creation atomique
+     * (RM-14/15/16) est inchange. La machine a etats est la MEME quelle que soit
+     * l origine : on n a pas dedouble les statuts.</p>
+     *
+     * <p>Les lignes reprennent les valeurs <b>figees a la commande</b> — prix, libelle,
+     * taux — et non le catalogue du jour : c est ce que le client a paye qui fait foi,
+     * comme partout ailleurs (RM-30).</p>
+     *
+     * <p>Le vehicule est <b>choisi par le garage</b> a la creation : la colonne est
+     * {@code NOT NULL} et une prestation achetee en ligne n est rattachee a aucun
+     * vehicule au moment de l achat. C est aussi le bon moment pour le demander —
+     * l atelier sait sur quoi il va travailler.</p>
+     *
+     * @param lignes lignes de service de la commande, deja filtrees par l appelant
+     */
+    public static Intervention pourCommande(String numero, Commande commande,
+                                            Vehicule vehicule, List<LignePanier> lignes) {
+        Intervention it = new Intervention();
+        it.reference = UUID.randomUUID();
+        it.numero = Objects.requireNonNull(numero, "numero");
+        it.commande = Objects.requireNonNull(commande, "commande");
+        it.vehicule = Objects.requireNonNull(vehicule, "vehicule");
+        Objects.requireNonNull(lignes, "lignes");
+        if (lignes.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Une intervention doit executer au moins une ligne de service.");
+        }
+        for (LignePanier ligne : lignes) {
+            if (!ligne.estService()) {
+                throw new IllegalArgumentException(
+                        "Seules les lignes de service donnent lieu a une intervention.");
+            }
+            it.lignes.add(new LigneIntervention(it, ligne.getPrestation(),
+                    ligne.getQuantite(), ligne.getPrixUnitaireHtva(), ligne.getTauxTva(),
+                    false));
+        }
+        it.montantDevisInitialHtva = it.totalDevisInitialHtva();
+        return it;
+    }
+
+    /**
+     * Membre concerne, quelle que soit l origine.
+     *
+     * <p>Centralise ce que plusieurs appelants faisaient a la main via
+     * {@code getRdv().getMembre()} — expression qui levait une NPE des qu une
+     * intervention ne venait pas d un rendez-vous. Rend {@code null} pour une entree
+     * directe au garage, seul cas ou personne n est rattache.</p>
+     */
+    public Utilisateur titulaire() {
+        if (rdv != null) {
+            return rdv.getMembre();
+        }
+        return commande == null ? null : commande.getMembre();
     }
 
     // --- transitions ---------------------------------------------------------------
@@ -404,6 +480,7 @@ public class Intervention extends BaseEntity {
     public UUID getReference() { return reference; }
     public String getNumero() { return numero; }
     public Rdv getRdv() { return rdv; }
+    public Commande getCommande() { return commande; }
     public Vehicule getVehicule() { return vehicule; }
     public StatutIntervention getStatut() { return statut; }
     public String getCommentaireAdmin() { return commentaireAdmin; }

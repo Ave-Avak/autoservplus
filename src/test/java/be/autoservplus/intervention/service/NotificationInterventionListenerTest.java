@@ -95,12 +95,14 @@ class NotificationInterventionListenerTest {
     }
 
     @Test
-    @DisplayName("intervention sans RDV lie (entree directe) : aucun membre a prevenir")
+    @DisplayName("intervention sans titulaire (entree directe) : aucun membre a prevenir")
     void sansRdvAucunCourriel() {
-        // Le constructeur V1 exige un RDV : l entree directe (hors V1) n existe qu en
-        // base. On simule ce cas avec un mock — c est la branche, pas l entite, qu on teste.
+        // Entree directe au garage : ni rendez-vous ni commande, donc aucun titulaire.
+        // Depuis F12-b le listener interroge titulaire() et non getRdv() — une
+        // intervention nee d une commande de services a bien un membre a prevenir,
+        // meme sans rendez-vous.
         Intervention sansRdv = mock(Intervention.class);
-        when(sansRdv.getRdv()).thenReturn(null);
+        when(sansRdv.titulaire()).thenReturn(null);
         UUID ref = UUID.randomUUID();
         when(interventions.findByReference(ref)).thenReturn(Optional.of(sansRdv));
 
