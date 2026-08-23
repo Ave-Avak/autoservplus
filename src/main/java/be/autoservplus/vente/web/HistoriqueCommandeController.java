@@ -4,6 +4,7 @@ import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.facturation.service.dto.FactureVue;
 import be.autoservplus.retractation.service.RetractationService;
 import be.autoservplus.vente.service.CommandeService;
+import be.autoservplus.vente.web.dto.CommandeDetailVue;
 import be.autoservplus.vente.web.dto.CommandeHistoriqueVue;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -12,6 +13,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 
 import java.util.List;
@@ -20,8 +22,8 @@ import java.util.UUID;
 import java.util.function.Function;
 
 /**
- * Historique des commandes du membre connecte, et point d acces a ses factures
- * (F31 ; F32 restreint a la liste, le detail d une commande reste a faire).
+ * Historique des commandes du membre connecte et detail de chacune d elles, point
+ * d acces a ses factures (F31, F32).
  *
  * <p>Sans cet ecran, F31 ne serait atteignable que dans la minute suivant le
  * paiement, depuis la page de confirmation : une facture doit rester accessible des
@@ -77,6 +79,43 @@ public class HistoriqueCommandeController {
         modele.addAttribute("commandes", lignes);
         modele.addAttribute("retractations", retractations.etatsDuMembre(email));
         return "vente/commandes";
+    }
+
+    /**
+     * Detail d une commande passee (F32, CdC P384).
+     *
+     * <p>Meme assemblage que la liste, et pour les memes raisons : la vente fournit
+     * la commande et ses lignes, la facturation le lien de telechargement, la
+     * retractation l etat d annulation. Les trois vues se rejoignent ici, pas dans un
+     * service — faire descendre ce rapprochement dans {@code CommandeService}
+     * inverserait la dependance entre les modules.</p>
+     *
+     * <p>L eligibilite a la retractation vient de
+     * {@code RetractationService.etatDeLaCommande}, qui partage son calcul avec la
+     * liste : le bouton ne peut pas apparaitre ici et manquer la-bas.</p>
+     *
+     * <p>Aucun {@code try/catch} : {@code RessourceIntrouvableException} porte deja
+     * {@code @ResponseStatus(NOT_FOUND)}, donc une commande inconnue — ou celle d un
+     * autre membre — produit un 404 sans code supplementaire. En catcher une pour la
+     * retraduire en 404 n ajouterait qu une occasion de se tromper de code.</p>
+     */
+    @GetMapping("/{reference}")
+    public String detail(@AuthenticationPrincipal UserDetails membre,
+                         @PathVariable UUID reference,
+                         Model modele) {
+        String email = membre.getUsername();
+        // L appartenance est verifiee ici, avant tout le reste : les appels suivants
+        // ne doivent pas s executer pour une commande qui n est pas au membre.
+        CommandeDetailVue commande = commandes.detail(reference, email);
+
+        CommandeDetailVue vue = factures.factureDe(reference)
+                .map(facture -> commande.avecFacture(facture.getReference(), facture.getNumero()))
+                .orElse(commande);
+
+        modele.addAttribute("titre", msg("commande.detail.titre", vue.numero()));
+        modele.addAttribute("commande", vue);
+        modele.addAttribute("retractation", retractations.etatDeLaCommande(email, reference));
+        return "vente/commande-detail";
     }
 
     private String msg(String cle, Object... arguments) {

@@ -117,13 +117,42 @@ public class RetractationService {
 
         Map<UUID, RetractationVue> etats = new LinkedHashMap<>();
         for (Commande commande : commandes.historiqueDuMembre(email)) {
-            boolean demandable = refusEventuel(commande, maintenant) == null;
-            DemandeAnnulation demande = derniere.get(commande.getReference());
-            etats.put(commande.getReference(), demande == null
-                    ? RetractationVue.sansDemande(commande.getReference(), demandable)
-                    : RetractationVue.avecDemande(demande, demandable));
+            etats.put(commande.getReference(),
+                    vuePour(commande, derniere.get(commande.getReference()), maintenant));
         }
         return etats;
+    }
+
+    /**
+     * Le meme etat, pour une seule commande — ce dont le detail d une commande a
+     * besoin (F32).
+     *
+     * <p>Passe par {@link #vuePour} comme {@link #etatsDuMembre} : l eligibilite est
+     * calculee par le <b>meme</b> {@link #refusEventuel}, et la vue construite par le
+     * meme code. Recalculer la regle ici la ferait diverger de la liste au premier
+     * amendement — le membre verrait un bouton sur un ecran et pas sur l autre, pour
+     * la meme commande.</p>
+     *
+     * <p>La commande d autrui remonte en 404 via {@link #commandeDuMembre}, comme
+     * partout ailleurs.</p>
+     */
+    public RetractationVue etatDeLaCommande(String email, UUID referenceCommande) {
+        Commande commande = commandeDuMembre(referenceCommande, email);
+        // historiqueDe trie du plus recent au plus ancien : le premier est la derniere
+        // demande, celle que l ecran doit montrer.
+        DemandeAnnulation derniere = demandes.historiqueDe(commande).stream()
+                .findFirst()
+                .orElse(null);
+        return vuePour(commande, derniere, horloge.instant());
+    }
+
+    /** Construction unique de la vue, partagee par la liste et le detail. */
+    private RetractationVue vuePour(Commande commande, DemandeAnnulation derniereDemande,
+                                    Instant maintenant) {
+        boolean demandable = refusEventuel(commande, maintenant) == null;
+        return derniereDemande == null
+                ? RetractationVue.sansDemande(commande.getReference(), demandable)
+                : RetractationVue.avecDemande(derniereDemande, demandable);
     }
 
     /** Historique des demandes d une commande du membre (la plus recente d abord). */

@@ -15,6 +15,7 @@ import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Panier;
 import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.vente.repository.CommandeRepository;
+import be.autoservplus.vente.repository.PaiementRepository;
 import be.autoservplus.vente.repository.PanierRepository;
 import be.autoservplus.vente.web.dto.ConfirmationCommandeVue;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,6 +50,7 @@ class CommandeServiceTest {
     private static final Instant MAINTENANT = Instant.parse("2026-09-14T09:00:00Z");
 
     @Mock private CommandeRepository commandes;
+    @Mock private PaiementRepository paiements;
     @Mock private PanierRepository paniers;
     @Mock private ConsentementRepository consentements;
     @Mock private GenerateurNumeroCommande numeros;
@@ -61,7 +63,7 @@ class CommandeServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new CommandeService(commandes, paniers, consentements, numeros,
+        service = new CommandeService(commandes, paiements, paniers, consentements, numeros,
                 Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
 
         marie = new Utilisateur(EMAIL, "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);

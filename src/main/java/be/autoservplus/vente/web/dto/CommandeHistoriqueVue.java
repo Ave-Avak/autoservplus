@@ -8,8 +8,10 @@ import java.time.ZoneId;
 import java.util.UUID;
 
 /**
- * Une ligne de l historique des commandes du membre (F32 restreint : la liste, pas
- * encore le detail). Montant et date pre-formates, convention du module.
+ * Une ligne de l historique des commandes du membre (F32). Montant et date
+ * pre-formates, convention du module. Le detail complet d une commande est porte
+ * par {@link CommandeDetailVue} : cette vue-ci ne montre que ce qu une liste doit
+ * montrer, elle ne charge pas les lignes commandees.
  *
  * <p>Les champs de facture sont nuls a la sortie du module vente, qui ne connait pas
  * la facturation : c est le controleur qui les complete depuis le module

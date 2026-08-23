@@ -537,3 +537,16 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     .bandeau-cookies__actions { width: 100%; }
     .btn-cookies { flex: 1 1 100%; }
 }
+
+/* --- Detail d'une commande (F32) -------------------------------------------------- */
+
+/* Documents et demarches proposes pour une commande : une liste de liens, sans puce,
+   chaque action sur sa ligne pour rester atteignable au doigt comme au clavier. */
+.liste-actions {
+    list-style: none;
+    padding: 0;
+    margin: var(--espace-m) 0 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--espace-s);
+}

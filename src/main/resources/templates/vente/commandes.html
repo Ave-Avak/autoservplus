@@ -51,7 +51,13 @@
         </thead>
         <tbody>
         <tr th:each="commande : ${commandes}">
-            <td th:text="${commande.numero()}">CMD-2026-0001</td>
+            <!-- Le numero mene au detail (F32). Un lien porte sur le numero plutot
+                 qu'une ligne entiere rendue cliquable en JavaScript : il s'annonce au
+                 lecteur d'ecran, s'atteint au clavier et s'ouvre dans un onglet. -->
+            <th scope="row">
+                <a th:href="@{/commandes/{ref}(ref=${commande.reference()})}"
+                   th:text="${commande.numero()}">CMD-2026-0001</a>
+            </th>
             <td th:text="${commande.date()}">22 août 2026</td>
             <td th:text="${commande.totalTvac()}">48,38 €</td>
             <td th:text="#{'commande.statut.' + ${commande.statut().name()}}">Payée</td>

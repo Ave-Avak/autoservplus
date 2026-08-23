@@ -284,4 +284,70 @@ class RetractationServiceTest {
             assertThat(vue.demandable()).isFalse();
         }
     }
+
+    @Nested
+    @DisplayName("etat d'une seule commande (F32)")
+    class EtatDeLaCommande {
+
+        /**
+         * Le detail d une commande et la liste doivent proposer la retractation aux
+         * memes conditions : un bouton visible d un cote et absent de l autre, pour la
+         * meme commande, serait incomprehensible pour le membre. Les deux chemins
+         * partagent {@code refusEventuel} et la construction de la vue ; ce test le
+         * verifie sur le resultat plutot que sur la structure du code, de sorte qu il
+         * tombe si quelqu un reecrit l un des deux calculs.
+         */
+        @Test
+        @DisplayName("rend exactement la meme vue que la liste, commande eligible")
+        void concordeAvecLaListe() {
+            Commande commande = commandePayeeIlYA(3);
+            commandeExiste(commande);
+            when(commandes.historiqueDuMembre("marie@exemple.be")).thenReturn(List.of(commande));
+            when(demandes.demandesDuMembre("marie@exemple.be")).thenReturn(List.of());
+            when(demandes.historiqueDe(commande)).thenReturn(List.of());
+            when(demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE))
+                    .thenReturn(false);
+
+            var depuisLaListe = service.etatsDuMembre("marie@exemple.be")
+                    .get(commande.getReference());
+            var depuisLeDetail = service.etatDeLaCommande("marie@exemple.be",
+                    commande.getReference());
+
+            assertThat(depuisLeDetail).isEqualTo(depuisLaListe);
+            assertThat(depuisLeDetail.demandable()).isTrue();
+        }
+
+        @Test
+        @DisplayName("rend la meme vue que la liste quand une demande est pendante")
+        void concordeAvecLaListeAvecDemande() {
+            Commande commande = commandePayeeIlYA(3);
+            DemandeAnnulation demande = new DemandeAnnulation(commande, null, MAINTENANT);
+            commandeExiste(commande);
+            when(commandes.historiqueDuMembre("marie@exemple.be")).thenReturn(List.of(commande));
+            when(demandes.demandesDuMembre("marie@exemple.be")).thenReturn(List.of(demande));
+            when(demandes.historiqueDe(commande)).thenReturn(List.of(demande));
+            when(demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE))
+                    .thenReturn(true);
+
+            var depuisLaListe = service.etatsDuMembre("marie@exemple.be")
+                    .get(commande.getReference());
+            var depuisLeDetail = service.etatDeLaCommande("marie@exemple.be",
+                    commande.getReference());
+
+            assertThat(depuisLeDetail).isEqualTo(depuisLaListe);
+            assertThat(depuisLeDetail.estEnAttente()).isTrue();
+        }
+
+        /** Meme garde que partout : la commande d autrui est introuvable, pas interdite. */
+        @Test
+        @DisplayName("la commande d'un autre membre remonte comme introuvable")
+        void commandeDAutrui() {
+            Commande commande = commandePayeeIlYA(3);
+            commandeExiste(commande);
+
+            assertThatThrownBy(() -> service.etatDeLaCommande("jean@exemple.be",
+                    commande.getReference()))
+                    .isInstanceOf(RessourceIntrouvableException.class);
+        }
+    }
 }

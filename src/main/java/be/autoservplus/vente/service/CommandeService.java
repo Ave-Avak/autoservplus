@@ -7,9 +7,13 @@ import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.identite.repository.ConsentementRepository;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
+import be.autoservplus.vente.domain.Paiement;
 import be.autoservplus.vente.domain.Panier;
+import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.repository.CommandeRepository;
+import be.autoservplus.vente.repository.PaiementRepository;
 import be.autoservplus.vente.repository.PanierRepository;
+import be.autoservplus.vente.web.dto.CommandeDetailVue;
 import be.autoservplus.vente.web.dto.CommandeHistoriqueVue;
 import be.autoservplus.vente.web.dto.ConfirmationCommandeVue;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -48,17 +52,20 @@ import java.util.UUID;
 public class CommandeService {
 
     private final CommandeRepository commandes;
+    private final PaiementRepository paiements;
     private final PanierRepository paniers;
     private final ConsentementRepository consentements;
     private final GenerateurNumeroCommande numeros;
     private final Clock horloge;
 
     public CommandeService(CommandeRepository commandes,
+                           PaiementRepository paiements,
                            PanierRepository paniers,
                            ConsentementRepository consentements,
                            GenerateurNumeroCommande numeros,
                            Clock horloge) {
         this.commandes = commandes;
+        this.paiements = paiements;
         this.paniers = paniers;
         this.consentements = consentements;
         this.numeros = numeros;
@@ -120,12 +127,52 @@ public class CommandeService {
      * meme code qu une reference inconnue) — meme mecanisme que le reste.
      */
     public ConfirmationCommandeVue confirmation(UUID reference, String email) {
+        return ConfirmationCommandeVue.de(commandeDuMembre(reference, email));
+    }
+
+    /**
+     * Detail d une commande passee (F32) : ses lignes aux prix figes, ses totaux et
+     * son paiement.
+     *
+     * <p>Les liens vers la facture et vers la retractation ne sont pas resolus ici :
+     * la vente ignore ces deux modules, c est le controleur qui assemble — meme
+     * partage que pour la liste.</p>
+     */
+    public CommandeDetailVue detail(UUID reference, String email) {
+        Commande commande = commandeDuMembre(reference, email);
+        return CommandeDetailVue.de(commande, commandes.lignesDe(commande),
+                paiementAbouti(commande), ZoneId.of(horloge.getZone().getId()));
+    }
+
+    /**
+     * Le paiement qui a effectivement abouti, ou {@code null}. REMBOURSE compte au
+     * meme titre que REUSSI : l encaissement a bien eu lieu, et c est un second
+     * mouvement qui le contre-passe — masquer le moyen de paiement d une commande
+     * remboursee reviendrait a nier qu elle a ete payee.
+     *
+     * <p>Les tentatives echouees ou expirees sont ecartees : une commande peut en
+     * compter plusieurs, elles ne disent rien de la maniere dont elle a ete reglee.</p>
+     */
+    private Paiement paiementAbouti(Commande commande) {
+        return paiements.findByCommandeAndStatutIn(commande,
+                        List.of(StatutPaiement.REUSSI, StatutPaiement.REMBOURSE))
+                .stream()
+                .findFirst()
+                .orElse(null);
+    }
+
+    /**
+     * Charge une commande en verifiant qu elle appartient au membre. La commande
+     * d autrui remonte comme introuvable — 404, le meme code qu une reference
+     * inconnue : un 403 confirmerait a un tiers que cette commande existe.
+     */
+    private Commande commandeDuMembre(UUID reference, String email) {
         Commande commande = commandes.findByReference(reference)
                 .orElseThrow(() -> new RessourceIntrouvableException("Commande", reference));
         if (!commande.getMembre().getEmail().equalsIgnoreCase(email)) {
             throw new RessourceIntrouvableException("Commande", reference);
         }
-        return ConfirmationCommandeVue.de(commande);
+        return commande;
     }
 
     /**

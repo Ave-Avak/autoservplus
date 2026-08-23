@@ -22,8 +22,7 @@ import java.util.UUID;
  * au prestataire pour qu une requete rejouee ne debite pas deux fois.</p>
  *
  * <p>Un echec ou une expiration est terminal : re-essayer, c est creer un NOUVEAU
- * paiement pour la meme commande. Colonnes non mappees : {@code methode} (nullable,
- * renseignee par le prestataire reel, hors bloc) ; pas de soft delete en base.</p>
+ * paiement pour la meme commande. Pas de soft delete en base.</p>
  */
 @Entity
 @Table(name = "paiement")
@@ -65,6 +64,21 @@ public class Paiement {
     @NotNull
     @Column(name = "devise", nullable = false, length = 3)
     private String devise = "EUR";
+
+    /**
+     * Moyen effectivement employe (Bancontact, carte, virement…), tel que le
+     * prestataire le rapporte.
+     *
+     * <p>Mappe en <b>lecture seule</b> : la colonne existe depuis V4, et le detail
+     * d une commande doit l afficher (F32, CdC P384). Aucun chemin d ecriture n est
+     * ouvert ici — le moyen n est pas choisi par AutoServ+ mais constate chez le
+     * prestataire, qui ne le connait qu une fois le client passe par sa page. Le
+     * bouchon de developpement ne le renseigne pas, la valeur est donc nulle en V1 :
+     * l ecran le dit au lieu d inventer un moyen. Le champ se remplira de lui-meme le
+     * jour ou {@code MollieGateway} sera cable, sans toucher a cette classe.</p>
+     */
+    @Column(name = "methode", length = 30, insertable = false, updatable = false)
+    private String methode;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -194,6 +208,7 @@ public class Paiement {
     public String getCleIdempotence() { return cleIdempotence; }
     public BigDecimal getMontant() { return montant; }
     public String getDevise() { return devise; }
+    public String getMethode() { return methode; }
     public StatutPaiement getStatut() { return statut; }
     public Instant getDateInitiation() { return dateInitiation; }
     public Instant getDateFinalisation() { return dateFinalisation; }
