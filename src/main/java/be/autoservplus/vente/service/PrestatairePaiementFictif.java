@@ -24,6 +24,10 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
     private final Map<String, StatutPaiement> statuts = new ConcurrentHashMap<>();
     private final AtomicLong compteur = new AtomicLong(1);
 
+    /** Remboursements deja accordes, indexes par cle d idempotence. */
+    private final Map<String, String> remboursements = new ConcurrentHashMap<>();
+    private final AtomicLong compteurRemboursements = new AtomicLong(1);
+
     @Override
     public PaiementCree creerPaiement(DemandePaiement demande) {
         String reference = "tr_fictif_%04d".formatted(compteur.getAndIncrement());
@@ -40,6 +44,38 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
                     "Reference inconnue du prestataire fictif : " + referencePrestataire);
         }
         return statut;
+    }
+
+    /**
+     * Remboursement bouchonne : succes immediat, comme un prestataire qui accepte le
+     * Refund sur-le-champ.
+     *
+     * <p>Le paiement d origine doit exister et avoir ete encaisse — rembourser une
+     * reference inconnue ou un paiement jamais abouti est une erreur de programmation
+     * que le bouchon signale au lieu de la masquer, sans quoi les tests de la
+     * retractation passeraient sur une chaine que le vrai prestataire refuserait.</p>
+     *
+     * <p>La cle d idempotence est honoree : deux appels portant la meme cle rendent
+     * la meme reference de remboursement, exactement comme le ferait Mollie. C est ce
+     * qui permet de prouver en test qu une double validation ne rembourse qu une
+     * fois — meme si, en amont, le verrou optimiste et l index unique de l avoir
+     * doivent l avoir deja empechee.</p>
+     */
+    @Override
+    public RemboursementCree rembourser(DemandeRemboursement demande) {
+        StatutPaiement statut = statuts.get(demande.referencePrestataire());
+        if (statut == null) {
+            throw new IllegalStateException(
+                    "Reference inconnue du prestataire fictif : " + demande.referencePrestataire());
+        }
+        if (statut != StatutPaiement.REUSSI && statut != StatutPaiement.REMBOURSE) {
+            throw new IllegalStateException(
+                    "Seul un paiement encaisse peut etre rembourse (statut : %s).".formatted(statut));
+        }
+        String reference = remboursements.computeIfAbsent(demande.cleIdempotence(),
+                cle -> "re_fictif_%04d".formatted(compteurRemboursements.getAndIncrement()));
+        statuts.put(demande.referencePrestataire(), StatutPaiement.REMBOURSE);
+        return new RemboursementCree(reference);
     }
 
     /** Programme le statut que la prochaine relecture restituera (tests, demo). */

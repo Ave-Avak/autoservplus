@@ -45,4 +45,24 @@ public class MollieGateway implements PrestatairePaiement {
         throw new UnsupportedOperationException(
                 "À implémenter avec le SDK Mollie et la clé API - hors périmètre assisté");
     }
+
+    @Override
+    public RemboursementCree rembourser(DemandeRemboursement demande) {
+        // TODO : appel POST /v2/payments/{id}/refunds via le SDK Mollie, avec
+        // DELAI_MAXIMUM et la cle d idempotence de la demande (derivee du paiement,
+        // donc stable : un rejeu ne doit pas rembourser deux fois).
+        //
+        // Trois points a ne pas manquer a l implementation reelle :
+        //  - valider le montant rendu contre le montant demande avant de restituer,
+        //    comme pour creerPaiement ;
+        //  - un Refund Mollie nait « pending » et n est « refunded » qu apres
+        //    execution bancaire. Le contrat actuel suppose une reponse synchrone :
+        //    le passage a l asynchrone demandera un webhook de remboursement et un
+        //    statut intermediaire sur paiement, pas seulement du code ici ;
+        //  - Mollie refuse le Refund au-dela de son propre delai ; l echec doit
+        //    remonter au service, qui annule alors la validation de la demande —
+        //    aucun avoir ne doit exister sans remboursement.
+        throw new UnsupportedOperationException(
+                "À implémenter avec le SDK Mollie et la clé API - hors périmètre assisté");
+    }
 }

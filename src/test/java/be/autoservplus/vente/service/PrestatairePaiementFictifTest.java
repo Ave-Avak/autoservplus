@@ -53,6 +53,53 @@ class PrestatairePaiementFictifTest {
     }
 
     @Test
+    @DisplayName("le remboursement bouchonne rend une reference et bascule le paiement (F30)")
+    void remboursementFictif() {
+        PrestatairePaiementFictif fictif = new PrestatairePaiementFictif();
+        PaiementCree cree = fictif.creerPaiement(demande);
+        fictif.programmerStatut(cree.referencePrestataire(), StatutPaiement.REUSSI);
+
+        RemboursementCree rembourse = fictif.rembourser(remboursement(cree, "cle-refund-1"));
+
+        assertThat(rembourse.referenceRemboursement()).startsWith("re_fictif_");
+        assertThat(fictif.lireStatut(cree.referencePrestataire()))
+                .isEqualTo(StatutPaiement.REMBOURSE);
+    }
+
+    @Test
+    @DisplayName("la cle d'idempotence est honoree : deux appels ne remboursent qu'une fois")
+    void remboursementIdempotent() {
+        // C est la garantie sur laquelle repose la validation d une retractation :
+        // si le commit echoue apres un remboursement accepte, rejouer la validation
+        // renvoie la meme cle et le prestataire ne rend pas l argent deux fois.
+        PrestatairePaiementFictif fictif = new PrestatairePaiementFictif();
+        PaiementCree cree = fictif.creerPaiement(demande);
+        fictif.programmerStatut(cree.referencePrestataire(), StatutPaiement.REUSSI);
+
+        RemboursementCree premier = fictif.rembourser(remboursement(cree, "cle-refund-1"));
+        RemboursementCree rejeu = fictif.rembourser(remboursement(cree, "cle-refund-1"));
+
+        assertThat(rejeu.referenceRemboursement())
+                .isEqualTo(premier.referenceRemboursement());
+    }
+
+    @Test
+    @DisplayName("le bouchon refuse de rembourser un paiement jamais encaisse")
+    void remboursementSansEncaissement() {
+        // Le vrai prestataire refuserait aussi : masquer le cas ferait passer des
+        // tests sur une chaine impossible en production.
+        PrestatairePaiementFictif fictif = new PrestatairePaiementFictif();
+        PaiementCree cree = fictif.creerPaiement(demande);
+
+        assertThatThrownBy(() -> fictif.rembourser(remboursement(cree, "cle-refund-1")))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("encaisse");
+        assertThatThrownBy(() -> fictif.rembourser(new DemandeRemboursement(
+                "tr_inconnu", new BigDecimal("80.21"), "EUR", "cle-refund-2")))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     @DisplayName("la MollieGateway reelle leve UnsupportedOperationException tant que non implementee")
     void frontiereMollieFermee() {
         MollieGateway gateway = new MollieGateway();
@@ -63,5 +110,16 @@ class PrestatairePaiementFictifTest {
         assertThatThrownBy(() -> gateway.lireStatut("tr_reel"))
                 .isInstanceOf(UnsupportedOperationException.class)
                 .hasMessageContaining("hors périmètre assisté");
+        // Le remboursement reel est ferme au meme titre : le TODO Mollie couvre les
+        // trois appels, il ne doit pas y avoir de demi-implementation.
+        assertThatThrownBy(() -> gateway.rembourser(new DemandeRemboursement(
+                "tr_reel", new BigDecimal("80.21"), "EUR", "cle-refund-1")))
+                .isInstanceOf(UnsupportedOperationException.class)
+                .hasMessageContaining("hors périmètre assisté");
+    }
+
+    private static DemandeRemboursement remboursement(PaiementCree cree, String cle) {
+        return new DemandeRemboursement(cree.referencePrestataire(),
+                new BigDecimal("80.21"), "EUR", cle);
     }
 }

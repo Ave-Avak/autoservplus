@@ -29,4 +29,20 @@ public interface PrestatairePaiement {
      * n est jamais cru, seul ce rappel fait foi.
      */
     StatutPaiement lireStatut(String referencePrestataire);
+
+    /**
+     * Rembourse un paiement encaisse (F30, RM-23) et retourne l identifiant du
+     * mouvement chez le prestataire.
+     *
+     * <p>Un remboursement est un mouvement <b>distinct</b> de l encaissement, pas son
+     * annulation : le paiement d origine reste au dossier, la facture qui l atteste
+     * est immuable, et c est une note de credit qui les contre-passe dans les livres.
+     * D ou une methode a part entiere plutot qu un {@code annuler(...)} — le
+     * vocabulaire de la passerelle doit dire ce qui se passe reellement.</p>
+     *
+     * <p>La cle d idempotence portee par la demande est <b>derivee du paiement</b>,
+     * donc stable d un appel a l autre : c est ce qui empeche un rejeu de rembourser
+     * deux fois, la ou une cle tiree au hasard offrirait la garantie inverse.</p>
+     */
+    RemboursementCree rembourser(DemandeRemboursement demande);
 }
