@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.avis.titre} + ' — AutoServ+'">Modération des avis — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.avis.titre}">Modération des avis</h1>
+
+    <p class="message" th:if="${message}" th:text="${message}">Avis masqué.</p>
+
+    <p th:if="${#lists.isEmpty(avis)}" th:text="#{admin.avis.aucun}">Aucun avis déposé.</p>
+
+    <table class="tableau" th:unless="${#lists.isEmpty(avis)}">
+        <caption th:text="#{admin.avis.legende}">Tous les avis, masqués compris, du plus récent au plus ancien.</caption>
+        <thead>
+        <tr>
+            <th scope="col" th:text="#{admin.avis.colonne.intervention}">Intervention</th>
+            <th scope="col" th:text="#{admin.avis.colonne.auteur}">Auteur</th>
+            <th scope="col" th:text="#{admin.avis.colonne.note}">Note</th>
+            <th scope="col" th:text="#{admin.avis.colonne.commentaire}">Commentaire</th>
+            <th scope="col" th:text="#{admin.avis.colonne.date}">Date</th>
+            <th scope="col" th:text="#{admin.avis.colonne.etat}">État</th>
+            <th scope="col" th:text="#{admin.avis.colonne.actions}">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="a : ${avis}">
+            <td th:text="${a.numeroIntervention()}">ITV-2026-0011</td>
+            <td th:text="${a.prenomAuteur()}">Marie</td>
+            <td th:text="#{avis.note(${a.note()})}">4 sur 5</td>
+            <td th:text="${a.aUnCommentaire()} ? ${a.commentaire()} : ''">Travail soigné.</td>
+            <td th:text="${a.date()}">23 août 2026</td>
+            <td>
+                <span th:text="${a.publie()} ? #{admin.avis.etat.publie} : #{admin.avis.etat.masque}">Publié</span>
+                <span th:if="${a.signale()}" class="badge" th:text="#{admin.avis.etat.signale}">Signalé</span>
+            </td>
+            <td>
+                <!-- Masquer et publier sont exclusifs : proposer les deux inviterait
+                     a cliquer sur celui qui ne change rien. -->
+                <form th:if="${a.publie()}" th:action="@{/admin/avis/{ref}/masquer(ref=${a.reference()})}"
+                      method="post" class="en-ligne">
+                    <button type="submit" class="lien-bouton" th:text="#{admin.avis.action.masquer}">Masquer</button>
+                </form>
+                <form th:unless="${a.publie()}" th:action="@{/admin/avis/{ref}/publier(ref=${a.reference()})}"
+                      method="post" class="en-ligne">
+                    <button type="submit" class="lien-bouton" th:text="#{admin.avis.action.publier}">Republier</button>
+                </form>
+
+                <form th:unless="${a.signale()}" th:action="@{/admin/avis/{ref}/signaler(ref=${a.reference()})}"
+                      method="post" class="en-ligne">
+                    <button type="submit" class="lien-bouton" th:text="#{admin.avis.action.signaler}">Signaler</button>
+                </form>
+                <form th:if="${a.signale()}" th:action="@{/admin/avis/{ref}/lever-signalement(ref=${a.reference()})}"
+                      method="post" class="en-ligne">
+                    <button type="submit" class="lien-bouton"
+                            th:text="#{admin.avis.action.lever-signalement}">Lever le signalement</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

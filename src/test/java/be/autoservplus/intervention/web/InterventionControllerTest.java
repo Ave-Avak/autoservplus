@@ -51,6 +51,8 @@ class InterventionControllerTest {
 
     @Autowired private MockMvc mvc;
     @MockitoBean private InterventionService service;
+    // BL-4 : le controleur demande a AvisService si le lien de depot doit apparaitre.
+    @MockitoBean private be.autoservplus.avis.service.AvisService avis;
 
     @TestConfiguration
     static class SecuriteTest {

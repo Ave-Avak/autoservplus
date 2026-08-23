@@ -27,7 +27,9 @@ public enum TypeNotification {
     COMMANDE_PAYEE,
     INTERVENTION_TERMINEE,
     AVOIR_EMIS,
-    RETRACTATION_REFUSEE;
+    RETRACTATION_REFUSEE,
+    /** Adressee aux administrateurs, seule valeur qui ne vise pas un membre (BL-4). */
+    AVIS_DEPOSE;
 
     /** Cle i18n du titre affiche. */
     public String cleTitre() {

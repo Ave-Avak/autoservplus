@@ -15,10 +15,15 @@ package be.autoservplus.communication.service;
  * @param numeroIntervention numero lisible de l intervention (INT-...)
  * @param libelleVehicule    marque et modele, tels qu affiches dans le suivi
  * @param immatriculation    plaque du vehicule a recuperer
+ * @param cheminDepotAvis    chemin relatif du formulaire de depot d avis (BL-4).
+ *                           Une chaine deja prete, comme le reste : le module
+ *                           communication ne construit pas d URL et ne connait pas
+ *                           les routes du module intervention
  */
 public record DetailsInterventionTerminee(String adresseEmail,
                                           String prenom,
                                           String numeroIntervention,
                                           String libelleVehicule,
-                                          String immatriculation) {
+                                          String immatriculation,
+                                          String cheminDepotAvis) {
 }

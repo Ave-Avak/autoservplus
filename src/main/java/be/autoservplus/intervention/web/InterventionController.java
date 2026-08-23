@@ -1,5 +1,6 @@
 package be.autoservplus.intervention.web;
 
+import be.autoservplus.avis.service.AvisService;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.service.InterventionService;
@@ -31,9 +32,11 @@ import java.util.function.Supplier;
 public class InterventionController {
 
     private final InterventionService service;
+    private final AvisService avis;
 
-    public InterventionController(InterventionService service) {
+    public InterventionController(InterventionService service, AvisService avis) {
         this.service = service;
+        this.avis = avis;
     }
 
     @GetMapping("/{reference}")
@@ -42,6 +45,10 @@ public class InterventionController {
                         Model modele) {
         InterventionVueMembre vue = service.interventionDuMembre(reference, membre.getUsername());
         modele.addAttribute("titre", "Suivi de l'intervention " + vue.numero());
+        // BL-4 : le lien de depot n apparait que si le depot aboutirait — travaux
+        // termines et aucun avis deja depose. Le controle reel reste fait au depot,
+        // un lien absent n etant pas une securite.
+        modele.addAttribute("peutDeposerAvis", avis.peutDeposer(membre.getUsername(), reference));
         modele.addAttribute("intervention", vue);
         return "intervention/suivi";
     }

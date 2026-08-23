@@ -145,6 +145,34 @@
         </div>
     </article>
 
+    <!-- BL-4 : avis publies. Reserve aux prestations — un avis porte sur un travail
+         effectue sur le vehicule, pas sur un article de stock. -->
+    <section th:if="${typeArticle == 'service'}" class="avis">
+        <h2 th:text="#{avis.section.titre}">Avis des clients</h2>
+
+        <p th:if="${syntheseAvis.aDesAvis()}">
+            <strong th:text="#{avis.moyenne(${syntheseAvis.moyenneAffichee()}, ${syntheseAvis.nombre()})}">
+                4,5 sur 5 (12 avis)
+            </strong>
+        </p>
+        <p th:unless="${syntheseAvis.aDesAvis()}" th:text="#{avis.aucun}">
+            Cette prestation n'a pas encore reçu d'avis.
+        </p>
+
+        <ol class="liste-avis" th:unless="${#lists.isEmpty(avis)}">
+            <li th:each="a : ${avis}">
+                <!-- Note rendue en toutes lettres et pas seulement en etoiles : un
+                     lecteur d'ecran doit pouvoir l'annoncer. -->
+                <p><strong th:text="#{avis.note(${a.note()})}">4 sur 5</strong></p>
+                <p th:if="${a.aUnCommentaire()}" th:text="${a.commentaire()}">Travail soigné.</p>
+                <p class="carte-meta">
+                    <span th:text="${a.prenomAuteur()}">Marie</span>
+                    <span th:text="${a.date()}">23 août 2026</span>
+                </p>
+            </li>
+        </ol>
+    </section>
+
     <p><a th:href="${typeArticle == 'service'} ? @{/services} : @{/pieces}">Retour au catalogue</a></p>
 </main>
 

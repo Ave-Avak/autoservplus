@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{avis.formulaire.titre} + ' — AutoServ+'">Déposer un avis — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}" th:text="#{nav.prestations}">Prestations</a></li>
+            <li><a th:href="@{/pieces}" th:text="#{nav.pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{avis.formulaire.titre}">Déposer un avis</h1>
+
+    <p th:text="#{avis.formulaire.intro(${numeroIntervention})}">
+        Votre avis sur l'intervention ITV-2026-0011.
+    </p>
+
+    <form th:action="@{/mes-avis/{ref}(ref=${referenceIntervention})}"
+          th:object="${formulaire}" method="post">
+
+        <fieldset>
+            <legend th:text="#{avis.formulaire.note}">Votre note</legend>
+            <!-- Boutons radio et non une liste deroulante : les cinq valeurs sont
+                 visibles d'un coup et atteignables au clavier sans ouvrir de menu. -->
+            <p th:each="valeur : ${#numbers.sequence(1, 5)}">
+                <input type="radio" th:id="'note-' + ${valeur}" th:field="*{note}" th:value="${valeur}">
+                <label th:for="'note-' + ${valeur}" th:text="#{avis.note(${valeur})}">1 sur 5</label>
+            </p>
+            <p class="erreur" th:if="${#fields.hasErrors('note')}"
+               th:errors="*{note}">Note obligatoire.</p>
+        </fieldset>
+
+        <p>
+            <label for="commentaire" th:text="#{avis.formulaire.commentaire}">Votre commentaire (facultatif)</label>
+            <textarea id="commentaire" th:field="*{commentaire}" rows="6" maxlength="2000"></textarea>
+        </p>
+        <p class="erreur" th:if="${#fields.hasErrors('commentaire')}"
+           th:errors="*{commentaire}">Commentaire trop long.</p>
+
+        <p class="carte-meta" th:text="#{avis.formulaire.avertissement}">
+            Votre avis est publié avec votre prénom uniquement.
+        </p>
+
+        <p>
+            <button type="submit" class="btn-cta" th:text="#{avis.formulaire.envoyer}">Publier mon avis</button>
+        </p>
+    </form>
+
+    <p><a th:href="@{/mes-interventions/{ref}(ref=${referenceIntervention})}"
+          th:text="#{avis.formulaire.retour}">Retour à l'intervention</a></p>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

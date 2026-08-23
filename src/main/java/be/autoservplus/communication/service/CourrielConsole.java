@@ -117,11 +117,13 @@ public class CourrielConsole implements ServiceCourriel {
                 Intervention : {}
                 Bonjour {}, les travaux sur votre {} ({}) sont termines.
                 Vous pouvez venir recuperer votre vehicule aux heures d ouverture
-                du garage. N hesitez pas a deposer un avis sur votre experience.
+                du garage. Vous pouvez aussi deposer un avis sur votre experience :
+                {}
                 -------------------------------------------------------------
                 """, details.prenom(), details.adresseEmail(),
                 details.numeroIntervention(), details.prenom(),
-                details.libelleVehicule(), details.immatriculation());
+                details.libelleVehicule(), details.immatriculation(),
+                details.cheminDepotAvis());
     }
 
     @Override

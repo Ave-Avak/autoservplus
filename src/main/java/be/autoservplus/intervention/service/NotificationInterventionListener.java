@@ -72,7 +72,10 @@ public class NotificationInterventionListener {
                     membre.getPrenom(),
                     it.getNumero(),
                     vehicule.getMarque() + " " + vehicule.getModele(),
-                    vehicule.getPlaque()));
+                    vehicule.getPlaque(),
+                    // BL-4 : le courriel invitait a deposer un avis alors qu aucun
+                    // ecran ne le permettait. Il porte desormais le chemin reel.
+                    "/mes-avis/" + it.getReference() + "/nouveau"));
         } catch (RuntimeException e) {
             log.warn("Envoi du courriel de cloture impossible pour l intervention {} : {}",
                     evenement.referenceIntervention(), e.getMessage());

@@ -1,5 +1,6 @@
 package be.autoservplus.catalogue.web;
 
+import be.autoservplus.avis.service.AvisService;
 import be.autoservplus.catalogue.service.CatalogueService;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
 import org.springframework.stereotype.Controller;
@@ -25,9 +26,11 @@ import java.util.UUID;
 public class CatalogueController {
 
     private final CatalogueService service;
+    private final AvisService avis;
 
-    public CatalogueController(CatalogueService service) {
+    public CatalogueController(CatalogueService service, AvisService avis) {
         this.service = service;
+        this.avis = avis;
     }
 
     @GetMapping("/services")
@@ -60,6 +63,11 @@ public class CatalogueController {
         modele.addAttribute("titre", article.libelle());
         modele.addAttribute("article", article);
         modele.addAttribute("typeArticle", "service");
+        // BL-4 : la note moyenne et les avis publies font partie de la fiche.
+        // Les pieces n en ont pas — un avis porte sur un travail effectue, pas sur
+        // un article de stock.
+        modele.addAttribute("syntheseAvis", avis.synthese(reference));
+        modele.addAttribute("avis", avis.publiesPour(reference));
         return "catalogue/detail";
     }
 

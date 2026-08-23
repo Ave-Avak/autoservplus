@@ -49,6 +49,7 @@ class SuppressionCompteServiceTest {
 
     @Mock private UtilisateurRepository utilisateurs;
     @Mock private VehiculeAnonymisationRepository vehicules;
+    @Mock private be.autoservplus.avis.repository.AvisRepository avis;
     @Mock private TracesAuditRepository tracesAudit;
     @Mock private ApplicationEventPublisher evenements;
 
@@ -60,7 +61,7 @@ class SuppressionCompteServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SuppressionCompteService(utilisateurs, vehicules, tracesAudit,
+        service = new SuppressionCompteService(utilisateurs, vehicules, avis, tracesAudit,
                 encodeur, evenements, Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
         marie = new Utilisateur("marie@exemple.be", encodeur.encode(MOT_DE_PASSE),
                 "Dupont", "Marie", TypeUtilisateur.MEMBRE);

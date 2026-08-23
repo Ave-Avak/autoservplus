@@ -136,6 +136,13 @@
             </tr>
         </tfoot>
     </table>
+
+    <!-- BL-4 : proposé seulement si le dépôt aboutirait — travaux terminés et
+         aucun avis déjà déposé (l'unicité en base refuserait le second). -->
+    <p class="actions-page" th:if="${peutDeposerAvis}">
+        <a th:href="@{/mes-avis/{ref}/nouveau(ref=${intervention.reference()})}"
+           th:text="#{avis.formulaire.titre}">Déposer un avis</a>
+    </p>
 </main>
 
 <footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>

@@ -1,5 +1,7 @@
 package be.autoservplus.rgpd.service;
 
+import be.autoservplus.avis.domain.Avis;
+import be.autoservplus.avis.repository.AvisRepository;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -78,6 +80,7 @@ public class SuppressionCompteService {
 
     private final UtilisateurRepository utilisateurs;
     private final VehiculeAnonymisationRepository vehicules;
+    private final AvisRepository avis;
     private final TracesAuditRepository tracesAudit;
     private final PasswordEncoder encodeur;
     private final ApplicationEventPublisher evenements;
@@ -85,12 +88,14 @@ public class SuppressionCompteService {
 
     public SuppressionCompteService(UtilisateurRepository utilisateurs,
                                     VehiculeAnonymisationRepository vehicules,
+                                    AvisRepository avis,
                                     TracesAuditRepository tracesAudit,
                                     PasswordEncoder encodeur,
                                     ApplicationEventPublisher evenements,
                                     Clock horloge) {
         this.utilisateurs = utilisateurs;
         this.vehicules = vehicules;
+        this.avis = avis;
         this.tracesAudit = tracesAudit;
         this.encodeur = encodeur;
         this.evenements = evenements;
@@ -128,6 +133,7 @@ public class SuppressionCompteService {
                 new CompteSupprimeEvent(adresseReelle, membre.getPrenom(), membre.getReference());
 
         int supprimes = anonymiserLeParc(membre);
+        int avisNeutralises = anonymiserLesAvis(membre);
         membre.anonymiser(jetonEmail(membre), hachageInerte(), horloge.instant());
         // Flush avant le balayage : voir TracesAuditRepository, l ordre est impose.
         utilisateurs.saveAndFlush(membre);
@@ -136,8 +142,9 @@ public class SuppressionCompteService {
         // Journal sans donnee personnelle : la reference identifie la ligne, jamais
         // la personne. Une trace de suppression qui contiendrait le nom ou l adresse
         // recreerait ce que la suppression vient d effacer.
-        JOURNAL.info("Compte {} anonymise : {} vehicule(s) supprime(s), {} trace(s) d audit nettoyee(s).",
-                membre.getReference(), supprimes, traces);
+        JOURNAL.info("Compte {} anonymise : {} vehicule(s) supprime(s), {} avis neutralise(s), "
+                        + "{} trace(s) d audit nettoyee(s).",
+                membre.getReference(), supprimes, avisNeutralises, traces);
 
         evenements.publishEvent(evenement);
     }
@@ -201,6 +208,29 @@ public class SuppressionCompteService {
             }
         }
         return supprimes;
+    }
+
+    /**
+     * Neutralise les commentaires d avis de l auteur (BL-4, extension F23).
+     *
+     * <p><b>Le texte disparait, la note reste.</b> Le commentaire est du champ libre :
+     * le membre a pu y ecrire son nom, sa plaque, le nom de son garagiste. La note est
+     * un chiffre de 1 a 5, qui ne designe personne — rattachee a une ligne dont
+     * l auteur porte desormais le jeton anonyme, elle n est pas plus identifiante
+     * apres qu avant. L effacer fausserait des moyennes publiques deja affichees, sans
+     * rien ajouter au droit a l effacement.</p>
+     *
+     * <p>L avis reste <b>publie</b> : le depublier ferait disparaitre une mauvaise note
+     * a la faveur d une suppression de compte, ce qui serait une decision commerciale
+     * deguisee en mesure de protection des donnees.</p>
+     *
+     * @return le nombre de commentaires reellement effaces
+     */
+    private int anonymiserLesAvis(Utilisateur membre) {
+        List<Avis> aNeutraliser = avis.avecCommentaireDuMembre(membre.getId());
+        aNeutraliser.forEach(Avis::anonymiserCommentaire);
+        avis.saveAllAndFlush(aNeutraliser);
+        return aNeutraliser.size();
     }
 
     private int nettoyerLesTracesDAudit(String adresseReelle, String jeton) {

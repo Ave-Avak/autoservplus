@@ -52,7 +52,8 @@ class CourrielConsoleTest {
     @DisplayName("envoie l invitation a recuperer le vehicule sans jeter")
     void envoieInterventionTerminee() {
         assertThatCode(() -> courriel.envoyerInterventionTerminee(new DetailsInterventionTerminee(
-                "marie@exemple.be", "Marie", "INT-2026-0001", "VW Golf", "1-ABC-123")))
+                "marie@exemple.be", "Marie", "INT-2026-0001", "VW Golf", "1-ABC-123",
+                "/mes-avis/11111111-1111-1111-1111-111111111111/nouveau")))
                 .doesNotThrowAnyException();
     }
 
