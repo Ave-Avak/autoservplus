@@ -1,6 +1,7 @@
 package be.autoservplus.catalogue.web;
 
 import be.autoservplus.avis.service.AvisService;
+import be.autoservplus.galerie.service.GalerieService;
 import be.autoservplus.catalogue.service.CatalogueService;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
 import org.springframework.stereotype.Controller;
@@ -27,10 +28,13 @@ public class CatalogueController {
 
     private final CatalogueService service;
     private final AvisService avis;
+    private final GalerieService galerie;
 
-    public CatalogueController(CatalogueService service, AvisService avis) {
+    public CatalogueController(CatalogueService service, AvisService avis,
+                               GalerieService galerie) {
         this.service = service;
         this.avis = avis;
+        this.galerie = galerie;
     }
 
     @GetMapping("/services")
@@ -68,6 +72,8 @@ public class CatalogueController {
         // un article de stock.
         modele.addAttribute("syntheseAvis", avis.synthese(reference));
         modele.addAttribute("avis", avis.publiesPour(reference));
+        // BL-9 : illustrations de la prestation.
+        modele.addAttribute("photos", galerie.dePrestation(reference));
         return "catalogue/detail";
     }
 
@@ -77,6 +83,8 @@ public class CatalogueController {
         modele.addAttribute("titre", article.libelle());
         modele.addAttribute("article", article);
         modele.addAttribute("typeArticle", "piece");
+        // BL-9 : illustrations de la piece.
+        modele.addAttribute("photos", galerie.dePiece(reference));
         return "catalogue/detail";
     }
 

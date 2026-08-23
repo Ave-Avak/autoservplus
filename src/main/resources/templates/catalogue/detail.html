@@ -145,6 +145,19 @@
         </div>
     </article>
 
+
+    <!-- BL-9 : galerie. Images servies par notre propre controleur depuis un stockage
+         hors webroot, ce qui laisse la CSP a img-src 'self' sans relachement. -->
+    <section th:unless="${#lists.isEmpty(photos)}" class="galerie">
+        <h2 th:text="#{galerie.titre}">Photos</h2>
+        <ul>
+            <li th:each="p : ${photos}">
+                <img th:src="@{/images/galerie/{id}(id=${p.id()})}" th:alt="${p.texteAlt()}"
+                     loading="lazy" width="300" alt="">
+            </li>
+        </ul>
+    </section>
+
     <!-- BL-4 : avis publies. Reserve aux prestations — un avis porte sur un travail
          effectue sur le vehicule, pas sur un article de stock. -->
     <section th:if="${typeArticle == 'service'}" class="avis">

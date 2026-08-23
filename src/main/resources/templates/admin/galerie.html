@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.galerie.titre} + ' — AutoServ+'">Galerie — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/admin}" th:text="#{admin.tableau.titre}">Tableau de bord</a></li>
+            <li><form th:action="@{/deconnexion}" method="post">
+                <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+            </form></li>
+        </ul>
+    </nav>
+</header>
+<main id="contenu">
+    <h1 th:text="#{admin.galerie.titre}">Galerie d'images</h1>
+
+    <p class="message" th:if="${message}" th:text="${message}">2 image(s) ajoutée(s).</p>
+    <p class="erreur" th:if="${erreur}" th:text="${erreur}">Format non accepté.</p>
+
+    <p th:if="${#lists.isEmpty(photos)}" th:text="#{admin.galerie.aucune}">
+        Aucune image pour l'instant.
+    </p>
+
+    <ul class="galerie" th:unless="${#lists.isEmpty(photos)}">
+        <li th:each="p : ${photos}">
+            <!-- L'URL porte l'identifiant de la ligne, jamais le chemin du fichier :
+                 le chemin réel est résolu côté serveur. -->
+            <img th:src="@{/images/galerie/{id}(id=${p.id()})}" th:alt="${p.texteAlt()}"
+                 width="200" alt="">
+            <p class="carte-meta" th:text="${p.texteAlt()}">Vidange terminée</p>
+            <form th:action="@{/admin/galerie/{t}/{r}/{id}/supprimer(t=${type},r=${reference},id=${p.id()})}"
+                  method="post">
+                <button type="submit" class="lien-bouton"
+                        th:text="#{admin.galerie.supprimer}">Supprimer</button>
+            </form>
+        </li>
+    </ul>
+
+    <h2 th:text="#{admin.galerie.ajouter}">Ajouter des images</h2>
+    <form th:action="@{/admin/galerie/{t}/{r}(t=${type},r=${reference})}"
+          method="post" enctype="multipart/form-data">
+        <p>
+            <label for="fichiers" th:text="#{admin.galerie.fichiers}">Images</label>
+            <!-- accept ne fait que guider le sélecteur : le contrôle réel est fait sur
+                 les octets d'en-tête côté serveur, jamais sur ce que le client annonce. -->
+            <input type="file" id="fichiers" name="fichiers" multiple required
+                   th:accept="${typesAdmis}">
+        </p>
+        <p class="carte-meta" th:text="#{admin.galerie.formats(${libelleTypesAdmis})}">
+            Formats admis : .jpg, .png, .webp
+        </p>
+        <p>
+            <!-- Obligatoire : une image sans alternative textuelle est invisible pour
+                 un lecteur d'écran (WCAG 2.1 AA, critère 1.1.1). -->
+            <label for="texteAlt" th:text="#{admin.galerie.texte-alt}">Description de l'image</label>
+            <input type="text" id="texteAlt" name="texteAlt" maxlength="200" required>
+        </p>
+        <p><button type="submit" class="btn-cta" th:text="#{admin.galerie.envoyer}">Envoyer</button></p>
+    </form>
+</main>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>
