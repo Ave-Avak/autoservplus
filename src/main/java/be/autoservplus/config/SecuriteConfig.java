@@ -61,7 +61,17 @@ public class SecuriteConfig {
                         // clef_api du socle reste volontairement inexploitee : y
                         // adosser des jetons supposerait quotas et revocation, hors
                         // perimetre V1.
-                        .requestMatchers(HttpMethod.GET, "/api/v1/**").permitAll()
+                        //
+                        // Les deux routes sont ENUMEREES, et non couvertes par un joker
+                        // /api/v1/**. Le joker est fail-open : le troisieme endpoint,
+                        // quel qu il soit, naitrait public sans que personne ne l ait
+                        // decide — y compris un endpoint qui exposerait des donnees de
+                        // membre. L enumeration est fail-closed : ajouter une route
+                        // publique devient un geste explicite, verifiable en revue.
+                        // ApiPubliqueIT.surfaceFermeeParDefaut verrouille l ecart entre
+                        // les deux ecritures (302 attendu, 404 avec le joker).
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/v1/prestations/**", "/api/v1/garages/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
                         .permitAll()
                         // Webhook du prestataire de paiement : appel serveur a serveur,

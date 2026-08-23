@@ -170,6 +170,22 @@ class ApiPubliqueIT {
         }
 
         @Test
+        @DisplayName("une route /api/v1 non declaree n est PAS publique par defaut")
+        void surfaceFermeeParDefaut() throws Exception {
+            // Verrouille le caractere fail-closed du matcher. Les deux statuts
+            // distinguent exactement les deux ecritures possibles :
+            //   .requestMatchers(GET, "/api/v1/**")  -> route permise, aucun handler -> 404
+            //   .requestMatchers(GET, "/api/v1/prestations/**", "/api/v1/garages/**")
+            //                                        -> route non permise, anonyme  -> 302
+            // Sans ce test, un retour au joker republierait toute route future sans
+            // que rien ne le signale.
+            mvc.perform(get("/api/v1/pieces"))
+                    .andExpect(status().is3xxRedirection());
+            mvc.perform(get("/api/v1/membres"))
+                    .andExpect(status().is3xxRedirection());
+        }
+
+        @Test
         @DisplayName("la reponse autorise un cache public court")
         void cacheCourt() throws Exception {
             mvc.perform(get("/api/v1/prestations"))
