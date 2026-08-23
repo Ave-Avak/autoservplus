@@ -1,6 +1,7 @@
 package be.autoservplus.i18n;
 
 import be.autoservplus.identite.domain.Langue;
+import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -12,6 +13,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
+import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
@@ -23,8 +26,11 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -54,6 +60,7 @@ class SelecteurLangueIT {
 
     @Autowired private MockMvc mvc;
     @Autowired private UtilisateurRepository utilisateurs;
+    @Autowired private PasswordEncoder encodeur;
 
     @Nested
     @DisplayName("Bascule par le selecteur")
@@ -142,50 +149,85 @@ class SelecteurLangueIT {
     @DisplayName("Preference enregistree au profil")
     class PreferenceDuMembre {
 
-        private String creerMembre(Langue langue) {
+        private static final String MOT_DE_PASSE = "MotDePasseTest2026!";
+
+        private String creerMembreConnectable(Langue langue) {
             String email = "f6-" + COMPTEUR.getAndIncrement() + "@exemple.be";
-            Utilisateur membre = new Utilisateur(email, "$2a$12$abcdefghijklmnopqrstuv",
+            Utilisateur membre = new Utilisateur(email, encodeur.encode(MOT_DE_PASSE),
                     "Test", "Alex", TypeUtilisateur.MEMBRE);
             membre.setLangue(langue);
+            membre.setStatut(StatutUtilisateur.ACTIF);
             utilisateurs.save(membre);
             return email;
         }
 
+        /** Connexion par le VRAI formulaire : c est l evenement qui declenche la regle. */
+        private MockHttpSession seConnecter(String email, MockHttpSession session) throws Exception {
+            var requete = post("/connexion").param("email", email)
+                    .param("password", MOT_DE_PASSE)
+                    .with(csrf()).header("Accept-Language", "fr");
+            if (session != null) {
+                requete = requete.session(session);
+            }
+            return (MockHttpSession) mvc.perform(requete)
+                    .andExpect(redirectedUrl("/mon-compte"))
+                    .andReturn().getRequest().getSession();
+        }
+
         /**
          * La colonne {@code utilisateur.langue} existait et etait deja lue pour choisir
-         * la langue d une facture PDF, mais rien ne la reliait a l interface web. Ce
-         * cas verrouille le branchement : aucun parametre d URL, aucune en-tete
-         * favorable, et pourtant du neerlandais.
+         * la langue d une facture PDF, mais rien ne la reliait a l interface web. Ce cas
+         * verrouille le branchement : le navigateur reclame du francais, et pourtant le
+         * site s affiche en neerlandais parce que le profil le dit.
          */
         @Test
-        @DisplayName("un membre dont le profil dit nl obtient le site en neerlandais")
-        void profilApplique() throws Exception {
-            String email = creerMembre(Langue.nl);
+        @DisplayName("apres connexion, un profil nl donne le site en neerlandais")
+        void profilAppliqueALaConnexion() throws Exception {
+            MockHttpSession session = seConnecter(creerMembreConnectable(Langue.nl), null);
 
-            mvc.perform(get("/cgv").with(user(email)).header("Accept-Language", "fr"))
+            mvc.perform(get("/cgv").session(session).header("Accept-Language", "fr"))
                     .andExpect(content().string(containsString("Voorlopig document")))
                     .andExpect(content().string(containsString("<html lang=\"nl\"")));
         }
 
         /**
-         * Le clic prime sur le profil pour la session courante. Autrement, un membre
-         * enregistre en francais ne pourrait <b>jamais</b> consulter le site en
-         * anglais : sa preference ecraserait son propre choix a chaque page.
+         * Le choix exprime avant la connexion survit a la connexion. La protection contre
+         * la fixation de session recopie les attributs, donc l attribut de langue passe la
+         * migration : quelqu un qui a clique sur « EN » puis s est connecte ne doit pas
+         * voir son clic annule par une preference qu il n a jamais renseignee.
          */
         @Test
-        @DisplayName("le choix manuel prime sur la preference du profil")
+        @DisplayName("un choix exprime avant la connexion n est pas ecrase par le profil")
         void choixManuelPrimeSurLeProfil() throws Exception {
-            String email = creerMembre(Langue.fr);
+            String email = creerMembreConnectable(Langue.nl);
 
-            HttpSession session = mvc.perform(get("/cgv").param("lang", "en")
-                            .with(user(email)).header("Accept-Language", "fr"))
+            MockHttpSession session = (MockHttpSession) mvc.perform(get("/cgv")
+                            .param("lang", "en").with(anonymous()).header("Accept-Language", "fr"))
                     .andReturn().getRequest().getSession();
+            seConnecter(email, session);
 
-            mvc.perform(get("/cgv").session(
-                                    (org.springframework.mock.web.MockHttpSession) session)
-                            .with(user(email)).header("Accept-Language", "fr"))
+            mvc.perform(get("/cgv").session(session).header("Accept-Language", "fr"))
                     .andExpect(content().string(containsString("Draft document")))
                     .andExpect(content().string(containsString("<html lang=\"en\"")));
+        }
+
+        /**
+         * NON-REGRESSION, et la raison d etre du resserrement au seul evenement de
+         * connexion. {@code utilisateur.langue} vaut {@code fr} par defaut pour tout le
+         * monde et aucun ecran ne l ecrit : appliquer la preference a chaque requete
+         * authentifiee revenait a servir du francais a tout membre connecte, y compris
+         * celui dont le navigateur reclame du neerlandais et qui n a jamais rien choisi.
+         * Quatre tests deja en place l ont montre ; celui-ci le dit a l endroit ou la
+         * regle est ecrite.
+         */
+        @Test
+        @DisplayName("hors connexion, l en-tete du navigateur decide encore pour un membre")
+        void enTeteRespecteeHorsConnexion() throws Exception {
+            String email = creerMembreConnectable(Langue.fr);
+
+            mvc.perform(get("/cgv").with(user(email)).header("Accept-Language", "nl"))
+                    .andExpect(content().string(containsString("Voorlopig document")))
+                    .andExpect(content().string(containsString("<html lang=\"nl\"")));
         }
     }
 }

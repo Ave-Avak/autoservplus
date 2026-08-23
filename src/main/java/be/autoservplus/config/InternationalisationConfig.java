@@ -1,10 +1,7 @@
 package be.autoservplus.config;
 
 import be.autoservplus.i18n.LanguesSupportees;
-import be.autoservplus.i18n.PreferenceLangueInterceptor;
 import be.autoservplus.i18n.ResolveurLangueSession;
-import be.autoservplus.identite.repository.UtilisateurRepository;
-import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.LocaleResolver;
@@ -30,24 +27,18 @@ import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
  * consentement, c est-a-dire a rouvrir un sujet regle, pour un confort. La
  * persistance durable existe deja par ailleurs, en base, pour les membres.</p>
  *
- * <p><b>L ordre des deux intercepteurs porte une regle metier.</b>
- * {@link PreferenceLangueInterceptor} est enregistre en premier : il pose la langue
- * du profil, puis {@link LocaleChangeInterceptor} peut encore la remplacer si la
- * requete porte {@code ?lang=}. Dans l ordre inverse, un clic sur le selecteur
- * effectue au moment ou la session s ouvre serait aussitot annule par la preference
- * enregistree — l utilisateur verrait son propre clic sans effet.</p>
+ * <p><b>La preference du profil n est PAS appliquee ici.</b> Elle l est a la
+ * connexion seule, par {@code LangueApresConnexionHandler}, qui documente pourquoi :
+ * appliquee a chaque requete authentifiee, elle servait du francais a tout membre
+ * connecte — la colonne vaut {@code fr} par defaut et aucun ecran ne l ecrit — et
+ * faisait donc perdre l en-tete du navigateur a ceux qui n avaient jamais rien
+ * choisi. Quatre tests deja en place l ont montre.</p>
  */
 @Configuration
 public class InternationalisationConfig implements WebMvcConfigurer {
 
     /** Nom du parametre de changement de langue, aussi employe par le selecteur. */
     public static final String PARAMETRE_LANGUE = "lang";
-
-    private final ObjectProvider<UtilisateurRepository> utilisateurs;
-
-    public InternationalisationConfig(ObjectProvider<UtilisateurRepository> utilisateurs) {
-        this.utilisateurs = utilisateurs;
-    }
 
     /**
      * Remplace le resolveur par defaut de Spring Boot, qui lit l en-tete du
@@ -81,7 +72,6 @@ public class InternationalisationConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registre) {
-        registre.addInterceptor(new PreferenceLangueInterceptor(utilisateurs));
         registre.addInterceptor(localeChangeInterceptor());
     }
 }

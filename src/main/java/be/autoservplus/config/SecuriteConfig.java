@@ -1,5 +1,6 @@
 package be.autoservplus.config;
 
+import be.autoservplus.i18n.LangueApresConnexionHandler;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -32,7 +33,9 @@ public class SecuriteConfig {
 
     @Bean
     public SecurityFilterChain chaineDeFiltres(HttpSecurity http,
-                                               EchecAuthentificationHandler echecHandler) throws Exception {
+                                               EchecAuthentificationHandler echecHandler,
+                                               LangueApresConnexionHandler succesHandler)
+            throws Exception {
         http
                 .authorizeHttpRequests(acces -> acces
                         .requestMatchers("/", "/accueil", "/services/**", "/pieces/**",
@@ -86,7 +89,10 @@ public class SecuriteConfig {
                 .formLogin(formulaire -> formulaire
                         .loginPage("/connexion")
                         .usernameParameter("email")
-                        .defaultSuccessUrl("/mon-compte", true)
+                        // Remplace defaultSuccessUrl("/mon-compte", true) a comportement
+                        // strictement egal — meme classe, memes deux reglages — en y
+                        // ajoutant l application de la langue enregistree au profil (F6).
+                        .successHandler(succesHandler)
                         .failureHandler(echecHandler)
                         .permitAll()
                 )
