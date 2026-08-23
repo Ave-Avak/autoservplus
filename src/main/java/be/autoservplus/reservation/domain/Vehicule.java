@@ -146,9 +146,16 @@ public class Vehicule extends BaseEntity {
      * chassis en est une autre, et le kilometrage renseigne sur les habitudes de
      * deplacement — les trois partent.</p>
      *
-     * <p>Marque, modele et motorisation restent : ils decrivent un objet technique,
-     * ne designent personne, et sont ce qui rend l historique d atelier encore
+     * <p><b>Marque, modele, motorisation et annee restent</b> : ils decrivent un
+     * objet technique, ne designent personne, et sont ce qui rend l historique encore
      * lisible pour le garage.</p>
+     *
+     * <p><b>L annee a longtemps ete effacee ici, par exces de prudence.</b> C etait une
+     * incoherence : elle releve de la meme categorie que la marque et le modele — une
+     * caracteristique du vehicule, pas de son proprietaire. « Golf diesel de 2015 » ne
+     * designe pas davantage quelqu un que « Golf diesel ». Le critere retenu est net :
+     * part ce qui identifie une personne (plaque, chassis) ou renseigne sur son
+     * comportement (kilometrage) ; reste ce qui decrit l objet.</p>
      *
      * <p>La plaque de substitution doit rester unique : {@code uq_vehicule_plaque_active}
      * s applique a tout vehicule non supprime logiquement, y compris anonymise.
@@ -157,8 +164,10 @@ public class Vehicule extends BaseEntity {
     public void anonymiser(String plaqueMarqueur) {
         this.plaque = Objects.requireNonNull(plaqueMarqueur, "plaqueMarqueur");
         this.numeroChassis = null;
+        // Le kilometrage part : il renseigne sur les habitudes de deplacement, donc
+        // sur la personne. L annee reste : elle decrit l objet, comme marque et
+        // modele. Voir le Javadoc pour le critere complet.
         this.kilometrage = null;
-        this.annee = null;
         this.actif = false;
     }
 
