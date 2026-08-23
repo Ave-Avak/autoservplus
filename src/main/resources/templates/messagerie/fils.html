@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{messagerie.titre} + ' — AutoServ+'">Mes messages — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}" th:text="#{nav.prestations}">Prestations</a></li>
+            <li><a th:href="@{/pieces}" th:text="#{nav.pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mes-messages}" th:text="#{messagerie.nav(${nombreFilsNonLus})}">Messages (0)</a></li>
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li><form th:action="@{/deconnexion}" method="post">
+                <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+            </form></li>
+        </ul>
+    </nav>
+</header>
+<main id="contenu">
+    <h1 th:text="#{messagerie.titre}">Mes messages</h1>
+    <p class="message" th:if="${message}" th:text="${message}">Message envoyé.</p>
+
+    <p class="actions-page">
+        <a th:href="@{/mes-messages/nouveau}" th:text="#{messagerie.nouveau.titre}">Poser une question</a>
+    </p>
+
+    <p th:if="${#lists.isEmpty(fils)}" th:text="#{messagerie.aucun}">
+        Vous n'avez encore échangé aucun message avec le garage.
+    </p>
+
+    <ul class="liste-fils" th:unless="${#lists.isEmpty(fils)}">
+        <li th:each="f : ${fils}">
+            <p>
+                <a th:href="@{/mes-messages/{ref}(ref=${f.reference()})}" th:text="${f.sujet()}">Question sur ma vidange</a>
+                <!-- Marqueur textuel et non seulement coloré : un lecteur d'écran doit
+                     percevoir qu'un fil attend une lecture. -->
+                <span th:if="${f.aDesNonLus()}" class="badge" th:text="#{messagerie.non-lus(${f.nombreNonLus()})}">2 non lus</span>
+                <span th:if="${f.cloturee()}" class="badge" th:text="#{messagerie.clos}">Clôturé</span>
+            </p>
+            <p class="carte-meta">
+                <span th:if="${f.estRattachee()}" th:text="#{messagerie.rattache(${f.numeroIntervention()})}">Travaux ITV-2026-0011</span>
+                <span th:text="${f.derniereActivite()}">23 août 2026</span>
+            </p>
+        </li>
+    </ul>
+</main>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

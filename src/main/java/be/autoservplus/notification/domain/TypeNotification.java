@@ -28,6 +28,8 @@ public enum TypeNotification {
     INTERVENTION_TERMINEE,
     AVOIR_EMIS,
     RETRACTATION_REFUSEE,
+    /** Nouveau message dans un fil de discussion (BL-5) : vise le membre ou le garage. */
+    MESSAGE_RECU,
     /** Adressee aux administrateurs, seule valeur qui ne vise pas un membre (BL-4). */
     AVIS_DEPOSE;
 

@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.messagerie.titre} + ' — AutoServ+'">Messages clients — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li><form th:action="@{/deconnexion}" method="post">
+                <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+            </form></li>
+        </ul>
+    </nav>
+</header>
+<main id="contenu">
+    <h1 th:text="#{admin.messagerie.titre}">Messages clients</h1>
+    <p class="message" th:if="${message}" th:text="${message}">Fil clôturé.</p>
+
+    <p th:if="${#lists.isEmpty(fils)}" th:text="#{admin.messagerie.aucun}">Aucun message client.</p>
+
+    <table class="tableau" th:unless="${#lists.isEmpty(fils)}">
+        <caption th:text="#{admin.messagerie.legende}">Fils ouverts d'abord, puis les fils clôturés.</caption>
+        <thead>
+        <tr>
+            <th scope="col" th:text="#{admin.messagerie.colonne.sujet}">Sujet</th>
+            <th scope="col" th:text="#{admin.messagerie.colonne.membre}">Client</th>
+            <th scope="col" th:text="#{admin.messagerie.colonne.rattachement}">Travaux</th>
+            <th scope="col" th:text="#{admin.messagerie.colonne.activite}">Dernière activité</th>
+            <th scope="col" th:text="#{admin.messagerie.colonne.etat}">État</th>
+            <th scope="col" th:text="#{admin.messagerie.colonne.actions}">Actions</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="f : ${fils}">
+            <td><a th:href="@{/admin/messages/{ref}(ref=${f.reference()})}" th:text="${f.sujet()}">Question</a></td>
+            <td th:text="${f.prenomMembre()}">Marie</td>
+            <td th:text="${f.estRattachee()} ? ${f.numeroIntervention()} : ''">ITV-2026-0011</td>
+            <td th:text="${f.derniereActivite()}">23 août 2026</td>
+            <td>
+                <span th:if="${f.aDesNonLus()}" class="badge" th:text="#{messagerie.non-lus(${f.nombreNonLus()})}">2 non lus</span>
+                <span th:if="${f.cloturee()}" th:text="#{messagerie.clos}">Clôturé</span>
+            </td>
+            <td>
+                <form th:unless="${f.cloturee()}" th:action="@{/admin/messages/{ref}/cloturer(ref=${f.reference()})}"
+                      method="post" class="en-ligne">
+                    <button type="submit" class="lien-bouton" th:text="#{admin.messagerie.action.cloturer}">Clôturer</button>
+                </form>
+                <form th:if="${f.cloturee()}" th:action="@{/admin/messages/{ref}/rouvrir(ref=${f.reference()})}"
+                      method="post" class="en-ligne">
+                    <button type="submit" class="lien-bouton" th:text="#{admin.messagerie.action.rouvrir}">Rouvrir</button>
+                </form>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>
