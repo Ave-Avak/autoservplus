@@ -24,11 +24,11 @@ import java.util.UUID;
  * a {@code commande_id} via {@link #reprendreLignes} (reaffectation prevue au
  * dictionnaire, CHECK {@code ck_ligne_rattachement_unique}).</p>
  *
- * <p>Machine a etats minimale ({@link StatutCommande#peutPasserA}) : PAYEE par le
- * webhook confirme, ANNULEE par le timeout RM-21. Une PAYEE ne redevient jamais
- * ANNULEE et inversement — c est la garde qui tranche la course entre le job
- * d expiration et un webhook tardif. Pas de collection de lignes cote commande :
- * la facture la mappera le moment venu.</p>
+ * <p>Machine a etats ({@link StatutCommande#peutPasserA}) : PAYEE par le webhook
+ * confirme, ANNULEE par le timeout RM-21, REMBOURSEE par la retractation (F30).
+ * Une PAYEE ne redevient jamais ANNULEE et inversement — c est la garde qui
+ * tranche la course entre le job d expiration et un webhook tardif. Pas de
+ * collection de lignes cote commande : la facture la mappera le moment venu.</p>
  */
 @Entity
 @Table(name = "commande")
@@ -137,6 +137,26 @@ public class Commande extends BaseEntity {
     public void annuler(MotifAnnulationCommande motif, Instant maintenant) {
         transitionVers(StatutCommande.ANNULEE);
         this.motifAnnulation = Objects.requireNonNull(motif, "motif");
+        this.dateAnnulation = Objects.requireNonNull(maintenant, "maintenant");
+    }
+
+    /**
+     * L administrateur a valide la retractation : la commande est REMBOURSEE (F30).
+     *
+     * <p>REMBOURSEE et non ANNULEE, alors que le resultat pour le membre se ressemble :
+     * une commande annulee ne l a jamais ete que faute de paiement (RM-21), une
+     * commande remboursee a ete encaissee, facturee, puis contre-passee par une note
+     * de credit. Les confondre effacerait cette difference dans les livres comme dans
+     * les statistiques du garage.</p>
+     *
+     * <p>Motif et date d annulation sont renseignes bien que le CHECK
+     * {@code ck_commande_annulation} ne les exige que pour ANNULEE : la colonne existe,
+     * le motif est connu, et une commande remboursee sans trace de la raison serait
+     * illisible six mois plus tard. V24 l avait explicitement prevu.</p>
+     */
+    public void rembourser(Instant maintenant) {
+        transitionVers(StatutCommande.REMBOURSEE);
+        this.motifAnnulation = MotifAnnulationCommande.RETRACTATION_F30;
         this.dateAnnulation = Objects.requireNonNull(maintenant, "maintenant");
     }
 

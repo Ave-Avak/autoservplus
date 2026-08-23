@@ -123,6 +123,102 @@ class SchemaIT {
         assertThat(nombre).isZero();
     }
 
+    // --- F30 : retractation et note de credit (V27) -----------------------------------
+
+    @Test
+    @DisplayName("la note de credit est immuable en base, comme la facture (tg_avoir_immuable)")
+    void avoirImmuable() {
+        // Le socle protegeait la facture et laissait l avoir nu. Une note de credit
+        // est pourtant un document comptable au meme titre : sa correction ne passe
+        // pas davantage par un UPDATE.
+        Integer triggers = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_trigger WHERE tgname = 'tg_avoir_immuable'", Integer.class);
+        assertThat(triggers).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("une facture porte au plus un avoir (uq_avoir_facture, perimetre V1)")
+    void unSeulAvoirParFacture() {
+        // L unicite dit aussi le perimetre : l annulation est TOTALE en V1.
+        // L annulation partielle par ligne (V2) devra lever cet index.
+        Boolean unique = jdbc.queryForObject(
+                "SELECT indisunique FROM pg_index i JOIN pg_class c ON c.oid = i.indexrelid "
+                        + "WHERE c.relname = 'uq_avoir_facture'", Boolean.class);
+        assertThat(unique).isTrue();
+        // L index simple du socle a bien ete remplace, pas double.
+        Integer ancien = jdbc.queryForObject(
+                "SELECT count(*) FROM pg_class WHERE relname = 'ix_avoir_facture'", Integer.class);
+        assertThat(ancien).isZero();
+    }
+
+    @Test
+    @DisplayName("le compteur d'avoirs existe et la sequence V9 est marquee inutilisee")
+    void compteurAvoirs() {
+        // Une sequence PostgreSQL laisse des trous au rollback : disqualifiant pour
+        // un document rectificatif comme pour la facture (AR n°1, art. 5 et 12).
+        Integer table = jdbc.queryForObject(
+                "SELECT count(*) FROM information_schema.tables WHERE table_name = 'compteur_avoir'",
+                Integer.class);
+        assertThat(table).isEqualTo(1);
+        assertThat(jdbc.queryForObject(
+                "SELECT obj_description('seq_numero_avoir'::regclass, 'pg_class')", String.class))
+                .contains("INUTILISEE");
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("une seule demande d'annulation EN_ATTENTE par commande")
+    void uneSeuleDemandeEnAttenteParCommande() {
+        Long commandeId = commandeDeTest("CMD-SCHEMA-IT-1");
+
+        jdbc.update("INSERT INTO demande_annulation (commande_id, statut) VALUES (?, 'EN_ATTENTE')",
+                commandeId);
+
+        assertThatThrownBy(() -> jdbc.update(
+                "INSERT INTO demande_annulation (commande_id, statut) VALUES (?, 'EN_ATTENTE')",
+                commandeId))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("uq_demande_annulation_en_attente");
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("une demande tranchee porte toujours son decideur et sa date")
+    void decisionTracee() {
+        Long commandeId = commandeDeTest("CMD-SCHEMA-IT-2");
+
+        // L etat « validee par personne » doit etre inexprimable, pas surveille.
+        assertThatThrownBy(() -> jdbc.update(
+                "INSERT INTO demande_annulation (commande_id, statut) VALUES (?, 'REFUSEE')",
+                commandeId))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ck_demande_annulation_decision");
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("une demande validee porte toujours son avoir, une autre n'en porte jamais")
+    void avoirReserveALaValidation() {
+        Long commandeId = commandeDeTest("CMD-SCHEMA-IT-3");
+        Long adminId = jdbc.queryForObject(
+                "SELECT id FROM utilisateur WHERE email = 'admin@autoservplus.be'", Long.class);
+
+        assertThatThrownBy(() -> jdbc.update(
+                "INSERT INTO demande_annulation (commande_id, statut, decide_par, decide_le) "
+                        + "VALUES (?, 'VALIDEE', ?, now())", commandeId, adminId))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ck_demande_annulation_avoir");
+    }
+
+    /** Commande PAYEE minimale, de quoi accrocher une demande d annulation. */
+    private Long commandeDeTest(String numero) {
+        return jdbc.queryForObject(
+                "INSERT INTO commande (numero, membre_id, statut, montant_htva, montant_tva, montant_tvac) "
+                        + "SELECT ?, id, 'PAYEE', 10.00, 2.10, 12.10 FROM utilisateur "
+                        + "WHERE email = 'admin@autoservplus.be' RETURNING id",
+                Long.class, numero);
+    }
+
     // --- RM-15 : le devis initial est structurellement obligatoire (V20 + V21) --------
 
     @Test

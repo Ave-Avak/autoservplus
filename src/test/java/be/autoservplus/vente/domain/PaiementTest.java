@@ -77,6 +77,46 @@ class PaiementTest {
         }
 
         @Test
+        @DisplayName("REUSSI mene au remboursement, qui est a son tour terminal (F30)")
+        void remboursement() {
+            paiement.confirmer(MAINTENANT);
+
+            paiement.rembourser("re_fictif_0001");
+
+            assertThat(paiement.getStatut()).isEqualTo(StatutPaiement.REMBOURSE);
+            assertThat(paiement.getReferenceRemboursement()).isEqualTo("re_fictif_0001");
+            assertThat(paiement.estTermine()).isTrue();
+            // La date de finalisation date l encaissement, pas le remboursement :
+            // c est elle que porte la facture immuable, elle ne se reecrit pas.
+            assertThat(paiement.getDateFinalisation()).isEqualTo(MAINTENANT);
+            assertThatThrownBy(() -> paiement.rembourser("re_fictif_0002"))
+                    .isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("seul un paiement encaisse se rembourse")
+        void remboursementSeulementApresEncaissement() {
+            assertThatThrownBy(() -> paiement.rembourser("re_fictif_0001"))
+                    .isInstanceOf(IllegalStateException.class);
+
+            paiement.mettreEnCours();
+            paiement.echouer(MAINTENANT);
+            assertThatThrownBy(() -> paiement.rembourser("re_fictif_0001"))
+                    .isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("la cle d'idempotence du remboursement est stable et distincte de celle du paiement")
+        void cleIdempotenceRemboursement() {
+            // Stable : un rejeu envoie la meme cle, le prestataire ne rembourse
+            // qu une fois. Une cle tiree au hasard donnerait la garantie inverse.
+            assertThat(paiement.cleIdempotenceRemboursement())
+                    .isEqualTo(paiement.cleIdempotenceRemboursement())
+                    .isNotEqualTo(paiement.getCleIdempotence())
+                    .contains(paiement.getReference().toString());
+        }
+
+        @Test
         @DisplayName("la reference prestataire se pose une seule fois")
         void referencePrestataireUnique() {
             paiement.enregistrerReferencePrestataire("tr_fictif_0001");
@@ -119,6 +159,33 @@ class PaiementTest {
                     MotifAnnulationCommande.TIMEOUT_PAIEMENT, MAINTENANT))
                     .isInstanceOf(IllegalStateException.class);
             assertThat(commande.getStatut()).isEqualTo(StatutCommande.PAYEE);
+        }
+
+        @Test
+        @DisplayName("rembourser : PAYEE -> REMBOURSEE, motif RETRACTATION_F30 pose (F30)")
+        void remboursementApresRetractation() {
+            commande.confirmerPaiement(MAINTENANT);
+
+            commande.rembourser(MAINTENANT.plusSeconds(86_400));
+
+            // REMBOURSEE et non ANNULEE : une commande encaissee puis contre-passee
+            // n est pas une commande jamais payee.
+            assertThat(commande.getStatut()).isEqualTo(StatutCommande.REMBOURSEE);
+            assertThat(commande.getMotifAnnulation())
+                    .isEqualTo(MotifAnnulationCommande.RETRACTATION_F30);
+            assertThat(commande.getDateAnnulation()).isEqualTo(MAINTENANT.plusSeconds(86_400));
+        }
+
+        @Test
+        @DisplayName("une commande non payee ne se rembourse pas, une REMBOURSEE ne se rembourse pas deux fois")
+        void remboursementImpossible() {
+            assertThatThrownBy(() -> commande.rembourser(MAINTENANT))
+                    .isInstanceOf(IllegalStateException.class);
+
+            commande.confirmerPaiement(MAINTENANT);
+            commande.rembourser(MAINTENANT);
+            assertThatThrownBy(() -> commande.rembourser(MAINTENANT))
+                    .isInstanceOf(IllegalStateException.class);
         }
 
         @Test

@@ -46,6 +46,14 @@ public class Paiement {
     @Column(name = "reference_mollie", length = 64)
     private String referenceMollie;
 
+    /**
+     * Identifiant du Refund chez le prestataire (V27), contrepartie de
+     * {@link #referenceMollie}. Seul point de rapprochement avec l extrait du
+     * prestataire si le membre conteste n avoir jamais ete rembourse.
+     */
+    @Column(name = "reference_remboursement", length = 64)
+    private String referenceRemboursement;
+
     @NotNull
     @Column(name = "cle_idempotence", nullable = false, updatable = false, length = 64)
     private String cleIdempotence;
@@ -136,6 +144,35 @@ public class Paiement {
         this.dateFinalisation = Objects.requireNonNull(maintenant, "maintenant");
     }
 
+    /**
+     * Le prestataire a accepte le Refund (F30) : l encaissement est contre-passe.
+     *
+     * <p>{@code dateFinalisation} n est PAS reecrite : elle date l encaissement, et
+     * c est cette date-la que porte la facture immuable. La date du remboursement
+     * vit sur la demande d annulation qui l a declenche ({@code decide_le}) et sur
+     * la note de credit ({@code date_emission}) — trois evenements distincts, trois
+     * horodatages distincts, aucun ecrase par le suivant.</p>
+     *
+     * @param referencePrestataire identifiant du Refund, pour le rapprochement
+     */
+    public void rembourser(String referencePrestataire) {
+        transitionVers(StatutPaiement.REMBOURSE);
+        this.referenceRemboursement =
+                Objects.requireNonNull(referencePrestataire, "referencePrestataire");
+    }
+
+    /**
+     * Cle d idempotence du remboursement, <b>derivee</b> de la reference du paiement
+     * et donc stable : deux appels pour le meme paiement portent la meme cle, et le
+     * prestataire ne rembourse qu une fois meme si la requete est rejouee. Une cle
+     * tiree au hasard a chaque appel offrirait exactement la garantie inverse.
+     * Distincte de {@link #cleIdempotence}, qui couvre l encaissement : ce sont deux
+     * operations differentes chez le prestataire.
+     */
+    public String cleIdempotenceRemboursement() {
+        return "remboursement-" + reference;
+    }
+
     private void transitionVers(StatutPaiement cible) {
         if (!statut.peutPasserA(cible)) {
             throw new IllegalStateException(
@@ -153,6 +190,7 @@ public class Paiement {
     public UUID getReference() { return reference; }
     public Commande getCommande() { return commande; }
     public String getReferenceMollie() { return referenceMollie; }
+    public String getReferenceRemboursement() { return referenceRemboursement; }
     public String getCleIdempotence() { return cleIdempotence; }
     public BigDecimal getMontant() { return montant; }
     public String getDevise() { return devise; }
