@@ -15,12 +15,17 @@ import java.util.Optional;
 import java.util.regex.Pattern;
 
 /**
- * Archivage des factures PDF sur le systeme de fichiers.
+ * Archivage des documents comptables PDF sur le systeme de fichiers.
  *
  * <p>La loi belge impose la conservation des factures <b>sept ans</b> (Code TVA
  * art. 60). Un document regenere a chaque demande ne serait pas une archive : il
  * refleterait le code du jour, pas celui de l emission. Le PDF est donc ecrit une
  * fois puis relu tel quel, et c est ce meme fichier qui sert de piece justificative.</p>
+ *
+ * <p>Le nom de la classe ne dit plus « factures » : la note de credit qui corrige une
+ * facture releve de la meme obligation de conservation et sera rangee dans la meme
+ * archive. La generalisation est faite <b>avant</b> son arrivee, pour que le bloc qui
+ * l ajoutera n ait pas a renommer en meme temps qu il implemente.</p>
  *
  * <p>Racine configurable ({@code autoservplus.facturation.archive}), jamais en dur :
  * en production elle designe un volume sauvegarde, distinct du repertoire de
@@ -32,9 +37,9 @@ import java.util.regex.Pattern;
  * {@code facture.chemin_pdf}. Arborescence par exercice, comme un classeur comptable.</p>
  */
 @Component
-public class ArchiveFactures {
+public class ArchiveComptable {
 
-    private static final Logger log = LoggerFactory.getLogger(ArchiveFactures.class);
+    private static final Logger log = LoggerFactory.getLogger(ArchiveComptable.class);
 
     /**
      * Un numero de facture, et rien d autre, peut composer un nom de fichier. Le
@@ -46,7 +51,7 @@ public class ArchiveFactures {
 
     private final Path racine;
 
-    public ArchiveFactures(
+    public ArchiveComptable(
             @Value("${autoservplus.facturation.archive:./data/factures}") String racine) {
         this.racine = Path.of(racine).toAbsolutePath().normalize();
     }
@@ -59,8 +64,19 @@ public class ArchiveFactures {
      * l emplacement definitif, ou il serait ensuite servi comme s il etait complet.</p>
      */
     public String archiver(short exercice, String numero, byte[] pdf) {
+        return ecrire("%d/%s.pdf".formatted(exercice, numero), numero, pdf);
+    }
+
+    /**
+     * Ecriture proprement dite, chemin relatif deja compose par l appelant.
+     *
+     * <p>Extraite d {@link #archiver} : la composition du chemin est le seul point
+     * qui variera d un type de document a l autre, l ecriture atomique est commune.
+     * Elle est isolee ici pour que l ajout d un second document n ait pas a dupliquer
+     * le fichier temporaire, le deplacement atomique et leur rattrapage d erreur.</p>
+     */
+    private String ecrire(String cheminRelatif, String numero, byte[] pdf) {
         exigerNumeroValide(numero);
-        String cheminRelatif = "%d/%s.pdf".formatted(exercice, numero);
         Path destination = racine.resolve(cheminRelatif);
         try {
             Files.createDirectories(destination.getParent());

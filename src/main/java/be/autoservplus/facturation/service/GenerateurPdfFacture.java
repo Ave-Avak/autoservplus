@@ -6,27 +6,30 @@ import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
-import com.lowagie.text.FontFactory;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.Phrase;
-import com.lowagie.text.pdf.PdfPCell;
 import com.lowagie.text.pdf.PdfPTable;
 import com.lowagie.text.pdf.PdfWriter;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
-import java.awt.Color;
 import java.io.ByteArrayOutputStream;
 import java.math.BigDecimal;
-import java.text.NumberFormat;
-import java.time.Instant;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.FormatStyle;
-import java.util.Currency;
 import java.util.List;
-import java.util.Locale;
+
+import static be.autoservplus.facturation.service.StylePdf.BLEU_MARINE;
+import static be.autoservplus.facturation.service.StylePdf.GRIS_TEXTE;
+import static be.autoservplus.facturation.service.StylePdf.cellule;
+import static be.autoservplus.facturation.service.StylePdf.celluleEntete;
+import static be.autoservplus.facturation.service.StylePdf.celluleInvisible;
+import static be.autoservplus.facturation.service.StylePdf.celluleTotal;
+import static be.autoservplus.facturation.service.StylePdf.date;
+import static be.autoservplus.facturation.service.StylePdf.montant;
+import static be.autoservplus.facturation.service.StylePdf.nonNul;
+import static be.autoservplus.facturation.service.StylePdf.police;
+import static be.autoservplus.facturation.service.StylePdf.pourcentage;
+import static be.autoservplus.facturation.service.StylePdf.tableauInvisible;
 
 /**
  * Composition du PDF d une facture (F31), avec OpenPDF.
@@ -42,21 +45,13 @@ import java.util.Locale;
  * etant forcee a l euro (un {@code Locale.ENGLISH} non contraint imprimerait des
  * dollars).</p>
  *
- * <p><b>Ecart de charte assume</b> : les couleurs sont celles de la charte
- * (bleu marine {@code #1F3864}, gris), mais la typographie est Helvetica et non
- * Inter. Inter est une police web ; l embarquer dans un PDF suppose de livrer le
- * fichier de fonte dans le depot, ce que ce bloc n introduit pas. Helvetica est une
- * des quatorze polices garanties par le format PDF, donc lisible partout sans
- * embarquement.</p>
+ * <p>Les primitives de composition (couleurs, cellules, formatage) vivent dans
+ * {@link StylePdf}, ou elles attendent le generateur de note de credit : une facture
+ * et son avoir doivent se ressembler au pixel pres, le client les compare cote a
+ * cote.</p>
  */
 @Component
 public class GenerateurPdfFacture {
-
-    private static final Color BLEU_MARINE = new Color(0x1F, 0x38, 0x64);
-    private static final Color GRIS_TEXTE = new Color(0x37, 0x41, 0x51);
-    private static final Color GRIS_FOND = new Color(0xF9, 0xFA, 0xFB);
-    private static final Color GRIS_BORDURE = new Color(0xE5, 0xE7, 0xEB);
-    private static final ZoneId BRUXELLES = ZoneId.of("Europe/Brussels");
 
     private final MessageSource messages;
     private final IdentiteGarage garage;
@@ -220,84 +215,8 @@ public class GenerateurPdfFacture {
         return mentions;
     }
 
-    // --- helpers de composition ---------------------------------------------------------
-
-    private static Font police(float taille, int style, Color couleur) {
-        return FontFactory.getFont(FontFactory.HELVETICA, taille, style, couleur);
-    }
-
-    private static PdfPTable tableauInvisible(float[] largeurs) {
-        PdfPTable table = new PdfPTable(largeurs);
-        table.setWidthPercentage(100);
-        return table;
-    }
-
-    private static PdfPCell celluleInvisible(Element contenu, int alignement) {
-        PdfPCell cellule = new PdfPCell();
-        cellule.addElement(contenu);
-        cellule.setBorder(com.lowagie.text.Rectangle.NO_BORDER);
-        cellule.setHorizontalAlignment(alignement);
-        cellule.setPadding(0);
-        return cellule;
-    }
-
-    private static PdfPCell celluleEntete(String texte, int alignement) {
-        PdfPCell cellule = new PdfPCell(new Phrase(texte, police(8, Font.BOLD, Color.WHITE)));
-        cellule.setBackgroundColor(BLEU_MARINE);
-        cellule.setHorizontalAlignment(alignement);
-        cellule.setPadding(6);
-        cellule.setBorderColor(BLEU_MARINE);
-        return cellule;
-    }
-
-    private static PdfPCell cellule(String texte, int alignement) {
-        PdfPCell cellule = new PdfPCell(new Phrase(texte, police(9, Font.NORMAL, GRIS_TEXTE)));
-        cellule.setHorizontalAlignment(alignement);
-        cellule.setPadding(6);
-        cellule.setBorderColor(GRIS_BORDURE);
-        return cellule;
-    }
-
-    private static PdfPCell celluleTotal(String texte, boolean accentue) {
-        PdfPCell cellule = new PdfPCell(new Phrase(texte,
-                police(accentue ? 11 : 9, accentue ? Font.BOLD : Font.NORMAL,
-                        accentue ? BLEU_MARINE : GRIS_TEXTE)));
-        cellule.setHorizontalAlignment(Element.ALIGN_RIGHT);
-        cellule.setPadding(6);
-        cellule.setBorderColor(GRIS_BORDURE);
-        if (accentue) {
-            cellule.setBackgroundColor(GRIS_FOND);
-        }
-        return cellule;
-    }
-
-    // --- formatage ----------------------------------------------------------------------
-
     private String libelle(DocumentFacture document, String cle, Object... arguments) {
         return messages.getMessage(cle, arguments, document.locale());
     }
 
-    /**
-     * Montant dans la locale du membre, devise forcee a l euro : sans cette
-     * contrainte, une facture en anglais s afficherait en dollars.
-     */
-    private static String montant(BigDecimal valeur, Locale locale) {
-        NumberFormat format = NumberFormat.getCurrencyInstance(locale);
-        format.setCurrency(Currency.getInstance("EUR"));
-        return format.format(valeur);
-    }
-
-    private static String pourcentage(BigDecimal taux) {
-        return taux.stripTrailingZeros().toPlainString() + " %";
-    }
-
-    private static String date(Instant instant, Locale locale) {
-        return DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)
-                .withLocale(locale)
-                .format(instant.atZone(BRUXELLES));
-    }
-
-    private static String nonNul(String valeur) {
-        return valeur == null ? "" : valeur;
-    }
 }

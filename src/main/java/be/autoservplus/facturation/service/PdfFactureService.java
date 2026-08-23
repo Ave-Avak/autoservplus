@@ -40,10 +40,10 @@ public class PdfFactureService {
     private final FactureRepository factures;
     private final FactureService factureService;
     private final GenerateurPdfFacture generateur;
-    private final ArchiveFactures archive;
+    private final ArchiveComptable archive;
 
     public PdfFactureService(FactureRepository factures, FactureService factureService,
-                             GenerateurPdfFacture generateur, ArchiveFactures archive) {
+                             GenerateurPdfFacture generateur, ArchiveComptable archive) {
         this.factures = factures;
         this.factureService = factureService;
         this.generateur = generateur;

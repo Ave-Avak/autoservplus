@@ -15,16 +15,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Archivage sur disque : emplacement, relecture, et refus de tout nom de fichier
  * qui ne serait pas un numero de facture.
  */
-@DisplayName("ArchiveFactures")
-class ArchiveFacturesTest {
+@DisplayName("ArchiveComptable")
+class ArchiveComptableTest {
 
     private static final byte[] PDF = "%PDF-1.4 contenu".getBytes(StandardCharsets.UTF_8);
 
     @TempDir
     Path racine;
 
-    private ArchiveFactures archive() {
-        return new ArchiveFactures(racine.toString());
+    private ArchiveComptable archive() {
+        return new ArchiveComptable(racine.toString());
     }
 
     @Test
@@ -41,7 +41,7 @@ class ArchiveFacturesTest {
     @Test
     @DisplayName("relit exactement ce qui a ete archive")
     void relecture() {
-        ArchiveFactures archive = archive();
+        ArchiveComptable archive = archive();
         String chemin = archive.archiver((short) 2026, "2026-0001", PDF);
 
         assertThat(archive.lire(chemin)).hasValue(PDF);
@@ -83,7 +83,7 @@ class ArchiveFacturesTest {
     @Test
     @DisplayName("reemettre le meme numero remplace le fichier au lieu d'en creer un second")
     void archivageIdempotent() {
-        ArchiveFactures archive = archive();
+        ArchiveComptable archive = archive();
         archive.archiver((short) 2026, "2026-0001", PDF);
         byte[] regenere = "%PDF-1.4 reconstruit".getBytes(StandardCharsets.UTF_8);
 

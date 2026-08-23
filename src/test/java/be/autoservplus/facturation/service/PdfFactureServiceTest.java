@@ -52,7 +52,7 @@ class PdfFactureServiceTest {
     @Mock private FactureRepository factures;
     @Mock private FactureService factureService;
     @Mock private GenerateurPdfFacture generateur;
-    @Mock private ArchiveFactures archive;
+    @Mock private ArchiveComptable archive;
 
     private PdfFactureService service;
 
