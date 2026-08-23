@@ -46,6 +46,7 @@
             <th scope="col" th:text="#{commandes.colonne.montant}">Montant TVAC</th>
             <th scope="col" th:text="#{commandes.colonne.statut}">Statut</th>
             <th scope="col" th:text="#{commandes.colonne.facture}">Facture</th>
+            <th scope="col" th:text="#{commandes.colonne.annulation}">Annulation</th>
         </tr>
         </thead>
         <tbody>
@@ -64,6 +65,32 @@
                 </a>
                 <span th:unless="${commande.estFacturee()}" class="carte-meta"
                       th:text="#{commandes.sans-facture}">—</span>
+            </td>
+            <!-- Etat de retractation : porte par une carte separee, indexee par
+                 reference de commande. Le module vente ignore la retractation ;
+                 c'est le gabarit qui fait la jointure. -->
+            <td th:with="retractation=${retractations[commande.reference()]}">
+                <!-- Note de credit disponible : la demande a ete validee. -->
+                <a th:if="${retractation != null and retractation.aUnAvoir()}"
+                   th:href="@{/avoirs/{ref}/pdf(ref=${retractation.referenceAvoir()})}"
+                   th:text="#{commandes.avoir.telecharger(${retractation.numeroAvoir()})}">
+                    Télécharger l'avoir AV-2026-0001
+                </a>
+                <!-- Demande deposee, en attente de la decision du garage. -->
+                <span th:if="${retractation != null and retractation.estEnAttente()}"
+                      class="badge badge-en_attente"
+                      th:text="#{commandes.annulation.en-attente}">Demande en cours</span>
+                <!-- Bouton propose seulement si le controle d'eligibilite passe :
+                     commande payee, delai de 14 jours en cours, aucune demande
+                     pendante. Il ouvre une page de confirmation, il n'agit pas. -->
+                <a th:if="${retractation != null and retractation.demandable()}"
+                   th:href="@{/commandes/{ref}/annulation(ref=${commande.reference()})}"
+                   th:text="#{commandes.annulation.demander}">Demander l'annulation</a>
+                <span th:if="${retractation == null
+                              or (!retractation.demandable()
+                                  and !retractation.estEnAttente()
+                                  and !retractation.aUnAvoir())}"
+                      class="carte-meta" th:text="#{commandes.sans-facture}">—</span>
             </td>
         </tr>
         </tbody>

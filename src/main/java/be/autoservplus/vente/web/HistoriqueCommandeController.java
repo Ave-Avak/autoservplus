@@ -2,6 +2,7 @@ package be.autoservplus.vente.web;
 
 import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.facturation.service.dto.FactureVue;
+import be.autoservplus.retractation.service.RetractationService;
 import be.autoservplus.vente.service.CommandeService;
 import be.autoservplus.vente.web.dto.CommandeHistoriqueVue;
 import org.springframework.context.MessageSource;
@@ -26,11 +27,17 @@ import java.util.function.Function;
  * paiement, depuis la page de confirmation : une facture doit rester accessible des
  * annees apres l achat.</p>
  *
- * <p>Le rapprochement commande / facture se fait <b>ici</b> et non dans un service :
- * chaque module repond sur son propre domaine — la vente ignore la facturation, la
- * facturation connait la commande dont elle est issue — et le controleur assemble
- * les deux vues. Faire descendre ce rapprochement dans {@code CommandeService}
- * inverserait la dependance entre les deux modules.</p>
+ * <p>Le rapprochement commande / facture / retractation se fait <b>ici</b> et non
+ * dans un service : chaque module repond sur son propre domaine — la vente ignore la
+ * facturation et la retractation, celles-ci connaissent la commande dont elles
+ * decoulent — et le controleur assemble les vues. Faire descendre ce rapprochement
+ * dans {@code CommandeService} inverserait la dependance entre les modules.</p>
+ *
+ * <p>L etat de retractation arrive dans une <b>carte a part</b>, indexee par
+ * reference de commande, plutot qu en champs supplementaires de
+ * {@code CommandeHistoriqueVue} : celle-ci devrait alors connaitre le statut d une
+ * demande d annulation, c est-a-dire faire dependre la vente de la retractation pour
+ * l affichage d un bouton. Le gabarit fait la jointure, le modele reste propre.</p>
  */
 @Controller
 @RequestMapping("/commandes")
@@ -38,12 +45,15 @@ public class HistoriqueCommandeController {
 
     private final CommandeService commandes;
     private final FactureService factures;
+    private final RetractationService retractations;
     private final MessageSource messages;
 
     public HistoriqueCommandeController(CommandeService commandes, FactureService factures,
+                                        RetractationService retractations,
                                         MessageSource messages) {
         this.commandes = commandes;
         this.factures = factures;
+        this.retractations = retractations;
         this.messages = messages;
     }
 
@@ -65,6 +75,7 @@ public class HistoriqueCommandeController {
 
         modele.addAttribute("titre", msg("commandes.titre"));
         modele.addAttribute("commandes", lignes);
+        modele.addAttribute("retractations", retractations.etatsDuMembre(email));
         return "vente/commandes";
     }
 

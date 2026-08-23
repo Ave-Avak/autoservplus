@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{retractation.titre} + ' — AutoServ+'">Demander l'annulation — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}" th:text="#{nav.prestations}">Prestations</a></li>
+            <li><a th:href="@{/pieces}" th:text="#{nav.pieces}">Pièces</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/panier}" th:text="#{panier.nav(${nombreArticlesPanier})}">Panier (0)</a></li>
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <p><a th:href="@{/commandes}" th:text="#{retractation.retour}">← Retour à mes commandes</a></p>
+
+    <h1 th:text="#{retractation.titre}">Demander l'annulation et le remboursement</h1>
+
+    <dl class="vehicule-details">
+        <div>
+            <dt th:text="#{commandes.colonne.numero}">Numéro</dt>
+            <dd th:text="${commande.numero()}">CMD-2026-0001</dd>
+        </div>
+        <div>
+            <dt th:text="#{commandes.colonne.montant}">Montant TVAC</dt>
+            <dd th:text="${commande.totalTvac()}">48,38 €</dd>
+        </div>
+    </dl>
+
+    <!-- Information precontractuelle : le membre doit savoir ce qu'il declenche,
+         et dans quel delai le garage doit rembourser. -->
+    <p class="texte-info" th:text="#{retractation.explication}">
+        Vous exercez votre droit de rétractation. Le garage vérifie que la pièce
+        n'a pas été montée ou déballée, puis vous rembourse.
+    </p>
+    <p class="texte-info" th:text="#{retractation.delai}">
+        Le remboursement intervient au plus tard 14 jours après acceptation.
+    </p>
+
+    <form class="formulaire"
+          th:action="@{/commandes/{ref}/annulation(ref=${commande.reference()})}"
+          th:object="${formulaire}" method="post" novalidate>
+
+        <div class="champ">
+            <label for="motif" th:text="#{retractation.motif.libelle}">Motif (facultatif)</label>
+            <textarea id="motif" th:field="*{motif}" rows="3" maxlength="1000"
+                      aria-describedby="aide-motif"></textarea>
+            <!-- Facultatif, et dit comme tel : le droit de retractation est
+                 inconditionnel, exiger une justification serait une entrave. -->
+            <p id="aide-motif" class="texte-info" th:text="#{retractation.motif.aide}">
+                Vous n'avez pas à vous justifier ; ce champ aide seulement le garage.
+            </p>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('motif')}" th:errors="*{motif}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="confirmation">
+                <input type="checkbox" id="confirmation" th:field="*{confirmation}">
+                <span th:text="#{retractation.confirmation.case}">Je confirme demander l'annulation de cette commande.</span>
+            </label>
+            <p class="texte-erreur" th:if="${#fields.hasErrors('confirmation')}"
+               th:errors="*{confirmation}"></p>
+        </div>
+
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{retractation.envoyer}">Envoyer la demande</button>
+            <a th:href="@{/commandes}" th:text="#{retractation.retour}">Retour à mes commandes</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>

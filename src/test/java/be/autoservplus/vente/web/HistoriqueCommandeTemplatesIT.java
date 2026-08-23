@@ -114,6 +114,36 @@ class HistoriqueCommandeTemplatesIT {
     }
 
     @Test
+    @DisplayName("une commande payee et recente propose la demande d'annulation (F30)")
+    void proposeLaDemandeDAnnulation() throws Exception {
+        // La colonne d annulation vient du module retractation, assemblee par le
+        // controleur : ce test verifie que la jointure du gabarit fonctionne, et que
+        // le bouton n apparait que la ou l eligibilite est reelle.
+        Commande commande = commandePayee("CMD-IT-HIST-0004");
+
+        mvc.perform(get("/commandes").locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Annulation")))
+                .andExpect(content().string(containsString(
+                        "/commandes/" + commande.getReference() + "/annulation")))
+                .andExpect(content().string(containsString("Demander l")));
+    }
+
+    @Test
+    @DisplayName("une commande non payee ne propose pas la demande d'annulation")
+    void pasDAnnulationSansPaiement() throws Exception {
+        // Rien a rembourser : proposer le bouton serait une promesse fausse.
+        Commande enAttente = commandes.saveAndFlush(new Commande("CMD-IT-HIST-0005", marie,
+                new BigDecimal("10.00"), new BigDecimal("2.10"), new BigDecimal("12.10"),
+                Instant.parse("2026-08-22T09:00:00Z")));
+
+        mvc.perform(get("/commandes").locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString(
+                        "/commandes/" + enAttente.getReference() + "/annulation"))));
+    }
+
+    @Test
     @DisplayName("sans commande, l'ecran le dit au lieu d'afficher un tableau vide")
     void historiqueVide() throws Exception {
         mvc.perform(get("/commandes").locale(Locale.FRENCH))
