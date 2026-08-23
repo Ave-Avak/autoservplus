@@ -1,4 +1,11 @@
 spring:
+  servlet:
+    multipart:
+      # Plafond du conteneur : il coupe la requete AVANT le controleur, c est la
+      # vraie protection contre la saturation. Le controle applicatif de
+      # StockageMedia est aligne dessus et sert aux tests hors requete HTTP.
+      max-file-size: ${MEDIAS_TAILLE_MAX_HTTP:5MB}
+      max-request-size: ${MEDIAS_REQUETE_MAX:25MB}
   application:
     name: autoservplus
   profiles:
@@ -62,6 +69,15 @@ autoservplus:
     iban: ${GARAGE_IBAN:BE68 5390 0754 7034}
     telephone: ${GARAGE_TELEPHONE:+32 2 000 00 00}
     courriel: ${GARAGE_COURRIEL:facturation@autoservplus.be}
+
+  stockage:
+    # Racine des fichiers deposes par le back-office (fondation upload).
+    # HORS webroot : rien ne sert ce repertoire statiquement, les images passent
+    # par un controleur qui verifie ce qu il sert. C est ce qui permet a la CSP de
+    # rester img-src 'self' sans relachement. Couvert par .gitignore (uploads/).
+    racine: ${MEDIAS_RACINE:./data/uploads}
+    # 5 Mo : une photo d atelier prise au telephone tient largement dessous.
+    taille-max-octets: ${MEDIAS_TAILLE_MAX:5242880}
 
   facturation:
     # Racine de l'archive des factures PDF, conservees SEPT ANS (Code TVA art. 60).
