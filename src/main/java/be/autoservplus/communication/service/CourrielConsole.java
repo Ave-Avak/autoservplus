@@ -168,4 +168,19 @@ public class CourrielConsole implements ServiceCourriel {
                 """, details.prenom(), details.adresseEmail(),
                 details.numeroCommande(), details.prenom(), details.motifRefus());
     }
+
+    @Override
+    public void envoyerConfirmationSuppressionCompte(DetailsSuppressionCompteCourriel details) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL SIMULE : compte supprime ----------
+                Destinataire : {} <{}>
+                Bonjour {}, votre compte AutoServ+ a bien ete supprime.
+                Vos donnees personnelles ont ete effacees et votre acces revoque.
+                Vos factures restent conservees sept ans, comme la loi l impose
+                (article 60 du Code de la TVA) ; elles ne vous identifient plus
+                dans l application.
+                ------------------------------------------------------
+                """, details.prenom(), details.adresseEmail(), details.prenom());
+    }
 }
