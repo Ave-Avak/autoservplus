@@ -1,6 +1,7 @@
 package be.autoservplus.facturation.service;
 
 import be.autoservplus.config.IdentiteGarage;
+import be.autoservplus.facturation.service.dto.DocumentAvoir;
 import be.autoservplus.facturation.service.dto.DocumentFacture;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
@@ -15,7 +16,6 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Component;
 
 import java.io.ByteArrayOutputStream;
-import java.math.BigDecimal;
 import java.util.List;
 
 import static be.autoservplus.facturation.service.StylePdf.BLEU_MARINE;
@@ -32,40 +32,41 @@ import static be.autoservplus.facturation.service.StylePdf.pourcentage;
 import static be.autoservplus.facturation.service.StylePdf.tableauInvisible;
 
 /**
- * Composition du PDF d une facture (F31), avec OpenPDF.
+ * Composition du PDF d une note de credit (F30), avec OpenPDF — jamais iText, dont
+ * la licence AGPL est incompatible avec un logiciel proprietaire.
  *
- * <p>Toutes les mentions obligatoires d une facture belge y figurent : numero et
- * date d emission, identification complete de l emetteur (denomination, siege, BCE,
- * TVA), identification du client, detail par ligne avec taux applique, et
- * <b>ventilation de la base imposable par taux</b> — c est cette derniere qui rend
- * une facture multi-taux verifiable par l administration.</p>
+ * <p><b>Mentions obligatoires du document rectificatif</b> (AR n°1, art. 12) : outre
+ * celles d une facture — numero, date, identification complete de l emetteur et du
+ * client, detail par ligne, ventilation de la base imposable par taux — la note de
+ * credit porte la <b>reference precise de la facture qu elle corrige</b> (numero et
+ * date) et la mention de restitution de TVA. Sans ce rattachement, elle ne corrige
+ * rien de verifiable.</p>
+ *
+ * <p>Meme charte et memes primitives que la facture ({@link StylePdf}) : le client
+ * recoit les deux documents et les compare. Seuls changent le titre, le bloc de
+ * reference a l original et les mentions de pied — c est-a-dire exactement ce qui
+ * distingue les deux documents, et rien d autre.</p>
  *
  * <p>Aucune chaine en dur : chaque libelle passe par le {@code MessageSource}, dans
- * la langue du membre. Les montants et les dates suivent la meme locale, la devise
- * etant forcee a l euro (un {@code Locale.ENGLISH} non contraint imprimerait des
- * dollars).</p>
- *
- * <p>Les primitives de composition (couleurs, cellules, formatage) vivent dans
- * {@link StylePdf}, partagees avec {@link GenerateurPdfAvoir} : une facture et son
- * avoir doivent se ressembler au pixel pres, le client les compare cote a cote.</p>
+ * la langue du membre — la meme que celle de la facture corrigee.</p>
  */
 @Component
-public class GenerateurPdfFacture {
+public class GenerateurPdfAvoir {
 
     private final MessageSource messages;
     private final IdentiteGarage garage;
 
-    public GenerateurPdfFacture(MessageSource messages, IdentiteGarage garage) {
+    public GenerateurPdfAvoir(MessageSource messages, IdentiteGarage garage) {
         this.messages = messages;
         this.garage = garage;
     }
 
-    public byte[] engendrer(DocumentFacture document) {
+    public byte[] engendrer(DocumentAvoir document) {
         ByteArrayOutputStream sortie = new ByteArrayOutputStream();
         Document pdf = new Document(PageSize.A4, 42, 42, 42, 54);
         try {
             PdfWriter.getInstance(pdf, sortie);
-            pdf.addTitle(libelle(document, "facture.titre") + " " + document.numero());
+            pdf.addTitle(libelle(document, "avoir.titre") + " " + document.numero());
             pdf.addCreator(garage.raisonSociale());
             pdf.open();
             pdf.add(enTete(document));
@@ -75,7 +76,7 @@ public class GenerateurPdfFacture {
             pdf.add(mentionsLegales(document));
         } catch (DocumentException e) {
             throw new IllegalStateException(
-                    "Composition du PDF de la facture %s impossible.".formatted(document.numero()), e);
+                    "Composition du PDF de l avoir %s impossible.".formatted(document.numero()), e);
         } finally {
             if (pdf.isOpen()) {
                 pdf.close();
@@ -86,8 +87,11 @@ public class GenerateurPdfFacture {
 
     // --- blocs du document -------------------------------------------------------------
 
-    /** Bandeau : emetteur a gauche, identite du document a droite. */
-    private PdfPTable enTete(DocumentFacture document) {
+    /**
+     * Bandeau : emetteur a gauche, identite du document a droite — avec la reference
+     * a la facture corrigee, qui est la mention distinctive de l avoir.
+     */
+    private PdfPTable enTete(DocumentAvoir document) {
         PdfPTable entete = tableauInvisible(new float[]{55, 45});
         entete.setSpacingAfter(24);
 
@@ -102,13 +106,18 @@ public class GenerateurPdfFacture {
         entete.addCell(celluleInvisible(emetteur, Element.ALIGN_LEFT));
 
         Paragraph identite = new Paragraph();
-        identite.add(new Phrase(libelle(document, "facture.titre").toUpperCase(document.locale()) + "\n",
+        identite.add(new Phrase(libelle(document, "avoir.titre").toUpperCase(document.locale()) + "\n",
                 police(22, Font.BOLD, BLEU_MARINE)));
         identite.add(new Phrase(document.numero() + "\n", police(13, Font.BOLD, GRIS_TEXTE)));
         identite.add(new Phrase("%s %s\n".formatted(
                         libelle(document, "facture.date-emission"),
                         date(document.dateEmission(), document.locale())),
                 police(9, Font.NORMAL, GRIS_TEXTE)));
+        // Rattachement au document corrige : mention obligatoire (AR n°1, art. 12).
+        identite.add(new Phrase("%s\n".formatted(libelle(document, "avoir.facture-origine",
+                        document.numeroFactureOrigine(),
+                        date(document.dateFactureOrigine(), document.locale()))),
+                police(9, Font.BOLD, GRIS_TEXTE)));
         identite.add(new Phrase("%s %s".formatted(
                         libelle(document, "facture.commande"), document.numeroCommande()),
                 police(9, Font.NORMAL, GRIS_TEXTE)));
@@ -116,13 +125,13 @@ public class GenerateurPdfFacture {
         return entete;
     }
 
-    /** Destinataire de la facture. */
-    private PdfPTable blocsIdentite(DocumentFacture document) {
+    /** Destinataire de la note de credit : le titulaire de la facture corrigee. */
+    private PdfPTable blocsIdentite(DocumentAvoir document) {
         PdfPTable bloc = tableauInvisible(new float[]{55, 45});
         bloc.setSpacingAfter(20);
 
         Paragraph client = new Paragraph();
-        client.add(new Phrase(libelle(document, "facture.client") + "\n",
+        client.add(new Phrase(libelle(document, "avoir.client") + "\n",
                 police(9, Font.BOLD, BLEU_MARINE)));
         client.add(new Phrase(document.client().nomComplet() + "\n",
                 police(10, Font.NORMAL, GRIS_TEXTE)));
@@ -138,8 +147,13 @@ public class GenerateurPdfFacture {
         return bloc;
     }
 
-    /** Detail par ligne : description, quantite, prix unitaire HTVA, taux, montant. */
-    private PdfPTable tableauDesLignes(DocumentFacture document) {
+    /**
+     * Detail par ligne, identique a celui de la facture : c est le meme achat qui est
+     * annule. Les montants restent positifs — le sens du document est porte par son
+     * titre et par sa mention de pied, pas par un signe que le lecteur devrait
+     * interpreter.
+     */
+    private PdfPTable tableauDesLignes(DocumentAvoir document) {
         PdfPTable table = new PdfPTable(new float[]{46, 10, 16, 12, 16});
         table.setWidthPercentage(100);
         table.setSpacingAfter(16);
@@ -161,8 +175,8 @@ public class GenerateurPdfFacture {
         return table;
     }
 
-    /** Totaux et ventilation de la TVA par taux (mention obligatoire). */
-    private PdfPTable totaux(DocumentFacture document) {
+    /** Totaux credites et ventilation de la TVA restituee par taux. */
+    private PdfPTable totaux(DocumentAvoir document) {
         PdfPTable conteneur = tableauInvisible(new float[]{50, 50});
         conteneur.setSpacingAfter(24);
         conteneur.addCell(celluleInvisible(ventilation(document), Element.ALIGN_LEFT));
@@ -173,13 +187,13 @@ public class GenerateurPdfFacture {
         synthese.addCell(celluleTotal(montant(document.totalHtva(), document.locale()), false));
         synthese.addCell(celluleTotal(libelle(document, "facture.total.tva"), false));
         synthese.addCell(celluleTotal(montant(document.totalTva(), document.locale()), false));
-        synthese.addCell(celluleTotal(libelle(document, "facture.total.tvac"), true));
+        synthese.addCell(celluleTotal(libelle(document, "avoir.total.credite"), true));
         synthese.addCell(celluleTotal(montant(document.totalTvac(), document.locale()), true));
         conteneur.addCell(celluleInvisible(synthese, Element.ALIGN_RIGHT));
         return conteneur;
     }
 
-    private PdfPTable ventilation(DocumentFacture document) {
+    private PdfPTable ventilation(DocumentAvoir document) {
         PdfPTable table = new PdfPTable(new float[]{34, 33, 33});
         table.setWidthPercentage(100);
         table.addCell(celluleEntete(libelle(document, "facture.ventilation.taux"), Element.ALIGN_LEFT));
@@ -193,15 +207,17 @@ public class GenerateurPdfFacture {
         return table;
     }
 
-    /** Conditions de paiement et mentions legales de pied de facture. */
-    private Paragraph mentionsLegales(DocumentFacture document) {
+    /** Motif de la correction, restitution de TVA et mentions legales de pied. */
+    private Paragraph mentionsLegales(DocumentAvoir document) {
         Paragraph mentions = new Paragraph();
-        mentions.add(new Phrase(libelle(document, "facture.mention.payee",
-                        date(document.datePaiement(), document.locale())) + "\n",
+        mentions.add(new Phrase(libelle(document, "avoir.mention.motif",
+                        libelle(document, "avoir.motif." + document.cleMotif())) + "\n",
                 police(9, Font.BOLD, GRIS_TEXTE)));
-        mentions.add(new Phrase(libelle(document, "facture.mention.conditions") + "\n",
+        mentions.add(new Phrase(libelle(document, "avoir.mention.remboursement") + "\n",
                 police(8, Font.NORMAL, GRIS_TEXTE)));
-        mentions.add(new Phrase(libelle(document, "facture.mention.tva") + "\n",
+        // Mention de restitution : c est elle qui autorise l emetteur a recuperer la
+        // TVA deja declaree sur la facture d origine.
+        mentions.add(new Phrase(libelle(document, "avoir.mention.tva") + "\n",
                 police(8, Font.NORMAL, GRIS_TEXTE)));
         mentions.add(new Phrase(libelle(document, "facture.mention.conservation") + "\n\n",
                 police(8, Font.NORMAL, GRIS_TEXTE)));
@@ -214,8 +230,7 @@ public class GenerateurPdfFacture {
         return mentions;
     }
 
-    private String libelle(DocumentFacture document, String cle, Object... arguments) {
+    private String libelle(DocumentAvoir document, String cle, Object... arguments) {
         return messages.getMessage(cle, arguments, document.locale());
     }
-
 }
