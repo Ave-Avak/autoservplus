@@ -36,7 +36,13 @@ public class SecuriteConfig {
                 .authorizeHttpRequests(acces -> acces
                         .requestMatchers("/", "/accueil", "/services/**", "/pieces/**",
                                 "/inscription/**", "/connexion", "/mot-de-passe/**",
-                                "/cgv", "/mentions-legales", "/confidentialite", "/cookies")
+                                "/cgv", "/mentions-legales", "/confidentialite", "/cookies",
+                                // Confirmation de suppression de compte (F23) : a
+                                // l instant ou elle s affiche, la session vient d etre
+                                // invalidee et le compte n existe plus. Une page
+                                // authentifiee renverrait vers un formulaire de
+                                // connexion que plus aucun identifiant ne satisfait.
+                                "/compte-supprime")
                         .permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .requestMatchers("/actuator/health").permitAll()

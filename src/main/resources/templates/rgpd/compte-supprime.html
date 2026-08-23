@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{suppression.confirmee.titre} + ' — AutoServ+'">Compte supprimé — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<!-- Navigation publique : la session vient d'être invalidée, il n'y a plus de
+     « Mon compte » ni de bouton de déconnexion à proposer. -->
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}" th:text="#{nav.prestations}">Prestations</a></li>
+            <li><a th:href="@{/pieces}" th:text="#{nav.pieces}">Pièces</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{suppression.confirmee.titre}">Votre compte a été supprimé</h1>
+
+    <div class="message message-succes" role="status" th:text="#{suppression.confirmee.message}">
+        Vos données personnelles ont été effacées et votre accès révoqué.
+    </div>
+
+    <p th:text="#{suppression.confirmee.conservation}">
+        Vos factures restent conservées sept ans, comme la loi l'impose.
+    </p>
+    <p th:text="#{suppression.confirmee.courriel}">
+        Une confirmation vous a été envoyée par courriel.
+    </p>
+    <!-- Le jeton d'anonymisation libère l'adresse réelle : la réinscription est
+         possible, et le dire évite une question au garage. -->
+    <p th:text="#{suppression.confirmee.reinscription}">
+        Vous pouvez créer un nouveau compte avec la même adresse.
+    </p>
+
+    <p class="actions-page">
+        <a th:href="@{/}" th:text="#{suppression.confirmee.accueil}">Retour à l'accueil</a>
+    </p>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+</body>
+</html>
