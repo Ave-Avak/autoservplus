@@ -2,6 +2,7 @@ package be.autoservplus.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -52,6 +53,17 @@ public class SecuriteConfig {
                         .permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
+                        // API publique en LECTURE SEULE (BL-8) et sa documentation.
+                        // Anonyme par construction : elle n expose que ce qui figure
+                        // deja sur le site public — catalogue des prestations et
+                        // identite commerciale du garage. Aucun verbe d ecriture n y
+                        // est declare, donc aucune authentification a exiger. La table
+                        // clef_api du socle reste volontairement inexploitee : y
+                        // adosser des jetons supposerait quotas et revocation, hors
+                        // perimetre V1.
+                        .requestMatchers(HttpMethod.GET, "/api/v1/**").permitAll()
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
+                        .permitAll()
                         // Webhook du prestataire de paiement : appel serveur a serveur,
                         // sans session. L authenticite ne vient pas d un jeton mais de
                         // la strategie securite §11 — le payload n est jamais cru, le
