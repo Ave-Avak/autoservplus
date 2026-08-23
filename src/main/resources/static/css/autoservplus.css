@@ -613,3 +613,36 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     flex-wrap: wrap;
     gap: var(--espace-m);
 }
+
+/* --- Selecteur de langue (F6) ------------------------------------------------------ */
+
+/* Trois liens dans l'en-tete, jamais un <select> : un menu deroulant ne se soumet pas
+   sans JavaScript, et la politique de securite n'autorise que script-src 'self'. */
+.selecteur-langue ul {
+    list-style: none;
+    display: flex;
+    gap: var(--espace-s);
+    margin: 0;
+    padding: 0;
+}
+
+.selecteur-langue a {
+    display: inline-block;
+    padding: 0.125rem var(--espace-s);
+    border-radius: var(--rayon);
+    color: var(--gris-700);
+    text-decoration: none;
+    font-size: 0.875rem;
+}
+
+.selecteur-langue a:hover,
+.selecteur-langue a:focus-visible { text-decoration: underline; }
+
+/* La langue active est signalee par le fond ET par la graisse : jamais par la couleur
+   seule (WCAG 1.4.1). L'information est aussi portee par aria-current dans le gabarit,
+   pour les technologies d'assistance qui ne voient aucun style. */
+.selecteur-langue a.est-active {
+    background: var(--bleu-marine);
+    color: var(--blanc);
+    font-weight: 600;
+}

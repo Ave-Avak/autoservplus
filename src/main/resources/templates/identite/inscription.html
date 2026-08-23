@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -17,6 +17,7 @@
       <li><a th:href="@{/connexion}">Connexion</a></li>
     </ul>
   </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
 </header>
 
 <main id="contenu">

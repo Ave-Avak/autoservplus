@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org"
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
@@ -19,6 +19,7 @@
             <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
         </ul>
     </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
 </header>
 
 <main id="contenu">

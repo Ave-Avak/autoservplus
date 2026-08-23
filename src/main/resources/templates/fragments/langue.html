@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Fragment selecteur de langue</title></head>
+<body>
+
+<!--
+  Sélecteur de langue (F6), inséré dans l'en-tête de chaque page.
+
+  Trois liens et rien d'autre : pas de <select>, qui exigerait du JavaScript pour se
+  soumettre — la politique de sécurité n'autorise que script-src 'self' et le projet
+  tient le « zéro JavaScript » depuis le bandeau cookies. Un lien fonctionne au
+  clavier, au lecteur d'écran, et sans script.
+
+  Les libellés ne sont PAS traduits : « Nederlands » s'écrit « Nederlands » dans les
+  trois versions du site. Traduire le nom d'une langue dans une langue qu'on ne
+  comprend pas est précisément ce qui empêche d'en sortir.
+-->
+<th:block th:fragment="selecteur">
+    <nav class="selecteur-langue"
+         th:attr="aria-label=#{langue.selecteur.aria}" aria-label="Choisir la langue">
+        <ul>
+            <li th:each="choix : ${languesDisponibles}">
+                <!-- aria-current signale la langue active aux technologies d'assistance ;
+                     la classe est-active porte la même information visuellement, jamais
+                     par la couleur seule (WCAG 1.4.1). -->
+                <a th:href="${choix.adresse()}"
+                   th:text="#{__${choix.cle}__}"
+                   th:classappend="${choix.active()} ? 'est-active'"
+                   th:attr="aria-current=${choix.active()} ? 'true' : null,
+                            lang=${choix.code()}">Français</a>
+            </li>
+        </ul>
+    </nav>
+</th:block>
+
+</body>
+</html>

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -13,6 +13,7 @@
     <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
         <a class="marque" th:href="@{/}">AutoServ+</a>
     </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
 </header>
 <main id="contenu">
     <h1 th:text="${titre}">Page introuvable</h1>
