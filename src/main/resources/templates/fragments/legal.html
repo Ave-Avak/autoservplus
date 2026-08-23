@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Fragments legaux</title></head>
+<body>
+
+<!--
+  Blocs partagés par les trois documents légaux (CGV, mentions légales,
+  confidentialité).
+
+  Ils sont ici et non recopiés dans chaque page pour une raison de fond : l'identité
+  du garage et la bannière de brouillon doivent être RIGOUREUSEMENT identiques d'un
+  document à l'autre. Trois copies, ce sont trois occasions qu'une adresse soit mise
+  à jour à deux endroits sur trois — et une mention légale divergente est une
+  mention légale fausse.
+-->
+
+<!--
+  Bannière de brouillon. Elle reste visible tant que le texte n'a pas été relu par
+  un juriste : un document légal provisoire qui ne s'annonce pas comme tel est plus
+  dangereux qu'une page absente, parce qu'il sera lu comme définitif.
+-->
+<th:block th:fragment="brouillon">
+    <aside class="avis-brouillon" role="note">
+        <h2 th:text="#{legal.brouillon.titre}">Document provisoire</h2>
+        <p th:text="#{legal.brouillon.texte}">
+            Ce texte doit être validé juridiquement avant sa mise en production.
+        </p>
+    </aside>
+</th:block>
+
+<!--
+  Identité légale du garage, lue de la configuration autoservplus.garage.* — la
+  même que celle imprimée en tête des factures. Aucune valeur n'est écrite dans le
+  gabarit : une identité recopiée à la main finirait par contredire la facture, qui
+  est le document opposable.
+-->
+<th:block th:fragment="identite">
+    <dl class="identite-garage">
+        <dt th:text="#{legal.garage.raison-sociale}">Dénomination</dt>
+        <dd th:text="${garage.raisonSociale()}">AutoServ+ SRL</dd>
+
+        <dt th:text="#{legal.garage.adresse}">Adresse</dt>
+        <dd>
+            <span th:text="${garage.adresseLisible()}">Rue de l'Atelier 12, 1000 Bruxelles</span>
+            <span th:text="${garage.pays()}">Belgique</span>
+        </dd>
+
+        <dt th:text="#{legal.garage.bce}">Numéro d'entreprise (BCE)</dt>
+        <dd th:text="${garage.numeroBce()}">0123.456.789</dd>
+
+        <dt th:text="#{legal.garage.tva}">Numéro de TVA</dt>
+        <dd th:text="${garage.numeroTva()}">BE0123456789</dd>
+
+        <dt th:text="#{legal.garage.telephone}">Téléphone</dt>
+        <dd th:text="${garage.telephone()}">+32 2 000 00 00</dd>
+
+        <dt th:text="#{legal.garage.courriel}">Courriel</dt>
+        <dd th:text="${garage.courriel()}">contact@autoservplus.be</dd>
+    </dl>
+</th:block>
+
+<!-- Renvois croisés : chaque document mène aux deux autres, sans passer par l'accueil. -->
+<th:block th:fragment="liens">
+    <ul class="liens-legaux">
+        <li><a th:href="@{/cgv}" th:text="#{legal.lien.cgv}">Conditions générales de vente</a></li>
+        <li><a th:href="@{/mentions-legales}" th:text="#{legal.lien.mentions}">Mentions légales</a></li>
+        <li><a th:href="@{/confidentialite}" th:text="#{legal.lien.confidentialite}">Politique de confidentialité</a></li>
+    </ul>
+</th:block>
+
+</body>
+</html>

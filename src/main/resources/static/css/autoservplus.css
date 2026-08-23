@@ -550,3 +550,66 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     flex-direction: column;
     gap: var(--espace-s);
 }
+
+
+/* --- Documents legaux (CGV, mentions legales, confidentialite) --------------------- */
+
+/* Banniere de brouillon. Elle emprunte la couleur d'alerte deja calculee du systeme
+   (--alerte-texte, 5.08:1 sur blanc) plutot qu'un ton nouveau : un contraste
+   « choisi a l'oeil » est exactement ce que WCAG 2.1 AA interdit de supposer.
+   Volontairement voyante — un document legal provisoire qui ne se distingue pas d'un
+   document definitif ne remplit pas son role d'avertissement. */
+.avis-brouillon {
+    border: 2px solid var(--alerte-texte);
+    border-radius: var(--rayon);
+    background: var(--gris-50);
+    padding: var(--espace-m);
+    margin: 0 0 var(--espace-l);
+}
+
+.avis-brouillon h2 {
+    margin: 0 0 var(--espace-s);
+    color: var(--alerte-texte);
+    font-size: 1rem;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.avis-brouillon p { margin: 0; color: var(--gris-700); }
+
+/* Blanc assume. Le marqueur est signale par une bordure laterale et non par une
+   couleur seule : un lecteur daltonien doit voir qu'il manque quelque chose
+   (WCAG 1.4.1, l'information ne peut pas reposer sur la couleur seule). */
+.a-completer {
+    border-left: 4px solid var(--alerte-texte);
+    padding-left: var(--espace-m);
+    color: var(--gris-700);
+    font-style: italic;
+}
+
+/* Identite legale du garage : liste de definitions rendue en deux colonnes sur grand
+   ecran, empilee au telephone. */
+.identite-garage {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--espace-s) var(--espace-m);
+    margin: var(--espace-m) 0;
+}
+
+.identite-garage dt { font-weight: 600; color: var(--gris-700); }
+.identite-garage dd { margin: 0; }
+
+@media (max-width: 640px) {
+    .identite-garage { grid-template-columns: 1fr; gap: 0.125rem var(--espace-m); }
+    .identite-garage dd { margin-bottom: var(--espace-s); }
+}
+
+/* Renvois croises entre les trois documents. */
+.liens-legaux {
+    list-style: none;
+    padding: 0;
+    margin: var(--espace-l) 0 0;
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espace-m);
+}

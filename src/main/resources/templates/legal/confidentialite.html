@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{legal.confidentialite.titre} + ' — AutoServ+'">Politique de confidentialité — AutoServ+</title>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}" th:text="#{nav.connexion}">Connexion</a></li>
+            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{legal.confidentialite.titre}">Politique de confidentialité</h1>
+
+    <div th:replace="~{fragments/legal :: brouillon}"></div>
+
+    <!--
+      Tout ce qui suit est rendu depuis CatalogueTraitements, le composant qui produit
+      déjà le registre joint à l'export RGPD de l'article 15. Ce n'est pas une
+      commodité d'implémentation : la politique publiée et le rappel légal remis au
+      membre doivent énoncer les MÊMES finalités, les mêmes destinataires et les mêmes
+      durées. Deux rédactions séparées finiraient par se contredire, et c'est
+      exactement la contradiction qu'une autorité de contrôle relève.
+    -->
+    <p th:text="#{legal.confidentialite.intro}">
+        Cette politique décrit les traitements réalisés par le garage.
+    </p>
+
+    <section>
+        <h2 th:text="#{legal.confidentialite.responsable.titre}">Responsable du traitement</h2>
+        <p th:text="${registre.responsableTraitement()}">Le garage est responsable du traitement.</p>
+        <div th:replace="~{fragments/legal :: identite}"></div>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.confidentialite.dpo.titre}">Délégué à la protection des données</h2>
+        <p class="a-completer" th:text="#{legal.confidentialite.dpo.completer}">[À COMPLÉTER]</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.confidentialite.finalites.titre}">Finalités et bases légales</h2>
+        <table class="tableau">
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{legal.confidentialite.finalites.colonne.finalite}">Finalité</th>
+                <th scope="col" th:text="#{legal.confidentialite.finalites.colonne.base}">Base légale</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="finalite : ${registre.finalites()}">
+                <td th:text="${finalite.libelle()}">Gestion de votre compte</td>
+                <td th:text="${finalite.baseLegale()}">Exécution du contrat</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.confidentialite.categories.titre}">Catégories de données traitées</h2>
+        <ul>
+            <li th:each="categorie : ${registre.categoriesDonnees()}" th:text="${categorie}">
+                Données d'identification
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.confidentialite.destinataires.titre}">Destinataires et sous-traitants</h2>
+        <table class="tableau">
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{legal.confidentialite.destinataires.colonne.nom}">Destinataire</th>
+                <th scope="col" th:text="#{legal.confidentialite.destinataires.colonne.role}">Rôle</th>
+                <th scope="col" th:text="#{legal.confidentialite.destinataires.colonne.pays}">Pays</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="destinataire : ${registre.destinataires()}">
+                <td th:text="${destinataire.nom()}">Mollie B.V.</td>
+                <td th:text="${destinataire.role()}">Traitement des paiements</td>
+                <td th:text="${destinataire.pays()}">Pays-Bas</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.confidentialite.transferts.titre}">Transferts hors Union européenne</h2>
+        <p class="a-completer" th:text="#{legal.confidentialite.transferts.completer}">[À COMPLÉTER]</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.confidentialite.durees.titre}">Durées de conservation</h2>
+        <table class="tableau">
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{legal.confidentialite.durees.colonne.donnees}">Données</th>
+                <th scope="col" th:text="#{legal.confidentialite.durees.colonne.duree}">Durée</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="duree : ${registre.dureesConservation()}">
+                <td th:text="${duree.donnees()}">Commandes et factures</td>
+                <td th:text="${duree.duree()}">7 ans</td>
+            </tr>
+            </tbody>
+        </table>
+        <!-- L'arbitrage entre l'article 17 et l'obligation comptable est énoncé plutôt
+             que laissé à déduire : c'est la question que pose tout membre qui demande
+             la suppression de son compte et voit ses factures survivre. -->
+        <p th:text="#{legal.confidentialite.durees.comptable}">
+            Les pièces comptables déjà émises ne sont ni modifiées ni supprimées.
+        </p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.confidentialite.droits.titre}">Vos droits</h2>
+        <table class="tableau">
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{legal.confidentialite.droits.colonne.droit}">Droit</th>
+                <th scope="col" th:text="#{legal.confidentialite.droits.colonne.article}">Fondement</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="droit : ${registre.droits()}">
+                <td th:text="${droit.libelle()}">Droit d'accès</td>
+                <td th:text="${droit.article()}">Article 15 du RGPD</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.confidentialite.exercice.titre}">Comment exercer vos droits</h2>
+        <p th:text="${registre.exerciceDesDroits()}">
+            Depuis la rubrique « Mes données personnelles » de votre compte.
+        </p>
+        <p th:text="#{legal.confidentialite.exercice.corps}">
+            Le téléchargement et la suppression demandent la saisie de votre mot de passe.
+        </p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.confidentialite.cookies.titre}">Cookies</h2>
+        <p th:text="#{legal.confidentialite.cookies.corps}">
+            La plateforme dépose des cookies strictement nécessaires à son fonctionnement.
+        </p>
+        <p><a th:href="@{/cookies}" th:text="#{cookies.gerer}">Gérer mes cookies</a></p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.confidentialite.securite.titre}">Sécurité</h2>
+        <p th:text="#{legal.confidentialite.securite.corps}">
+            Les mots de passe sont conservés sous forme d'empreinte non réversible.
+        </p>
+    </section>
+
+    <nav th:attr="aria-label=#{legal.liens.aria}" aria-label="Documents légaux">
+        <div th:replace="~{fragments/legal :: liens}"></div>
+    </nav>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

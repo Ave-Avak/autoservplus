@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{legal.cgv.titre} + ' — AutoServ+'">Conditions générales de vente — AutoServ+</title>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}" th:text="#{nav.connexion}">Connexion</a></li>
+            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{legal.cgv.titre}">Conditions générales de vente</h1>
+
+    <div th:replace="~{fragments/legal :: brouillon}"></div>
+
+    <p th:text="#{legal.cgv.intro}">
+        Les présentes conditions régissent la vente sur la plateforme.
+    </p>
+
+    <section>
+        <h2 th:text="#{legal.cgv.art1.titre}">Article 1 — Vendeur</h2>
+        <p th:text="#{legal.cgv.art1.corps}">Le vendeur est le garage identifié ci-dessous.</p>
+        <div th:replace="~{fragments/legal :: identite}"></div>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.cgv.art2.titre}">Article 2 — Champ d'application et acceptation</h2>
+        <p th:text="#{legal.cgv.art2.corps}">L'acceptation est recueillie au récapitulatif.</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.cgv.art3.titre}">Article 3 — Prix et taxe sur la valeur ajoutée</h2>
+        <p th:text="#{legal.cgv.art3.corps}">Les prix sont exprimés en euros.</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.cgv.art4.titre}">Article 4 — Commande</h2>
+        <p th:text="#{legal.cgv.art4.corps}">La commande se forme en trois temps.</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.cgv.art5.titre}">Article 5 — Paiement</h2>
+        <p th:text="#{legal.cgv.art5.corps}">Le paiement s'effectue en ligne.</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.cgv.art6.titre}">Article 6 — Retrait et exécution</h2>
+        <p th:text="#{legal.cgv.art6.corps}">Les pièces sont retirées au garage.</p>
+        <p class="a-completer" th:text="#{legal.cgv.art6.completer}">[À COMPLÉTER]</p>
+    </section>
+
+    <section>
+        <!-- Le nombre de jours vient de RetractationService.DELAI_LEGAL, la constante
+             qui refuse effectivement une demande hors délai. Écrire « quatorze » en
+             dur dans le message laisserait le texte survivre à un changement de règle. -->
+        <h2 th:text="#{legal.cgv.art7.titre}">Article 7 — Droit de rétractation</h2>
+        <p th:text="#{legal.cgv.art7.corps(${delaiRetractationJours})}">
+            Le consommateur dispose d'un délai de quatorze jours.
+        </p>
+        <p class="a-completer" th:text="#{legal.cgv.art7.completer}">[À COMPLÉTER]</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.cgv.art8.titre}">Article 8 — Prestations pleinement exécutées</h2>
+        <p th:text="#{legal.cgv.art8.corps}">La renonciation est facultative et jamais pré-cochée.</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.cgv.art9.titre}">Article 9 — Facture</h2>
+        <p th:text="#{legal.cgv.art9.corps}">Une facture est émise pour toute commande payée.</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.cgv.art10.titre}">Article 10 — Garantie légale de conformité</h2>
+        <p class="a-completer" th:text="#{legal.cgv.art10.completer}">[À COMPLÉTER]</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.cgv.art11.titre}">Article 11 — Responsabilité</h2>
+        <p class="a-completer" th:text="#{legal.cgv.art11.completer}">[À COMPLÉTER]</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.cgv.art12.titre}">Article 12 — Données personnelles</h2>
+        <p th:text="#{legal.cgv.art12.corps}">Le traitement est décrit dans la politique de confidentialité.</p>
+        <p><a th:href="@{/confidentialite}" th:text="#{legal.lien.confidentialite}">Politique de confidentialité</a></p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.cgv.art13.titre}">Article 13 — Droit applicable et litiges</h2>
+        <p class="a-completer" th:text="#{legal.cgv.art13.completer}">[À COMPLÉTER]</p>
+    </section>
+
+    <nav th:attr="aria-label=#{legal.liens.aria}" aria-label="Documents légaux">
+        <div th:replace="~{fragments/legal :: liens}"></div>
+    </nav>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{legal.mentions.titre} + ' — AutoServ+'">Mentions légales — AutoServ+</title>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}" th:text="#{nav.connexion}">Connexion</a></li>
+            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+        </ul>
+    </nav>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{legal.mentions.titre}">Mentions légales</h1>
+
+    <div th:replace="~{fragments/legal :: brouillon}"></div>
+
+    <section>
+        <h2 th:text="#{legal.mentions.editeur.titre}">Éditeur du site</h2>
+        <div th:replace="~{fragments/legal :: identite}"></div>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.mentions.responsable.titre}">Responsable de la publication</h2>
+        <p class="a-completer" th:text="#{legal.mentions.responsable.completer}">[À COMPLÉTER]</p>
+    </section>
+
+    <section>
+        <!-- L'hébergeur ne peut pas être déduit du code : il dépend de l'infrastructure
+             réellement choisie au déploiement, qui n'est pas tranchée. Un nom plausible
+             écrit ici serait une mention légale fausse. -->
+        <h2 th:text="#{legal.mentions.hebergeur.titre}">Hébergeur</h2>
+        <p class="a-completer" th:text="#{legal.mentions.hebergeur.completer}">[À COMPLÉTER]</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.mentions.propriete.titre}">Propriété intellectuelle</h2>
+        <p class="a-completer" th:text="#{legal.mentions.propriete.completer}">[À COMPLÉTER]</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.mentions.profession.titre}">Accès à la profession et assurances</h2>
+        <p class="a-completer" th:text="#{legal.mentions.profession.completer}">[À COMPLÉTER]</p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.mentions.contact.titre}">Contact</h2>
+        <p th:text="#{legal.mentions.contact.corps}">
+            Toute question peut être adressée au garage aux coordonnées ci-dessus.
+        </p>
+    </section>
+
+    <section>
+        <h2 th:text="#{legal.mentions.liens.titre}">Documents liés</h2>
+        <nav th:attr="aria-label=#{legal.liens.aria}" aria-label="Documents légaux">
+            <div th:replace="~{fragments/legal :: liens}"></div>
+        </nav>
+    </section>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>
