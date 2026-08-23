@@ -1,7 +1,9 @@
 package be.autoservplus.vente.domain;
 
 import be.autoservplus.catalogue.domain.Piece;
+import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.common.entity.BaseEntity;
+import be.autoservplus.vente.service.PanierDeNatureMixteException;
 import be.autoservplus.identite.domain.Utilisateur;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -78,6 +80,7 @@ public class Panier extends BaseEntity {
      */
     public LignePanier ajouterPiece(Piece piece, int quantite) {
         Objects.requireNonNull(piece, "piece");
+        exigerNatureCompatible(false);
         LignePanier existante = lignePour(piece).orElse(null);
         if (existante != null) {
             existante.augmenterQuantite(quantite);
@@ -86,6 +89,60 @@ public class Panier extends BaseEntity {
         LignePanier ligne = new LignePanier(this, piece, quantite);
         this.lignes.add(ligne);
         return ligne;
+    }
+
+    /**
+     * Ajoute une prestation au panier, ou incremente la ligne existante (F12), selon
+     * le meme patron que {@link #ajouterPiece} : valeurs figees a la premiere entree.
+     *
+     * @throws PanierDeNatureMixteException si le panier contient deja des pieces
+     */
+    public LignePanier ajouterService(Prestation prestation, int quantite) {
+        Objects.requireNonNull(prestation, "prestation");
+        exigerNatureCompatible(true);
+        LignePanier existante = lignePour(prestation).orElse(null);
+        if (existante != null) {
+            existante.augmenterQuantite(quantite);
+            return existante;
+        }
+        LignePanier ligne = new LignePanier(this, prestation, quantite);
+        this.lignes.add(ligne);
+        return ligne;
+    }
+
+    /**
+     * <b>Un panier est d une seule nature</b> : que des pieces, ou que des services.
+     *
+     * <p>Garde qui evite la retractation PARTIELLE. Une commande mixte serait
+     * insoluble en V1 : une piece reste retractable quand un service pleinement
+     * execute sous renonciation VI.53 ne l est plus, et annuler une partie de la
+     * commande demanderait de lever {@code uq_avoir_facture} — ce que F30 a remis a
+     * la V2.</p>
+     *
+     * <p>La garde vit ICI, au plus tot, plutot qu au passage en commande : refuser
+     * l ajout laisse le membre corriger tout de suite, alors qu un panier constitue
+     * puis rejete a la caisse lui ferait perdre son travail sans qu il comprenne
+     * pourquoi.</p>
+     */
+    private void exigerNatureCompatible(boolean ajoutDUnService) {
+        boolean contientDesServices = lignes.stream().anyMatch(LignePanier::estService);
+        boolean contientDesPieces = lignes.stream().anyMatch(ligne -> !ligne.estService());
+        if (ajoutDUnService && contientDesPieces) {
+            throw new PanierDeNatureMixteException(true);
+        }
+        if (!ajoutDUnService && contientDesServices) {
+            throw new PanierDeNatureMixteException(false);
+        }
+    }
+
+    /** Le panier ne contient que des prestations, et il en contient au moins une. */
+    public boolean estPanierDeServices() {
+        return !lignes.isEmpty() && lignes.stream().allMatch(LignePanier::estService);
+    }
+
+    /** Quantite deja au panier pour cette prestation. */
+    public int quantitePour(Prestation prestation) {
+        return lignePour(prestation).map(ligne -> (int) ligne.getQuantite()).orElse(0);
     }
 
     /** Quantite deja au panier pour cette piece — sert au controle de stock cumule. */
@@ -142,7 +199,16 @@ public class Panier extends BaseEntity {
      */
     private Optional<LignePanier> lignePour(Piece piece) {
         return lignes.stream()
+                .filter(l -> !l.estService())
                 .filter(l -> l.getPiece().getReference().equals(piece.getReference()))
+                .findFirst();
+    }
+
+    /** Meme recherche par reference pour une prestation (F12). */
+    private Optional<LignePanier> lignePour(Prestation prestation) {
+        return lignes.stream()
+                .filter(LignePanier::estService)
+                .filter(l -> l.getPrestation().getReference().equals(prestation.getReference()))
                 .findFirst();
     }
 

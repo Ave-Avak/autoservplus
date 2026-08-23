@@ -1,6 +1,7 @@
 package be.autoservplus.vente.domain;
 
 import be.autoservplus.catalogue.domain.Piece;
+import be.autoservplus.catalogue.domain.Prestation;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.annotation.CreatedBy;
@@ -59,6 +60,16 @@ public class LignePanier {
     @JoinColumn(name = "piece_id")
     private Piece piece;
 
+    /**
+     * Prestation vendue (F12). La colonne {@code service_id} existait au socle V4,
+     * volontairement non mappee tant que le service ne passait pas par le panier.
+     * Le CHECK {@code ck_ligne_article_unique} impose deja le XOR avec {@code piece}
+     * en base : une ligne est d une nature ou de l autre, jamais des deux.
+     */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "service_id")
+    private Prestation prestation;
+
     @NotNull
     @Column(name = "libelle_fige", nullable = false, length = 150)
     private String libelleFige;
@@ -100,6 +111,27 @@ public class LignePanier {
         this.prixUnitaireHtva = piece.getPrixHtva();
         this.tauxTva = piece.getTauxTva();
         this.quantite = (short) quantite;
+    }
+
+    /**
+     * Ligne de prestation (F12). <b>Memes valeurs figees a l ajout</b> que pour une
+     * piece (RM-30) : libelle, prix et taux sont recopies au moment ou le membre
+     * ajoute, pas relus au passage en commande. Un tarif revu entre-temps ne change
+     * pas ce que le membre a vu quand il a decide.
+     */
+    LignePanier(Panier panier, Prestation prestation, int quantite) {
+        this.panier = Objects.requireNonNull(panier, "panier");
+        this.prestation = Objects.requireNonNull(prestation, "prestation");
+        exigerQuantiteValide(quantite);
+        this.libelleFige = prestation.getLibelle();
+        this.prixUnitaireHtva = prestation.getPrixHtva();
+        this.tauxTva = prestation.getTauxTva();
+        this.quantite = (short) quantite;
+    }
+
+    /** Nature de la ligne, lue sur l article reellement rattache. */
+    public boolean estService() {
+        return prestation != null;
     }
 
     /** Fusion d un doublon (F13) : la quantite s ajoute, les conditions figees restent. */
@@ -183,6 +215,7 @@ public class LignePanier {
     public Panier getPanier() { return panier; }
     public Commande getCommande() { return commande; }
     public Piece getPiece() { return piece; }
+    public Prestation getPrestation() { return prestation; }
     public String getLibelleFige() { return libelleFige; }
     public short getQuantite() { return quantite; }
     public BigDecimal getPrixUnitaireHtva() { return prixUnitaireHtva; }

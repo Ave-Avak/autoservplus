@@ -45,6 +45,7 @@ class PanierServiceTest {
 
     @Mock private PanierRepository paniers;
     @Mock private PieceRepository pieces;
+    @Mock private be.autoservplus.catalogue.repository.PrestationRepository prestations;
     @Mock private UtilisateurRepository utilisateurs;
 
     private PanierService service;
@@ -55,7 +56,7 @@ class PanierServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new PanierService(paniers, pieces, utilisateurs);
+        service = new PanierService(paniers, pieces, prestations, utilisateurs);
 
         marie = new Utilisateur(EMAIL, "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         Categorie freinage = new Categorie("FRE", "Freinage", TypeCategorie.PIECE);

@@ -1,7 +1,9 @@
 package be.autoservplus.vente.service;
 
 import be.autoservplus.catalogue.domain.Piece;
+import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PieceRepository;
+import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -47,13 +49,16 @@ public class PanierService {
 
     private final PanierRepository paniers;
     private final PieceRepository pieces;
+    private final PrestationRepository prestations;
     private final UtilisateurRepository utilisateurs;
 
     public PanierService(PanierRepository paniers,
                          PieceRepository pieces,
+                         PrestationRepository prestations,
                          UtilisateurRepository utilisateurs) {
         this.paniers = paniers;
         this.pieces = pieces;
+        this.prestations = prestations;
         this.utilisateurs = utilisateurs;
     }
 
@@ -69,6 +74,33 @@ public class PanierService {
     }
 
     // --- ecritures --------------------------------------------------------------------
+
+    /**
+     * Ajoute une prestation au panier (F12), trouve-ou-cree, en fusionnant la ligne
+     * existante le cas echeant.
+     *
+     * <p><b>Aucun controle de stock</b>, contrairement aux pieces : une prestation est
+     * du temps d atelier, pas un article denombrable. Ce que la V1 ne verifie donc pas
+     * ici, c est la disponibilite d un creneau — le service est vendu, sa planification
+     * reste une etape separee (decouplage assume, voir la dette F12-a).</p>
+     *
+     * <p>Prestation inactive refusee, miroir exact de RM-28 pour les pieces : on ne
+     * vend pas ce qui a ete retire du catalogue.</p>
+     */
+    @Transactional
+    @PreAuthorize("isAuthenticated()")
+    public PanierVue ajouterService(String email, UUID referencePrestation, int quantite) {
+        exigerQuantitePositive(quantite);
+        Prestation prestation = prestations.findByReference(referencePrestation)
+                .orElseThrow(() -> new RessourceIntrouvableException(
+                        "Prestation", referencePrestation));
+        if (!prestation.isActif()) {
+            throw new PrestationInactiveException(prestation.getLibelle());
+        }
+        Panier panier = trouveOuCree(email);
+        panier.ajouterService(prestation, quantite);
+        return PanierVue.de(paniers.saveAndFlush(panier));
+    }
 
     /**
      * Ajoute une piece au panier (trouve-ou-cree), en fusionnant avec la ligne

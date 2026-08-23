@@ -66,6 +66,21 @@ public class PanierController {
                 () -> service.ajouterPiece(membre.getUsername(), reference, quantite));
     }
 
+    /**
+     * Ajout d une prestation au panier (F12). Endpoint distinct de
+     * {@code /panier/ajouter} : les deux natures ne partagent ni le service appele ni
+     * les controles (stock pour la piece, aucun pour la prestation), et un parametre
+     * « type » obligerait le controleur a trancher ce que la route dit deja.
+     */
+    @PostMapping("/ajouter-service")
+    public String ajouterService(@AuthenticationPrincipal UserDetails membre,
+                                 @RequestParam UUID reference,
+                                 @RequestParam int quantite,
+                                 RedirectAttributes redirection) {
+        return executer(redirection, "panier.message.ajout",
+                () -> service.ajouterService(membre.getUsername(), reference, quantite));
+    }
+
     @PostMapping("/lignes/{id}/quantite")
     public String modifierQuantite(@AuthenticationPrincipal UserDetails membre,
                                    @PathVariable Long id,

@@ -133,6 +133,18 @@
         <div class="fiche-actions" th:if="${article.disponible()}">
             <a class="btn-cta" th:href="@{/rendez-vous/nouveau(article=${article.reference()})}"
                th:if="${typeArticle == 'service'}">Prendre rendez-vous</a>
+            <!-- F12 : la prestation s'achete aussi hors rendez-vous. Modele DECOUPLE —
+                 payer le service ne reserve pas le creneau, la planification reste une
+                 etape separee. Reserve aux membres connectes, comme le panier. -->
+            <form th:action="@{/panier/ajouter-service}" method="post"
+                  th:if="${typeArticle == 'service'}" sec:authorize="isAuthenticated()">
+                <input type="hidden" name="reference" th:value="${article.reference()}">
+                <label for="quantite-service" th:text="#{panier.ajout.quantite}">Quantité</label>
+                <input type="number" id="quantite-service" name="quantite" value="1"
+                       min="1" max="32767" required>
+                <button type="submit" class="btn-cta"
+                        th:text="#{panier.ajout.service}">Ajouter au panier</button>
+            </form>
             <!-- F13 : ajout au panier en POST (jeton CSRF injecte par th:action), avec
                  quantite choisie ici. Un GET mutateur — l'ancien lien — contournerait
                  la protection CSRF et le pattern PRG. -->
