@@ -113,3 +113,33 @@ autoservplus:
 logging:
   level:
     be.autoservplus: INFO
+
+# =====================================================================================
+# Profil « demo » : jeu de donnees transactionnelles pour l evaluation.
+#
+# Les migrations de db/migration decrivent le SCHEMA et ses donnees de reference ; elles
+# s appliquent toujours. Le jeu de demonstration vit a part, dans db/demo, et n est
+# charge que sous ce profil.
+#
+# La separation n est pas cosmetique. Les tests d integration partent d une base vierge
+# de donnees transactionnelles : plusieurs comptent des lignes (« aucune commande avant
+# la conversion ») ou vident des tables de reference entre deux cas. Y semer des
+# rendez-vous et des commandes casse vingt-trois d entre eux — non parce qu ils seraient
+# fragiles, mais parce qu ils verifient des etats initiaux qui cesseraient d etre vrais.
+# Les adapter reviendrait a affaiblir des tests justes pour accommoder des donnees de
+# demonstration ; c est l inverse de ce que le projet fait ailleurs.
+#
+# Chargement :   mvnw spring-boot:run "-Dspring-boot.run.profiles=demo"
+# ou, plus simple pour un evaluateur : restaurer docs/dump_autoservplus.sql, qui contient
+# deja le schema ET ce jeu.
+#
+# A NE PAS ACTIVER EN PRODUCTION : le jeu cree des comptes dont les mots de passe sont
+# publies dans le depot.
+# =====================================================================================
+---
+spring:
+  config:
+    activate:
+      on-profile: demo
+  flyway:
+    locations: classpath:db/migration,classpath:db/demo
