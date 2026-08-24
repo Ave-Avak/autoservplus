@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GenerateurPdfFactureTest {
 
     private static final IdentiteGarage GARAGE = new IdentiteGarage(
-            "AutoServ+ SRL", "Rue de l'Atelier", "12", "1000", "Bruxelles", "Belgique",
+            "AutoServ+", "AutoServ+ SRL", "Rue de l'Atelier", "12", "1000", "Bruxelles", "Belgique",
             "0123.456.789", "BE0123456789", "BE68 5390 0754 7034",
             "+32 2 000 00 00", "facturation@autoservplus.be");
 

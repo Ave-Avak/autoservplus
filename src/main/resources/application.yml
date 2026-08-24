@@ -77,6 +77,7 @@ autoservplus:
   # DEMONSTRATION : chacune doit etre surchargee en production par sa variable
   # d'environnement — une facture portant un faux numero de TVA n'est pas une facture.
   garage:
+    nom-commercial: ${GARAGE_NOM_COMMERCIAL:AutoServ+}
     raison-sociale: ${GARAGE_RAISON_SOCIALE:AutoServ+ SRL}
     rue: ${GARAGE_RUE:Rue de l'Atelier}
     numero-rue: ${GARAGE_NUMERO_RUE:12}

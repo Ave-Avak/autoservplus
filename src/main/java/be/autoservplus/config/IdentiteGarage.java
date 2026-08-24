@@ -15,12 +15,19 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  * du garage ; c est alors le fournisseur qui changera, pas le document.</p>
  *
  * <p>Premier usage de {@code @ConfigurationProperties} dans le projet, qui n employait
- * jusqu ici que {@code @Value} : dix champs lies ensemble et valides d un bloc au
- * demarrage valent mieux que dix injections independantes qu on peut oublier
+ * jusqu ici que {@code @Value} : douze champs lies ensemble et valides d un bloc au
+ * demarrage valent mieux que douze injections independantes qu on peut oublier
  * d aligner.</p>
  */
 @ConfigurationProperties(prefix = "autoservplus.garage")
 public record IdentiteGarage(
+        /**
+         * Nom commercial, celui sous lequel le garage se presente au public. Distinct de
+         * la raison sociale : la mention legale du responsable de la publication nomme
+         * l enseigne ET l entite juridique, parce que ce sont deux choses que le lecteur
+         * doit pouvoir rapprocher lui-meme.
+         */
+        String nomCommercial,
         String raisonSociale,
         String rue,
         String numeroRue,
