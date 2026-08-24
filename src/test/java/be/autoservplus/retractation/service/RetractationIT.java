@@ -331,7 +331,7 @@ class RetractationIT {
                 .andExpect(result -> assertThat(result.getResponse().getContentAsByteArray())
                         .startsWith("%PDF".getBytes()));
 
-        // Le PDF est archive a la premiere demande, puis relu tel quel (7 ans).
+        // Le PDF est archive a la premiere demande, puis relu tel quel (10 ans).
         assertThat(jdbc.queryForObject(
                 "SELECT chemin_pdf FROM avoir WHERE reference = ?", String.class, referenceAvoir))
                 .matches("\\d{4}/avoirs/AV-\\d{4}-\\d{4}\\.pdf");

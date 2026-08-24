@@ -150,7 +150,7 @@ public class LignePanier {
 
     /**
      * <b>Immuabilite comptable</b> : une ligne rattachee a une commande est une piece
-     * comptable (conservee 7 ans), plus une ligne de panier. Toute mutation est
+     * comptable (conservee 10 ans), plus une ligne de panier. Toute mutation est
      * refusee ICI, dans l entite — pas par convention d appel : meme un appelant qui
      * tiendrait encore une reference (la collection du panier n est pas purgee dans
      * la transaction de conversion, voir {@link #rattacherA}) se heurte a la garde.

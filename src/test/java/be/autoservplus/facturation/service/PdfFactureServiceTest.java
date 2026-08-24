@@ -111,7 +111,7 @@ class PdfFactureServiceTest {
 
         assertThat(service.pdfDe(facture)).isEqualTo(PDF_ARCHIVE);
 
-        // Le document conserve sept ans doit rester celui qui a ete remis : une
+        // Le document conserve dix ans doit rester celui qui a ete remis : une
         // evolution du gabarit ne reecrit pas retroactivement une facture emise.
         verifyNoInteractions(generateur);
         verify(factures, never()).saveAndFlush(any());

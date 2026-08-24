@@ -126,7 +126,8 @@ autoservplus:
     taille-max-octets: ${MEDIAS_TAILLE_MAX:5242880}
 
   facturation:
-    # Racine de l'archive des factures PDF, conservees SEPT ANS (Code TVA art. 60).
+    # Racine de l'archive des factures PDF, conservees DIX ANS (Code TVA art. 60, tel
+    # que modifie par la loi du 20 novembre 2022 — sept ans avant le 1er janvier 2023).
     # En production : un volume sauvegarde, distinct du repertoire de deploiement —
     # une archive legale ne peut pas disparaitre avec un redeploiement.
     archive: ${FACTURES_ARCHIVE:./data/factures}

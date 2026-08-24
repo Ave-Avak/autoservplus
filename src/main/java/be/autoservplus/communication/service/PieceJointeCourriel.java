@@ -12,7 +12,7 @@ package be.autoservplus.communication.service;
  * <p><b>Pourquoi une piece jointe ici, alors que la facture est un lien ?</b> Les
  * deux documents n ont pas la meme nature. Une facture est une piece comptable
  * nominative : la lier oblige a s authentifier pour la lire, et evite qu elle
- * dorme dans la boite aux lettres du destinataire pendant sept ans. Un fichier
+ * dorme dans la boite aux lettres du destinataire pendant dix ans. Un fichier
  * d agenda n a de valeur qu au moment ou il arrive, il ne contient rien que le
  * membre ne sache deja, et surtout il ne rend service que joint : un lien de
  * telechargement ouvert dans un navigateur de telephone n atteint pas

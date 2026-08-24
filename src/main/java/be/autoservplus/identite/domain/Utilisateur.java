@@ -241,7 +241,7 @@ public class Utilisateur extends BaseEntity {
      *
      * <p><b>La ligne survit.</b> {@code deleted_at} n est deliberement pas renseigne :
      * le {@code @SQLRestriction} de cette entite masquerait sinon la ligne de toutes
-     * les requetes, et une facture conservee sept ans ne pourrait plus resoudre son
+     * les requetes, et une facture conservee dix ans ne pourrait plus resoudre son
      * titulaire. L anonymisation vide, elle ne fait pas disparaitre.</p>
      *
      * <p><b>Les champs NOT NULL recoivent un marqueur, pas du vide.</b> {@code nom} et

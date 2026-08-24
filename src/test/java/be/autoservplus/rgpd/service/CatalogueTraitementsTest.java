@@ -104,13 +104,13 @@ class CatalogueTraitementsTest {
         }
 
         @Test
-        @DisplayName("mentionne la conservation comptable de 7 ans")
+        @DisplayName("mentionne la conservation comptable de 10 ans")
         void mentionneLaConservationComptable() {
             InformationsTraitement infos = catalogue.informationsTraitement(Locale.FRENCH);
 
             assertThat(infos.dureesConservation())
                     .extracting(InformationsTraitement.DureeConservation::duree)
-                    .anySatisfy(duree -> assertThat(duree).contains("7 ans"));
+                    .anySatisfy(duree -> assertThat(duree).contains("10 ans"));
         }
 
         @ParameterizedTest(name = "langue {0}")

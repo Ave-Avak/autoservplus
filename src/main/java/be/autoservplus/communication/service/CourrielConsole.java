@@ -228,7 +228,7 @@ public class CourrielConsole implements ServiceCourriel {
                 Destinataire : {} <{}>
                 Bonjour {}, votre compte AutoServ+ a bien ete supprime.
                 Vos donnees personnelles ont ete effacees et votre acces revoque.
-                Vos factures restent conservees sept ans, comme la loi l impose
+                Vos factures restent conservees dix ans, comme la loi l impose
                 (article 60 du Code de la TVA) ; elles ne vous identifient plus
                 dans l application.
                 ------------------------------------------------------

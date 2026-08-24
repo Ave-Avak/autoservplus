@@ -63,7 +63,7 @@ class SuppressionCompteTemplatesIT {
                 .andExpect(content().string(containsString("Supprimer mon compte")))
                 // Dire la conservation comptable AVANT l'action : une page qui
                 // promettrait un effacement total serait fausse.
-                .andExpect(content().string(containsString("sept ans")))
+                .andExpect(content().string(containsString("dix ans")))
                 .andExpect(content().string(containsString("irréversible")))
                 // Le mot a recopier vient du service, pas d'une copie du gabarit.
                 .andExpect(content().string(containsString("SUPPRIMER")))

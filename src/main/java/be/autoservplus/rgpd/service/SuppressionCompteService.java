@@ -27,7 +27,7 @@ import java.util.List;
  *
  * <p><b>Le droit a l effacement n est pas absolu.</b> L article 17.3.b ecarte
  * l obligation d effacer quand le traitement sert une obligation legale : le Code de
- * la TVA (art. 60) impose sept ans de conservation des factures, et une facture doit
+ * la TVA (art. 60) impose dix ans de conservation des factures, et une facture doit
  * porter l identite du client. Les deux exigences ne s opposent pas, elles ne portent
  * pas sur le meme objet. Le document comptable reste intact — ni regenere, ni
  * modifie ; la ligne applicative qui designe la personne est videe.</p>

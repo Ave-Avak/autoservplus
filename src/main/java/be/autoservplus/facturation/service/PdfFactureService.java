@@ -24,7 +24,7 @@ import java.util.Locale;
  * sur la facture ; toutes les demandes suivantes relisent ce fichier.</p>
  *
  * <p>Servir l archive plutot que regenerer n est pas une optimisation mais une
- * exigence : la facture conservee sept ans doit rester le document remis au client,
+ * exigence : la facture conservee dix ans doit rester le document remis au client,
  * pas ce que le code produirait aujourd hui. Une evolution du gabarit ne doit pas
  * reecrire retroactivement des documents deja transmis.</p>
  *

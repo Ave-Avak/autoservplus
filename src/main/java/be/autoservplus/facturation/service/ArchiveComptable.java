@@ -18,16 +18,23 @@ import java.util.regex.Pattern;
  * Archivage des documents comptables PDF sur le systeme de fichiers : factures et
  * notes de credit.
  *
- * <p>La loi belge impose la conservation des factures <b>sept ans</b> (Code TVA
- * art. 60), et la note de credit qui en corrige une est soumise a la meme obligation
- * — une facture conservee sans son avoir donnerait un montant faux au controle. Un
- * document regenere a chaque demande ne serait pas une archive : il refleterait le
- * code du jour, pas celui de l emission. Le PDF est donc ecrit une fois puis relu tel
- * quel, et c est ce meme fichier qui sert de piece justificative.</p>
+ * <p>La loi belge impose la conservation des factures <b>dix ans</b> (Code TVA art. 60,
+ * tel que modifie par la loi du 20 novembre 2022), et la note de credit qui en corrige
+ * une est soumise a la meme obligation — une facture conservee sans son avoir donnerait
+ * un montant faux au controle. Un document regenere a chaque demande ne serait pas une
+ * archive : il refleterait le code du jour, pas celui de l emission. Le PDF est donc
+ * ecrit une fois puis relu tel quel, et c est ce meme fichier qui sert de piece
+ * justificative.</p>
+ *
+ * <p><b>Dix et non sept</b> : le delai etait de sept ans jusqu a la loi du 20 novembre
+ * 2022, qui l a porte a dix pour les taxes devenues exigibles a partir du 1er janvier
+ * 2023. Il court a compter du 1er janvier de l annee qui suit celle de la facture, et
+ * non de sa date d emission — un mois de decembre et le janvier suivant ne sortent donc
+ * pas de l archive la meme annee.</p>
  *
  * <p>Racine configurable ({@code autoservplus.facturation.archive}), jamais en dur :
  * en production elle designe un volume sauvegarde, distinct du repertoire de
- * deploiement — une archive de sept ans ne peut pas disparaitre avec un
+ * deploiement — une archive de dix ans ne peut pas disparaitre avec un
  * redeploiement.</p>
  *
  * <p>Le chemin stocke en base est <b>relatif</b> a cette racine : deplacer l archive
