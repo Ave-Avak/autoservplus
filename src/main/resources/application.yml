@@ -43,10 +43,36 @@ spring:
 
 server:
   port: ${SERVER_PORT:8080}
+
+  # Derriere un proxy TLS terminant HTTPS (Caddy en production, cloudflared pour la
+  # repetition locale), l application ne voit qu une connexion HTTP en clair sur le
+  # reseau interne. Sans ce reglage elle se croit servie en http :// et le fait savoir
+  # partout ou elle se decrit elle-meme : Spring Security redirige vers du http, le
+  # cookie marque Secure n est jamais pose parce que la requete n est pas jugee sure,
+  # et l en-tete HSTS n est pas emis pour la meme raison. C est aussi ce qui rend
+  # l adresse du client visible : sans lui, toutes les requetes semblent venir du proxy.
+  #
+  # « native » plutot que « framework » : la vanne RemoteIp de Tomcat n honore
+  # X-Forwarded-* que si le pas precedent appartient a une plage privee. Le filtre du
+  # framework, lui, fait confiance a l en-tete quel qu en soit l emetteur — donc a
+  # quiconque atteindrait le port de l application directement.
+  forward-headers-strategy: native
+
   servlet:
     session:
       cookie:
         http-only: true
+        # false par defaut pour le poste de developpement, qui sert en HTTP clair : un
+        # cookie Secure y serait simplement ignore par le navigateur, donc aucune
+        # session ne s etablirait. A mettre a true partout ou le site est joint en
+        # HTTPS, ce que font les deux fichiers .env de deploiement.
+        secure: ${COOKIE_SECURE:false}
+        # Lax et NON Strict, malgre le CdC N1 qui annonce Strict. Le membre revient de
+        # chez Mollie par une redirection depuis un autre site : avec Strict, le
+        # navigateur retiendrait le cookie sur cette premiere requete, la session
+        # serait perdue et le retour de paiement afficherait un ecran de connexion
+        # au lieu de la commande payee. Lax laisse passer une navigation de premier
+        # niveau en GET, ce qui est exactement ce retour, et rien de plus.
         same-site: lax
 
 management:
