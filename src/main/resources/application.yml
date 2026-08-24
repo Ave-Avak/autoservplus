@@ -22,7 +22,14 @@ spring:
       ddl-auto: validate
     properties:
       hibernate:
-        jdbc.time_zone: UTC
+        # Pas de jdbc.time_zone ici. Le reglage n'aurait d'effet que sur des colonnes
+        # temporelles SANS fuseau, et le schema n'en compte aucune : les 51 champs
+        # Instant sont tous sur TIMESTAMPTZ, ou le fuseau est porte par la donnee.
+        # Son unique effet observable etait donc de fausser les deux seules colonnes
+        # TIME du schema — plage_ouverture.heure_debut et heure_fin, lues en LocalTime
+        # avec une heure d'ecart. Une heure sans date se rapporte a l'epoch, ou
+        # Europe/Brussels vaut UTC+1 : le garage ouvrait a 08:00 en base et le systeme
+        # lisait 09:00, en affichage comme au calcul des creneaux reservables.
         format_sql: true
 
   flyway:
