@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{verification.renvoi.titre} + ' — AutoServ+'">Renvoyer l'e-mail de vérification — AutoServ+</title>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<header class="entete">
+    <nav th:aria-label="#{nav.principale}"><a class="marque" th:href="@{/}">AutoServ+</a></nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
+</header>
+<main id="contenu">
+    <h1 th:text="#{verification.renvoi.titre}">Renvoyer l'e-mail de vérification</h1>
+    <p th:text="#{verification.renvoi.intro}">Votre compte n'est actif qu'une fois votre adresse confirmée.</p>
+
+    <form class="formulaire" th:action="@{/inscription/renvoyer-verification}" method="post">
+        <div class="champ">
+            <label for="email" th:text="#{verification.renvoi.email}">Adresse de courriel</label>
+            <input type="email" id="email" name="email" autocomplete="email" required autofocus>
+        </div>
+        <button type="submit" class="btn-cta" th:text="#{verification.renvoi.envoyer}">Envoyer</button>
+    </form>
+
+    <p><a th:href="@{/connexion}" th:text="#{verification.renvoi.retour}">Retour à la connexion</a></p>
+</main>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

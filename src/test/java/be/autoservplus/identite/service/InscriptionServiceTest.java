@@ -281,6 +281,67 @@ class InscriptionServiceTest {
         }
     }
 
+    @Nested
+    @DisplayName("Demande publique de renvoi (point d entree neutre)")
+    class DemandeDeRenvoi {
+
+        /**
+         * Le coeur de la garantie : les trois situations doivent etre indiscernables du
+         * dehors. Verifie ici sur le service, et de nouveau sur la reponse HTTP complete
+         * par RenvoiVerificationIT — un ecran peut trahir ce que le service tait.
+         */
+        @Test
+        @DisplayName("ne leve rien sur une adresse inconnue et n envoie aucun courriel")
+        void adresseInconnueResteMuette() {
+            when(repository.findByEmailIgnoreCase("inconnu@exemple.be")).thenReturn(Optional.empty());
+
+            service.demanderRenvoiVerification("inconnu@exemple.be");
+
+            verifyNoInteractions(courriel);
+        }
+
+        @Test
+        @DisplayName("ne leve rien sur une adresse deja verifiee et n envoie aucun courriel")
+        void adresseDejaVerifieeResteMuette() {
+            Utilisateur membre = membreEnAttente();
+            membre.confirmerAdresseEmail();
+            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+
+            service.demanderRenvoiVerification("marie@exemple.be");
+
+            verifyNoInteractions(courriel);
+        }
+
+        /**
+         * L adresse vide passe par normaliser(), qui leve RM-01. Ce chemin doit lui
+         * aussi rester muet : une soumission a blanc ne doit pas se distinguer d une
+         * soumission valide.
+         */
+        @Test
+        @DisplayName("ne leve rien sur une adresse vide")
+        void adresseVideResteMuette() {
+            service.demanderRenvoiVerification("   ");
+
+            verifyNoInteractions(courriel);
+        }
+
+        @Test
+        @DisplayName("renvoie effectivement le courriel pour un compte non verifie")
+        void compteNonVerifieRecoitSonCourriel() {
+            Utilisateur membre = membreEnAttente();
+            membre.enregistrerJetonVerification("ancien", MAINTENANT.plusSeconds(60));
+            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+
+            service.demanderRenvoiVerification("marie@exemple.be");
+
+            ArgumentCaptor<String> lien = ArgumentCaptor.forClass(String.class);
+            verify(courriel).envoyerVerificationAdresse(eq(membre), lien.capture());
+            assertThat(lien.getValue())
+                    .startsWith("/inscription/verification?jeton=")
+                    .doesNotContain("ancien");
+        }
+    }
+
     private Utilisateur membreEnAttente() {
         return new Utilisateur("marie@exemple.be", "$2a$04$empreinte",
                 "Dupont", "Marie", TypeUtilisateur.MEMBRE);

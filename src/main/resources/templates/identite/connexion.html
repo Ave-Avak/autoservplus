@@ -54,6 +54,11 @@
     </form>
 
     <p><a th:href="@{/mot-de-passe/oublie}">Mot de passe oublié ?</a></p>
+
+    <!-- Un compte non verifie ne peut PAS se connecter : c'est ici, sur l'ecran ou il
+         echoue, qu'il doit pouvoir redemander son lien d'activation. -->
+    <p><a th:href="@{/inscription/renvoyer-verification}"
+          th:text="#{verification.renvoi.lien}">Vous n'avez pas reçu l'e-mail de vérification ?</a></p>
 </main>
 
 <footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>

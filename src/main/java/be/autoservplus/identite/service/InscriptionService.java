@@ -6,6 +6,8 @@ import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,6 +34,8 @@ public class InscriptionService {
     public static final Duration VALIDITE_JETON = Duration.ofHours(24);
 
     private static final int LONGUEUR_MINIMALE_MOT_DE_PASSE = 12;
+
+    private static final Logger JOURNAL = LoggerFactory.getLogger(InscriptionService.class);
 
     private final UtilisateurRepository repository;
     private final PasswordEncoder encodeurMotDePasse;
@@ -106,7 +110,48 @@ public class InscriptionService {
         return membre;
     }
 
-    /** Regenere un jeton pour un compte dont le lien precedent a expire. */
+    /**
+     * Traite une demande publique de renvoi du courriel de verification.
+     *
+     * <p>Ne leve jamais d exception et ne rend aucun resultat : l ecran doit afficher le
+     * meme message que l adresse soit inconnue, deja verifiee, ou effectivement
+     * renvoyee. Une reponse qui differencierait ces trois cas transformerait ce
+     * formulaire public en oracle d existence de compte, permettant d enumerer les
+     * membres de la plateforme — exactement ce que
+     * {@link MotDePasseService#demanderReinitialisation(String)} evite deja sur le
+     * parcours voisin, dont ce point d entree reprend le patron.</p>
+     *
+     * <p>La neutralite est portee ICI et non dans le controleur : c est une regle du
+     * flux, pas une regle de presentation. Un second appelant du service en heriterait
+     * donc automatiquement, au lieu d avoir a la reimplementer.</p>
+     */
+    @Transactional
+    public void demanderRenvoiVerification(String email) {
+        try {
+            renvoyerVerification(email);
+        } catch (RessourceIntrouvableException | RegleMetierException refus) {
+            // Journalise le motif reel sans jamais le remonter a l appelant : le
+            // diagnostic reste disponible a l exploitant, pas au visiteur.
+            //
+            // Rattraper une RuntimeException sans compromettre la transaction n est
+            // possible que parce que l appel est INTERNE : il ne traverse pas le proxy
+            // transactionnel, qui seul marque la transaction rollback-only. Passer un
+            // jour par une auto-injection pour appeler renvoyerVerification rendrait
+            // ce catch inoperant et ferait echouer le commit.
+            JOURNAL.info("Renvoi de verification sans effet : {}", refus.getMessage());
+        }
+    }
+
+    /**
+     * Regenere un jeton pour un compte dont le lien precedent a expire.
+     *
+     * <p>Leve une exception qui NOMME la situation reelle : reservee a un appelant de
+     * confiance. Tout point d entree public doit passer par
+     * {@link #demanderRenvoiVerification(String)}.</p>
+     *
+     * @throws RessourceIntrouvableException si aucun compte ne porte cette adresse
+     * @throws RegleMetierException          si l adresse est deja verifiee (RM-04)
+     */
     @Transactional
     public Utilisateur renvoyerVerification(String email) {
         Utilisateur membre = repository.findByEmailIgnoreCase(normaliser(email))

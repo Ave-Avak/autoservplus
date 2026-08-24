@@ -66,6 +66,31 @@ public class InscriptionController {
         return "identite/inscription-confirmee";
     }
 
+    /**
+     * Formulaire public de renvoi du courriel de verification.
+     *
+     * <p>La route vit sous /inscription, deja ouverte a l anonyme par
+     * SecuriteConfig : c est la suite du parcours d inscription, et la placer ailleurs
+     * obligerait a elargir la surface publique pour un ecran qui n en a pas besoin.</p>
+     */
+    @GetMapping("/inscription/renvoyer-verification")
+    public String afficherRenvoiVerification() {
+        return "identite/renvoyer-verification";
+    }
+
+    /**
+     * Traite la demande de renvoi.
+     *
+     * <p>Rend TOUJOURS la meme vue, sans exposer l adresse saisie ni le sort reel de la
+     * demande : le service ne remonte rien qui permettrait de les distinguer. C est le
+     * courriel, et lui seul, qui renseigne le titulaire du compte.</p>
+     */
+    @PostMapping("/inscription/renvoyer-verification")
+    public String traiterRenvoiVerification(@RequestParam String email) {
+        service.demanderRenvoiVerification(email);
+        return "identite/renvoyer-verification-envoye";
+    }
+
     @GetMapping("/inscription/verification")
     public String verifierAdresse(@RequestParam String jeton, Model modele) {
         modele.addAttribute("titre", "Vérification de votre adresse");
