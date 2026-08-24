@@ -36,6 +36,7 @@
     <h1 th:text="#{commande.confirmation.titre}">Commande enregistrée</h1>
 
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+    <div class="message message-succes" th:if="${succes}" role="status" th:text="${succes}">Succès</div>
 
     <div class="message message-succes" role="status"
          th:text="#{commande.confirmation.numero(${commande.numero()})}">
@@ -44,13 +45,20 @@
 
     <p th:text="#{commande.confirmation.total(${commande.totalTvac()})}">Montant à régler : 80,21 €</p>
 
-    <p th:text="#{commande.confirmation.paiement}">
+    <!-- Sans objet une fois la commande payee : ce texte annonce l'attente. -->
+    <p th:if="${commande.enAttenteDePaiement()}" th:text="#{commande.confirmation.paiement}">
         Votre commande sera préparée dès réception du paiement.
     </p>
 
-    <!-- Le POST part vers la passerelle de paiement : URL factice hors production,
-         Mollie en production (frontiere MollieGateway). -->
-    <form th:action="@{/commande/{ref}/payer(ref=${commande.reference()})}" method="post">
+    <!--
+      Le bouton de paiement ne s'affiche QUE tant que la commande en attend un. Cette
+      page est desormais le point de chute du retour de paiement : proposer « Procéder
+      au paiement » a un membre qui vient de payer serait au mieux deroutant, au pire
+      une seconde tentative. Le POST part vers la passerelle — page simulee si aucun
+      prestataire n'est configure, Mollie sinon (frontiere MollieGateway).
+    -->
+    <form th:if="${commande.enAttenteDePaiement()}"
+          th:action="@{/commande/{ref}/payer(ref=${commande.reference()})}" method="post">
         <p class="actions-page">
             <button type="submit" class="btn-cta" th:text="#{commande.payer}">Procéder au paiement</button>
             <!-- Une fois payee, la facture se telecharge depuis l'historique : elle
@@ -59,6 +67,11 @@
             <a th:href="@{/pieces}" th:text="#{panier.continuer}">Continuer mes achats</a>
         </p>
     </form>
+
+    <p class="actions-page" th:unless="${commande.enAttenteDePaiement()}">
+        <a class="btn-cta" th:href="@{/commandes}" th:text="#{commandes.nav}">Mes commandes</a>
+        <a th:href="@{/pieces}" th:text="#{panier.continuer}">Continuer mes achats</a>
+    </p>
 </main>
 
 <footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>

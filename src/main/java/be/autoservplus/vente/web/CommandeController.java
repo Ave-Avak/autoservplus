@@ -113,6 +113,36 @@ public class CommandeController {
         }
     }
 
+    /**
+     * Retour du membre depuis la page du prestataire.
+     *
+     * <p><b>Rien n est conclu de la seule visite de cette adresse.</b> Le prestataire
+     * y renvoie le membre quelle que soit l issue, abandon compris, et l URL est
+     * ouvrable par quiconque la connait : le service relit le statut chez le
+     * prestataire avant de repondre. Le message affiche decoule de l etat constate, pas
+     * du fait d etre revenu.</p>
+     *
+     * <p>La session survit au detour : le prestataire ramene le navigateur par une
+     * navigation GET de premier niveau, que le cookie {@code SameSite=Lax} accompagne.
+     * Elle ne survivrait pas a un POST de retour — raison de plus pour que la
+     * notification serveur a serveur reste le chemin nominal quand elle est
+     * possible.</p>
+     */
+    @GetMapping("/{reference}/retour")
+    public String retourDePaiement(@AuthenticationPrincipal UserDetails membre,
+                                   @PathVariable UUID reference,
+                                   RedirectAttributes redirection) {
+        boolean payee = paiements.constaterRetour(reference, membre.getUsername());
+        if (payee) {
+            redirection.addFlashAttribute("succes", msg("commande.retour.paye"));
+        } else {
+            // Ni echec ni succes affirme : le paiement peut encore aboutir, notamment
+            // par virement. Annoncer un echec pousserait a payer une seconde fois.
+            redirection.addFlashAttribute("erreur", msg("commande.retour.en-attente"));
+        }
+        return "redirect:/commande/" + reference + "/confirmation";
+    }
+
     @GetMapping("/{reference}/confirmation")
     public String confirmation(@AuthenticationPrincipal UserDetails membre,
                                @PathVariable UUID reference,

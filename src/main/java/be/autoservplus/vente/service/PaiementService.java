@@ -103,6 +103,45 @@ public class PaiementService {
         return cree.urlRedirection();
     }
 
+    // --- retour du membre depuis la page du prestataire --------------------------------
+
+    /**
+     * Constate l issue du paiement au retour du membre, et rend {@code true} si la
+     * commande est payee a l issue de ce constat.
+     *
+     * <p><b>Le retour n est PAS une preuve de paiement</b>, et rien ici ne le traite
+     * comme tel. Le prestataire y renvoie le membre quelle que soit l issue —
+     * y compris apres un abandon pur et simple — et l adresse est une URL que
+     * n importe qui peut ouvrir. Ce qui tranche reste ce qui tranchait deja : le
+     * statut RELU chez le prestataire par {@link #traiterNotification}. Le retour ne
+     * fait que declencher cette relecture plus tot.</p>
+     *
+     * <p><b>Pourquoi ce declenchement est necessaire et non redondant.</b> La
+     * notification serveur a serveur n arrive pas toujours : elle n est meme pas
+     * demandee quand le site n est pas joignable depuis l exterieur, ce qui est le cas
+     * de tout poste de developpement. Sans cette reconciliation, la commande resterait
+     * EN_ATTENTE_PAIEMENT apres un paiement reussi, puis serait annulee par le job
+     * RM-21 au bout de trente minutes — un encaissement reel sans commande en face.</p>
+     *
+     * <p><b>Aucun risque de double effet</b> : l appel emprunte exactement le chemin du
+     * webhook, dont l idempotence vient de l etat sous verrou pessimiste. Webhook et
+     * retour peuvent donc arriver dans n importe quel ordre, ou tous les deux : la
+     * facture n est emise qu une fois, sur la transition reelle, et la numerotation
+     * continue sans trou n est pas plus exposee qu avant.</p>
+     */
+    @Transactional
+    @PreAuthorize("isAuthenticated()")
+    public boolean constaterRetour(UUID referenceCommande, String email) {
+        Commande commande = commandeDuMembre(referenceCommande, email);
+        paiements.findFirstByCommandeOrderByDateInitiationDescIdDesc(commande)
+                .map(Paiement::getReferenceMollie)
+                // Une tentative sans reference prestataire n a jamais quitte le site :
+                // il n y a rien a relire chez lui.
+                .filter(reference -> reference != null && !reference.isBlank())
+                .ifPresent(this::traiterNotification);
+        return commande.getStatut() == StatutCommande.PAYEE;
+    }
+
     // --- notification entrante (webhook) ----------------------------------------------
 
     /**

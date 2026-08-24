@@ -60,9 +60,11 @@ public class PaiementSimuleController {
     }
 
     /**
-     * Simule l issue puis ramene le membre sur sa commande. PRG : un rafraichissement
-     * ne rejouerait pas l issue — et le rejouerait-il que le traitement est
-     * idempotent, l etat de la commande ayant deja tranche.
+     * Simule l issue puis renvoie le membre par la MEME porte qu un prestataire reel :
+     * l URL de retour de la commande, et non la page de confirmation en direct. Un
+     * raccourci ici laisserait la reconciliation du retour sans couverture, alors
+     * qu elle est le seul chemin par lequel un paiement aboutit lorsque la
+     * notification serveur a serveur n arrive pas.
      */
     @PostMapping("/{referencePrestataire}")
     public String simuler(@AuthenticationPrincipal UserDetails membre,
@@ -70,7 +72,7 @@ public class PaiementSimuleController {
                           @RequestParam(defaultValue = "false") boolean reussite) {
         UUID commande =
                 simulation.simuler(referencePrestataire, reussite, membre.getUsername());
-        return "redirect:/commande/" + commande + "/confirmation";
+        return "redirect:/commande/" + commande + "/retour";
     }
 
     private String msg(String cle) {

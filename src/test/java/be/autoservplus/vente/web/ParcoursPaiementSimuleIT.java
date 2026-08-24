@@ -77,6 +77,7 @@ class ParcoursPaiementSimuleIT {
     @Autowired private PanierService panierService;
     @Autowired private CommandeRepository commandes;
     @Autowired private PaiementRepository paiements;
+    @Autowired private be.autoservplus.vente.service.PrestatairePaiementFictif prestataireFictif;
 
     private Piece filtre;
 
@@ -126,7 +127,12 @@ class ParcoursPaiementSimuleIT {
                 .andExpect(content().string(containsString("simul")))
                 .andExpect(content().string(containsString("CMD-")));
 
+        // Le retour passe par la meme porte qu un prestataire reel : /retour, qui
+        // reconcilie, puis la confirmation.
         mvc.perform(post(urlPaiement).with(csrf()).param("reussite", "true"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/commande/" + reference + "/retour"));
+        mvc.perform(get("/commande/{ref}/retour", reference))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/commande/" + reference + "/confirmation"));
 
@@ -170,6 +176,81 @@ class ParcoursPaiementSimuleIT {
 
         assertThat(pieces.findById(filtre.getId()).orElseThrow().getQuantiteStock())
                 .isEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("le retour reconcilie meme si AUCUNE notification n est arrivee")
+    void reconciliationSansNotification() throws Exception {
+        UUID reference = commander();
+        String urlPaiement = urlDePaiement(reference);
+        String referencePrestataire = urlPaiement.substring(urlPaiement.lastIndexOf('/') + 1);
+
+        // Le paiement aboutit CHEZ le prestataire, et rien ne le notifie — exactement
+        // ce qui se produit lorsque le site n est pas joignable depuis l exterieur et
+        // qu aucune URL de notification n a donc ete transmise.
+        prestataireFictif.programmerStatut(referencePrestataire, StatutPaiement.REUSSI);
+        assertThat(commandes.findByReference(reference).orElseThrow().getStatut())
+                .isEqualTo(StatutCommande.EN_ATTENTE_PAIEMENT);
+
+        // Sans cette reconciliation, la commande resterait en attente puis serait
+        // annulee par le job RM-21 : un encaissement reel sans commande en face.
+        mvc.perform(get("/commande/{ref}/retour", reference))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/commande/" + reference + "/confirmation"));
+
+        assertThat(commandes.findByReference(reference).orElseThrow().getStatut())
+                .isEqualTo(StatutCommande.PAYEE);
+    }
+
+    @Test
+    @DisplayName("le retour ne conclut rien de lui-meme : sans paiement abouti, la commande attend")
+    void retourNEstPasUnePreuve() throws Exception {
+        UUID reference = commander();
+        urlDePaiement(reference);
+
+        // Le membre revient sans avoir paye — le prestataire renvoie aussi apres un
+        // abandon. Visiter l adresse ne doit rien confirmer.
+        mvc.perform(get("/commande/{ref}/retour", reference))
+                .andExpect(status().is3xxRedirection());
+
+        assertThat(commandes.findByReference(reference).orElseThrow().getStatut())
+                .isEqualTo(StatutCommande.EN_ATTENTE_PAIEMENT);
+    }
+
+    @Test
+    @DisplayName("un retour sur une commande jamais mise en paiement ne rompt pas")
+    void retourSansAucunPaiement() throws Exception {
+        UUID reference = commander();
+
+        // Aucune tentative n a ete initiee : il n y a rien a relire chez le
+        // prestataire, et l ecran doit malgre tout repondre.
+        mvc.perform(get("/commande/{ref}/retour", reference))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/commande/" + reference + "/confirmation"));
+    }
+
+    @Test
+    @DisplayName("le retour d autrui repond 404, jamais 403")
+    void retourDAutrui() throws Exception {
+        UUID reference = commander();
+
+        mvc.perform(get("/commande/{ref}/retour", reference).with(user("luc@exemple.be")))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("une fois payee, la confirmation ne propose plus de payer")
+    void plusDeBoutonDePaiementApresPaiement() throws Exception {
+        UUID reference = commander();
+        String urlPaiement = urlDePaiement(reference);
+        mvc.perform(post(urlPaiement).with(csrf()).param("reussite", "true"));
+        mvc.perform(get("/commande/{ref}/retour", reference));
+
+        // Reproposer le paiement a qui vient de payer invite a payer deux fois.
+        mvc.perform(get("/commande/{ref}/confirmation", reference))
+                .andExpect(status().isOk())
+                .andExpect(content().string(
+                        org.hamcrest.Matchers.not(containsString("/payer"))));
     }
 
     @Test
