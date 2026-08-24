@@ -5,7 +5,6 @@ import be.autoservplus.vente.domain.Paiement;
 import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.repository.PaiementRepository;
 import be.autoservplus.vente.web.dto.SimulationPaiementVue;
-import org.springframework.context.annotation.Profile;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,11 +31,11 @@ import java.util.UUID;
  * transitions du domaine validerait un chemin que la production n emprunte pas —
  * et c est precisement le defaut qu elle repare.</p>
  *
- * <p>Active partout sauf en production, comme le bouchon dont elle est la face
- * visible : les deux vivent et meurent ensemble.</p>
+ * <p>Active sous la condition exacte du bouchon dont elle est la face visible
+ * ({@link SiAucunPrestataireConfigure}) : les deux vivent et meurent ensemble.</p>
  */
 @Service
-@Profile("!prod")
+@SiAucunPrestataireConfigure
 public class SimulationPaiementService {
 
     private final PaiementRepository paiements;

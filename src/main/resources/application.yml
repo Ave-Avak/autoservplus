@@ -106,6 +106,37 @@ autoservplus:
     archive: ${FACTURES_ARCHIVE:./data/factures}
   retractation:
     delai-jours: 14
+  # Prestataire de paiement en ligne (F14). AUCUNE valeur n'est livree : sans
+  # identifiant, l'application se rabat sur un prestataire bouchonne et sert une page
+  # de paiement qui s'annonce comme simulee. Le repli vaut y compris en production —
+  # une plateforme deployee sans cle doit rester parcourable de bout en bout plutot
+  # que de rompre au moment de payer — et il n'est pas silencieux : avertissement au
+  # demarrage cote exploitant, banniere sur la page cote membre.
+  #
+  # Deux formes d'identifiant sont acceptees, et elles ne demandent pas la meme chose :
+  #
+  #   - cle API      test_... ou live_...  Elle designe a elle seule un profil de site
+  #                                        et un mode. Rien d'autre a renseigner.
+  #   - jeton d'acces access_...           Il authentifie une ORGANISATION, pas un
+  #                                        site. Mollie ne peut alors deduire ni le
+  #                                        profil a facturer ni le mode : profil-id et
+  #                                        mode-test deviennent obligatoires.
+  #
+  # profil-id se lit dans le tableau de bord Mollie (forme pfl_...). Il n'est PAS
+  # decouvert par appel a GET /v2/profiles/me : cet appel exigerait la permission
+  # profiles.read, donc un jeton plus large que necessaire pour une donnee que
+  # l'exploitant a sous les yeux. Les quatre permissions payments.read,
+  # payments.write, refunds.read et refunds.write suffisent a tout le parcours.
+  #
+  # L'URL de retour et celle du webhook sont derivees de autoservplus.url-publique
+  # (variable URL_PUBLIQUE) : elles doivent designer le site tel que Mollie et le
+  # navigateur du membre le joignent, pas tel que le serveur se voit lui-meme.
+  paiement:
+    mollie:
+      cle-api: ${MOLLIE_API_KEY:}
+      profil-id: ${MOLLIE_PROFILE_ID:}
+      mode-test: ${MOLLIE_MODE_TEST:true}
+
   securite:
     tentatives-max: 5
     duree-verrouillage-minutes: 15

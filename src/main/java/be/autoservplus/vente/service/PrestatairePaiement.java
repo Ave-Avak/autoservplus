@@ -8,8 +8,11 @@ import be.autoservplus.vente.domain.StatutPaiement;
  * <p>Le code metier depend de cette interface, jamais de Mollie : c est le meme
  * decoupage que {@code ServiceCourriel}, et l application de la strategie
  * securite §11 — chaque service tiers est isole derriere une passerelle unique.
- * L implementation active est choisie par le profil Spring : bouchon programmable
- * en developpement et en test, {@code MollieGateway} en production.</p>
+ * L implementation active est choisie par la PRESENCE D UN IDENTIFIANT de
+ * prestataire ({@code autoservplus.paiement.mollie.cle-api}) : {@code MollieGateway}
+ * des qu il y en a un, bouchon programmable sinon. Le profil Spring ne decide pas —
+ * il l a fait, et deployer sans identifiant levait alors une exception au moment de
+ * payer.</p>
  *
  * <p>Les signatures sont volontairement independantes du vocabulaire Mollie
  * (records de demande et de resultat, {@link StatutPaiement} projete) : changer

@@ -1,7 +1,9 @@
 package be.autoservplus.vente.service;
 
 import be.autoservplus.vente.domain.StatutPaiement;
-import org.springframework.context.annotation.Profile;
+import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
@@ -9,17 +11,27 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Prestataire de paiement bouchonne, actif partout sauf en production : toute la
- * logique metier du module se developpe et se teste contre lui, sans reseau et
- * de maniere deterministe (meme role que {@code CourrielConsole} pour l email).
+ * Prestataire de paiement bouchonne, actif tant qu aucun identifiant de
+ * prestataire n est fourni : toute la logique metier du module se developpe et se
+ * teste contre lui, sans reseau et de maniere deterministe (meme role que
+ * {@code CourrielConsole} pour l email).
  *
- * <p>Un paiement cree nait INITIE ; les tests et la demo font evoluer son statut
- * via {@link #programmerStatut} — c est ce que {@link #lireStatut} restituera,
- * comme le ferait la relecture de l API Mollie.</p>
+ * <p>Un paiement cree nait INITIE ; les tests, la demonstration et la page de
+ * paiement simulee font evoluer son statut via {@link #programmerStatut} — c est ce
+ * que {@link #lireStatut} restituera, comme le ferait la relecture de l API
+ * Mollie.</p>
+ *
+ * <p><b>Le repli s annonce.</b> Il vaut aussi en production, ou il evite de rompre
+ * un parcours d achat faute de cle — mais un encaissement simule qui se tairait
+ * serait pire que la rupture qu il evite. D ou l avertissement au demarrage, et la
+ * banniere que porte la page de paiement simulee.</p>
  */
 @Service
-@Profile("!prod")
+@SiAucunPrestataireConfigure
 public class PrestatairePaiementFictif implements PrestatairePaiement {
+
+    private static final Logger JOURNAL =
+            LoggerFactory.getLogger(PrestatairePaiementFictif.class);
 
     private final Map<String, StatutPaiement> statuts = new ConcurrentHashMap<>();
     private final AtomicLong compteur = new AtomicLong(1);
@@ -76,6 +88,18 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
                 cle -> "re_fictif_%04d".formatted(compteurRemboursements.getAndIncrement()));
         statuts.put(demande.referencePrestataire(), StatutPaiement.REMBOURSE);
         return new RemboursementCree(reference);
+    }
+
+    /**
+     * Avertissement au demarrage. En {@code WARN} et non en {@code INFO} : un
+     * exploitant qui croit encaisser alors qu il simule ne decouvrirait le probleme
+     * qu au moment de compter la caisse.
+     */
+    @PostConstruct
+    void annoncerLeRepli() {
+        JOURNAL.warn("Aucun identifiant de prestataire de paiement configure "
+                + "(autoservplus.paiement.mollie.cle-api / MOLLIE_API_KEY) : les "
+                + "paiements sont SIMULES et aucun encaissement reel n a lieu.");
     }
 
     /** Programme le statut que la prochaine relecture restituera (tests, demo). */

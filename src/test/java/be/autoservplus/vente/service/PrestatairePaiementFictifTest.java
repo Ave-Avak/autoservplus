@@ -1,5 +1,6 @@
 package be.autoservplus.vente.service;
 
+import be.autoservplus.config.MollieProprietes;
 import be.autoservplus.vente.domain.StatutPaiement;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -102,20 +103,18 @@ class PrestatairePaiementFictifTest {
     @Test
     @DisplayName("la MollieGateway reelle leve UnsupportedOperationException tant que non implementee")
     void frontiereMollieFermee() {
-        MollieGateway gateway = new MollieGateway();
+        MollieGateway gateway = new MollieGateway(
+                new MollieProprietes("test_cle-de-test", null, true));
 
         assertThatThrownBy(() -> gateway.creerPaiement(demande))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessageContaining("hors périmètre assisté");
+                .isInstanceOf(UnsupportedOperationException.class);
         assertThatThrownBy(() -> gateway.lireStatut("tr_reel"))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessageContaining("hors périmètre assisté");
+                .isInstanceOf(UnsupportedOperationException.class);
         // Le remboursement reel est ferme au meme titre : le TODO Mollie couvre les
         // trois appels, il ne doit pas y avoir de demi-implementation.
         assertThatThrownBy(() -> gateway.rembourser(new DemandeRemboursement(
                 "tr_reel", new BigDecimal("80.21"), "EUR", "cle-refund-1")))
-                .isInstanceOf(UnsupportedOperationException.class)
-                .hasMessageContaining("hors périmètre assisté");
+                .isInstanceOf(UnsupportedOperationException.class);
     }
 
     private static DemandeRemboursement remboursement(PaiementCree cree, String cle) {

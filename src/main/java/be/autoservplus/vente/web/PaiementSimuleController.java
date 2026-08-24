@@ -1,9 +1,9 @@
 package be.autoservplus.vente.web;
 
+import be.autoservplus.vente.service.SiAucunPrestataireConfigure;
 import be.autoservplus.vente.service.SimulationPaiementService;
 import be.autoservplus.vente.web.dto.SimulationPaiementVue;
 import org.springframework.context.MessageSource;
-import org.springframework.context.annotation.Profile;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -30,10 +30,12 @@ import java.util.UUID;
  * le provoquer. Une page qui se ferait passer pour une vraie page de paiement
  * serait, elle, indefendable.</p>
  *
- * <p>Active partout sauf en production, comme le bouchon qu elle donne a voir.</p>
+ * <p>Active tant qu aucun identifiant de prestataire n est fourni, comme le bouchon
+ * qu elle donne a voir — y compris en production, ou un repli annonce vaut mieux
+ * qu une rupture au paiement.</p>
  */
 @Controller
-@Profile("!prod")
+@SiAucunPrestataireConfigure
 @RequestMapping("/paiement-fictif")
 public class PaiementSimuleController {
 
