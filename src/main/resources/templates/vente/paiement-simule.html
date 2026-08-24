@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{paiement.simule.titre} + ' — AutoServ+'">Paiement simulé — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<!--
+  En-tête RÉDUIT À LA MARQUE, et c'est délibéré : cette page tient la place de celle
+  du prestataire de paiement, qui n'affiche jamais la navigation du marchand. Y
+  laisser le menu et le compteur de panier inviterait à quitter un paiement en cours,
+  et donnerait à voir un écran que le parcours réel ne montre pas. Le sélecteur de
+  langue reste — une page de paiement multilingue est la norme, chez Mollie comme
+  ailleurs.
+-->
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+    </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
+</header>
+
+<main id="contenu">
+
+    <!--
+      Reprend .avis-brouillon plutôt que d'introduire une classe : même rôle
+      sémantique — « ceci n'est pas la chose réelle » — et surtout un contraste déjà
+      CALCULÉ (5.08:1). Une bannière d'avertissement dont le contraste serait choisi
+      à l'œil manquerait sa cible auprès des lecteurs qu'elle vise en premier.
+    -->
+    <aside class="avis-brouillon" role="note">
+        <h2 th:text="#{paiement.simule.banniere}">Paiement simulé — démonstration</h2>
+        <p th:text="#{paiement.simule.explication}">
+            Aucun prestataire de paiement n'est configuré : aucun débit réel n'a lieu.
+        </p>
+    </aside>
+
+    <h1 th:text="#{paiement.simule.titre}">Paiement simulé</h1>
+
+    <!--
+      Numéro et montant affichés parce que c'est ce que le membre doit confronter à
+      son récapitulatif avant de payer — la seule vérification qui compte à cet
+      instant, chez un prestataire réel comme ici.
+    -->
+    <dl class="identite-garage">
+        <dt th:text="#{paiement.simule.commande}">Commande</dt>
+        <dd th:text="${paiement.numeroCommande()}">CMD-2026-0001</dd>
+        <dt th:text="#{paiement.simule.montant}">Montant à encaisser</dt>
+        <dd th:text="${paiement.totalTvac()}">80,21 €</dd>
+    </dl>
+
+    <p th:text="#{paiement.simule.choix}">Choisissez l'issue à simuler :</p>
+
+    <!--
+      Les deux issues sont offertes, et pas seulement le succès : l'échec
+      d'encaissement fait partie du parcours à démontrer, et rien d'autre dans
+      l'application ne permet de le provoquer depuis l'interface.
+    -->
+    <form th:action="@{/paiement-fictif/{ref}(ref=${paiement.referencePrestataire()})}"
+          method="post">
+        <p class="actions-page">
+            <button type="submit" name="reussite" value="true" class="btn-cta"
+                    th:text="#{paiement.simule.reussir}">Simuler un paiement réussi</button>
+            <button type="submit" name="reussite" value="false" class="lien-bouton"
+                    th:text="#{paiement.simule.echouer}">Simuler un échec de paiement</button>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>
