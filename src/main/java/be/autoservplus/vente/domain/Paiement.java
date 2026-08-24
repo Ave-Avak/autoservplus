@@ -67,17 +67,24 @@ public class Paiement {
 
     /**
      * Moyen effectivement employe (Bancontact, carte, virement…), tel que le
-     * prestataire le rapporte.
+     * prestataire le rapporte. Affiche au detail d une commande (F32, CdC P384).
      *
-     * <p>Mappe en <b>lecture seule</b> : la colonne existe depuis V4, et le detail
-     * d une commande doit l afficher (F32, CdC P384). Aucun chemin d ecriture n est
-     * ouvert ici — le moyen n est pas choisi par AutoServ+ mais constate chez le
-     * prestataire, qui ne le connait qu une fois le client passe par sa page. Le
-     * bouchon de developpement ne le renseigne pas, la valeur est donc nulle en V1 :
-     * l ecran le dit au lieu d inventer un moyen. Le champ se remplira de lui-meme le
-     * jour ou {@code MollieGateway} sera cable, sans toucher a cette classe.</p>
+     * <p><b>Ecrit a la relecture, jamais a la creation</b> : le moyen n est pas choisi
+     * par AutoServ+ mais constate chez le prestataire, qui ne le connait qu une fois le
+     * client passe par sa page. La colonne reste donc nulle a l insertion et se
+     * renseigne quand la relecture du statut le rapporte.</p>
+     *
+     * <p><b>Correction d une promesse non tenue.</b> Le champ etait mappe
+     * {@code insertable = false, updatable = false} en annoncant qu il « se remplirait
+     * de lui-meme le jour ou MollieGateway serait cable ». C etait faux : ainsi mappe,
+     * Hibernate ne l ecrit jamais, et l ecran aurait continue d afficher « moyen non
+     * communique » avec un prestataire reel branche. Un commentaire faux coute plus
+     * cher qu un commentaire absent — il dispense de verifier.</p>
+     *
+     * <p>Un prestataire bouchonne n en rapporte aucun : la valeur reste nulle et
+     * l ecran le dit, plutot que d inventer un moyen.</p>
      */
-    @Column(name = "methode", length = 30, insertable = false, updatable = false)
+    @Column(name = "methode", length = 30)
     private String methode;
 
     @NotNull
@@ -173,6 +180,20 @@ public class Paiement {
         transitionVers(StatutPaiement.REMBOURSE);
         this.referenceRemboursement =
                 Objects.requireNonNull(referencePrestataire, "referencePrestataire");
+    }
+
+    /**
+     * Enregistre le moyen rapporte par le prestataire, une seule fois.
+     *
+     * <p>Ne reecrit jamais une valeur deja posee, et ignore une valeur vide : la
+     * relecture du statut est rejouee a chaque notification et a chaque retour du
+     * membre. Sans cette garde, un prestataire qui cesserait de rapporter le moyen
+     * effacerait une donnee que la facture emise a peut-etre deja opposee.</p>
+     */
+    public void enregistrerMethode(String methodeRapportee) {
+        if (this.methode == null && methodeRapportee != null && !methodeRapportee.isBlank()) {
+            this.methode = methodeRapportee;
+        }
     }
 
     /**

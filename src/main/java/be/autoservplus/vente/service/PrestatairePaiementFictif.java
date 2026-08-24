@@ -18,7 +18,7 @@ import java.util.concurrent.atomic.AtomicLong;
  *
  * <p>Un paiement cree nait INITIE ; les tests, la demonstration et la page de
  * paiement simulee font evoluer son statut via {@link #programmerStatut} — c est ce
- * que {@link #lireStatut} restituera, comme le ferait la relecture de l API
+ * que {@link #lireEtat} restituera, comme le ferait la relecture de l API
  * Mollie.</p>
  *
  * <p><b>Le repli s annonce.</b> Il vaut aussi en production, ou il evite de rompre
@@ -48,14 +48,19 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
         return new PaiementCree(reference, "/paiement-fictif/" + reference);
     }
 
+    /**
+     * Aucun moyen de paiement n est rapporte, et c est volontaire : en inventer un
+     * ferait afficher « Bancontact » sur une commande que personne n a payee. L ecran
+     * de detail sait dire que le moyen n a pas ete communique.
+     */
     @Override
-    public StatutPaiement lireStatut(String referencePrestataire) {
+    public EtatPaiement lireEtat(String referencePrestataire) {
         StatutPaiement statut = statuts.get(referencePrestataire);
         if (statut == null) {
             throw new IllegalStateException(
                     "Reference inconnue du prestataire fictif : " + referencePrestataire);
         }
-        return statut;
+        return EtatPaiement.de(statut);
     }
 
     /**

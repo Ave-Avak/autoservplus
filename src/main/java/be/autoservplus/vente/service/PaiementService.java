@@ -154,8 +154,13 @@ public class PaiementService {
         Paiement paiement = paiements.findByReferenceMollie(referencePrestataire)
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Paiement", referencePrestataire));
-        // Strategie securite §11 : seul le statut relu chez le prestataire fait foi.
-        StatutPaiement statutAuthentique = prestataire.lireStatut(referencePrestataire);
+        // Strategie securite §11 : seul l etat relu chez le prestataire fait foi.
+        EtatPaiement etat = prestataire.lireEtat(referencePrestataire);
+        // Le moyen arrive dans la meme reponse que le statut, et se pose des qu il est
+        // connu — y compris sur un paiement qui n a pas encore abouti. L entite refuse
+        // de le reecrire, donc un rejeu ne peut pas l alterer.
+        paiement.enregistrerMethode(etat.methode());
+        StatutPaiement statutAuthentique = etat.statut();
         switch (statutAuthentique) {
             case REUSSI -> confirmer(paiement);
             case ECHOUE, EXPIRE -> clore(paiement, statutAuthentique);

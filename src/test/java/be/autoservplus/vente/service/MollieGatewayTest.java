@@ -218,7 +218,7 @@ class MollieGatewayTest {
                     .andRespond(withSuccess(paiementJson(statutMollie),
                             MediaType.APPLICATION_JSON));
 
-            assertThat(passerelleAvecJetonOrganisation().lireStatut("tr_reel1"))
+            assertThat(passerelleAvecJetonOrganisation().lireEtat("tr_reel1").statut())
                     .isEqualTo(attendu);
             serveur.verify();
         }
@@ -233,8 +233,37 @@ class MollieGatewayTest {
                     .andRespond(withSuccess(paiementJson("authorized"),
                             MediaType.APPLICATION_JSON));
 
-            assertThat(passerelleAvecJetonOrganisation().lireStatut("tr_reel1"))
+            assertThat(passerelleAvecJetonOrganisation().lireEtat("tr_reel1").statut())
                     .isNotEqualTo(StatutPaiement.REUSSI);
+        }
+
+        @Test
+        @DisplayName("le moyen employe est remonte avec le statut, dans la meme reponse")
+        void moyenRemonte() {
+            // Le CdC P384 demande le mode de paiement au detail d une commande. Un
+            // accesseur separe imposerait un second appel reseau pour une donnee que
+            // cette reponse porte deja.
+            serveur.expect(requestTo(API + "/payments/tr_reel1?testmode=true"))
+                    .andRespond(withSuccess("""
+                            {"id":"tr_reel1","status":"paid","method":"bancontact",
+                             "amount":{"currency":"EUR","value":"80.21"}}
+                            """, MediaType.APPLICATION_JSON));
+
+            EtatPaiement etat = passerelleAvecJetonOrganisation().lireEtat("tr_reel1");
+            assertThat(etat.statut()).isEqualTo(StatutPaiement.REUSSI);
+            assertThat(etat.methode()).isEqualTo("bancontact");
+        }
+
+        @Test
+        @DisplayName("un moyen encore inconnu remonte a null, sans faire echouer la relecture")
+        void moyenPasEncoreConnu() {
+            // Le client choisit son moyen sur la page du prestataire : il est absent
+            // tant qu il n a pas choisi, et ce n est pas une anomalie.
+            serveur.expect(requestTo(API + "/payments/tr_reel1?testmode=true"))
+                    .andRespond(withSuccess(paiementJson("open"), MediaType.APPLICATION_JSON));
+
+            assertThat(passerelleAvecJetonOrganisation().lireEtat("tr_reel1").methode())
+                    .isNull();
         }
 
         @Test
@@ -243,7 +272,7 @@ class MollieGatewayTest {
             serveur.expect(requestTo(API + "/payments/tr_reel1"))
                     .andRespond(withSuccess(paiementJson("paid"), MediaType.APPLICATION_JSON));
 
-            assertThat(passerelleAvecCleApi().lireStatut("tr_reel1"))
+            assertThat(passerelleAvecCleApi().lireEtat("tr_reel1").statut())
                     .isEqualTo(StatutPaiement.REUSSI);
             serveur.verify();
         }
@@ -257,7 +286,7 @@ class MollieGatewayTest {
                     .andRespond(withSuccess(paiementJson("chargeback_pending"),
                             MediaType.APPLICATION_JSON));
 
-            assertThatThrownBy(() -> passerelleAvecJetonOrganisation().lireStatut("tr_reel1"))
+            assertThatThrownBy(() -> passerelleAvecJetonOrganisation().lireEtat("tr_reel1").statut())
                     .isInstanceOf(PrestataireIndisponibleException.class)
                     .hasMessageContaining("chargeback_pending");
         }

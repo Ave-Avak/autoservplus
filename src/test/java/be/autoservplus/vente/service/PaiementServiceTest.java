@@ -101,7 +101,12 @@ class PaiementServiceTest {
     }
 
     private void statutAuthentique(StatutPaiement statut) {
-        when(prestataire.lireStatut("tr_fictif_0001")).thenReturn(statut);
+        when(prestataire.lireEtat("tr_fictif_0001")).thenReturn(EtatPaiement.de(statut));
+    }
+
+    private void etatAuthentique(StatutPaiement statut, String methode) {
+        when(prestataire.lireEtat("tr_fictif_0001"))
+                .thenReturn(new EtatPaiement(statut, methode));
     }
 
     /** Stubs du chemin « confirme » : verrou commande, lignes triees, verrous pieces. */
@@ -181,6 +186,55 @@ class PaiementServiceTest {
     @Nested
     @DisplayName("webhook — statut relu, jamais le payload")
     class Webhook {
+
+        @Test
+        @DisplayName("le moyen rapporte par le prestataire est enregistre sur le paiement")
+        void moyenDePaiementEnregistre() {
+            // Le CdC P384 demande le mode de paiement au detail d une commande. Le
+            // prestataire ne le connait qu une fois le client passe par sa page : il
+            // arrive donc a la relecture, pas a la creation.
+            Paiement paiement = paiementInitie();
+            etatAuthentique(StatutPaiement.REUSSI, "bancontact");
+            cheminConfirmation();
+
+            service.traiterNotification("tr_fictif_0001");
+
+            assertThat(paiement.getMethode()).isEqualTo("bancontact");
+        }
+
+        @Test
+        @DisplayName("le moyen deja enregistre n est jamais reecrit par un rejeu")
+        void moyenJamaisReecrit() {
+            // La relecture est rejouee a chaque notification et a chaque retour du
+            // membre. Un prestataire qui cesserait de rapporter le moyen effacerait
+            // sinon une donnee que la facture emise a peut-etre deja opposee.
+            Paiement paiement = paiementInitie();
+            etatAuthentique(StatutPaiement.REUSSI, "bancontact");
+            cheminConfirmation();
+            service.traiterNotification("tr_fictif_0001");
+
+            etatAuthentique(StatutPaiement.REUSSI, null);
+            service.traiterNotification("tr_fictif_0001");
+            assertThat(paiement.getMethode()).isEqualTo("bancontact");
+
+            etatAuthentique(StatutPaiement.REUSSI, "carte");
+            service.traiterNotification("tr_fictif_0001");
+            assertThat(paiement.getMethode()).isEqualTo("bancontact");
+        }
+
+        @Test
+        @DisplayName("un prestataire qui ne rapporte aucun moyen laisse le champ vide")
+        void aucunMoyenRapporte() {
+            // Le bouchon est dans ce cas : l ecran dit « moyen non communique » plutot
+            // que d inventer un moyen que personne n a employe.
+            Paiement paiement = paiementInitie();
+            statutAuthentique(StatutPaiement.REUSSI);
+            cheminConfirmation();
+
+            service.traiterNotification("tr_fictif_0001");
+
+            assertThat(paiement.getMethode()).isNull();
+        }
 
         @Test
         @DisplayName("paye : commande PAYEE, stock decremente, evenement publie une fois")
@@ -302,7 +356,7 @@ class PaiementServiceTest {
 
             assertThatThrownBy(() -> service.traiterNotification("tr_forge"))
                     .isInstanceOf(RessourceIntrouvableException.class);
-            verify(prestataire, never()).lireStatut(any());
+            verify(prestataire, never()).lireEtat(any());
         }
     }
 }

@@ -27,11 +27,16 @@ public interface PrestatairePaiement {
     PaiementCree creerPaiement(DemandePaiement demande);
 
     /**
-     * Statut AUTHENTIQUE du paiement, relu chez le prestataire. C est l unique
-     * source de verite du webhook (strategie securite §11) : le payload entrant
-     * n est jamais cru, seul ce rappel fait foi.
+     * Etat AUTHENTIQUE du paiement, relu chez le prestataire : statut, et moyen de
+     * paiement s il est deja connu. C est l unique source de verite du webhook
+     * (strategie securite §11) : le payload entrant n est jamais cru, seul ce rappel
+     * fait foi.
+     *
+     * <p>Le moyen voyage avec le statut parce qu il arrive dans la meme reponse. Un
+     * accesseur separe imposerait un second appel reseau pour une donnee deja
+     * recue.</p>
      */
-    StatutPaiement lireStatut(String referencePrestataire);
+    EtatPaiement lireEtat(String referencePrestataire);
 
     /**
      * Rembourse un paiement encaisse (F30, RM-23) et retourne l identifiant du

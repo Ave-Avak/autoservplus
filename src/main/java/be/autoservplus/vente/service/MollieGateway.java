@@ -186,7 +186,7 @@ public class MollieGateway implements PrestatairePaiement {
     // --- relecture --------------------------------------------------------------------
 
     @Override
-    public StatutPaiement lireStatut(String referencePrestataire) {
+    public EtatPaiement lireEtat(String referencePrestataire) {
         PaiementMollie reponse = appeler(() -> client.get()
                         .uri(constructeur -> constructeur.path("/payments/{id}")
                                 // En GET, le mode test se transmet en parametre d URL et
@@ -201,7 +201,7 @@ public class MollieGateway implements PrestatairePaiement {
             throw new PrestataireIndisponibleException(
                     "Reponse de relecture sans statut pour " + referencePrestataire + ".");
         }
-        return projeter(reponse.status());
+        return new EtatPaiement(projeter(reponse.status()), reponse.method());
     }
 
     private java.util.Optional<Boolean> modeTestEventuel() {
@@ -320,7 +320,7 @@ public class MollieGateway implements PrestatairePaiement {
     }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
-    record PaiementMollie(String id, String status, MontantMollie amount,
+    record PaiementMollie(String id, String status, String method, MontantMollie amount,
                           @JsonProperty("_links") LiensMollie links) {
 
         /** URL de la page de paiement, absente des paiements deja aboutis. */

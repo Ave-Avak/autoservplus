@@ -31,7 +31,7 @@ class PrestatairePaiementFictifTest {
 
         assertThat(cree.referencePrestataire()).startsWith("tr_fictif_");
         assertThat(cree.urlRedirection()).contains(cree.referencePrestataire());
-        assertThat(fictif.lireStatut(cree.referencePrestataire()))
+        assertThat(fictif.lireEtat(cree.referencePrestataire()).statut())
                 .isEqualTo(StatutPaiement.INITIE);
     }
 
@@ -43,14 +43,14 @@ class PrestatairePaiementFictifTest {
 
         fictif.programmerStatut(cree.referencePrestataire(), StatutPaiement.REUSSI);
 
-        assertThat(fictif.lireStatut(cree.referencePrestataire()))
+        assertThat(fictif.lireEtat(cree.referencePrestataire()).statut())
                 .isEqualTo(StatutPaiement.REUSSI);
     }
 
     @Test
     @DisplayName("une reference inconnue du bouchon est une erreur, pas un statut invente")
     void referenceInconnue() {
-        assertThatThrownBy(() -> new PrestatairePaiementFictif().lireStatut("tr_inconnu"))
+        assertThatThrownBy(() -> new PrestatairePaiementFictif().lireEtat("tr_inconnu"))
                 .isInstanceOf(IllegalStateException.class);
     }
 
@@ -64,7 +64,7 @@ class PrestatairePaiementFictifTest {
         RemboursementCree rembourse = fictif.rembourser(remboursement(cree, "cle-refund-1"));
 
         assertThat(rembourse.referenceRemboursement()).startsWith("re_fictif_");
-        assertThat(fictif.lireStatut(cree.referencePrestataire()))
+        assertThat(fictif.lireEtat(cree.referencePrestataire()).statut())
                 .isEqualTo(StatutPaiement.REMBOURSE);
     }
 
