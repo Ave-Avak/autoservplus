@@ -145,10 +145,18 @@ production**.
 | `FACTURES_ARCHIVE` | `./data/factures` | Répertoire d'archivage des factures (conservation sept ans) |
 | `MEDIAS_RACINE` | `./data/uploads` | Répertoire des fichiers déposés |
 | `GARAGE_RAISON_SOCIALE`, `GARAGE_TVA`, `GARAGE_BCE`, `GARAGE_IBAN`, … | valeurs de démonstration | Identité légale imprimée sur les factures et les mentions légales |
+| `MOLLIE_API_KEY` | *vide* | Clé ou jeton Mollie. **Vide, le paiement passe par une passerelle bouchonnée** |
+| `MOLLIE_PROFILE_ID` | *vide* | Identifiant de profil Mollie, requis avec un jeton d'organisation |
+| `MOLLIE_MODE_TEST` | `true` | Emploie le mode test de Mollie plutôt que des paiements réels |
 
 Les valeurs `GARAGE_*` livrées sont des valeurs de démonstration explicites : une
 facture portant un faux numéro de TVA n'est pas une facture. La liste complète figure
 dans [`src/main/resources/application.yml`](src/main/resources/application.yml).
+
+Le prestataire de paiement est choisi sur la **présence d'un identifiant**, non sur le
+profil actif : sans `MOLLIE_API_KEY`, une passerelle bouchonnée simule le parcours de
+bout en bout, ce qui permet de payer une commande et d'obtenir sa facture sans compte
+Mollie. Avec un identifiant, les appels partent chez le prestataire.
 
 Aucun secret réel n'est versionné dans ce dépôt.
 
