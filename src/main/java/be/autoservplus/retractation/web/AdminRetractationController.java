@@ -6,6 +6,7 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.retractation.domain.DemandeAnnulation;
 import be.autoservplus.retractation.service.AdminRetractationService;
 import be.autoservplus.retractation.web.dto.MotifDecisionForm;
+import be.autoservplus.vente.service.PrestataireIndisponibleException;
 import jakarta.validation.Valid;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -73,6 +74,15 @@ public class AdminRetractationController {
         } catch (RessourceIntrouvableException | ConflitConcurrenceException
                  | RegleMetierException e) {
             redirection.addFlashAttribute("erreur", e.getMessage());
+        } catch (PrestataireIndisponibleException e) {
+            // Le remboursement est appele DANS la transaction de validation : un refus
+            // du prestataire annule tout — avoir, numero rendu au compteur, bascule de
+            // la commande. L administrateur doit donc lire que rien n a ete fait et
+            // qu il peut reessayer, pas une page d erreur qui laisserait croire a un
+            // etat indetermine. Le message de l exception n est pas affiche : il peut
+            // porter des details du prestataire.
+            redirection.addFlashAttribute("erreur",
+                    msg("admin.retractations.prestataire-indisponible"));
         } catch (IllegalStateException e) {
             // Machine a etats du domaine : la demande n est plus en attente.
             redirection.addFlashAttribute("erreur", e.getMessage());

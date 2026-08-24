@@ -2,6 +2,7 @@ package be.autoservplus.vente.web;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.vente.service.PaiementService;
+import be.autoservplus.vente.service.PrestataireIndisponibleException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,6 +16,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -46,6 +48,22 @@ class PaiementWebhookControllerTest {
                     .csrf(c -> c.ignoringRequestMatchers("/webhooks/**"))
                     .build();
         }
+    }
+
+    @Test
+    @DisplayName("prestataire injoignable : l erreur REMONTE, pour que le prestataire rejoue")
+    void panneDuPrestataireNonAbsorbee() throws Exception {
+        // Asymetrie deliberee avec les ecrans, qui traduisent cette meme exception en
+        // message lisible. Ici le correspondant est une machine : un 200 signifierait
+        // « c est traite » et le prestataire ne rappellerait jamais, laissant la
+        // commande en attente apres un encaissement reel. Le traitement etant
+        // idempotent, le rejeu provoque par l erreur est sans risque.
+        doThrow(new PrestataireIndisponibleException("prestataire injoignable"))
+                .when(service).traiterNotification("tr_panne");
+
+        assertThatThrownBy(() -> mvc.perform(
+                post("/webhooks/paiement").param("id", "tr_panne")))
+                .hasRootCauseInstanceOf(PrestataireIndisponibleException.class);
     }
 
     @Test

@@ -5,6 +5,7 @@ import be.autoservplus.vente.service.CgvNonAccepteesException;
 import be.autoservplus.vente.service.CommandeService;
 import be.autoservplus.vente.service.PaiementImpossibleException;
 import be.autoservplus.vente.service.PaiementService;
+import be.autoservplus.vente.service.PrestataireIndisponibleException;
 import be.autoservplus.vente.service.PanierService;
 import be.autoservplus.vente.service.StockInsuffisantException;
 import be.autoservplus.vente.web.dto.ConfirmationCommandeVue;
@@ -152,6 +153,41 @@ class CommandeControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("vente/recapitulatif"))
                 .andExpect(model().attributeExists("erreurLignes"));
+    }
+
+    @Test
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("prestataire injoignable a l initiation : message lisible, jamais un 500")
+    void initiationPrestataireInjoignable() throws Exception {
+        // Une page d erreur au moment de payer est le pire point de rupture d un
+        // parcours d achat. La commande reste valide et payable.
+        doThrow(new PrestataireIndisponibleException("detail technique du prestataire"))
+                .when(paiements).initierPaiement(REF, "marie@exemple.be");
+
+        mvc.perform(post("/commande/{ref}/payer", REF).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/commande/" + REF + "/confirmation"))
+                .andExpect(flash().attributeExists("erreur"))
+                // Le detail technique ne doit pas atterrir a l ecran.
+                .andExpect(flash().attribute("erreur",
+                        org.hamcrest.Matchers.not(
+                                org.hamcrest.Matchers.containsString("detail technique"))));
+    }
+
+    @Test
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("prestataire injoignable au retour : ni succes ni echec affirme")
+    void retourPrestataireInjoignable() throws Exception {
+        // On ne sait pas si le paiement a abouti : affirmer un echec pousserait a
+        // payer une seconde fois un encaissement peut-etre deja passe.
+        doThrow(new PrestataireIndisponibleException("injoignable"))
+                .when(paiements).constaterRetour(REF, "marie@exemple.be");
+
+        mvc.perform(get("/commande/{ref}/retour", REF))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/commande/" + REF + "/confirmation"))
+                .andExpect(flash().attributeExists("erreur"))
+                .andExpect(flash().attributeCount(1));
     }
 
     @Test

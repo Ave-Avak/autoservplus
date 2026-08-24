@@ -7,6 +7,7 @@ import be.autoservplus.vente.service.PaiementService;
 import be.autoservplus.vente.service.PanierService;
 import be.autoservplus.vente.service.PanierVideException;
 import be.autoservplus.vente.service.PieceInactiveException;
+import be.autoservplus.vente.service.PrestataireIndisponibleException;
 import be.autoservplus.vente.service.StockInsuffisantException;
 import be.autoservplus.vente.web.dto.ConfirmationCommandeVue;
 import be.autoservplus.vente.web.dto.PanierVue;
@@ -110,6 +111,15 @@ public class CommandeController {
         } catch (PaiementImpossibleException e) {
             redirection.addFlashAttribute("erreur", msg("commande.erreur.paiement-impossible"));
             return "redirect:/commande/" + reference + "/confirmation";
+        } catch (PrestataireIndisponibleException e) {
+            // Le pire point de rupture d un parcours d achat est une page d erreur au
+            // moment de payer. La commande, elle, reste valide et payable : le membre
+            // est ramene sur elle avec un message qui invite a reessayer, et non un 500.
+            // Le message de l exception n est PAS affiche — il peut porter des details
+            // du prestataire.
+            redirection.addFlashAttribute("erreur",
+                    msg("commande.erreur.prestataire-indisponible"));
+            return "redirect:/commande/" + reference + "/confirmation";
         }
     }
 
@@ -132,7 +142,17 @@ public class CommandeController {
     public String retourDePaiement(@AuthenticationPrincipal UserDetails membre,
                                    @PathVariable UUID reference,
                                    RedirectAttributes redirection) {
-        boolean payee = paiements.constaterRetour(reference, membre.getUsername());
+        boolean payee;
+        try {
+            payee = paiements.constaterRetour(reference, membre.getUsername());
+        } catch (PrestataireIndisponibleException e) {
+            // Le prestataire est injoignable a cet instant : on ne sait pas si le
+            // paiement a abouti, et on se garde de trancher. La notification serveur a
+            // serveur, ou une prochaine visite, constatera. Affirmer un echec ici
+            // pousserait a payer une seconde fois un encaissement peut-etre deja passe.
+            redirection.addFlashAttribute("erreur", msg("commande.retour.indisponible"));
+            return "redirect:/commande/" + reference + "/confirmation";
+        }
         if (payee) {
             redirection.addFlashAttribute("succes", msg("commande.retour.paye"));
         } else {
