@@ -36,7 +36,7 @@
 <main id="contenu">
     <h1 th:text="#{notifications.titre}">Mes notifications</h1>
 
-    <p class="message" th:if="${message}" th:text="${message}">Notification marquée comme lue.</p>
+    <p role="status" class="message" th:if="${message}" th:text="${message}">Notification marquée comme lue.</p>
 
     <p th:if="${#lists.isEmpty(notifications)}" th:text="#{notifications.aucune}">
         Vous n'avez aucune notification.

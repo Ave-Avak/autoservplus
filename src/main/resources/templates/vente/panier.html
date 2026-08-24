@@ -55,14 +55,14 @@
         <table class="tableau">
             <thead>
             <tr>
-                <th th:text="#{panier.colonne.article}">Article</th>
-                <th th:text="#{panier.colonne.quantite}">Quantité</th>
-                <th th:text="#{panier.colonne.prix-unitaire}">Prix unitaire HTVA</th>
-                <th th:text="#{panier.colonne.taux}">Taux TVA</th>
-                <th th:text="#{panier.colonne.total-htva}">Total HTVA</th>
-                <th th:text="#{panier.colonne.tva}">TVA</th>
-                <th th:text="#{panier.colonne.total-tvac}">Total TVAC</th>
-                <th><span class="visuellement-cache" th:text="#{panier.colonne.actions}">Actions</span></th>
+                <th scope="col" th:text="#{panier.colonne.article}">Article</th>
+                <th scope="col" th:text="#{panier.colonne.quantite}">Quantité</th>
+                <th scope="col" th:text="#{panier.colonne.prix-unitaire}">Prix unitaire HTVA</th>
+                <th scope="col" th:text="#{panier.colonne.taux}">Taux TVA</th>
+                <th scope="col" th:text="#{panier.colonne.total-htva}">Total HTVA</th>
+                <th scope="col" th:text="#{panier.colonne.tva}">TVA</th>
+                <th scope="col" th:text="#{panier.colonne.total-tvac}">Total TVAC</th>
+                <th scope="col"><span class="visuellement-cache" th:text="#{panier.colonne.actions}">Actions</span></th>
             </tr>
             </thead>
             <tbody>
@@ -78,7 +78,8 @@
                                th:text="#{panier.colonne.quantite}">Quantité</label>
                         <input type="number" th:id="'quantite-' + ${l.id()}" name="quantite"
                                th:value="${l.quantite()}" min="1" max="32767" required>
-                        <button type="submit" class="lien-bouton" th:text="#{panier.action.modifier}">Modifier</button>
+                        <button type="submit" class="lien-bouton" th:aria-label="#{panier.action.modifier.aria(${l.libelle()})}"
+                                th:text="#{panier.action.modifier}">Modifier</button>
                     </form>
                 </td>
                 <td th:text="${l.prixUnitaireHtva()}">19,99 €</td>
@@ -88,7 +89,8 @@
                 <td th:text="${l.totalTvac()}">48,38 €</td>
                 <td>
                     <form th:action="@{/panier/lignes/{id}/retirer(id=${l.id()})}" method="post">
-                        <button type="submit" class="lien-bouton" th:text="#{panier.action.retirer}">Retirer</button>
+                        <button type="submit" class="lien-bouton" th:aria-label="#{panier.action.retirer.aria(${l.libelle()})}"
+                                th:text="#{panier.action.retirer}">Retirer</button>
                     </form>
                 </td>
             </tr>

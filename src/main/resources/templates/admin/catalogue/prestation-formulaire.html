@@ -48,7 +48,7 @@
                 <option th:each="c : ${categories}" th:value="${c.code}"
                         th:text="${c.libelle}">Entretien</option>
             </select>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('codeCategorie')}"
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('codeCategorie')}"
                th:errors="*{codeCategorie}"></p>
         </div>
 
@@ -58,7 +58,7 @@
         <div class="champ" th:unless="${edition}">
             <label for="code" th:text="#{admin.catalogue.champ.code}">Code</label>
             <input type="text" id="code" th:field="*{code}" maxlength="40" required>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('code')}" th:errors="*{code}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('code')}" th:errors="*{code}"></p>
         </div>
         <div class="champ" th:if="${edition}">
             <label for="code" th:text="#{admin.catalogue.champ.code}">Code</label>
@@ -72,7 +72,7 @@
         <div class="champ">
             <label for="libelle" th:text="#{admin.catalogue.champ.nom}">Nom</label>
             <input type="text" id="libelle" th:field="*{libelle}" maxlength="150" required>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('libelle')}" th:errors="*{libelle}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('libelle')}" th:errors="*{libelle}"></p>
         </div>
 
         <div class="champ">
@@ -86,7 +86,7 @@
         <div class="champ">
             <label for="prixHtva" th:text="#{admin.catalogue.champ.prix}">Prix HTVA (€)</label>
             <input type="number" id="prixHtva" th:field="*{prixHtva}" min="0" step="0.01" required>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('prixHtva')}" th:errors="*{prixHtva}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('prixHtva')}" th:errors="*{prixHtva}"></p>
         </div>
 
         <div class="champ">
@@ -94,13 +94,13 @@
             <select id="tauxTva" th:field="*{tauxTva}" required>
                 <option th:each="t : ${tauxAdmis}" th:value="${t}" th:text="${t} + ' %'">21 %</option>
             </select>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('tauxTva')}" th:errors="*{tauxTva}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('tauxTva')}" th:errors="*{tauxTva}"></p>
         </div>
 
         <div class="champ">
             <label for="dureeMinutes" th:text="#{admin.catalogue.champ.duree}">Durée estimée (minutes)</label>
             <input type="number" id="dureeMinutes" th:field="*{dureeMinutes}" min="1" step="1" required>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('dureeMinutes')}" th:errors="*{dureeMinutes}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('dureeMinutes')}" th:errors="*{dureeMinutes}"></p>
         </div>
 
         <div class="champ">

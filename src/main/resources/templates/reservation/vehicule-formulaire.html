@@ -42,19 +42,19 @@
             <p class="texte-info" th:unless="${modeAjout}">
                 La plaque identifie le véhicule et ne peut pas être modifiée.
             </p>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('plaque')}" th:errors="*{plaque}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('plaque')}" th:errors="*{plaque}"></p>
         </div>
 
         <div class="champ">
             <label for="marque">Marque</label>
             <input type="text" id="marque" th:field="*{marque}" placeholder="Volkswagen" required>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('marque')}" th:errors="*{marque}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('marque')}" th:errors="*{marque}"></p>
         </div>
 
         <div class="champ">
             <label for="modele">Modèle</label>
             <input type="text" id="modele" th:field="*{modele}" placeholder="Golf" required>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('modele')}" th:errors="*{modele}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('modele')}" th:errors="*{modele}"></p>
         </div>
 
         <div class="champ">
@@ -63,13 +63,13 @@
                 <option value="">Choisissez…</option>
                 <option th:each="m : ${motorisations}" th:value="${m}" th:text="${m}">Diesel</option>
             </select>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('motorisation')}" th:errors="*{motorisation}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motorisation')}" th:errors="*{motorisation}"></p>
         </div>
 
         <div class="champ">
             <label for="annee">Année de mise en circulation</label>
             <input type="number" id="annee" th:field="*{annee}" min="1900" max="2100" placeholder="2018">
-            <p class="texte-erreur" th:if="${#fields.hasErrors('annee')}" th:errors="*{annee}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('annee')}" th:errors="*{annee}"></p>
         </div>
 
         <div class="champ">
@@ -79,13 +79,13 @@
             <p id="aide-kilometrage" class="texte-info">
                 Le kilométrage ne peut pas diminuer d'un relevé à l'autre.
             </p>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('kilometrage')}" th:errors="*{kilometrage}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('kilometrage')}" th:errors="*{kilometrage}"></p>
         </div>
 
         <div class="champ">
             <label for="numeroChassis">Numéro de châssis <span class="champ-facultatif">(facultatif)</span></label>
             <input type="text" id="numeroChassis" th:field="*{numeroChassis}" maxlength="20">
-            <p class="texte-erreur" th:if="${#fields.hasErrors('numeroChassis')}" th:errors="*{numeroChassis}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('numeroChassis')}" th:errors="*{numeroChassis}"></p>
         </div>
 
         <button type="submit" class="btn-cta"

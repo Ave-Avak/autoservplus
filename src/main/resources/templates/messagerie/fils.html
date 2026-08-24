@@ -29,7 +29,7 @@
 </header>
 <main id="contenu">
     <h1 th:text="#{messagerie.titre}">Mes messages</h1>
-    <p class="message" th:if="${message}" th:text="${message}">Message envoyé.</p>
+    <p role="status" class="message" th:if="${message}" th:text="${message}">Message envoyé.</p>
 
     <p class="actions-page">
         <a th:href="@{/mes-messages/nouveau}" th:text="#{messagerie.nouveau.titre}">Poser une question</a>

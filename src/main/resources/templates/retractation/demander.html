@@ -71,7 +71,7 @@
             <p id="aide-motif" class="texte-info" th:text="#{retractation.motif.aide}">
                 Vous n'avez pas à vous justifier ; ce champ aide seulement le garage.
             </p>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('motif')}" th:errors="*{motif}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motif')}" th:errors="*{motif}"></p>
         </div>
 
         <div class="champ">
@@ -79,7 +79,7 @@
                 <input type="checkbox" id="confirmation" th:field="*{confirmation}">
                 <span th:text="#{retractation.confirmation.case}">Je confirme demander l'annulation de cette commande.</span>
             </label>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('confirmation')}"
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('confirmation')}"
                th:errors="*{confirmation}"></p>
         </div>
 

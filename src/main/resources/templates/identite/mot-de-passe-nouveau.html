@@ -25,14 +25,14 @@
                    autocomplete="new-password" minlength="12" required
                    aria-describedby="aide-mdp" autofocus>
             <p id="aide-mdp" class="texte-info">Douze caractères minimum.</p>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('motDePasse')}" th:errors="*{motDePasse}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motDePasse')}" th:errors="*{motDePasse}"></p>
         </div>
 
         <div class="champ">
             <label for="confirmation">Confirmez le mot de passe</label>
             <input type="password" id="confirmation" th:field="*{confirmation}"
                    autocomplete="new-password" required>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('confirmation')}" th:errors="*{confirmation}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('confirmation')}" th:errors="*{confirmation}"></p>
         </div>
 
         <button type="submit" class="btn-cta">Enregistrer</button>

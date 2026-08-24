@@ -29,7 +29,7 @@
 <main id="contenu">
     <h1 th:text="#{admin.avis.titre}">Modération des avis</h1>
 
-    <p class="message" th:if="${message}" th:text="${message}">Avis masqué.</p>
+    <p role="status" class="message" th:if="${message}" th:text="${message}">Avis masqué.</p>
 
     <p th:if="${#lists.isEmpty(avis)}" th:text="#{admin.avis.aucun}">Aucun avis déposé.</p>
 
@@ -62,20 +62,24 @@
                      a cliquer sur celui qui ne change rien. -->
                 <form th:if="${a.publie()}" th:action="@{/admin/avis/{ref}/masquer(ref=${a.reference()})}"
                       method="post" class="en-ligne">
-                    <button type="submit" class="lien-bouton" th:text="#{admin.avis.action.masquer}">Masquer</button>
+                    <button type="submit" class="lien-bouton" th:aria-label="#{admin.avis.action.masquer.aria(${a.prenomAuteur()})}"
+                            th:text="#{admin.avis.action.masquer}">Masquer</button>
                 </form>
                 <form th:unless="${a.publie()}" th:action="@{/admin/avis/{ref}/publier(ref=${a.reference()})}"
                       method="post" class="en-ligne">
-                    <button type="submit" class="lien-bouton" th:text="#{admin.avis.action.publier}">Republier</button>
+                    <button type="submit" class="lien-bouton" th:aria-label="#{admin.avis.action.publier.aria(${a.prenomAuteur()})}"
+                            th:text="#{admin.avis.action.publier}">Republier</button>
                 </form>
 
                 <form th:unless="${a.signale()}" th:action="@{/admin/avis/{ref}/signaler(ref=${a.reference()})}"
                       method="post" class="en-ligne">
-                    <button type="submit" class="lien-bouton" th:text="#{admin.avis.action.signaler}">Signaler</button>
+                    <button type="submit" class="lien-bouton" th:aria-label="#{admin.avis.action.signaler.aria(${a.prenomAuteur()})}"
+                            th:text="#{admin.avis.action.signaler}">Signaler</button>
                 </form>
                 <form th:if="${a.signale()}" th:action="@{/admin/avis/{ref}/lever-signalement(ref=${a.reference()})}"
                       method="post" class="en-ligne">
                     <button type="submit" class="lien-bouton"
+                            th:aria-label="#{admin.avis.action.lever-signalement.aria(${a.prenomAuteur()})}"
                             th:text="#{admin.avis.action.lever-signalement}">Lever le signalement</button>
                 </form>
             </td>

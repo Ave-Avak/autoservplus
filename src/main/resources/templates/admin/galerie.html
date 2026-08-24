@@ -24,8 +24,8 @@
 <main id="contenu">
     <h1 th:text="#{admin.galerie.titre}">Galerie d'images</h1>
 
-    <p class="message" th:if="${message}" th:text="${message}">2 image(s) ajoutée(s).</p>
-    <p class="erreur" th:if="${erreur}" th:text="${erreur}">Format non accepté.</p>
+    <p role="status" class="message" th:if="${message}" th:text="${message}">2 image(s) ajoutée(s).</p>
+    <p role="alert" class="erreur" th:if="${erreur}" th:text="${erreur}">Format non accepté.</p>
 
     <p th:if="${#lists.isEmpty(photos)}" th:text="#{admin.galerie.aucune}">
         Aucune image pour l'instant.
@@ -41,6 +41,7 @@
             <form th:action="@{/admin/galerie/{t}/{r}/{id}/supprimer(t=${type},r=${reference},id=${p.id()})}"
                   method="post">
                 <button type="submit" class="lien-bouton"
+                        th:aria-label="#{admin.galerie.supprimer.aria(${p.texteAlt()})}"
                         th:text="#{admin.galerie.supprimer}">Supprimer</button>
             </form>
         </li>

@@ -70,7 +70,7 @@
             <p id="aide-motif" class="texte-info" th:text="#{admin.retractations.refus.aide}">
                 Le motif est communiqué au membre par courriel.
             </p>
-            <p class="texte-erreur" th:if="${#fields.hasErrors('motif')}" th:errors="*{motif}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motif')}" th:errors="*{motif}"></p>
         </div>
 
         <p class="actions-page">

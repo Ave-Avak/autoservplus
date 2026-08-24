@@ -23,7 +23,7 @@
 </header>
 <main id="contenu">
     <h1 th:text="#{admin.messagerie.titre}">Messages clients</h1>
-    <p class="message" th:if="${message}" th:text="${message}">Fil clôturé.</p>
+    <p role="status" class="message" th:if="${message}" th:text="${message}">Fil clôturé.</p>
 
     <p th:if="${#lists.isEmpty(fils)}" th:text="#{admin.messagerie.aucun}">Aucun message client.</p>
 
@@ -52,11 +52,13 @@
             <td>
                 <form th:unless="${f.cloturee()}" th:action="@{/admin/messages/{ref}/cloturer(ref=${f.reference()})}"
                       method="post" class="en-ligne">
-                    <button type="submit" class="lien-bouton" th:text="#{admin.messagerie.action.cloturer}">Clôturer</button>
+                    <button type="submit" class="lien-bouton" th:aria-label="#{admin.messagerie.action.cloturer.aria(${f.sujet()})}"
+                            th:text="#{admin.messagerie.action.cloturer}">Clôturer</button>
                 </form>
                 <form th:if="${f.cloturee()}" th:action="@{/admin/messages/{ref}/rouvrir(ref=${f.reference()})}"
                       method="post" class="en-ligne">
-                    <button type="submit" class="lien-bouton" th:text="#{admin.messagerie.action.rouvrir}">Rouvrir</button>
+                    <button type="submit" class="lien-bouton" th:aria-label="#{admin.messagerie.action.rouvrir.aria(${f.sujet()})}"
+                            th:text="#{admin.messagerie.action.rouvrir}">Rouvrir</button>
                 </form>
             </td>
         </tr>

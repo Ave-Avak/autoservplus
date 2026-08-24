@@ -65,14 +65,14 @@
                     <option th:each="v : ${vehicules}" th:value="${v.reference()}"
                             th:text="${v.designation()}">VW Golf (1-ABC-123)</option>
                 </select>
-                <p id="vehicule-erreur" class="erreur" th:if="${#fields.hasErrors('vehicule')}"
+                <p role="alert" id="vehicule-erreur" class="erreur" th:if="${#fields.hasErrors('vehicule')}"
                    th:errors="*{vehicule}">Erreur</p>
             </div>
         </fieldset>
 
         <fieldset>
             <legend>2. Les prestations souhaitées</legend>
-            <p id="prestations-erreur" class="erreur" th:if="${#fields.hasErrors('prestations')}"
+            <p role="alert" id="prestations-erreur" class="erreur" th:if="${#fields.hasErrors('prestations')}"
                th:errors="*{prestations}">Erreur</p>
 
             <div th:each="entree : ${prestationsParCategorie}" class="groupe-prestations">
@@ -106,7 +106,7 @@
 
         <fieldset>
             <legend>4. L'heure</legend>
-            <p id="debut-erreur" class="erreur" th:if="${#fields.hasErrors('debut')}"
+            <p role="alert" id="debut-erreur" class="erreur" th:if="${#fields.hasErrors('debut')}"
                th:errors="*{debut}">Erreur</p>
 
             <!-- Recharge les heures disponibles a chaque changement dans le formulaire.
@@ -135,7 +135,7 @@
                 <label for="commentaire">Commentaire</label>
                 <textarea id="commentaire" th:field="*{commentaire}" rows="3" maxlength="2000"
                           placeholder="Par exemple : bruit au freinage à froid, voyant moteur allumé…"></textarea>
-                <p class="erreur" th:if="${#fields.hasErrors('commentaire')}" th:errors="*{commentaire}">Erreur</p>
+                <p role="alert" class="erreur" th:if="${#fields.hasErrors('commentaire')}" th:errors="*{commentaire}">Erreur</p>
             </div>
         </fieldset>
 

@@ -20,9 +20,9 @@
     --blanc:    #FFFFFF;
 
     /* Couleurs semantiques pour du TEXTE, conformes AA */
-    --succes-texte: #047857;  /* 4.97:1 — remplace #10B981 (2.54:1, non conforme) */
-    --alerte-texte: #B45309;  /* 5.08:1 — remplace #F59E0B (2.15:1, non conforme) */
-    --info-texte:   #1D4ED8;  /* 6.31:1 — remplace #3B82F6 (3.68:1, non conforme) */
+    --succes-texte: #047857;  /* 5.48:1 — remplace #10B981 (2.54:1, non conforme) */
+    --alerte-texte: #B45309;  /* 5.02:1 — remplace #F59E0B (2.15:1, non conforme) */
+    --info-texte:   #1D4ED8;  /* 6.70:1 — remplace #3B82F6 (3.68:1, non conforme) */
     --erreur-texte: #DC2626;  /* 4.83:1 */
 
     --police: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -400,13 +400,13 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 
 /* Badges de statut : texte semantique AA sur fond pale de la meme teinte. */
 .badge { display: inline-block; padding: .15rem .6rem; border-radius: 1rem; font-size: .85rem; font-weight: 600; }
-.badge-en_attente { background: #FEF3C7; color: var(--alerte-texte); }   /* 5.3:1 */
-.badge-confirme   { background: #DCFCE7; color: var(--succes-texte); }   /* 4.9:1 */
-.badge-honore     { background: #E0E7FF; color: var(--info-texte); }     /* 5.1:1 */
-.badge-refuse, .badge-annule, .badge-absent { background: var(--gris-200); color: var(--gris-700); } /* 9.4:1 */
+.badge-en_attente { background: #FEF3C7; color: var(--alerte-texte); }   /* 4.51:1 — le plus juste de la palette : toute retouche de #FEF3C7 le fait passer sous 4.5 */
+.badge-confirme   { background: #DCFCE7; color: var(--succes-texte); }   /* 4.99:1 */
+.badge-honore     { background: #E0E7FF; color: var(--info-texte); }     /* 5.44:1 */
+.badge-refuse, .badge-annule, .badge-absent { background: var(--gris-200); color: var(--gris-700); } /* 8.33:1 */
 
 /* #DC2626 sur fond rose ne tient que 3.8:1 : on fonce le texte pour ce seul cas. */
-.message-erreur { background: #FEE2E2; color: #991B1B; }   /* 7.0:1 */
+.message-erreur { background: #FEE2E2; color: #991B1B; }   /* 6.80:1 */
 /* --- Consentement aux cookies (F25) ---------------------------------------------- */
 
 /* Barre fixe en bas de fenêtre. Elle ne capture pas le focus et ne recouvre pas le

@@ -27,8 +27,8 @@
     <p class="carte-meta" th:if="${fil.estRattachee()}"
        th:text="#{messagerie.rattache(${fil.numeroIntervention()})}">Travaux ITV-2026-0011</p>
 
-    <p class="message" th:if="${message}" th:text="${message}">Message envoyé.</p>
-    <p class="erreur" th:if="${erreur}" th:text="${erreur}">Ce fil est clôturé.</p>
+    <p role="status" class="message" th:if="${message}" th:text="${message}">Message envoyé.</p>
+    <p role="alert" class="erreur" th:if="${erreur}" th:text="${erreur}">Ce fil est clôturé.</p>
 
     <ol class="fil-discussion">
         <li th:each="m : ${fil.messages()}" th:classappend="${m.duGarage()} ? 'du-garage' : 'du-membre'">
@@ -50,7 +50,7 @@
             <label for="corps" th:text="#{messagerie.reponse}">Votre message</label>
             <textarea id="corps" th:field="*{corps}" rows="5" maxlength="4000" required></textarea>
         </p>
-        <p class="erreur" th:if="${#fields.hasErrors('corps')}" th:errors="*{corps}">Message obligatoire.</p>
+        <p role="alert" class="erreur" th:if="${#fields.hasErrors('corps')}" th:errors="*{corps}">Message obligatoire.</p>
         <p><button type="submit" class="btn-cta" th:text="#{messagerie.envoyer}">Envoyer</button></p>
     </form>
 

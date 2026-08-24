@@ -30,13 +30,13 @@
             <label for="sujet" th:text="#{messagerie.sujet}">Sujet</label>
             <input type="text" id="sujet" th:field="*{sujet}" maxlength="150" required>
         </p>
-        <p class="erreur" th:if="${#fields.hasErrors('sujet')}" th:errors="*{sujet}">Sujet obligatoire.</p>
+        <p role="alert" class="erreur" th:if="${#fields.hasErrors('sujet')}" th:errors="*{sujet}">Sujet obligatoire.</p>
 
         <p>
             <label for="corps" th:text="#{messagerie.reponse}">Votre message</label>
             <textarea id="corps" th:field="*{corps}" rows="6" maxlength="4000" required></textarea>
         </p>
-        <p class="erreur" th:if="${#fields.hasErrors('corps')}" th:errors="*{corps}">Message obligatoire.</p>
+        <p role="alert" class="erreur" th:if="${#fields.hasErrors('corps')}" th:errors="*{corps}">Message obligatoire.</p>
 
         <!-- Le socle ne prévoit qu'un rattachement à une intervention. Pour une
              question sur une commande, le membre ouvre un fil libre et cite la

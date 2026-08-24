@@ -49,7 +49,7 @@
                 <input type="radio" th:id="'note-' + ${valeur}" th:field="*{note}" th:value="${valeur}">
                 <label th:for="'note-' + ${valeur}" th:text="#{avis.note(${valeur})}">1 sur 5</label>
             </p>
-            <p class="erreur" th:if="${#fields.hasErrors('note')}"
+            <p role="alert" class="erreur" th:if="${#fields.hasErrors('note')}"
                th:errors="*{note}">Note obligatoire.</p>
         </fieldset>
 
@@ -57,7 +57,7 @@
             <label for="commentaire" th:text="#{avis.formulaire.commentaire}">Votre commentaire (facultatif)</label>
             <textarea id="commentaire" th:field="*{commentaire}" rows="6" maxlength="2000"></textarea>
         </p>
-        <p class="erreur" th:if="${#fields.hasErrors('commentaire')}"
+        <p role="alert" class="erreur" th:if="${#fields.hasErrors('commentaire')}"
            th:errors="*{commentaire}">Commentaire trop long.</p>
 
         <p class="carte-meta" th:text="#{avis.formulaire.avertissement}">

@@ -32,19 +32,19 @@
     <div class="champ">
       <label for="prenom">Prénom</label>
       <input type="text" id="prenom" th:field="*{prenom}" autocomplete="given-name" required>
-      <p class="texte-erreur" th:if="${#fields.hasErrors('prenom')}" th:errors="*{prenom}"></p>
+      <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('prenom')}" th:errors="*{prenom}"></p>
     </div>
 
     <div class="champ">
       <label for="nom">Nom</label>
       <input type="text" id="nom" th:field="*{nom}" autocomplete="family-name" required>
-      <p class="texte-erreur" th:if="${#fields.hasErrors('nom')}" th:errors="*{nom}"></p>
+      <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('nom')}" th:errors="*{nom}"></p>
     </div>
 
     <div class="champ">
       <label for="email">Adresse de courriel</label>
       <input type="email" id="email" th:field="*{email}" autocomplete="email" required>
-      <p class="texte-erreur" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+      <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
     </div>
 
     <div class="champ">
@@ -53,14 +53,14 @@
              autocomplete="new-password" minlength="12" required
              aria-describedby="aide-mot-de-passe">
       <p id="aide-mot-de-passe" class="texte-info">Douze caractères minimum.</p>
-      <p class="texte-erreur" th:if="${#fields.hasErrors('motDePasse')}" th:errors="*{motDePasse}"></p>
+      <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motDePasse')}" th:errors="*{motDePasse}"></p>
     </div>
 
     <div class="champ">
       <label for="confirmationMotDePasse">Confirmez le mot de passe</label>
       <input type="password" id="confirmationMotDePasse" th:field="*{confirmationMotDePasse}"
              autocomplete="new-password" required>
-      <p class="texte-erreur" th:if="${#fields.hasErrors('confirmationMotDePasse')}"
+      <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('confirmationMotDePasse')}"
          th:errors="*{confirmationMotDePasse}"></p>
     </div>
 

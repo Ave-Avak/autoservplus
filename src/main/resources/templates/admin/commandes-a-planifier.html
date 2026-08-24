@@ -27,7 +27,7 @@
         Prestations vendues en ligne. Ouvrez un dossier d'atelier pour chacune.
     </p>
 
-    <p class="message" th:if="${message}" th:text="${message}">Dossier ouvert.</p>
+    <p role="status" class="message" th:if="${message}" th:text="${message}">Dossier ouvert.</p>
 
     <p th:if="${#lists.isEmpty(commandes)}" th:text="#{admin.planification.aucune}">
         Aucune prestation vendue en ligne pour l'instant.

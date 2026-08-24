@@ -27,7 +27,7 @@
         Chargez un fichier CSV pour créer ou mettre à jour vos prestations et vos pièces.
     </p>
 
-    <p class="erreur" th:if="${erreur}" th:text="${erreur}">Import refusé.</p>
+    <p role="alert" class="erreur" th:if="${erreur}" th:text="${erreur}">Import refusé.</p>
 
     <!-- Tout ou rien : le rapport décrit ce qui A été fait si l'import a réussi, et ce
          qui AURAIT été fait s'il a été refusé. -->

@@ -54,14 +54,14 @@
     <table class="tableau" th:unless="${prestations.isEmpty()}">
         <thead>
         <tr>
-            <th th:text="#{admin.catalogue.colonne.code}">Code</th>
-            <th th:text="#{admin.catalogue.colonne.nom}">Nom</th>
-            <th th:text="#{admin.catalogue.colonne.categorie}">Catégorie</th>
-            <th th:text="#{admin.catalogue.colonne.prix}">Prix HTVA</th>
-            <th th:text="#{admin.catalogue.colonne.taux}">TVA</th>
-            <th th:text="#{admin.catalogue.colonne.duree}">Durée</th>
-            <th th:text="#{admin.catalogue.colonne.statut}">Statut</th>
-            <th><span class="visuellement-cache" th:text="#{admin.catalogue.colonne.actions}">Actions</span></th>
+            <th scope="col" th:text="#{admin.catalogue.colonne.code}">Code</th>
+            <th scope="col" th:text="#{admin.catalogue.colonne.nom}">Nom</th>
+            <th scope="col" th:text="#{admin.catalogue.colonne.categorie}">Catégorie</th>
+            <th scope="col" th:text="#{admin.catalogue.colonne.prix}">Prix HTVA</th>
+            <th scope="col" th:text="#{admin.catalogue.colonne.taux}">TVA</th>
+            <th scope="col" th:text="#{admin.catalogue.colonne.duree}">Durée</th>
+            <th scope="col" th:text="#{admin.catalogue.colonne.statut}">Statut</th>
+            <th scope="col"><span class="visuellement-cache" th:text="#{admin.catalogue.colonne.actions}">Actions</span></th>
         </tr>
         </thead>
         <tbody>
@@ -80,17 +80,21 @@
             </td>
             <td>
                 <a th:href="@{/admin/catalogue/prestations/{ref}/modifier(ref=${p.reference()})}"
+                   th:aria-label="#{admin.catalogue.action.modifier.aria(${p.libelle()})}"
                    th:text="#{admin.catalogue.action.modifier}">Modifier</a>
                 <a th:href="@{/admin/catalogue/prestations/{ref}/supprimer(ref=${p.reference()})}"
+                   th:aria-label="#{admin.catalogue.action.retirer.aria(${p.libelle()})}"
                    th:text="#{admin.catalogue.action.retirer}">Retirer</a>
                 <form th:if="${p.actif()}" method="post"
                       th:action="@{/admin/catalogue/prestations/{ref}/desactiver(ref=${p.reference()})}">
                     <button type="submit" class="lien-bouton"
+                            th:aria-label="#{admin.catalogue.action.desactiver.aria(${p.libelle()})}"
                             th:text="#{admin.catalogue.action.desactiver}">Désactiver</button>
                 </form>
                 <form th:unless="${p.actif()}" method="post"
                       th:action="@{/admin/catalogue/prestations/{ref}/activer(ref=${p.reference()})}">
                     <button type="submit" class="lien-bouton"
+                            th:aria-label="#{admin.catalogue.action.activer.aria(${p.libelle()})}"
                             th:text="#{admin.catalogue.action.activer}">Réactiver</button>
                 </form>
             </td>
