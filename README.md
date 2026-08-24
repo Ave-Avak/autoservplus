@@ -73,6 +73,24 @@ profil `demo`, les migrations étant déjà enregistrées. L'en-tête de
 [`docs/dump_autoservplus.sql`](docs/dump_autoservplus.sql) détaille la procédure et
 ses limites.
 
+## Déploiement
+
+`docker-compose.yml` ne démarre qu'une base de données : c'est le compose de
+**développement**, et il reste tel quel. Le déploiement s'appuie sur des fichiers
+distincts — `Dockerfile`, `docker-compose.prod.yml` et `deploy/Caddyfile` — qui
+démarrent la base, l'application et un proxy Caddy terminant le HTTPS.
+
+```bash
+cp .env.example .env    # puis renseigner DOMAINE, URL_PUBLIQUE, DB_PASSWORD
+docker compose -f docker-compose.prod.yml up -d --build
+```
+
+Les mêmes fichiers servent à répéter le déploiement sur le poste de développement,
+derrière un tunnel Cloudflare, et à déployer sur un serveur : seule la variable
+`DOMAINE` change. La procédure complète — chargement du jeu de démonstration, mise en
+service sur un serveur Hetzner, sauvegardes, limites connues — figure dans
+[`docs/deploiement.md`](docs/deploiement.md).
+
 ## Tests
 
 ```bash
@@ -141,6 +159,9 @@ production**.
 | `DB_USER` / `DB_PASSWORD` | `autoservplus` | Identifiants de la base |
 | `SERVER_PORT` | `8080` | Port d'écoute |
 | `SPRING_PROFILES_ACTIVE` | `dev` | Profil actif |
+| `DOMAINE` | — | Lu par Caddy au déploiement. `:80` sert en HTTP derrière un tunnel ; un nom de domaine déclenche l'obtention d'un certificat Let's Encrypt |
+| `COOKIE_SECURE` | `false` | Pose l'attribut `Secure` sur le cookie de session. À mettre à `true` dès que le site est joint en HTTPS |
+| `JAVA_OPTS` | `-XX:MaxRAMPercentage=75` | Options de la machine virtuelle Java dans le conteneur |
 | `URL_PUBLIQUE` | `http://localhost:8080` | Adresse publique, employée là où une URL absolue est indispensable |
 | `FACTURES_ARCHIVE` | `./data/factures` | Répertoire d'archivage des factures (conservation sept ans) |
 | `MEDIAS_RACINE` | `./data/uploads` | Répertoire des fichiers déposés |
