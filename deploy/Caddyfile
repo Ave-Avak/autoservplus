@@ -1,0 +1,35 @@
+# Proxy d'entree. La valeur de DOMAINE decide a elle seule du mode :
+#
+#   DOMAINE=:80              Caddy ecoute en HTTP pur et ne demande aucun certificat.
+#                            C'est le mode de repetition locale : le tunnel cloudflared
+#                            apporte le HTTPS depuis l'exterieur.
+#   DOMAINE=exemple.tld      Caddy obtient un certificat aupres de Let's Encrypt par
+#                            ACME, le renouvelle seul, et redirige HTTP vers HTTPS.
+#
+# Caddy plutot que nginx + Certbot : meme autorite de certification et meme protocole
+# ACME, mais une seule piece a installer, configurer et surveiller au lieu de trois
+# (nginx, certbot, la tache de renouvellement). Le renouvellement est ici un
+# comportement du serveur, pas une tache planifiee qui peut avoir cesse de tourner
+# sans que personne s'en apercoive.
+#
+# DOMAINE ne doit jamais etre vide, et le compose l'exige (${DOMAINE:?}). Vide, la
+# ligne suivante se reduirait a une accolade ouvrante, que Caddy lirait comme un bloc
+# d'options globales : il refuserait de demarrer sur « unrecognized global option:
+# encode », un message qui ne designe pas la variable manquante.
+{$DOMAINE} {
+	encode gzip
+
+	reverse_proxy app:8080 {
+		# Caddy renseigne lui-meme X-Forwarded-Proto d'apres le protocole de la requete
+		# qu'il recoit. En mode local il recoit du HTTP depuis cloudflared et ecraserait
+		# donc le « https » que le tunnel a pose, ce qui ferait croire a l'application
+		# qu'elle est servie en clair.
+		#
+		# Declarer les plages privees comme relais de confiance conserve les en-tetes
+		# X-Forwarded-* quand elles viennent de la machine hote, et seulement dans ce
+		# cas : sur le serveur, les requetes arrivent d'adresses publiques, ne sont donc
+		# pas de confiance, et Caddy renseigne lui-meme les en-tetes comme il se doit.
+		# Une seule ecriture pour les deux modes.
+		trusted_proxies private_ranges
+	}
+}

@@ -1,0 +1,94 @@
+# =====================================================================================
+# Pile de deploiement : base de donnees, application, proxy TLS.
+#
+# Distinct de docker-compose.yml, qui ne demarre qu'une base pour le developpement et
+# reste inchange. Les deux ne se melangent pas : celui-ci publie un proxy sur 80/443
+# et ne publie NI la base NI l'application.
+#
+# Un seul jeu de fichiers sert aux deux usages, seule la variable DOMAINE change :
+#   - repetition locale : DOMAINE=:80        Caddy sert en HTTP, cloudflared apporte
+#                                            le HTTPS depuis l'exterieur ;
+#   - serveur           : DOMAINE=exemple.tld  Caddy obtient et renouvelle seul son
+#                                            certificat aupres de Let's Encrypt.
+#
+# Demarrage : docker compose -f docker-compose.prod.yml up -d --build
+# Procedure complete et premier chargement des donnees : docs/deploiement.md
+# =====================================================================================
+# Nom de projet FIXE, et non deduit du repertoire courant. Deduit, il vaudrait
+# « autoservplus » depuis un clone nomme ainsi et autre chose depuis un arbre de
+# travail : les volumes etant nommes d'apres le projet, un « down -v » lance du mauvais
+# repertoire viserait un projet fantome et ne detruirait rien, tandis qu'un demarrage
+# depuis un autre repertoire repartirait d'une base vide sans que rien ne le signale.
+# Le suffixe le distingue aussi du projet de developpement, dont le volume pgdata
+# porterait sinon le meme nom complet.
+name: autoservplus-prod
+
+services:
+
+  postgres:
+    image: postgres:16-alpine
+    # AUCUN port publie. La base n'est joignable que par le reseau du compose ; la
+    # publier exposerait PostgreSQL a l'internet entier pour un confort d'administration
+    # que « docker compose exec » rend inutile.
+    environment:
+      POSTGRES_DB: ${DB_NOM:-autoservplus}
+      POSTGRES_USER: ${DB_USER:?DB_USER manquant}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?DB_PASSWORD manquant}
+      TZ: UTC
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    # Une base qui ne remonte pas apres un redemarrage du serveur rend tout le reste
+    # inutile : la politique de redemarrage vaut ici autant que pour l'application.
+    restart: unless-stopped
+
+  app:
+    build: .
+    env_file: .env
+    depends_on:
+      # Et non « service_started » : Flyway ouvre une connexion des l'amorcage du
+      # contexte. Demarrer avant que PostgreSQL accepte les connexions ferait echouer
+      # l'application au lieu de la faire patienter.
+      postgres:
+        condition: service_healthy
+    volumes:
+      # Volumes NOMMES et non montages depuis le repertoire de deploiement : l'archive
+      # des factures est conservee sept ans (Code TVA art. 60) et ne doit pas disparaitre
+      # avec un « git clone » refait ailleurs ou un repertoire efface.
+      - factures:/data/factures
+      - uploads:/data/uploads
+    # Aucun port publie : le seul chemin vers l'application passe par le proxy, donc
+    # par TLS. Publier 8080 offrirait un contournement en clair de tout ce qui suit.
+    restart: unless-stopped
+
+  caddy:
+    image: caddy:2
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/Caddyfile:/etc/caddy/Caddyfile:ro
+      # Le certificat et sa cle vivent dans caddy_data. Sans ce volume, chaque
+      # redemarrage redemanderait un certificat a Let's Encrypt et heurterait ses
+      # quotas au bout de cinq emissions par semaine pour le meme domaine.
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      DOMAINE: ${DOMAINE:?DOMAINE manquant}
+    depends_on:
+      # Demarrage seulement, pas « service_healthy » : Caddy doit pouvoir obtenir son
+      # certificat pendant que l'application demarre. Le temps de l'amorcage il rend
+      # 502, ce qui est preferable a un site injoignable faute de certificat.
+      - app
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  factures:
+  uploads:
+  caddy_data:
+  caddy_config:

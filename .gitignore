@@ -14,6 +14,10 @@ Thumbs.db
 # Secrets et environnement local : ne doivent JAMAIS etre versionnes
 .env
 .env.*
+# Exception : le MODELE de configuration de deploiement, qui ne porte aucune
+# valeur reelle. Sans cette ligne il serait avale par « .env.* » ci-dessus et
+# personne ne saurait quelles variables renseigner.
+!.env.example
 application-local.yml
 application-secrets.yml
 
