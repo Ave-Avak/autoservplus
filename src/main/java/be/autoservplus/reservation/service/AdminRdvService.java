@@ -4,12 +4,14 @@ import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsRdvCourriel;
+import be.autoservplus.communication.service.PieceJointeCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.intervention.service.InterventionService;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
+import be.autoservplus.reservation.service.dto.FichierAgenda;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.reservation.web.dto.RdvVueAdmin;
 import org.slf4j.Logger;
@@ -58,17 +60,20 @@ public class AdminRdvService {
     private final ParametreAtelierRepository parametres;
     private final ServiceCourriel courriel;
     private final InterventionService interventions;
+    private final ExportAgendaService exportAgenda;
     private final ApplicationEventPublisher evenements;
     private final Clock horloge;
 
     public AdminRdvService(RdvRepository rdvs, ParametreAtelierRepository parametres,
                            ServiceCourriel courriel, InterventionService interventions,
+                           ExportAgendaService exportAgenda,
                            ApplicationEventPublisher evenements,
                            Clock horloge) {
         this.rdvs = rdvs;
         this.parametres = parametres;
         this.courriel = courriel;
         this.interventions = interventions;
+        this.exportAgenda = exportAgenda;
         this.evenements = evenements;
         this.horloge = horloge;
     }
@@ -115,8 +120,13 @@ public class AdminRdvService {
     public Rdv confirmer(UUID reference) {
         Rdv rdv = charger(reference);
         rdv.confirmer();
+        // La production du fichier d agenda est DANS le lambda absorbe par
+        // notifierSansEchouer : une exception du redacteur iCalendar ne doit pas plus
+        // annuler la confirmation qu une panne du fournisseur de courriel. Le
+        // rendez-vous est deja confirme en base a ce point.
         return ecrire(rdv, enregistre -> notifierSansEchouer(
-                () -> courriel.envoyerConfirmationRdv(enregistre.getMembre(), detailsPour(enregistre))));
+                () -> courriel.envoyerConfirmationRdv(enregistre.getMembre(),
+                        detailsPour(enregistre), agendaPour(enregistre))));
     }
 
     @Transactional
@@ -197,6 +207,29 @@ public class AdminRdvService {
         } catch (OptimisticLockingFailureException e) {
             throw new ConflitConcurrenceException(
                     "Ce rendez-vous a été mis à jour par un autre administrateur, rechargez la page.");
+        }
+    }
+
+    /**
+     * Fichier iCalendar joint a la confirmation (F38). Produit ici et non dans le
+     * module {@code communication}, qui ignore tout des rendez-vous : il ne recoit
+     * que des octets et un nom de fichier.
+     *
+     * <p>Un echec rend {@code null} au lieu de remonter. La hierarchie est explicite :
+     * la confirmation est l information que le membre attend, le fichier d agenda en
+     * est le confort. Laisser l exception remonter la ferait absorber un cran plus
+     * haut par {@code notifierSansEchouer} — la transition survivrait, mais le
+     * courriel ne partirait pas du tout, c est-a-dire qu on priverait le membre de
+     * l essentiel faute d accessoire.</p>
+     */
+    private PieceJointeCourriel agendaPour(Rdv rdv) {
+        try {
+            FichierAgenda agenda = exportAgenda.pourLeCourriel(rdv);
+            return new PieceJointeCourriel(agenda.nomFichier(), FichierAgenda.TYPE_MIME, agenda.octets());
+        } catch (RuntimeException e) {
+            log.warn("Fichier d agenda non produit pour {}, la confirmation part sans piece jointe",
+                    rdv.getNumero(), e);
+            return null;
         }
     }
 

@@ -30,7 +30,22 @@ class CourrielConsoleTest {
     @Test
     @DisplayName("envoie la confirmation d un rendez-vous sans jeter")
     void envoieConfirmation() {
-        assertThatCode(() -> courriel.envoyerConfirmationRdv(marie, rdv))
+        PieceJointeCourriel agenda = new PieceJointeCourriel(
+                "rendez-vous-RDV-2026-0001.ics", "text/calendar", "BEGIN:VCALENDAR".getBytes());
+
+        assertThatCode(() -> courriel.envoyerConfirmationRdv(marie, rdv, agenda))
+                .doesNotThrowAnyException();
+    }
+
+    /**
+     * La piece jointe est facultative (F38) : le fichier d agenda peut manquer sans
+     * que la confirmation elle-meme soit retenue. Le cas est teste parce que c est
+     * exactement celui ou une journalisation naive dereferencerait un null.
+     */
+    @Test
+    @DisplayName("envoie la confirmation meme sans fichier d agenda")
+    void envoieConfirmationSansAgenda() {
+        assertThatCode(() -> courriel.envoyerConfirmationRdv(marie, rdv, null))
                 .doesNotThrowAnyException();
     }
 

@@ -2,13 +2,18 @@ package be.autoservplus.reservation.web;
 
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.reservation.service.AucunePrestationChoisieException;
+import be.autoservplus.reservation.service.ExportAgendaService;
 import be.autoservplus.reservation.service.LimiteDemandesEnAttenteException;
 import be.autoservplus.reservation.service.PrestationIndisponibleException;
 import be.autoservplus.reservation.service.RdvService;
 import be.autoservplus.reservation.service.VehiculeService;
+import be.autoservplus.reservation.service.dto.FichierAgenda;
 import be.autoservplus.reservation.web.dto.RdvForm;
 import jakarta.validation.Valid;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -22,6 +27,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -37,10 +43,12 @@ public class RdvController {
 
     private final RdvService rdvs;
     private final VehiculeService vehicules;
+    private final ExportAgendaService agendas;
 
-    public RdvController(RdvService rdvs, VehiculeService vehicules) {
+    public RdvController(RdvService rdvs, VehiculeService vehicules, ExportAgendaService agendas) {
         this.rdvs = rdvs;
         this.vehicules = vehicules;
+        this.agendas = agendas;
     }
 
     @GetMapping
@@ -132,6 +140,26 @@ public class RdvController {
         modele.addAttribute("titre", "Rendez-vous " + rdv.numero());
         modele.addAttribute("rdv", rdv);
         return "reservation/rdv-detail";
+    }
+
+    /**
+     * Fichier iCalendar du rendez-vous, pour l agenda personnel du membre (F38).
+     *
+     * <p>{@code Content-Disposition: attachment} et non {@code inline} : le fichier
+     * n a aucun sens affiche dans un navigateur, il doit etre remis a l application
+     * de calendrier du systeme. L appartenance et l etat CONFIRME sont verifies par
+     * le service, qui repond {@code 404} dans les deux cas — jamais {@code 403},
+     * conformement au patron des autres telechargements du projet.</p>
+     */
+    @GetMapping(value = "/{reference}/agenda.ics", produces = "text/calendar;charset=UTF-8")
+    public ResponseEntity<byte[]> agenda(@AuthenticationPrincipal UserDetails membre,
+                                         @PathVariable UUID reference,
+                                         Locale langue) {
+        FichierAgenda fichier = agendas.pourLeMembre(reference, membre.getUsername(), langue);
+        return ResponseEntity.ok()
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        ContentDisposition.attachment().filename(fichier.nomFichier()).build().toString())
+                .body(fichier.octets());
     }
 
     @PostMapping("/{reference}/annuler")

@@ -49,15 +49,31 @@ public class CourrielConsole implements ServiceCourriel {
     }
 
     @Override
-    public void envoyerConfirmationRdv(Utilisateur destinataire, DetailsRdvCourriel rdv) {
+    public void envoyerConfirmationRdv(Utilisateur destinataire, DetailsRdvCourriel rdv,
+                                       PieceJointeCourriel agenda) {
         JOURNAL.info("""
 
                 ---------- COURRIEL SIMULE : confirmation de rendez-vous ----------
                 Destinataire : {} <{}>
                 Rendez-vous  : {} le {} a {}
+                Piece jointe : {}
                 ------------------------------------------------------------------
                 """, destinataire.nomComplet(), destinataire.getEmail(),
-                rdv.numero(), rdv.jourLisible(), rdv.heureLisible());
+                rdv.numero(), rdv.jourLisible(), rdv.heureLisible(),
+                descriptionPieceJointe(agenda));
+    }
+
+    /**
+     * La console ne peut pas joindre un fichier : elle en annonce le nom et la
+     * taille. C est ce qui rend la piece jointe <b>observable</b> en developpement —
+     * sans cette ligne, un fichier vide ou absent passerait inapercu jusqu a la mise
+     * en production, ou plus personne ne regarde les journaux.
+     */
+    private static String descriptionPieceJointe(PieceJointeCourriel piece) {
+        if (piece == null) {
+            return "aucune";
+        }
+        return "%s (%s, %d octets)".formatted(piece.nomFichier(), piece.typeMime(), piece.tailleOctets());
     }
 
     @Override

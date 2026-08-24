@@ -4,6 +4,7 @@ import be.autoservplus.reservation.service.CreneauIndisponibleException;
 import org.springframework.validation.BindingResult;
 import be.autoservplus.reservation.service.LimiteDemandesEnAttenteException;
 import be.autoservplus.reservation.service.PrestationIndisponibleException;
+import be.autoservplus.reservation.service.ExportAgendaService;
 import be.autoservplus.reservation.service.RdvService;
 import be.autoservplus.reservation.service.VehiculeService;
 import be.autoservplus.reservation.web.dto.VehiculeVue;
@@ -47,6 +48,7 @@ class RdvControllerFormulaireTest {
     @Autowired private MockMvc mvc;
     @MockitoBean private RdvService rdvs;
     @MockitoBean private VehiculeService vehicules;
+    @MockitoBean private ExportAgendaService agendas;
 
     @Test
     @DisplayName("expose min et max au format ISO yyyy-MM-dd sur l input date")

@@ -84,6 +84,21 @@
         Contactez directement le garage.
     </p>
 
+    <!--
+      Export iCalendar (F38), proposé sur les seuls rendez-vous CONFIRMÉS. Une demande
+      encore en attente n'a pas de date arrêtée : déposée dans l'agenda du membre, elle
+      s'y installerait comme un fait et rien ne viendrait l'en retirer si le garage
+      refusait — le fichier vit chez lui, hors de portée du site. Le contrôleur applique
+      la même condition, un accès direct à l'adresse répond 404.
+    -->
+    <p th:if="${rdv.statut()} == 'CONFIRME'" class="actions-page">
+        <a th:href="@{/mes-rendez-vous/{ref}/agenda.ics(ref=${rdv.reference()})}"
+           th:text="#{rdv.agenda.bouton}">Ajouter à mon agenda</a>
+        <span class="aide" th:text="#{rdv.agenda.aide}">
+            Un fichier de calendrier est téléchargé.
+        </span>
+    </p>
+
     <p th:if="${rdv.statut()} == 'HONORE'" class="actions-page">
         <a class="btn-cta"
            th:href="@{/mes-interventions/depuis-rdv/{ref}(ref=${rdv.reference()})}">

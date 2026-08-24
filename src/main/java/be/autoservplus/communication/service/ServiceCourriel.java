@@ -23,8 +23,17 @@ public interface ServiceCourriel {
      */
     void envoyerRappelVerification(Utilisateur destinataire, String lienVerification);
 
-    /** Le garage a confirme la demande de rendez-vous du membre. */
-    void envoyerConfirmationRdv(Utilisateur destinataire, DetailsRdvCourriel rdv);
+    /**
+     * Le garage a confirme la demande de rendez-vous du membre.
+     *
+     * @param agenda fichier iCalendar du rendez-vous (F38), ou {@code null} si sa
+     *               production a echoue. Le courriel part <b>quand meme</b> dans ce
+     *               cas : la confirmation est l information importante, le fichier
+     *               n en est que le confort, et priver le membre de la premiere
+     *               parce que le second manque serait un mauvais echange.
+     */
+    void envoyerConfirmationRdv(Utilisateur destinataire, DetailsRdvCourriel rdv,
+                                PieceJointeCourriel agenda);
 
     /** Le garage a refuse la demande de rendez-vous, avec un motif obligatoire. */
     void envoyerRefusRdv(Utilisateur destinataire, DetailsRdvCourriel rdv, String motif);

@@ -6,12 +6,14 @@ import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsRdvCourriel;
+import be.autoservplus.communication.service.PieceJointeCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.reservation.domain.*;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
+import be.autoservplus.reservation.service.dto.FichierAgenda;
 import be.autoservplus.reservation.web.dto.RdvVueAdmin;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,6 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -60,6 +63,7 @@ class AdminRdvServiceTest {
     @Mock private ParametreAtelierRepository parametres;
     @Mock private ServiceCourriel courriel;
     @Mock private be.autoservplus.intervention.service.InterventionService interventions;
+    @Mock private ExportAgendaService exportAgenda;
     @Mock private org.springframework.context.ApplicationEventPublisher evenements;
 
     private Clock horloge;
@@ -73,7 +77,7 @@ class AdminRdvServiceTest {
     @BeforeEach
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
-        service = new AdminRdvService(rdvs, parametres, courriel, interventions, evenements, horloge);
+        service = new AdminRdvService(rdvs, parametres, courriel, interventions, exportAgenda, evenements, horloge);
 
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         golf = new Vehicule(marie, "1-ABC-123", "Volkswagen", "Golf", Motorisation.DIESEL);
@@ -108,6 +112,13 @@ class AdminRdvServiceTest {
         when(rdvs.findByReference(rdv.getReference())).thenReturn(Optional.of(rdv));
     }
 
+    // Le fichier iCalendar joint a la confirmation (F38) est produit par un service
+    // dedie, teste ailleurs : ici seul importe qu il soit demande et transmis.
+    private void stubAgenda() {
+        when(exportAgenda.pourLeCourriel(any(Rdv.class)))
+                .thenReturn(new FichierAgenda("rendez-vous-RDV-2026-0001.ics", "BEGIN:VCALENDAR"));
+    }
+
     // ---------------------------------------------------------------------------------
 
     @Nested
@@ -121,12 +132,14 @@ class AdminRdvServiceTest {
             stubLookup(rdv);
             when(rdvs.saveAndFlush(rdv)).thenReturn(rdv);
             stubParametresCourants();
+            stubAgenda();
 
             Rdv resultat = service.confirmer(rdv.getReference());
 
             assertThat(resultat.getStatut()).isEqualTo(StatutRdv.CONFIRME);
             verify(rdvs).saveAndFlush(rdv);
-            verify(courriel).envoyerConfirmationRdv(eq(marie), any(DetailsRdvCourriel.class));
+            verify(courriel).envoyerConfirmationRdv(eq(marie), any(DetailsRdvCourriel.class),
+                    any(PieceJointeCourriel.class));
         }
 
         @Test
@@ -139,7 +152,7 @@ class AdminRdvServiceTest {
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("RM-10");
             verify(rdvs, never()).saveAndFlush(any());
-            verify(courriel, never()).envoyerConfirmationRdv(any(), any());
+            verify(courriel, never()).envoyerConfirmationRdv(any(), any(), any());
         }
 
         @Test
@@ -162,7 +175,7 @@ class AdminRdvServiceTest {
             assertThatThrownBy(() -> service.confirmer(rdv.getReference()))
                     .isInstanceOf(ConflitConcurrenceException.class)
                     .hasMessageContaining("rechargez");
-            verify(courriel, never()).envoyerConfirmationRdv(any(), any());
+            verify(courriel, never()).envoyerConfirmationRdv(any(), any(), any());
         }
 
         @Test
@@ -172,13 +185,46 @@ class AdminRdvServiceTest {
             stubLookup(rdv);
             when(rdvs.saveAndFlush(rdv)).thenReturn(rdv);
             stubParametresCourants();
+            stubAgenda();
             doThrow(new RuntimeException("SMTP down"))
-                    .when(courriel).envoyerConfirmationRdv(any(), any());
+                    .when(courriel).envoyerConfirmationRdv(any(), any(), any());
 
             Rdv resultat = service.confirmer(rdv.getReference());
 
             assertThat(resultat.getStatut()).isEqualTo(StatutRdv.CONFIRME);
             verify(rdvs).saveAndFlush(rdv);
+        }
+    }
+
+    /**
+     * Le fichier d agenda est un confort, la confirmation est l information. Si le
+     * redacteur iCalendar jette, le courriel doit partir <b>quand meme</b> — sans
+     * piece jointe — et la transition rester acquise. Ce test verrouille cet ordre de
+     * priorite, qu une refactorisation placant la production du fichier hors du bloc
+     * absorbant casserait en silence.
+     */
+    @Nested
+    @DisplayName("confirmer : panne du generateur d agenda")
+    class ConfirmerSansAgenda {
+
+        @Test
+        @DisplayName("un export iCalendar qui jette laisse partir la confirmation, sans piece jointe")
+        void exportQuiJetteNEmpechePasLeCourriel() {
+            Rdv rdv = rdvDans(StatutRdv.EN_ATTENTE);
+            stubLookup(rdv);
+            when(rdvs.saveAndFlush(rdv)).thenReturn(rdv);
+            stubParametresCourants();
+            when(exportAgenda.pourLeCourriel(any(Rdv.class)))
+                    .thenThrow(new IllegalStateException("redacteur indisponible"));
+
+            Rdv resultat = service.confirmer(rdv.getReference());
+
+            assertThat(resultat.getStatut()).isEqualTo(StatutRdv.CONFIRME);
+            verify(rdvs).saveAndFlush(rdv);
+            // isNull() et non any() : c est precisement l absence de piece jointe qui
+            // distingue ce cas du cas nominal. any() passerait aussi si le fichier
+            // avait ete produit, et le test ne prouverait plus rien.
+            verify(courriel).envoyerConfirmationRdv(eq(marie), any(DetailsRdvCourriel.class), isNull());
         }
     }
 
@@ -248,7 +294,7 @@ class AdminRdvServiceTest {
 
             assertThat(resultat.getStatut()).isEqualTo(StatutRdv.HONORE);
             verify(rdvs).saveAndFlush(rdv);
-            verify(courriel, never()).envoyerConfirmationRdv(any(), any());
+            verify(courriel, never()).envoyerConfirmationRdv(any(), any(), any());
             verify(courriel, never()).envoyerRefusRdv(any(), any(), any());
             verify(courriel, never()).envoyerAnnulationParLeGarage(any(), any(), any());
         }
@@ -300,7 +346,7 @@ class AdminRdvServiceTest {
 
             assertThat(resultat.getStatut()).isEqualTo(StatutRdv.ABSENT);
             verify(rdvs).saveAndFlush(rdv);
-            verify(courriel, never()).envoyerConfirmationRdv(any(), any());
+            verify(courriel, never()).envoyerConfirmationRdv(any(), any(), any());
             verify(courriel, never()).envoyerRefusRdv(any(), any(), any());
             verify(courriel, never()).envoyerAnnulationParLeGarage(any(), any(), any());
         }

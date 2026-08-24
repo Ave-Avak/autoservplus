@@ -52,6 +52,18 @@ autoservplus:
   tva:
     taux-standard: 21.00
 
+  # Adresse publique du site, employee LA OU une URL absolue est indispensable et ou
+  # aucune requete HTTP n'est disponible pour la deduire : aujourd'hui le fichier
+  # iCalendar d'un rendez-vous (F38), qui est lu dans l'agenda du membre, hors du
+  # site — un chemin relatif n'y designerait rien.
+  #
+  # Ailleurs le projet emet des liens RELATIFS dans ses courriels et continue de le
+  # faire : cette propriete n'est pas une invitation a les absolutiser. Elle vaut
+  # aussi pour le telechargement direct plutot que l'URL de la requete, afin que le
+  # fichier servi et le fichier joint au courriel soient identiques a l'octet pres —
+  # deux variantes du meme UID se remplaceraient l'une l'autre dans l'agenda.
+  url-publique: ${URL_PUBLIQUE:http://localhost:8080}
+
   # Identification legale de l'emetteur des factures (mentions obligatoires :
   # Code TVA art. 53, AR n°1 art. 5). Mono-tenant V1 : un seul garage, donc en
   # configuration plutot qu'en base. Les valeurs livrees sont des valeurs de
