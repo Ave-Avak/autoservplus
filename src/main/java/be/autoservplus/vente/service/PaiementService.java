@@ -12,6 +12,7 @@ import be.autoservplus.vente.repository.CommandeRepository;
 import be.autoservplus.vente.repository.PaiementRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -55,19 +56,27 @@ public class PaiementService {
     private final PrestatairePaiement prestataire;
     private final ApplicationEventPublisher evenements;
     private final Clock horloge;
+    private final String urlPublique;
 
     public PaiementService(PaiementRepository paiements,
                            CommandeRepository commandes,
                            PieceRepository pieces,
                            PrestatairePaiement prestataire,
                            ApplicationEventPublisher evenements,
-                           Clock horloge) {
+                           Clock horloge,
+                           @Value("${autoservplus.url-publique}") String urlPublique) {
         this.paiements = paiements;
         this.commandes = commandes;
         this.pieces = pieces;
         this.prestataire = prestataire;
         this.evenements = evenements;
         this.horloge = horloge;
+        // Barre finale retiree une fois pour toutes : la concatenation qui suit
+        // produirait sinon un double separateur, et une URL de retour invalide ne se
+        // decouvrirait que chez le prestataire.
+        this.urlPublique = urlPublique.endsWith("/")
+                ? urlPublique.substring(0, urlPublique.length() - 1)
+                : urlPublique;
     }
 
     // --- initiation -------------------------------------------------------------------
@@ -87,7 +96,8 @@ public class PaiementService {
         Paiement paiement = new Paiement(commande, commande.getMontantTvac(), horloge.instant());
         PaiementCree cree = prestataire.creerPaiement(new DemandePaiement(
                 commande.getNumero(), commande.getMontantTvac(),
-                paiement.getDevise(), paiement.getCleIdempotence()));
+                paiement.getDevise(), paiement.getCleIdempotence(),
+                urlRetour(commande.getReference()), urlNotification()));
         paiement.enregistrerReferencePrestataire(cree.referencePrestataire());
         paiements.saveAndFlush(paiement);
         return cree.urlRedirection();
@@ -219,6 +229,25 @@ public class PaiementService {
             log.warn("Rupture a honorer sur la commande {} : {}",
                     commande.getNumero(), String.join(" ; ", ruptures));
         }
+    }
+
+    // --- adresses absolues remises au prestataire --------------------------------------
+
+    /**
+     * Ou le prestataire renvoie le membre une fois la page de paiement quittee.
+     *
+     * <p>Absolue et derivee de {@code autoservplus.url-publique}, non de la requete
+     * en cours : le prestataire renvoie un navigateur vers le site tel qu il est
+     * joignable depuis l exterieur, ce que l URL vue par le serveur derriere un
+     * reverse proxy ne dit pas.</p>
+     */
+    private String urlRetour(UUID referenceCommande) {
+        return urlPublique + "/commande/" + referenceCommande + "/retour";
+    }
+
+    /** Ou le prestataire notifie le serveur, sans navigateur ni session. */
+    private String urlNotification() {
+        return urlPublique + "/webhooks/paiement";
     }
 
     // --- helpers ----------------------------------------------------------------------

@@ -66,7 +66,10 @@ class PaiementServiceTest {
     @BeforeEach
     void setUp() {
         service = new PaiementService(paiements, commandes, pieces, prestataire, evenements,
-                Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
+                Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")),
+                // Barre finale volontaire : elle verifie que le service la retire au
+                // lieu de produire une URL a double separateur.
+                "https://garage.example/");
 
         marie = new Utilisateur(EMAIL, "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         Categorie freinage = new Categorie("FRE", "Freinage", TypeCategorie.PIECE);
@@ -139,6 +142,16 @@ class PaiementServiceTest {
             ArgumentCaptor<DemandePaiement> demande = ArgumentCaptor.forClass(DemandePaiement.class);
             verify(prestataire).creerPaiement(demande.capture());
             assertThat(demande.getValue().cleIdempotence()).isEqualTo(paiement.getCleIdempotence());
+
+            // Les deux adresses remises au prestataire sont ABSOLUES et derivees de
+            // l URL publique : le prestataire renvoie un navigateur depuis l exterieur,
+            // et notifie un serveur sans session — ni l un ni l autre ne saurait quoi
+            // faire d un chemin relatif. La barre finale de la configuration est retiree.
+            assertThat(demande.getValue().urlRetour())
+                    .isEqualTo("https://garage.example/commande/"
+                            + commande.getReference() + "/retour");
+            assertThat(demande.getValue().urlNotification())
+                    .isEqualTo("https://garage.example/webhooks/paiement");
         }
 
         @Test

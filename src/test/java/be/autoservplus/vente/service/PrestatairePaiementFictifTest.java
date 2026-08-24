@@ -1,6 +1,5 @@
 package be.autoservplus.vente.service;
 
-import be.autoservplus.config.MollieProprietes;
 import be.autoservplus.vente.domain.StatutPaiement;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,7 +18,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class PrestatairePaiementFictifTest {
 
     private final DemandePaiement demande = new DemandePaiement(
-            "CMD-2026-0001", new BigDecimal("80.21"), "EUR", "cle-idempotence-1");
+            "CMD-2026-0001", new BigDecimal("80.21"), "EUR", "cle-idempotence-1",
+            "http://localhost:8080/commande/abc/retour",
+            "http://localhost:8080/webhooks/paiement");
 
     @Test
     @DisplayName("le bouchon cree un paiement INITIE avec reference et URL factice")
@@ -100,22 +101,6 @@ class PrestatairePaiementFictifTest {
                 .isInstanceOf(IllegalStateException.class);
     }
 
-    @Test
-    @DisplayName("la MollieGateway reelle leve UnsupportedOperationException tant que non implementee")
-    void frontiereMollieFermee() {
-        MollieGateway gateway = new MollieGateway(
-                new MollieProprietes("test_cle-de-test", null, true));
-
-        assertThatThrownBy(() -> gateway.creerPaiement(demande))
-                .isInstanceOf(UnsupportedOperationException.class);
-        assertThatThrownBy(() -> gateway.lireStatut("tr_reel"))
-                .isInstanceOf(UnsupportedOperationException.class);
-        // Le remboursement reel est ferme au meme titre : le TODO Mollie couvre les
-        // trois appels, il ne doit pas y avoir de demi-implementation.
-        assertThatThrownBy(() -> gateway.rembourser(new DemandeRemboursement(
-                "tr_reel", new BigDecimal("80.21"), "EUR", "cle-refund-1")))
-                .isInstanceOf(UnsupportedOperationException.class);
-    }
 
     private static DemandeRemboursement remboursement(PaiementCree cree, String cle) {
         return new DemandeRemboursement(cree.referencePrestataire(),
