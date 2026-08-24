@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.sql.Timestamp;
+import java.time.OffsetDateTime;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -71,7 +72,7 @@ public class JournalService {
     }
 
     private EntreeJournal versEntree(Object[] ligne, ZoneId zone) {
-        Instant horodatage = ((Timestamp) ligne[0]).toInstant();
+        Instant horodatage = horodatageDe(ligne[0]);
         String type = (String) ligne[1];
         String prenom = (String) ligne[2];
         String nom = (String) ligne[3];
@@ -87,6 +88,31 @@ public class JournalService {
                 prenom == null ? null : "%s %s".formatted(prenom, nom),
                 cible,
                 detail(type, champ, avant, apres, motif));
+    }
+
+    /**
+     * Horodatage d une ligne de requete NATIVE, quel que soit le type rendu par le
+     * pilote.
+     *
+     * <p>Le code castait en dur vers {@link Timestamp}. Le pilote PostgreSQL rend en
+     * realite un {@link Instant} pour une colonne {@code TIMESTAMPTZ}, de sorte que
+     * l ecran tombait en {@code ClassCastException} des qu une SEULE ligne existait.
+     * Le defaut est reste invisible parce que les deux tables d historique n avaient
+     * jamais ete alimentees hors des tests, et que ceux-ci verifient l execution des
+     * quatre variantes de l UNION et le cas « aucune trace » — jamais la conversion
+     * d une ligne reelle. Une requete native rend des {@code Object[]} : c est a
+     * l appelant de ne rien presumer de leur type.</p>
+     */
+    private static Instant horodatageDe(Object valeur) {
+        return switch (valeur) {
+            case Instant instant -> instant;
+            case Timestamp timestamp -> timestamp.toInstant();
+            case OffsetDateTime decale -> decale.toInstant();
+            case null -> throw new IllegalStateException(
+                    "Horodatage nul dans le journal : la colonne est NOT NULL des deux cotes de l UNION.");
+            default -> throw new IllegalStateException(
+                    "Type d horodatage inattendu dans le journal : " + valeur.getClass().getName());
+        };
     }
 
     /**

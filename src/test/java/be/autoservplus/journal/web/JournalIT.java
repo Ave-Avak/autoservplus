@@ -6,6 +6,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
@@ -137,6 +138,44 @@ class JournalIT {
         @DisplayName("l anonyme est renvoye vers la connexion")
         void anonymeRefuse() throws Exception {
             mvc.perform(get("/admin/journal")).andExpect(status().is3xxRedirection());
+        }
+    }
+
+    /**
+     * Lecture d une ligne REELLE, et non d un resultat vide.
+     *
+     * <p>C est le trou que les cas precedents laissaient : ils verifient que les quatre
+     * variantes de l UNION s executent et qu une periode sans trace rend une liste vide,
+     * donc jamais la <b>conversion</b> d une ligne. Le service castait l horodatage en
+     * {@code java.sql.Timestamp} alors que le pilote rend un {@code java.time.Instant}
+     * pour une colonne {@code TIMESTAMPTZ} : l ecran tombait en 500 des la premiere trace
+     * ecrite, et aucun test ne le voyait parce que les deux tables d historique
+     * n avaient jamais ete alimentees hors de ce fichier.</p>
+     */
+    @Nested
+    @DisplayName("Conversion d une ligne reelle")
+    class LigneReelle {
+
+        @Autowired private JdbcTemplate jdbc;
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("une trace de catalogue est convertie sans erreur de type")
+        void uneTraceEstConvertie() {
+            jdbc.update(
+                    "INSERT INTO historique_modification_catalogue "
+                            + "(type_entite, entite_id, champ_modifie, valeur_avant, valeur_apres, "
+                            + " auteur_id, horodatage, created_by, updated_by) "
+                            + "VALUES ('SERVICE', (SELECT id FROM service ORDER BY id LIMIT 1), "
+                            + "        'prix_htva', '65.00', '69.00', "
+                            + "        (SELECT id FROM utilisateur WHERE email = 'admin@autoservplus.be'), "
+                            + "        now(), 'test', 'test')");
+
+            List<EntreeJournal> entrees = journal.rechercher(null, null, null, null);
+
+            assertThat(entrees)
+                    .as("la ligne inseree doit traverser le mapping, pas seulement la requete")
+                    .isNotEmpty();
         }
     }
 }
