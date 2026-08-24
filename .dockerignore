@@ -1,0 +1,23 @@
+# Ce que le contexte de build ne doit pas transporter.
+#
+# target/ est le motif qui compte : sans lui, le JAR construit sur le poste est
+# expedie au demon Docker puis ECRASE par la compilation de l'etape 1 — contexte
+# alourdi de plusieurs dizaines de mega-octets pour un fichier jete.
+target/
+.git/
+.idea/
+*.iml
+
+# Donnees d'execution locales : archives de factures et fichiers deposes n'ont rien
+# a faire dans une image, et peuvent contenir des donnees personnelles.
+data/
+
+# Documentation et dump de demonstration : le dump seul pese 200 Ko, et le contenu
+# de docs/ n'est jamais lu par l'application.
+docs/
+*.md
+
+# Secrets. Redondant avec .gitignore pour un depot clone, indispensable pour un
+# build lance sur un poste ou le .env existe : sans cette ligne, il entrerait dans
+# le contexte de build.
+.env*
