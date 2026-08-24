@@ -166,7 +166,7 @@ class JournalIT {
                     "INSERT INTO historique_modification_catalogue "
                             + "(type_entite, entite_id, champ_modifie, valeur_avant, valeur_apres, "
                             + " auteur_id, horodatage, created_by, updated_by) "
-                            + "VALUES ('SERVICE', (SELECT id FROM service ORDER BY id LIMIT 1), "
+                            + "VALUES ('PRESTATION', (SELECT id FROM service ORDER BY id LIMIT 1), "
                             + "        'prix_htva', '65.00', '69.00', "
                             + "        (SELECT id FROM utilisateur WHERE email = 'admin@autoservplus.be'), "
                             + "        now(), 'test', 'test')");
