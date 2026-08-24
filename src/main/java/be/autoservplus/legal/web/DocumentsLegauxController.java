@@ -1,12 +1,16 @@
 package be.autoservplus.legal.web;
 
+import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.config.IdentiteGarage;
+import be.autoservplus.legal.domain.TypeDocumentVersionne;
+import be.autoservplus.legal.service.VersionsDocumentsService;
 import be.autoservplus.retractation.service.RetractationService;
 import be.autoservplus.rgpd.service.CatalogueTraitements;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 
 /**
  * Documents legaux publics : conditions generales de vente, mentions legales et
@@ -48,10 +52,13 @@ public class DocumentsLegauxController {
 
     private final IdentiteGarage garage;
     private final CatalogueTraitements traitements;
+    private final VersionsDocumentsService versionsDocuments;
 
-    public DocumentsLegauxController(IdentiteGarage garage, CatalogueTraitements traitements) {
+    public DocumentsLegauxController(IdentiteGarage garage, CatalogueTraitements traitements,
+                                     VersionsDocumentsService versionsDocuments) {
         this.garage = garage;
         this.traitements = traitements;
+        this.versionsDocuments = versionsDocuments;
     }
 
     @GetMapping("/cgv")
@@ -60,6 +67,12 @@ public class DocumentsLegauxController {
         // Le delai est lu sur la constante qui l applique reellement (F30) : si la
         // regle change, le texte affiche change avec elle plutot que de mentir.
         modele.addAttribute("delaiRetractationJours", RetractationService.DELAI_LEGAL.toDays());
+        // F24 : le lecteur doit pouvoir nommer le texte qu il lit. Sans cette mention,
+        // le numero de version figé sur sa preuve d acceptation ne lui apprend rien —
+        // il designerait un document qu il ne peut pas identifier.
+        modele.addAttribute("versionEnVigueur",
+                versionsDocuments.versionEnVigueur(TypeDocumentVersionne.CGV).orElse(null));
+        modele.addAttribute("typeDocument", TypeDocumentVersionne.CGV.slug());
         return "legal/cgv";
     }
 
@@ -67,6 +80,33 @@ public class DocumentsLegauxController {
     public String mentionsLegales(Model modele) {
         modele.addAttribute("garage", garage);
         return "legal/mentions-legales";
+    }
+
+    /**
+     * Texte GELE d une version donnee (F24).
+     *
+     * <p>C est le point qui manquait a la preuve de consentement : sans lui,
+     * {@code consentement.version_acceptee} porte un numero que rien ne permet de
+     * rapporter a un texte. Publique et non reservee au titulaire — a la difference
+     * d une facture, un document contractuel general n est le secret de personne, et
+     * exiger une connexion pour lire les conditions qu on a acceptees serait une
+     * entrave sans motif.</p>
+     *
+     * <p>Une version inconnue remonte en 404 par {@code RessourceIntrouvableException},
+     * comme partout ailleurs.</p>
+     */
+    @GetMapping("/documents/{type}/{version}")
+    public String texteArchive(@PathVariable String type, @PathVariable String version,
+                               Model modele) {
+        TypeDocumentVersionne document = TypeDocumentVersionne.parSlug(type)
+                .orElseThrow(() -> new RessourceIntrouvableException("Document versionne", type));
+
+        modele.addAttribute("archive",
+                versionsDocuments.archive(document, version, LocaleContextHolder.getLocale())
+                        .orElseThrow(() -> new RessourceIntrouvableException(
+                                "Version de " + document.slug(), version)));
+        modele.addAttribute("libelleDocument", document.cleLibelle());
+        return "legal/archive";
     }
 
     @GetMapping("/confidentialite")

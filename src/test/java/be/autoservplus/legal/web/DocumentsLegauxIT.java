@@ -188,4 +188,63 @@ class DocumentsLegauxIT {
                                     org.hamcrest.Matchers.containsString("Mollie (Belgique)"))));
         }
     }
+
+    /**
+     * Versionnage des documents (F24). Ces cas sont des tests d integration pour la meme
+     * raison que les precedents : ce qui doit etre prouve, ce n est pas qu une route
+     * existe, c est qu un texte gele est reellement rendu au bout.
+     */
+    @Nested
+    @DisplayName("Texte archive d une version (F24)")
+    class Archive {
+
+        @Test
+        @DisplayName("les CGV annoncent la version en vigueur et menent a son texte archive")
+        void mentionDeVersion() throws Exception {
+            mvc.perform(get("/cgv").with(anonymous()).header("Accept-Language", "fr"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(
+                            org.hamcrest.Matchers.containsString("CGV-2026-01")))
+                    .andExpect(content().string(
+                            org.hamcrest.Matchers.containsString("/documents/cgv/CGV-2026-01")));
+        }
+
+        /**
+         * Publique et non reservee au titulaire : a la difference d une facture, un
+         * document contractuel general n est le secret de personne, et exiger une
+         * connexion pour relire les conditions qu on a acceptees serait une entrave
+         * sans motif.
+         */
+        @Test
+        @DisplayName("le texte gele est servi a l anonyme, avec une clause reellement presente")
+        void texteGeleServi() throws Exception {
+            mvc.perform(get("/documents/cgv/CGV-2026-01").with(anonymous())
+                            .header("Accept-Language", "fr"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(
+                            org.hamcrest.Matchers.containsString("Article 9 — Facture")))
+                    // Le delai substitue prouve que le gel est passe par MessageFormat et
+                    // non par une recopie du fichier brut, ou il resterait « {0} ».
+                    .andExpect(content().string(
+                            org.hamcrest.Matchers.containsString("délai de 14 jours")));
+        }
+
+        @Test
+        @DisplayName("la renonciation VI.53 est archivee elle aussi, pas seulement les CGV")
+        void renonciationArchivee() throws Exception {
+            mvc.perform(get("/documents/renonciation/VI53-2026-01").with(anonymous())
+                            .header("Accept-Language", "fr"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(
+                            org.hamcrest.Matchers.containsString("perdre mon droit de rétractation")));
+        }
+
+        @ParameterizedTest(name = "{0} repond 404")
+        @ValueSource(strings = {"/documents/cgv/CGV-1999-99", "/documents/inconnu/CGV-2026-01"})
+        @DisplayName("un document ou une version inconnus remontent en 404, jamais en texte approchant")
+        void inconnus(String adresse) throws Exception {
+            mvc.perform(get(adresse).with(anonymous()).header("Accept-Language", "fr"))
+                    .andExpect(status().isNotFound());
+        }
+    }
 }

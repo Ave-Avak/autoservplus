@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{legal.archive.titre} + ' — AutoServ+'">Texte archivé — AutoServ+</title>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}" th:text="#{nav.connexion}">Connexion</a></li>
+            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+        </ul>
+    </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
+</header>
+
+<main id="contenu">
+    <h1>
+        <span th:text="#{${libelleDocument}}">Conditions générales de vente</span>
+        <span th:text="${archive.version()}">CGV-2026-01</span>
+    </h1>
+
+    <!--
+      Le sélecteur de langue de l'en-tête suffit à demander une autre traduction : le
+      texte servi suit la locale de session. On n'ajoute donc pas un second mécanisme
+      de choix de langue propre à cette page, qui divergerait du premier.
+    -->
+    <p th:text="#{legal.archive.intro}">
+        Ce texte est celui qui a été présenté sous cette version. Il n'est plus modifiable.
+    </p>
+
+    <dl class="meta-archive">
+        <dt th:text="#{legal.archive.date-effet}">En vigueur depuis</dt>
+        <dd th:text="${#temporals.format(archive.dateEffet(), 'dd/MM/yyyy')}">24/08/2026</dd>
+
+        <dt th:text="#{legal.archive.langue}">Langue du texte affiché</dt>
+        <dd th:text="${archive.langue()}">fr</dd>
+    </dl>
+
+    <!-- Une version retirée du jeu résolvable reste consultable : une preuve qui la
+         désigne doit continuer à mener à son texte, sans quoi retirer une version
+         reviendrait à effacer ce que des membres ont accepté. -->
+    <p class="avis-version-retiree" role="note" th:if="${!archive.actif()}"
+       th:text="#{legal.archive.retiree}">
+        Cette version n'est plus en vigueur.
+    </p>
+
+    <!-- th:text et non th:utext : le contenu est du texte, jamais du balisage. Le
+         rendre en HTML ferait d'une colonne de base de données une surface d'injection
+         sur une page publique. Les retours à la ligne sont restitués par la CSS. -->
+    <div class="texte-archive" th:text="${archive.contenu()}">
+        Texte gelé de la version.
+    </div>
+
+    <nav th:attr="aria-label=#{legal.liens.aria}" aria-label="Documents légaux">
+        <div th:replace="~{fragments/legal :: liens}"></div>
+    </nav>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

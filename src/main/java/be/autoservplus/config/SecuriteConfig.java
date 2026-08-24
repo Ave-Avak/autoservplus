@@ -41,6 +41,14 @@ public class SecuriteConfig {
                         .requestMatchers("/", "/accueil", "/services/**", "/pieces/**",
                                 "/inscription/**", "/connexion", "/mot-de-passe/**",
                                 "/cgv", "/mentions-legales", "/confidentialite",
+                                // Texte gele d une version de document (F24). Public
+                                // pour la meme raison que les CGV elles-memes : exiger
+                                // une connexion pour relire les conditions qu on a
+                                // acceptees serait une entrave sans motif, et le
+                                // document n est le secret de personne. Enumere par
+                                // prefixe et non par joker ouvert sur tout : la route
+                                // ne sert que des textes contractuels generaux.
+                                "/documents/*/*",
                                 // Page de contact : l article VI.45 CDE veut que
                                 // l identite du professionnel, son adresse, son
                                 // telephone et son courriel soient accessibles AVANT

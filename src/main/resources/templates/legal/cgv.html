@@ -27,6 +27,17 @@
 
     <div th:replace="~{fragments/legal :: brouillon}"></div>
 
+    <!-- Le lecteur doit pouvoir NOMMER le texte qu'il lit : c'est ce numero que sa
+         preuve d'acceptation portera, et le lien mene au texte gele de cette version,
+         qui restera lisible quand la page publique aura changé. -->
+    <p class="version-document" th:if="${versionEnVigueur != null}">
+        <span th:text="#{legal.version.mention(${versionEnVigueur.version()}, ${#temporals.format(versionEnVigueur.dateEffet(), 'dd/MM/yyyy')})}">
+            Version CGV-2026-01 — en vigueur depuis le 24/08/2026
+        </span>
+        <a th:href="@{/documents/{type}/{version}(type=${typeDocument}, version=${versionEnVigueur.version()})}"
+           th:text="#{legal.version.archive-lien}">Consulter le texte archivé</a>
+    </p>
+
     <p th:text="#{legal.cgv.intro}">
         Les présentes conditions régissent la vente sur la plateforme.
     </p>

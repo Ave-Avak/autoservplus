@@ -647,3 +647,42 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     color: var(--blanc);
     font-weight: 600;
 }
+
+/* --- Versionnage des documents (F24) --------------------------------------------
+   Mention de version en tete d'un document engageant, et restitution du texte gele.
+   Le contraste n'est pas suppose : --gris-700 sur fond blanc est celui deja calcule
+   et employe par .avis-brouillon ci-dessus (WCAG 1.4.3). */
+
+.version-document {
+    margin: 0 0 var(--espace-l);
+    color: var(--gris-700);
+    font-size: 0.9375rem;
+}
+
+.version-document a { margin-left: var(--espace-s); }
+
+.meta-archive {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: var(--espace-s) var(--espace-m);
+    margin: var(--espace-m) 0 var(--espace-l);
+}
+
+.meta-archive dt { font-weight: 600; color: var(--gris-700); }
+.meta-archive dd { margin: 0; }
+
+/* Le texte archive est stocke en TEXTE BRUT : ses sauts de ligne portent la structure
+   du document, et th:text les rend tels quels dans le HTML, ou ils s'effondreraient
+   sans cette regle. pre-wrap et non pre : les lignes doivent se replier au telephone,
+   sinon la page defilerait horizontalement. */
+.texte-archive {
+    white-space: pre-wrap;
+    line-height: 1.7;
+    max-width: 70ch;
+}
+
+.avis-version-retiree {
+    border-left: 4px solid var(--alerte-texte);
+    padding-left: var(--espace-m);
+    color: var(--gris-700);
+}
