@@ -577,16 +577,6 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 
 .avis-brouillon p { margin: 0; color: var(--gris-700); }
 
-/* Blanc assume. Le marqueur est signale par une bordure laterale et non par une
-   couleur seule : un lecteur daltonien doit voir qu'il manque quelque chose
-   (WCAG 1.4.1, l'information ne peut pas reposer sur la couleur seule). */
-.a-completer {
-    border-left: 4px solid var(--alerte-texte);
-    padding-left: var(--espace-m);
-    color: var(--gris-700);
-    font-style: italic;
-}
-
 /* Listes de definition « libelle / valeur » : identite legale du garage (pages
    legales et contact) et horaires d ouverture. Meme mise en page parce que c est
    la meme structure de lecture ; deux blocs de regles identiques finiraient par

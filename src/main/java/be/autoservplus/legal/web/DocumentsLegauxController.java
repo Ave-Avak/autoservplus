@@ -29,11 +29,19 @@ import org.springframework.web.bind.annotation.GetMapping;
  * public et le registre joint a l export d un membre ne peuvent pas diverger,
  * puisqu ils sont resolus par le meme composant.</p>
  *
- * <p>Le contenu redactionnel est un <b>brouillon</b>, signale comme tel par une
- * banniere en tete de chaque page. Ce qui manque est marque
- * {@code [A COMPLETER : …]} plutot que comble par une affirmation plausible : sur
- * un document qui engage le garage, une phrase inventee est pire qu un blanc, parce
- * qu elle ne se voit pas.</p>
+ * <p>Le contenu redactionnel est <b>complet</b> : les onze clauses laissees en blanc
+ * a la livraison initiale sont redigees. La <b>banniere de brouillon</b> reste
+ * pourtant en tete de chaque page, et ce n est pas un oubli — elle n a jamais
+ * annonce qu il manquait du texte, mais qu <b>aucun juriste n a relu celui-ci</b>.
+ * Les deux etats sont distincts, et le second est le plus dangereux : un document
+ * inacheve se voit, un document complet mais non valide se lit comme definitif.
+ * La banniere tombera sur validation juridique, pas sur completude redactionnelle.</p>
+ *
+ * <p>Le principe qui a preside aux blancs vaut toujours pour ce qui les a remplaces :
+ * aucune affirmation n est inventee. L identite vient de la configuration, l hebergeur
+ * et les sous-traitants sont nommes parce qu ils sont des faits de deploiement, et les
+ * regles citees renvoient a des textes existants. Sur un document qui engage le garage,
+ * une phrase plausible est pire qu un blanc, parce qu elle ne se voit pas.</p>
  */
 @Controller
 public class DocumentsLegauxController {

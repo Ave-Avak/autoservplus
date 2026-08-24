@@ -127,17 +127,65 @@ class DocumentsLegauxIT {
         }
 
         /**
-         * Ce que le code ne sait pas reste un blanc VISIBLE. Le test verrouille la
-         * marque, pour qu une relecture pressee ne puisse pas supprimer le marqueur
-         * en laissant la section vide : une section vide se lit comme « rien a dire »,
-         * un marqueur se lit comme « pas encore ecrit ».
+         * Ce test verrouillait l inverse : il exigeait la presence de
+         * {@code [A COMPLETER}, parce qu un blanc devait rester VISIBLE tant qu il
+         * n etait pas comble. Les onze clauses etant desormais redigees, il aurait
+         * fallu le supprimer — ce qui aurait laisse le defaut symetrique sans garde :
+         * plus rien n aurait empeche une clause de revenir a l etat de marqueur, ni
+         * une section de se vider en silence.
+         *
+         * <p>Il verifie donc maintenant ce qui doit etre vrai : <b>aucun marqueur
+         * residuel</b> sur aucune des trois pages. Le controle porte sur les trois et
+         * non sur les seules mentions legales, parce que les blancs y etaient repartis
+         * — cinq aux conditions generales, quatre aux mentions, deux a la politique de
+         * confidentialite.</p>
+         */
+        @ParameterizedTest(name = "{0} ne porte plus aucun marqueur")
+        @ValueSource(strings = {"/cgv", "/mentions-legales", "/confidentialite"})
+        @DisplayName("aucune clause ne reste a l etat de marqueur")
+        void plusAucunPlaceholder(String adresse) throws Exception {
+            mvc.perform(get(adresse).with(anonymous()).header("Accept-Language", "fr"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(
+                            org.hamcrest.Matchers.not(
+                                    org.hamcrest.Matchers.containsString("COMPLÉTER"))));
+        }
+
+        /**
+         * La banniere de brouillon <b>reste</b>, et c est le point a defendre : elle
+         * n annonce pas qu il manque du texte, mais qu aucun juriste n a relu celui-ci.
+         * Completer les clauses ne valide rien. Un texte complet mais non valide est
+         * plus dangereux qu un texte visiblement inacheve, parce qu il se lit comme
+         * definitif — c est donc precisement au moment ou les blancs disparaissent
+         * que cette banniere devient utile, et qu il faut empecher qu on la retire
+         * en croyant le travail fini.
+         */
+        @ParameterizedTest(name = "{0} porte la banniere de brouillon")
+        @ValueSource(strings = {"/cgv", "/mentions-legales", "/confidentialite"})
+        @DisplayName("la banniere de brouillon survit au remplissage des clauses")
+        void banniereBrouillonMaintenue(String adresse) throws Exception {
+            mvc.perform(get(adresse).with(anonymous()).header("Accept-Language", "fr"))
+                    .andExpect(content().string(
+                            org.hamcrest.Matchers.containsString("avis-brouillon")));
+        }
+
+        /**
+         * Mollie est une societe NEERLANDAISE ({@code Mollie B.V.}). Le texte de la
+         * politique annoncait la Belgique, en contradiction avec le registre des
+         * traitements rendu sur la MEME page — et avec celui que l export RGPD de
+         * l article 15 remet au membre, puisque les deux sont resolus par le meme
+         * composant. Une politique de confidentialite qui situe mal un sous-traitant
+         * informe mal sur le sort des donnees.
          */
         @Test
-        @DisplayName("l hebergeur inconnu reste un blanc marque, pas une invention")
-        void placeholdersVisibles() throws Exception {
-            mvc.perform(get("/mentions-legales").with(anonymous()).header("Accept-Language", "fr"))
+        @DisplayName("le pays de Mollie concorde avec le registre des traitements")
+        void mollieSitueeAuxPaysBas() throws Exception {
+            mvc.perform(get("/confidentialite").with(anonymous()).header("Accept-Language", "fr"))
                     .andExpect(content().string(
-                            org.hamcrest.Matchers.containsString("[À COMPLÉTER")));
+                            org.hamcrest.Matchers.containsString("Mollie (Pays-Bas)")))
+                    .andExpect(content().string(
+                            org.hamcrest.Matchers.not(
+                                    org.hamcrest.Matchers.containsString("Mollie (Belgique)"))));
         }
     }
 }

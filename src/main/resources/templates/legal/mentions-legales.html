@@ -34,25 +34,27 @@
 
     <section>
         <h2 th:text="#{legal.mentions.responsable.titre}">Responsable de la publication</h2>
-        <p class="a-completer" th:text="#{legal.mentions.responsable.completer}">[À COMPLÉTER]</p>
+        <p th:text="#{legal.mentions.responsable.completer(${garage.nomCommercial()}, ${garage.raisonSociale()}, ${garage.adresseLisible() + ', ' + garage.pays()}, ${garage.numeroBce()}, ${garage.numeroTva()}, ${garage.telephone()}, ${garage.courriel()})}">Le responsable de la publication est le représentant légal du garage.</p>
     </section>
 
     <section>
-        <!-- L'hébergeur ne peut pas être déduit du code : il dépend de l'infrastructure
-             réellement choisie au déploiement, qui n'est pas tranchée. Un nom plausible
-             écrit ici serait une mention légale fausse. -->
+        <!-- L'hébergeur est nommé en toutes lettres, et non lu de la configuration
+             autoservplus.garage.* comme le reste de cette page : il ne dépend pas du
+             garage mais du déploiement de la plateforme, que le garage ne choisit pas.
+             Le rendre surchargeable laisserait un exploitant publier un hébergeur qui
+             n'est pas le sien — une mention légale fausse. -->
         <h2 th:text="#{legal.mentions.hebergeur.titre}">Hébergeur</h2>
-        <p class="a-completer" th:text="#{legal.mentions.hebergeur.completer}">[À COMPLÉTER]</p>
+        <p th:text="#{legal.mentions.hebergeur.completer}">Le site est hébergé par Hetzner Online GmbH, en Allemagne.</p>
     </section>
 
     <section>
         <h2 th:text="#{legal.mentions.propriete.titre}">Propriété intellectuelle</h2>
-        <p class="a-completer" th:text="#{legal.mentions.propriete.completer}">[À COMPLÉTER]</p>
+        <p th:text="#{legal.mentions.propriete.completer}">Les éléments du site sont protégés par le droit de la propriété intellectuelle.</p>
     </section>
 
     <section>
         <h2 th:text="#{legal.mentions.profession.titre}">Accès à la profession et assurances</h2>
-        <p class="a-completer" th:text="#{legal.mentions.profession.completer}">[À COMPLÉTER]</p>
+        <p th:text="#{legal.mentions.profession.completer}">Les informations d'assurance sont disponibles sur simple demande.</p>
     </section>
 
     <section>

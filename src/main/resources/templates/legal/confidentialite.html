@@ -47,7 +47,7 @@
 
     <section>
         <h2 th:text="#{legal.confidentialite.dpo.titre}">Délégué à la protection des données</h2>
-        <p class="a-completer" th:text="#{legal.confidentialite.dpo.completer}">[À COMPLÉTER]</p>
+        <p th:text="#{legal.confidentialite.dpo.completer(${garage.courriel()})}">Aucun délégué à la protection des données n'a été désigné.</p>
     </section>
 
     <section>
@@ -99,7 +99,7 @@
 
     <section>
         <h2 th:text="#{legal.confidentialite.transferts.titre}">Transferts hors Union européenne</h2>
-        <p class="a-completer" th:text="#{legal.confidentialite.transferts.completer}">[À COMPLÉTER]</p>
+        <p th:text="#{legal.confidentialite.transferts.completer}">Toutes vos données sont hébergées et traitées au sein de l'Union européenne.</p>
     </section>
 
     <section>
