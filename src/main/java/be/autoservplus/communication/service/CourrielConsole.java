@@ -1,26 +1,59 @@
 package be.autoservplus.communication.service;
 
 import be.autoservplus.identite.domain.Utilisateur;
+import jakarta.annotation.PostConstruct;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
 
 /**
- * Implementation de developpement : le contenu du courriel est journalise plutot
- * qu envoye. Le lien reste ainsi accessible sans dependre d un service externe.
+ * SEULE implementation de {@link ServiceCourriel} : le contenu du courriel est
+ * journalise, jamais expedie. Le lien reste ainsi accessible sans dependre d un
+ * service externe.
+ *
+ * <p><b>Perimetre assume, pas dette masquee.</b> L integration d un fournisseur
+ * d envoi reel (Brevo) n est pas au perimetre : elle demanderait un compte, un
+ * domaine expediteur verifie (SPF, DKIM), une gestion des rebonds et des
+ * desabonnements, et ces quatre elements ne s eprouvent pas sans une adresse
+ * d envoi legitime. Un envoi mal configure part en indesirable, ce qui est pire
+ * qu un envoi assume comme absent : le membre ne recoit rien ET personne ne le
+ * sait. La frontiere {@link ServiceCourriel} est en place et c est elle qui compte —
+ * brancher Brevo ne touchera que ce fichier.</p>
+ *
+ * <p><b>Le profil ne conditionne plus cette classe.</b> Elle portait
+ * {@code @Profile("!prod")} alors qu aucune autre implementation n existe : demarrer
+ * en profil {@code prod} echouait donc au cablage, faute de {@code ServiceCourriel} a
+ * injecter. Un stub assume doit etre disponible partout ou il tient le role, sans
+ * quoi il n en tient aucun. Meme raisonnement que pour le prestataire de paiement :
+ * un repli qui n existe pas dans l environnement ou l on en a besoin n est pas un
+ * repli.</p>
+ *
+ * <p>Chaque bloc journalise s annonce NON EXPEDIE, et un avertissement au demarrage
+ * le rappelle : lire « courriel simule » dans un journal pouvait se comprendre comme
+ * « simule ici, expedie ailleurs ».</p>
  */
 @Service
-@Profile("!prod")
 public class CourrielConsole implements ServiceCourriel {
 
     private static final Logger JOURNAL = LoggerFactory.getLogger(CourrielConsole.class);
+
+    /**
+     * Avertissement au demarrage. En {@code WARN} comme pour le paiement simule : un
+     * exploitant qui croit que ses membres recoivent leurs courriels d activation ne
+     * s en apercevrait qu au premier appel d un client bloque a l inscription.
+     */
+    @PostConstruct
+    void annoncerLAbsenceDEnvoi() {
+        JOURNAL.warn("Aucun fournisseur d envoi de courriel n est configure : les "
+                + "messages sont JOURNALISES et jamais expedies. Les liens d activation "
+                + "et de reinitialisation se lisent dans ce journal.");
+    }
 
     @Override
     public void envoyerVerificationAdresse(Utilisateur destinataire, String lienVerification) {
         JOURNAL.info("""
 
-                ---------- COURRIEL SIMULE : verification d adresse ----------
+                ---------- COURRIEL NON EXPEDIE (demonstration) : verification d adresse ----------
                 Destinataire : {} <{}>
                 Lien         : {}
                 -------------------------------------------------------------
@@ -31,7 +64,7 @@ public class CourrielConsole implements ServiceCourriel {
     public void envoyerReinitialisationMotDePasse(Utilisateur destinataire, String lien) {
         JOURNAL.info("""
 
-                ---------- COURRIEL SIMULE : mot de passe oublie ----------
+                ---------- COURRIEL NON EXPEDIE (demonstration) : mot de passe oublie ----------
                 Destinataire : {} <{}>
                 Lien         : {}
                 ----------------------------------------------------------
@@ -41,7 +74,7 @@ public class CourrielConsole implements ServiceCourriel {
     public void envoyerRappelVerification(Utilisateur destinataire, String lienVerification) {
         JOURNAL.info("""
 
-                ---------- COURRIEL SIMULE : compte jamais active ----------
+                ---------- COURRIEL NON EXPEDIE (demonstration) : compte jamais active ----------
                 Destinataire : {} <{}>
                 Lien         : {}
                 -----------------------------------------------------------
@@ -53,7 +86,7 @@ public class CourrielConsole implements ServiceCourriel {
                                        PieceJointeCourriel agenda) {
         JOURNAL.info("""
 
-                ---------- COURRIEL SIMULE : confirmation de rendez-vous ----------
+                ---------- COURRIEL NON EXPEDIE (demonstration) : confirmation de rendez-vous ----------
                 Destinataire : {} <{}>
                 Rendez-vous  : {} le {} a {}
                 Piece jointe : {}
@@ -80,7 +113,7 @@ public class CourrielConsole implements ServiceCourriel {
     public void envoyerRefusRdv(Utilisateur destinataire, DetailsRdvCourriel rdv, String motif) {
         JOURNAL.info("""
 
-                ---------- COURRIEL SIMULE : refus de rendez-vous ----------
+                ---------- COURRIEL NON EXPEDIE (demonstration) : refus de rendez-vous ----------
                 Destinataire : {} <{}>
                 Rendez-vous  : {} le {} a {}
                 Motif        : {}
@@ -93,7 +126,7 @@ public class CourrielConsole implements ServiceCourriel {
     public void envoyerAnnulationParLeGarage(Utilisateur destinataire, DetailsRdvCourriel rdv, String motif) {
         JOURNAL.info("""
 
-                ---------- COURRIEL SIMULE : annulation par le garage ----------
+                ---------- COURRIEL NON EXPEDIE (demonstration) : annulation par le garage ----------
                 Destinataire : {} <{}>
                 Rendez-vous  : {} le {} a {}
                 Motif        : {}
@@ -108,7 +141,7 @@ public class CourrielConsole implements ServiceCourriel {
                                                     DetailsDepassementCourriel depassement) {
         JOURNAL.info("""
 
-                ---------- COURRIEL SIMULE : accord requis sur un depassement de devis ----------
+                ---------- COURRIEL NON EXPEDIE (demonstration) : accord requis sur un depassement de devis ----------
                 Destinataire  : {} <{}>
                 Intervention  : {} (rendez-vous {} du {})
                 Devis initial : {}
@@ -128,7 +161,7 @@ public class CourrielConsole implements ServiceCourriel {
     public void envoyerInterventionTerminee(DetailsInterventionTerminee details) {
         JOURNAL.info("""
 
-                ---------- COURRIEL SIMULE : intervention terminee ----------
+                ---------- COURRIEL NON EXPEDIE (demonstration) : intervention terminee ----------
                 Destinataire : {} <{}>
                 Intervention : {}
                 Bonjour {}, les travaux sur votre {} ({}) sont termines.
@@ -146,7 +179,7 @@ public class CourrielConsole implements ServiceCourriel {
     public void envoyerConfirmationPaiement(DetailsPaiementCourriel details) {
         JOURNAL.info("""
 
-                ---------- COURRIEL SIMULE : paiement confirme ----------
+                ---------- COURRIEL NON EXPEDIE (demonstration) : paiement confirme ----------
                 Destinataire : {} <{}>
                 Commande     : {}
                 Bonjour {}, votre paiement de {} est bien recu.
@@ -162,7 +195,7 @@ public class CourrielConsole implements ServiceCourriel {
         if (details.acceptee()) {
             JOURNAL.info("""
 
-                    ---------- COURRIEL SIMULE : retractation acceptee ----------
+                    ---------- COURRIEL NON EXPEDIE (demonstration) : retractation acceptee ----------
                     Destinataire : {} <{}>
                     Commande     : {}
                     Bonjour {}, votre demande d'annulation est acceptee.
@@ -177,7 +210,7 @@ public class CourrielConsole implements ServiceCourriel {
         }
         JOURNAL.info("""
 
-                ---------- COURRIEL SIMULE : retractation refusee ----------
+                ---------- COURRIEL NON EXPEDIE (demonstration) : retractation refusee ----------
                 Destinataire : {} <{}>
                 Commande     : {}
                 Bonjour {}, votre demande d'annulation n'a pas pu etre acceptee.
@@ -191,7 +224,7 @@ public class CourrielConsole implements ServiceCourriel {
     public void envoyerConfirmationSuppressionCompte(DetailsSuppressionCompteCourriel details) {
         JOURNAL.info("""
 
-                ---------- COURRIEL SIMULE : compte supprime ----------
+                ---------- COURRIEL NON EXPEDIE (demonstration) : compte supprime ----------
                 Destinataire : {} <{}>
                 Bonjour {}, votre compte AutoServ+ a bien ete supprime.
                 Vos donnees personnelles ont ete effacees et votre acces revoque.
