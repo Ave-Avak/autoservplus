@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{vitrine.contact.titre} + ' — AutoServ+'">Contact — AutoServ+</title>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu">
+            <li><a th:href="@{/services}" th:text="#{nav.prestations}">Prestations</a></li>
+            <li><a th:href="@{/pieces}" th:text="#{nav.pieces}">Pièces</a></li>
+            <li><a th:href="@{/contact}" aria-current="page" th:text="#{nav.contact}">Contact</a></li>
+        </ul>
+        <ul class="menu menu-compte">
+            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}" th:text="#{nav.connexion}">Connexion</a></li>
+            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+        </ul>
+    </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{vitrine.contact.titre}">Contact</h1>
+    <p th:text="#{vitrine.contact.intro}">Une question sur un devis, une pièce ou un rendez-vous ?</p>
+
+    <section>
+        <!--
+          Identité reprise du fragment partagé avec les pages légales : dénomination,
+          adresse, BCE, TVA, téléphone et courriel sont les mentions exigées de tout
+          professionnel vendant à distance (art. VI.45 CDE). Le fragment garantit
+          qu'elles soient rigoureusement les mêmes ici et sur les mentions légales —
+          deux copies finiraient par diverger, et une coordonnée périmée sur la page
+          que le client consulte est exactement le défaut que l'article vise.
+        -->
+        <h2 th:text="#{vitrine.contact.identite.titre}">Le garage</h2>
+        <div th:replace="~{fragments/legal :: identite}"></div>
+    </section>
+
+    <section>
+        <h2 th:text="#{vitrine.contact.horaires.titre}">Horaires d'ouverture</h2>
+        <!--
+          Les horaires viennent de plage_ouverture, la table dont sont déduits les
+          créneaux réservables : ce qui est affiché ici et ce que propose l'agenda ne
+          peuvent pas diverger. Les sept jours sont rendus, fermetures comprises —
+          sauter une ligne ne dirait pas au lecteur si le garage ferme ce jour-là ou
+          si la saisie manque.
+        -->
+        <dl class="horaires" th:attr="aria-label=#{vitrine.contact.horaires.aria}">
+            <th:block th:each="jour : ${horaires}">
+                <dt th:text="#{__${jour.cleJour()}__}">Lundi</dt>
+                <dd th:if="${jour.ferme()}" class="horaire-ferme" th:text="#{vitrine.horaires.ferme}">Fermé</dd>
+                <dd th:unless="${jour.ferme()}">
+                    <span th:each="plage, statut : ${jour.plages()}">
+                        <span th:text="${plage}">08:00 – 12:00</span><span th:unless="${statut.last}">, </span>
+                    </span>
+                </dd>
+            </th:block>
+        </dl>
+        <p class="aide" th:text="#{vitrine.contact.horaires.source}">
+            Ces horaires sont ceux qui déterminent les créneaux proposés à la réservation.
+        </p>
+    </section>
+
+    <section>
+        <h2 th:text="#{vitrine.contact.acces.titre}">Nous trouver</h2>
+        <p th:text="#{vitrine.contact.acces.corps}">Le garage se situe à l'adresse reprise ci-dessus.</p>
+        <!--
+          Plan d'accès = un LIEN sortant, pas une carte embarquée. Une carte interactive
+          exigerait du JavaScript tiers et un assouplissement de la CSP (script-src reste
+          'self'), et chargerait des tuiles depuis un domaine externe dès l'ouverture de
+          la page — donc un traceur potentiel sur une page publique, ce que le bandeau
+          cookies F25 ne couvre pas. La carte embarquée relève de F33, hors périmètre.
+          rel="noopener noreferrer" : le service externe n'obtient ni handle sur notre
+          fenêtre ni référent (la politique du site est déjà SAME_ORIGIN).
+          L'adresse est construite depuis la configuration, jamais recopiée.
+        -->
+        <p>
+            <a th:href="'https://www.openstreetmap.org/search?query=' + ${#uris.escapeQueryParam(garage.adresseLisible() + ', ' + garage.pays())}"
+               target="_blank" rel="noopener noreferrer"
+               th:text="#{vitrine.contact.acces.plan}">Ouvrir le plan d'accès (nouvel onglet)</a>
+        </p>
+    </section>
+
+    <section>
+        <h2 th:text="#{vitrine.contact.rdv.titre}">Prendre rendez-vous</h2>
+        <p th:text="#{vitrine.contact.rdv.corps}">Un rendez-vous se réserve en ligne depuis votre espace membre.</p>
+        <p class="actions-page">
+            <a class="btn-cta" sec:authorize="isAuthenticated()"
+               th:href="@{/mes-rendez-vous/nouveau}" th:text="#{accueil.action.reserver}">Prendre rendez-vous</a>
+            <a class="btn-cta" sec:authorize="!isAuthenticated()"
+               th:href="@{/inscription}" th:text="#{accueil.action.compte}">Créer mon compte</a>
+        </p>
+    </section>
+
+    <section>
+        <h2 th:text="#{vitrine.contact.legal.titre}">Informations légales</h2>
+        <nav th:attr="aria-label=#{legal.liens.aria}" aria-label="Documents légaux">
+            <div th:replace="~{fragments/legal :: liens}"></div>
+        </nav>
+    </section>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

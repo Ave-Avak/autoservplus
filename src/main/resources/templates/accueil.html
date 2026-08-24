@@ -4,25 +4,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>AutoServ+ — Votre garage en quelques clics</title>
-    <meta name="description" content="Réservez votre entretien automobile en ligne, suivez votre intervention et recevez votre facture. Garage indépendant en Belgique.">
+    <title th:text="#{accueil.titre} + ' — AutoServ+'">AutoServ+ — Votre garage en quelques clics</title>
+    <meta name="description" th:attr="content=#{accueil.meta.description}"
+          content="Réservez votre entretien automobile en ligne, suivez votre intervention et recevez votre facture. Garage indépendant en Belgique.">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <header class="entete">
-    <nav aria-label="Navigation principale">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
         <a class="marque" th:href="@{/}">AutoServ+</a>
+        <!--
+          L'accueil ne portait AUCUN lien public : ni catalogue, ni contact. La moitié
+          vitrine du site n'était atteignable qu'en connaissant les adresses.
+        -->
+        <ul class="menu">
+            <li><a th:href="@{/services}" th:text="#{nav.prestations}">Prestations</a></li>
+            <li><a th:href="@{/pieces}" th:text="#{nav.pieces}">Pièces</a></li>
+            <li><a th:href="@{/contact}" th:text="#{nav.contact}">Contact</a></li>
+        </ul>
         <ul class="menu menu-compte">
-            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}">Connexion</a></li>
+            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}" th:text="#{nav.connexion}">Connexion</a></li>
             <li sec:authorize="!isAuthenticated()">
-                <a class="btn-cta" th:href="@{/inscription}">Créer un compte</a></li>
-            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}">Mon compte</a></li>
+                <a class="btn-cta" th:href="@{/inscription}" th:text="#{accueil.action.compte}">Créer un compte</a></li>
+            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
             <li sec:authorize="isAuthenticated()">
                 <form th:action="@{/deconnexion}" method="post">
-                    <button type="submit" class="lien-bouton">Se déconnecter</button>
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
                 </form>
             </li>
         </ul>
@@ -31,21 +41,60 @@
 </header>
 
 <main id="contenu">
-    <h1>Votre garage en quelques clics</h1>
-    <p>Réservez votre entretien en ligne, suivez l'avancement de l'intervention
-        et recevez votre facture sans vous déplacer.</p>
-    <p sec:authorize="!isAuthenticated()">
-        <a class="btn-cta" th:href="@{/inscription}">Créer mon compte</a>
+    <h1 th:text="#{accueil.titre}">Votre garage en quelques clics</h1>
+    <p th:text="#{accueil.accroche}">
+        Réservez votre entretien en ligne, suivez l'avancement de l'intervention
+        et recevez votre facture sans vous déplacer.
     </p>
+
+    <p class="actions-page">
+        <!--
+          Un seul bouton orange par écran : la charte réserve l'orange à l'appel à
+          l'action principal, et deux boutons de même poids ne hiérarchisent plus rien.
+          Le second chemin est donc un lien, pas un bouton.
+        -->
+        <a class="btn-cta" sec:authorize="isAuthenticated()"
+           th:href="@{/mes-rendez-vous/nouveau}" th:text="#{accueil.action.reserver}">Prendre rendez-vous</a>
+        <a class="btn-cta" sec:authorize="!isAuthenticated()"
+           th:href="@{/inscription}" th:text="#{accueil.action.compte}">Créer mon compte</a>
+        <a th:href="@{/services}" th:text="#{accueil.action.catalogue}">Voir les prestations</a>
+    </p>
+
+    <section>
+        <h2 th:text="#{accueil.atouts.titre}">Ce que vous pouvez faire ici</h2>
+        <ul class="grille-articles">
+            <li class="carte">
+                <h3 th:text="#{accueil.atout.rdv.titre}">Réserver un créneau</h3>
+                <p th:text="#{accueil.atout.rdv.corps}">Choisissez votre prestation et l'heure qui vous arrange.</p>
+            </li>
+            <li class="carte">
+                <h3 th:text="#{accueil.atout.suivi.titre}">Suivre votre véhicule</h3>
+                <p th:text="#{accueil.atout.suivi.corps}">L'avancement des travaux est visible depuis votre espace membre.</p>
+            </li>
+            <li class="carte">
+                <h3 th:text="#{accueil.atout.facture.titre}">Retrouver vos documents</h3>
+                <p th:text="#{accueil.atout.facture.corps}">Factures et historique restent accessibles depuis votre compte.</p>
+            </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2 th:text="#{accueil.venir.titre}">Nous rendre visite</h2>
+        <p th:text="#{accueil.venir.corps}">
+            Horaires, adresse et coordonnées du garage sont repris sur la page de contact.
+        </p>
+        <p><a th:href="@{/contact}" th:text="#{accueil.venir.lien}">Horaires et contact</a></p>
+    </section>
 </main>
 
 <footer class="pied">
     <ul>
-        <li><a th:href="@{/cgv}">CGV</a></li>
-        <li><a th:href="@{/mentions-legales}">Mentions légales</a></li>
-        <li><a th:href="@{/confidentialite}">Confidentialité</a></li>
+        <li><a th:href="@{/contact}" th:text="#{nav.contact}">Contact</a></li>
+        <li><a th:href="@{/cgv}" th:text="#{legal.lien.cgv}">CGV</a></li>
+        <li><a th:href="@{/mentions-legales}" th:text="#{legal.lien.mentions}">Mentions légales</a></li>
+        <li><a th:href="@{/confidentialite}" th:text="#{legal.lien.confidentialite}">Confidentialité</a></li>
     </ul>
-    <p>&copy; 2026 AutoServ+</p>
+    <p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p>
 </footer>
 
 <div th:replace="~{fragments/cookies :: bandeau}"></div>

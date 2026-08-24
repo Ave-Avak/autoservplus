@@ -41,6 +41,14 @@ public class SecuriteConfig {
                         .requestMatchers("/", "/accueil", "/services/**", "/pieces/**",
                                 "/inscription/**", "/connexion", "/mot-de-passe/**",
                                 "/cgv", "/mentions-legales", "/confidentialite",
+                                // Page de contact : l article VI.45 CDE veut que
+                                // l identite du professionnel, son adresse, son
+                                // telephone et son courriel soient accessibles AVANT
+                                // que le consommateur ne soit lie — donc avant toute
+                                // creation de compte. Derriere une authentification,
+                                // l information arriverait apres le moment ou elle
+                                // doit eclairer la decision.
+                                "/contact",
                                 // Bandeau et gestion des cookies (F25) : la question du
                                 // consentement se pose des la premiere visite, donc avant
                                 // toute connexion. Exiger une authentification pour y

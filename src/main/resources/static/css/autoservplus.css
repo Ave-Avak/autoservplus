@@ -587,21 +587,32 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     font-style: italic;
 }
 
-/* Identite legale du garage : liste de definitions rendue en deux colonnes sur grand
-   ecran, empilee au telephone. */
-.identite-garage {
+/* Listes de definition « libelle / valeur » : identite legale du garage (pages
+   legales et contact) et horaires d ouverture. Meme mise en page parce que c est
+   la meme structure de lecture ; deux blocs de regles identiques finiraient par
+   diverger a la premiere retouche. */
+.identite-garage,
+.horaires {
     display: grid;
     grid-template-columns: max-content 1fr;
     gap: var(--espace-s) var(--espace-m);
     margin: var(--espace-m) 0;
 }
 
-.identite-garage dt { font-weight: 600; color: var(--gris-700); }
-.identite-garage dd { margin: 0; }
+.identite-garage dt,
+.horaires dt { font-weight: 600; color: var(--gris-700); }
+.identite-garage dd,
+.horaires dd { margin: 0; }
+
+/* Fermeture signalee par le MOT, jamais par la seule couleur (WCAG 1.4.1) : la
+   teinte ne fait que renforcer une information deja lisible. */
+.horaire-ferme { color: var(--gris-500); }
 
 @media (max-width: 640px) {
-    .identite-garage { grid-template-columns: 1fr; gap: 0.125rem var(--espace-m); }
-    .identite-garage dd { margin-bottom: var(--espace-s); }
+    .identite-garage,
+    .horaires { grid-template-columns: 1fr; gap: 0.125rem var(--espace-m); }
+    .identite-garage dd,
+    .horaires dd { margin-bottom: var(--espace-s); }
 }
 
 /* Renvois croises entre les trois documents. */
