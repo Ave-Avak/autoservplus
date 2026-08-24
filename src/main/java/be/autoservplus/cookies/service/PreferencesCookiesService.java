@@ -6,6 +6,8 @@ import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.ConsentementRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.legal.domain.TypeDocumentVersionne;
+import be.autoservplus.legal.service.VersionsDocumentsService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -43,13 +45,16 @@ public class PreferencesCookiesService {
 
     private final UtilisateurRepository utilisateurs;
     private final ConsentementRepository consentements;
+    private final VersionsDocumentsService versionsDocuments;
     private final Clock horloge;
 
     public PreferencesCookiesService(UtilisateurRepository utilisateurs,
                                      ConsentementRepository consentements,
+                                     VersionsDocumentsService versionsDocuments,
                                      Clock horloge) {
         this.utilisateurs = utilisateurs;
         this.consentements = consentements;
+        this.versionsDocuments = versionsDocuments;
         this.horloge = horloge;
     }
 
@@ -83,10 +88,15 @@ public class PreferencesCookiesService {
             return;
         }
         Instant maintenant = horloge.instant();
+        // Une seule resolution pour les deux lignes, comme pour l instant : les deux
+        // finalites sont consenties sur UN document unique, et deux lectures pourraient
+        // en theorie encadrer une publication et attribuer au meme geste deux versions
+        // differentes.
+        String version = versionsDocuments.versionCourante(TypeDocumentVersionne.COOKIES);
         consentements.save(preuve(titulaire.get(), TypeDocumentConsentement.COOKIES_ANALYTIQUE,
-                preferences.analytique(), adresseIp, maintenant));
+                preferences.analytique(), adresseIp, maintenant, version));
         consentements.save(preuve(titulaire.get(), TypeDocumentConsentement.COOKIES_MARKETING,
-                preferences.marketing(), adresseIp, maintenant));
+                preferences.marketing(), adresseIp, maintenant, version));
     }
 
     /**
@@ -102,8 +112,8 @@ public class PreferencesCookiesService {
     }
 
     private Consentement preuve(Utilisateur titulaire, TypeDocumentConsentement finalite,
-                                boolean accorde, String adresseIp, Instant maintenant) {
-        return Consentement.decision(titulaire, finalite,
-                Consentement.COOKIES_VERSION_COURANTE, accorde, adresseIp, maintenant);
+                                boolean accorde, String adresseIp, Instant maintenant,
+                                String version) {
+        return Consentement.decision(titulaire, finalite, version, accorde, adresseIp, maintenant);
     }
 }

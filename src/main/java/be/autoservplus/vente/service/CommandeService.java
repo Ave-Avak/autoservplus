@@ -5,6 +5,8 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.identite.repository.ConsentementRepository;
+import be.autoservplus.legal.domain.TypeDocumentVersionne;
+import be.autoservplus.legal.service.VersionsDocumentsService;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Paiement;
@@ -56,6 +58,7 @@ public class CommandeService {
     private final PanierRepository paniers;
     private final ConsentementRepository consentements;
     private final GenerateurNumeroCommande numeros;
+    private final VersionsDocumentsService versionsDocuments;
     private final Clock horloge;
 
     public CommandeService(CommandeRepository commandes,
@@ -63,12 +66,14 @@ public class CommandeService {
                            PanierRepository paniers,
                            ConsentementRepository consentements,
                            GenerateurNumeroCommande numeros,
+                           VersionsDocumentsService versionsDocuments,
                            Clock horloge) {
         this.commandes = commandes;
         this.paiements = paiements;
         this.paniers = paniers;
         this.consentements = consentements;
         this.numeros = numeros;
+        this.versionsDocuments = versionsDocuments;
         this.horloge = horloge;
     }
 
@@ -130,8 +135,14 @@ public class CommandeService {
 
         // Preuve contractuelle F24, dans la MEME transaction : un rollback de la
         // conversion emporte la preuve — jamais de consentement orphelin.
+        // La version vient de version_document (F24) et non plus d une constante : elle
+        // designe une ligne dont le texte est archive, donc une preuve qui dit QUOI a
+        // ete accepte et pas seulement QUE quelque chose l a ete. Resolue DANS la
+        // transaction : une version publiee entre l affichage du recapitulatif et la
+        // validation serait de toute facon celle que le membre vient de voir a l ecran.
         consentements.save(Consentement.acceptation(panier.getMembre(),
-                TypeDocumentConsentement.CGV, Consentement.CGV_VERSION_COURANTE,
+                TypeDocumentConsentement.CGV,
+                versionsDocuments.versionCourante(TypeDocumentVersionne.CGV),
                 adresseIp, horloge.instant()));
 
         // Preuve VI.53 (F12), ecrite UNIQUEMENT si la question a ete posee — donc si
@@ -145,7 +156,7 @@ public class CommandeService {
         if (panierDeServices) {
             consentements.save(Consentement.decision(panier.getMembre(),
                     TypeDocumentConsentement.RENONCIATION_RETRACTATION,
-                    Consentement.RENONCIATION_VERSION_COURANTE,
+                    versionsDocuments.versionCourante(TypeDocumentVersionne.RENONCIATION_RETRACTATION),
                     renonciationRetenue, adresseIp, horloge.instant()));
         }
 

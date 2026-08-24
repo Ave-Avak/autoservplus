@@ -248,7 +248,7 @@ class ConsentementCookiesIT {
             assertThat(analytique.get(0).getAdresseIp()).isNotBlank();
             assertThat(analytique.get(0).getDateConsentement()).isNotNull();
             assertThat(analytique.get(0).getVersionAcceptee())
-                    .isEqualTo(Consentement.COOKIES_VERSION_COURANTE);
+                    .isEqualTo("COOKIES-2026-01");
 
             assertThat(marketing).hasSize(1);
             assertThat(marketing.get(0).isAccorde()).isFalse();

@@ -565,7 +565,7 @@ class ExportDonneesServiceTest {
             compteSansDonnees();
             when(consentements.pourMembre(EMAIL)).thenReturn(List.of(
                     Consentement.acceptation(marie, TypeDocumentConsentement.CGV,
-                            Consentement.CGV_VERSION_COURANTE, "81.240.10.7",
+                            "CGV-2026-01", "81.240.10.7",
                             Instant.parse("2026-03-01T07:59:00Z"))));
 
             List<ExportDonnees.ConsentementExport> exportes =
@@ -573,7 +573,7 @@ class ExportDonneesServiceTest {
 
             assertThat(exportes).singleElement().satisfies(preuve -> {
                 assertThat(preuve.typeDocument()).isEqualTo("CGV");
-                assertThat(preuve.versionAcceptee()).isEqualTo(Consentement.CGV_VERSION_COURANTE);
+                assertThat(preuve.versionAcceptee()).isEqualTo("CGV-2026-01");
                 assertThat(preuve.accorde()).isTrue();
                 assertThat(preuve.adresseIp()).isEqualTo("81.240.10.7");
                 assertThat(preuve.dateConsentement())
@@ -587,7 +587,7 @@ class ExportDonneesServiceTest {
             compteSansDonnees();
             when(consentements.pourMembre(EMAIL)).thenReturn(List.of(
                     Consentement.acceptation(marie, TypeDocumentConsentement.CGV,
-                            Consentement.CGV_VERSION_COURANTE, "81.240.10.7", MAINTENANT)));
+                            "CGV-2026-01", "81.240.10.7", MAINTENANT)));
 
             assertThat(documentJson(service.assembler(EMAIL)))
                     .contains("\"adresse_ip\"")

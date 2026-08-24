@@ -33,44 +33,6 @@ import java.util.Objects;
 @EntityListeners(AuditingEntityListener.class)
 public class Consentement {
 
-    /**
-     * Version des CGV en vigueur, figee sur chaque preuve d acceptation.
-     * Raccourci V1 assume : le versionnage complet des documents (numero, date
-     * d entree en vigueur, re-acceptation a chaque modification — F24) est une
-     * evolution ; d ici la, cette constante est l unique source de la version.
-     */
-    public static final String CGV_VERSION_COURANTE = "CGV-2026-01";
-
-    /**
-     * Version de la politique cookies en vigueur, figee sur chaque preuve de choix
-     * (F25).
-     *
-     * <p><b>F24 n est pas ici une dette de confort : c est un prerequis de
-     * conformite.</b> Un consentement ne vaut que pour les finalites effectivement
-     * presentees au moment ou il a ete donne. Le jour ou une finalite sera ajoutee ou
-     * elargie, les choix recueillis sur l ancienne liste cesseront de couvrir la
-     * nouvelle, et il faudra <b>reposer la question</b> — sans quoi un traceur serait
-     * charge sur la foi d un accord qui ne le visait pas, c est-a-dire sans
-     * consentement. Le declencheur de cette redemande est le changement de version,
-     * donc precisement ce que cette constante devra cesser d etre.</p>
-     *
-     * <p>En V1 le risque est nul et le raccourci tenable, parce qu <b>aucun traceur
-     * optionnel n est installe</b> : rien ne se charge, quel que soit le choix. La
-     * contrainte devient bloquante au moment ou un traceur reel sera cable — le
-     * versionnage des documents doit alors etre livre <b>avant</b>, pas apres.</p>
-     */
-    public static final String COOKIES_VERSION_COURANTE = "COOKIES-2026-01";
-
-    /**
-     * Version du texte de renonciation VI.53 presente au client (F12).
-     *
-     * <p>Meme dette que {@link #CGV_VERSION_COURANTE} : une constante, pas une table
-     * de versions. Elle deviendra bloquante avec F24 — une renonciation ne vaut que
-     * pour le texte reellement montre, et changer ce texte sans changer la version
-     * ferait couvrir le nouveau libelle par des accords donnes sur l ancien.</p>
-     */
-    public static final String RENONCIATION_VERSION_COURANTE = "VI53-2026-01";
-
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -85,6 +47,21 @@ public class Consentement {
     @Column(name = "type_document", nullable = false, length = 30, updatable = false)
     private TypeDocumentConsentement typeDocument;
 
+    /**
+     * Version du document acceptee, figee sur la preuve.
+     *
+     * <p>Depuis F24 cette valeur n est plus tiree d une constante compilee mais
+     * <b>resolue en base</b> par {@code VersionsDocumentsService}, et elle designe une
+     * ligne reelle de {@code version_document} dont le texte est archive langue par
+     * langue. C est ce qui manquait : la colonne existait depuis le socle, mais rien ne
+     * reliait le numero qu elle porte au texte qu il designe — une preuve pouvait dire
+     * QU ON avait accepte, jamais QUOI.</p>
+     *
+     * <p>Aucune FK vers {@code version_document} : la preuve doit survivre a tout,
+     * y compris a une ligne d archive retiree par erreur. Une contrainte referentielle
+     * ferait dependre l existence de la preuve de celle du texte, alors que c est la
+     * preuve qui prime.</p>
+     */
     @NotNull
     @Column(name = "version_acceptee", nullable = false, length = 20, updatable = false)
     private String versionAcceptee;

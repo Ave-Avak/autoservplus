@@ -5,6 +5,8 @@ import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Consentement;
+import be.autoservplus.legal.domain.TypeDocumentVersionne;
+import be.autoservplus.legal.service.VersionsDocumentsService;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -37,6 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -49,11 +52,16 @@ class CommandeServiceTest {
     private static final String IP = "203.0.113.7";
     private static final Instant MAINTENANT = Instant.parse("2026-09-14T09:00:00Z");
 
+    /** Identifiant amorce par V33 : celui-la meme que portait la constante supprimee. */
+    private static final String VERSION_CGV = "CGV-2026-01";
+    private static final String VERSION_VI53 = "VI53-2026-01";
+
     @Mock private CommandeRepository commandes;
     @Mock private PaiementRepository paiements;
     @Mock private PanierRepository paniers;
     @Mock private ConsentementRepository consentements;
     @Mock private GenerateurNumeroCommande numeros;
+    @Mock private VersionsDocumentsService versionsDocuments;
 
     private CommandeService service;
 
@@ -64,7 +72,7 @@ class CommandeServiceTest {
     @BeforeEach
     void setUp() {
         service = new CommandeService(commandes, paiements, paniers, consentements, numeros,
-                Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
+                versionsDocuments, Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
 
         marie = new Utilisateur(EMAIL, "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         Categorie freinage = new Categorie("FRE", "Freinage", TypeCategorie.PIECE);
@@ -87,6 +95,13 @@ class CommandeServiceTest {
     private void conversionPossible() {
         when(numeros.prochain()).thenReturn("CMD-2026-0001");
         when(commandes.saveAndFlush(any(Commande.class))).thenAnswer(inv -> inv.getArgument(0));
+        // Depuis F24 la version figee sur la preuve est resolue en base et non lue sur une
+        // constante. lenient : les paniers de pieces ne posent pas la question VI.53, donc
+        // la seconde resolution n est pas toujours atteinte.
+        lenient().when(versionsDocuments.versionCourante(TypeDocumentVersionne.CGV))
+                .thenReturn(VERSION_CGV);
+        lenient().when(versionsDocuments.versionCourante(TypeDocumentVersionne.RENONCIATION_RETRACTATION))
+                .thenReturn(VERSION_VI53);
     }
 
     @Nested
@@ -168,7 +183,7 @@ class CommandeServiceTest {
             Consentement preuve = captor.getValue();
             assertThat(preuve.getUtilisateur()).isSameAs(marie);
             assertThat(preuve.getTypeDocument()).isEqualTo(TypeDocumentConsentement.CGV);
-            assertThat(preuve.getVersionAcceptee()).isEqualTo(Consentement.CGV_VERSION_COURANTE);
+            assertThat(preuve.getVersionAcceptee()).isEqualTo(VERSION_CGV);
             assertThat(preuve.isAccorde()).isTrue();
             assertThat(preuve.getAdresseIp()).isEqualTo(IP);
             assertThat(preuve.getDateConsentement()).isEqualTo(MAINTENANT);

@@ -166,7 +166,7 @@ class ExportDonneesIT {
                 new Vehicule(membre, plaque, marque, "Modele", Motorisation.DIESEL));
 
         consentements.save(Consentement.acceptation(membre, TypeDocumentConsentement.CGV,
-                Consentement.CGV_VERSION_COURANTE, ip, Instant.parse("2026-03-01T07:59:00Z")));
+                "CGV-2026-01", ip, Instant.parse("2026-03-01T07:59:00Z")));
 
         Panier panier = new Panier(membre);
         panier.ajouterPiece(plaquettes, 2);

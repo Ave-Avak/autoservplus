@@ -86,7 +86,7 @@ class PreuveConsentementCookiesIT {
                 preuveUnique(marie.getEmail(), TypeDocumentConsentement.COOKIES_ANALYTIQUE);
         assertThat(analytique.isAccorde()).isTrue();
         assertThat(analytique.getVersionAcceptee())
-                .isEqualTo(Consentement.COOKIES_VERSION_COURANTE);
+                .isEqualTo("COOKIES-2026-01");
         assertThat(analytique.getAdresseIp()).isEqualTo(IP);
         assertThat(analytique.getDateConsentement()).isNotNull();
 

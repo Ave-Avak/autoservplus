@@ -161,7 +161,7 @@ class CommandeTemplatesIT {
                 .findByUtilisateurEmailIgnoreCaseAndTypeDocument(
                         "marie@exemple.be", TypeDocumentConsentement.CGV);
         assertThat(preuves).hasSize(1);
-        assertThat(preuves.get(0).getVersionAcceptee()).isEqualTo(Consentement.CGV_VERSION_COURANTE);
+        assertThat(preuves.get(0).getVersionAcceptee()).isEqualTo("CGV-2026-01");
         assertThat(preuves.get(0).isAccorde()).isTrue();
         assertThat(preuves.get(0).getAdresseIp()).isEqualTo("127.0.0.1");
 

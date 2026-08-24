@@ -2,6 +2,8 @@ package be.autoservplus.cookies.service;
 
 import be.autoservplus.cookies.domain.PreferencesCookies;
 import be.autoservplus.identite.domain.Consentement;
+import be.autoservplus.legal.domain.TypeDocumentVersionne;
+import be.autoservplus.legal.service.VersionsDocumentsService;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -27,6 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 /**
@@ -43,21 +46,28 @@ class PreferencesCookiesServiceTest {
     private static final String EMAIL = "marie@exemple.be";
     private static final String IP = "81.246.0.12";
 
+    /** Identifiant amorce par V33 : celui-la meme que portait la constante supprimee. */
+    private static final String VERSION_COOKIES = "COOKIES-2026-01";
+
     @Mock private UtilisateurRepository utilisateurs;
     @Mock private ConsentementRepository consentements;
+    @Mock private VersionsDocumentsService versionsDocuments;
 
     private PreferencesCookiesService service;
     private Utilisateur marie;
 
     @BeforeEach
     void setUp() {
-        service = new PreferencesCookiesService(utilisateurs, consentements,
+        service = new PreferencesCookiesService(utilisateurs, consentements, versionsDocuments,
                 Clock.fixed(MAINTENANT, BRUXELLES));
         marie = new Utilisateur(EMAIL, "peu-importe", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
     }
 
     private void compteExiste() {
         when(utilisateurs.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(marie));
+        // La version figee sur les deux preuves vient desormais de version_document (F24).
+        lenient().when(versionsDocuments.versionCourante(TypeDocumentVersionne.COOKIES))
+                .thenReturn(VERSION_COOKIES);
     }
 
     private List<Consentement> preuvesEcrites() {
@@ -159,7 +169,7 @@ class PreferencesCookiesServiceTest {
             assertThat(preuvesEcrites()).allSatisfy(preuve -> {
                 assertThat(preuve.getAdresseIp()).isEqualTo(IP);
                 assertThat(preuve.getVersionAcceptee())
-                        .isEqualTo(Consentement.COOKIES_VERSION_COURANTE);
+                        .isEqualTo(VERSION_COOKIES);
                 assertThat(preuve.getUtilisateur()).isSameAs(marie);
             });
         }
