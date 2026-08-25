@@ -60,6 +60,26 @@ le navigateur, c'est le tunnel, et le tunnel est en HTTPS.
 
 `URL_PUBLIQUE` reste vide pour l'instant — l'adresse n'existe pas encore.
 
+> **Une variable présente mais vide n'est pas une variable absente.** `application.yml`
+> écrit ses valeurs par défaut sous la forme `${GARAGE_RUE:Rue de l'Atelier}` : Spring
+> ne prend le repli que si la variable est **introuvable**. Or `cp .env.example .env`
+> recopie douze lignes `GARAGE_*=` vides, et Docker Compose les transmet comme des
+> variables définies à la chaîne vide. Les laisser telles quelles **n'applique pas** les
+> valeurs de démonstration — cela vide l'identité du garage sur la facture, les mentions
+> légales et la page de contact, sans lever la moindre erreur.
+>
+> **Pour chaque variable : la renseigner, ou supprimer la ligne.** Ne jamais laisser une
+> ligne vide en comptant sur le défaut.
+>
+> `MOLLIE_PROFILE_ID` mérite la même vigilance, avec une conséquence plus brutale : avec
+> un jeton d'accès, un profil vide fait **refuser le démarrage** — ce qui vaut mieux que
+> ses deux alternatives, rompre devant un client ou simuler en silence alors qu'un
+> identifiant réel a été fourni.
+
+Sur le choix de l'identifiant Mollie lui-même — clé API `test_`/`live_`, jeton
+d'organisation `access_`, ou jeton d'accès avancé, et lequel des trois oblige à
+renseigner `MOLLIE_PROFILE_ID` — le commentaire de `.env.example` fait référence.
+
 ### 2. Démarrage et chargement des données
 
 ```bash
@@ -195,6 +215,26 @@ Deux autres fins possibles pour la ligne de retour :
 > tunnel change à chaque relance. Le parcours aboutit malgré tout : c'est le retour du
 > membre qui réconcilie, et sa ligne porte alors « facture emise » puisqu'il est le
 > premier à constater. Voir « Limites connues ».
+
+**Reprendre un paiement sans refaire le panier.** Un paiement qui échoue ou qu'on
+abandonne **ne détruit pas la commande** : le panier a été converti, la commande existe,
+elle reste `EN_ATTENTE_PAIEMENT` et repayable pendant le délai RM-21 de **30 minutes**,
+après quoi le job d'expiration l'annule. Le bouton « Procéder au paiement » se trouve
+sur **la page de confirmation de cette commande** :
+
+```
+https://<adresse-du-tunnel>/commande/<reference>/confirmation
+```
+
+C'est ce qui a permis de relancer le parcours après le blocage CSP, sans reconstituer le
+panier — la référence figure dans l'historique du navigateur, qui est le chemin le plus
+court pour y revenir.
+
+> **« Mes commandes » ne renvoie pas vers cette page.** `/commandes` et
+> `/commandes/{référence}` proposent le détail, la facture, la note de crédit et la
+> demande d'annulation, mais aucun lien de reprise de paiement. Une commande impayée s'y
+> voit donc sans pouvoir s'y payer : il faut passer par l'historique ou retaper l'adresse
+> ci-dessus. Dette d'ergonomie inscrite au registre, hors périmètre de ce lot.
 
 ### 6. Arrêt
 
