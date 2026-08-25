@@ -41,16 +41,41 @@ class MollieProprietesTest {
     class Forme {
 
         @Test
-        @DisplayName("le prefixe access_ designe un jeton d organisation")
-        void jetonOrganisation() {
-            assertThat(avec("access_abc123", "pfl_1").estJetonOrganisation()).isTrue();
+        @DisplayName("une cle API test_ ou live_ porte deja son profil et son mode")
+        void cleApi() {
+            assertThat(avec("test_abc123", null).exigeContexteOrganisation()).isFalse();
+            assertThat(avec("live_abc123", null).exigeContexteOrganisation()).isFalse();
         }
 
         @Test
-        @DisplayName("une cle API test_ ou live_ n en est pas un")
-        void cleApi() {
-            assertThat(avec("test_abc123", null).estJetonOrganisation()).isFalse();
-            assertThat(avec("live_abc123", null).estJetonOrganisation()).isFalse();
+        @DisplayName("le jeton d organisation access_ exige le contexte")
+        void jetonOrganisation() {
+            assertThat(avec("access_abc123", "pfl_1").exigeContexteOrganisation()).isTrue();
+        }
+
+        @Test
+        @DisplayName("un jeton d acces avance l exige aussi, quel que soit son prefixe")
+        void jetonAvance() {
+            // Mollie a unifie ses pages de jetons et propose des « jetons d acces
+            // avances » dont la documentation publique ne donne aucun prefixe. Une
+            // liste de prefixes acceptes aurait pris ceux-la pour des cles API et
+            // omis profileId et testmode — c est-a-dire encaisse dans le mauvais mode
+            // sans que rien ne le signale. La reconnaissance se fait donc par
+            // exclusion de la seule forme dont le prefixe EST documente.
+            assertThat(avec("adv_inconnu", "pfl_1").exigeContexteOrganisation()).isTrue();
+            assertThat(avec("mollie_at_inconnu", "pfl_1").exigeContexteOrganisation()).isTrue();
+            assertThat(avec("sans_prefixe_du_tout", "pfl_1").exigeContexteOrganisation())
+                    .isTrue();
+        }
+
+        @Test
+        @DisplayName("aucun identifiant : rien a exiger, c est le cas du repli")
+        void aucunIdentifiant() {
+            // Sans cette garde, le repli sur la passerelle bouchonnee refuserait de
+            // demarrer faute de profil — une chaine vide n etant pas un prefixe de
+            // cle API.
+            assertThat(avec(null, null).exigeContexteOrganisation()).isFalse();
+            assertThat(avec("  ", null).exigeContexteOrganisation()).isFalse();
         }
 
         @Test
@@ -59,7 +84,10 @@ class MollieProprietesTest {
             // Une variable d environnement copiee-collee traine volontiers un espace
             // ou un retour a la ligne ; l en-tete Authorization ne le pardonnerait pas.
             assertThat(avec("  test_abc123\n", null).jeton()).isEqualTo("test_abc123");
-            assertThat(avec(" access_abc ", "pfl_1").estJetonOrganisation()).isTrue();
+            // Et sans le strip, « test_... » precede d un espace cesserait d etre
+            // reconnu comme une cle API : profileId partirait a tort.
+            assertThat(avec("  test_abc123\n", null).exigeContexteOrganisation()).isFalse();
+            assertThat(avec(" access_abc ", "pfl_1").exigeContexteOrganisation()).isTrue();
         }
     }
 
@@ -68,17 +96,30 @@ class MollieProprietesTest {
     class Coherence {
 
         @Test
-        @DisplayName("jeton d organisation sans profil : refus, avec la marche a suivre")
+        @DisplayName("jeton d acces sans profil : refus, avec la marche a suivre")
         void jetonSansProfil() {
-            // Mollie exige profileId a la creation d un paiement quand le jeton
+            // Mollie exige profileId a la creation d un paiement quand l identifiant
             // authentifie une organisation. Sans lui, l echec surviendrait au premier
             // achat d un client plutot qu au demarrage.
             assertThatThrownBy(() -> avec("access_abc123", null).verifierCoherence())
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("profil-id")
-                    .hasMessageContaining("MOLLIE_PROFILE_ID");
+                    .hasMessageContaining("MOLLIE_PROFILE_ID")
+                    // Le message doit nommer les DEUX formes : un exploitant qui lit
+                    // « access_... » alors que son jeton commence autrement conclurait
+                    // que le diagnostic ne le concerne pas.
+                    .hasMessageContaining("access_")
+                    .hasMessageContaining("avance");
             assertThatThrownBy(() -> avec("access_abc123", "  ").verifierCoherence())
                     .isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("jeton d acces avance sans profil : meme refus, meme marche a suivre")
+        void jetonAvanceSansProfil() {
+            assertThatThrownBy(() -> avec("adv_inconnu", null).verifierCoherence())
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("MOLLIE_PROFILE_ID");
         }
 
         @Test

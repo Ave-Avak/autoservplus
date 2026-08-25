@@ -76,9 +76,9 @@ public class MollieGateway implements PrestatairePaiement {
         this.proprietes = proprietes;
         JOURNAL.info("Prestataire de paiement Mollie actif (mode {}{}).",
                 proprietes.modeTest() ? "TEST" : "REEL",
-                proprietes.estJetonOrganisation()
-                        ? ", jeton d organisation, profil " + proprietes.profilId()
-                        : ", cle API");
+                proprietes.exigeContexteOrganisation()
+                        ? ", jeton d acces, profil " + proprietes.profilId()
+                        : ", cle API de site");
     }
 
     // --- creation ---------------------------------------------------------------------
@@ -152,13 +152,13 @@ public class MollieGateway implements PrestatairePaiement {
     }
 
     /**
-     * Un jeton d acces organisation n est rattache a aucun profil de site : Mollie
-     * ne peut deduire ni ou imputer le paiement, ni s il est de test. Une cle API
-     * porte les deux, et Mollie refuse alors ces memes champs — d ou la condition
-     * plutot qu un envoi systematique.
+     * Un jeton d acces n est rattache a aucun profil de site : Mollie ne peut deduire
+     * ni ou imputer le paiement, ni s il est de test. Une cle API porte les deux, et
+     * Mollie refuse alors ces memes champs — d ou la condition plutot qu un envoi
+     * systematique.
      */
     private void ajouterContexteOrganisation(Map<String, Object> corps) {
-        if (proprietes.estJetonOrganisation()) {
+        if (proprietes.exigeContexteOrganisation()) {
             corps.put("profileId", proprietes.profilId());
             corps.put("testmode", proprietes.modeTest());
         }
@@ -205,7 +205,7 @@ public class MollieGateway implements PrestatairePaiement {
     }
 
     private java.util.Optional<Boolean> modeTestEventuel() {
-        return proprietes.estJetonOrganisation()
+        return proprietes.exigeContexteOrganisation()
                 ? java.util.Optional.of(proprietes.modeTest())
                 : java.util.Optional.empty();
     }
@@ -244,7 +244,7 @@ public class MollieGateway implements PrestatairePaiement {
                 "currency", demande.devise(),
                 "value", montantMollie(demande.montantTvac())));
         corps.put("description", "Remboursement " + demande.referencePrestataire());
-        if (proprietes.estJetonOrganisation()) {
+        if (proprietes.exigeContexteOrganisation()) {
             // Pas de profileId ici : le Refund se rattache au paiement d origine, qui
             // porte deja son profil. Seul le mode reste a preciser.
             corps.put("testmode", proprietes.modeTest());
