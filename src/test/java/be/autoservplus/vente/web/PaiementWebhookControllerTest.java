@@ -1,14 +1,19 @@
 package be.autoservplus.vente.web;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.vente.service.IssueRelecture;
 import be.autoservplus.vente.service.PaiementService;
+import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.service.PrestataireIndisponibleException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -16,7 +21,9 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -30,6 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = PaiementWebhookController.class,
         excludeAutoConfiguration = ThymeleafAutoConfiguration.class)
 @Import(PaiementWebhookControllerTest.SecuriteTest.class)
+@ExtendWith(OutputCaptureExtension.class)
 @DisplayName("PaiementWebhookController")
 class PaiementWebhookControllerTest {
 
@@ -68,11 +76,36 @@ class PaiementWebhookControllerTest {
 
     @Test
     @DisplayName("POST anonyme sans CSRF : 200, l'identifiant est delegue au service")
-    void notificationAnonymeAcceptee() throws Exception {
+    void notificationAnonymeAcceptee(CapturedOutput journal) throws Exception {
+        doReturn(new IssueRelecture(StatutPaiement.REUSSI,
+                IssueRelecture.Effet.FACTURE_EMISE))
+                .when(service).traiterNotification("tr_fictif_0001");
+
         mvc.perform(post("/webhooks/paiement").param("id", "tr_fictif_0001"))
                 .andExpect(status().isOk());
 
         verify(service).traiterNotification("tr_fictif_0001");
+        // Formulation verrouillee ici parce que docs/deploiement.md la cite mot pour
+        // mot : une reformulation silencieuse rendrait la documentation fausse.
+        assertThat(journal).contains("Notification du prestataire pour le paiement "
+                + "tr_fictif_0001 : statut relu = REUSSI, commande passee PAYEE, "
+                + "facture emise.");
+    }
+
+    @Test
+    @DisplayName("prestataire injoignable : aucune ligne n annonce un statut non relu")
+    void pasDeTraceQuandLeStatutNAPuEtreRelu(CapturedOutput journal) {
+        // Le 500 provoque un rejeu ; ecrire « statut relu = ... » alors que la
+        // relecture a echoue rendrait la trace mensongere au moment exact ou
+        // l exploitant s y fie.
+        doThrow(new PrestataireIndisponibleException("injoignable"))
+                .when(service).traiterNotification("tr_muet");
+
+        assertThatThrownBy(() -> mvc.perform(
+                post("/webhooks/paiement").param("id", "tr_muet")))
+                .hasRootCauseInstanceOf(PrestataireIndisponibleException.class);
+
+        assertThat(journal).doesNotContain("Notification du prestataire pour le paiement tr_muet");
     }
 
     @Test

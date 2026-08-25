@@ -17,9 +17,12 @@ import be.autoservplus.vente.service.PanierService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -63,6 +66,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Testcontainers
 @Transactional
 @WithMockUser(username = "marie@exemple.be")
+@ExtendWith(OutputCaptureExtension.class)
 @DisplayName("Parcours marchand complet par l interface (bouchon)")
 class ParcoursPaiementSimuleIT {
 
@@ -273,5 +277,58 @@ class ParcoursPaiementSimuleIT {
     void referenceInconnue() throws Exception {
         mvc.perform(get("/paiement-fictif/tr_inexistant"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("notification puis retour : deux lignes distinctes, une seule transition")
+    void lesDeuxDeclencheursSeLisentCoteACote(CapturedOutput journal) throws Exception {
+        // docs/deploiement.md §B.5 promet de « voir les deux arriver tour a tour, sans
+        // double facture ». Avant ce lot la promesse n etait pas tenable : aucune ligne
+        // de journal ne distinguait le retour du membre de la notification serveur a
+        // serveur, et rien ne disait laquelle des deux avait ecrit quelque chose.
+        UUID reference = commander();
+        String urlPaiement = urlDePaiement(reference);
+        String referencePrestataire = urlPaiement.substring(urlPaiement.lastIndexOf('/') + 1);
+        String numero = commandes.findByReference(reference).orElseThrow().getNumero();
+
+        // Le paiement aboutit chez le prestataire sans que rien ne l ait encore
+        // constate ici : c est la notification qui arrive la premiere.
+        prestataireFictif.programmerStatut(referencePrestataire, StatutPaiement.REUSSI);
+        mvc.perform(post("/webhooks/paiement").param("id", referencePrestataire))
+                .andExpect(status().isOk());
+
+        assertThat(journal).contains("Notification du prestataire pour le paiement "
+                + referencePrestataire + " : statut relu = REUSSI, commande passee PAYEE, "
+                + "facture emise.");
+
+        // Le membre revient ensuite. Meme chemin, meme relecture — mais plus rien a
+        // ecrire, et c est ce que la ligne doit rendre visible.
+        mvc.perform(get("/commande/{ref}/retour", reference))
+                .andExpect(status().is3xxRedirection());
+
+        assertThat(journal).contains("Retour du membre pour la commande " + numero
+                + " : statut relu chez le prestataire = REUSSI, deja traite, "
+                + "aucune ecriture.");
+
+        // L idempotence n est pas seulement annoncee par les libelles : une seule
+        // transition a eu lieu, donc un seul decrement de stock.
+        assertThat(pieces.findById(filtre.getId()).orElseThrow().getQuantiteStock())
+                .isEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("retour sans tentative partie : la ligne le dit au lieu de se taire")
+    void retourSansTentativeEstTraceAussi(CapturedOutput journal) throws Exception {
+        UUID reference = commander();
+        String numero = commandes.findByReference(reference).orElseThrow().getNumero();
+
+        mvc.perform(get("/commande/{ref}/retour", reference))
+                .andExpect(status().is3xxRedirection());
+
+        // Un silence se confondrait avec une panne de journalisation. L exploitant doit
+        // pouvoir distinguer « rien a relire » de « rien ne s est execute ».
+        assertThat(journal).contains("Retour du membre pour la commande " + numero
+                + " : statut relu chez le prestataire = aucun, aucune tentative n a "
+                + "quitte le site.");
     }
 }

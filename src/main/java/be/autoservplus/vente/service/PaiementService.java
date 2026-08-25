@@ -138,8 +138,29 @@ public class PaiementService {
                 // Une tentative sans reference prestataire n a jamais quitte le site :
                 // il n y a rien a relire chez lui.
                 .filter(reference -> reference != null && !reference.isBlank())
-                .ifPresent(this::traiterNotification);
+                .ifPresentOrElse(
+                        reference -> journaliserRetour(commande, traiterNotification(reference)),
+                        () -> log.info("Retour du membre pour la commande {} : statut relu chez "
+                                        + "le prestataire = aucun, aucune tentative n a quitte "
+                                        + "le site.",
+                                commande.getNumero()));
         return commande.getStatut() == StatutCommande.PAYEE;
+    }
+
+    /**
+     * Trace du retour du membre, a lire cote a cote avec celle de la notification
+     * serveur a serveur ecrite par le controleur de webhook.
+     *
+     * <p>Le numero de commande, et non sa reference technique : c est lui qui figure
+     * sur la facture et dans les autres traces de ce service, donc le seul identifiant
+     * par lequel l exploitant relie une ligne de journal a un dossier. Ni montant, ni
+     * adresse, ni identifiant d acces — une trace d exploitation n a pas besoin de
+     * porter une donnee personnelle pour etre utile.</p>
+     */
+    private void journaliserRetour(Commande commande, IssueRelecture issue) {
+        log.info("Retour du membre pour la commande {} : statut relu chez le prestataire "
+                        + "= {}, {}.",
+                commande.getNumero(), issue.statutRelu(), issue.effet().libelle());
     }
 
     // --- notification entrante (webhook) ----------------------------------------------
@@ -148,9 +169,16 @@ public class PaiementService {
      * Traite une notification du prestataire. Rejouable sans double effet : voir
      * le Javadoc de classe pour la securite (statut relu, jamais le payload) et
      * l idempotence par l etat.
+     *
+     * @return ce que la relecture a constate et ce qu elle a change, pour que chacun
+     *         des deux declencheurs — retour du membre, notification serveur a serveur
+     *         — redige SA ligne de journal. Rendre l information plutot que de l ecrire
+     *         ici est ce qui permet de distinguer les deux chemins, que
+     *         {@code docs/deploiement.md} demande de voir arriver tour a tour ; une
+     *         ligne ecrite au fond de cette methode serait identique dans les deux cas.
      */
     @Transactional
-    public void traiterNotification(String referencePrestataire) {
+    public IssueRelecture traiterNotification(String referencePrestataire) {
         Paiement paiement = paiements.findByReferenceMollie(referencePrestataire)
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Paiement", referencePrestataire));
@@ -161,20 +189,25 @@ public class PaiementService {
         // de le reecrire, donc un rejeu ne peut pas l alterer.
         paiement.enregistrerMethode(etat.methode());
         StatutPaiement statutAuthentique = etat.statut();
-        switch (statutAuthentique) {
+        IssueRelecture.Effet effet = switch (statutAuthentique) {
             case REUSSI -> confirmer(paiement);
             case ECHOUE, EXPIRE -> clore(paiement, statutAuthentique);
             case EN_COURS -> {
                 if (paiement.getStatut() == StatutPaiement.INITIE) {
                     paiement.mettreEnCours();
                     paiements.saveAndFlush(paiement);
+                    yield IssueRelecture.Effet.EN_ATTENTE;
                 }
+                yield IssueRelecture.Effet.DEJA_TRAITE;
             }
-            case INITIE -> { /* rien de neuf a constater */ }
-            case REMBOURSE -> log.warn(
-                    "Statut REMBOURSE recu pour le paiement {} : bloc retractation a venir, ignore.",
-                    referencePrestataire);
-        }
+            case INITIE -> IssueRelecture.Effet.EN_ATTENTE; // rien de neuf a constater
+            case REMBOURSE -> {
+                log.warn("Statut REMBOURSE recu pour le paiement {} : bloc retractation "
+                        + "a venir, ignore.", referencePrestataire);
+                yield IssueRelecture.Effet.DEJA_TRAITE;
+            }
+        };
+        return new IssueRelecture(statutAuthentique, effet);
     }
 
     /**
@@ -182,7 +215,7 @@ public class PaiementService {
      * serialise ce traitement avec le job d expiration et les webhooks rejoues ;
      * l etat relu sous verrou decide ensuite, une fois pour toutes.
      */
-    private void confirmer(Paiement paiement) {
+    private IssueRelecture.Effet confirmer(Paiement paiement) {
         Commande commande = commandes.verrouillerParId(paiement.getCommande().getId())
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Commande", paiement.getCommande().getId()));
@@ -191,7 +224,7 @@ public class PaiementService {
             // Webhook rejoue : tout est deja fait. On aligne au besoin le paiement
             // sur la realite, et rien d autre — ni stock, ni evenement.
             confirmerLePaiementSeul(paiement);
-            return;
+            return IssueRelecture.Effet.DEJA_TRAITE;
         }
         if (commande.getStatut() == StatutCommande.ANNULEE) {
             // Course perdue contre le job RM-21 : l encaissement est reel mais la
@@ -201,7 +234,9 @@ public class PaiementService {
             log.warn("Paiement {} encaisse sur la commande {} deja annulee : "
                             + "remboursement a traiter hors ligne.",
                     paiement.getReference(), commande.getNumero());
-            return;
+            // Rien n a ete ecrit sur la commande. L avertissement ci-dessus porte le
+            // detail de ce cas rare ; la ligne du declencheur n a pas a le repeter.
+            return IssueRelecture.Effet.DEJA_TRAITE;
         }
 
         paiement.confirmer(horloge.instant());
@@ -212,6 +247,7 @@ public class PaiementService {
         // Publie UNE fois, sur la transition reelle uniquement : point d accroche de
         // la facture (RM-22, bloc suivant) et du courriel de confirmation.
         evenements.publishEvent(new CommandePayeeEvent(commande.getReference()));
+        return IssueRelecture.Effet.FACTURE_EMISE;
     }
 
     private void confirmerLePaiementSeul(Paiement paiement) {
@@ -222,9 +258,9 @@ public class PaiementService {
     }
 
     /** Echec ou expiration : terminal pour CE paiement, la commande attend toujours. */
-    private void clore(Paiement paiement, StatutPaiement cible) {
+    private IssueRelecture.Effet clore(Paiement paiement, StatutPaiement cible) {
         if (paiement.estTermine()) {
-            return; // notification rejouee : deja constate
+            return IssueRelecture.Effet.DEJA_TRAITE; // rejouee : deja constate
         }
         if (cible == StatutPaiement.ECHOUE) {
             paiement.echouer(horloge.instant());
@@ -232,6 +268,7 @@ public class PaiementService {
             paiement.expirer(horloge.instant());
         }
         paiements.saveAndFlush(paiement);
+        return IssueRelecture.Effet.TENTATIVE_CLOSE;
     }
 
     /**

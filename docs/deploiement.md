@@ -160,7 +160,7 @@ Depuis l'adresse `trycloudflare.com`, dans un navigateur :
 
 3. **Commande et paiement** — ajouter une pièce au panier, valider, payer.
 4. **Retour sur le site** après paiement, puis **téléchargement de la facture**.
-5. **Réception du webhook** :
+5. **Retour du membre et réception du webhook** :
 
    ```bash
    docker compose -f docker-compose.prod.yml logs -f app
@@ -169,7 +169,32 @@ Depuis l'adresse `trycloudflare.com`, dans un navigateur :
 Le retour du membre et le webhook empruntent le même chemin idempotent : le statut est
 relu chez Mollie, jamais déduit de ce que la requête affirme. Voir les deux arriver
 tour à tour, sans double facture, est précisément ce que cette répétition sert à
-montrer.
+montrer — et c'est **deux lignes de journal** qui le montrent, une par déclencheur :
+
+```
+Notification du prestataire pour le paiement tr_XXXXXXXX : statut relu = REUSSI, commande passee PAYEE, facture emise.
+Retour du membre pour la commande CMD-2026-0002 : statut relu chez le prestataire = REUSSI, deja traite, aucune ecriture.
+```
+
+L'ordre des deux dépend de qui arrive le premier — Mollie notifie parfois avant que le
+navigateur n'ait fini de revenir. **Ce qui compte est ailleurs** : une seule des deux
+porte « facture emise », l'autre dit « deja traite, aucune ecriture ». C'est cela,
+l'idempotence, rendue lisible : le second passage relit le même statut et n'écrit rien.
+Deux lignes portant toutes deux « facture emise » signaleraient une double émission.
+
+Deux autres fins possibles pour la ligne de retour :
+
+- `statut relu chez le prestataire = aucun, aucune tentative n a quitte le site` — le
+  membre est revenu sur une commande dont le paiement n'a jamais été initié ;
+- rien du tout, précédé d'un `WARN Prestataire de paiement indisponible pour la
+  commande …` — Mollie n'a pas pu être relu. C'est la ligne à chercher quand le
+  paiement échoue : elle porte le code HTTP renvoyé par le prestataire.
+
+> **Si aucune ligne « Notification du prestataire » n'apparaît**, Mollie n'a pas appelé
+> le webhook. La cause la plus fréquente est une `URL_PUBLIQUE` périmée — l'adresse du
+> tunnel change à chaque relance. Le parcours aboutit malgré tout : c'est le retour du
+> membre qui réconcilie, et sa ligne porte alors « facture emise » puisqu'il est le
+> premier à constater. Voir « Limites connues ».
 
 ### 6. Arrêt
 

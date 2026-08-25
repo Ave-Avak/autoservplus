@@ -1,6 +1,9 @@
 package be.autoservplus.vente.web;
 
+import be.autoservplus.vente.service.IssueRelecture;
 import be.autoservplus.vente.service.PaiementService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -29,10 +32,19 @@ import org.springframework.web.bind.annotation.RestController;
  *
  * <p>Premier {@code @RestController} du projet : un webhook rend un statut HTTP,
  * pas une vue Thymeleaf.</p>
+ *
+ * <p><b>La reception est tracee</b>, en pendant de la ligne ecrite au retour du
+ * membre. C est le seul moyen de constater ce que docs/deploiement.md promet de
+ * montrer : les deux declencheurs arrivent tour a tour et la facture n est emise
+ * qu une fois. Sans ces deux lignes, l idempotence reste une affirmation — le
+ * journal ne distinguait meme pas lequel des deux chemins venait de s executer.</p>
  */
 @RestController
 @RequestMapping("/webhooks")
 public class PaiementWebhookController {
+
+    private static final Logger JOURNAL =
+            LoggerFactory.getLogger(PaiementWebhookController.class);
 
     private final PaiementService service;
 
@@ -42,7 +54,15 @@ public class PaiementWebhookController {
 
     @PostMapping("/paiement")
     public ResponseEntity<Void> notificationPaiement(@RequestParam("id") String id) {
-        service.traiterNotification(id);
+        IssueRelecture issue = service.traiterNotification(id);
+        // L identifiant du paiement chez le prestataire, et rien d autre : ni montant,
+        // ni membre. C est la seule donnee par laquelle cette ligne se rapproche de
+        // celle du retour du membre, et elle n identifie personne.
+        // La ligne n est atteinte que si la relecture a abouti : une panne du
+        // prestataire remonte en 500 pour provoquer un rejeu, et journaliser un
+        // « statut relu » que l on n a pas pu relire serait faux.
+        JOURNAL.info("Notification du prestataire pour le paiement {} : statut relu = {}, {}.",
+                id, issue.statutRelu(), issue.effet().libelle());
         return ResponseEntity.ok().build();
     }
 }
