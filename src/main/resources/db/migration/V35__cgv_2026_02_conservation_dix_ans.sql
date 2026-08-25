@@ -47,9 +47,17 @@
 --
 -- 4) V35 ET NON V34
 --
---    V34 est prise : elle numerote le jeu de demonstration de db/demo. Deux migrations
---    de meme version se disputeraient le rang sous le profil demo, ou les deux
---    emplacements sont charges ensemble.
+--    V34 etait prise au moment ou cette migration a ete ecrite : elle numerotait le jeu
+--    de demonstration de db/demo, et deux migrations de meme version se seraient
+--    disputees le rang sous le profil demo, ou les deux emplacements sont charges
+--    ensemble.
+--
+--    La graine a depuis ete deplacee en V900, precisement parce que cette migration-ci
+--    a revele le probleme : une migration de schema qui DEPASSE la graine la fait
+--    passer de « future » (toleree) a « missing » (fatale), et rendait le dump publie
+--    indemarrable. Le numero 34 est donc libre aujourd hui ; le trou est laisse tel
+--    quel plutot que renumerote, Flyway ordonnant sans exiger de continuite et une
+--    migration ne se renumerotant pas apres coup.
 --
 -- 5) AUCUNE TOUCHE AU SCHEMA
 --

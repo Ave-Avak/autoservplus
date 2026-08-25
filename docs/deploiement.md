@@ -80,18 +80,23 @@ pas.
 > **Un avertissement Flyway au démarrage est normal et attendu :**
 >
 > ```
-> Schema "public" has a version (34) that is newer than the latest available migration (33) !
+> Schema "public" has a version (900) that is newer than the latest available migration (35) !
 > ```
 >
 > Le dump a été pris sur une base où le profil `demo` était actif, donc avec la
-> migration V34 du jeu de démonstration appliquée. Hors de ce profil, V34 n'est pas sur
-> le chemin de Flyway. Il la classe alors parmi les migrations « futures », les ignore
-> et démarre — comportement vérifié, pas supposé : les journaux affichent
-> `Successfully validated 34 migrations`, puis `Schema "public" is up to date`.
+> migration **V900** du jeu de démonstration appliquée. Hors de ce profil, elle n'est
+> pas sur le chemin de Flyway, qui la classe parmi les migrations « futures », l'ignore
+> et démarre — comportement vérifié, pas supposé.
 >
-> Aucune migration postérieure à V33 n'existe dans `db/migration`. Le jour où il y en
-> aura une, elle s'appliquera d'elle-même à ce premier démarrage, ce qui est le
-> comportement voulu.
+> **C'est pour cela que la graine porte le numéro 900** et non le suivant de la série.
+> Flyway ne tolère une migration appliquée mais non résolue que si son numéro dépasse
+> toutes les migrations connues ; en dessous, elle devient « missing » et fait échouer
+> le démarrage. Numérotée 34, la graine a cessé d'être tolérée dès l'arrivée de V35 :
+> le dump restauré ne démarrait plus. À 900, elle reste hors d'atteinte quel que soit
+> le nombre de migrations ajoutées ensuite.
+>
+> L'avertissement ne doit donc désigner **que** V900. S'il en nomme une autre, c'est
+> qu'une migration de schéma manque réellement au dépôt.
 
 Vérification :
 

@@ -9,6 +9,41 @@
 -- moitie des parcours n etait tout simplement pas atteignable.
 --
 -- ------------------------------------------------------------------------------------
+-- POURQUOI 900, ET NON LE NUMERO SUIVANT
+-- ------------------------------------------------------------------------------------
+-- Cette graine vit dans db/demo, chargee sous le seul profil « demo ». Une base de
+-- production n a donc AUCUN moyen de la resoudre — et c est voulu. Mais le dump publie
+-- pour l evaluation est pris AVEC ce profil : son flyway_schema_history porte cette
+-- ligne. Une base restauree depuis ce dump connait donc une migration appliquee que le
+-- classpath ne resout pas.
+--
+-- Flyway traite ce cas de deux facons opposees selon le NUMERO :
+--
+--   - version SUPERIEURE a toutes les migrations resolues -> « future », toleree,
+--     simple avertissement au demarrage ;
+--   - version INFERIEURE a l une d elles                  -> « missing », erreur
+--     fatale : « Detected applied migration not resolved locally ».
+--
+-- Numerotee 34, cette graine n etait « future » que tant qu aucune migration de schema
+-- ne la depassait. La premiere qui l a fait — V35 — a suffi a rendre le dump
+-- indemarrable, alors que rien du jeu de donnees n avait change. Le defaut etait
+-- structurel et n attendait qu une migration de plus, quelle qu elle soit.
+--
+-- 900 place la graine hors d atteinte de la plage des migrations de schema : elle reste
+-- « future » pour toute base qui l a appliquee sans pouvoir la resoudre, quel que soit
+-- le nombre de migrations ajoutees ensuite. Le numero 34 reste libre et inutilise ; un
+-- trou dans la numerotation n a aucun effet pour Flyway, qui ordonne sans exiger de
+-- continuite.
+--
+-- Effet de bord voulu : sous le profil « demo », la graine s applique desormais APRES
+-- toutes les migrations de schema. C est le bon ordre — semer des donnees au milieu
+-- d une evolution de schema les expose a etre reprises par les migrations suivantes.
+--
+-- Aucun garde-fou n est desactive au passage : « missing » continue de faire echouer
+-- la validation, ce qui reste souhaitable pour une migration de schema reellement
+-- supprimee.
+--
+-- ------------------------------------------------------------------------------------
 -- CE QUI EST DU DML DE DEMONSTRATION, PAS DU SCHEMA
 -- ------------------------------------------------------------------------------------
 -- Aucune table, aucune colonne, aucune contrainte : cette migration n ajoute que des
@@ -111,16 +146,32 @@ $$
         SELECT id INTO v_poste1 FROM poste_atelier ORDER BY ordre, id LIMIT 1;
         SELECT id INTO v_poste2 FROM poste_atelier ORDER BY ordre, id OFFSET 1 LIMIT 1;
 
-        -- La version de document vient de version_document (F24) et non d une chaine
-        -- ecrite ici : une preuve de consentement doit designer une ligne REELLE, dont
-        -- le texte est archive. La ecrire en dur reproduirait exactement le defaut que
-        -- F24 corrige.
-        SELECT version INTO v_version_cgv
+        -- CGV : version ECRITE EN DUR, et c est un choix de scenario, pas un oubli.
+        --
+        -- Depuis que cette graine porte le numero 900, elle s execute APRES toutes les
+        -- migrations de schema, donc apres V35 qui publie CGV-2026-02. Deriver la
+        -- version active donnerait desormais 2026-02, et le jeu de demonstration
+        -- montrerait un membre ayant accepte le texte du jour — le cas le moins
+        -- interessant, celui ou le versionnage ne se voit pas.
+        --
+        -- 2026-01 est retenue pour que la demonstration porte le cas que F24 sert a
+        -- traiter : un membre dont la preuve designe une redaction REMPLACEE, dont le
+        -- texte reste consultable a /documents/cgv/CGV-2026-01 alors que /cgv affiche
+        -- deja la suivante. Une preuve doit dire QUOI a ete accepte, pas seulement QUE
+        -- quelque chose l a ete ; on ne le montre qu avec deux versions.
+        --
+        -- Ecrire un identifiant en dur ICI ne reproduit pas le defaut d avant F24 :
+        -- ce n est pas l application qui enregistre un consentement, c est un jeu de
+        -- donnees qui choisit ce que le membre fictif a accepte. La contrainte reste
+        -- entiere — la valeur doit designer une ligne reelle de version_document, et
+        -- le SELECT ci-dessous echoue bruyamment si elle n existe pas, plutot que de
+        -- laisser passer une preuve orpheline.
+        SELECT version INTO STRICT v_version_cgv
         FROM version_document
-        WHERE type_document = 'CGV' AND langue = 'fr' AND actif
-        ORDER BY date_effet DESC, id DESC
-        LIMIT 1;
+        WHERE type_document = 'CGV' AND version = 'CGV-2026-01' AND langue = 'fr';
 
+        -- COOKIES : derivee, elle. Ce document n a qu une version, et rien dans ce jeu
+        -- ne demande d en illustrer le remplacement — la regle generale s applique donc.
         SELECT version INTO v_version_cookies
         FROM version_document
         WHERE type_document = 'COOKIES' AND langue = 'fr' AND actif
