@@ -119,9 +119,22 @@ public class SecuriteConfig {
                         .deleteCookies("JSESSIONID")
                 )
                 .headers(entetes -> entetes
+                        // form-action porte le seul assouplissement de cette politique, et il
+                        // conditionne le parcours de paiement : le depart vers le prestataire
+                        // est un POST dont la reponse redirige vers Mollie. Chrome et Edge
+                        // appliquent form-action a la CIBLE de la redirection qui suit l envoi
+                        // d un formulaire, et pas seulement a l action ecrite dans le gabarit :
+                        // avec 'self' seul, ils refusent de suivre et le membre ne peut pas
+                        // payer. Firefox ne l applique pas, d ou un defaut invisible sur une
+                        // partie des navigateurs.
+                        // Un seul hote, et aucun joker : la page Mollie renvoie ensuite vers
+                        // les banques depuis SON domaine, hors de notre document et donc hors
+                        // de cette politique. Elargir davantage n aiderait a rien et ouvrirait
+                        // l envoi d un formulaire du site vers un tiers.
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; script-src 'self'; style-src 'self'; " +
-                                        "img-src 'self' data:; form-action 'self'; " +
+                                        "img-src 'self' data:; " +
+                                        "form-action 'self' https://www.mollie.com; " +
                                         "frame-ancestors 'none'; base-uri 'self'"))
                         .frameOptions(cadre -> cadre.deny())
                         .referrerPolicy(rp -> rp.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.SAME_ORIGIN))
