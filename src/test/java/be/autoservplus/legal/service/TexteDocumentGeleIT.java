@@ -90,12 +90,13 @@ class TexteDocumentGeleIT {
 
     @Autowired private MessageSource messages;
     @Autowired private VersionDocumentRepository versions;
+    @Autowired private VersionsDocumentsService versionsDocuments;
 
     @Test
     @DisplayName("le texte archive est EXACTEMENT celui que l application presente, dans les trois langues")
     void aucuneDerive() {
         for (TypeDocumentVersionne type : TypeDocumentVersionne.values()) {
-            String version = versionAmorcee(type);
+            String version = versionEnVigueur(type);
             for (Langue langue : Langue.values()) {
                 String presente = texteReellementPresente(type, langue);
 
@@ -149,16 +150,42 @@ class TexteDocumentGeleIT {
     }
 
     @Test
-    @DisplayName("les identifiants de version amorces sont ceux des constantes remplacees")
-    void continuiteDesIdentifiants() {
-        // Sans cette egalite, F24 rendrait orphelines toutes les preuves de consentement
-        // anterieures a sa propre livraison : elles designeraient une version absente de
-        // la table. Les valeurs sont donc recopiees en dur ici, volontairement — c est un
-        // engagement de compatibilite, pas une donnee de configuration.
-        assertThat(versionAmorcee(TypeDocumentVersionne.CGV)).isEqualTo("CGV-2026-01");
-        assertThat(versionAmorcee(TypeDocumentVersionne.COOKIES)).isEqualTo("COOKIES-2026-01");
-        assertThat(versionAmorcee(TypeDocumentVersionne.RENONCIATION_RETRACTATION))
+    @DisplayName("les versions en vigueur sont celles attendues, CGV comprise depuis V35")
+    void versionsEnVigueur() {
+        // Valeurs recopiees en dur volontairement : c est un engagement de compatibilite,
+        // pas une donnee de configuration. COOKIES et VI53 portent encore l identifiant
+        // des constantes que F24 a remplacees ; CGV est passee a 2026-02 par V35.
+        assertThat(versionEnVigueur(TypeDocumentVersionne.CGV)).isEqualTo("CGV-2026-02");
+        assertThat(versionEnVigueur(TypeDocumentVersionne.COOKIES)).isEqualTo("COOKIES-2026-01");
+        assertThat(versionEnVigueur(TypeDocumentVersionne.RENONCIATION_RETRACTATION))
                 .isEqualTo("VI53-2026-01");
+    }
+
+    @Test
+    @DisplayName("la version CGV remplacee reste archivee, avec son texte d origine intact")
+    void versionRemplaceeToujoursArchivee() {
+        // Sans cette garantie, F24 rendrait orphelines les preuves anterieures a V35 :
+        // elles designeraient une version absente. Publier retire du jeu resolvable, cela
+        // n efface pas — et le texte rendu doit rester celui qui a ete accepte, donc
+        // celui qui annoncait SEPT ans.
+        List<VersionDocument> remplacee = versions
+                .findByTypeDocumentAndVersionOrderByLangue(TypeDocumentVersionne.CGV, "CGV-2026-01");
+
+        assertThat(remplacee).hasSize(Langue.values().length);
+        assertThat(remplacee)
+                .as("Une version retiree du jeu resolvable ne doit pas etre supprimee")
+                .allSatisfy(ligne -> assertThat(ligne.isActif()).isFalse());
+
+        assertThat(remplacee)
+                .filteredOn(ligne -> ligne.getLangue() == Langue.fr)
+                .singleElement()
+                .satisfies(ligne -> {
+                    assertThat(ligne.getContenu())
+                            .as("Le texte accepte avant V35 annoncait sept ans : le reecrire "
+                                    + "reviendrait a opposer au membre un texte qu il n a pas lu")
+                            .contains("conservées sept ans");
+                    assertThat(ligne.getEmpreinte()).isEqualTo(empreinte(ligne.getContenu()));
+                });
     }
 
     /**
@@ -176,14 +203,25 @@ class TexteDocumentGeleIT {
                 .orElseThrow();
     }
 
-    private String versionAmorcee(TypeDocumentVersionne type) {
-        List<VersionDocument> toutes = versions.findAll().stream()
-                .filter(ligne -> ligne.getTypeDocument() == type)
-                .toList();
-        assertThat(toutes)
-                .as("La migration V33 doit amorcer %s dans les trois langues", type)
+    /**
+     * Version <b>en vigueur</b>, resolue par le service que l application emploie
+     * elle-meme, et non « la seule version amorcee ».
+     *
+     * <p>La distinction est devenue reelle avec CGV-2026-02 (V35) : le type CGV porte
+     * desormais deux versions, dont une retiree du jeu resolvable. Confronter le texte
+     * affiche a une version choisie arbitrairement parmi les lignes de la table ferait
+     * echouer ce test au premier changement de redaction — c est-a-dire precisement
+     * quand F24 fonctionne. Ce qui doit etre vrai n a jamais ete « il n existe qu une
+     * version » mais « le texte servi est celui de la version en vigueur ».</p>
+     */
+    private String versionEnVigueur(TypeDocumentVersionne type) {
+        String version = versionsDocuments.versionCourante(type);
+        assertThat(versions.findByTypeDocumentAndVersionOrderByLangue(type, version))
+                .as("La version en vigueur de %s doit exister dans les trois langues : les "
+                        + "trois se publient ensemble, une version incomplete laisse un membre "
+                        + "sans texte opposable.", type)
                 .hasSize(Langue.values().length);
-        return toutes.getFirst().getVersion();
+        return version;
     }
 
     private static String empreinte(String texte) {

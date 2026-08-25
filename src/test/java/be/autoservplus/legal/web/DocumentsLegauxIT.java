@@ -201,12 +201,30 @@ class DocumentsLegauxIT {
         @Test
         @DisplayName("les CGV annoncent la version en vigueur et menent a son texte archive")
         void mentionDeVersion() throws Exception {
+            // CGV-2026-02 depuis V35. La page publique annonce la version DU JOUR : c est
+            // ce numero que portera la preuve d acceptation du lecteur, pas celui de la
+            // redaction precedente.
             mvc.perform(get("/cgv").with(anonymous()).header("Accept-Language", "fr"))
                     .andExpect(status().isOk())
                     .andExpect(content().string(
-                            org.hamcrest.Matchers.containsString("CGV-2026-01")))
+                            org.hamcrest.Matchers.containsString("CGV-2026-02")))
                     .andExpect(content().string(
-                            org.hamcrest.Matchers.containsString("/documents/cgv/CGV-2026-01")));
+                            org.hamcrest.Matchers.containsString("/documents/cgv/CGV-2026-02")))
+                    .andExpect(content().string(
+                            org.hamcrest.Matchers.containsString("conservées dix ans")));
+        }
+
+        @Test
+        @DisplayName("la version remplacee reste servie a son adresse, dans sa redaction d origine")
+        void versionRemplaceeToujoursServie() throws Exception {
+            // Publier une nouvelle version ne doit pas rendre 404 l adresse citee par les
+            // preuves anterieures : c est la seule facon, pour un membre, de montrer ce
+            // qu il a reellement accepte.
+            mvc.perform(get("/documents/cgv/CGV-2026-01").with(anonymous())
+                            .header("Accept-Language", "fr"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(
+                            org.hamcrest.Matchers.containsString("conservées sept ans")));
         }
 
         /**

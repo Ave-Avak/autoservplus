@@ -43,10 +43,22 @@ class VersionnageDocumentsIT {
     class Amorcage {
 
         @Test
-        @DisplayName("gele les trois documents consentis, dans les trois langues")
-        void neufLignes() {
-            assertThat(versions.count()).isEqualTo(TypeDocumentVersionne.values().length
-                    * (long) Langue.values().length);
+        @DisplayName("gele les trois documents consentis dans les trois langues, versions remplacees comprises")
+        void troisLanguesParVersion() {
+            // Une version = un jeu de trois textes publies ensemble. Le compte total croit
+            // donc de trois a chaque publication, et non de un : V33 amorce trois documents,
+            // V35 publie une seconde version des CGV.
+            assertThat(versions.count())
+                    .isEqualTo((TypeDocumentVersionne.values().length + 1)
+                            * (long) Langue.values().length);
+
+            for (TypeDocumentVersionne type : TypeDocumentVersionne.values()) {
+                String courante = versionsDocuments.versionCourante(type);
+                assertThat(versions.findByTypeDocumentAndVersionOrderByLangue(type, courante))
+                        .as("Version en vigueur de %s incomplete : un membre pourrait se voir "
+                                + "opposer un texte dans une langue qu il n a pas lue", type)
+                        .hasSize(Langue.values().length);
+            }
         }
 
         @Test
@@ -81,14 +93,30 @@ class VersionnageDocumentsIT {
     class EnVigueur {
 
         @Test
-        @DisplayName("resout les identifiants que portaient les constantes supprimees")
+        @DisplayName("resout la version en vigueur, y compris apres une publication")
         void continuite() {
+            // CGV a change de version avec V35 (article 9, conservation portee a dix ans) ;
+            // les deux autres documents portent encore l identifiant des constantes que F24
+            // a remplacees, ce qui reste l engagement de compatibilite pris a sa livraison.
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.CGV))
-                    .isEqualTo("CGV-2026-01");
+                    .isEqualTo("CGV-2026-02");
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.COOKIES))
                     .isEqualTo("COOKIES-2026-01");
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.RENONCIATION_RETRACTATION))
                     .isEqualTo("VI53-2026-01");
+        }
+
+        @Test
+        @DisplayName("une version retiree du jeu resolvable n est plus servie comme courante")
+        void versionRetireeNonResolue() {
+            // actif = false ne supprime pas : la ligne reste consultable a l archive. Ce qui
+            // doit cesser, c est qu elle soit proposee comme le texte du jour.
+            assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.CGV))
+                    .isNotEqualTo("CGV-2026-01");
+            assertThat(versionsDocuments.archive(TypeDocumentVersionne.CGV, "CGV-2026-01",
+                            Locale.FRENCH))
+                    .as("La version remplacee doit rester consultable : des preuves la designent")
+                    .isPresent();
         }
 
         /**
@@ -141,7 +169,7 @@ class VersionnageDocumentsIT {
 
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.CGV))
                     .as("La version annoncee pour dans trente jours ne s applique pas aujourd hui")
-                    .isEqualTo("CGV-2026-01");
+                    .isEqualTo("CGV-2026-02");
         }
     }
 
@@ -171,6 +199,28 @@ class VersionnageDocumentsIT {
             assertThat(vue.langue())
                     .as("Le lecteur doit savoir quelle langue il lit reellement")
                     .isEqualTo("fr");
+        }
+
+        @Test
+        @DisplayName("sert encore le texte d origine d une version remplacee")
+        void versionRemplacee() {
+            // Le point que V35 met a l epreuve : apres publication de CGV-2026-02, la preuve
+            // d un membre qui a accepte 2026-01 doit toujours pouvoir montrer CE qu il a
+            // accepte — donc l ancienne redaction, celle qui annoncait sept ans.
+            TexteArchiveVue vue = versionsDocuments
+                    .archive(TypeDocumentVersionne.CGV, "CGV-2026-01", Locale.FRENCH)
+                    .orElseThrow();
+
+            assertThat(vue.contenu()).contains("conservées sept ans");
+            assertThat(vue.actif())
+                    .as("Elle est archivee, donc plus en vigueur — et le lecteur doit le savoir")
+                    .isFalse();
+
+            TexteArchiveVue courante = versionsDocuments
+                    .archive(TypeDocumentVersionne.CGV, "CGV-2026-02", Locale.FRENCH)
+                    .orElseThrow();
+            assertThat(courante.contenu()).contains("conservées dix ans");
+            assertThat(courante.actif()).isTrue();
         }
 
         @Test

@@ -14,6 +14,8 @@ import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.Panier;
 import be.autoservplus.vente.domain.StatutCommande;
+import be.autoservplus.legal.domain.TypeDocumentVersionne;
+import be.autoservplus.legal.service.VersionsDocumentsService;
 import be.autoservplus.vente.repository.CommandeRepository;
 import be.autoservplus.vente.repository.PanierRepository;
 import be.autoservplus.vente.service.PanierService;
@@ -71,6 +73,7 @@ class CommandeTemplatesIT {
     @Autowired private PanierRepository paniers;
     @Autowired private CommandeRepository commandes;
     @Autowired private ConsentementRepository consentements;
+    @Autowired private VersionsDocumentsService versionsDocuments;
     @Autowired private EntityManager entityManager;
 
     private Piece plaquettes;
@@ -161,7 +164,14 @@ class CommandeTemplatesIT {
                 .findByUtilisateurEmailIgnoreCaseAndTypeDocument(
                         "marie@exemple.be", TypeDocumentConsentement.CGV);
         assertThat(preuves).hasSize(1);
-        assertThat(preuves.get(0).getVersionAcceptee()).isEqualTo("CGV-2026-01");
+        // Comparee a la version REELLEMENT en vigueur et non a un identifiant ecrit ici :
+        // ce que ce test doit etablir, c est que la conversion fige la version du jour,
+        // pas laquelle elle est. Le litteral « CGV-2026-01 » qui figurait la a fait
+        // echouer ce test a la publication de CGV-2026-02 (V35), alors que le
+        // comportement verifie n avait pas bouge — un test couple au calendrier
+        // editorial des conditions generales, ce qui n est pas son sujet.
+        assertThat(preuves.get(0).getVersionAcceptee())
+                .isEqualTo(versionsDocuments.versionCourante(TypeDocumentVersionne.CGV));
         assertThat(preuves.get(0).isAccorde()).isTrue();
         assertThat(preuves.get(0).getAdresseIp()).isEqualTo("127.0.0.1");
 
