@@ -57,7 +57,7 @@ services:
         condition: service_healthy
     volumes:
       # Volumes NOMMES et non montages depuis le repertoire de deploiement : l'archive
-      # des factures est conservee sept ans (Code TVA art. 60) et ne doit pas disparaitre
+      # des factures est conservee dix ans (Code TVA art. 60) et ne doit pas disparaitre
       # avec un « git clone » refait ailleurs ou un repertoire efface.
       - factures:/data/factures
       - uploads:/data/uploads

@@ -163,7 +163,7 @@ production**.
 | `COOKIE_SECURE` | `false` | Pose l'attribut `Secure` sur le cookie de session. À mettre à `true` dès que le site est joint en HTTPS |
 | `JAVA_OPTS` | `-XX:MaxRAMPercentage=75` | Options de la machine virtuelle Java dans le conteneur |
 | `URL_PUBLIQUE` | `http://localhost:8080` | Adresse publique, employée là où une URL absolue est indispensable |
-| `FACTURES_ARCHIVE` | `./data/factures` | Répertoire d'archivage des factures (conservation sept ans) |
+| `FACTURES_ARCHIVE` | `./data/factures` | Répertoire d'archivage des factures (conservation dix ans) |
 | `MEDIAS_RACINE` | `./data/uploads` | Répertoire des fichiers déposés |
 | `GARAGE_RAISON_SOCIALE`, `GARAGE_TVA`, `GARAGE_BCE`, `GARAGE_IBAN`, … | valeurs de démonstration | Identité légale imprimée sur les factures et les mentions légales |
 | `MOLLIE_API_KEY` | *vide* | Clé ou jeton Mollie. **Vide, le paiement passe par une passerelle bouchonnée** |

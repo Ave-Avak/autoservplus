@@ -340,7 +340,8 @@ connexions.
 ### Sauvegarder
 
 La base **et** l'archive des factures sont à sauvegarder. La seconde est une obligation
-légale de conservation de sept ans (Code TVA art. 60) : elle ne se reconstruit pas.
+légale de conservation de dix ans (Code TVA art. 60, tel que modifié par la loi du
+20 novembre 2022) : elle ne se reconstruit pas.
 
 ```bash
 sudo mkdir -p /var/backups/autoservplus
@@ -400,7 +401,7 @@ volumes nommés, qui survivent à `down`, à `git pull` et à la reconstruction 
 | Volume | Contenu | Perte si supprimé |
 |---|---|---|
 | `autoservplus-prod_pgdata` | base de données | tout le métier |
-| `autoservplus-prod_factures` | factures et notes de crédit PDF | archive légale de sept ans |
+| `autoservplus-prod_factures` | factures et notes de crédit PDF | archive légale de dix ans |
 | `autoservplus-prod_uploads` | photographies déposées | galerie |
 | `autoservplus-prod_caddy_data` | certificat TLS et sa clé | nouvelle émission, dans la limite des quotas Let's Encrypt |
 
