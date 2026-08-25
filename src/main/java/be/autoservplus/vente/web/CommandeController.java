@@ -12,6 +12,8 @@ import be.autoservplus.vente.service.StockInsuffisantException;
 import be.autoservplus.vente.web.dto.ConfirmationCommandeVue;
 import be.autoservplus.vente.web.dto.PanierVue;
 import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -45,6 +47,8 @@ import java.util.UUID;
 @Controller
 @RequestMapping("/commande")
 public class CommandeController {
+
+    private static final Logger JOURNAL = LoggerFactory.getLogger(CommandeController.class);
 
     private final CommandeService service;
     private final PanierService paniers;
@@ -117,6 +121,11 @@ public class CommandeController {
             // est ramene sur elle avec un message qui invite a reessayer, et non un 500.
             // Le message de l exception n est PAS affiche — il peut porter des details
             // du prestataire.
+            // Il est en revanche JOURNALISE, avec sa cause. Sans cela l exploitant voit
+            // un parcours qui echoue et n a rien pour dire pourquoi : c est ce qui s est
+            // produit en repetition avec un jeton mal colle, ou seul l ecran parlait.
+            JOURNAL.warn("Prestataire de paiement indisponible pour la commande {} : {}",
+                    reference, e.getMessage(), e);
             redirection.addFlashAttribute("erreur",
                     msg("commande.erreur.prestataire-indisponible"));
             return "redirect:/commande/" + reference + "/confirmation";
@@ -150,6 +159,10 @@ public class CommandeController {
             // paiement a abouti, et on se garde de trancher. La notification serveur a
             // serveur, ou une prochaine visite, constatera. Affirmer un echec ici
             // pousserait a payer une seconde fois un encaissement peut-etre deja passe.
+            // Une trace est d autant plus utile ici que rien d autre ne signale ce cas :
+            // l ecran reste volontairement muet sur la cause.
+            JOURNAL.warn("Prestataire de paiement indisponible pour la commande {} : {}",
+                    reference, e.getMessage(), e);
             redirection.addFlashAttribute("erreur", msg("commande.retour.indisponible"));
             return "redirect:/commande/" + reference + "/confirmation";
         }

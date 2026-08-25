@@ -295,6 +295,15 @@ public class MollieGateway implements PrestatairePaiement {
      * <p>Le message conserve l operation mais jamais le corps de la reponse, qui peut
      * porter des identifiants de requete et des details d infrastructure. La cause est
      * attachee pour le journal ; ce qui s affiche au membre vient de l i18n.</p>
+     *
+     * <p><b>Garantie dont depend la journalisation des echecs</b> (voir les deux
+     * {@code catch} de {@code CommandeController}) : aucun message construit dans cette
+     * classe ne porte l identifiant d acces, ni entier ni tronque. Les sept sites qui
+     * levent une {@link PrestataireIndisponibleException} composent des chaines fixes,
+     * au plus completees du nom de l operation, du statut rendu par Mollie ou de la
+     * reference du paiement — la seule donnee que le journal reprend deliberement par
+     * ailleurs. Le message est donc journalisable tel quel ; c est l affichage a
+     * l ecran, lui, qui reste interdit.</p>
      */
     private <T> T appeler(java.util.function.Supplier<T> appel, String operation) {
         try {

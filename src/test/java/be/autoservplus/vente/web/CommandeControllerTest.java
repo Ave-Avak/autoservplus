@@ -13,10 +13,13 @@ import be.autoservplus.vente.web.dto.PanierVue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.config.Customizer;
@@ -30,6 +33,7 @@ import org.springframework.web.servlet.ViewResolver;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
@@ -51,6 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = CommandeController.class,
         excludeAutoConfiguration = ThymeleafAutoConfiguration.class)
 @Import({CommandeControllerTest.SecuriteTest.class, CommandeControllerTest.StubViewResolver.class})
+@ExtendWith(OutputCaptureExtension.class)
 @DisplayName("CommandeController")
 class CommandeControllerTest {
 
@@ -158,7 +163,7 @@ class CommandeControllerTest {
     @Test
     @WithMockUser(username = "marie@exemple.be")
     @DisplayName("prestataire injoignable a l initiation : message lisible, jamais un 500")
-    void initiationPrestataireInjoignable() throws Exception {
+    void initiationPrestataireInjoignable(CapturedOutput journal) throws Exception {
         // Une page d erreur au moment de payer est le pire point de rupture d un
         // parcours d achat. La commande reste valide et payable.
         doThrow(new PrestataireIndisponibleException("detail technique du prestataire"))
@@ -172,12 +177,19 @@ class CommandeControllerTest {
                 .andExpect(flash().attribute("erreur",
                         org.hamcrest.Matchers.not(
                                 org.hamcrest.Matchers.containsString("detail technique"))));
+
+        // ... mais il doit atterrir dans le journal. Les deux moities comptent
+        // ensemble : ecran muet SANS trace, c est le defaut constate en repetition,
+        // ou un paiement echouait sans que rien ne dise pourquoi.
+        assertThat(journal).contains(
+                "Prestataire de paiement indisponible pour la commande " + REF);
+        assertThat(journal).contains("detail technique du prestataire");
     }
 
     @Test
     @WithMockUser(username = "marie@exemple.be")
     @DisplayName("prestataire injoignable au retour : ni succes ni echec affirme")
-    void retourPrestataireInjoignable() throws Exception {
+    void retourPrestataireInjoignable(CapturedOutput journal) throws Exception {
         // On ne sait pas si le paiement a abouti : affirmer un echec pousserait a
         // payer une seconde fois un encaissement peut-etre deja passe.
         doThrow(new PrestataireIndisponibleException("injoignable"))
@@ -188,6 +200,11 @@ class CommandeControllerTest {
                 .andExpect(redirectedUrl("/commande/" + REF + "/confirmation"))
                 .andExpect(flash().attributeExists("erreur"))
                 .andExpect(flash().attributeCount(1));
+
+        // L ecran est volontairement muet sur la cause : le journal est alors le seul
+        // endroit ou elle existe.
+        assertThat(journal).contains(
+                "Prestataire de paiement indisponible pour la commande " + REF);
     }
 
     @Test
