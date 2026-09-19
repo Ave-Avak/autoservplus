@@ -22,6 +22,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.UUID;
@@ -64,8 +66,20 @@ class RetractationTemplatesIT {
     @Autowired private UtilisateurRepository utilisateurs;
     @Autowired private CommandeRepository commandes;
     @Autowired private DemandeAnnulationRepository demandes;
+    /**
+     * Meme horloge que les services. Les dates de ces jeux d essai en derivent au
+     * lieu d etre ecrites en dur : une commande datee d un jour fixe finit par sortir
+     * de la fenetre de retractation de quatorze jours, et ces ecrans cessent alors de
+     * se rendre a une date qui n a rien a voir avec le code qu ils verifient.
+     */
+    @Autowired private Clock horloge;
 
     private Utilisateur marie;
+
+    /** Conclusion d une commande assez recente pour rester retractable (F30). */
+    private Instant hier() {
+        return horloge.instant().minus(Duration.ofDays(1));
+    }
 
     @BeforeEach
     void setUp() {
@@ -74,10 +88,10 @@ class RetractationTemplatesIT {
     }
 
     private Commande commandePayee(String numero) {
+        Instant conclusion = hier();
         Commande commande = new Commande(numero, marie, new BigDecimal("39.98"),
-                new BigDecimal("8.40"), new BigDecimal("48.38"),
-                Instant.parse("2026-08-22T09:00:00Z"));
-        commande.confirmerPaiement(Instant.parse("2026-08-22T09:05:00Z"));
+                new BigDecimal("8.40"), new BigDecimal("48.38"), conclusion);
+        commande.confirmerPaiement(conclusion.plus(Duration.ofMinutes(5)));
         return commandes.saveAndFlush(commande);
     }
 
@@ -165,7 +179,7 @@ class RetractationTemplatesIT {
     void fileAdmin() throws Exception {
         Commande commande = commandePayee("CMD-IT-RETT-0005");
         demandes.saveAndFlush(new DemandeAnnulation(commande, "piece non compatible",
-                Instant.parse("2026-08-23T09:00:00Z")));
+                horloge.instant()));
 
         mvc.perform(get("/admin/retractations").locale(Locale.FRENCH)
                         .with(user("admin@autoservplus.be").roles("ADMINISTRATEUR")))
@@ -183,7 +197,7 @@ class RetractationTemplatesIT {
     void refusMotifObligatoire() throws Exception {
         Commande commande = commandePayee("CMD-IT-RETT-0006");
         DemandeAnnulation demande = demandes.saveAndFlush(new DemandeAnnulation(
-                commande, null, Instant.parse("2026-08-23T09:00:00Z")));
+                commande, null, horloge.instant()));
 
         mvc.perform(get("/admin/retractations/{ref}/refuser", demande.getReference())
                         .locale(Locale.FRENCH)
@@ -204,7 +218,7 @@ class RetractationTemplatesIT {
     void fileAdminEnNeerlandais() throws Exception {
         Commande commande = commandePayee("CMD-IT-RETT-0007");
         demandes.saveAndFlush(new DemandeAnnulation(commande, null,
-                Instant.parse("2026-08-23T09:00:00Z")));
+                horloge.instant()));
 
         mvc.perform(get("/admin/retractations").locale(new Locale("nl"))
                         .with(user("admin@autoservplus.be").roles("ADMINISTRATEUR")))
