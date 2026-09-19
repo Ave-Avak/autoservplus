@@ -112,6 +112,22 @@
     <h2 th:text="#{commande.detail.documents}">Documents et démarches</h2>
 
     <ul class="liste-actions">
+        <!-- Reprise du paiement, même raison qu'à la liste : le bouton de la page de
+             confirmation ne sert qu'une fois, et une commande non payée reste payable
+             pendant tout son délai RM-21. La condition n'est qu'un affichage — la
+             garde vit dans PaiementService.initierPaiement, qui refuse une commande
+             déjà payée, annulée ou appartenant à autrui. En tête de liste : c'est la
+             seule démarche qui expire. -->
+        <li th:if="${commande.peutEtrePayee()}">
+            <form th:action="@{/commande/{ref}/payer(ref=${commande.reference()})}" method="post">
+                <!-- Même aria-label qu'à la liste, par cohérence : le bouton annonce
+                     la commande qu'il paie, sans remplacer son libellé visible. -->
+                <button type="submit" class="btn-cta"
+                        th:aria-label="#{commande.payer.aria(${commande.numero()})}"
+                        th:text="#{commande.payer}">Procéder au paiement</button>
+            </form>
+        </li>
+
         <!-- Mêmes conditions qu'à la liste, sur les mêmes vues : une commande non
              payee n'a pas de facture, et n'en aura pas tant qu'elle ne l'est pas. -->
         <li th:if="${commande.estFacturee()}">
@@ -140,6 +156,7 @@
         </li>
 
         <li th:if="${!commande.estFacturee()
+                     and !commande.peutEtrePayee()
                      and (retractation == null
                           or (!retractation.demandable()
                               and !retractation.estEnAttente()

@@ -52,4 +52,20 @@ public record CommandeHistoriqueVue(
     public boolean estFacturee() {
         return referenceFacture != null;
     }
+
+    /**
+     * La commande attend encore son paiement : la liste peut proposer de le
+     * reprendre.
+     *
+     * <p>Même calcul que {@code ConfirmationCommandeVue.enAttenteDePaiement}, et
+     * même règle que la garde de {@code PaiementService.initierPaiement} — celle-ci
+     * reste seule à décider : le gabarit affiche, il n'autorise pas.</p>
+     *
+     * <p>Aucune notion de délai ici. L'expiration RM-21 n'est pas une durée à
+     * comparer, c'est {@code ExpirationCommandesJob} qui fait passer la commande en
+     * ANNULEE au bout de trente minutes ; le statut porte donc déjà le verdict.</p>
+     */
+    public boolean peutEtrePayee() {
+        return statut == StatutCommande.EN_ATTENTE_PAIEMENT;
+    }
 }

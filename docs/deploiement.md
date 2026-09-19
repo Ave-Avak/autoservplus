@@ -219,22 +219,22 @@ Deux autres fins possibles pour la ligne de retour :
 **Reprendre un paiement sans refaire le panier.** Un paiement qui échoue ou qu'on
 abandonne **ne détruit pas la commande** : le panier a été converti, la commande existe,
 elle reste `EN_ATTENTE_PAIEMENT` et repayable pendant le délai RM-21 de **30 minutes**,
-après quoi le job d'expiration l'annule. Le bouton « Procéder au paiement » se trouve
-sur **la page de confirmation de cette commande** :
+après quoi le job d'expiration l'annule. La reprise se fait **depuis « Mes commandes »
+ou le détail de la commande**, qui portent tous deux le bouton « Procéder au
+paiement » :
 
 ```
-https://<adresse-du-tunnel>/commande/<reference>/confirmation
+https://<adresse-du-tunnel>/commandes
+https://<adresse-du-tunnel>/commandes/<reference>
 ```
+
+Il reste également sur la page de confirmation
+(`/commande/<reference>/confirmation`), point de chute du retour de paiement.
 
 C'est ce qui a permis de relancer le parcours après le blocage CSP, sans reconstituer le
-panier — la référence figure dans l'historique du navigateur, qui est le chemin le plus
-court pour y revenir.
-
-> **« Mes commandes » ne renvoie pas vers cette page.** `/commandes` et
-> `/commandes/{référence}` proposent le détail, la facture, la note de crédit et la
-> demande d'annulation, mais aucun lien de reprise de paiement. Une commande impayée s'y
-> voit donc sans pouvoir s'y payer : il faut passer par l'historique ou retaper l'adresse
-> ci-dessus. Dette d'ergonomie inscrite au registre, hors périmètre de ce lot.
+panier. La reprise ne dépend plus de l'historique du navigateur : la colonne
+« Paiement » de la liste porte le bouton sur toute commande encore en attente, et le
+détail le reprend sous « Documents et démarches ».
 
 ### 6. Arrêt
 

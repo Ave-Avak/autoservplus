@@ -22,6 +22,8 @@ import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
+import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
 
@@ -53,8 +55,20 @@ class HistoriqueCommandeTemplatesIT {
     @Autowired private UtilisateurRepository utilisateurs;
     @Autowired private CommandeRepository commandes;
     @Autowired private FactureService factures;
+    /**
+     * Meme horloge que les services. Les dates de ces jeux d essai en derivent au
+     * lieu d etre ecrites en dur : une commande datee d un jour fixe finit par sortir
+     * de la fenetre de retractation de quatorze jours, et le test devient rouge a une
+     * date qui n a rien a voir avec le code qu il verifie.
+     */
+    @Autowired private Clock horloge;
 
     private Utilisateur marie;
+
+    /** Conclusion d une commande assez recente pour rester retractable (F30). */
+    private Instant hier() {
+        return horloge.instant().minus(Duration.ofDays(1));
+    }
 
     @BeforeEach
     void setUp() {
@@ -63,10 +77,10 @@ class HistoriqueCommandeTemplatesIT {
     }
 
     private Commande commandePayee(String numero) {
+        Instant conclusion = hier();
         Commande commande = new Commande(numero, marie, new BigDecimal("39.98"),
-                new BigDecimal("8.40"), new BigDecimal("48.38"),
-                Instant.parse("2026-08-22T09:00:00Z"));
-        commande.confirmerPaiement(Instant.parse("2026-08-22T09:05:00Z"));
+                new BigDecimal("8.40"), new BigDecimal("48.38"), conclusion);
+        commande.confirmerPaiement(conclusion.plus(Duration.ofMinutes(5)));
         return commandes.saveAndFlush(commande);
     }
 
@@ -92,7 +106,7 @@ class HistoriqueCommandeTemplatesIT {
     void aucunLienSansFacture() throws Exception {
         Commande enAttente = commandes.saveAndFlush(new Commande("CMD-IT-HIST-0002", marie,
                 new BigDecimal("10.00"), new BigDecimal("2.10"), new BigDecimal("12.10"),
-                Instant.parse("2026-08-22T09:00:00Z")));
+                hier()));
 
         mvc.perform(get("/commandes").locale(Locale.FRENCH))
                 .andExpect(status().isOk())
@@ -135,12 +149,44 @@ class HistoriqueCommandeTemplatesIT {
         // Rien a rembourser : proposer le bouton serait une promesse fausse.
         Commande enAttente = commandes.saveAndFlush(new Commande("CMD-IT-HIST-0005", marie,
                 new BigDecimal("10.00"), new BigDecimal("2.10"), new BigDecimal("12.10"),
-                Instant.parse("2026-08-22T09:00:00Z")));
+                hier()));
 
         mvc.perform(get("/commandes").locale(Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString(
                         "/commandes/" + enAttente.getReference() + "/annulation"))));
+    }
+
+    @Test
+    @DisplayName("une commande en attente propose de reprendre son paiement")
+    void proposeLaRepriseDuPaiement() throws Exception {
+        // Le bouton de la page de confirmation ne sert qu une fois : sans celui-ci,
+        // un membre qui a ferme l onglet ne pouvait plus payer nulle part.
+        Commande enAttente = commandes.saveAndFlush(new Commande("CMD-IT-HIST-0006", marie,
+                new BigDecimal("10.00"), new BigDecimal("2.10"), new BigDecimal("12.10"),
+                hier()));
+
+        mvc.perform(get("/commandes").locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(
+                        "/commande/" + enAttente.getReference() + "/payer")))
+                .andExpect(content().string(containsString("Procéder au paiement")))
+                // Plusieurs lignes peuvent attendre leur paiement : le bouton nomme
+                // la commande qu il paie, sinon les boutons sont indistinguables.
+                .andExpect(content().string(containsString(
+                        "Procéder au paiement de la commande " + enAttente.getNumero())));
+    }
+
+    @Test
+    @DisplayName("une commande payee ne propose plus de la payer")
+    void pasDeRepriseUneFoisPayee() throws Exception {
+        // Reproposer le paiement a qui vient de payer invite a payer deux fois.
+        Commande payee = commandePayee("CMD-IT-HIST-0007");
+
+        mvc.perform(get("/commandes").locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString(
+                        "/commande/" + payee.getReference() + "/payer"))));
     }
 
     @Test

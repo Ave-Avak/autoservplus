@@ -117,6 +117,15 @@ public record CommandeDetailVue(
         return referenceFacture != null;
     }
 
+    /**
+     * La commande attend encore son paiement : l'écran peut proposer de le reprendre.
+     * Condition de la liste, sur la même règle — voir
+     * {@link CommandeHistoriqueVue#peutEtrePayee()}.
+     */
+    public boolean peutEtrePayee() {
+        return statut == StatutCommande.EN_ATTENTE_PAIEMENT;
+    }
+
     /** Un paiement abouti existe : de quoi afficher une section « paiement ». */
     public boolean estPayee() {
         return statutPaiement != null;
