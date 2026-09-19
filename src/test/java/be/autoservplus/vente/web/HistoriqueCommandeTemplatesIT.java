@@ -158,6 +158,38 @@ class HistoriqueCommandeTemplatesIT {
     }
 
     @Test
+    @DisplayName("une commande en attente propose de reprendre son paiement")
+    void proposeLaRepriseDuPaiement() throws Exception {
+        // Le bouton de la page de confirmation ne sert qu une fois : sans celui-ci,
+        // un membre qui a ferme l onglet ne pouvait plus payer nulle part.
+        Commande enAttente = commandes.saveAndFlush(new Commande("CMD-IT-HIST-0006", marie,
+                new BigDecimal("10.00"), new BigDecimal("2.10"), new BigDecimal("12.10"),
+                hier()));
+
+        mvc.perform(get("/commandes").locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(
+                        "/commande/" + enAttente.getReference() + "/payer")))
+                .andExpect(content().string(containsString("Procéder au paiement")))
+                // Plusieurs lignes peuvent attendre leur paiement : le bouton nomme
+                // la commande qu il paie, sinon les boutons sont indistinguables.
+                .andExpect(content().string(containsString(
+                        "Procéder au paiement de la commande " + enAttente.getNumero())));
+    }
+
+    @Test
+    @DisplayName("une commande payee ne propose plus de la payer")
+    void pasDeRepriseUneFoisPayee() throws Exception {
+        // Reproposer le paiement a qui vient de payer invite a payer deux fois.
+        Commande payee = commandePayee("CMD-IT-HIST-0007");
+
+        mvc.perform(get("/commandes").locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString(
+                        "/commande/" + payee.getReference() + "/payer"))));
+    }
+
+    @Test
     @DisplayName("sans commande, l'ecran le dit au lieu d'afficher un tableau vide")
     void historiqueVide() throws Exception {
         mvc.perform(get("/commandes").locale(Locale.FRENCH))

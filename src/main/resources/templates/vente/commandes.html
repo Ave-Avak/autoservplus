@@ -49,6 +49,7 @@
             <th scope="col" th:text="#{commandes.colonne.statut}">Statut</th>
             <th scope="col" th:text="#{commandes.colonne.facture}">Facture</th>
             <th scope="col" th:text="#{commandes.colonne.annulation}">Annulation</th>
+            <th scope="col" th:text="#{commandes.colonne.paiement}">Paiement</th>
         </tr>
         </thead>
         <tbody>
@@ -99,6 +100,29 @@
                                   and !retractation.estEnAttente()
                                   and !retractation.aUnAvoir())}"
                       class="carte-meta" th:text="#{commandes.sans-facture}">—</span>
+            </td>
+            <!-- Reprise du paiement. Le bouton de la page de confirmation ne sert
+                 qu'une fois : onglet fermé, prestataire indisponible au premier essai
+                 ou simple retour plus tard, et la commande n'était plus payable nulle
+                 part alors qu'elle le reste pendant tout son délai RM-21. Cet écran est
+                 le seul où le membre la retrouve sans avoir gardé son adresse.
+                 La condition n'est qu'un affichage : une requête forgée sur une
+                 commande déjà payée, annulée ou appartenant à autrui est refusée par
+                 PaiementService.initierPaiement, qui porte la garde. -->
+            <td>
+                <form th:if="${commande.peutEtrePayee()}"
+                      th:action="@{/commande/{ref}/payer(ref=${commande.reference()})}"
+                      method="post">
+                    <!-- Plusieurs lignes peuvent attendre leur paiement : sans
+                         aria-label, la liste des boutons d'une page annoncerait
+                         autant de « Procéder au paiement » indistinguables. Le
+                         libellé visible est complété, jamais remplacé (WCAG 2.5.3). -->
+                    <button type="submit" class="btn-cta"
+                            th:aria-label="#{commande.payer.aria(${commande.numero()})}"
+                            th:text="#{commande.payer}">Procéder au paiement</button>
+                </form>
+                <span th:unless="${commande.peutEtrePayee()}" class="carte-meta"
+                      th:text="#{commandes.sans-facture}">—</span>
             </td>
         </tr>
         </tbody>

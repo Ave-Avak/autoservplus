@@ -272,7 +272,7 @@ class CommandeDetailIT {
         }
 
         @Test
-        @DisplayName("commande non payee : ni facture ni annulation")
+        @DisplayName("commande non payee : ni facture ni annulation, mais la reprise du paiement")
         void commandeNonPayee() throws Exception {
             UUID reference = commander(MARIE, piece("Essuie-glace", "9.00"), 1);
 
@@ -280,7 +280,36 @@ class CommandeDetailIT {
 
             assertNeContientPas(page, "/factures/");
             assertNeContientPas(page, "/annulation");
-            assertContient(page, "Aucun document ni démarche");
+            assertContient(page, "/commande/" + reference + "/payer");
+            // La ligne d etat vide ne tient plus : une demarche est disponible. La
+            // laisser sous un bouton la contredirait mot pour mot.
+            assertNeContientPas(page, "Aucun document ni démarche");
+        }
+
+        @Test
+        @DisplayName("commande payee : plus de reprise du paiement")
+        void plusDeRepriseUneFoisPayee() throws Exception {
+            UUID reference = commander(MARIE, piece("Amortisseur", "80.00"), 1);
+            payer(MARIE, reference);
+
+            assertNeContientPas(detail(MARIE, reference), "/payer");
+        }
+
+        /**
+         * Le POST avec jeton, qui part vers la passerelle bouchonnee, est deja
+         * exerce par {@link CommandeDetailIT#payer} et par
+         * {@code ParcoursPaiementSimuleIT.urlDePaiement} — inutile de le redire. Le
+         * refus sans jeton, lui, n etait verifie que sur {@code POST /commande} :
+         * ce bouton place la reprise sur deux ecrans de plus, d ou la garde ici.
+         */
+        @Test
+        @DisplayName("la reprise sans jeton CSRF est rejetee")
+        void repriseSansCsrfRejetee() throws Exception {
+            UUID reference = commander(MARIE, piece("Filtre a air", "14.00"), 1);
+
+            mvc.perform(post("/commande/{ref}/payer", reference)
+                            .with(user(MARIE).roles("MEMBRE")))
+                    .andExpect(status().isForbidden());
         }
     }
 
