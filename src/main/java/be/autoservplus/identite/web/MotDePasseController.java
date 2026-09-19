@@ -32,11 +32,24 @@ public class MotDePasseController {
         return "identite/mot-de-passe-oublie";
     }
 
+    /**
+     * Traite la demande de reinitialisation.
+     *
+     * <p>Rend TOUJOURS la meme vue, quel que soit le sort de la demande : le service
+     * ne remonte rien qui permettrait de distinguer une adresse inconnue d une adresse
+     * servie. Faire autrement ferait de ce formulaire public un oracle d existence de
+     * compte, donc un moyen d enumerer les membres.</p>
+     *
+     * <p><b>L adresse soumise n est pas renvoyee au modele</b>, alignement sur
+     * {@code InscriptionController.traiterRenvoiVerification}. La reafficher
+     * permettrait de faire porter la page a une adresse arbitraire : un lien forge
+     * vers cette adresse donnerait a n importe quelle saisie l apparence d une
+     * confirmation emise par le site.</p>
+     */
     @PostMapping("/oublie")
     public String traiterDemande(@RequestParam String email, Model modele) {
         service.demanderReinitialisation(email);
         modele.addAttribute("titre", "Vérifiez votre courriel");
-        modele.addAttribute("adresse", email);
         return "identite/mot-de-passe-demande";
     }
 

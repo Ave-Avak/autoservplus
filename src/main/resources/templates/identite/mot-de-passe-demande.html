@@ -13,9 +13,15 @@
 </header>
 <main id="contenu">
     <h1>Vérifiez votre courriel</h1>
+    <!-- L'adresse saisie n'est PAS reaffichee, alignement sur le parcours de renvoi de
+         verification. La reafficher permettrait de faire porter a cette page une
+         adresse arbitraire : un lien forge menant ici donnerait a n'importe quelle
+         adresse l'apparence d'une confirmation legitime emise par le site. Le message
+         est par ailleurs identique que le compte existe ou non — c'est le courriel,
+         et lui seul, qui renseigne le titulaire. -->
     <div class="message message-succes" role="status">
-        <p>Si un compte est associé à <strong th:text="${adresse}">adresse@exemple.be</strong>,
-            vous recevrez un message dans quelques instants.</p>
+        <p>Si un compte est associé à cette adresse, vous recevrez un message dans
+            quelques instants.</p>
         <p>Le lien qu'il contient reste valable une heure.</p>
     </div>
     <p>Vous ne recevez rien ? Vérifiez le dossier des indésirables, et assurez-vous
