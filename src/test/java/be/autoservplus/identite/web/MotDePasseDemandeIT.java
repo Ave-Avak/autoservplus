@@ -48,7 +48,15 @@ class MotDePasseDemandeIT {
 
     private static final AtomicInteger COMPTEUR = new AtomicInteger(1);
     private static final String MOT_DE_PASSE = "MotDePasseSolide2026!";
-    private static final String INCONNUE = "personne-sans-compte@exemple.be";
+
+    /**
+     * IP fixe et propre a cette classe. Le plafond de debit des formulaires publics
+     * compte par adresse IP ; sans cette epingle, tous les cas de tous les tests
+     * partageraient le budget de {@code 127.0.0.1}, que MockMvc attribue par defaut,
+     * et un cas ajoute plus tard ferait echouer un cas ecrit avant lui.
+     * {@code 203.0.113.0/24} est la plage reservee a la documentation (RFC 5737).
+     */
+    private static final String IP = "203.0.113.41";
 
     @Autowired private MockMvc mvc;
     @Autowired private UtilisateurRepository utilisateurs;
@@ -62,7 +70,8 @@ class MotDePasseDemandeIT {
         assertThat(corpsApresDemande(email)).doesNotContain(email);
         // Une adresse inconnue non plus : sinon un lien forge menant ici donnerait a
         // n importe quelle saisie l apparence d une confirmation emise par le site.
-        assertThat(corpsApresDemande(INCONNUE)).doesNotContain(INCONNUE);
+        String inconnue = adresseInconnue();
+        assertThat(corpsApresDemande(inconnue)).doesNotContain(inconnue);
     }
 
     /**
@@ -75,7 +84,7 @@ class MotDePasseDemandeIT {
     void memePageDansLesDeuxCas() throws Exception {
         String email = creerMembreActif();
 
-        assertThat(corpsApresDemande(email)).isEqualTo(corpsApresDemande(INCONNUE));
+        assertThat(corpsApresDemande(email)).isEqualTo(corpsApresDemande(adresseInconnue()));
     }
 
     /**
@@ -106,10 +115,24 @@ class MotDePasseDemandeIT {
      */
     private String corpsApresDemande(String email) throws Exception {
         String corps = mvc.perform(post("/mot-de-passe/oublie").param("email", email)
-                        .with(anonymous()).with(csrf()).header("Accept-Language", "fr"))
+                        .with(anonymous()).with(csrf()).header("Accept-Language", "fr")
+                        .with(brute -> {
+                            brute.setRemoteAddr(IP);
+                            return brute;
+                        }))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return corps.replaceAll("name=\"_csrf\" value=\"[^\"]*\"", "name=\"_csrf\" value=\"X\"");
+    }
+
+    /**
+     * Adresse inconnue NEUVE a chaque appel. Une constante partagee verrait son quota
+     * de debit consomme par les cas precedents : le dernier a s executer recevrait la
+     * page de plafond quand son terme de comparaison recevrait celle du succes, et la
+     * comparaison de neutralite echouerait pour une raison etrangere a la neutralite.
+     */
+    private String adresseInconnue() {
+        return "personne-sans-compte-" + COMPTEUR.getAndIncrement() + "@exemple.be";
     }
 
     private String creerMembreActif() {

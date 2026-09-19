@@ -53,6 +53,14 @@ class RenvoiVerificationIT {
     private static final AtomicInteger COMPTEUR = new AtomicInteger(1);
     private static final String MOT_DE_PASSE = "MotDePasseSolide2026!";
 
+    /**
+     * IP fixe et propre a cette classe : le plafond de debit compte par adresse IP, et
+     * MockMvc attribue {@code 127.0.0.1} a tout le monde. Sans cette epingle, les cas
+     * de classes differentes se partageraient un budget et se feraient echouer
+     * mutuellement. Plage reservee a la documentation (RFC 5737).
+     */
+    private static final String IP = "203.0.113.42";
+
     @Autowired private MockMvc mvc;
     @Autowired private UtilisateurRepository utilisateurs;
     @Autowired private PasswordEncoder encodeur;
@@ -192,7 +200,11 @@ class RenvoiVerificationIT {
     /** Corps de la reponse, jetons CSRF neutralises : eux seuls varient legitimement. */
     private String corpsApresDemande(String email) throws Exception {
         String corps = mvc.perform(post("/inscription/renvoyer-verification").param("email", email)
-                        .with(anonymous()).with(csrf()).header("Accept-Language", "fr"))
+                        .with(anonymous()).with(csrf()).header("Accept-Language", "fr")
+                        .with(brute -> {
+                            brute.setRemoteAddr(IP);
+                            return brute;
+                        }))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return corps.replaceAll("name=\"_csrf\" value=\"[^\"]*\"", "name=\"_csrf\" value=\"X\"");

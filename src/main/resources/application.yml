@@ -168,6 +168,20 @@ autoservplus:
     tentatives-max: 5
     duree-verrouillage-minutes: 15
 
+    # Plafond des formulaires PUBLICS qui declenchent un envoi de courriel : renvoi du
+    # lien de verification et demande de reinitialisation. Sans lui, une adresse valide
+    # peut etre inondee par un tiers et le quota du fournisseur d envoi consomme par
+    # n importe qui. Le verrouillage de compte ci-dessus ne couvre que la connexion.
+    #
+    # Deux cles : par adresse contre le harcelement d un titulaire precis, par IP
+    # contre le balayage de beaucoup d adresses. Les valeurs suivent celles du
+    # verrouillage — cinq tentatives, quinze minutes — pour qu un exploitant n ait
+    # qu une echelle a comprendre.
+    debit:
+      demandes-max-par-adresse: 5
+      demandes-max-par-ip: 20
+      fenetre-minutes: 15
+
 logging:
   level:
     be.autoservplus: INFO

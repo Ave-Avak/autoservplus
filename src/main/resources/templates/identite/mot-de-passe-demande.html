@@ -23,6 +23,12 @@
         <p>Si un compte est associé à cette adresse, vous recevrez un message dans
             quelques instants.</p>
         <p>Le lien qu'il contient reste valable une heure.</p>
+        <!-- Meme ligne de plafond qu'au parcours de renvoi, et meme motif : elle parle
+             du demandeur, pas du compte. Seul texte i18n de cet ecran encore en
+             francais en dur — une chaine ajoutee aujourd'hui n'a pas de raison de
+             naitre non traduite, la traduction de l'ecran entier restant un chantier
+             a part. -->
+        <p th:if="${debitDepasse}" th:text="#{securite.debit.trop-de-demandes}">Trop de demandes ont été envoyées depuis peu. Réessayez dans quelques minutes.</p>
     </div>
     <p>Vous ne recevez rien ? Vérifiez le dossier des indésirables, et assurez-vous
         que l'adresse saisie est bien celle de votre compte.</p>
