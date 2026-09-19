@@ -11,6 +11,7 @@ import be.autoservplus.reservation.repository.VehiculeRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,10 +32,14 @@ public class VehiculeService {
 
     private final VehiculeRepository vehicules;
     private final UtilisateurRepository membres;
+    /** Horodate la suppression logique : l entite ne lit plus l heure elle-meme. */
+    private final Clock horloge;
 
-    public VehiculeService(VehiculeRepository vehicules, UtilisateurRepository membres) {
+    public VehiculeService(VehiculeRepository vehicules, UtilisateurRepository membres,
+                           Clock horloge) {
         this.vehicules = vehicules;
         this.membres = membres;
+        this.horloge = horloge;
     }
 
     public List<Vehicule> vehiculesDuMembre(String email) {
@@ -129,6 +134,6 @@ public class VehiculeService {
      */
     @Transactional
     public void supprimer(UUID reference, String email) {
-        vehiculeDuMembre(reference, email).marquerSupprime(email);
+        vehiculeDuMembre(reference, email).marquerSupprime(email, horloge.instant());
     }
 }

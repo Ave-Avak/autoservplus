@@ -44,9 +44,23 @@ public abstract class BaseEntity {
     @Column(name = "deleted_by", length = 120)
     private String deletedBy;
 
-    /** Marque l entite comme supprimee sans la retirer de la base. */
-    public void marquerSupprime(String auteur) {
-        this.deletedAt = Instant.now();
+    /**
+     * Marque l entite comme supprimee sans la retirer de la base.
+     *
+     * <p>L instant vient de l <b>appelant</b>, jamais de {@code Instant.now()} : le
+     * projet injecte une {@link java.time.Clock} partout ou le temps intervient, pour
+     * qu un test puisse se placer a la date de son choix. Cette methode faisait
+     * exception, et elle etait la seule du domaine — {@code Rdv.annulerParLeGarage},
+     * {@code Commande.annuler}, {@code Paiement.expirer} et {@code Consentement}
+     * recoivent tous leur instant.</p>
+     *
+     * <p><b>Parametre obligatoire et non surcharge de confort</b> : une variante sans
+     * instant serait celle qu on ecrirait par reflexe, et elle ramenerait le defaut
+     * qu elle remplace. Ici le compilateur refuse de l oublier, ce qui vaut mieux
+     * qu un test de garde a entretenir.</p>
+     */
+    public void marquerSupprime(String auteur, Instant maintenant) {
+        this.deletedAt = maintenant;
         this.deletedBy = auteur;
     }
 

@@ -395,7 +395,7 @@ class ExportDonneesServiceTest {
         @DisplayName("restitue un vehicule supprime logiquement, marque comme tel")
         void vehiculeSupprime() {
             compteSansDonnees();
-            golf.marquerSupprime(EMAIL);
+            golf.marquerSupprime(EMAIL, Instant.parse("2026-06-20T09:00:00Z"));
             avecLaGolfAuParc();
 
             List<ExportDonnees.VehiculeExport> exportes =
@@ -415,7 +415,7 @@ class ExportDonneesServiceTest {
         @DisplayName("l'historique d'atelier d'un vehicule supprime reste exporte")
         void historiqueDUnVehiculeSupprime() {
             compteSansDonnees();
-            golf.marquerSupprime(EMAIL);
+            golf.marquerSupprime(EMAIL, Instant.parse("2026-06-20T09:00:00Z"));
             avecLaGolfAuParc();
             when(rendezVous.pourMembre(EMAIL)).thenReturn(List.of(rdvDeMarie()));
             Intervention intervention = new Intervention("INT-2026-0001", rdvDeMarie());

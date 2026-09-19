@@ -12,10 +12,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
+import org.junit.jupiter.api.BeforeEach;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.time.Clock;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -38,10 +41,27 @@ class VehiculeServiceTest {
     private static final String MARIE = "marie@exemple.be";
     private static final String PAUL = "paul@exemple.be";
 
+    /**
+     * Horloge figee, et non {@code systemUTC} : la suppression logique horodate
+     * desormais depuis l horloge injectee, donc la date ecrite est verifiable a la
+     * valeur pres. Avec une horloge systeme on ne pourrait qu en constater la
+     * presence, ce qui ne distinguerait pas l instant injecte d un
+     * {@code Instant.now()} revenu en douce.
+     */
+    private static final Instant MAINTENANT = Instant.parse("2026-09-20T11:30:00Z");
+
     @Mock private VehiculeRepository vehicules;
     @Mock private UtilisateurRepository membres;
 
-    @InjectMocks private VehiculeService service;
+    private VehiculeService service;
+
+    @BeforeEach
+    void construireLeService() {
+        // Construction explicite plutot que @InjectMocks : l horloge n est pas une
+        // doublure et n a aucune raison d en etre une.
+        service = new VehiculeService(vehicules, membres,
+                Clock.fixed(MAINTENANT, ZoneOffset.UTC));
+    }
 
     @Nested
     @DisplayName("ajout")
@@ -234,6 +254,8 @@ class VehiculeServiceTest {
 
             assertThat(vehicule.estSupprime()).isTrue();
             assertThat(vehicule.getDeletedBy()).isEqualTo(MARIE);
+            // L horodatage vient de l horloge injectee, pas de l heure de la machine.
+            assertThat(vehicule.getDeletedAt()).isEqualTo(MAINTENANT);
             verify(vehicules, never()).delete(any());
         }
 
