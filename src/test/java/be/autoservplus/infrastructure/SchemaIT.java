@@ -6,20 +6,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import be.autoservplus.support.SocleIntegration;
 
 /**
  * Rejoue l ensemble des migrations sur un PostgreSQL neuf et verifie les elements de
@@ -30,13 +27,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Failsafe (suffixe IT) et requiert Docker.</p>
  */
 @SpringBootTest
-@Testcontainers
 @DisplayName("Schema de base de donnees")
-class SchemaIT {
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+class SchemaIT extends SocleIntegration {
 
     @Autowired
     private JdbcTemplate jdbc;

@@ -30,14 +30,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -47,6 +43,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
+import be.autoservplus.support.SocleIntegration;
 
 /**
  * RM-29 et RM-28 contre un vrai PostgreSQL 16 : les references d historique sont
@@ -61,15 +58,10 @@ import static org.assertj.core.api.Assertions.tuple;
  * et triee.</p>
  */
 @SpringBootTest
-@Testcontainers
 @Transactional
 @WithMockUser(username = "admin@garage.be", roles = "ADMINISTRATEUR")
 @DisplayName("AdminCatalogueService (integration)")
-class AdminCatalogueServiceIT {
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+class AdminCatalogueServiceIT extends SocleIntegration {
 
     @Autowired private AdminCatalogueService admin;
     @Autowired private CatalogueService cataloguePublic;

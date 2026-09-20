@@ -6,13 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -21,6 +17,7 @@ import java.time.ZoneId;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import be.autoservplus.support.SocleIntegration;
 
 /**
  * Prouve que la chaine complete de disponibilite fonctionne apres application
@@ -38,14 +35,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * test — cf. le meme pattern que RdvServiceIT.</p>
  */
 @SpringBootTest
-@Testcontainers
 @Import(DisponibiliteIT.HorlogeFixe.class)
 @DisplayName("Disponibilite (integration)")
-class DisponibiliteIT {
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+class DisponibiliteIT extends SocleIntegration {
 
     private static final ZoneId BRUXELLES = ZoneId.of("Europe/Brussels");
     // Vendredi 11 septembre 2026 a 09:00 Bruxelles. Le lundi suivant (14 sept)

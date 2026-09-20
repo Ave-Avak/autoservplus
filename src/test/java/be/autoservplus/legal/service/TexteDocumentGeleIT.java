@@ -9,12 +9,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.MessageSource;
 import org.springframework.core.io.ClassPathResource;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.io.InputStreamReader;
 import java.io.Reader;
@@ -29,6 +25,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import be.autoservplus.support.SocleIntegration;
 
 /**
  * Garde de non-derive du texte gele (F24).
@@ -51,13 +48,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * comparerait que le test a lui-meme.</p>
  */
 @SpringBootTest
-@Testcontainers
 @DisplayName("Texte gele des documents versionnes (F24)")
-class TexteDocumentGeleIT {
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+class TexteDocumentGeleIT extends SocleIntegration {
 
     /**
      * Seule cle a arguments des trois familles surveillees. Le delai vient de la

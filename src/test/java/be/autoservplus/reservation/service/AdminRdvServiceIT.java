@@ -17,15 +17,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -38,6 +34,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import be.autoservplus.support.SocleIntegration;
 
 /**
  * Exerce les requetes JPQL du tableau de bord admin contre un vrai PostgreSQL 16.
@@ -54,16 +51,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * principal necessaire.</p>
  */
 @SpringBootTest
-@Testcontainers
 @Transactional
 @Import(AdminRdvServiceIT.HorlogeFixe.class)
 @WithMockUser(username = "admin@garage.be", roles = "ADMINISTRATEUR")
 @DisplayName("AdminRdvService (integration)")
-class AdminRdvServiceIT {
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+class AdminRdvServiceIT extends SocleIntegration {
 
     private static final ZoneId BRUXELLES = ZoneId.of("Europe/Brussels");
     // Dimanche 13 septembre 2026 a 12:00 Bruxelles. Les RDV termines a 09:30 sont

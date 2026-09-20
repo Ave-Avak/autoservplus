@@ -1,0 +1,6 @@
+# Enregistrement GLOBAL de la fabrique, et non une annotation sur le socle : une
+# classe @Nested n'herite pas du socle (seule son hote en herite), et l'annotation ne
+# serait donc pas toujours trouvee pour elle. La fabrique decide elle-meme si elle
+# s'applique, en remontant a la classe englobante racine.
+org.springframework.test.context.ContextCustomizerFactory=\
+  be.autoservplus.support.BaseDedieeParClasse
