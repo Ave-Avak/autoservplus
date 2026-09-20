@@ -103,7 +103,12 @@ public class BaseDedieeParClasse implements ContextCustomizerFactory {
                             // defaut : chaque contexte en cache retiendrait donc quatre
                             // connexions oisives jusqu a la fin de la build. A zero,
                             // elles sont rendues au serveur.
-                            "spring.datasource.hikari.minimum-idle=0")
+                            "spring.datasource.hikari.minimum-idle=0",
+                            // Ordonnanceur eteint : voir PlanificationConfig. Pose ici
+                            // et non dans un application.yml de test, qui masquerait
+                            // celui de production — src/test/resources n en contient
+                            // volontairement aucun.
+                            "autoservplus.planification.activee=false")
                     .applyTo(contexte);
         }
 
