@@ -2,8 +2,10 @@ package be.autoservplus.config;
 
 import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.i18n.ResolveurLangueSession;
+import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
@@ -73,5 +75,36 @@ public class InternationalisationConfig implements WebMvcConfigurer {
     @Override
     public void addInterceptors(InterceptorRegistry registre) {
         registre.addInterceptor(localeChangeInterceptor());
+    }
+
+    /**
+     * Fait resoudre les messages de Bean Validation par le {@code MessageSource} du
+     * projet, c est-a-dire par {@code i18n/messages*.properties}.
+     *
+     * <p><b>Le defaut corrige.</b> Sans ce bean, l interpolateur de Bean Validation
+     * cherche les cles dans un {@code ValidationMessages.properties} — que ce projet
+     * n a jamais eu. Une cle introuvable n est pas une erreur au sens de la
+     * specification : le message est rendu <b>tel quel, accolades comprises</b>. Le
+     * formulaire public d inscription affichait donc
+     * {@code {validation.email.format}} a l utilisateur, constate en soumettant le
+     * formulaire sur une application demarree.</p>
+     *
+     * <p>Les huit cles manquantes sont ajoutees par ailleurs, mais les ajouter aurait
+     * suffi a faire disparaitre le symptome <b>sans</b> corriger la cause : le projet
+     * serait reste avec deux mecanismes de resolution — celui-ci, muet, et la
+     * resolution par codes d erreur de Spring, qui faisait fonctionner les cles
+     * {@code admin.catalogue.validation.*}. Une cle ajoutee demain serait retombee
+     * dans le meme piege.</p>
+     *
+     * <p>Consequence utile : les messages de validation suivent desormais la langue
+     * de la session, comme le reste de l interface. Ils suivaient jusqu ici l en-tete
+     * du navigateur par un autre chemin, ce que F6 avait justement cesse de faire
+     * partout ailleurs.</p>
+     */
+    @Bean
+    public LocalValidatorFactoryBean validator(MessageSource messages) {
+        LocalValidatorFactoryBean validateur = new LocalValidatorFactoryBean();
+        validateur.setValidationMessageSource(messages);
+        return validateur;
     }
 }
