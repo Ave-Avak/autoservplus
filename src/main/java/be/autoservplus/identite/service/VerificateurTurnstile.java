@@ -1,10 +1,10 @@
 package be.autoservplus.identite.service;
 
+import be.autoservplus.config.SiTurnstileConfigure;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.util.LinkedMultiValueMap;
@@ -36,7 +36,7 @@ import java.util.Map;
  * formulaire poste hors du navigateur, pas une panne.</p>
  */
 @Service
-@ConditionalOnProperty(name = "autoservplus.securite.turnstile.cle-secrete")
+@SiTurnstileConfigure
 public class VerificateurTurnstile {
 
     private static final Logger JOURNAL = LoggerFactory.getLogger(VerificateurTurnstile.class);

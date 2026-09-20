@@ -1,6 +1,5 @@
 package be.autoservplus.config;
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.http.client.ClientHttpRequestFactoryBuilder;
 import org.springframework.boot.http.client.ClientHttpRequestFactorySettings;
 import org.springframework.context.annotation.Bean;
@@ -21,7 +20,7 @@ import java.time.Duration;
  * Turnstile, pas un deploiement casse.</p>
  */
 @Configuration
-@ConditionalOnProperty(name = "autoservplus.securite.turnstile.cle-secrete")
+@SiTurnstileConfigure
 public class TurnstileClientConfig {
 
     private static final String URL_VERIFICATION =

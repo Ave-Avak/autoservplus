@@ -89,6 +89,15 @@ class TurnstileIT extends SocleIntegration {
         assertThat(utilisateurs.findByEmailIgnoreCase(email)).isEmpty();
     }
 
+    /**
+     * <b>Le defaut que ce cas verrouille.</b> {@code @ConditionalOnProperty} considere
+     * une propriete presente des qu elle est declaree, meme vide — or
+     * {@code application.yml} la declare avec une valeur par defaut vide. Le
+     * verificateur naissait donc sur TOUT deploiement, avec une cle vide, et refusait
+     * chaque soumission en silence : inscription, renvoi de verification et mot de
+     * passe oublie etaient morts par defaut. Verifie par {@code TurnstileAbsentIT},
+     * qui monte le contexte sans cle.
+     */
     private void inscrire(String email, String jeton) throws Exception {
         var requete = post("/inscription").with(anonymous()).with(csrf())
                 .header("Accept-Language", "fr")
