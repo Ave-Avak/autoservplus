@@ -98,10 +98,17 @@ service sur un serveur Hetzner, sauvegardes, limites connues — figure dans
 ```
 
 Exécute les tests unitaires (Surefire, suffixe `Test`), les tests d'intégration
-(Failsafe, suffixe `IT`) et la vérification de couverture.
+(Failsafe, suffixe `IT`) et la vérification de couverture — soit **907 tests unitaires**
+et **406 tests d'intégration** répartis sur 84 et 49 classes.
 
-- Les tests d'intégration démarrent un PostgreSQL 16 via **Testcontainers** : Docker
-  doit être disponible et démarré.
+- Les tests d'intégration démarrent **un seul** PostgreSQL 16 via **Testcontainers**,
+  partagé par les 49 classes d'intégration : Docker doit être disponible et démarré.
+- Chaque classe d'intégration reçoit néanmoins **sa propre base de données** dans ce
+  conteneur. L'isolation est donc celle d'un serveur par classe, pour le prix d'un seul.
+- La **planification est désactivée** en test : l'ordonnanceur n'y rend aucun service, et
+  chaque contexte gardait le sien vivant jusqu'à la fin de la machine virtuelle. Le job
+  concerné (expiration des commandes impayées) est couvert par un test unitaire qui
+  l'appelle directement, avec une horloge figée.
 - **JaCoCo** échoue sous **60 %** d'instructions couvertes sur l'ensemble du projet.
 
 L'intégration continue (GitHub Actions, `.github/workflows/ci.yml`) exécute
@@ -139,13 +146,27 @@ src/main/java/be/autoservplus/
 └── config/          sécurité, horloge, propriétés
 
 src/main/resources/db/
-├── migration/       schéma et données de référence — appliquées toujours (V1 à V33)
-└── demo/            jeu de démonstration — appliqué sous le profil `demo` seulement
+├── migration/       schéma et données de référence — appliquées toujours (V1 à V33, puis V35)
+└── demo/            jeu de démonstration — appliqué sous le profil `demo` seulement (V900)
 ```
 
 La séparation entre `migration` et `demo` n'est pas cosmétique : les tests
 d'intégration partent d'une base dépourvue de données transactionnelles, et plusieurs
 vérifient des états initiaux qu'un jeu de démonstration rendrait faux.
+
+**Le numéro V34 est libre, et le trou est voulu.** La graine de démonstration l'occupait ;
+elle est devenue `db/demo/V900`. Flyway ne tolère une migration *appliquée mais non
+résolue* — ce qu'est `db/demo` pour toute base démarrée sans le profil `demo` — que si son
+numéro dépasse toutes les migrations connues ; en dessous, la validation échoue et
+l'application refuse de démarrer. Numérotée 34, la graine n'était donc tolérée que par
+accident de numérotation, et n'attendait que la migration suivante. Une migration ne se
+renumérote pas après coup : le trou reste.
+
+**V16 et V17 portent « demo » dans leur nom alors qu'elles sont toujours appliquées.**
+L'écart est assumé : elles sèment le catalogue et les postes d'atelier, sans lesquels la
+réservation ne propose aucun créneau. Ce sont donc des données de référence, que leur nom
+décrit mal. Une migration déjà appliquée ne se renomme pas — son empreinte changerait et
+Flyway refuserait toute base existante — et le nom reste tel quel.
 
 ## Configuration
 
