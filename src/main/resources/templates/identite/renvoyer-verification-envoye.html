@@ -21,6 +21,11 @@
          la demande deviendrait un oracle d'existence de compte. -->
     <div class="message message-succes" role="status">
         <p th:text="#{verification.renvoi.envoye.neutre}">Si un compte non vérifié correspond à cette adresse, un e-mail vient d'être envoyé.</p>
+        <!-- Ligne de plafond. Elle parle du DEMANDEUR, jamais du compte : elle ne dit
+             ni « cette adresse » ni « ce compte », et le compteur monte identiquement
+             pour une adresse inconnue. La comparer entre deux adresses n'apprend donc
+             rien, et la page reste la meme dans tous les cas. -->
+        <p th:if="${debitDepasse}" th:text="#{securite.debit.trop-de-demandes}">Trop de demandes ont été envoyées depuis peu. Réessayez dans quelques minutes.</p>
         <p th:text="#{verification.renvoi.envoye.validite}">Le lien qu'il contient reste valable 24 heures.</p>
     </div>
 

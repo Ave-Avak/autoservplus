@@ -347,7 +347,7 @@ class ExportDonneesIT {
         membreComplet("chloe@exemple.be", MDP_MARIE, "8-CHL-001", "Fiat",
                 "CHLOE", "81.240.10.14", Instant.parse("2026-06-17T08:00:00Z"));
         Vehicule fiat = vehicules.findByMembre("chloe@exemple.be").get(0);
-        fiat.marquerSupprime("chloe@exemple.be");
+        fiat.marquerSupprime("chloe@exemple.be", Instant.parse("2026-06-20T09:00:00Z"));
         entites.flush();
         entites.clear();
 

@@ -2,8 +2,10 @@ package be.autoservplus.identite.web;
 
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.identite.service.LimiteurDemandesCourriel;
 import be.autoservplus.identite.service.MotDePasseService;
 import be.autoservplus.identite.web.dto.NouveauMotDePasseForm;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -21,9 +23,11 @@ import org.springframework.web.bind.annotation.*;
 public class MotDePasseController {
 
     private final MotDePasseService service;
+    private final LimiteurDemandesCourriel limiteur;
 
-    public MotDePasseController(MotDePasseService service) {
+    public MotDePasseController(MotDePasseService service, LimiteurDemandesCourriel limiteur) {
         this.service = service;
+        this.limiteur = limiteur;
     }
 
     @GetMapping("/oublie")
@@ -32,11 +36,32 @@ public class MotDePasseController {
         return "identite/mot-de-passe-oublie";
     }
 
+    /**
+     * Traite la demande de reinitialisation.
+     *
+     * <p>Rend TOUJOURS la meme vue, quel que soit le sort de la demande : le service
+     * ne remonte rien qui permettrait de distinguer une adresse inconnue d une adresse
+     * servie. Faire autrement ferait de ce formulaire public un oracle d existence de
+     * compte, donc un moyen d enumerer les membres.</p>
+     *
+     * <p><b>L adresse soumise n est pas renvoyee au modele</b>, alignement sur
+     * {@code InscriptionController.traiterRenvoiVerification}. La reafficher
+     * permettrait de faire porter la page a une adresse arbitraire : un lien forge
+     * vers cette adresse donnerait a n importe quelle saisie l apparence d une
+     * confirmation emise par le site.</p>
+     */
     @PostMapping("/oublie")
-    public String traiterDemande(@RequestParam String email, Model modele) {
-        service.demanderReinitialisation(email);
+    public String traiterDemande(@RequestParam String email, Model modele,
+                                 HttpServletRequest requete) {
+        // Le decompte precede l appel au service, donc tout acces a la base : c est ce
+        // qui fait monter le compteur identiquement pour une adresse inconnue et pour
+        // une adresse servie. L inverser transformerait l ecran en oracle.
+        if (limiteur.autoriser(email, requete.getRemoteAddr())) {
+            service.demanderReinitialisation(email);
+        } else {
+            modele.addAttribute("debitDepasse", true);
+        }
         modele.addAttribute("titre", "Vérifiez votre courriel");
-        modele.addAttribute("adresse", email);
         return "identite/mot-de-passe-demande";
     }
 

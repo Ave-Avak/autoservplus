@@ -3,7 +3,9 @@ package be.autoservplus.identite.web;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.service.InscriptionService;
+import be.autoservplus.identite.service.LimiteurDemandesCourriel;
 import be.autoservplus.identite.web.dto.InscriptionForm;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -25,9 +27,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 public class InscriptionController {
 
     private final InscriptionService service;
+    private final LimiteurDemandesCourriel limiteur;
 
-    public InscriptionController(InscriptionService service) {
+    public InscriptionController(InscriptionService service,
+                                 LimiteurDemandesCourriel limiteur) {
         this.service = service;
+        this.limiteur = limiteur;
     }
 
     @GetMapping("/inscription")
@@ -86,8 +91,16 @@ public class InscriptionController {
      * courriel, et lui seul, qui renseigne le titulaire du compte.</p>
      */
     @PostMapping("/inscription/renvoyer-verification")
-    public String traiterRenvoiVerification(@RequestParam String email) {
-        service.demanderRenvoiVerification(email);
+    public String traiterRenvoiVerification(@RequestParam String email, Model modele,
+                                            HttpServletRequest requete) {
+        // Decompte AVANT le service, donc avant toute recherche en base : le compteur
+        // monte pareil pour une adresse inconnue, ce qui est la condition pour que le
+        // plafond n introduise pas l oracle que cet ecran est fait pour taire.
+        if (limiteur.autoriser(email, requete.getRemoteAddr())) {
+            service.demanderRenvoiVerification(email);
+        } else {
+            modele.addAttribute("debitDepasse", true);
+        }
         return "identite/renvoyer-verification-envoye";
     }
 
