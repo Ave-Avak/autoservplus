@@ -5,6 +5,10 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.service.LimiteurDemandesCourriel;
 import be.autoservplus.identite.service.MotDePasseService;
 import be.autoservplus.identite.service.PiegeAntiBot;
+import be.autoservplus.identite.service.VerificateurTurnstile;
+import org.springframework.beans.factory.annotation.Value;
+
+import java.util.Optional;
 import be.autoservplus.identite.web.dto.NouveauMotDePasseForm;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -26,18 +30,32 @@ public class MotDePasseController {
     private final MotDePasseService service;
     private final LimiteurDemandesCourriel limiteur;
     private final PiegeAntiBot pieges;
+    /** Absent quand aucune cle secrete n est configuree : voir TurnstileClientConfig. */
+    private final Optional<VerificateurTurnstile> turnstile;
+    private final String cleTurnstile;
 
     public MotDePasseController(MotDePasseService service, LimiteurDemandesCourriel limiteur,
-                                PiegeAntiBot pieges) {
+                                PiegeAntiBot pieges,
+                                Optional<VerificateurTurnstile> turnstile,
+                                @Value("${autoservplus.securite.turnstile.cle-site:}")
+                                String cleTurnstile) {
         this.service = service;
         this.limiteur = limiteur;
         this.pieges = pieges;
+        this.turnstile = turnstile;
+        this.cleTurnstile = cleTurnstile;
+    }
+
+    private boolean turnstileRefuse(String jeton, HttpServletRequest requete) {
+        return turnstile.isPresent()
+                && !turnstile.get().jetonValide(jeton, requete.getRemoteAddr());
     }
 
     @GetMapping("/oublie")
     public String afficherDemande(Model modele) {
         modele.addAttribute("titre", "Mot de passe oublié");
         modele.addAttribute("horodatageAntiBot", pieges.horodatageActuel());
+        modele.addAttribute("cleTurnstile", cleTurnstile);
         return "identite/mot-de-passe-oublie";
     }
 
@@ -61,9 +79,12 @@ public class MotDePasseController {
                                  @RequestParam(name = PiegeAntiBot.CHAMP_PIEGE,
                                          required = false) String piege,
                                  @RequestParam(name = PiegeAntiBot.CHAMP_HORODATAGE,
-                                         required = false) String horodatage) {
+                                         required = false) String horodatage,
+                                 @RequestParam(name = VerificateurTurnstile.CHAMP_JETON,
+                                         required = false) String jetonTurnstile) {
         // Meme page que le cas nominal, pour la meme raison qu au renvoi.
-        if (pieges.soumissionAutomatique(piege, horodatage)) {
+        if (pieges.soumissionAutomatique(piege, horodatage)
+                || turnstileRefuse(jetonTurnstile, requete)) {
             modele.addAttribute("titre", "Vérifiez votre courriel");
             return "identite/mot-de-passe-demande";
         }

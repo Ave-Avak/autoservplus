@@ -182,6 +182,19 @@ autoservplus:
       demandes-max-par-ip: 20
       fenetre-minutes: 15
 
+    # Turnstile (Cloudflare) sur les formulaires publics. Les deux cles sont vides par
+    # defaut : sans elles, ni le widget ni la verification n'existent et le site
+    # fonctionne sur ses trois autres couches — champ piege, delai minimal, plafond par
+    # IP. Une cle absente est un deploiement sans Turnstile, pas un deploiement casse.
+    #
+    # Cles de test publiees par Cloudflare, pour un poste de developpement :
+    #   cle-site    1x00000000000000000000AA  (passe toujours)
+    #   cle-secrete 1x0000000000000000000000000000000AA  (valide toujours)
+    # Elles ne contactent rien : le widget rend un jeton factice sans ouvrir de trame.
+    turnstile:
+      cle-site: ${TURNSTILE_CLE_SITE:}
+      cle-secrete: ${TURNSTILE_CLE_SECRETE:}
+
 logging:
   level:
     be.autoservplus: INFO

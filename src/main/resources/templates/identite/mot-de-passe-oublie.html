@@ -23,6 +23,7 @@
         </div>
         <button type="submit" class="btn-cta">Envoyer</button>
         <div th:replace="~{fragments/antibot :: pieges(${horodatageAntiBot})}"></div>
+    <div th:replace="~{fragments/antibot :: turnstile(${cleTurnstile})}"></div>
 </form>
 
     <p><a th:href="@{/connexion}">Retour à la connexion</a></p>
