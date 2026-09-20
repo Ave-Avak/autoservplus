@@ -6,14 +6,10 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -29,6 +25,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import be.autoservplus.support.SocleIntegration;
 
 /**
  * Le coeur legal de F31 : la numerotation des factures est CONTINUE, sans trou.
@@ -44,13 +41,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * sert la ou c est son proxy transactionnel qui est verifie.</p>
  */
 @SpringBootTest
-@Testcontainers
 @DisplayName("Numerotation continue des factures (integration)")
-class NumerotationFactureIT {
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+class NumerotationFactureIT extends SocleIntegration {
 
     private static final ZoneId BRUXELLES = ZoneId.of("Europe/Brussels");
 

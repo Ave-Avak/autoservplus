@@ -16,15 +16,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.transaction.annotation.Transactional;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.math.BigDecimal;
 import java.time.*;
@@ -32,6 +28,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import be.autoservplus.support.SocleIntegration;
 
 /**
  * Reservation de rendez-vous sur un PostgreSQL reel.
@@ -47,15 +44,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * reservation deterministe, independamment du jour d execution.</p>
  */
 @SpringBootTest
-@Testcontainers
 @Transactional
 @Import(RdvServiceIT.HorlogeFixe.class)
 @DisplayName("RdvService (integration)")
-class RdvServiceIT {
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+class RdvServiceIT extends SocleIntegration {
 
     private static final ZoneId BRUXELLES = ZoneId.of("Europe/Brussels");
 

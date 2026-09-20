@@ -11,16 +11,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import be.autoservplus.support.SocleIntegration;
 
 /**
  * Preuve de consentement aux cookies contre un PostgreSQL reel (F25).
@@ -42,13 +39,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code ConsentementCookiesIT}, livre avec le bandeau.</p>
  */
 @SpringBootTest
-@Testcontainers
 @DisplayName("Preuve de consentement aux cookies (integration)")
-class PreuveConsentementCookiesIT {
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+class PreuveConsentementCookiesIT extends SocleIntegration {
 
     private static final AtomicInteger COMPTEUR = new AtomicInteger(1);
     private static final String IP = "81.246.0.12";

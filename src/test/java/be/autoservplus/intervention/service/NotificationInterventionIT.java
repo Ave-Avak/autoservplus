@@ -23,13 +23,9 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.testcontainers.service.connection.ServiceConnection;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -43,6 +39,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import be.autoservplus.support.SocleIntegration;
 
 /**
  * Contrat transactionnel de la notification de cloture (F17) contre un vrai
@@ -56,14 +53,9 @@ import static org.mockito.Mockito.verify;
  * du conteneur (jetable, un par classe), d ou les fixtures a suffixe unique.</p>
  */
 @SpringBootTest
-@Testcontainers
 @WithMockUser(username = "admin@garage.be", roles = "ADMINISTRATEUR")
 @DisplayName("Notification de cloture d'intervention (integration)")
-class NotificationInterventionIT {
-
-    @Container
-    @ServiceConnection
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine");
+class NotificationInterventionIT extends SocleIntegration {
 
     /** Numeros de RDV et creneaux uniques : sans rollback, chaque test laisse ses donnees. */
     private static final AtomicInteger COMPTEUR = new AtomicInteger(1);
