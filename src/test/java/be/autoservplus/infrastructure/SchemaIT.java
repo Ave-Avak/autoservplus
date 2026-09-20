@@ -97,15 +97,18 @@ class SchemaIT extends SocleIntegration {
     @Test
     @DisplayName("le compte admin de seed est connectable avec le mot de passe documente")
     void leCompteAdminDeSeedEstConnectable() {
-        // V10 insere l admin, V15 corrige son hash. Sans le test, un desaccord entre
-        // le hash et le mot de passe documente (comme c etait le cas avant V15) reste
-        // invisible jusqu au premier essai de connexion.
+        // V10 insere l admin, V15 corrige son hash, V36 le remplace par une phrase de
+        // passe. Sans le test, un desaccord entre le hash et le mot de passe documente
+        // (comme c etait le cas avant V15) reste invisible jusqu au premier essai de
+        // connexion.
         Utilisateur admin = utilisateurs.findByEmailIgnoreCase("admin@autoservplus.be")
                 .orElseThrow(() -> new AssertionError(
                         "Le seed V10 doit inserer un compte admin@autoservplus.be"));
 
-        assertThat(new BCryptPasswordEncoder(12).matches("ChangezMoi2026!", admin.getMotDePasseHache()))
-                .as("Le hash BCrypt du seed doit correspondre au mot de passe documente \"ChangezMoi2026!\"")
+        assertThat(new BCryptPasswordEncoder(12)
+                .matches("garage-bruxelles-atelier-2026", admin.getMotDePasseHache()))
+                .as("Le hash BCrypt du seed doit correspondre au mot de passe documente "
+                        + "\"garage-bruxelles-atelier-2026\"")
                 .isTrue();
     }
 

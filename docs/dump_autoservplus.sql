@@ -57,8 +57,11 @@
 -- ------------------------------------------------------------------------------------
 -- COMPTES DE TEST
 -- ------------------------------------------------------------------------------------
---   Administrateur   admin@autoservplus.be      ChangezMoi2026!
---   Membre           marie.dupont@demo.test     DemoMembre2026!
+--   Administrateur   admin@autoservplus.be      garage-bruxelles-atelier-2026
+--   Membre           marie.dupont@demo.test     marie-conduit-une-golf-bleue
+-- ATTENTION : ce dump a ete produit AVANT V36 et V901, qui remplacent ces deux
+-- mots de passe. Les identifiants ci-dessus sont ceux que porteront les comptes
+-- apres regeneration du dump ; le fichier lui-meme est a regenerer au gel du code.
 --
 -- Les empreintes sont de vraies empreintes BCrypt de cout 12. Les adresses sont dans le
 -- domaine de premier niveau .test, reserve par la RFC 2606 et non routable : aucun
