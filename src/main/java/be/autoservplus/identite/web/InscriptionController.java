@@ -4,6 +4,8 @@ import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.service.InscriptionService;
 import be.autoservplus.identite.service.LimiteurDemandesCourriel;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import be.autoservplus.identite.web.dto.InscriptionForm;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -28,11 +30,14 @@ public class InscriptionController {
 
     private final InscriptionService service;
     private final LimiteurDemandesCourriel limiteur;
+    private final MessageSource messages;
 
     public InscriptionController(InscriptionService service,
-                                 LimiteurDemandesCourriel limiteur) {
+                                 LimiteurDemandesCourriel limiteur,
+                                 MessageSource messages) {
         this.service = service;
         this.limiteur = limiteur;
+        this.messages = messages;
     }
 
     @GetMapping("/inscription")
@@ -42,10 +47,26 @@ public class InscriptionController {
         return "identite/inscription";
     }
 
+    /**
+     * Traite l inscription.
+     *
+     * <p>Le plafond est consomme <b>avant</b> la validation et avant tout acces a la
+     * base : un formulaire rejete pour saisie invalide coute donc autant qu un autre,
+     * sans quoi il suffirait d envoyer des saisies fautives pour sonder sans limite.</p>
+     */
     @PostMapping("/inscription")
     public String traiterFormulaire(@Valid @ModelAttribute("formulaire") InscriptionForm formulaire,
                                     BindingResult erreurs,
-                                    Model modele) {
+                                    Model modele,
+                                    HttpServletRequest requete) {
+
+        if (!limiteur.autoriserParIp(requete.getRemoteAddr())) {
+            erreurs.reject("securite.debit.trop-de-demandes",
+                    messages.getMessage("securite.debit.trop-de-demandes", null,
+                            LocaleContextHolder.getLocale()));
+            modele.addAttribute("titre", "Créer un compte");
+            return "identite/inscription";
+        }
 
         if (!formulaire.motsDePasseConcordent()) {
             erreurs.rejectValue("confirmationMotDePasse", "motsDePasse.differents",

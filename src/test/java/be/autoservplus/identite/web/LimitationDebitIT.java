@@ -146,6 +146,77 @@ class LimitationDebitIT extends SocleIntegration {
     }
 
     @Nested
+    @DisplayName("inscription")
+    class Inscription {
+
+        /** Valeur par defaut de {@code demandes-max-par-ip}. */
+        private static final int MAX_PAR_IP = 20;
+
+        @Test
+        @DisplayName("au-delà du plafond par IP, l'inscription est refusée et aucun compte n'est créé")
+        void inscriptionPlafonnee() throws Exception {
+            String ip = "203.0.113.51";
+            for (int i = 0; i < MAX_PAR_IP; i++) {
+                inscrire("plafond-" + COMPTEUR.getAndIncrement() + "@exemple.be", ip);
+            }
+            String refusee = "refusee-" + COMPTEUR.getAndIncrement() + "@exemple.be";
+
+            String page = inscrire(refusee, ip);
+
+            assertThat(page).contains("Trop de demandes");
+            assertThat(utilisateurs.findByEmailIgnoreCase(refusee)).isEmpty();
+        }
+
+        /**
+         * Le plafond est consomme avant la validation : sans cela, il suffirait
+         * d envoyer des saisies fautives pour sonder l inscription sans limite.
+         */
+        @Test
+        @DisplayName("un formulaire invalide consomme aussi le quota")
+        void formulaireInvalideConsommeLeQuota() throws Exception {
+            String ip = "203.0.113.52";
+            for (int i = 0; i < MAX_PAR_IP; i++) {
+                mvc.perform(post("/inscription").with(anonymous()).with(csrf())
+                                .header("Accept-Language", "fr")
+                                .with(brute -> { brute.setRemoteAddr(ip); return brute; })
+                                .param("email", "pas-une-adresse").param("motDePasse", "")
+                                .param("confirmationMotDePasse", "").param("nom", "")
+                                .param("prenom", "").param("langue", "fr"))
+                        .andExpect(status().isOk());
+            }
+
+            assertThat(inscrire("apres-" + COMPTEUR.getAndIncrement() + "@exemple.be", ip))
+                    .contains("Trop de demandes");
+        }
+
+        @Test
+        @DisplayName("une autre IP reste servie")
+        void autreIpServie() throws Exception {
+            String ip = "203.0.113.53";
+            for (int i = 0; i <= MAX_PAR_IP; i++) {
+                inscrire("saturation-" + COMPTEUR.getAndIncrement() + "@exemple.be", ip);
+            }
+            String intacte = "intacte-" + COMPTEUR.getAndIncrement() + "@exemple.be";
+
+            assertThat(inscrire(intacte, "203.0.113.54")).doesNotContain("Trop de demandes");
+            assertThat(utilisateurs.findByEmailIgnoreCase(intacte)).isPresent();
+        }
+
+        private String inscrire(String email, String ip) throws Exception {
+            return mvc.perform(post("/inscription").with(anonymous()).with(csrf())
+                            .header("Accept-Language", "fr")
+                            .with(brute -> { brute.setRemoteAddr(ip); return brute; })
+                            .param("email", email)
+                            .param("motDePasse", MOT_DE_PASSE)
+                            .param("confirmationMotDePasse", MOT_DE_PASSE)
+                            .param("nom", "Test").param("prenom", "Alex")
+                            .param("langue", "fr"))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+        }
+    }
+
+    @Nested
     @DisplayName("neutralité anti-oracle")
     class Neutralite {
 
