@@ -686,3 +686,8 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     padding-left: var(--espace-m);
     color: var(--gris-700);
 }
+
+/* Champ piege anti-robot (PiegeAntiBot). display:none et non un simple
+   retrait visuel : le champ ne doit etre ni vu, ni lu, ni atteint au clavier.
+   Le retirer du DOM le soustrairait au robot qu'il vise. */
+.piege { display: none; }

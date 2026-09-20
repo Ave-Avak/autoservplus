@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<body>
+
+<!--
+  Deux controles passifs, a inserer dans tout formulaire public. Voir PiegeAntiBot
+  pour ce qu'ils valent : ils ecartent le robot generique, pas l'adversaire determine.
+
+  Le champ piege porte un nom metier plausible (societe) et non « honeypot », qu'un
+  robot reconnaitrait. Il est retire du parcours d'accessibilite : sans tabindex="-1"
+  et aria-hidden="true", un lecteur d'ecran l'annoncerait et un gestionnaire de mots
+  de passe pourrait le remplir — le piege se refermerait sur les utilisateurs qu'il
+  est cense servir. autocomplete="off" pour la meme raison.
+
+  Le masquage passe par une classe CSS et non par type="hidden" : un champ cache par
+  l'attribut n'est pas rempli par un robot naif, qui ne vise que les champs visibles
+  du DOM. C'est le contraire de l'effet recherche.
+-->
+<th:block th:fragment="pieges(horodatage)">
+    <div class="piege" aria-hidden="true">
+        <label for="societe">Société</label>
+        <input type="text" id="societe" name="societe" tabindex="-1" autocomplete="off">
+    </div>
+    <input type="hidden" name="affiche" th:value="${horodatage}">
+</th:block>
+
+</body>
+</html>

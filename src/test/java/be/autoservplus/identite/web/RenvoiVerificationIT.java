@@ -4,6 +4,7 @@ import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.identite.service.PiegeAntiBot;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -143,7 +144,7 @@ class RenvoiVerificationIT extends SocleIntegration {
         @Test
         @DisplayName("une adresse vide ne provoque aucune erreur visible")
         void adresseVideAcceptee() throws Exception {
-            mvc.perform(post("/inscription/renvoyer-verification").param("email", "")
+            mvc.perform(post("/inscription/renvoyer-verification").param(PiegeAntiBot.CHAMP_HORODATAGE, affiche()).param("email", "")
                             .with(anonymous()).with(csrf()).header("Accept-Language", "fr"))
                     .andExpect(status().isOk());
         }
@@ -191,7 +192,7 @@ class RenvoiVerificationIT extends SocleIntegration {
 
     /** Corps de la reponse, jetons CSRF neutralises : eux seuls varient legitimement. */
     private String corpsApresDemande(String email) throws Exception {
-        String corps = mvc.perform(post("/inscription/renvoyer-verification").param("email", email)
+        String corps = mvc.perform(post("/inscription/renvoyer-verification").param(PiegeAntiBot.CHAMP_HORODATAGE, affiche()).param("email", email)
                         .with(anonymous()).with(csrf()).header("Accept-Language", "fr")
                         .with(brute -> {
                             brute.setRemoteAddr(IP);
@@ -215,4 +216,16 @@ class RenvoiVerificationIT extends SocleIntegration {
         }
         return utilisateurs.save(membre).getEmail();
     }
+
+    /**
+     * Horodatage d affichage d un formulaire, place assez loin dans le passe pour
+     * satisfaire le delai minimal de {@code PiegeAntiBot} sans faire attendre le test.
+     * Un formulaire servi par l application porte ce champ ; ne pas l envoyer
+     * reviendrait a tester un robot.
+     */
+    private static String affiche() {
+        return String.valueOf(System.currentTimeMillis()
+                - PiegeAntiBot.DELAI_MINIMAL.plusSeconds(7).toMillis());
+    }
+
 }

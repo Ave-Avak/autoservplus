@@ -4,6 +4,7 @@ import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.identite.service.PiegeAntiBot;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -176,7 +177,7 @@ class LimitationDebitIT extends SocleIntegration {
         void formulaireInvalideConsommeLeQuota() throws Exception {
             String ip = "203.0.113.52";
             for (int i = 0; i < MAX_PAR_IP; i++) {
-                mvc.perform(post("/inscription").with(anonymous()).with(csrf())
+                mvc.perform(post("/inscription").param(PiegeAntiBot.CHAMP_HORODATAGE, affiche()).with(anonymous()).with(csrf())
                                 .header("Accept-Language", "fr")
                                 .with(brute -> { brute.setRemoteAddr(ip); return brute; })
                                 .param("email", "pas-une-adresse").param("motDePasse", "")
@@ -203,7 +204,7 @@ class LimitationDebitIT extends SocleIntegration {
         }
 
         private String inscrire(String email, String ip) throws Exception {
-            return mvc.perform(post("/inscription").with(anonymous()).with(csrf())
+            return mvc.perform(post("/inscription").param(PiegeAntiBot.CHAMP_HORODATAGE, affiche()).with(anonymous()).with(csrf())
                             .header("Accept-Language", "fr")
                             .with(brute -> { brute.setRemoteAddr(ip); return brute; })
                             .param("email", email)
@@ -213,6 +214,47 @@ class LimitationDebitIT extends SocleIntegration {
                             .param("langue", "fr"))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
+        }
+    }
+
+    @Nested
+    @DisplayName("contrôles passifs")
+    class ControlesPassifs {
+
+        @Test
+        @DisplayName("champ piège rempli : aucun compte créé, page de succès rendue")
+        void champPiegeRempli() throws Exception {
+            String email = "piege-" + COMPTEUR.getAndIncrement() + "@exemple.be";
+
+            mvc.perform(post("/inscription").param(PiegeAntiBot.CHAMP_HORODATAGE, affiche())
+                            .with(anonymous()).with(csrf()).header("Accept-Language", "fr")
+                            .with(brute -> { brute.setRemoteAddr("203.0.113.61"); return brute; })
+                            .param(PiegeAntiBot.CHAMP_PIEGE, "ACME SA")
+                            .param("email", email).param("motDePasse", MOT_DE_PASSE)
+                            .param("confirmationMotDePasse", MOT_DE_PASSE)
+                            .param("nom", "Test").param("prenom", "Alex").param("langue", "fr"))
+                    .andExpect(status().isOk());
+
+            // Rien en base, et rien dans la page qui dise au robot ce qui l a trahi.
+            assertThat(utilisateurs.findByEmailIgnoreCase(email)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("formulaire renvoyé instantanément : aucun compte créé")
+        void soumissionInstantanee() throws Exception {
+            String email = "rapide-" + COMPTEUR.getAndIncrement() + "@exemple.be";
+
+            mvc.perform(post("/inscription")
+                            .param(PiegeAntiBot.CHAMP_HORODATAGE,
+                                    String.valueOf(System.currentTimeMillis()))
+                            .with(anonymous()).with(csrf()).header("Accept-Language", "fr")
+                            .with(brute -> { brute.setRemoteAddr("203.0.113.62"); return brute; })
+                            .param("email", email).param("motDePasse", MOT_DE_PASSE)
+                            .param("confirmationMotDePasse", MOT_DE_PASSE)
+                            .param("nom", "Test").param("prenom", "Alex").param("langue", "fr"))
+                    .andExpect(status().isOk());
+
+            assertThat(utilisateurs.findByEmailIgnoreCase(email)).isEmpty();
         }
     }
 
@@ -325,6 +367,9 @@ class LimitationDebitIT extends SocleIntegration {
 
     private MockHttpServletRequestBuilder requete(String route, String email, String ip) {
         return post(route).param("email", email)
+                // Un formulaire servi par l application porte cet horodatage ; ne pas
+                // l envoyer reviendrait a tester un robot, que PiegeAntiBot ecarte.
+                .param(PiegeAntiBot.CHAMP_HORODATAGE, affiche())
                 .with(anonymous()).with(csrf()).header("Accept-Language", "fr")
                 .with(brute -> {
                     brute.setRemoteAddr(ip);
@@ -383,4 +428,16 @@ class LimitationDebitIT extends SocleIntegration {
         membre.setStatut(StatutUtilisateur.ACTIF);
         return utilisateurs.save(membre).getEmail();
     }
+
+    /**
+     * Horodatage d affichage d un formulaire, place assez loin dans le passe pour
+     * satisfaire le delai minimal de {@code PiegeAntiBot} sans faire attendre le test.
+     * Un formulaire servi par l application porte ce champ ; ne pas l envoyer
+     * reviendrait a tester un robot.
+     */
+    private static String affiche() {
+        return String.valueOf(System.currentTimeMillis()
+                - PiegeAntiBot.DELAI_MINIMAL.plusSeconds(7).toMillis());
+    }
+
 }

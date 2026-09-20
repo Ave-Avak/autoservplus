@@ -4,6 +4,7 @@ import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.service.InscriptionService;
 import be.autoservplus.identite.service.LimiteurDemandesCourriel;
+import be.autoservplus.identite.service.PiegeAntiBot;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import be.autoservplus.identite.web.dto.InscriptionForm;
@@ -31,19 +32,23 @@ public class InscriptionController {
     private final InscriptionService service;
     private final LimiteurDemandesCourriel limiteur;
     private final MessageSource messages;
+    private final PiegeAntiBot pieges;
 
     public InscriptionController(InscriptionService service,
                                  LimiteurDemandesCourriel limiteur,
-                                 MessageSource messages) {
+                                 MessageSource messages,
+                                 PiegeAntiBot pieges) {
         this.service = service;
         this.limiteur = limiteur;
         this.messages = messages;
+        this.pieges = pieges;
     }
 
     @GetMapping("/inscription")
     public String afficherFormulaire(Model modele) {
         modele.addAttribute("titre", "Créer un compte");
         modele.addAttribute("formulaire", new InscriptionForm());
+        modele.addAttribute("horodatageAntiBot", pieges.horodatageActuel());
         return "identite/inscription";
     }
 
@@ -58,13 +63,26 @@ public class InscriptionController {
     public String traiterFormulaire(@Valid @ModelAttribute("formulaire") InscriptionForm formulaire,
                                     BindingResult erreurs,
                                     Model modele,
-                                    HttpServletRequest requete) {
+                                    HttpServletRequest requete,
+                                    @RequestParam(name = PiegeAntiBot.CHAMP_PIEGE,
+                                            required = false) String piege,
+                                    @RequestParam(name = PiegeAntiBot.CHAMP_HORODATAGE,
+                                            required = false) String horodatage) {
+
+        // Ecarte en silence : dire au robot ce qui l a trahi, c est lui dire quoi
+        // corriger. Un visiteur legitime ne peut pas atteindre ce cas.
+        if (pieges.soumissionAutomatique(piege, horodatage)) {
+            modele.addAttribute("titre", "Vérifiez votre courriel");
+            modele.addAttribute("adresse", formulaire.getEmail());
+            return "identite/inscription-confirmee";
+        }
 
         if (!limiteur.autoriserParIp(requete.getRemoteAddr())) {
             erreurs.reject("securite.debit.trop-de-demandes",
                     messages.getMessage("securite.debit.trop-de-demandes", null,
                             LocaleContextHolder.getLocale()));
             modele.addAttribute("titre", "Créer un compte");
+            modele.addAttribute("horodatageAntiBot", pieges.horodatageActuel());
             return "identite/inscription";
         }
 
@@ -75,6 +93,7 @@ public class InscriptionController {
 
         if (erreurs.hasErrors()) {
             modele.addAttribute("titre", "Créer un compte");
+            modele.addAttribute("horodatageAntiBot", pieges.horodatageActuel());
             return "identite/inscription";
         }
 
@@ -84,6 +103,7 @@ public class InscriptionController {
         } catch (RegleMetierException e) {
             erreurs.addError(new FieldError("formulaire", "email", e.getMessage()));
             modele.addAttribute("titre", "Créer un compte");
+            modele.addAttribute("horodatageAntiBot", pieges.horodatageActuel());
             return "identite/inscription";
         }
 
@@ -100,7 +120,8 @@ public class InscriptionController {
      * obligerait a elargir la surface publique pour un ecran qui n en a pas besoin.</p>
      */
     @GetMapping("/inscription/renvoyer-verification")
-    public String afficherRenvoiVerification() {
+    public String afficherRenvoiVerification(Model modele) {
+        modele.addAttribute("horodatageAntiBot", pieges.horodatageActuel());
         return "identite/renvoyer-verification";
     }
 
@@ -113,7 +134,16 @@ public class InscriptionController {
      */
     @PostMapping("/inscription/renvoyer-verification")
     public String traiterRenvoiVerification(@RequestParam String email, Model modele,
-                                            HttpServletRequest requete) {
+                                            HttpServletRequest requete,
+                                            @RequestParam(name = PiegeAntiBot.CHAMP_PIEGE,
+                                                    required = false) String piege,
+                                            @RequestParam(name = PiegeAntiBot.CHAMP_HORODATAGE,
+                                                    required = false) String horodatage) {
+        // Meme page que le cas nominal : la neutralite de cet ecran vaut aussi face a
+        // un robot, qui ne doit pas apprendre qu il a ete repere.
+        if (pieges.soumissionAutomatique(piege, horodatage)) {
+            return "identite/renvoyer-verification-envoye";
+        }
         // Decompte AVANT le service, donc avant toute recherche en base : le compteur
         // monte pareil pour une adresse inconnue, ce qui est la condition pour que le
         // plafond n introduise pas l oracle que cet ecran est fait pour taire.

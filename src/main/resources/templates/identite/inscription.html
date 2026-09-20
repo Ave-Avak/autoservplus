@@ -74,7 +74,8 @@
     </div>
 
     <button type="submit" class="btn-cta">Créer mon compte</button>
-  </form>
+      <div th:replace="~{fragments/antibot :: pieges(${horodatageAntiBot})}"></div>
+</form>
 </main>
 
 <footer class="pied">
