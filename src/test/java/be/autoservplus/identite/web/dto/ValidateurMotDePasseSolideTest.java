@@ -125,7 +125,7 @@ class ValidateurMotDePasseSolideTest {
         // Un jeu de démonstration refusé par la politique du projet serait un piège
         // pour l'évaluateur autant qu'une contradiction.
         for (String motDePasse : new String[]{
-                "garage-bruxelles-atelier-2026",
+                "atelier-demonstration-2026",
                 "marie-conduit-une-golf-bleue",
                 "MotDePasseSolide2026!"}) {
             assertThat(sansService().isValid(motDePasse, null))

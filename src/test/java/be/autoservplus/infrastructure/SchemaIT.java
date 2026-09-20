@@ -106,9 +106,9 @@ class SchemaIT extends SocleIntegration {
                         "Le seed V10 doit inserer un compte admin@autoservplus.be"));
 
         assertThat(new BCryptPasswordEncoder(12)
-                .matches("garage-bruxelles-atelier-2026", admin.getMotDePasseHache()))
+                .matches("atelier-demonstration-2026", admin.getMotDePasseHache()))
                 .as("Le hash BCrypt du seed doit correspondre au mot de passe documente "
-                        + "\"garage-bruxelles-atelier-2026\"")
+                        + "\"atelier-demonstration-2026\"")
                 .isTrue();
     }
 

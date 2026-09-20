@@ -49,7 +49,7 @@ commande payée et sa facture, avis, messagerie et notifications.
 
 | Rôle | Adresse | Mot de passe |
 |---|---|---|
-| Administrateur | `admin@autoservplus.be` | `garage-bruxelles-atelier-2026` |
+| Administrateur | `admin@autoservplus.be` | `atelier-demonstration-2026` |
 | Membre | `marie.dupont@demo.test` | `marie-conduit-une-golf-bleue` |
 
 > **Le profil `demo` ne doit jamais être activé en production.** Il crée des comptes
