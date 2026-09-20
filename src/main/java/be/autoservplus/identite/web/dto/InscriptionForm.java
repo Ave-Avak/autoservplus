@@ -20,7 +20,7 @@ public class InscriptionForm {
     private String email;
 
     @NotBlank(message = "{validation.motDePasse.obligatoire}")
-    @Size(min = 12, max = 100, message = "{validation.motDePasse.longueur}")
+    @MotDePasseSolide
     private String motDePasse;
 
     @NotBlank(message = "{validation.motDePasse.confirmation}")

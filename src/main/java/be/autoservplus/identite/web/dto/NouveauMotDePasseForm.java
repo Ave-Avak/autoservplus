@@ -1,7 +1,6 @@
 package be.autoservplus.identite.web.dto;
 
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.Size;
 
 /** Saisie d un nouveau mot de passe depuis un lien de reinitialisation. */
 public class NouveauMotDePasseForm {
@@ -9,8 +8,8 @@ public class NouveauMotDePasseForm {
     @NotBlank
     private String jeton;
 
-    @NotBlank
-    @Size(min = 12, max = 100, message = "Le mot de passe doit comporter au moins douze caractères.")
+    @NotBlank(message = "{validation.motDePasse.obligatoire}")
+    @MotDePasseSolide
     private String motDePasse;
 
     @NotBlank
