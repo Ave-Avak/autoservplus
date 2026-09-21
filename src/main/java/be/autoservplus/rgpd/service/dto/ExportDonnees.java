@@ -513,10 +513,15 @@ public record ExportDonnees(
      *
      * <p>Sont exclus le jeton de verification et sa date d expiration : ce sont des
      * secrets d authentification, communicables a personne — voir {@link Exclusions}.
+     * L adresse en attente de confirmation, elle, EST restituee : c est une donnee a
+     * caractere personnel detenue sur la personne, que l article 15 couvre au meme
+     * titre que l adresse en vigueur. Son jeton reste exclu, pour la meme raison que
+     * le precedent — communiquer le secret n est pas communiquer la donnee.
      */
     public record ConnexionExport(
             Instant derniereConnexion,
             boolean emailVerifie,
+            String adresseEnAttenteDeConfirmation,
             short tentativesEchoueesEnCours,
             Instant compteVerrouilleJusquA) {
 
@@ -524,6 +529,7 @@ public record ExportDonnees(
             return new ConnexionExport(
                     membre.getDerniereConnexion(),
                     membre.isEmailVerifie(),
+                    membre.getEmailEnAttente(),
                     membre.getTentativesEchouees(),
                     membre.getVerrouilleJusquA());
         }
