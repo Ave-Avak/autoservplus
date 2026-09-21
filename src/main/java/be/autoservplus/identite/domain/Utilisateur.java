@@ -177,6 +177,57 @@ public class Utilisateur extends BaseEntity {
         return verrouilleJusquA != null && maintenant.isBefore(verrouilleJusquA);
     }
 
+    /**
+     * Applique les champs modifiables du profil.
+     *
+     * <p>Une methode de domaine plutot que des accesseurs : {@code nom} et
+     * {@code prenom} n en avaient aucun, et leur en donner aurait ouvert l entite a
+     * des modifications partielles depuis n importe quelle couche. Ici l ensemble
+     * change d un coup, ou pas du tout.</p>
+     *
+     * <p><b>Ce qui n est PAS modifiable ici</b> : l adresse de courriel, qui est
+     * l identifiant de connexion et suit une procedure de verification propre ; le
+     * statut, qui releve de l administration ; le type d utilisateur, qui ne change
+     * jamais.</p>
+     *
+     * <p>L adresse postale est <b>complete ou vide</b> — la garde est portee par le
+     * formulaire, qui peut dire a l utilisateur ce qui manque. L entite accepte les
+     * deux etats parce que le schema les accepte : les colonnes sont nullables depuis
+     * le socle et des comptes anciens n ont jamais renseigne d adresse.</p>
+     */
+    public void modifierProfil(String prenom, String nom, String telephone,
+                               String rue, String numeroRue, String codePostal,
+                               String localite, String pays, Langue langue) {
+        this.prenom = normaliser(prenom);
+        this.nom = normaliser(nom);
+        this.telephone = normaliser(telephone);
+        this.rue = normaliser(rue);
+        this.numeroRue = normaliser(numeroRue);
+        this.codePostal = normaliser(codePostal);
+        this.localite = normaliser(localite);
+        this.pays = normaliser(pays);
+        this.langue = langue;
+    }
+
+    /**
+     * Vide devient {@code null} : la base distingue les deux, pas l utilisateur. Sans
+     * cela, un champ efface au formulaire vaudrait la chaine vide, et
+     * {@code adresseLisible()} de la facture — qui teste {@code null} — imprimerait
+     * une adresse faite d espaces.
+     */
+    private static String normaliser(String valeur) {
+        if (valeur == null) {
+            return null;
+        }
+        String propre = valeur.trim();
+        return propre.isEmpty() ? null : propre;
+    }
+
+    /** Les trois champs que la facture exige pour imprimer une adresse. */
+    public boolean adressePostaleComplete() {
+        return rue != null && codePostal != null && localite != null;
+    }
+
     public boolean estActif() {
         return statut == StatutUtilisateur.ACTIF;
     }

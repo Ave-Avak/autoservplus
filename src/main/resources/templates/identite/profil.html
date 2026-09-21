@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{profil.titre} + ' — AutoServ+'">Mon profil — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{profil.titre}">Mon profil</h1>
+
+    <p th:text="#{profil.connecte(${email})}">Connecté en tant que adresse@exemple.be.</p>
+
+    <div class="message message-succes" th:if="${enregistre}" role="status"
+         th:text="#{profil.enregistre}">Vos informations sont enregistrées.</div>
+
+    <form class="formulaire" th:action="@{/mon-profil}" th:object="${formulaire}" method="post">
+
+        <div class="message message-erreur" th:if="${#fields.hasGlobalErrors()}" role="alert">
+            <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Erreur</p>
+        </div>
+
+        <fieldset>
+            <legend th:text="#{profil.section.identite}">Identité</legend>
+
+            <div class="champ">
+                <label for="prenom" th:text="#{profil.prenom}">Prénom</label>
+                <input type="text" id="prenom" th:field="*{prenom}" autocomplete="given-name" required>
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('prenom')}"
+                   th:errors="*{prenom}"></p>
+            </div>
+
+            <div class="champ">
+                <label for="nom" th:text="#{profil.nom}">Nom</label>
+                <input type="text" id="nom" th:field="*{nom}" autocomplete="family-name" required>
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('nom')}"
+                   th:errors="*{nom}"></p>
+            </div>
+
+            <div class="champ">
+                <label for="telephone" th:text="#{profil.telephone}">Téléphone</label>
+                <input type="tel" id="telephone" th:field="*{telephone}" autocomplete="tel">
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('telephone')}"
+                   th:errors="*{telephone}"></p>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend th:text="#{profil.section.adresse}">Adresse</legend>
+            <!-- L'adresse est complete ou vide : la facture exige rue, code postal et
+                 localite ensemble (AR n°1, art. 5), et n'en imprime aucune si l'un
+                 manque. Le dire ici evite une facture non conforme. -->
+            <p class="texte-info" th:text="#{profil.adresse.aide}">
+                Rue, code postal et localité vont ensemble : renseignez-les tous les trois, ou aucun.</p>
+
+            <div class="champ">
+                <label for="rue" th:text="#{profil.rue}">Rue</label>
+                <input type="text" id="rue" th:field="*{rue}" autocomplete="address-line1">
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('rue')}"
+                   th:errors="*{rue}"></p>
+            </div>
+
+            <div class="champ">
+                <label for="numeroRue" th:text="#{profil.numero}">Numéro</label>
+                <input type="text" id="numeroRue" th:field="*{numeroRue}">
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('numeroRue')}"
+                   th:errors="*{numeroRue}"></p>
+            </div>
+
+            <div class="champ">
+                <label for="codePostal" th:text="#{profil.code-postal}">Code postal</label>
+                <input type="text" id="codePostal" th:field="*{codePostal}" autocomplete="postal-code">
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('codePostal')}"
+                   th:errors="*{codePostal}"></p>
+            </div>
+
+            <div class="champ">
+                <label for="localite" th:text="#{profil.localite}">Localité</label>
+                <input type="text" id="localite" th:field="*{localite}" autocomplete="address-level2">
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('localite')}"
+                   th:errors="*{localite}"></p>
+            </div>
+
+            <div class="champ">
+                <label for="pays" th:text="#{profil.pays}">Pays</label>
+                <input type="text" id="pays" th:field="*{pays}" autocomplete="country-name">
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('pays')}"
+                   th:errors="*{pays}"></p>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend th:text="#{profil.section.preferences}">Préférences</legend>
+            <!-- Les noms de langue ne sont PAS traduits : « Nederlands » s'ecrit
+                 « Nederlands » dans les trois versions. Traduire le nom d'une langue
+                 dans une langue qu'on ne comprend pas empeche precisement d'en sortir. -->
+            <div class="champ">
+                <label for="langue" th:text="#{profil.langue}">Langue</label>
+                <select id="langue" th:field="*{langue}">
+                    <option th:each="l : ${langues}" th:value="${l}"
+                            th:text="${l.name() == 'fr'} ? 'Français' : (${l.name() == 'nl'} ? 'Nederlands' : 'English')">Français</option>
+                </select>
+                <p class="texte-info" th:text="#{profil.langue.aide}">
+                    Ce choix vaut pour vos prochaines connexions et pour vos documents.</p>
+            </div>
+        </fieldset>
+
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{profil.enregistrer}">Enregistrer</button>
+            <a th:href="@{/mon-compte}" th:text="#{profil.retour}">Retour à mon compte</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>
