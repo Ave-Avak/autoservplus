@@ -22,20 +22,30 @@
     <div th:replace="~{fragments/langue :: selecteur}"></div>
 </header>
 <main id="contenu">
-    <h1>Mon compte</h1>
-    <p>Connecté en tant que <strong th:text="${email}">adresse@exemple.be</strong>.</p>
+    <h1 th:text="#{compte.titre}">Mon compte</h1>
+    <p th:text="#{compte.connecte(${email})}">Connecté en tant que adresse@exemple.be.</p>
 
-    <nav class="grille-articles" aria-label="Sections de mon compte">
+    <nav class="grille-articles" th:attr="aria-label=#{compte.sections}"
+         aria-label="Sections de mon compte">
+        <!-- En tete : c'est ici que le membre corrige son nom, son adresse et sa
+             langue. La langue enregistree vaut pour ses prochaines connexions et
+             pour ses documents PDF (F6). -->
+        <a class="carte carte-lien" th:href="@{/mon-profil}">
+            <h2 th:text="#{profil.titre}">Mon profil</h2>
+            <p th:text="#{profil.carte.description}">Modifiez votre nom, vos coordonnées
+                et votre langue.</p>
+        </a>
         <a class="carte carte-lien" th:href="@{/mes-vehicules}">
-            <h2>Mes véhicules</h2>
-            <p>Gérez votre parc et suivez le kilométrage de chaque véhicule.</p>
+            <h2 th:text="#{compte.vehicules.titre}">Mes véhicules</h2>
+            <p th:text="#{compte.vehicules.description}">Gérez votre parc et suivez le
+                kilométrage de chaque véhicule.</p>
         </a>
         <a class="carte carte-lien" th:href="@{/mes-rendez-vous}">
-            <h2>Mes rendez-vous</h2>
-            <p>Consultez vos rendez-vous et prenez-en un nouveau.</p>
+            <h2 th:text="#{compte.rdv.titre}">Mes rendez-vous</h2>
+            <p th:text="#{compte.rdv.description}">Consultez vos rendez-vous et prenez-en
+                un nouveau.</p>
         </a>
-        <!-- F22 : droit d'accès (art. 15 RGPD). Libellés en i18n, contrairement au
-             reste de cette page encore en français figé (dette documentée). -->
+        <!-- F22 : droit d'accès (art. 15 RGPD). -->
         <a class="carte carte-lien" th:href="@{/mes-donnees}">
             <h2 th:text="#{rgpd.donnees.titre}">Mes données personnelles</h2>
             <p th:text="#{rgpd.donnees.carte.description}">Consultez le droit d'accès et
@@ -51,13 +61,15 @@
         </a>
         <a class="carte carte-lien" sec:authorize="hasRole('ADMINISTRATEUR')"
            th:href="@{/admin/rendez-vous}">
-            <h2>Espace administration</h2>
-            <p>Gérez les demandes de rendez-vous : confirmer, refuser, clôturer.</p>
+            <h2 th:text="#{compte.admin.titre}">Espace administration</h2>
+            <p th:text="#{compte.admin.description}">Gérez les demandes de rendez-vous :
+                confirmer, refuser, clôturer.</p>
         </a>
         <a class="carte carte-lien" sec:authorize="hasRole('ADMINISTRATEUR')"
            th:href="@{/admin/interventions}">
-            <h2>Interventions</h2>
-            <p>Suivez les interventions en cours : démarrer, mettre en pause, terminer.</p>
+            <h2 th:text="#{compte.interventions.titre}">Interventions</h2>
+            <p th:text="#{compte.interventions.description}">Suivez les interventions en
+                cours : démarrer, mettre en pause, terminer.</p>
         </a>
     </nav>
 </main>

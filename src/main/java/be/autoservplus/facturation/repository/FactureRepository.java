@@ -40,4 +40,11 @@ public interface FactureRepository extends JpaRepository<Facture, Long> {
             ORDER BY f.dateEmission DESC, f.id DESC
             """)
     List<Facture> facturesDuMembre(@Param("email") String email);
+
+    /**
+     * Compte sans charger : sert a refuser qu un membre vide son adresse postale alors
+     * qu une facture reste a generer. Charger la liste pour n en regarder que la
+     * taille couterait les lignes et leurs relations.
+     */
+    long countByMembreEmailIgnoreCase(String email);
 }
