@@ -99,6 +99,27 @@ public class Utilisateur extends BaseEntity {
     @Column(name = "jeton_expiration")
     private Instant jetonExpiration;
 
+    /**
+     * Nouvelle adresse demandee et <b>pas encore prouvee</b> (CdC 5.2.2). L adresse en
+     * vigueur reste {@link #email} jusqu a la confirmation : appliquer d abord et
+     * verifier ensuite enfermerait hors de son compte tout membre qui se trompe d une
+     * lettre, puisque plus aucune adresse joignable ne le rattacherait a sa ligne.
+     */
+    @Column(name = "email_en_attente", length = 180)
+    private String emailEnAttente;
+
+    /**
+     * Jeton du lien de confirmation, <b>distinct</b> de {@link #jetonVerification}.
+     * Ce dernier ouvre aussi la reinitialisation du mot de passe : un jeton commun
+     * serait envoye a une adresse non encore prouvee et permettrait a son porteur de
+     * fixer le mot de passe du compte.
+     */
+    @Column(name = "jeton_changement_email", length = 64)
+    private String jetonChangementEmail;
+
+    @Column(name = "jeton_changement_expiration")
+    private Instant jetonChangementExpiration;
+
     @Column(name = "derniere_connexion")
     private Instant derniereConnexion;
 
@@ -152,6 +173,55 @@ public class Utilisateur extends BaseEntity {
 
     public boolean jetonEstExpire(Instant maintenant) {
         return jetonExpiration == null || maintenant.isAfter(jetonExpiration);
+    }
+
+    /**
+     * Enregistre une demande de changement d adresse, sans rien appliquer.
+     *
+     * <p>Remplace une demande precedente encore en cours : le dernier choix du membre
+     * fait foi, et le lien deja parti cesse d etre exploitable. C est voulu — laisser
+     * deux liens vivants ferait dependre l adresse finale de l ordre des clics.</p>
+     */
+    public void demanderChangementEmail(String nouvelleAdresse, String jeton, Instant expiration) {
+        this.emailEnAttente = Objects.requireNonNull(nouvelleAdresse, "nouvelleAdresse");
+        this.jetonChangementEmail = Objects.requireNonNull(jeton, "jeton");
+        this.jetonChangementExpiration = Objects.requireNonNull(expiration, "expiration");
+    }
+
+    public boolean jetonChangementExpire(Instant maintenant) {
+        return jetonChangementExpiration == null
+                || maintenant.isAfter(jetonChangementExpiration);
+    }
+
+    /**
+     * Bascule sur l adresse confirmee.
+     *
+     * <p>{@code emailVerifie} passe a vrai sans autre controle : le clic sur un lien
+     * recu a cette adresse EST la preuve qu elle est joignable et controlee. C est le
+     * meme raisonnement qu a l activation du compte.</p>
+     *
+     * @return l ancienne adresse, que l appelant doit avoir capturee pour l aviser —
+     *         apres cet appel, la ligne ne la porte plus nulle part
+     */
+    public String appliquerChangementEmail() {
+        if (emailEnAttente == null) {
+            throw new IllegalStateException("Aucun changement d adresse en attente.");
+        }
+        String ancienne = this.email;
+        this.email = emailEnAttente;
+        this.emailVerifie = true;
+        annulerChangementEmail();
+        return ancienne;
+    }
+
+    public void annulerChangementEmail() {
+        this.emailEnAttente = null;
+        this.jetonChangementEmail = null;
+        this.jetonChangementExpiration = null;
+    }
+
+    public boolean changementEmailEnCours() {
+        return emailEnAttente != null;
     }
 
     public void enregistrerConnexionReussie(Instant maintenant) {
@@ -344,6 +414,10 @@ public class Utilisateur extends BaseEntity {
         this.emailVerifie = false;
         this.jetonVerification = null;
         this.jetonExpiration = null;
+        // Une demande de changement porte une SECONDE adresse personnelle, tout aussi
+        // identifiante que celle qu on efface : la laisser subsister viderait
+        // l anonymisation de son objet.
+        annulerChangementEmail();
         this.derniereConnexion = null;
         this.tentativesEchouees = 0;
         this.verrouilleJusquA = null;
@@ -358,6 +432,11 @@ public class Utilisateur extends BaseEntity {
         this.motDePasseHache = Objects.requireNonNull(nouvelleEmpreinte, "nouvelleEmpreinte");
         this.tentativesEchouees = 0;
         this.verrouilleJusquA = null;
+        // Reprendre la main sur son compte doit abandonner toute demande de changement
+        // d adresse en cours : c est le geste qu on conseille au membre avise d une
+        // demande qu il n a pas faite, et il serait vain s il laissait vivre le lien
+        // deja parti vers la boite de l attaquant.
+        annulerChangementEmail();
     }
     /**
      * Redefinit le mot de passe et leve le verrouillage.
@@ -393,6 +472,9 @@ public class Utilisateur extends BaseEntity {
     public Langue getLangue() { return langue; }
     public StatutUtilisateur getStatut() { return statut; }
     public boolean isEmailVerifie() { return emailVerifie; }
+    public String getEmailEnAttente() { return emailEnAttente; }
+    public String getJetonChangementEmail() { return jetonChangementEmail; }
+    public Instant getJetonChangementExpiration() { return jetonChangementExpiration; }
     public String getJetonVerification() { return jetonVerification; }
     public Instant getJetonExpiration() { return jetonExpiration; }
     public Instant getDerniereConnexion() { return derniereConnexion; }
