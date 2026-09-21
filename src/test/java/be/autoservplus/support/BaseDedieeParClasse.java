@@ -108,7 +108,12 @@ public class BaseDedieeParClasse implements ContextCustomizerFactory {
                             // et non dans un application.yml de test, qui masquerait
                             // celui de production — src/test/resources n en contient
                             // volontairement aucun.
-                            "autoservplus.planification.activee=false")
+                            "autoservplus.planification.activee=false",
+                            // Aucun appel sortant depuis les tests : la verification
+                            // des mots de passe compromis interrogerait un service
+                            // distant a chaque validation de formulaire, ce qui
+                            // rendrait la suite lente et dependante du reseau.
+                            "autoservplus.securite.compromission.activee=false")
                     .applyTo(contexte);
         }
 

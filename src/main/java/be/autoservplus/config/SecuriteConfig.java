@@ -131,11 +131,24 @@ public class SecuriteConfig {
                         // les banques depuis SON domaine, hors de notre document et donc hors
                         // de cette politique. Elargir davantage n aiderait a rien et ouvrirait
                         // l envoi d un formulaire du site vers un tiers.
+                        // Turnstile : deux hotes ajoutes, un seul et le meme.
+                        // script-src pour api.js, frame-src pour la trame du widget.
+                        // frame-src et connect-src etaient jusqu ici ABSENTES et
+                        // retombaient sur default-src 'self' : la trame aurait ete
+                        // bloquee sans que la politique le laisse voir. Les declarer
+                        // rend explicite ce qui n etait qu un repli.
+                        // frame-ancestors reste 'none' : autoriser un tiers a charger
+                        // NOS pages dans une trame n a rien a voir avec charger LA
+                        // SIENNE dans les notres.
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
-                                "default-src 'self'; script-src 'self'; style-src 'self'; " +
-                                        "img-src 'self' data:; " +
-                                        "form-action 'self' https://www.mollie.com; " +
-                                        "frame-ancestors 'none'; base-uri 'self'"))
+                                "default-src 'self'; "
+                                        + "script-src 'self' https://challenges.cloudflare.com; "
+                                        + "frame-src https://challenges.cloudflare.com; "
+                                        + "connect-src 'self'; "
+                                        + "style-src 'self'; "
+                                        + "img-src 'self' data:; "
+                                        + "form-action 'self' https://www.mollie.com; "
+                                        + "frame-ancestors 'none'; base-uri 'self'"))
                         .frameOptions(cadre -> cadre.deny())
                         .referrerPolicy(rp -> rp.policy(ReferrerPolicyHeaderWriter.ReferrerPolicy.SAME_ORIGIN))
                         .httpStrictTransportSecurity(hsts -> hsts

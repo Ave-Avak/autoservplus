@@ -24,7 +24,7 @@
             <input type="password" id="motDePasse" th:field="*{motDePasse}"
                    autocomplete="new-password" minlength="12" required
                    aria-describedby="aide-mdp" autofocus>
-            <p id="aide-mdp" class="texte-info">Douze caractères minimum.</p>
+            <p id="aide-mdp" class="texte-info" th:text="#{validation.motDePasse.aide}">Au moins 15 caractères. Une phrase que vous seul connaissez convient, espaces compris.</p>
             <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motDePasse')}" th:errors="*{motDePasse}"></p>
         </div>
 

@@ -49,8 +49,8 @@ commande payée et sa facture, avis, messagerie et notifications.
 
 | Rôle | Adresse | Mot de passe |
 |---|---|---|
-| Administrateur | `admin@autoservplus.be` | `ChangezMoi2026!` |
-| Membre | `marie.dupont@demo.test` | `DemoMembre2026!` |
+| Administrateur | `admin@autoservplus.be` | `atelier-demonstration-2026` |
+| Membre | `marie.dupont@demo.test` | `marie-conduit-une-golf-bleue` |
 
 > **Le profil `demo` ne doit jamais être activé en production.** Il crée des comptes
 > dont les mots de passe sont publiés dans ce dépôt, et des données fictives.

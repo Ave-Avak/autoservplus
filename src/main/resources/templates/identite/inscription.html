@@ -52,7 +52,7 @@
       <input type="password" id="motDePasse" th:field="*{motDePasse}"
              autocomplete="new-password" minlength="12" required
              aria-describedby="aide-mot-de-passe">
-      <p id="aide-mot-de-passe" class="texte-info">Douze caractères minimum.</p>
+      <p id="aide-mot-de-passe" class="texte-info" th:text="#{validation.motDePasse.aide}">Au moins 15 caractères. Une phrase que vous seul connaissez convient, espaces compris.</p>
       <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motDePasse')}" th:errors="*{motDePasse}"></p>
     </div>
 
@@ -74,7 +74,9 @@
     </div>
 
     <button type="submit" class="btn-cta">Créer mon compte</button>
-  </form>
+      <div th:replace="~{fragments/antibot :: pieges(${horodatageAntiBot})}"></div>
+    <div th:replace="~{fragments/antibot :: turnstile(${cleTurnstile})}"></div>
+</form>
 </main>
 
 <footer class="pied">

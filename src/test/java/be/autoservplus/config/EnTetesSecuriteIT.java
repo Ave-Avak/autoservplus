@@ -56,8 +56,9 @@ class EnTetesSecuriteIT extends SocleIntegration {
                 .andExpect(header().string("Content-Security-Policy",
                         containsString("default-src 'self'")))
                 .andExpect(header().string("Content-Security-Policy",
-                        // HTMX est servi en local : aucun CDN n a jamais ete autorise, et
-                        // l assouplissement de form-action ne doit pas servir de precedent.
+                        // HTMX est servi en local : aucun CDN n a jamais ete autorise.
+                        // Le seul hote ajoute depuis est celui de Turnstile, verifie
+                        // par le test dedie ci-dessous.
                         containsString("script-src 'self'")))
                 .andExpect(header().string("Content-Security-Policy",
                         containsString("frame-ancestors 'none'")))
@@ -66,6 +67,35 @@ class EnTetesSecuriteIT extends SocleIntegration {
                 // Un joker sur form-action rendrait le test precedent vert tout en
                 // autorisant l envoi d un formulaire vers n importe quel tiers.
                 .andExpect(header().string("Content-Security-Policy", not(containsString("*"))));
+    }
+
+    /**
+     * Turnstile exige deux directives, et une seule et meme origine dans les deux.
+     *
+     * <p><b>Ce que ce test ne prouve pas</b>, et c est le point : les cles de test de
+     * Cloudflare ne contactent rien — pas d iframe, jeton factice — donc aucun test ne
+     * peut reveler qu il manque une directive. C est exactement ce qui s est produit
+     * avec {@code form-action} : la passerelle bouchonnee redirigeait vers une page
+     * interne, le defaut n existait que sur le chemin du vrai prestataire, et aucune
+     * build ne l a vu. La completude de cette politique ne se verifie qu avec une
+     * vraie cle de site — voir registre §4.</p>
+     */
+    @Test
+    @DisplayName("Turnstile : script-src et frame-src autorisent le seul hote de Cloudflare")
+    void turnstile() throws Exception {
+        mvc.perform(get("/").with(anonymous()))
+                .andExpect(header().string("Content-Security-Policy",
+                        containsString("script-src 'self' https://challenges.cloudflare.com")))
+                .andExpect(header().string("Content-Security-Policy",
+                        containsString("frame-src https://challenges.cloudflare.com")))
+                // Declaree explicitement : sans elle, connect-src retombait sur
+                // default-src, et la politique ne disait pas ce qu elle autorisait.
+                .andExpect(header().string("Content-Security-Policy",
+                        containsString("connect-src 'self'")))
+                // Charger la trame d un tiers chez nous n autorise pas un tiers a
+                // charger nos pages chez lui.
+                .andExpect(header().string("Content-Security-Policy",
+                        containsString("frame-ancestors 'none'")));
     }
 
     @Test

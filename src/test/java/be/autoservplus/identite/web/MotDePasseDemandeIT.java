@@ -4,6 +4,7 @@ import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.identite.service.PiegeAntiBot;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -106,7 +107,7 @@ class MotDePasseDemandeIT extends SocleIntegration {
      * qu il affirme.
      */
     private String corpsApresDemande(String email) throws Exception {
-        String corps = mvc.perform(post("/mot-de-passe/oublie").param("email", email)
+        String corps = mvc.perform(post("/mot-de-passe/oublie").param(PiegeAntiBot.CHAMP_HORODATAGE, affiche()).param("email", email)
                         .with(anonymous()).with(csrf()).header("Accept-Language", "fr")
                         .with(brute -> {
                             brute.setRemoteAddr(IP);
@@ -135,4 +136,16 @@ class MotDePasseDemandeIT extends SocleIntegration {
         membre.setStatut(StatutUtilisateur.ACTIF);
         return utilisateurs.save(membre).getEmail();
     }
+
+    /**
+     * Horodatage d affichage d un formulaire, place assez loin dans le passe pour
+     * satisfaire le delai minimal de {@code PiegeAntiBot} sans faire attendre le test.
+     * Un formulaire servi par l application porte ce champ ; ne pas l envoyer
+     * reviendrait a tester un robot.
+     */
+    private static String affiche() {
+        return String.valueOf(System.currentTimeMillis()
+                - PiegeAntiBot.DELAI_MINIMAL.plusSeconds(7).toMillis());
+    }
+
 }

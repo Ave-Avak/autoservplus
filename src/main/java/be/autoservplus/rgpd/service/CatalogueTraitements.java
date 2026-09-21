@@ -45,12 +45,20 @@ public class CatalogueTraitements {
             "commande", "connexion", "consentement");
 
     /**
-     * Sous-traitants effectivement mobilises par la plateforme : Mollie pour le
-     * paiement, Brevo pour le courriel, l hebergeur pour l application et la base.
-     * Aucun autre n est declare — la liste doit rester le miroir de la realite
-     * technique, pas une liste de precaution.
+     * Sous-traitants et destinataires effectivement mobilises : Mollie pour le
+     * paiement, Brevo pour le courriel, l hebergeur pour l application et la base,
+     * Cloudflare pour la protection des formulaires publics, Have I Been Pwned pour
+     * le controle des mots de passe compromis. Aucun autre n est declare — la liste
+     * doit rester le miroir de la realite technique, pas une liste de precaution.
+     *
+     * <p><b>Have I Been Pwned n est pas un sous-traitant</b> au sens de l article 28 :
+     * il ne traite aucune donnee pour notre compte. Ce qui lui parvient est un
+     * <b>prefixe de cinq caracteres d empreinte</b>, sans adresse ni identifiant, et
+     * il ne peut pas savoir quel mot de passe a ete verifie. Il figure ici parce qu un
+     * flux sortant se declare, meme minime.</p>
      */
-    private static final List<String> DESTINATAIRES = List.of("mollie", "brevo", "hebergeur");
+    private static final List<String> DESTINATAIRES =
+            List.of("mollie", "brevo", "hebergeur", "cloudflare", "hibp");
 
     private static final List<String> CONSERVATIONS = List.of(
             "compte", "comptable", "atelier", "consentement", "connexion");

@@ -124,7 +124,15 @@ class CatalogueTraitementsTest {
             assertThat(infos.finalites()).hasSize(8);
             assertThat(infos.categoriesDonnees()).hasSize(7).allSatisfy(
                     categorie -> assertThat(categorie).isNotBlank());
-            assertThat(infos.destinataires()).hasSize(3);
+            // Cinq depuis l ajout de Cloudflare (Turnstile) et de Have I Been Pwned.
+            // Le compte seul ne dit rien : chaque destinataire doit etre nomme, avoir
+            // un role et un pays traduits, sans quoi une cle absente passerait pour un
+            // destinataire valide dans l export remis au membre (article 15.1.c).
+            assertThat(infos.destinataires()).hasSize(5).allSatisfy(destinataire -> {
+                assertThat(destinataire.nom()).isNotBlank().doesNotStartWith("??");
+                assertThat(destinataire.role()).isNotBlank().doesNotStartWith("??");
+                assertThat(destinataire.pays()).isNotBlank().doesNotStartWith("??");
+            });
             assertThat(infos.dureesConservation()).hasSize(5);
             assertThat(infos.droits()).hasSize(8);
         }

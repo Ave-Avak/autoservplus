@@ -138,6 +138,23 @@ public class LimiteurDemandesCourriel {
     }
 
     /**
+     * Plafonne sur la seule adresse IP, sans consommer de quota d adresse.
+     *
+     * <p>Pour l inscription, ou l adresse soumise n est pas encore celle d un compte :
+     * lui faire consommer le quota d adresse coupleraient l inscription au renvoi de
+     * verification et a la reinitialisation, qui visent les comptes existants. Le
+     * balayage d adresses depuis une meme source reste borne par le plafond d IP.</p>
+     */
+    public boolean autoriserParIp(String ip) {
+        boolean sousPlafond = consommer(parIp, ip == null ? "?" : ip, maxParIp,
+                horloge.instant());
+        if (!sousPlafond) {
+            JOURNAL.info("Inscription refusee, plafond d inscriptions par IP atteint.");
+        }
+        return sousPlafond;
+    }
+
+    /**
      * Fenetre reellement glissante : les horodatages sortis de la fenetre sont purges
      * a chaque passage, et l entree disparait quand elle se vide — c est ce qui borne
      * la carte en regime normal, le plafond dur n etant qu un filet. Une fenetre fixe

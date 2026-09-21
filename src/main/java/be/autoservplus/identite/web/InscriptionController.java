@@ -4,6 +4,13 @@ import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.service.InscriptionService;
 import be.autoservplus.identite.service.LimiteurDemandesCourriel;
+import be.autoservplus.identite.service.PiegeAntiBot;
+import be.autoservplus.identite.service.VerificateurTurnstile;
+import org.springframework.beans.factory.annotation.Value;
+
+import java.util.Optional;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import be.autoservplus.identite.web.dto.InscriptionForm;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -28,24 +35,86 @@ public class InscriptionController {
 
     private final InscriptionService service;
     private final LimiteurDemandesCourriel limiteur;
+    private final MessageSource messages;
+    private final PiegeAntiBot pieges;
+    /** Absent quand aucune cle secrete n est configuree : voir TurnstileClientConfig. */
+    private final Optional<VerificateurTurnstile> turnstile;
+    private final String cleTurnstile;
 
     public InscriptionController(InscriptionService service,
-                                 LimiteurDemandesCourriel limiteur) {
+                                 LimiteurDemandesCourriel limiteur,
+                                 MessageSource messages,
+                                 PiegeAntiBot pieges,
+                                 Optional<VerificateurTurnstile> turnstile,
+                                 @Value("${autoservplus.securite.turnstile.cle-site:}")
+                                 String cleTurnstile) {
         this.service = service;
         this.limiteur = limiteur;
+        this.messages = messages;
+        this.pieges = pieges;
+        this.turnstile = turnstile;
+        this.cleTurnstile = cleTurnstile;
+    }
+
+    /**
+     * Jeton refuse, ou absent alors que Turnstile est configure. Rend {@code false}
+     * quand Turnstile n est pas configure : les trois autres couches suffisent alors.
+     */
+    private boolean turnstileRefuse(String jeton, HttpServletRequest requete) {
+        return turnstile.isPresent()
+                && !turnstile.get().jetonValide(jeton, requete.getRemoteAddr());
+    }
+
+    /** Pose de quoi rendre le widget ; vide, le fragment ne rend rien. */
+    private void armerFormulaire(Model modele) {
+        modele.addAttribute("horodatageAntiBot", pieges.horodatageActuel());
+        modele.addAttribute("cleTurnstile", cleTurnstile);
     }
 
     @GetMapping("/inscription")
     public String afficherFormulaire(Model modele) {
         modele.addAttribute("titre", "Créer un compte");
         modele.addAttribute("formulaire", new InscriptionForm());
+        armerFormulaire(modele);
         return "identite/inscription";
     }
 
+    /**
+     * Traite l inscription.
+     *
+     * <p>Le plafond est consomme <b>avant</b> la validation et avant tout acces a la
+     * base : un formulaire rejete pour saisie invalide coute donc autant qu un autre,
+     * sans quoi il suffirait d envoyer des saisies fautives pour sonder sans limite.</p>
+     */
     @PostMapping("/inscription")
     public String traiterFormulaire(@Valid @ModelAttribute("formulaire") InscriptionForm formulaire,
                                     BindingResult erreurs,
-                                    Model modele) {
+                                    Model modele,
+                                    HttpServletRequest requete,
+                                    @RequestParam(name = PiegeAntiBot.CHAMP_PIEGE,
+                                            required = false) String piege,
+                                    @RequestParam(name = PiegeAntiBot.CHAMP_HORODATAGE,
+                                            required = false) String horodatage,
+                                    @RequestParam(name = VerificateurTurnstile.CHAMP_JETON,
+                                            required = false) String jetonTurnstile) {
+
+        // Ecarte en silence : dire au robot ce qui l a trahi, c est lui dire quoi
+        // corriger. Un visiteur legitime ne peut pas atteindre ce cas.
+        if (pieges.soumissionAutomatique(piege, horodatage)
+                || turnstileRefuse(jetonTurnstile, requete)) {
+            modele.addAttribute("titre", "Vérifiez votre courriel");
+            modele.addAttribute("adresse", formulaire.getEmail());
+            return "identite/inscription-confirmee";
+        }
+
+        if (!limiteur.autoriserParIp(requete.getRemoteAddr())) {
+            erreurs.reject("securite.debit.trop-de-demandes",
+                    messages.getMessage("securite.debit.trop-de-demandes", null,
+                            LocaleContextHolder.getLocale()));
+            modele.addAttribute("titre", "Créer un compte");
+            armerFormulaire(modele);
+            return "identite/inscription";
+        }
 
         if (!formulaire.motsDePasseConcordent()) {
             erreurs.rejectValue("confirmationMotDePasse", "motsDePasse.differents",
@@ -54,6 +123,7 @@ public class InscriptionController {
 
         if (erreurs.hasErrors()) {
             modele.addAttribute("titre", "Créer un compte");
+            armerFormulaire(modele);
             return "identite/inscription";
         }
 
@@ -63,6 +133,7 @@ public class InscriptionController {
         } catch (RegleMetierException e) {
             erreurs.addError(new FieldError("formulaire", "email", e.getMessage()));
             modele.addAttribute("titre", "Créer un compte");
+            armerFormulaire(modele);
             return "identite/inscription";
         }
 
@@ -79,7 +150,8 @@ public class InscriptionController {
      * obligerait a elargir la surface publique pour un ecran qui n en a pas besoin.</p>
      */
     @GetMapping("/inscription/renvoyer-verification")
-    public String afficherRenvoiVerification() {
+    public String afficherRenvoiVerification(Model modele) {
+        armerFormulaire(modele);
         return "identite/renvoyer-verification";
     }
 
@@ -92,7 +164,19 @@ public class InscriptionController {
      */
     @PostMapping("/inscription/renvoyer-verification")
     public String traiterRenvoiVerification(@RequestParam String email, Model modele,
-                                            HttpServletRequest requete) {
+                                            HttpServletRequest requete,
+                                            @RequestParam(name = PiegeAntiBot.CHAMP_PIEGE,
+                                                    required = false) String piege,
+                                            @RequestParam(name = PiegeAntiBot.CHAMP_HORODATAGE,
+                                                    required = false) String horodatage,
+                                            @RequestParam(name = VerificateurTurnstile.CHAMP_JETON,
+                                                    required = false) String jetonTurnstile) {
+        // Meme page que le cas nominal : la neutralite de cet ecran vaut aussi face a
+        // un robot, qui ne doit pas apprendre qu il a ete repere.
+        if (pieges.soumissionAutomatique(piege, horodatage)
+                || turnstileRefuse(jetonTurnstile, requete)) {
+            return "identite/renvoyer-verification-envoye";
+        }
         // Decompte AVANT le service, donc avant toute recherche en base : le compteur
         // monte pareil pour une adresse inconnue, ce qui est la condition pour que le
         // plafond n introduise pas l oracle que cet ecran est fait pour taire.

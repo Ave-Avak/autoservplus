@@ -22,7 +22,9 @@
             <input type="email" id="email" name="email" autocomplete="email" required autofocus>
         </div>
         <button type="submit" class="btn-cta" th:text="#{verification.renvoi.envoyer}">Envoyer</button>
-    </form>
+        <div th:replace="~{fragments/antibot :: pieges(${horodatageAntiBot})}"></div>
+    <div th:replace="~{fragments/antibot :: turnstile(${cleTurnstile})}"></div>
+</form>
 
     <p><a th:href="@{/connexion}" th:text="#{verification.renvoi.retour}">Retour à la connexion</a></p>
 </main>
