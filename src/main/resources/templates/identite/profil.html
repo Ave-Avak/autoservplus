@@ -34,6 +34,12 @@
     <div class="message message-succes" th:if="${enregistre}" role="status"
          th:text="#{profil.enregistre}">Vos informations sont enregistrées.</div>
 
+    <!-- Message NEUTRE : identique que l'adresse visée soit libre ou déjà prise. Le
+         distinguer ferait du formulaire un oracle d'existence de compte. -->
+    <div class="message message-succes" th:if="${demandeEnregistree}" role="status"
+         th:text="#{changement-email.demande-enregistree}">
+        Si cette adresse peut être utilisée, un lien de confirmation vient d'y être envoyé.</div>
+
     <form class="formulaire" th:action="@{/mon-profil}" th:object="${formulaire}" method="post">
 
         <div class="message message-erreur" th:if="${#fields.hasGlobalErrors()}" role="alert">
@@ -56,6 +62,15 @@
                 <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('nom')}"
                    th:errors="*{nom}"></p>
             </div>
+
+            <!-- L'adresse de courriel n'est PAS un champ de ce formulaire : elle est
+                 l'identifiant de connexion, et la changer exige de prouver la nouvelle
+                 avant de basculer. Un parcours distinct, donc, et non un champ de plus
+                 que l'on enregistrerait avec le reste. -->
+            <p class="texte-info">
+                <span th:text="#{profil.connecte(${email})}">Connecté en tant que adresse@exemple.be.</span>
+                <a th:href="@{/mon-profil/adresse}" th:text="#{changement-email.lien}">Changer mon adresse de courriel</a>
+            </p>
 
             <div class="champ">
                 <label for="telephone" th:text="#{profil.telephone}">Téléphone</label>

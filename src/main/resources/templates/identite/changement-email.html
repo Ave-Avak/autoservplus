@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{changement-email.titre} + ' — AutoServ+'">Changer mon adresse — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{changement-email.titre}">Changer mon adresse de courriel</h1>
+
+    <p th:text="#{changement-email.actuelle(${email})}">Votre adresse actuelle est adresse@exemple.be.</p>
+
+    <!-- Le point essentiel pour le membre : rien ne change tant qu'il n'a pas cliqué
+         le lien. Le taire ferait croire à un basculement immédiat, et une saisie
+         erronée serait vécue comme la perte du compte. -->
+    <p class="texte-info" th:text="#{changement-email.aide}">
+        Votre adresse ne changera qu'après confirmation du lien envoyé à la nouvelle adresse.</p>
+
+    <form class="formulaire" th:action="@{/mon-profil/adresse}" th:object="${formulaire}" method="post">
+
+        <div class="message message-erreur" th:if="${#fields.hasGlobalErrors()}" role="alert">
+            <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Erreur</p>
+        </div>
+
+        <div class="champ">
+            <label for="nouvelleAdresse" th:text="#{changement-email.nouvelle}">Nouvelle adresse</label>
+            <input type="email" id="nouvelleAdresse" th:field="*{nouvelleAdresse}"
+                   autocomplete="email" required>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('nouvelleAdresse')}"
+               th:errors="*{nouvelleAdresse}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="motDePasse" th:text="#{changement-email.mot-de-passe}">Votre mot de passe</label>
+            <!-- Jamais th:field sur ce champ : il repeuplerait la valeur au retour
+                 d'erreur, donc renverrait le mot de passe dans la page. -->
+            <input type="password" id="motDePasse" name="motDePasse"
+                   autocomplete="current-password" required>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motDePasse')}"
+               th:errors="*{motDePasse}"></p>
+            <p class="texte-info" th:text="#{changement-email.mot-de-passe.aide}">
+                Votre mot de passe confirme que la demande vient bien de vous.</p>
+        </div>
+
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{changement-email.envoyer}">Envoyer le lien</button>
+            <a th:href="@{/mon-profil}" th:text="#{changement-email.retour}">Retour à mon profil</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>
