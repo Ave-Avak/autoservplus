@@ -85,6 +85,20 @@ autoservplus:
   tva:
     taux-standard: 21.00
 
+  # Compte super-administrateur d'exploitation (CdC 5.2.3), cree au demarrage s'il
+  # n'existe pas deja. Les deux valeurs vont ENSEMBLE : n'en renseigner qu'une fait
+  # echouer le demarrage, plutot que de creer un compte privilegie bancal ou de se
+  # taire. Absentes toutes les deux, rien n'est cree et rien n'echoue.
+  #
+  # Un compte existant n'est JAMAIS reecrit : la variable devient perimee des le
+  # premier changement de mot de passe, et la reappliquer ramenerait indefiniment le
+  # compte au secret initial — celui qui vit dans un fichier .env.
+  exploitant:
+    email: ${EXPLOITANT_EMAIL:}
+    mot-de-passe: ${EXPLOITANT_MOT_DE_PASSE:}
+    nom: ${EXPLOITANT_NOM:Exploitant}
+    prenom: ${EXPLOITANT_PRENOM:AutoServ+}
+
   # Adresse publique du site, employee LA OU une URL absolue est indispensable et ou
   # aucune requete HTTP n'est disponible pour la deduire : aujourd'hui le fichier
   # iCalendar d'un rendez-vous (F38), qui est lu dans l'agenda du membre, hors du
