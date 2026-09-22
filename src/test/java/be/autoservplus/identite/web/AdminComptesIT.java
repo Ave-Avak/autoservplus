@@ -136,6 +136,60 @@ class AdminComptesIT extends SocleIntegration {
     }
 
     @Nested
+    @DisplayName("liste des membres")
+    class Liste {
+
+        /**
+         * <b>Le cas qui manquait, et que la recette a trouve a ma place.</b> Aucun test
+         * n ouvrait cet ecran : la requete testait {@code :filtre is null} pour rendre
+         * tout le monde, et PostgreSQL, incapable d inferer le type d un parametre nul,
+         * repondait {@code function lower(bytea) does not exist} — 500 des l ouverture.
+         * Meme piege que celui deja consigne pour le journal d audit (BL-7), et meme
+         * motif que le 404 du paiement : ce qu aucun test ne traverse, seule
+         * l exploitation le traverse.
+         */
+        @Test
+        @DisplayName("s'ouvre sans recherche et rend les membres")
+        void listeSansRecherche() throws Exception {
+            mvc.perform(get("/admin/comptes")
+                            .with(user(admin.getEmail()).roles("ADMINISTRATEUR"))
+                            .locale(Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString(membre.getEmail())));
+        }
+
+        @Test
+        @DisplayName("la recherche filtre, et ne rend pas les autres")
+        void rechercheFiltre() throws Exception {
+            mvc.perform(get("/admin/comptes").param("recherche", membre.getEmail())
+                            .with(user(admin.getEmail()).roles("ADMINISTRATEUR"))
+                            .locale(Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString(membre.getEmail())));
+
+            // Une recherche qui ne correspond a rien rend la page, pas une erreur.
+            mvc.perform(get("/admin/comptes").param("recherche", "zzz-aucun-membre-zzz")
+                            .with(user(admin.getEmail()).roles("ADMINISTRATEUR"))
+                            .locale(Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(org.hamcrest.Matchers.not(
+                            containsString(membre.getEmail()))));
+        }
+
+        /** Les comptes du back-office ne figurent PAS dans la liste des membres. */
+        @Test
+        @DisplayName("les comptes privilégiés n'y figurent pas")
+        void privilegiesExclus() throws Exception {
+            mvc.perform(get("/admin/comptes")
+                            .with(user(chef.getEmail()).roles("SUPER_ADMINISTRATEUR"))
+                            .locale(Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(org.hamcrest.Matchers.not(
+                            containsString(chef.getEmail()))));
+        }
+    }
+
+    @Nested
     @DisplayName("pouvoirs exclusifs")
     class PouvoirsExclusifs {
 

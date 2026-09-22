@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -78,8 +79,12 @@ public class GestionComptesService {
     // --- lectures ---------------------------------------------------------------------
 
     public List<Utilisateur> membres(String filtre) {
-        String recherche = filtre == null || filtre.isBlank() ? null : filtre.strip();
-        return utilisateurs.rechercherMembres(recherche);
+        // Motif compose ICI : sans recherche il vaut simplement %, ce qui rend tout le
+        // monde sans qu aucun parametre nul n ait a etre type par la base.
+        String motif = filtre == null || filtre.isBlank()
+                ? "%"
+                : "%" + filtre.strip().toLowerCase(Locale.ROOT) + "%";
+        return utilisateurs.rechercherMembres(motif);
     }
 
     /** Comptes du back-office : les deux natures privilegiees, jamais les membres. */
