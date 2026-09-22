@@ -302,8 +302,26 @@ public class Utilisateur extends BaseEntity {
         return statut == StatutUtilisateur.ACTIF;
     }
 
+    /**
+     * Le compte relève-t-il du back-office ?
+     *
+     * <p><b>Couvre les DEUX natures privilegiees</b>, et ce n est pas un detail de
+     * confort : l unique appelant de ce predicat est la garde de {@link #anonymiser}
+     * qui refuse d effacer un compte dont les decisions sont tracees. Le limiter a
+     * {@code ADMINISTRATEUR} rendrait un super-administrateur <b>anonymisable</b>,
+     * c est-a-dire exactement l inverse de ce que la garde protege — ses decisions
+     * sont les plus engageantes du systeme, puisqu il cree et suspend les autres
+     * administrateurs. Le piege est etroit et silencieux : ajouter une valeur a
+     * l enumeration n aurait rien casse, la garde aurait simplement cesse de couvrir
+     * le cas le plus sensible.</p>
+     */
     public boolean estAdministrateur() {
-        return typeUtilisateur == TypeUtilisateur.ADMINISTRATEUR;
+        return typeUtilisateur.estPrivilegie();
+    }
+
+    /** Pouvoirs exclusifs sur les comptes administrateurs (CdC 5.2.3). */
+    public boolean estSuperAdministrateur() {
+        return typeUtilisateur == TypeUtilisateur.SUPER_ADMINISTRATEUR;
     }
 
     public String nomComplet() {
