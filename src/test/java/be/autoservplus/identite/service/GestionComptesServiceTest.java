@@ -51,6 +51,7 @@ class GestionComptesServiceTest {
     @Mock private UtilisateurRepository utilisateurs;
     @Mock private HistoriqueStatutUtilisateurRepository historique;
     @Mock private AuteurCourant auteurCourant;
+    @Mock private RevocationSessions revocation;
 
     private GestionComptesService service;
     private Utilisateur membre;
@@ -60,7 +61,7 @@ class GestionComptesServiceTest {
     @BeforeEach
     void setUp() {
         service = new GestionComptesService(utilisateurs, historique, auteurCourant,
-                Clock.fixed(MAINTENANT, ZoneOffset.UTC));
+                revocation, Clock.fixed(MAINTENANT, ZoneOffset.UTC));
         membre = compte(1L, "marie@exemple.be", TypeUtilisateur.MEMBRE);
         admin = compte(2L, "admin@exemple.be", TypeUtilisateur.ADMINISTRATEUR);
         chef = compte(3L, "chef@exemple.be", TypeUtilisateur.SUPER_ADMINISTRATEUR);
@@ -114,6 +115,23 @@ class GestionComptesServiceTest {
             assertThat(ligne.getValue().getAuteur()).isSameAs(admin);
             assertThat(ligne.getValue().getMotif()).isEqualTo(MOTIF);
             assertThat(ligne.getValue().getHorodatage()).isEqualTo(MAINTENANT);
+        }
+
+        /**
+         * La revocation accompagne la SUSPENSION et elle seule : la declencher a la
+         * reactivation deconnecterait le membre au moment precis ou on lui rend
+         * l acces.
+         */
+        @Test
+        @DisplayName("la suspension ferme les sessions ouvertes, la réactivation non")
+        void revocationSurSuspensionSeulement() {
+            agit(admin);
+
+            service.suspendre(ref(membre), MOTIF);
+            verify(revocation).revoquer(membre.getEmail());
+
+            service.reactiver(ref(membre));
+            verify(revocation, org.mockito.Mockito.times(1)).revoquer(membre.getEmail());
         }
 
         @Test

@@ -5,6 +5,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -73,7 +74,8 @@ public class SecuriteConfig {
     @Bean
     public SecurityFilterChain chaineDeFiltres(HttpSecurity http,
                                                EchecAuthentificationHandler echecHandler,
-                                               LangueApresConnexionHandler succesHandler)
+                                               LangueApresConnexionHandler succesHandler,
+                                               SessionRegistry registreSessions)
             throws Exception {
         http
                 .authorizeHttpRequests(acces -> acces
@@ -161,6 +163,14 @@ public class SecuriteConfig {
                         .failureHandler(echecHandler)
                         .permitAll()
                 )
+                // Les sessions authentifiees sont inscrites au registre, pour que la
+                // suspension d un compte puisse couper celles deja ouvertes. Sans
+                // cette ligne, le bean SessionRegistry existerait sans jamais rien
+                // apprendre : la revocation ne trouverait aucune session a fermer, et
+                // rien ne le signalerait.
+                .sessionManagement(sessions -> sessions
+                        .maximumSessions(-1)
+                        .sessionRegistry(registreSessions))
                 .logout(deconnexion -> deconnexion
                         .logoutRequestMatcher(new AntPathRequestMatcher("/deconnexion", "POST"))
                         .logoutSuccessUrl("/?deconnecte")

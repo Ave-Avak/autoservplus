@@ -61,14 +61,17 @@ public class GestionComptesService {
     private final UtilisateurRepository utilisateurs;
     private final HistoriqueStatutUtilisateurRepository historique;
     private final AuteurCourant auteurCourant;
+    private final RevocationSessions revocation;
     private final Clock horloge;
 
     public GestionComptesService(UtilisateurRepository utilisateurs,
                                  HistoriqueStatutUtilisateurRepository historique,
-                                 AuteurCourant auteurCourant, Clock horloge) {
+                                 AuteurCourant auteurCourant, RevocationSessions revocation,
+                                 Clock horloge) {
         this.utilisateurs = utilisateurs;
         this.historique = historique;
         this.auteurCourant = auteurCourant;
+        this.revocation = revocation;
         this.horloge = horloge;
     }
 
@@ -137,7 +140,16 @@ public class GestionComptesService {
                             + "definitivement la gestion des comptes.");
         }
 
-        return transiter(cible, StatutUtilisateur.SUSPENDU, auteur, motif.strip());
+        Utilisateur suspendu = transiter(cible, StatutUtilisateur.SUSPENDU, auteur,
+                motif.strip());
+
+        // Les sessions deja ouvertes tombent AUSSI. Sans cela, la suspension serait
+        // immediate pour toute nouvelle connexion et differee pour celle qui est en
+        // cours — l inverse de ce qu on attend d une mesure prise en urgence. Le
+        // registre ne porte que des sessions de cette instance : voir la limite
+        // enoncee a RegistreSessionsConfig.
+        revocation.revoquer(suspendu.getEmail());
+        return suspendu;
     }
 
     /** Reactive un compte suspendu. Le motif n a pas d objet ici. */
