@@ -1,6 +1,6 @@
 package be.autoservplus.identite.web;
 
-import be.autoservplus.common.exception.RegleMetierException;
+import be.autoservplus.identite.service.ChangementEmailRefuseException;
 import be.autoservplus.identite.service.ChangementEmailService;
 import be.autoservplus.identite.web.dto.ChangementEmailForm;
 import jakarta.servlet.http.HttpServletRequest;
@@ -23,8 +23,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
-import java.util.Map;
-
 /**
  * Changement d adresse de courriel, en deux temps (CdC 5.2.2).
  *
@@ -35,19 +33,6 @@ import java.util.Map;
  */
 @Controller
 public class ChangementEmailController {
-
-    /**
-     * Refus traduits par leur CODE de regle et non par le texte de l exception : le
-     * service rend une phrase francaise, conforme a son contrat, mais l ecran doit
-     * suivre la langue de session (F6). Patron de {@code RdvController}.
-     */
-    private static final Map<String, String> CLES_DE_REFUS = Map.of(
-            "RM-32", "changement-email.erreur.mot-de-passe",
-            "RM-33", "changement-email.erreur.non-verifiee",
-            "RM-34", "changement-email.erreur.identique",
-            "RM-35", "changement-email.erreur.trop-de-demandes",
-            "RM-36", "changement-email.erreur.expire",
-            "RM-37", "changement-email.erreur.prise");
 
     private final ChangementEmailService service;
     private final MessageSource messages;
@@ -76,8 +61,8 @@ public class ChangementEmailController {
             try {
                 service.demander(membre.getUsername(), formulaire.getNouvelleAdresse(),
                         formulaire.getMotDePasse(), requete.getRemoteAddr());
-            } catch (RegleMetierException refus) {
-                erreurs.reject(refus.getCodeRegle(), traduire(refus));
+            } catch (ChangementEmailRefuseException refus) {
+                erreurs.reject(refus.getCleMessage(), traduire(refus));
             }
         }
 
@@ -108,7 +93,7 @@ public class ChangementEmailController {
                             Model modele) {
         try {
             service.confirmer(jeton);
-        } catch (RegleMetierException refus) {
+        } catch (ChangementEmailRefuseException refus) {
             modele.addAttribute("echec", traduire(refus));
             return "identite/changement-email-resultat";
         }
@@ -121,11 +106,12 @@ public class ChangementEmailController {
         return "identite/changement-email-resultat";
     }
 
-    private String traduire(RegleMetierException refus) {
-        String cle = CLES_DE_REFUS.get(refus.getCodeRegle());
-        // Repli sur la phrase du service plutot que sur une cle brute : un code non
-        // recense doit degrader en francais lisible, pas en « ??cle_en_clair?? ».
-        return cle == null ? refus.getMessage()
-                : messages.getMessage(cle, null, LocaleContextHolder.getLocale());
+    /**
+     * Le refus PORTE sa cle i18n : il n y a plus de table a tenir a jour, donc plus
+     * de refus nouveau qui s afficherait en francais faute d y avoir ete inscrit.
+     */
+    private String traduire(ChangementEmailRefuseException refus) {
+        return messages.getMessage(refus.getCleMessage(), null,
+                LocaleContextHolder.getLocale());
     }
 }

@@ -1,6 +1,5 @@
 package be.autoservplus.identite.service;
 
-import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.communication.service.DetailsChangementEmailCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.TypeUtilisateur;
@@ -130,9 +129,9 @@ class ChangementEmailServiceTest {
         @DisplayName("mot de passe faux : refus, et rien n'est enregistré")
         void motDePasseFaux() {
             assertThatThrownBy(() -> service.demander(ACTUELLE, CIBLE, "mauvais", IP))
-                    .isInstanceOf(RegleMetierException.class)
-                    .extracting(e -> ((RegleMetierException) e).getCodeRegle())
-                    .isEqualTo("RM-32");
+                    .isInstanceOf(ChangementEmailRefuseException.class)
+                    .extracting(e -> ((ChangementEmailRefuseException) e).getCleMessage())
+                    .isEqualTo("changement-email.erreur.mot-de-passe");
 
             assertThat(membre.changementEmailEnCours()).isFalse();
             verify(courriel, never()).envoyerAvisChangementAdresse(any());
@@ -152,18 +151,18 @@ class ChangementEmailServiceTest {
             when(encodeur.matches(MOT_DE_PASSE, neuf.getMotDePasseHache())).thenReturn(true);
 
             assertThatThrownBy(ChangementEmailServiceTest.this::demander)
-                    .isInstanceOf(RegleMetierException.class)
-                    .extracting(e -> ((RegleMetierException) e).getCodeRegle())
-                    .isEqualTo("RM-33");
+                    .isInstanceOf(ChangementEmailRefuseException.class)
+                    .extracting(e -> ((ChangementEmailRefuseException) e).getCleMessage())
+                    .isEqualTo("changement-email.erreur.non-verifiee");
         }
 
         @Test
         @DisplayName("adresse identique à l'actuelle : refus")
         void adresseIdentique() {
             assertThatThrownBy(() -> service.demander(ACTUELLE, "MARIE@exemple.be", MOT_DE_PASSE, IP))
-                    .isInstanceOf(RegleMetierException.class)
-                    .extracting(e -> ((RegleMetierException) e).getCodeRegle())
-                    .isEqualTo("RM-34");
+                    .isInstanceOf(ChangementEmailRefuseException.class)
+                    .extracting(e -> ((ChangementEmailRefuseException) e).getCleMessage())
+                    .isEqualTo("changement-email.erreur.identique");
         }
 
         /**
@@ -177,9 +176,9 @@ class ChangementEmailServiceTest {
             when(limiteur.autoriser(CIBLE, IP)).thenReturn(false);
 
             assertThatThrownBy(ChangementEmailServiceTest.this::demander)
-                    .isInstanceOf(RegleMetierException.class)
-                    .extracting(e -> ((RegleMetierException) e).getCodeRegle())
-                    .isEqualTo("RM-35");
+                    .isInstanceOf(ChangementEmailRefuseException.class)
+                    .extracting(e -> ((ChangementEmailRefuseException) e).getCleMessage())
+                    .isEqualTo("changement-email.erreur.trop-de-demandes");
 
             verify(repository, never()).existsByEmailIgnoreCase(anyString());
         }
@@ -256,9 +255,9 @@ class ChangementEmailServiceTest {
             when(repository.existsByEmailIgnoreCase(CIBLE)).thenReturn(true);
 
             assertThatThrownBy(() -> service.confirmer(jeton))
-                    .isInstanceOf(RegleMetierException.class)
-                    .extracting(e -> ((RegleMetierException) e).getCodeRegle())
-                    .isEqualTo("RM-37");
+                    .isInstanceOf(ChangementEmailRefuseException.class)
+                    .extracting(e -> ((ChangementEmailRefuseException) e).getCleMessage())
+                    .isEqualTo("changement-email.erreur.prise");
 
             assertThat(membre.getEmail()).isEqualTo(ACTUELLE);
             // La demande est abandonnee : la laisser vivante ferait echouer chaque
@@ -277,9 +276,9 @@ class ChangementEmailServiceTest {
             when(repository.findByJetonChangementEmail(jeton)).thenReturn(Optional.of(membre));
 
             assertThatThrownBy(() -> tardif.confirmer(jeton))
-                    .isInstanceOf(RegleMetierException.class)
-                    .extracting(e -> ((RegleMetierException) e).getCodeRegle())
-                    .isEqualTo("RM-36");
+                    .isInstanceOf(ChangementEmailRefuseException.class)
+                    .extracting(e -> ((ChangementEmailRefuseException) e).getCleMessage())
+                    .isEqualTo("changement-email.erreur.expire");
 
             assertThat(membre.getEmail()).isEqualTo(ACTUELLE);
             assertThat(membre.changementEmailEnCours()).isFalse();

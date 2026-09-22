@@ -81,14 +81,15 @@ public class ChangementEmailService {
      * finirait par etre affiche, donc par distinguer les cas que la neutralite doit
      * confondre.</p>
      *
-     * <p>Les messages portes par l exception sont des phrases francaises, conformement
-     * au contrat de {@link RegleMetierException} ; c est le CODE que le controleur
-     * traduit, comme {@code RdvController} le fait deja.</p>
+     * <p>Les refus portent une phrase francaise affichable, conformement au contrat de
+     * {@link RegleMetierException}, et la cle i18n que le controleur rend a l ecran.
+     * Aucun code RM : aucune regle du CdC ne les porte.</p>
      *
-     * @throws RegleMetierException si le mot de passe est faux, l adresse d origine non
-     *                              verifiee, l adresse identique a l actuelle, ou le
-     *                              plafond de demandes atteint — tous des refus qui ne
-     *                              parlent que du compte de l appelant
+     * @throws ChangementEmailRefuseException si le mot de passe est faux, l adresse
+     *                              d origine non verifiee, l adresse identique a
+     *                              l actuelle, ou le plafond de demandes atteint —
+     *                              tous des refus qui ne parlent que du compte de
+     *                              l appelant
      */
     @Transactional
     @PreAuthorize("isAuthenticated()")
@@ -100,7 +101,7 @@ public class ChangementEmailService {
                 || !encodeur.matches(motDePasse, membre.getMotDePasseHache())) {
             JOURNAL.warn("Changement d adresse refuse : re-authentification echouee pour {}",
                     membre.getReference());
-            throw new RegleMetierException("RM-32",
+            throw new ChangementEmailRefuseException("changement-email.erreur.mot-de-passe",
                     "Mot de passe incorrect.");
         }
 
@@ -108,13 +109,13 @@ public class ChangementEmailService {
         // controle le compte : il pourrait s etre inscrit avec l adresse d autrui et
         // s en detacher avant que le titulaire ne s en apercoive.
         if (!membre.isEmailVerifie()) {
-            throw new RegleMetierException("RM-33",
+            throw new ChangementEmailRefuseException("changement-email.erreur.non-verifiee",
                     "Verifiez d abord votre adresse actuelle.");
         }
 
         String cible = normaliser(nouvelleAdresse);
         if (cible.equals(normaliser(membre.getEmail()))) {
-            throw new RegleMetierException("RM-34",
+            throw new ChangementEmailRefuseException("changement-email.erreur.identique",
                     "Cette adresse est deja la votre.");
         }
 
@@ -122,7 +123,7 @@ public class ChangementEmailService {
         // publics : un decompte qui dependrait de l existence de l adresse rendrait le
         // refus bavard.
         if (!limiteur.autoriser(cible, ip)) {
-            throw new RegleMetierException("RM-35",
+            throw new ChangementEmailRefuseException("changement-email.erreur.trop-de-demandes",
                     "Trop de demandes. Reessayez dans quelques minutes.");
         }
 
@@ -160,9 +161,10 @@ public class ChangementEmailService {
      * laisserait le membre sans explication.</p>
      *
      * @return l ancienne adresse, pour que l appelant puisse la journaliser
-     * @throws RessourceIntrouvableException si aucune demande ne porte ce jeton
-     * @throws RegleMetierException          si le lien a expire, ou si l adresse a ete
-     *                                       prise entre la demande et la confirmation
+     * @throws RessourceIntrouvableException  si aucune demande ne porte ce jeton
+     * @throws ChangementEmailRefuseException si le lien a expire, ou si l adresse a
+     *                                        ete prise entre la demande et la
+     *                                        confirmation
      */
     @Transactional
     public String confirmer(String jeton) {
@@ -171,7 +173,7 @@ public class ChangementEmailService {
 
         if (membre.jetonChangementExpire(Instant.now(horloge))) {
             membre.annulerChangementEmail();
-            throw new RegleMetierException("RM-36",
+            throw new ChangementEmailRefuseException("changement-email.erreur.expire",
                     "Ce lien a expire. Refaites la demande depuis votre profil.");
         }
 
@@ -181,7 +183,7 @@ public class ChangementEmailService {
         // erreur technique, au pire moment et sans message exploitable.
         if (repository.existsByEmailIgnoreCase(membre.getEmailEnAttente())) {
             membre.annulerChangementEmail();
-            throw new RegleMetierException("RM-37",
+            throw new ChangementEmailRefuseException("changement-email.erreur.prise",
                     "Cette adresse n est plus disponible.");
         }
 
