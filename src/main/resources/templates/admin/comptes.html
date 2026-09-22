@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.comptes.titre} + ' — AutoServ+'">Comptes membres — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.comptes.titre}">Comptes membres</h1>
+
+    <form class="formulaire" th:action="@{/admin/comptes}" method="get">
+        <div class="champ">
+            <label for="recherche" th:text="#{admin.comptes.recherche}">Rechercher</label>
+            <input type="search" id="recherche" name="recherche" th:value="${recherche}">
+        </div>
+        <button type="submit" class="btn-cta" th:text="#{admin.comptes.rechercher}">Rechercher</button>
+    </form>
+
+    <p th:if="${#lists.isEmpty(comptes)}" th:text="#{admin.comptes.aucun}">Aucun compte ne correspond.</p>
+
+    <table class="tableau" th:unless="${#lists.isEmpty(comptes)}">
+        <caption th:text="#{admin.comptes.legende}">Comptes membres, par ordre alphabétique.</caption>
+        <thead>
+        <tr>
+            <th scope="col" th:text="#{admin.comptes.colonne.nom}">Nom</th>
+            <th scope="col" th:text="#{admin.comptes.colonne.email}">Adresse</th>
+            <th scope="col" th:text="#{admin.comptes.colonne.statut}">Statut</th>
+            <th scope="col" th:text="#{admin.comptes.colonne.action}">Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="c : ${comptes}">
+            <td th:text="${c.nomComplet()}">Marie Dupont</td>
+            <td th:text="${c.email()}">marie@exemple.be</td>
+            <td>
+                <span class="badge" th:classappend="${c.suspendu()} ? 'badge-suspendu' : 'badge-actif'"
+                      th:text="#{'admin.comptes.statut.' + ${c.statut()}}">Actif</span>
+            </td>
+            <td>
+                <a th:href="@{/admin/comptes/{ref}(ref=${c.reference()})}"
+                   th:text="#{admin.comptes.consulter}"
+                   th:attr="aria-label=#{admin.comptes.consulter.aria(${c.nomComplet()})}">Consulter</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

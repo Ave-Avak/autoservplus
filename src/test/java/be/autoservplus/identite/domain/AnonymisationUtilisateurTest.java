@@ -167,6 +167,41 @@ class AnonymisationUtilisateurTest {
         assertThat(admin.getEmail()).isEqualTo("admin@autoservplus.be");
     }
 
+    /**
+     * <b>Le piege que l ajout de SUPER_ADMINISTRATEUR a failli ouvrir.</b> La garde
+     * reposait sur {@code typeUtilisateur == ADMINISTRATEUR}, egalite stricte : une
+     * troisieme valeur d enumeration l aurait rendue fausse pour le compte le PLUS
+     * sensible du systeme — celui qui cree, suspend et reactive les autres
+     * administrateurs. Rien n aurait casse : la garde aurait simplement cesse de
+     * couvrir ce cas, en silence. Elle repose desormais sur
+     * {@code TypeUtilisateur.estPrivilegie()}, et ce cas echoue si quelqu un revient a
+     * une egalite.
+     */
+    @Test
+    @DisplayName("un super-administrateur ne s'anonymise pas davantage")
+    void superAdministrateurRefuse() {
+        Utilisateur chef = new Utilisateur("chef@autoservplus.be", "$2a$12$empreinte",
+                "Garage", "Chef", TypeUtilisateur.SUPER_ADMINISTRATEUR);
+
+        assertThatThrownBy(() -> chef.anonymiser(JETON, HACHAGE, MAINTENANT))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("administrateur");
+        assertThat(chef.getEmail()).isEqualTo("chef@autoservplus.be");
+    }
+
+    /**
+     * Les deux natures privilegiees sont couvertes, le membre ne l est pas : sans ce
+     * dernier point, une garde qui refuserait TOUT le monde satisferait les deux cas
+     * precedents et rendrait la suppression de compte (F23) impossible.
+     */
+    @Test
+    @DisplayName("le membre, lui, reste anonymisable")
+    void membreToujoursAnonymisable() {
+        assertThat(marie.estAdministrateur()).isFalse();
+        marie.anonymiser(JETON, HACHAGE, MAINTENANT);
+        assertThat(marie.estAnonymise()).isTrue();
+    }
+
     @Test
     @DisplayName("refuse un jeton, un hachage ou une date absents")
     void argumentsObligatoires() {

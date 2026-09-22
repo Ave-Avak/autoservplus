@@ -5,6 +5,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
+import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -31,10 +34,48 @@ public class SecuriteConfig {
         return new BCryptPasswordEncoder(COUT_BCRYPT);
     }
 
+    /**
+     * {@code ROLE_SUPER_ADMINISTRATEUR} implique {@code ROLE_ADMINISTRATEUR}
+     * (CdC 5.2.3).
+     *
+     * <p><b>Pourquoi une hierarchie plutot que treize annotations doublees.</b> Un
+     * compte ne porte qu une autorite — {@code UtilisateurDetailsService} fait
+     * {@code .roles(typeUtilisateur.name())}. Sans ce bean, le super-administrateur
+     * serait refuse partout ou l administrateur est admis, et il faudrait reecrire les
+     * <b>treize</b> {@code @PreAuthorize("hasRole('ADMINISTRATEUR')")} du projet plus
+     * le matcher {@code /admin/**}. Chaque oubli serait un ecran inaccessible, et
+     * chaque service ajoute plus tard une occasion de recommencer.</p>
+     *
+     * <p><b>Deux niveaux seulement, et c est une decision.</b> {@code ROLE_MEMBRE} n y
+     * figure pas parce qu il n est <b>garde nulle part</b> : aucun
+     * {@code hasRole('MEMBRE')} n existe dans le projet, et les ecrans personnels
+     * ({@code /mes-vehicules}, {@code /panier}, {@code /commandes}) sont couverts par
+     * {@code anyRequest().authenticated()} seul — leur cloisonnement vient de
+     * l <i>ownership</i>, chacun projetant les donnees du principal. L inscrire dans la
+     * hierarchie ne changerait donc rien du tout : ce serait du bruit dans une
+     * declaration dont toute la valeur est d etre lisible d un coup d oeil.
+     * {@code RoleMembreNestPasUneGardeTest} casse la build si une telle garde
+     * apparaissait, auquel cas la question se reposerait.</p>
+     *
+     * <p><b>Ce bean suffit-il vraiment aux deux surfaces ?</b> Depuis Spring Security
+     * 6.3, un {@code RoleHierarchy} unique est repris par l autorisation web ET par la
+     * securite de methode. Le projet ne s en remet pas a cette lecture :
+     * {@code HierarchieRolesIT} verifie les deux surfaces separement, parce qu un
+     * comportement de framework suppose a deja coute trois formulaires publics au
+     * projet (la propriete declaree vide jugee presente).</p>
+     */
+    @Bean
+    public RoleHierarchy hierarchieDesRoles() {
+        return RoleHierarchyImpl.withDefaultRolePrefix()
+                .role("SUPER_ADMINISTRATEUR").implies("ADMINISTRATEUR")
+                .build();
+    }
+
     @Bean
     public SecurityFilterChain chaineDeFiltres(HttpSecurity http,
                                                EchecAuthentificationHandler echecHandler,
-                                               LangueApresConnexionHandler succesHandler)
+                                               LangueApresConnexionHandler succesHandler,
+                                               SessionRegistry registreSessions)
             throws Exception {
         http
                 .authorizeHttpRequests(acces -> acces
@@ -122,6 +163,14 @@ public class SecuriteConfig {
                         .failureHandler(echecHandler)
                         .permitAll()
                 )
+                // Les sessions authentifiees sont inscrites au registre, pour que la
+                // suspension d un compte puisse couper celles deja ouvertes. Sans
+                // cette ligne, le bean SessionRegistry existerait sans jamais rien
+                // apprendre : la revocation ne trouverait aucune session a fermer, et
+                // rien ne le signalerait.
+                .sessionManagement(sessions -> sessions
+                        .maximumSessions(-1)
+                        .sessionRegistry(registreSessions))
                 .logout(deconnexion -> deconnexion
                         .logoutRequestMatcher(new AntPathRequestMatcher("/deconnexion", "POST"))
                         .logoutSuccessUrl("/?deconnecte")
