@@ -82,6 +82,30 @@ public interface ServiceCourriel {
     void envoyerDecisionRetractation(DetailsRetractationCourriel details);
 
     /**
+     * Lien de confirmation envoye a la NOUVELLE adresse (CdC 5.2.2). Tant qu il n est
+     * pas suivi, le compte reste joignable a l ancienne : une saisie erronee coute un
+     * courriel perdu, jamais l acces au compte.
+     */
+    void envoyerConfirmationNouvelleAdresse(DetailsChangementEmailCourriel details,
+                                            String lienConfirmation);
+
+    /**
+     * Avis envoye a l ANCIENNE adresse, sans lien d action.
+     *
+     * <p>C est le seul signal qu une prise de controle laisse au titulaire legitime :
+     * qui detourne un compte commence par en deplacer l adresse, apres quoi la
+     * reinitialisation de mot de passe ne revient plus jamais a la victime. L avis part
+     * des la DEMANDE et non a la bascule — averti apres coup, le titulaire n aurait
+     * plus aucun moyen de reprendre la main.</p>
+     *
+     * <p>Aucun bouton d annulation n y figure : un lien d annulation dans un courriel
+     * est lui-meme une action non authentifiee, donc une prise supplementaire. Le
+     * message invite a se connecter et a changer de mot de passe, ce qui suppose de
+     * prouver son identite.</p>
+     */
+    void envoyerAvisChangementAdresse(DetailsChangementEmailCourriel details);
+
+    /**
      * Le compte du membre a ete supprime a sa demande (F23, art. 17 RGPD). Envoye
      * apres commit de l anonymisation.
      *

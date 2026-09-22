@@ -221,6 +221,35 @@ public class CourrielConsole implements ServiceCourriel {
     }
 
     @Override
+    public void envoyerConfirmationNouvelleAdresse(DetailsChangementEmailCourriel details,
+                                                   String lienConfirmation) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL NON EXPEDIE (demonstration) : confirmation de nouvelle adresse ----------
+                Destinataire : {} <{}>
+                Bonjour {}, confirmez cette adresse pour qu elle remplace {}.
+                Lien         : {}
+                Sans confirmation, votre compte reste joignable a votre adresse actuelle.
+                -------------------------------------------------------------
+                """, details.prenom(), details.destinataire(), details.prenom(),
+                details.ancienneAdresse(), lienConfirmation);
+    }
+
+    @Override
+    public void envoyerAvisChangementAdresse(DetailsChangementEmailCourriel details) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL NON EXPEDIE (demonstration) : avis de changement d adresse ----------
+                Destinataire : {} <{}>
+                Bonjour {}, une demande de changement vers {} a ete enregistree sur votre compte.
+                Si vous n en etes pas a l origine, connectez-vous et changez votre mot de passe :
+                la demande sera abandonnee.
+                -------------------------------------------------------------
+                """, details.prenom(), details.destinataire(), details.prenom(),
+                details.nouvelleAdresse());
+    }
+
+    @Override
     public void envoyerConfirmationSuppressionCompte(DetailsSuppressionCompteCourriel details) {
         JOURNAL.info("""
 

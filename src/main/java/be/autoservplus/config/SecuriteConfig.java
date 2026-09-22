@@ -68,7 +68,17 @@ public class SecuriteConfig {
                                 // invalidee et le compte n existe plus. Une page
                                 // authentifiee renverrait vers un formulaire de
                                 // connexion que plus aucun identifiant ne satisfait.
-                                "/compte-supprime")
+                                "/compte-supprime",
+                                // Confirmation d un changement d adresse (CdC 5.2.2).
+                                // Le lien arrive dans la NOUVELLE boite, souvent
+                                // ouverte ailleurs que dans la session du membre ;
+                                // exiger une authentification y renverrait vers un
+                                // formulaire de connexion portant l ANCIENNE adresse,
+                                // et la bascule deviendrait impossible a conclure. Le
+                                // jeton porte l autorisation, comme pour l activation
+                                // de compte. Route ENUMEREE et non ouverte par joker :
+                                // elle ne sert que cette confirmation.
+                                "/changement-adresse/confirmation")
                         .permitAll()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .requestMatchers("/actuator/health").permitAll()

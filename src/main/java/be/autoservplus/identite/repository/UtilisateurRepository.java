@@ -26,6 +26,18 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     boolean existsByEmailIgnoreCase(String email);
 
+    Optional<Utilisateur> findByJetonChangementEmail(String jeton);
+
+    /**
+     * Une demande de changement vise-t-elle deja cette adresse ?
+     *
+     * <p>Distinct de {@link #existsByEmailIgnoreCase(String)} : une adresse peut
+     * n appartenir a personne et etre pourtant reservee par une demande en cours. Les
+     * deux controles sont necessaires, et l index partiel
+     * {@code uq_utilisateur_email_en_attente} reprend celui-ci en base.</p>
+     */
+    boolean existsByEmailEnAttenteIgnoreCase(String emailEnAttente);
+
     List<Utilisateur> findByTypeUtilisateurAndStatut(TypeUtilisateur type, StatutUtilisateur statut);
 
     long countByStatut(StatutUtilisateur statut);
