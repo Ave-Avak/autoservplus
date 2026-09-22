@@ -38,6 +38,11 @@ public class ProfilService {
     /**
      * Enregistre le profil et rend l entite a jour.
      *
+     * <p>Le message porte par l exception est une <b>phrase francaise affichable</b>,
+     * conformement au contrat de {@link RegleMetierException} : il sert aux journaux
+     * et a tout appelant non web. L ecran, lui, rend sa propre cle i18n pour suivre la
+     * langue de session (F6).</p>
+     *
      * @throws RegleMetierException si le membre vide son adresse postale alors qu une
      *                              facture peut encore etre generee pour lui
      */
@@ -51,7 +56,12 @@ public class ProfilService {
                 || localite == null || localite.isBlank();
 
         if (adresseDevientVide && membre.adressePostaleComplete() && aDesFactures(email)) {
-            throw new RegleMetierException("RM-31", "adresse.requise.facture");
+            // Constructeur SANS code : aucune regle du CdC ne porte ce refus, et
+            // fabriquer un « RM-31 » polluerait une tracabilite qui vaut precisement
+            // parce qu elle renvoie a une exigence reelle. Le message se suffit donc a
+            // lui-meme, comme le Javadoc de l exception l exige.
+            throw new RegleMetierException(
+                    "Renseignez votre adresse : elle figure sur vos factures.");
         }
 
         membre.modifierProfil(prenom, nom, telephone, rue, numeroRue, codePostal,

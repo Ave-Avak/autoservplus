@@ -86,7 +86,11 @@ public class ProfilController {
                     formulaire.getNumeroRue(), formulaire.getCodePostal(),
                     formulaire.getLocalite(), formulaire.getPays(), formulaire.getLangue());
         } catch (RegleMetierException refus) {
-            erreurs.reject(refus.getCodeRegle(), msg("profil.erreur.adresse-facture"));
+            // Code d erreur SPRING, pas un code RM : le premier argument de reject sert
+            // a la resolution de message cote framework. Il valait jusqu ici
+            // getCodeRegle(), devenu nul — le refus ne correspond a aucune exigence du
+            // CdC. Le texte affiche reste la cle i18n, pour suivre la langue de session.
+            erreurs.reject("adresse.requise.facture", msg("profil.erreur.adresse-facture"));
             preparer(modele, service.profilDe(membre.getUsername()));
             return "identite/profil";
         }
