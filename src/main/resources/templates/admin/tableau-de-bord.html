@@ -126,6 +126,12 @@
             <li><a th:href="@{/admin/retractations}" th:text="#{admin.tableau.lien.retractations}">Rétractations</a></li>
             <li><a th:href="@{/admin/avis}" th:text="#{admin.tableau.lien.avis}">Avis</a></li>
             <li><a th:href="@{/admin/messages}" th:text="#{admin.tableau.lien.messages}">Messages</a></li>
+            <li><a th:href="@{/admin/comptes}" th:text="#{admin.tableau.lien.comptes}">Comptes membres</a></li>
+            <!-- Le lien vers les comptes du back-office est visible de tous les
+                 administrateurs, mais l'écran est gardé par le service : masquer le
+                 lien serait du confort, la garde est ce qui protège. -->
+            <li><a th:href="@{/admin/comptes/administrateurs}"
+                   th:text="#{admin.tableau.lien.administrateurs}">Comptes du back-office</a></li>
         </ul>
     </nav>
 </main>

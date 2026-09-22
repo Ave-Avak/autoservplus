@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.administrateurs.titre} + ' — AutoServ+'">Comptes du back-office — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.administrateurs.titre}">Comptes du back-office</h1>
+
+    <!-- Cet écran n'est atteignable que par un super-administrateur : la garde est au
+         service, qui seul connaît l'auteur de la requête. -->
+    <p class="texte-info" th:text="#{admin.administrateurs.aide}">
+        Seul un super-administrateur peut suspendre ou réactiver ces comptes.</p>
+
+    <table class="tableau">
+        <caption th:text="#{admin.administrateurs.legende}">Comptes privilégiés, par ordre alphabétique.</caption>
+        <thead>
+        <tr>
+            <th scope="col" th:text="#{admin.comptes.colonne.nom}">Nom</th>
+            <th scope="col" th:text="#{admin.comptes.colonne.email}">Adresse</th>
+            <th scope="col" th:text="#{admin.compte.type}">Nature</th>
+            <th scope="col" th:text="#{admin.comptes.colonne.statut}">Statut</th>
+            <th scope="col" th:text="#{admin.comptes.colonne.action}">Action</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="c : ${comptes}">
+            <td th:text="${c.nomComplet()}">Chef Garage</td>
+            <td th:text="${c.email()}">chef@autoservplus.be</td>
+            <td th:text="#{'admin.comptes.type.' + ${c.type()}}">Super-administrateur</td>
+            <td>
+                <span class="badge" th:classappend="${c.suspendu()} ? 'badge-suspendu' : 'badge-actif'"
+                      th:text="#{'admin.comptes.statut.' + ${c.statut()}}">Actif</span>
+            </td>
+            <td>
+                <a th:href="@{/admin/comptes/{ref}(ref=${c.reference()})}"
+                   th:text="#{admin.comptes.consulter}"
+                   th:attr="aria-label=#{admin.comptes.consulter.aria(${c.nomComplet()})}">Consulter</a>
+            </td>
+        </tr>
+        </tbody>
+    </table>
+
+    <p class="actions-page">
+        <a th:href="@{/admin/comptes}" th:text="#{admin.administrateurs.vers-membres}">Comptes membres</a>
+    </p>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>
