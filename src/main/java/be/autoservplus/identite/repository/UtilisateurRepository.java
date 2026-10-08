@@ -31,6 +31,9 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     Optional<Utilisateur> findByJetonChangementEmail(String jeton);
 
+    /** Recherche par EMPREINTE : le jeton de definition n est jamais stocke en clair. */
+    Optional<Utilisateur> findByJetonDefinitionHache(String empreinte);
+
     /**
      * Une demande de changement vise-t-elle deja cette adresse ?
      *
