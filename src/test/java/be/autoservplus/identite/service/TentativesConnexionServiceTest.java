@@ -11,7 +11,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
-import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
 
 import java.time.Clock;
@@ -82,13 +81,13 @@ class TentativesConnexionServiceTest {
     }
 
     @Test
-    @DisplayName("remet le compteur a zero apres une connexion reussie")
+    @DisplayName("remet le compteur a zero quand la connexion aboutit")
     void remetLeCompteurAZero() {
         when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
         service.surEchec(echec("marie@exemple.be"));
         service.surEchec(echec("marie@exemple.be"));
 
-        service.surSucces(succes("marie@exemple.be"));
+        service.connexionAboutie("marie@exemple.be");
 
         assertThat(membre.getTentativesEchouees()).isZero();
         assertThat(membre.getVerrouilleJusquA()).isNull();
@@ -111,8 +110,4 @@ class TentativesConnexionServiceTest {
                 new org.springframework.security.authentication.BadCredentialsException("test"));
     }
 
-    private AuthenticationSuccessEvent succes(String email) {
-        Authentication auth = UsernamePasswordAuthenticationToken.authenticated(email, null, java.util.List.of());
-        return new AuthenticationSuccessEvent(auth);
-    }
 }

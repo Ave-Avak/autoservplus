@@ -6,6 +6,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
+
 /**
  * SEULE implementation de {@link ServiceCourriel} : le contenu du courriel est
  * journalise, jamais expedie. Le lien reste ainsi accessible sans dependre d un
@@ -262,5 +264,45 @@ public class CourrielConsole implements ServiceCourriel {
                 dans l application.
                 ------------------------------------------------------
                 """, details.prenom(), details.adresseEmail(), details.prenom());
+    }
+
+    @Override
+    public void envoyerLienDefinitionMotDePasse(Utilisateur destinataire, String lien) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL NON EXPEDIE (demonstration) : definition du mot de passe ----------
+                Destinataire : {} <{}>
+                Un compte administrateur AutoServ+ a ete cree a votre nom.
+                Choisissez votre mot de passe (lien valable 24 heures, une seule fois) :
+                Lien         : {}
+                ----------------------------------------------------------------
+                """, destinataire.nomComplet(), destinataire.getEmail(), lien);
+    }
+
+    @Override
+    public void envoyerAvisVerrouillageSecondFacteur(Utilisateur destinataire, Instant jusqua) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL NON EXPEDIE (demonstration) : second facteur verrouille ----------
+                Destinataire : {} <{}>
+                Cinq codes de verification incorrects ont ete saisis apres votre mot de
+                passe. Votre compte est verrouille jusqu au {}.
+                Si ce n etait pas vous, votre mot de passe est connu d un tiers :
+                changez-le des que possible.
+                ----------------------------------------------------------------
+                """, destinataire.nomComplet(), destinataire.getEmail(), jusqua);
+    }
+
+    @Override
+    public void envoyerAvisReinitialisationSecondFacteur(Utilisateur destinataire) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL NON EXPEDIE (demonstration) : second facteur reinitialise ----------
+                Destinataire : {} <{}>
+                Un super-administrateur a reinitialise votre second facteur. Vos codes de
+                secours ne sont plus valables, et vos sessions ouvertes ont ete fermees.
+                Si vous n en etes pas a l origine, contactez le garage.
+                ----------------------------------------------------------------
+                """, destinataire.nomComplet(), destinataire.getEmail());
     }
 }

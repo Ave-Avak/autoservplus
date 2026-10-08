@@ -7,7 +7,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.event.EventListener;
 import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
-import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,10 +56,15 @@ public class TentativesConnexionService {
         });
     }
 
-    @EventListener
+    /**
+     * Connexion ABOUTIE : appelee a la fin de la derniere etape, et non sur
+     * {@code AuthenticationSuccessEvent}, que Spring Security publie des que le mot de
+     * passe est verifie. Reagir a cet evenement remettait a zero les compteurs et datait
+     * la connexion avant le second facteur — un mot de passe juste suivi de codes faux
+     * aurait ete enregistre comme une connexion reussie.
+     */
     @Transactional
-    public void surSucces(AuthenticationSuccessEvent evenement) {
-        String email = evenement.getAuthentication().getName();
+    public void connexionAboutie(String email) {
         repository.findByEmailIgnoreCase(email)
                 .ifPresent(membre -> membre.enregistrerConnexionReussie(Instant.now(horloge)));
     }

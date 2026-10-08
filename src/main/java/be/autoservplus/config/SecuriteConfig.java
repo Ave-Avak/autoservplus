@@ -1,9 +1,15 @@
 package be.autoservplus.config;
 
-import be.autoservplus.i18n.LangueApresConnexionHandler;
+import be.autoservplus.identite.web.AuthentificationPartielle;
+import be.autoservplus.identite.web.EtapeConnexion;
+import be.autoservplus.identite.web.ParcoursConnexion;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AuthenticationTrustResolver;
+import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
+import org.springframework.security.authorization.AuthorizationDecision;
+import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
@@ -12,6 +18,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 
@@ -71,10 +78,26 @@ public class SecuriteConfig {
                 .build();
     }
 
+    /**
+     * Remplace {@code anyRequest().authenticated()} : une connexion PARTIELLE (mot de
+     * passe verifie, second facteur ou changement impose en attente) satisferait
+     * {@code authenticated()}, et ouvrirait {@code /panier}, {@code /mon-compte} et tout
+     * ecran garde par la seule authentification. Les gardes {@code hasRole}, elles,
+     * refusent deja : le jeton partiel ne porte aucune autorite.
+     */
+    static AuthorizationManager<RequestAuthorizationContext> authentificationAboutie() {
+        AuthenticationTrustResolver confiance = new AuthenticationTrustResolverImpl();
+        return (authentification, contexte) -> {
+            var courante = authentification.get();
+            return new AuthorizationDecision(confiance.isAuthenticated(courante)
+                    && !(courante instanceof AuthentificationPartielle));
+        };
+    }
+
     @Bean
     public SecurityFilterChain chaineDeFiltres(HttpSecurity http,
                                                EchecAuthentificationHandler echecHandler,
-                                               LangueApresConnexionHandler succesHandler,
+                                               ParcoursConnexion succesHandler,
                                                SessionRegistry registreSessions)
             throws Exception {
         http
@@ -119,8 +142,20 @@ public class SecuriteConfig {
                                 // jeton porte l autorisation, comme pour l activation
                                 // de compte. Route ENUMEREE et non ouverte par joker :
                                 // elle ne sert que cette confirmation.
-                                "/changement-adresse/confirmation")
+                                "/changement-adresse/confirmation",
+                                // Definition du premier mot de passe d un administrateur
+                                // cree au back-office. Le compte n a encore AUCUN mot de
+                                // passe utilisable : il ne peut pas s authentifier pour
+                                // atteindre cette page. Le jeton du lien porte
+                                // l autorisation — 256 bits, a usage unique, 24 h.
+                                "/compte/definition")
                         .permitAll()
+                        // Etapes d une connexion commencee : seule surface ouverte a une
+                        // connexion partielle, avec la deconnexion et les ressources
+                        // statiques. authenticated() l admet, la ou AuthentificationAboutie
+                        // la refuse partout ailleurs.
+                        .requestMatchers(EtapeConnexion.PREFIXE, EtapeConnexion.PREFIXE + "/**")
+                        .authenticated()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         // API publique en LECTURE SEULE (BL-8) et sa documentation.
@@ -150,8 +185,11 @@ public class SecuriteConfig {
                         // statut est relu aupres du prestataire via la passerelle.
                         .requestMatchers("/webhooks/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMINISTRATEUR")
-                        .anyRequest().authenticated()
+                        .anyRequest().access(authentificationAboutie())
                 )
+                .exceptionHandling(exceptions -> exceptions
+                        .accessDeniedHandler(new RefusAccesEnEtapes()))
+
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/webhooks/**"))
                 .formLogin(formulaire -> formulaire
                         .loginPage("/connexion")
@@ -168,9 +206,13 @@ public class SecuriteConfig {
                 // cette ligne, le bean SessionRegistry existerait sans jamais rien
                 // apprendre : la revocation ne trouverait aucune session a fermer, et
                 // rien ne le signalerait.
+                // expiredUrl : sans lui, une session coupee (suspension, activation du
+                // second facteur ailleurs) recevait la page texte brute par defaut de
+                // Spring Security, en anglais. La connexion est la suite logique.
                 .sessionManagement(sessions -> sessions
                         .maximumSessions(-1)
-                        .sessionRegistry(registreSessions))
+                        .sessionRegistry(registreSessions)
+                        .expiredUrl("/connexion"))
                 .logout(deconnexion -> deconnexion
                         .logoutRequestMatcher(new AntPathRequestMatcher("/deconnexion", "POST"))
                         .logoutSuccessUrl("/?deconnecte")

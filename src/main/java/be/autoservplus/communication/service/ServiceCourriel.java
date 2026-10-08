@@ -2,6 +2,8 @@ package be.autoservplus.communication.service;
 
 import be.autoservplus.identite.domain.Utilisateur;
 
+import java.time.Instant;
+
 /**
  * Envoi des courriels transactionnels.
  *
@@ -119,4 +121,20 @@ public interface ServiceCourriel {
      * conservation au pire moment.</p>
      */
     void envoyerConfirmationSuppressionCompte(DetailsSuppressionCompteCourriel details);
+
+    /**
+     * Lien de definition du mot de passe d un administrateur cree au back-office. Le
+     * courriel ne porte JAMAIS de mot de passe : le compte nait sans secret utilisable,
+     * et c est le titulaire qui choisit le sien en suivant le lien.
+     */
+    void envoyerLienDefinitionMotDePasse(Utilisateur destinataire, String lien);
+
+    /**
+     * Le second facteur a echoue cinq fois et le compte est verrouille. Un tel echec
+     * suppose le mot de passe deja connu : le titulaire doit le savoir, pour le changer.
+     */
+    void envoyerAvisVerrouillageSecondFacteur(Utilisateur destinataire, Instant jusqua);
+
+    /** Un super-administrateur a reinitialise le second facteur du titulaire. */
+    void envoyerAvisReinitialisationSecondFacteur(Utilisateur destinataire);
 }

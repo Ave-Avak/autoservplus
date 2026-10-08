@@ -691,3 +691,29 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
    retrait visuel : le champ ne doit etre ni vu, ni lu, ni atteint au clavier.
    Le retirer du DOM le soustrairait au robot qu'il vise. */
 .piege { display: none; }
+
+/* QR code d'enrolement TOTP. Taille fixe en rem plutot que la largeur du conteneur :
+   un code trop grand deborde au telephone, trop petit il ne se scanne plus depuis
+   un ecran. Le fond blanc est porte par le SVG lui-meme (CodeQrSvg). */
+.code-qr {
+    width: 14rem;
+    max-width: 100%;
+    height: auto;
+}
+
+/* Cle et codes de secours : chasse fixe, pour que 0/O et 1/I ne se confondent pas a la
+   recopie, et cesure interdite au milieu d'un groupe. */
+.cle-totp,
+.liste-codes code {
+    font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+    letter-spacing: 0.05em;
+    white-space: nowrap;
+}
+
+.liste-codes {
+    list-style: none;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr));
+    gap: var(--espace-m);
+}
