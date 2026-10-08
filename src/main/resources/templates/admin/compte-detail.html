@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -44,7 +45,31 @@
         <dd th:text="#{'admin.comptes.type.' + ${compte.type()}}">Membre</dd>
         <dt th:text="#{admin.compte.derniere-connexion}">Dernière connexion</dt>
         <dd th:text="${compte.derniereConnexion()} ?: #{admin.compte.jamais}">jamais</dd>
+        <dt th:text="#{admin.compte.mfa}">Vérification en deux étapes</dt>
+        <dd th:text="${compte.secondFacteurActif()} ? #{admin.compte.mfa.active} : #{admin.compte.mfa.inactive}">Active</dd>
     </dl>
+
+    <!-- Pouvoirs du super-administrateur seul : le service les garde aussi, le
+         gabarit ne fait que ne pas proposer ce qui serait refusé. -->
+    <section sec:authorize="hasRole('SUPER_ADMINISTRATEUR')" th:if="${compte.motDePasseADefinir()}">
+        <h2 th:text="#{admin.compte.lien.titre}">Lien de définition du mot de passe</h2>
+        <p class="texte-info" th:text="#{admin.compte.lien.aide}">
+            Ce compte n'a pas encore choisi son mot de passe. Renvoyer le lien invalide le précédent.</p>
+        <form th:action="@{/admin/comptes/{ref}/lien-definition(ref=${compte.reference()})}" method="post">
+            <button type="submit" class="btn-cta" th:text="#{admin.compte.lien.renvoyer}">Renvoyer le lien</button>
+        </form>
+    </section>
+
+    <section sec:authorize="hasRole('SUPER_ADMINISTRATEUR')"
+             th:if="${compte.secondFacteurActif() or compte.enrolementEnCours()}">
+        <h2 th:text="#{admin.compte.mfa.reinitialiser.titre}">Réinitialiser la vérification en deux étapes</h2>
+        <p class="texte-info" th:text="#{admin.compte.mfa.reinitialiser.aide}">
+            Pour un titulaire qui a perdu son téléphone et ses codes de secours. Ses sessions sont fermées et il est averti.</p>
+        <form th:action="@{/admin/comptes/{ref}/second-facteur/reinitialisation(ref=${compte.reference()})}"
+              method="post">
+            <button type="submit" class="btn-cta" th:text="#{admin.compte.mfa.reinitialiser}">Réinitialiser</button>
+        </form>
+    </section>
 
     <!-- Suspendre et réactiver sont deux formulaires distincts, jamais une bascule :
          la suspension exige un motif, la réactivation n'en a pas, et une seule
@@ -101,9 +126,33 @@
         </tbody>
     </table>
 
+    <h2 th:text="#{admin.compte.securite.titre}">Journal de sécurité</h2>
+    <p th:if="${#lists.isEmpty(journalSecurite)}" th:text="#{admin.compte.securite.aucun}">
+        Aucun événement de sécurité enregistré.</p>
+
+    <table class="tableau" th:unless="${#lists.isEmpty(journalSecurite)}">
+        <caption th:text="#{admin.compte.journal.legende}">Du plus récent au plus ancien.</caption>
+        <thead>
+        <tr>
+            <th scope="col" th:text="#{admin.compte.journal.date}">Date</th>
+            <th scope="col" th:text="#{admin.compte.securite.evenement}">Événement</th>
+            <th scope="col" th:text="#{admin.compte.journal.auteur}">Auteur</th>
+        </tr>
+        </thead>
+        <tbody>
+        <tr th:each="e : ${journalSecurite}">
+            <td th:text="${#temporals.format(e.horodatage(), 'dd/MM/yyyy HH:mm')}">01/10/2026 09:12</td>
+            <td th:text="#{'admin.compte.securite.type.' + ${e.type()}}">Second facteur activé</td>
+            <!-- Auteur nul : le titulaire a agi lui-même, ou l'événement vient du système. -->
+            <td th:text="${e.auteur()} ?: #{admin.compte.securite.titulaire}">Titulaire</td>
+        </tr>
+        </tbody>
+    </table>
+
     <p class="actions-page">
         <a th:href="@{/admin/comptes}" th:text="#{admin.compte.retour}">Retour à la liste</a>
     </p>
+
 </main>
 
 <footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>

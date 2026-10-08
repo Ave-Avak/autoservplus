@@ -2,14 +2,22 @@ package be.autoservplus.identite.web;
 
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.identite.service.ComptesAdministrateursService;
 import be.autoservplus.identite.service.GestionComptesService;
+import be.autoservplus.identite.service.JournalSecuriteCompte;
 import be.autoservplus.identite.web.dto.CompteVue;
+import be.autoservplus.identite.web.dto.CreationAdministrateurForm;
+import be.autoservplus.identite.web.dto.EvenementSecuriteVue;
 import be.autoservplus.identite.web.dto.EvenementStatutVue;
+import jakarta.validation.Valid;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,10 +44,17 @@ import java.util.UUID;
 public class AdminComptesController {
 
     private final GestionComptesService service;
+    private final ComptesAdministrateursService administrateurs;
+    private final JournalSecuriteCompte journalSecurite;
     private final MessageSource messages;
 
-    public AdminComptesController(GestionComptesService service, MessageSource messages) {
+    public AdminComptesController(GestionComptesService service,
+                                  ComptesAdministrateursService administrateurs,
+                                  JournalSecuriteCompte journalSecurite,
+                                  MessageSource messages) {
         this.service = service;
+        this.administrateurs = administrateurs;
+        this.journalSecurite = journalSecurite;
         this.messages = messages;
     }
 
@@ -73,8 +88,68 @@ public class AdminComptesController {
                 .map(EvenementStatutVue::de)
                 .toList();
         modele.addAttribute("journal", journal);
+        modele.addAttribute("journalSecurite", journalSecurite.evenementsDe(compte).stream()
+                .map(EvenementSecuriteVue::de)
+                .toList());
         return "admin/compte-detail";
     }
+
+    /**
+     * Formulaire de creation d un administrateur. La garde est posee ICI, et non au seul
+     * service : ce GET n appelle aucun service, et sans elle un administrateur ordinaire
+     * verrait le formulaire avant d etre refuse a l envoi.
+     */
+    @GetMapping("/administrateurs/nouveau")
+    @PreAuthorize("hasRole('SUPER_ADMINISTRATEUR')")
+    public String nouvelAdministrateur(Model modele) {
+        modele.addAttribute("formulaire", new CreationAdministrateurForm());
+        modele.addAttribute("titre", msg("admin.administrateurs.nouveau.titre"));
+        return "admin/administrateur-nouveau";
+    }
+
+    /** Meme garde qu au GET : un envoi invalide re-rend le formulaire avant tout appel au service. */
+    @PostMapping("/administrateurs/nouveau")
+    @PreAuthorize("hasRole('SUPER_ADMINISTRATEUR')")
+    public String creerAdministrateur(
+            @Valid @ModelAttribute("formulaire") CreationAdministrateurForm formulaire,
+            BindingResult erreurs, Model modele, RedirectAttributes redirection) {
+        if (!erreurs.hasErrors()) {
+            try {
+                Utilisateur cree = administrateurs.creerAdministrateur(formulaire.getEmail(),
+                        formulaire.getPrenom(), formulaire.getNom(), formulaire.getFonction());
+                redirection.addFlashAttribute("message", msg("admin.administrateurs.cree"));
+                return "redirect:/admin/comptes/" + cree.getReference();
+            } catch (RefusTraduit refus) {
+                erreurs.rejectValue("email", "adresse.prise", msg(refus.getCleMessage()));
+            }
+        }
+        modele.addAttribute("titre", msg("admin.administrateurs.nouveau.titre"));
+        return "admin/administrateur-nouveau";
+    }
+
+    @PostMapping("/{reference}/lien-definition")
+    public String renvoyerLien(@PathVariable UUID reference, RedirectAttributes redirection) {
+        try {
+            administrateurs.renvoyerLienDefinition(reference);
+            redirection.addFlashAttribute("message", msg("admin.compte.lien.renvoye"));
+        } catch (RefusTraduit refus) {
+            redirection.addFlashAttribute("erreur", msg(refus.getCleMessage()));
+        }
+        return "redirect:/admin/comptes/" + reference;
+    }
+
+    @PostMapping("/{reference}/second-facteur/reinitialisation")
+    public String reinitialiserSecondFacteur(@PathVariable UUID reference,
+                                             RedirectAttributes redirection) {
+        try {
+            administrateurs.reinitialiserSecondFacteur(reference);
+            redirection.addFlashAttribute("message", msg("admin.compte.mfa.reinitialise"));
+        } catch (RefusTraduit refus) {
+            redirection.addFlashAttribute("erreur", msg(refus.getCleMessage()));
+        }
+        return "redirect:/admin/comptes/" + reference;
+    }
+
 
     @PostMapping("/{reference}/suspendre")
     public String suspendre(@PathVariable UUID reference,
