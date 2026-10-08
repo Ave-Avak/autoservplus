@@ -77,7 +77,7 @@
     <section th:unless="${compte.suspendu()}">
         <h2 th:text="#{admin.compte.suspendre.titre}">Suspendre ce compte</h2>
         <p class="texte-info" th:text="#{admin.compte.suspendre.aide}">
-            Le membre ne pourra plus se connecter. Ses sessions ouvertes restent actives jusqu'à leur expiration.</p>
+            Le titulaire ne pourra plus se connecter, et ses sessions déjà ouvertes sont fermées immédiatement.</p>
         <form class="formulaire" th:action="@{/admin/comptes/{ref}/suspendre(ref=${compte.reference()})}"
               method="post">
             <div class="champ">
