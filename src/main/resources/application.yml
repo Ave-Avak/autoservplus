@@ -99,6 +99,15 @@ autoservplus:
     nom: ${EXPLOITANT_NOM:Exploitant}
     prenom: ${EXPLOITANT_PRENOM:AutoServ+}
 
+  # Cle maitre AES-256 des secrets TOTP (32 octets en base 64 : openssl rand -base64 32).
+  # OBLIGATOIRE hors des profils dev et test : sans elle, le demarrage est refuse (voir
+  # MfaConfig). La version est inscrite sur chaque secret chiffre ; pour une rotation,
+  # passer l ancienne cle dans cles-precedentes (« 1:base64 ») et incrementer la version.
+  mfa:
+    cle-maitre: ${MFA_CLE_MAITRE:}
+    cle-version: ${MFA_CLE_VERSION:1}
+    cles-precedentes: ${MFA_CLES_PRECEDENTES:}
+
   # Adresse publique du site, employee LA OU une URL absolue est indispensable et ou
   # aucune requete HTTP n'est disponible pour la deduire : aujourd'hui le fichier
   # iCalendar d'un rendez-vous (F38), qui est lu dans l'agenda du membre, hors du
@@ -228,7 +237,8 @@ logging:
 # Les adapter reviendrait a affaiblir des tests justes pour accommoder des donnees de
 # demonstration ; c est l inverse de ce que le projet fait ailleurs.
 #
-# Chargement :   mvnw spring-boot:run "-Dspring-boot.run.profiles=demo"
+# Chargement :   mvnw spring-boot:run "-Dspring-boot.run.profiles=dev,demo"
+# (dev pour la cle TOTP ephemere : sans MFA_CLE_MAITRE, demo seul refuse de demarrer)
 # ou, plus simple pour un evaluateur : restaurer docs/dump_autoservplus.sql, qui contient
 # deja le schema ET ce jeu.
 #
