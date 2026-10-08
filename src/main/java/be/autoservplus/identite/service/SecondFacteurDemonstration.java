@@ -26,9 +26,18 @@ import java.time.Clock;
  *
  * <p><b>Pourquoi Java et non SQL.</b> Le secret est chiffre sous la cle maitre DU
  * DEPLOIEMENT, qu une migration ne connait pas : un chiffre fige en SQL ne se
- * dechiffrerait qu avec la cle qui l a produit. Il est donc reecrit a chaque demarrage,
- * sous la cle du moment — ce qui le rend aussi insensible a une rotation de cle qu a la
- * cle ephemere du developpement.</p>
+ * dechiffrerait qu avec la cle qui l a produit.</p>
+ *
+ * <p><b>Pose s il manque, et seulement alors.</b> Un compte deja enrole n est pas
+ * touche : un evaluateur qui a enrole autre chose, ou un pas deja consomme, n a pas a
+ * etre reecrit a chaque demarrage. Le cas couvert est celui de la base restauree depuis
+ * le dump, dont l admin n a aucun secret.</p>
+ *
+ * <p><b>Un secret indechiffrable compte comme manquant.</b> Sous {@code dev,demo} sans
+ * {@code MFA_CLE_MAITRE}, la cle est tiree a chaque demarrage — et devtools redemarre au
+ * moindre changement de classe. Le secret pose au demarrage precedent ne s ouvre plus :
+ * le laisser enfermerait l admin de demonstration hors du back-office, alors que le
+ * secret publie au README est le seul qu il puisse connaitre.</p>
  */
 @Component
 @Profile("demo")
@@ -57,12 +66,36 @@ public class SecondFacteurDemonstration implements ApplicationRunner {
     public void run(ApplicationArguments arguments) {
         utilisateurs.findByEmailIgnoreCase(ADRESSE_ADMIN_DEMO)
                 .filter(Utilisateur::estAdministrateur)
-                .ifPresentOrElse(this::semer,
+                .ifPresentOrElse(this::semerSiManquant,
                         () -> JOURNAL.warn("Compte {} absent : second facteur de demonstration "
                                 + "non seme.", ADRESSE_ADMIN_DEMO));
     }
 
+    private void semerSiManquant(Utilisateur admin) {
+        if (secretUtilisable(admin)) {
+            JOURNAL.info("Second facteur de demonstration deja en place pour {} : inchange.",
+                    ADRESSE_ADMIN_DEMO);
+            return;
+        }
+        semer(admin);
+    }
+
+    /** Actif ET dechiffrable sous les cles connues. Un enrolement en attente ne compte pas. */
+    private boolean secretUtilisable(Utilisateur admin) {
+        if (!admin.secondFacteurActif()) {
+            return false;
+        }
+        try {
+            chiffrement.dechiffrer(admin.getMfaSecretChiffre(), admin.getMfaCleVersion(),
+                    admin.getId());
+            return true;
+        } catch (ChiffrementSecretMfa.SecretIndechiffrableException ancienneCle) {
+            return false;
+        }
+    }
+
     private void semer(Utilisateur admin) {
+
         ChiffrementSecretMfa.SecretChiffre chiffre =
                 chiffrement.chiffrer(Base32.decoder(SECRET_PUBLIE), admin.getId());
         admin.retirerSecondFacteur();

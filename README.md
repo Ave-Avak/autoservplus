@@ -62,11 +62,12 @@ main la clé publiée ci-dessous, puis entrez le code à six chiffres qu'elle af
 |---|---|
 | `IF2X I32T MVZH MK2E MVWW 6LKU J5KF AMRW` | SHA-1, six chiffres, trente secondes |
 
-Le secret est ressemé à chaque démarrage sous le profil `demo`, chiffré sous la clé du
-moment. `dev` est associé à `demo` dans la commande de démarrage : sans
+Au démarrage sous le profil `demo`, le secret est posé si l'administrateur n'en a pas, ou
+si celui en place ne se déchiffre plus sous la clé du moment ; un secret lisible n'est
+jamais réécrit. `dev` est associé à `demo` dans la commande de démarrage : sans
 `MFA_CLE_MAITRE`, seuls les profils `dev` et `test` admettent une clé éphémère. La base
-restaurée depuis le dump ci-dessous ne porte pas ce secret : l'enrôlement y est demandé
-à la première connexion.
+restaurée depuis le dump ci-dessous démarre sans le profil `demo` : le secret n'y est pas
+posé, et l'enrôlement est demandé à la première connexion.
 
 > **Le profil `demo` ne doit jamais être activé en production.** Il crée des comptes
 > dont les mots de passe sont publiés dans ce dépôt, et des données fictives.
