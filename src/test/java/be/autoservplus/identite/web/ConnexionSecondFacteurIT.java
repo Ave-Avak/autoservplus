@@ -280,6 +280,47 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
         mvc.perform(get("/mon-compte").session(ici)).andExpect(status().isOk());
     }
 
+    /**
+     * Le champ de secours est un second formulaire vers la meme route : le code y passe
+     * par le meme service, donc le meme journal et le meme compteur d echecs.
+     */
+    @Test
+    @DisplayName("code de secours par son champ distinct : accepté une fois, refus rouvrant le champ")
+    void champDeSecours() throws Exception {
+        Utilisateur admin = creer(TypeUtilisateur.ADMINISTRATEUR, false, false);
+        MockHttpSession enrolement = session(connecter(admin, MOT_DE_PASSE));
+        mvc.perform(get("/connexion/etape/enrolement").session(enrolement));
+        Utilisateur enAttente = relire(admin);
+        byte[] secret = chiffrement.dechiffrer(enAttente.getMfaSecretChiffre(),
+                enAttente.getMfaCleVersion(), enAttente.getId());
+        @SuppressWarnings("unchecked")
+        List<String> codes = (List<String>) mvc.perform(post("/connexion/etape/enrolement")
+                        .session(enrolement).with(csrf()).param("code", codeCourant(secret)))
+                .andReturn().getFlashMap().get("codesSecours");
+
+        MockHttpSession session = session(connecter(admin, MOT_DE_PASSE));
+        mvc.perform(get("/connexion/etape/second-facteur").session(session).locale(Locale.FRENCH))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("autocomplete=\"off\"")))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("<details open"))));
+
+        MvcResult refus = mvc.perform(post("/connexion/etape/second-facteur").session(session).with(csrf())
+                .locale(Locale.FRENCH).param("mode", "secours").param("code", "ZZZZ-ZZZZ")).andReturn();
+        assertThat(refus.getResponse().getContentAsString()).contains("<details open");
+        assertThat(relire(admin).getMfaEchecs()).isEqualTo((short) 1);
+
+        MvcResult accepte = mvc.perform(post("/connexion/etape/second-facteur").session(session).with(csrf())
+                .param("mode", "secours").param("code", codes.get(0).toLowerCase())).andReturn();
+        assertThat(accepte.getResponse().getRedirectedUrl()).isEqualTo("/mon-compte");
+        assertThat(evenements.evenementsDe(admin.getId())).extracting(e -> e.getType())
+                .contains(TypeEvenementSecurite.CODE_SECOURS_CONSOMME);
+
+        MockHttpSession rejeu = session(connecter(admin, MOT_DE_PASSE));
+        assertThat(mvc.perform(post("/connexion/etape/second-facteur").session(rejeu).with(csrf())
+                        .param("mode", "secours").param("code", codes.get(0))).andReturn()
+                .getResponse().getStatus()).isEqualTo(200);
+    }
+
     @Test
     @DisplayName("le membre ne retire son second facteur qu'avec mot de passe et code valide")
     void desactivationParLeMembre() throws Exception {

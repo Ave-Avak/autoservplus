@@ -38,6 +38,7 @@ public class EtapesConnexionController {
     static final String VUE_SECOND_FACTEUR = "identite/connexion-second-facteur";
     static final String VUE_MOT_DE_PASSE = "identite/mot-de-passe-a-definir";
     static final String VUE_ENROLEMENT = "identite/enrolement";
+    private static final String MODE_SECOURS = "secours";
 
     private final ParcoursConnexion parcours;
     private final SecondFacteurService secondFacteur;
@@ -75,6 +76,7 @@ public class EtapesConnexionController {
     @PostMapping("/second-facteur")
     public String verifierSecondFacteur(Authentication authentification,
                                         @RequestParam(required = false) String code,
+                                        @RequestParam(required = false) String mode,
                                         Model modele, HttpServletRequest requete,
                                         HttpServletResponse reponse) {
         String garde = parcours.garder(authentification, EtapeConnexion.SECOND_FACTEUR);
@@ -95,6 +97,9 @@ public class EtapesConnexionController {
             case REFUSE -> {
                 modele.addAttribute("titre", msg("connexion.etape.second-facteur.titre"));
                 modele.addAttribute("erreur", msg("connexion.etape.second-facteur.erreur"));
+                // Le champ de secours ne sert qu a la saisie ; le verdict est celui du
+                // meme service. Le rouvrir evite de faire chercher a nouveau le lien.
+                modele.addAttribute("secoursOuvert", MODE_SECOURS.equals(mode));
                 yield VUE_SECOND_FACTEUR;
             }
         };

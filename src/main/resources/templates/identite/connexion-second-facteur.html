@@ -39,16 +39,39 @@
         <div class="champ">
             <label for="code" th:text="#{connexion.etape.second-facteur.code}">Code de vérification</label>
             <!-- one-time-code : le navigateur et le téléphone proposent le code reçu ;
-                 numeric : clavier à chiffres sur mobile. Pas de pattern à six chiffres,
-                 un code de secours en compte huit, lettres comprises. -->
+                 numeric : clavier à chiffres sur mobile. Sept caractères pour l'espace
+                 que certaines applications affichent au milieu du code. -->
             <input type="text" id="code" name="code" autocomplete="one-time-code"
-                   inputmode="numeric" maxlength="12" required autofocus
-                   aria-describedby="aide-code">
-            <p id="aide-code" class="texte-info" th:text="#{connexion.etape.second-facteur.secours}">
-                Sans votre téléphone, saisissez l'un de vos codes de secours.</p>
+                   inputmode="numeric" maxlength="7" required autofocus>
         </div>
         <button type="submit" class="btn-cta" th:text="#{connexion.etape.second-facteur.valider}">Valider</button>
     </form>
+
+    <!-- Champ distinct pour les codes de secours : ils comptent des lettres, qu'un
+         clavier numérique de téléphone n'offre pas. <details> natif, sans JavaScript,
+         comme le bandeau des cookies. Même route, même service : limitation et journal
+         sont ceux du code TOTP. Rouvert d'office après un refus venu de ce champ. -->
+    <details th:open="${secoursOuvert}">
+        <summary th:text="#{connexion.etape.second-facteur.secours.lien}">Utiliser un code de secours</summary>
+        <p th:text="#{connexion.etape.second-facteur.secours}">
+            Sans votre téléphone, saisissez l'un de vos codes de secours.</p>
+        <form class="formulaire" th:action="@{/connexion/etape/second-facteur}" method="post">
+            <input type="hidden" name="mode" value="secours">
+            <div class="champ">
+                <label for="code-secours" th:text="#{connexion.etape.second-facteur.secours.champ}">Code de secours</label>
+                <!-- autocomplete off : un code de secours ne sert qu'une fois, et ni un
+                     code reçu par SMS (one-time-code) ni un mot de passe enregistré n'a
+                     à y être proposé. -->
+                <input type="text" id="code-secours" name="code" autocomplete="off"
+                       autocapitalize="characters" spellcheck="false" maxlength="9" required
+                       aria-describedby="aide-secours">
+                <p id="aide-secours" class="texte-info" th:text="#{connexion.etape.second-facteur.secours.format}">
+                    Huit caractères, avec ou sans le tiret.</p>
+            </div>
+            <button type="submit" class="btn-cta" th:text="#{connexion.etape.second-facteur.valider}">Valider</button>
+        </form>
+    </details>
+
 </main>
 
 <footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
