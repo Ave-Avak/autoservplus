@@ -53,7 +53,11 @@ Puis, dans `.env` :
 DOMAINE=:80
 COOKIE_SECURE=true
 DB_PASSWORD=<un mot de passe quelconque, sans caractère dollar>
+MFA_CLE_MAITRE=<sortie de : openssl rand -base64 32>
 ```
+
+Sans `MFA_CLE_MAITRE`, l'application **refuse de démarrer** sous le profil `prod` : elle
+chiffre les secrets du second facteur, obligatoire pour tout compte du back-office.
 
 `COOKIE_SECURE=true` alors que Caddy sert en clair n'est pas une erreur : ce que voit
 le navigateur, c'est le tunnel, et le tunnel est en HTTPS.
@@ -325,7 +329,12 @@ DOMAINE=203-0-113-7.sslip.io
 URL_PUBLIQUE=https://203-0-113-7.sslip.io
 COOKIE_SECURE=true
 DB_PASSWORD=<mot de passe long, propre à cette machine>
+MFA_CLE_MAITRE=<sortie de : openssl rand -base64 32, propre à cette machine>
 ```
+
+**Sauvegarder `MFA_CLE_MAITRE` hors de la machine, et à part des sauvegardes de la
+base.** La perdre rend indéchiffrables tous les seconds facteurs enrôlés ; la ranger avec
+la base redonnerait d'un coup ce que le chiffrement sépare.
 
 `sslip.io` résout un nom en l'adresse IP qu'il contient. Il n'y a donc **aucun
 enregistrement DNS à créer** pour obtenir un certificat Let's Encrypt valable, ce qui
