@@ -3,6 +3,7 @@ package be.autoservplus.rgpd.service;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.identite.repository.CodeSecoursRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.Vehicule;
@@ -51,6 +52,7 @@ class SuppressionCompteServiceTest {
     @Mock private VehiculeAnonymisationRepository vehicules;
     @Mock private be.autoservplus.avis.repository.AvisRepository avis;
     @Mock private TracesAuditRepository tracesAudit;
+    @Mock private CodeSecoursRepository codesSecours;
     @Mock private ApplicationEventPublisher evenements;
 
     /** Encodeur reel : la re-authentification doit etre exercee, pas simulee. */
@@ -62,7 +64,7 @@ class SuppressionCompteServiceTest {
     @BeforeEach
     void setUp() {
         service = new SuppressionCompteService(utilisateurs, vehicules, avis, tracesAudit,
-                encodeur, evenements, Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
+                codesSecours, encodeur, evenements, Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
         marie = new Utilisateur("marie@exemple.be", encodeur.encode(MOT_DE_PASSE),
                 "Dupont", "Marie", TypeUtilisateur.MEMBRE);
     }

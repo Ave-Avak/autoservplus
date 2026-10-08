@@ -4,6 +4,7 @@ import be.autoservplus.avis.domain.Avis;
 import be.autoservplus.avis.repository.AvisRepository;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.identite.repository.CodeSecoursRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.rgpd.repository.TracesAuditRepository;
@@ -82,6 +83,7 @@ public class SuppressionCompteService {
     private final VehiculeAnonymisationRepository vehicules;
     private final AvisRepository avis;
     private final TracesAuditRepository tracesAudit;
+    private final CodeSecoursRepository codesSecours;
     private final PasswordEncoder encodeur;
     private final ApplicationEventPublisher evenements;
     private final Clock horloge;
@@ -90,6 +92,7 @@ public class SuppressionCompteService {
                                     VehiculeAnonymisationRepository vehicules,
                                     AvisRepository avis,
                                     TracesAuditRepository tracesAudit,
+                                    CodeSecoursRepository codesSecours,
                                     PasswordEncoder encodeur,
                                     ApplicationEventPublisher evenements,
                                     Clock horloge) {
@@ -97,6 +100,7 @@ public class SuppressionCompteService {
         this.vehicules = vehicules;
         this.avis = avis;
         this.tracesAudit = tracesAudit;
+        this.codesSecours = codesSecours;
         this.encodeur = encodeur;
         this.evenements = evenements;
         this.horloge = horloge;
@@ -135,6 +139,9 @@ public class SuppressionCompteService {
         int supprimes = anonymiserLeParc(membre);
         int avisNeutralises = anonymiserLesAvis(membre);
         membre.anonymiser(jetonEmail(membre), hachageInerte(), horloge.instant());
+        // Le secret TOTP part avec anonymiser() ; les codes de secours encore valables
+        // sont invalides, et non supprimes : leur date reste la trace de leur fin.
+        codesSecours.invaliderUtilisables(membre.getId(), horloge.instant());
         // Flush avant le balayage : voir TracesAuditRepository, l ordre est impose.
         utilisateurs.saveAndFlush(membre);
         int traces = nettoyerLesTracesDAudit(adresseReelle, membre.getEmail());

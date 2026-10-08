@@ -1,6 +1,7 @@
 package be.autoservplus.rgpd.service.dto;
 
 import be.autoservplus.identite.domain.Consentement;
+import be.autoservplus.identite.domain.EvenementSecuriteCompte;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -517,21 +518,45 @@ public record ExportDonnees(
      * caractere personnel detenue sur la personne, que l article 15 couvre au meme
      * titre que l adresse en vigueur. Son jeton reste exclu, pour la meme raison que
      * le precedent — communiquer le secret n est pas communiquer la donnee.
+     *
+     * <p>Du second facteur, l export dit s il est actif et depuis quand, et restitue le
+     * journal des evenements de securite du compte : ce sont des donnees sur la personne.
+     * Le secret TOTP et les codes de secours n y figurent pas, pour la raison deja dite
+     * des jetons.</p>
      */
     public record ConnexionExport(
             Instant derniereConnexion,
             boolean emailVerifie,
             String adresseEnAttenteDeConfirmation,
             short tentativesEchoueesEnCours,
-            Instant compteVerrouilleJusquA) {
+            Instant compteVerrouilleJusquA,
+            boolean secondFacteurActif,
+            Instant secondFacteurActiveLe,
+            List<EvenementSecuriteExport> evenementsSecurite) {
 
-        public static ConnexionExport de(Utilisateur membre) {
+        public static ConnexionExport de(Utilisateur membre,
+                                         List<EvenementSecuriteCompte> evenements) {
             return new ConnexionExport(
                     membre.getDerniereConnexion(),
                     membre.isEmailVerifie(),
                     membre.getEmailEnAttente(),
                     membre.getTentativesEchouees(),
-                    membre.getVerrouilleJusquA());
+                    membre.getVerrouilleJusquA(),
+                    membre.secondFacteurActif(),
+                    membre.getMfaActiveLe(),
+                    evenements.stream().map(EvenementSecuriteExport::de).toList());
+        }
+    }
+
+    /**
+     * Un evenement du journal de securite. L auteur n est pas restitue : quand ce n est
+     * pas le membre lui-meme, c est un administrateur, dont l identite n est pas une
+     * donnee du membre.
+     */
+    public record EvenementSecuriteExport(Instant horodatage, String type) {
+
+        public static EvenementSecuriteExport de(EvenementSecuriteCompte evenement) {
+            return new EvenementSecuriteExport(evenement.getHorodatage(), evenement.getType().name());
         }
     }
 

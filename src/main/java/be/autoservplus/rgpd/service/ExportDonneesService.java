@@ -3,6 +3,7 @@ package be.autoservplus.rgpd.service;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.identite.repository.EvenementSecuriteCompteRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.rgpd.repository.AjoutAuPanier;
@@ -114,6 +115,7 @@ public class ExportDonneesService {
     private final ConsentementExportRepository consentements;
     private final PanierRepository paniers;
     private final PanierExportRepository panierExport;
+    private final EvenementSecuriteCompteRepository evenementsSecurite;
     private final CatalogueTraitements catalogue;
     private final SerialiseurExportJson serialiseur;
     private final RegistreExportsRecents registre;
@@ -129,6 +131,7 @@ public class ExportDonneesService {
                                 ConsentementExportRepository consentements,
                                 PanierRepository paniers,
                                 PanierExportRepository panierExport,
+                                EvenementSecuriteCompteRepository evenementsSecurite,
                                 CatalogueTraitements catalogue,
                                 SerialiseurExportJson serialiseur,
                                 RegistreExportsRecents registre,
@@ -143,6 +146,7 @@ public class ExportDonneesService {
         this.consentements = consentements;
         this.paniers = paniers;
         this.panierExport = panierExport;
+        this.evenementsSecurite = evenementsSecurite;
         this.catalogue = catalogue;
         this.serialiseur = serialiseur;
         this.registre = registre;
@@ -257,7 +261,8 @@ public class ExportDonneesService {
                                 .toList(),
                         interventionsDuParc(plaques),
                         preuves.stream().map(ExportDonnees.ConsentementExport::de).toList(),
-                        ExportDonnees.ConnexionExport.de(membre)),
+                        ExportDonnees.ConnexionExport.de(membre,
+                                evenementsSecurite.evenementsDe(membre.getId()))),
                 catalogue.informationsTraitement(langue),
                 catalogue.exclusions(langue));
     }
