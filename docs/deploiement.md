@@ -56,7 +56,7 @@ DB_PASSWORD=<un mot de passe quelconque, sans caractère dollar>
 MFA_CLE_MAITRE=<sortie de : openssl rand -base64 32>
 ```
 
-Sans `MFA_CLE_MAITRE`, l'application **refuse de démarrer** sous le profil `prod` : elle
+Sans `MFA_CLE_MAITRE`, l'application **refuse de démarrer**, sous tout profil : elle
 chiffre les secrets du second facteur, obligatoire pour tout compte du back-office.
 
 `COOKIE_SECURE=true` alors que Caddy sert en clair n'est pas une erreur : ce que voit

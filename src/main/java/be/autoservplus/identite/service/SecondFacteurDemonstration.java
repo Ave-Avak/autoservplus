@@ -33,11 +33,11 @@ import java.time.Clock;
  * etre reecrit a chaque demarrage. Le cas couvert est celui de la base restauree depuis
  * le dump, dont l admin n a aucun secret.</p>
  *
- * <p><b>Un secret indechiffrable compte comme manquant.</b> Sous {@code dev,demo} sans
- * {@code MFA_CLE_MAITRE}, la cle est tiree a chaque demarrage — et devtools redemarre au
- * moindre changement de classe. Le secret pose au demarrage precedent ne s ouvre plus :
- * le laisser enfermerait l admin de demonstration hors du back-office, alors que le
- * secret publie au README est le seul qu il puisse connaitre.</p>
+ * <p><b>Un secret indechiffrable compte comme manquant.</b> C est le cas apres un
+ * changement de {@code MFA_CLE_MAITRE} sans que l ancienne ait ete conservee dans
+ * {@code MFA_CLES_PRECEDENTES} — sur un poste de demonstration, l oubli le plus probable.
+ * Le laisser enfermerait l admin de demonstration hors du back-office, alors que le secret
+ * publie au README est le seul qu il puisse connaitre.</p>
  */
 @Component
 @Profile("demo")

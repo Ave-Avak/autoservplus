@@ -3,7 +3,9 @@ package be.autoservplus.config;
 import be.autoservplus.identite.mfa.ChiffrementSecretMfa;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.mock.env.MockEnvironment;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Base64;
 
@@ -15,36 +17,18 @@ class MfaConfigTest {
 
     private static final String CLE_32_OCTETS = Base64.getEncoder().encodeToString(new byte[32]);
 
-    private static MockEnvironment profils(String... actifs) {
-        MockEnvironment environnement = new MockEnvironment();
-        environnement.setActiveProfiles(actifs);
-        return environnement;
-    }
-
-    @Test
-    @DisplayName("sans clé, le démarrage est refusé sous le profil prod")
-    void refusEnProduction() {
-        assertThatThrownBy(() -> MfaConfig.construire(profils("prod"), "", (short) 1, ""))
+    /**
+     * Plus de profil d exception : le refus ne depend que de la presence de la cle. La
+     * methode ne recoit d ailleurs plus l environnement — aucun profil ne peut l assouplir.
+     */
+    @ParameterizedTest(name = "cle « {0} »")
+    @NullAndEmptySource
+    @ValueSource(strings = {"   "})
+    @DisplayName("sans clé, le démarrage est refusé, quel que soit le profil")
+    void refusSansCle(String cle) {
+        assertThatThrownBy(() -> MfaConfig.construire(cle, (short) 1, ""))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("MFA_CLE_MAITRE");
-    }
-
-    @Test
-    @DisplayName("sans clé, le démarrage est refusé sous tout profil autre que dev et test")
-    void refusHorsListeBlanche() {
-        assertThatThrownBy(() -> MfaConfig.construire(profils("demo"), null, (short) 1, ""))
-                .isInstanceOf(IllegalStateException.class);
-    }
-
-    @Test
-    @DisplayName("sans clé, dev et test tirent une clé éphémère")
-    void cleEphemereEnDeveloppement() {
-        ChiffrementSecretMfa dev = MfaConfig.construire(profils("dev"), "", (short) 1, "");
-        ChiffrementSecretMfa test = MfaConfig.construire(profils("test"), "", (short) 3, "");
-
-        byte[] secret = {1, 2, 3};
-        assertThat(dev.dechiffrer(dev.chiffrer(secret, 1L).donnees(), (short) 1, 1L)).isEqualTo(secret);
-        assertThat(test.versionActive()).isEqualTo((short) 3);
     }
 
     @Test
@@ -52,20 +36,30 @@ class MfaConfigTest {
     void longueurExigee() {
         String seize = Base64.getEncoder().encodeToString(new byte[16]);
 
-        assertThatThrownBy(() -> MfaConfig.construire(profils("prod"), seize, (short) 1, ""))
+        assertThatThrownBy(() -> MfaConfig.construire(seize, (short) 1, ""))
                 .isInstanceOf(IllegalStateException.class)
                 .hasMessageContaining("32 octets");
     }
 
     @Test
+    @DisplayName("une clé valide chiffre sous la version déclarée")
+    void cleValide() {
+        ChiffrementSecretMfa chiffrement = MfaConfig.construire(CLE_32_OCTETS, (short) 3, "");
+
+        byte[] secret = {1, 2, 3};
+        assertThat(chiffrement.versionActive()).isEqualTo((short) 3);
+        assertThat(chiffrement.dechiffrer(chiffrement.chiffrer(secret, 1L).donnees(), (short) 3, 1L))
+                .isEqualTo(secret);
+    }
+
+    @Test
     @DisplayName("les clés précédentes déchiffrent ce qu'elles ont chiffré")
     void clesPrecedentes() {
-        ChiffrementSecretMfa avant = MfaConfig.construire(profils("prod"), CLE_32_OCTETS, (short) 1, "");
+        ChiffrementSecretMfa avant = MfaConfig.construire(CLE_32_OCTETS, (short) 1, "");
         byte[] chiffre = avant.chiffrer(new byte[]{7}, 5L).donnees();
-        String nouvelle = Base64.getEncoder().encodeToString(new byte[32]).replace('A', 'B');
+        String nouvelle = CLE_32_OCTETS.replace('A', 'B');
 
-        ChiffrementSecretMfa apres = MfaConfig.construire(profils("prod"), nouvelle, (short) 2,
-                "1:" + CLE_32_OCTETS);
+        ChiffrementSecretMfa apres = MfaConfig.construire(nouvelle, (short) 2, "1:" + CLE_32_OCTETS);
 
         assertThat(apres.dechiffrer(chiffre, (short) 1, 5L)).containsExactly(7);
         assertThat(apres.versionActive()).isEqualTo((short) 2);

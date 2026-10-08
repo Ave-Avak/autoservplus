@@ -87,7 +87,7 @@ class SecondFacteurDemonstrationTest {
     }
 
     /**
-     * Cle ephemere de {@code dev} : le secret pose au demarrage precedent ne s ouvre plus.
+     * Cle maitre changee sans conserver l ancienne : le secret en place ne s ouvre plus.
      * Le laisser en place enfermerait l admin de demonstration hors du back-office.
      */
     @Test

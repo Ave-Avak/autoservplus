@@ -35,11 +35,19 @@ Maven n'a pas à être installé : le dépôt fournit le wrapper (`mvnw`, `mvnw.
 git clone https://github.com/Ave-Avak/autoservplus.git
 cd autoservplus
 docker compose up -d
-./mvnw spring-boot:run -Dspring-boot.run.profiles=dev,demo
+openssl rand -base64 32                     # une seule fois : conserver la valeur
+export MFA_CLE_MAITRE='<valeur conservée>'
+./mvnw spring-boot:run -Dspring-boot.run.profiles=demo
 ```
 
-Sous Windows, employer `mvnw.cmd` et encadrer le paramètre :
-`mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=dev,demo"`
+Sous Windows, employer `mvnw.cmd` et encadrer le paramètre ; en PowerShell, la clé se
+définit par `$env:MFA_CLE_MAITRE = '<valeur conservée>'` :
+`mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=demo"`
+
+**La clé maître est requise en local aussi.** Sans `MFA_CLE_MAITRE`, l'application refuse
+de démarrer, quel que soit le profil : elle chiffre les secrets du second facteur. La
+générer **une fois** et la réutiliser à chaque démarrage — une clé neuve rendrait
+illisibles les seconds facteurs déjà enrôlés. `openssl` est fourni avec Git pour Windows.
 
 L'application écoute sur <http://localhost:8080>.
 
@@ -63,11 +71,10 @@ main la clé publiée ci-dessous, puis entrez le code à six chiffres qu'elle af
 | `IF2X I32T MVZH MK2E MVWW 6LKU J5KF AMRW` | SHA-1, six chiffres, trente secondes |
 
 Au démarrage sous le profil `demo`, le secret est posé si l'administrateur n'en a pas, ou
-si celui en place ne se déchiffre plus sous la clé du moment ; un secret lisible n'est
-jamais réécrit. `dev` est associé à `demo` dans la commande de démarrage : sans
-`MFA_CLE_MAITRE`, seuls les profils `dev` et `test` admettent une clé éphémère. La base
-restaurée depuis le dump ci-dessous démarre sans le profil `demo` : le secret n'y est pas
-posé, et l'enrôlement est demandé à la première connexion.
+si celui en place ne se déchiffre plus — après un changement de clé maître ; un secret
+lisible n'est jamais réécrit. La base restaurée depuis le dump ci-dessous démarre sans le
+profil `demo` : le secret n'y est pas posé, et l'enrôlement est demandé à la première
+connexion.
 
 > **Le profil `demo` ne doit jamais être activé en production.** Il crée des comptes
 > dont les mots de passe sont publiés dans ce dépôt, et des données fictives.
@@ -207,7 +214,8 @@ production**.
 | `MOLLIE_API_KEY` | *vide* | Clé ou jeton Mollie. **Vide, le paiement passe par une passerelle bouchonnée** |
 | `MOLLIE_PROFILE_ID` | *vide* | Identifiant de profil Mollie, requis avec un jeton d'organisation |
 | `MOLLIE_MODE_TEST` | `true` | Emploie le mode test de Mollie plutôt que des paiements réels |
-| `MFA_CLE_MAITRE` | *vide* | Clé AES-256 des secrets du second facteur (`openssl rand -base64 32`). **Obligatoire hors des profils `dev` et `test` : sans elle, le démarrage est refusé** |
+| `MFA_CLE_MAITRE` | *vide* | Clé AES-256 des secrets du second facteur (`openssl rand -base64 32`). **Obligatoire sous tout profil, en local comme en production : sans elle, le démarrage est refusé** |
+
 | `MFA_CLE_VERSION` / `MFA_CLES_PRECEDENTES` | `1` / *vide* | Rotation de la clé : version active, et anciennes clés au format `1:base64` |
 | `EXPLOITANT_EMAIL` / `EXPLOITANT_MOT_DE_PASSE` | *vides* | Compte super-administrateur créé au premier démarrage. Son mot de passe doit être changé à la première connexion |
 
