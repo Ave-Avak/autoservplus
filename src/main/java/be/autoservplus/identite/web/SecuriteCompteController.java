@@ -36,6 +36,7 @@ public class SecuriteCompteController {
 
     static final String CHEMIN = "/mon-profil/securite";
     static final String CHEMIN_CODES = CHEMIN + "/codes";
+    private static final String MODE_SECOURS = "secours";
 
     private final SecondFacteurService secondFacteur;
     private final MessageSource messages;
@@ -96,13 +97,14 @@ public class SecuriteCompteController {
     public String regenererCodes(@AuthenticationPrincipal UserDetails titulaire,
                                  @RequestParam(required = false) String motDePasse,
                                  @RequestParam(required = false) String code,
+                                 @RequestParam(required = false) String mode,
                                  RedirectAttributes redirection) {
         try {
             redirection.addFlashAttribute("codesSecours",
                     secondFacteur.regenererCodes(titulaire.getUsername(), motDePasse, code));
             return "redirect:" + CHEMIN_CODES;
         } catch (RefusTraduit refus) {
-            redirection.addFlashAttribute("erreur", msg(refus.getCleMessage()));
+            refuser(redirection, refus, mode, "codes");
             return "redirect:" + CHEMIN;
         }
     }
@@ -111,15 +113,28 @@ public class SecuriteCompteController {
     public String desactiver(@AuthenticationPrincipal UserDetails titulaire,
                              @RequestParam(required = false) String motDePasse,
                              @RequestParam(required = false) String code,
+                             @RequestParam(required = false) String mode,
                              HttpServletRequest requete, RedirectAttributes redirection) {
         try {
             secondFacteur.desactiver(titulaire.getUsername(), motDePasse, code,
                     requete.getSession().getId());
             redirection.addFlashAttribute("message", msg("securite.desactive"));
         } catch (RefusTraduit refus) {
-            redirection.addFlashAttribute("erreur", msg(refus.getCleMessage()));
+            refuser(redirection, refus, mode, "desactivation");
         }
         return "redirect:" + CHEMIN;
+    }
+
+    /**
+     * Le refus est celui du service, quel que soit le champ employe ; seul l affichage
+     * suit : un refus venu d un champ de secours rouvre ce champ-la, et pas l autre.
+     */
+    private void refuser(RedirectAttributes redirection, RefusTraduit refus, String mode,
+                         String formulaire) {
+        redirection.addFlashAttribute("erreur", msg(refus.getCleMessage()));
+        if (MODE_SECOURS.equals(mode)) {
+            redirection.addFlashAttribute("secoursOuvert", formulaire);
+        }
     }
 
     private void preparerEnrolement(String email, Model modele) {

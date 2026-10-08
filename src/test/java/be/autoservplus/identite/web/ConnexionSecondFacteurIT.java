@@ -322,6 +322,45 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
     }
 
     @Test
+    @DisplayName("écran de sécurité : code de secours par son champ distinct, refus rouvrant le bon champ")
+    void securiteChampDeSecours() throws Exception {
+        Utilisateur membre = creer(TypeUtilisateur.MEMBRE, false, false);
+        MockHttpSession session = session(connecter(membre, MOT_DE_PASSE));
+        mvc.perform(get("/mon-profil/securite/enrolement").session(session));
+        Utilisateur enAttente = relire(membre);
+        byte[] secret = chiffrement.dechiffrer(enAttente.getMfaSecretChiffre(),
+                enAttente.getMfaCleVersion(), enAttente.getId());
+        @SuppressWarnings("unchecked")
+        List<String> codes = (List<String>) mvc.perform(post("/mon-profil/securite/enrolement")
+                        .session(session).with(csrf()).param("code", codeCourant(secret)))
+                .andReturn().getFlashMap().get("codesSecours");
+
+        String page = mvc.perform(get("/mon-profil/securite").session(session).locale(Locale.FRENCH))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(page).contains("id=\"secours-codes\"", "id=\"secours-retrait\"")
+                .doesNotContain("<details open");
+
+        MvcResult refus = mvc.perform(post("/mon-profil/securite/desactivation").session(session)
+                        .with(csrf()).param("mode", "secours")
+                        .param("motDePasse", MOT_DE_PASSE).param("code", "ZZZZ-ZZZZ"))
+                .andExpect(redirectedUrl("/mon-profil/securite")).andReturn();
+        assertThat(refus.getFlashMap().get("secoursOuvert")).isEqualTo("desactivation");
+        assertThat(relire(membre).getMfaEchecs()).isEqualTo((short) 1);
+        String rouverte = mvc.perform(get("/mon-profil/securite").session(session).locale(Locale.FRENCH)
+                        .flashAttr("secoursOuvert", "desactivation"))
+                .andReturn().getResponse().getContentAsString();
+        assertThat(rouverte.split("<details open", -1)).hasSize(2);
+
+        mvc.perform(post("/mon-profil/securite/codes").session(session).with(csrf())
+                        .param("mode", "secours").param("motDePasse", MOT_DE_PASSE)
+                        .param("code", codes.get(1)))
+                .andExpect(redirectedUrl("/mon-profil/securite/codes"));
+        assertThat(evenements.evenementsDe(membre.getId())).extracting(e -> e.getType())
+                .contains(TypeEvenementSecurite.CODE_SECOURS_CONSOMME,
+                        TypeEvenementSecurite.CODES_SECOURS_REGENERES);
+    }
+
+    @Test
     @DisplayName("le membre ne retire son second facteur qu'avec mot de passe et code valide")
     void desactivationParLeMembre() throws Exception {
         Utilisateur membre = creer(TypeUtilisateur.MEMBRE, true, false);

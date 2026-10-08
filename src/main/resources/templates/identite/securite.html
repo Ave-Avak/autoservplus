@@ -57,10 +57,32 @@
             <div class="champ">
                 <label for="code-codes" th:text="#{securite.code}">Code de vérification</label>
                 <input type="text" id="code-codes" name="code" autocomplete="one-time-code"
-                       inputmode="numeric" maxlength="12" required>
+                       inputmode="numeric" maxlength="7" required>
             </div>
             <button type="submit" class="btn-cta" th:text="#{securite.codes.regenerer}">Générer de nouveaux codes</button>
         </form>
+        <!-- Même traitement qu'à la connexion : le code de secours a son propre champ,
+             sans clavier numérique, dans un second formulaire vers la même route. -->
+        <details th:open="${secoursOuvert == 'codes'}">
+            <summary th:text="#{securite.secours.lien}">Utiliser un code de secours</summary>
+            <form class="formulaire" th:action="@{/mon-profil/securite/codes}" method="post">
+                <input type="hidden" name="mode" value="secours">
+                <div class="champ">
+                    <label for="mdp-codes-secours" th:text="#{securite.mot-de-passe}">Votre mot de passe</label>
+                    <input type="password" id="mdp-codes-secours" name="motDePasse"
+                           autocomplete="current-password" required>
+                </div>
+                <div class="champ">
+                    <label for="secours-codes" th:text="#{securite.secours.champ}">Code de secours</label>
+                    <input type="text" id="secours-codes" name="code" autocomplete="off"
+                           autocapitalize="characters" spellcheck="false" maxlength="9" required
+                           aria-describedby="aide-secours-codes">
+                    <p id="aide-secours-codes" class="texte-info" th:text="#{securite.secours.format}">
+                        Huit caractères, avec ou sans le tiret. Le code utilisé ne servira plus.</p>
+                </div>
+                <button type="submit" class="btn-cta" th:text="#{securite.codes.regenerer}">Générer de nouveaux codes</button>
+            </form>
+        </details>
 
         <!-- Au back-office le second facteur est obligatoire : le formulaire de retrait
              n'est pas proposé, et le service le refuserait de toute façon. -->
@@ -74,10 +96,31 @@
                 <div class="champ">
                     <label for="code-retrait" th:text="#{securite.code}">Code de vérification</label>
                     <input type="text" id="code-retrait" name="code" autocomplete="one-time-code"
-                           inputmode="numeric" maxlength="12" required>
+                           inputmode="numeric" maxlength="7" required>
                 </div>
                 <button type="submit" class="btn-cta" th:text="#{securite.desactiver}">Désactiver</button>
             </form>
+            <details th:open="${secoursOuvert == 'desactivation'}">
+                <summary th:text="#{securite.secours.lien}">Utiliser un code de secours</summary>
+                <form class="formulaire" th:action="@{/mon-profil/securite/desactivation}" method="post">
+                    <input type="hidden" name="mode" value="secours">
+                    <div class="champ">
+                        <label for="mdp-retrait-secours" th:text="#{securite.mot-de-passe}">Votre mot de passe</label>
+                        <input type="password" id="mdp-retrait-secours" name="motDePasse"
+                               autocomplete="current-password" required>
+                    </div>
+                    <div class="champ">
+                        <label for="secours-retrait" th:text="#{securite.secours.champ}">Code de secours</label>
+                        <input type="text" id="secours-retrait" name="code" autocomplete="off"
+                               autocapitalize="characters" spellcheck="false" maxlength="9" required
+                               aria-describedby="aide-secours-retrait">
+                        <p id="aide-secours-retrait" class="texte-info" th:text="#{securite.secours.format}">
+                            Huit caractères, avec ou sans le tiret. Le code utilisé ne servira plus.</p>
+                    </div>
+                    <button type="submit" class="btn-cta" th:text="#{securite.desactiver}">Désactiver</button>
+                </form>
+            </details>
+
         </th:block>
         <p th:if="${etat.obligatoire()}" class="texte-info" th:text="#{securite.mfa.obligatoire}">
             Obligatoire pour un compte du back-office : elle ne peut pas être désactivée.</p>
