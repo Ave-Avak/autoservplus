@@ -62,7 +62,7 @@ public class PremierMotDePasseService {
     public void definir(String jeton, String motDePasse) {
         Utilisateur compte = chargerParJeton(jeton);
         compte.definirMotDePasse(encodeur.encode(motDePasse));
-        journal.consigner(compte, TypeEvenementSecurite.MOT_DE_PASSE_DEFINI, null);
+        journal.consigner(compte, TypeEvenementSecurite.MOT_DE_PASSE_DEFINI, compte);
         JOURNAL.info("Mot de passe defini par le titulaire du compte {}", compte.getReference());
     }
 
@@ -79,7 +79,7 @@ public class PremierMotDePasseService {
                     "Choisissez un mot de passe different de celui qui vous a ete remis.");
         }
         compte.changerMotDePasse(encodeur.encode(motDePasse));
-        journal.consigner(compte, TypeEvenementSecurite.MOT_DE_PASSE_CHANGE, null);
+        journal.consigner(compte, TypeEvenementSecurite.MOT_DE_PASSE_CHANGE, compte);
         JOURNAL.info("Mot de passe impose change pour le compte {}", compte.getReference());
     }
 

@@ -157,7 +157,7 @@ public class SecondFacteurService {
             throw new RefusTraduit("mfa.erreur.code", "Code incorrect.");
         }
         compte.confirmerEnrolement(maintenant, pas.getAsLong());
-        journal.consigner(compte, TypeEvenementSecurite.MFA_ACTIVE, null);
+        journal.consigner(compte, TypeEvenementSecurite.MFA_ACTIVE, compte);
         List<String> clairs = emettreCodes(compte, maintenant);
         revocation.revoquerSauf(compte.getEmail(), idSessionCourante);
         JOURNAL.info("Second facteur active pour le compte {}", compte.getReference());
@@ -194,7 +194,7 @@ public class SecondFacteurService {
 
         compte.retirerSecondFacteur();
         codes.invaliderUtilisables(compte.getId(), horloge.instant());
-        journal.consigner(compte, TypeEvenementSecurite.MFA_DESACTIVE, null);
+        journal.consigner(compte, TypeEvenementSecurite.MFA_DESACTIVE, compte);
         revocation.revoquerSauf(compte.getEmail(), idSessionCourante);
         JOURNAL.info("Second facteur desactive par le titulaire du compte {}", compte.getReference());
     }
@@ -210,7 +210,7 @@ public class SecondFacteurService {
         exigerCodeValide(compte, code);
 
         List<String> clairs = emettreCodes(compte, horloge.instant());
-        journal.consigner(compte, TypeEvenementSecurite.CODES_SECOURS_REGENERES, null);
+        journal.consigner(compte, TypeEvenementSecurite.CODES_SECOURS_REGENERES, compte);
         return clairs;
     }
 
@@ -278,7 +278,7 @@ public class SecondFacteurService {
         for (CodeSecours candidat : codes.utilisablesDe(compte.getId())) {
             if (encodeurCodes.matches(code, candidat.getEmpreinte())) {
                 candidat.consommer(maintenant);
-                journal.consigner(compte, TypeEvenementSecurite.CODE_SECOURS_CONSOMME, null);
+                journal.consigner(compte, TypeEvenementSecurite.CODE_SECOURS_CONSOMME, compte);
                 return true;
             }
         }

@@ -45,7 +45,12 @@ public class EvenementSecuriteCompte {
     @Column(name = "horodatage", nullable = false, updatable = false)
     private Instant horodatage;
 
-    /** Nul quand le titulaire agit lui-meme ou quand l evenement vient du systeme. */
+    /**
+     * Qui a agi. Le titulaire lui-meme pour ses propres gestes ; un autre compte pour une
+     * creation ou une reinitialisation ; nul quand le systeme constate (echec, verrouillage),
+     * l auteur de la saisie restant inconnu. Distinguer les deux premiers cas du troisieme
+     * est ce que la fiche affiche — un nul unique les confondait.
+     */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "auteur_id", updatable = false)
     private Utilisateur auteur;

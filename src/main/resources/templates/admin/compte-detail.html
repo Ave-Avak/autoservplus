@@ -131,7 +131,7 @@
         Aucun événement de sécurité enregistré.</p>
 
     <table class="tableau" th:unless="${#lists.isEmpty(journalSecurite)}">
-        <caption th:text="#{admin.compte.journal.legende}">Du plus récent au plus ancien.</caption>
+        <caption th:text="#{admin.compte.securite.legende}">Du plus récent au plus ancien.</caption>
         <thead>
         <tr>
             <th scope="col" th:text="#{admin.compte.journal.date}">Date</th>
@@ -143,8 +143,9 @@
         <tr th:each="e : ${journalSecurite}">
             <td th:text="${#temporals.format(e.horodatage(), 'dd/MM/yyyy HH:mm')}">01/10/2026 09:12</td>
             <td th:text="#{'admin.compte.securite.type.' + ${e.type()}}">Second facteur activé</td>
-            <!--/* Auteur nul : le titulaire a agi lui-même, ou l'événement vient du système. */-->
-            <td th:text="${e.auteur()} ?: #{admin.compte.securite.titulaire}">Titulaire</td>
+            <!--/* Auteur nul : le système a constaté (échec, verrouillage) sans savoir qui saisissait. */-->
+            <td th:text="${e.parTitulaire()} ? #{admin.compte.securite.titulaire}
+                         : (${e.auteur()} ?: #{admin.compte.securite.systeme})">Titulaire</td>
         </tr>
         </tbody>
     </table>

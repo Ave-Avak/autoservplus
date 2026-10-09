@@ -78,7 +78,7 @@ class VerrouillageConnexionIT extends SocleIntegration {
                         .locale(Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString(
-                        "Compte verrouillé après des mots de passe incorrects")));
+                        "Compte verrouillé après trop de mots de passe incorrects")));
     }
 
     @Test

@@ -62,7 +62,7 @@ class PremierMotDePasseServiceTest {
         assertThat(encodeur.matches("phrase de passe choisie", admin.getMotDePasseHache())).isTrue();
         assertThat(admin.getStatut()).isEqualTo(StatutUtilisateur.ACTIF);
         assertThat(admin.getJetonDefinitionHache()).isNull();
-        verify(journal).consigner(admin, TypeEvenementSecurite.MOT_DE_PASSE_DEFINI, null);
+        verify(journal).consigner(admin, TypeEvenementSecurite.MOT_DE_PASSE_DEFINI, admin);
     }
 
     @Test
@@ -104,6 +104,6 @@ class PremierMotDePasseServiceTest {
         service.changerImpose("chef@exemple.be", "phrase choisie par le chef");
 
         assertThat(exploitant.doitChangerMotDePasse()).isFalse();
-        verify(journal).consigner(exploitant, TypeEvenementSecurite.MOT_DE_PASSE_CHANGE, null);
+        verify(journal).consigner(exploitant, TypeEvenementSecurite.MOT_DE_PASSE_CHANGE, exploitant);
     }
 }

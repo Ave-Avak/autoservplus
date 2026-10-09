@@ -122,7 +122,7 @@ class SecondFacteurServiceTest {
         assertThat(clairs).hasSize(8).allMatch(c -> c.matches("[2-9A-HJKMNP-Z]{4}-[2-9A-HJKMNP-Z]{4}"));
         assertThat(codesEnregistres).hasSize(8)
                 .allMatch(c -> c.getEmpreinte().startsWith("$2a$10$"));
-        verify(journal).consigner(titulaire, TypeEvenementSecurite.MFA_ACTIVE, null);
+        verify(journal).consigner(titulaire, TypeEvenementSecurite.MFA_ACTIVE, titulaire);
         verify(revocation).revoquerSauf(EMAIL, "session-1");
     }
 
@@ -156,7 +156,7 @@ class SecondFacteurServiceTest {
         assertThat(service.verifier(EMAIL, code)).isEqualTo(SecondFacteurService.Resultat.ACCEPTE);
         assertThat(service.verifier(EMAIL, code)).isEqualTo(SecondFacteurService.Resultat.REFUSE);
         assertThat(codesEnregistres.stream().filter(c -> c.getConsommeLe() != null)).hasSize(1);
-        verify(journal).consigner(titulaire, TypeEvenementSecurite.CODE_SECOURS_CONSOMME, null);
+        verify(journal).consigner(titulaire, TypeEvenementSecurite.CODE_SECOURS_CONSOMME, titulaire);
     }
 
     @Test
@@ -220,7 +220,7 @@ class SecondFacteurServiceTest {
 
         assertThat(titulaire.secondFacteurActif()).isFalse();
         verify(codes).invaliderUtilisables(eq(42L), any());
-        verify(journal).consigner(titulaire, TypeEvenementSecurite.MFA_DESACTIVE, null);
+        verify(journal).consigner(titulaire, TypeEvenementSecurite.MFA_DESACTIVE, titulaire);
         verify(revocation).revoquerSauf(EMAIL, "session-2");
     }
 
@@ -232,7 +232,7 @@ class SecondFacteurServiceTest {
         List<String> nouveaux = service.regenererCodes(EMAIL, MOT_DE_PASSE, codeCourant(secret));
 
         assertThat(nouveaux).hasSize(8);
-        verify(journal).consigner(titulaire, TypeEvenementSecurite.CODES_SECOURS_REGENERES, null);
+        verify(journal).consigner(titulaire, TypeEvenementSecurite.CODES_SECOURS_REGENERES, titulaire);
     }
 
     @Test
