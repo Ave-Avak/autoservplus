@@ -135,6 +135,13 @@ public interface ServiceCourriel {
      */
     void envoyerAvisVerrouillageSecondFacteur(Utilisateur destinataire, Instant jusqua);
 
+    /**
+     * Cinq mots de passe incorrects ont verrouille le compte. Contrairement au second
+     * facteur, rien ne prouve que le mot de passe soit connu : l avis informe, et indique
+     * la reinitialisation qui leve le verrou.
+     */
+    void envoyerAvisVerrouillageConnexion(Utilisateur destinataire, Instant jusqua);
+
     /** Un super-administrateur a reinitialise le second facteur du titulaire. */
     void envoyerAvisReinitialisationSecondFacteur(Utilisateur destinataire);
 }

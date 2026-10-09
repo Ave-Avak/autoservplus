@@ -294,6 +294,20 @@ public class CourrielConsole implements ServiceCourriel {
     }
 
     @Override
+    public void envoyerAvisVerrouillageConnexion(Utilisateur destinataire, Instant jusqua) {
+        JOURNAL.info("""
+
+                ---------- COURRIEL NON EXPEDIE (demonstration) : connexion verrouillee ----------
+                Destinataire : {} <{}>
+                Cinq mots de passe incorrects ont ete saisis pour votre compte. Il est
+                verrouille jusqu au {}.
+                Si ce n etait pas vous, aucune action n est requise. Pour retrouver l acces
+                sans attendre, reinitialisez votre mot de passe.
+                ----------------------------------------------------------------
+                """, destinataire.nomComplet(), destinataire.getEmail(), jusqua);
+    }
+
+    @Override
     public void envoyerAvisReinitialisationSecondFacteur(Utilisateur destinataire) {
         JOURNAL.info("""
 
