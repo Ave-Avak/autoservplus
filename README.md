@@ -84,6 +84,11 @@ référence (catalogue, postes d'atelier, horaires) et aucun compte membre.
 
 ## Restaurer la base de démonstration
 
+> **Le dump publié date d'avant V36 et ne démarre plus** : Flyway refuse les migrations
+> V36 à V41, de numéro inférieur à la graine V900 qu'il porte déjà. Il sera régénéré au
+> gel du code par [`docs/regenerer-dump.sh`](docs/regenerer-dump.sh) ; d'ici là, employer
+> la commande de démarrage ci-dessus.
+
 Alternative à la commande précédente, sans passer par Maven ni Flyway :
 
 ```bash
