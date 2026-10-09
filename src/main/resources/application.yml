@@ -252,3 +252,7 @@ spring:
       on-profile: demo
   flyway:
     locations: classpath:db/migration,classpath:db/demo
+    # La graine porte V900 : une migration de schema ajoutee apres elle a un numero
+    # inferieur, que Flyway classerait « ignored » et refuserait a la validation sur une
+    # base de demonstration persistante. Sous ce seul profil, elle s applique apres coup.
+    out-of-order: true
