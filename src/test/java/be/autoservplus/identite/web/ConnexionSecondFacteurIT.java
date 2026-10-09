@@ -16,6 +16,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -60,6 +61,7 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
     @Autowired private ChiffrementSecretMfa chiffrement;
     @Autowired private SessionRegistry registre;
     @Autowired private Clock horloge;
+    @Autowired private JdbcTemplate jdbc;
 
     private Utilisateur creer(TypeUtilisateur type, boolean enrole, boolean doitChanger) {
         Utilisateur u = new Utilisateur("mfa-" + COMPTEUR.getAndIncrement() + "@exemple.be",
@@ -101,6 +103,41 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
     private MvcResult saisirCode(MockHttpSession session, String code) throws Exception {
         return mvc.perform(post("/connexion/etape/second-facteur").session(session).with(csrf())
                 .locale(Locale.FRENCH).param("code", code)).andReturn();
+    }
+
+    @Test
+    @DisplayName("connexion partielle : une route publique la voit anonyme, l'étape reste reprenable")
+    void partielleAnonymeSurLesRoutesPubliques() throws Exception {
+        Utilisateur membre = creer(TypeUtilisateur.MEMBRE, true, false);
+        MockHttpSession session = session(connecter(membre, MOT_DE_PASSE));
+
+        // Route publique MUTANTE : le choix des cookies ne s ecrit en base que pour un
+        // compte connecte. Une connexion partielle ne doit pas agir au nom du compte.
+        mvc.perform(post("/cookies/preferences").session(session).with(csrf())
+                        .param("action", "accepter"))
+                .andExpect(status().is3xxRedirection());
+        assertThat(consentementsCookies(membre)).isZero();
+
+        // Route publique LUE : l en-tete ne la traite pas comme une connexion.
+        mvc.perform(get("/").session(session).locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        org.hamcrest.Matchers.containsString("href=\"/mon-compte\""))));
+
+        // Le contexte anonyme n a pas ete enregistre : l etape se reprend et aboutit.
+        MvcResult fin = saisirCode(session, codeCourant(SECRET));
+        assertThat(fin.getResponse().getRedirectedUrl()).isEqualTo("/mon-compte");
+
+        // Contre-epreuve : connexion aboutie, le meme geste ecrit bien la preuve.
+        mvc.perform(post("/cookies/preferences").session(session).with(csrf())
+                        .param("action", "accepter"))
+                .andExpect(status().is3xxRedirection());
+        assertThat(consentementsCookies(membre)).isPositive();
+    }
+
+    private Integer consentementsCookies(Utilisateur membre) {
+        return jdbc.queryForObject("SELECT count(*) FROM consentement WHERE utilisateur_id = ? "
+                + "AND type_document LIKE 'COOKIES%'", Integer.class, membre.getId());
     }
 
     @Test

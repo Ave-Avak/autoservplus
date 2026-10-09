@@ -1,6 +1,7 @@
 package be.autoservplus.config;
 
 import be.autoservplus.identite.web.AuthentificationPartielle;
+import be.autoservplus.identite.web.ConnexionPartielleHorsEtapes;
 import be.autoservplus.identite.web.EtapeConnexion;
 import be.autoservplus.identite.web.ParcoursConnexion;
 import org.springframework.context.annotation.Bean;
@@ -18,6 +19,7 @@ import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
@@ -189,6 +191,9 @@ public class SecuriteConfig {
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .accessDeniedHandler(new RefusAccesEnEtapes()))
+                // Apres l autorisation : ce qui est public voit une connexion partielle
+                // comme anonyme ; voir ConnexionPartielleHorsEtapes.
+                .addFilterAfter(new ConnexionPartielleHorsEtapes(), AuthorizationFilter.class)
 
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/webhooks/**"))
                 .formLogin(formulaire -> formulaire
