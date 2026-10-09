@@ -61,8 +61,8 @@
             </div>
             <button type="submit" class="btn-cta" th:text="#{securite.codes.regenerer}">Générer de nouveaux codes</button>
         </form>
-        <!-- Même traitement qu'à la connexion : le code de secours a son propre champ,
-             sans clavier numérique, dans un second formulaire vers la même route. -->
+        <!--/* Même traitement qu'à la connexion : le code de secours a son propre champ,
+             sans clavier numérique, dans un second formulaire vers la même route. */-->
         <details th:open="${secoursOuvert == 'codes'}">
             <summary th:text="#{securite.secours.lien}">Utiliser un code de secours</summary>
             <form class="formulaire" th:action="@{/mon-profil/securite/codes}" method="post">
@@ -84,8 +84,8 @@
             </form>
         </details>
 
-        <!-- Au back-office le second facteur est obligatoire : le formulaire de retrait
-             n'est pas proposé, et le service le refuserait de toute façon. -->
+        <!--/* Au back-office le second facteur est obligatoire : le formulaire de retrait
+             n'est pas proposé, et le service le refuserait de toute façon. */-->
         <th:block th:unless="${etat.obligatoire()}">
             <h3 th:text="#{securite.desactiver.titre}">Désactiver la vérification en deux étapes</h3>
             <form class="formulaire" th:action="@{/mon-profil/securite/desactivation}" method="post">

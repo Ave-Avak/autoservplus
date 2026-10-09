@@ -14,9 +14,9 @@
 <header class="entete">
     <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
         <a class="marque" th:href="@{/}">AutoServ+</a>
-        <!-- Deux usages, un écran : changement imposé pendant une connexion (seule la
+        <!--/* Deux usages, un écran : changement imposé pendant une connexion (seule la
              déconnexion est atteignable), ou définition depuis un lien reçu par
-             courriel (personne n'est connecté). -->
+             courriel (personne n'est connecté). */-->
         <ul class="menu menu-compte" th:if="${enConnexion}">
             <li>
                 <form th:action="@{/deconnexion}" method="post">
@@ -39,8 +39,8 @@
 
         <div class="champ">
             <label for="motDePasse" th:text="#{mot-de-passe-a-definir.nouveau}">Nouveau mot de passe</label>
-            <!-- Jamais th:field : il renverrait le mot de passe dans la page au retour
-                 d'une erreur. -->
+            <!--/* Jamais th:field : il renverrait le mot de passe dans la page au retour
+                 d'une erreur. */-->
             <input type="password" id="motDePasse" name="motDePasse"
                    autocomplete="new-password" required aria-describedby="aide-mdp" autofocus>
             <p id="aide-mdp" class="texte-info" th:text="#{validation.motDePasse.aide}">

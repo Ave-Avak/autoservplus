@@ -15,7 +15,7 @@
     <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
         <a class="marque" th:href="@{/}">AutoServ+</a>
         <ul class="menu menu-compte">
-            <!-- Pendant une connexion, l'espace du compte n'est pas encore atteignable. -->
+            <!--/* Pendant une connexion, l'espace du compte n'est pas encore atteignable. */-->
             <li th:unless="${enConnexion}"><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
             <li>
                 <form th:action="@{/deconnexion}" method="post">
@@ -40,8 +40,8 @@
         <li th:text="#{enrolement.etape.saisir}">Saisissez le code à six chiffres qu'elle affiche.</li>
     </ol>
 
-    <!-- SVG produit côté serveur à partir de chiffres et d'attributs fixes : aucun
-         contenu saisi n'y entre, d'où th:utext. -->
+    <!--/* SVG produit côté serveur à partir de chiffres et d'attributs fixes : aucun
+         contenu saisi n'y entre, d'où th:utext. */-->
     <div class="code-qr-conteneur" th:utext="${codeQr}"></div>
 
     <p>

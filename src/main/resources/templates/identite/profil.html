@@ -34,8 +34,8 @@
     <div class="message message-succes" th:if="${enregistre}" role="status"
          th:text="#{profil.enregistre}">Vos informations sont enregistrées.</div>
 
-    <!-- Message NEUTRE : identique que l'adresse visée soit libre ou déjà prise. Le
-         distinguer ferait du formulaire un oracle d'existence de compte. -->
+    <!--/* Message NEUTRE : identique que l'adresse visée soit libre ou déjà prise. Le
+         distinguer ferait du formulaire un oracle d'existence de compte. */-->
     <div class="message message-succes" th:if="${demandeEnregistree}" role="status"
          th:text="#{changement-email.demande-enregistree}">
         Si cette adresse peut être utilisée, un lien de confirmation vient d'y être envoyé.</div>
@@ -63,10 +63,10 @@
                    th:errors="*{nom}"></p>
             </div>
 
-            <!-- L'adresse de courriel n'est PAS un champ de ce formulaire : elle est
+            <!--/* L'adresse de courriel n'est PAS un champ de ce formulaire : elle est
                  l'identifiant de connexion, et la changer exige de prouver la nouvelle
                  avant de basculer. Un parcours distinct, donc, et non un champ de plus
-                 que l'on enregistrerait avec le reste. -->
+                 que l'on enregistrerait avec le reste. */-->
             <p class="texte-info">
                 <a th:href="@{/mon-profil/adresse}" th:text="#{changement-email.lien}">Changer mon adresse de courriel</a>
             </p>
@@ -84,9 +84,9 @@
 
         <fieldset>
             <legend th:text="#{profil.section.adresse}">Adresse</legend>
-            <!-- L'adresse est complete ou vide : la facture exige rue, code postal et
+            <!--/* L'adresse est complete ou vide : la facture exige rue, code postal et
                  localite ensemble (AR n°1, art. 5), et n'en imprime aucune si l'un
-                 manque. Le dire ici evite une facture non conforme. -->
+                 manque. Le dire ici evite une facture non conforme. */-->
             <p class="texte-info" th:text="#{profil.adresse.aide}">
                 Rue, code postal et localité vont ensemble : renseignez-les tous les trois, ou aucun.</p>
 
@@ -128,9 +128,9 @@
 
         <fieldset>
             <legend th:text="#{profil.section.preferences}">Préférences</legend>
-            <!-- Les noms de langue ne sont PAS traduits : « Nederlands » s'ecrit
+            <!--/* Les noms de langue ne sont PAS traduits : « Nederlands » s'ecrit
                  « Nederlands » dans les trois versions. Traduire le nom d'une langue
-                 dans une langue qu'on ne comprend pas empeche precisement d'en sortir. -->
+                 dans une langue qu'on ne comprend pas empeche precisement d'en sortir. */-->
             <div class="champ">
                 <label for="langue" th:text="#{profil.langue}">Langue</label>
                 <select id="langue" th:field="*{langue}">
