@@ -34,6 +34,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.clearInvocations;
@@ -75,6 +76,10 @@ class SecondFacteurServiceTest {
                 TypeUtilisateur.MEMBRE);
         ReflectionTestUtils.setField(titulaire, "id", 42L);
         lenient().when(utilisateurs.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(titulaire));
+        lenient().when(utilisateurs.findForUpdateByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(titulaire));
+        // L UPDATE conditionnel reussit ici : la concurrence est prouvee en integration.
+        lenient().when(utilisateurs.accepterPasSiNouveau(eq(42L), anyLong())).thenReturn(1);
+        lenient().when(codes.consommerSiUtilisable(any(), any())).thenReturn(1);
         lenient().when(codes.save(any(CodeSecours.class))).thenAnswer(invocation -> {
             codesEnregistres.add(invocation.getArgument(0));
             return invocation.getArgument(0);
@@ -196,7 +201,7 @@ class SecondFacteurServiceTest {
     void desactivationRefuseeAuBackOffice() {
         Utilisateur admin = new Utilisateur("admin@exemple.be", encodeur.encode(MOT_DE_PASSE),
                 "Nom", "Prenom", TypeUtilisateur.ADMINISTRATEUR);
-        when(utilisateurs.findByEmailIgnoreCase("admin@exemple.be")).thenReturn(Optional.of(admin));
+        when(utilisateurs.findForUpdateByEmailIgnoreCase("admin@exemple.be")).thenReturn(Optional.of(admin));
 
         assertThatThrownBy(() -> service.desactiver("admin@exemple.be", MOT_DE_PASSE, "123456", "s"))
                 .isInstanceOf(RefusTraduit.class)
@@ -233,6 +238,26 @@ class SecondFacteurServiceTest {
 
         assertThat(nouveaux).hasSize(8);
         verify(journal).consigner(titulaire, TypeEvenementSecurite.CODES_SECOURS_REGENERES, titulaire);
+    }
+
+    @Test
+    @DisplayName("un secret indéchiffrable donne un refus propre, sans compter d'échec")
+    void secretIndechiffrable() {
+        byte[] secret = enroler(service);
+        // Meme version de cle, autre valeur : le tag GCM ne se verifie plus.
+        SecondFacteurService cleRemplacee = service(new ChiffrementSecretMfa(
+                Map.of((short) 1, new SecretKeySpec(new byte[] {
+                        1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16,
+                        17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32}, "AES")),
+                (short) 1));
+
+        assertThat(cleRemplacee.verifier(EMAIL, codeCourant(secret)))
+                .isEqualTo(SecondFacteurService.Resultat.INDISPONIBLE);
+        assertThat(titulaire.getMfaEchecs()).isZero();
+        verify(journal, never()).consigner(titulaire, TypeEvenementSecurite.SECOND_FACTEUR_ECHEC, null);
+        assertThatThrownBy(() -> cleRemplacee.desactiver(EMAIL, MOT_DE_PASSE, codeCourant(secret), "s"))
+                .isInstanceOfSatisfying(RefusTraduit.class,
+                        refus -> assertThat(refus.getCleMessage()).isEqualTo("mfa.erreur.indisponible"));
     }
 
     @Test

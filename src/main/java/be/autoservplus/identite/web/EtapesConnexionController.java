@@ -94,6 +94,12 @@ public class EtapesConnexionController {
                 parcours.abandonner(requete, reponse);
                 yield "redirect:/connexion?bloque";
             }
+            case INDISPONIBLE -> {
+                // Message generique : la cause technique est au journal, pas a l ecran.
+                modele.addAttribute("titre", msg("connexion.etape.second-facteur.titre"));
+                modele.addAttribute("erreur", msg("connexion.etape.second-facteur.indisponible"));
+                yield VUE_SECOND_FACTEUR;
+            }
             case REFUSE -> {
                 modele.addAttribute("titre", msg("connexion.etape.second-facteur.titre"));
                 modele.addAttribute("erreur", msg("connexion.etape.second-facteur.erreur"));

@@ -101,7 +101,12 @@ public class SecondFacteurService {
         }
     }
 
-    public enum Resultat { ACCEPTE, REFUSE, VERROUILLE }
+    /**
+     * {@code INDISPONIBLE} : le secret ne se dechiffre plus (cle maitre perdue ou
+     * alteree). Ce n est pas un echec du titulaire : rien n est compte, et seule une
+     * reinitialisation par un super-administrateur le resout.
+     */
+    public enum Resultat { ACCEPTE, REFUSE, VERROUILLE, INDISPONIBLE }
 
     public record Etat(boolean actif, Instant activeLe, boolean obligatoire, int codesRestants) {
     }
@@ -172,7 +177,7 @@ public class SecondFacteurService {
      */
     @Transactional
     public Resultat verifier(String email, String saisie) {
-        return verifierSaisie(charger(email), saisie);
+        return verifierSaisie(chargerPourVerification(email), saisie);
     }
 
     /**
@@ -181,7 +186,7 @@ public class SecondFacteurService {
      */
     @Transactional(noRollbackFor = RefusTraduit.class)
     public void desactiver(String email, String motDePasse, String code, String idSessionCourante) {
-        Utilisateur compte = charger(email);
+        Utilisateur compte = chargerPourVerification(email);
         if (compte.secondFacteurObligatoire()) {
             throw new RefusTraduit("mfa.erreur.obligatoire",
                     "Le second facteur est obligatoire pour un compte du back-office.");
@@ -202,7 +207,7 @@ public class SecondFacteurService {
     /** Remplace les codes de secours, apres reauthentification par mot de passe et code. */
     @Transactional(noRollbackFor = RefusTraduit.class)
     public List<String> regenererCodes(String email, String motDePasse, String code) {
-        Utilisateur compte = charger(email);
+        Utilisateur compte = chargerPourVerification(email);
         if (!compte.secondFacteurActif()) {
             throw new RefusTraduit("mfa.erreur.inactif", "Aucun second facteur actif.");
         }
@@ -235,10 +240,20 @@ public class SecondFacteurService {
         if (compte.estVerrouille(maintenant)) {
             return Resultat.VERROUILLE;
         }
-        if (compte.secondFacteurActif()
-                && (accepterTotp(compte, saisie, maintenant)
-                    || consommerCodeSecours(compte, saisie, maintenant))) {
-            return Resultat.ACCEPTE;
+        if (compte.secondFacteurActif()) {
+            try {
+                if (accepterTotp(compte, saisie, maintenant)
+                        || consommerCodeSecours(compte, saisie, maintenant)) {
+                    return Resultat.ACCEPTE;
+                }
+            } catch (ChiffrementSecretMfa.SecretIndechiffrableException indechiffrable) {
+                // Ni echec compte ni code de secours essaye : le titulaire n y est pour
+                // rien, et des essais non comptes ouvriraient une recherche illimitee des
+                // codes de secours.
+                JOURNAL.error("Secret TOTP indechiffrable pour le compte {} (version de cle {}) : {}",
+                        compte.getReference(), compte.getMfaCleVersion(), indechiffrable.getMessage());
+                return Resultat.INDISPONIBLE;
+            }
         }
         journal.consigner(compte, TypeEvenementSecurite.SECOND_FACTEUR_ECHEC, null);
         Optional<Instant> verrouillage = compte.enregistrerEchecSecondFacteur(
@@ -259,6 +274,11 @@ public class SecondFacteurService {
         if (pas.isEmpty()) {
             return false;
         }
+        // L UPDATE conditionnel tranche entre deux verifications simultanees du meme code ;
+        // le compte en memoire est ensuite aligne, pour ne pas reecrire un pas perime.
+        if (utilisateurs.accepterPasSiNouveau(compte.getId(), pas.getAsLong()) == 0) {
+            return false;
+        }
         compte.accepterPas(pas.getAsLong());
         // Rotation de cle resorbee a l usage : chaque connexion reussie remet le secret
         // sous la cle active, sans procedure de migration a part.
@@ -277,6 +297,9 @@ public class SecondFacteurService {
         }
         for (CodeSecours candidat : codes.utilisablesDe(compte.getId())) {
             if (encodeurCodes.matches(code, candidat.getEmpreinte())) {
+                if (codes.consommerSiUtilisable(candidat.getId(), maintenant) == 0) {
+                    return false;
+                }
                 candidat.consommer(maintenant);
                 journal.consigner(compte, TypeEvenementSecurite.CODE_SECOURS_CONSOMME, compte);
                 return true;
@@ -300,6 +323,10 @@ public class SecondFacteurService {
         }
         if (resultat == Resultat.REFUSE) {
             throw new RefusTraduit("mfa.erreur.code", "Code incorrect.");
+        }
+        if (resultat == Resultat.INDISPONIBLE) {
+            throw new RefusTraduit("mfa.erreur.indisponible",
+                    "Verification du second facteur impossible pour ce compte.");
         }
     }
 
@@ -359,6 +386,11 @@ public class SecondFacteurService {
             JOURNAL.warn("Avis de verrouillage non envoye pour le compte {} : {}",
                     compte.getReference(), echec.getMessage());
         }
+    }
+
+    private Utilisateur chargerPourVerification(String email) {
+        return utilisateurs.findForUpdateByEmailIgnoreCase(email)
+                .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
     }
 
     private Utilisateur charger(String email) {
