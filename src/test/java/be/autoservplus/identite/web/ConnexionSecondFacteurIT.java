@@ -21,12 +21,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.Clock;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -98,6 +101,22 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
     private MvcResult saisirCode(MockHttpSession session, String code) throws Exception {
         return mvc.perform(post("/connexion/etape/second-facteur").session(session).with(csrf())
                 .locale(Locale.FRENCH).param("code", code)).andReturn();
+    }
+
+    @Test
+    @DisplayName("la date d'activation suit la locale du rendu, en NL comme en EN")
+    void dateDActivationLocalisee() throws Exception {
+        Utilisateur membre = creer(TypeUtilisateur.MEMBRE, true, false);
+        // Meme fuseau que #temporals, qui formate un Instant dans le fuseau du systeme.
+        var activeLe = relire(membre).getMfaActiveLe().atZone(ZoneId.systemDefault());
+
+        for (Locale langue : List.of(Locale.of("nl"), Locale.ENGLISH)) {
+            String attendu = DateTimeFormatter.ofPattern("d MMMM yyyy", langue).format(activeLe);
+            mvc.perform(get("/mon-profil/securite").locale(langue)
+                            .with(user(membre.getEmail()).roles("MEMBRE")))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString(attendu)));
+        }
     }
 
     @Test

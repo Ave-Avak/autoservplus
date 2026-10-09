@@ -43,7 +43,7 @@
     </section>
 
     <section th:if="${etat.actif()}">
-        <p th:text="#{securite.mfa.actif(${#temporals.format(etat.activeLe(), 'dd/MM/yyyy')}, ${etat.codesRestants()})}">
+        <p th:text="#{securite.mfa.actif(${#temporals.format(etat.activeLe(), 'd MMMM yyyy')}, ${etat.codesRestants()})}">
             Active depuis le 01/10/2026. Codes de secours restants : 8.</p>
 
         <h3 th:text="#{securite.codes.titre}">Nouveaux codes de secours</h3>
