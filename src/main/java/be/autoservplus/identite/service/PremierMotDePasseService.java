@@ -36,10 +36,13 @@ public class PremierMotDePasseService {
     private final PasswordEncoder encodeur;
     private final JournalSecuriteCompte journal;
     private final Clock horloge;
+    private final PolitiqueMotDePasse politique;
 
     public PremierMotDePasseService(UtilisateurRepository utilisateurs, PasswordEncoder encodeur,
-                                    JournalSecuriteCompte journal, Clock horloge) {
+                                    JournalSecuriteCompte journal, Clock horloge,
+                                    PolitiqueMotDePasse politique) {
         this.utilisateurs = utilisateurs;
+        this.politique = politique;
         this.encodeur = encodeur;
         this.journal = journal;
         this.horloge = horloge;
@@ -56,11 +59,13 @@ public class PremierMotDePasseService {
      * @throws RessourceIntrouvableException jeton inconnu ou deja consomme — les deux cas
      *         sont indiscernables, et c est voulu : l ecran n a pas a dire qu un lien a
      *         existe
-     * @throws RefusTraduit                  jeton expire
+     * @throws RefusTraduit                  jeton expire, ou mot de passe hors
+     *                                       {@link PolitiqueMotDePasse}
      */
     @Transactional
     public void definir(String jeton, String motDePasse) {
         Utilisateur compte = chargerParJeton(jeton);
+        politique.exiger(motDePasse);
         compte.definirMotDePasse(encodeur.encode(motDePasse));
         journal.consigner(compte, TypeEvenementSecurite.MOT_DE_PASSE_DEFINI, compte);
         JOURNAL.info("Mot de passe defini par le titulaire du compte {}", compte.getReference());
@@ -74,6 +79,7 @@ public class PremierMotDePasseService {
     public void changerImpose(String email, String motDePasse) {
         Utilisateur compte = utilisateurs.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
+        politique.exiger(motDePasse);
         if (encodeur.matches(motDePasse, compte.getMotDePasseHache())) {
             throw new RefusTraduit("mot-de-passe-impose.erreur.identique",
                     "Choisissez un mot de passe different de celui qui vous a ete remis.");

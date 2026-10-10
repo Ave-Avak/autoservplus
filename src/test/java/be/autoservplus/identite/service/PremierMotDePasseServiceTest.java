@@ -44,7 +44,7 @@ class PremierMotDePasseServiceTest {
     @BeforeEach
     void setUp() {
         service = new PremierMotDePasseService(utilisateurs, encodeur, journal,
-                Clock.fixed(MAINTENANT, ZoneOffset.UTC));
+                Clock.fixed(MAINTENANT, ZoneOffset.UTC), new PolitiqueMotDePasse(new MotsDePasseCourants(), motDePasse -> false));
         admin = new Utilisateur("admin@exemple.be", encodeur.encode("inerte"), "Nom", "Prenom",
                 TypeUtilisateur.ADMINISTRATEUR);
     }
@@ -87,6 +87,27 @@ class PremierMotDePasseServiceTest {
                 .hasMessageNotContaining("abcdef");
         assertThatThrownBy(() -> service.verifierJeton(" "))
                 .isInstanceOf(RessourceIntrouvableException.class);
+    }
+
+    @Test
+    @DisplayName("refuse, appelé directement, un mot de passe de quatorze caractères")
+    void refuseUnMotDePasseTropCourt() {
+        JetonDefinition jeton = JetonDefinition.tirer();
+        admin.preparerDefinitionMotDePasse(jeton.empreinte(), MAINTENANT.plus(Duration.ofHours(24)));
+        when(utilisateurs.findByJetonDefinitionHache(jeton.empreinte())).thenReturn(Optional.of(admin));
+        Utilisateur exploitant = new Utilisateur("chef@exemple.be", encodeur.encode("secret du fichier env"),
+                "Nom", "Prenom", TypeUtilisateur.SUPER_ADMINISTRATEUR);
+        exploitant.exigerChangementMotDePasse();
+        when(utilisateurs.findByEmailIgnoreCase("chef@exemple.be")).thenReturn(Optional.of(exploitant));
+
+        // Aucun formulaire ici : c est la garde du service qui refuse.
+        assertThatThrownBy(() -> service.definir(jeton.clair(), "atelier garage"))
+                .isInstanceOf(RefusTraduit.class).hasFieldOrPropertyWithValue("codeRegle", "RM-02");
+        assertThatThrownBy(() -> service.changerImpose("chef@exemple.be", "atelier garage"))
+                .isInstanceOf(RefusTraduit.class).hasFieldOrPropertyWithValue("codeRegle", "RM-02");
+
+        assertThat(admin.motDePasseADefinir()).isTrue();
+        assertThat(exploitant.doitChangerMotDePasse()).isTrue();
     }
 
     @Test

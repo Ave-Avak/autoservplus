@@ -127,6 +127,25 @@ class DefinitionMotDePasseIT extends SocleIntegration {
         assertThat(parEmail(email).getJetonDefinitionHache()).isNotNull();
     }
 
+    /**
+     * Quarante caracteres accentues : sous l ancien maximum de cent, mais quatre-vingts
+     * octets, que BCrypt refuse par une exception. Le formulaire doit l arreter avant.
+     */
+    @Test
+    @DisplayName("au-delà de 72 octets : refus lisible sur le formulaire, pas d'erreur 500")
+    void tropLongRefuseSansErreur() throws Exception {
+        String email = "long-" + COMPTEUR.getAndIncrement() + "@exemple.be";
+        String jeton = creerAdministrateur(email);
+        String accentue = "é".repeat(40);
+
+        mvc.perform(post("/compte/definition").with(csrf()).locale(Locale.FRENCH)
+                        .param("jeton", jeton).param("motDePasse", accentue).param("confirmation", accentue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("72 octets au maximum")));
+
+        assertThat(parEmail(email).motDePasseADefinir()).isTrue();
+    }
+
     @Test
     @DisplayName("le POST définit le mot de passe, active le compte, puis le lien est mort")
     void definitionPuisRejeu() throws Exception {

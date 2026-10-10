@@ -1,12 +1,17 @@
 package be.autoservplus.identite.web.dto;
 
 import be.autoservplus.identite.service.MotsDePasseCourants;
+import be.autoservplus.identite.service.PolitiqueMotDePasse;
 import be.autoservplus.identite.service.VerificateurCompromission;
+import jakarta.validation.ConstraintValidatorContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 /**
  * Politique de mot de passe : longueur, listes de refus, absence de regle de
@@ -18,7 +23,7 @@ class ValidateurMotDePasseSolideTest {
     private final MotsDePasseCourants courants = new MotsDePasseCourants();
 
     private ValidateurMotDePasseSolide validateur(VerificateurCompromission service) {
-        return new ValidateurMotDePasseSolide(courants, service);
+        return new ValidateurMotDePasseSolide(new PolitiqueMotDePasse(courants, service));
     }
 
     /** Service de compromission qui ne refuse rien : le cas nominal hors ligne. */
@@ -37,11 +42,19 @@ class ValidateurMotDePasseSolideTest {
             assertThat(sansService().isValid("phrase-de-passe", null)).isTrue();
         }
 
+        /**
+         * Le depassement a son propre message : « trop court ou compromis » serait
+         * incomprehensible pour une phrase trop longue, et la longueur n apprend rien.
+         */
         @Test
-        @DisplayName("au-delà du maximum : refusé")
-        void maximum() {
-            assertThat(sansService().isValid("a".repeat(101), null)).isFalse();
-            assertThat(sansService().isValid("a".repeat(100), null)).isTrue();
+        @DisplayName("au-delà de 72 octets : refusé, avec le message de longueur")
+        void maximumMessagePropre() {
+            ConstraintValidatorContext contexte = mock(ConstraintValidatorContext.class, RETURNS_DEEP_STUBS);
+
+            assertThat(sansService().isValid("é".repeat(40), contexte)).isFalse();
+
+            verify(contexte).disableDefaultConstraintViolation();
+            verify(contexte).buildConstraintViolationWithTemplate("{validation.motDePasse.tropLong}");
         }
 
         /**

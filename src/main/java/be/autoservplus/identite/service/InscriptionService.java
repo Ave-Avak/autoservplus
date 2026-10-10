@@ -33,11 +33,10 @@ public class InscriptionService {
     /** Duree de validite du jeton de verification. */
     public static final Duration VALIDITE_JETON = Duration.ofHours(24);
 
-    private static final int LONGUEUR_MINIMALE_MOT_DE_PASSE = 12;
-
     private static final Logger JOURNAL = LoggerFactory.getLogger(InscriptionService.class);
 
     private final UtilisateurRepository repository;
+    private final PolitiqueMotDePasse politique;
     private final PasswordEncoder encodeurMotDePasse;
     private final Clock horloge;
     private final ServiceCourriel courriel;
@@ -46,8 +45,10 @@ public class InscriptionService {
     public InscriptionService(UtilisateurRepository repository,
                               PasswordEncoder encodeurMotDePasse,
                               Clock horloge,
-                              ServiceCourriel courriel) {
+                              ServiceCourriel courriel,
+                              PolitiqueMotDePasse politique) {
         this.repository = repository;
+        this.politique = politique;
         this.encodeurMotDePasse = encodeurMotDePasse;
         this.horloge = horloge;
         this.courriel = courriel;
@@ -57,7 +58,7 @@ public class InscriptionService {
      * Inscrit un nouveau membre et genere son jeton de verification.
      *
      * @throws RegleMetierException si l adresse est deja utilisee ou si le mot de passe
-     *                              ne respecte pas la longueur minimale
+     *                              ne respecte pas {@link PolitiqueMotDePasse}
      */
     @Transactional
     public Utilisateur inscrire(String email, String motDePasseClair,
@@ -69,11 +70,7 @@ public class InscriptionService {
             throw new RegleMetierException("RM-01",
                     "Un compte existe deja pour l adresse %s.".formatted(emailNormalise));
         }
-        if (motDePasseClair == null || motDePasseClair.length() < LONGUEUR_MINIMALE_MOT_DE_PASSE) {
-            throw new RegleMetierException("RM-02",
-                    "Le mot de passe doit comporter au moins %d caracteres."
-                            .formatted(LONGUEUR_MINIMALE_MOT_DE_PASSE));
-        }
+        politique.exiger(motDePasseClair);
 
         Utilisateur membre = new Utilisateur(
                 emailNormalise,

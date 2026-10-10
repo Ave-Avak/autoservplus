@@ -35,6 +35,15 @@ public class RefusTraduit extends RegleMetierException {
         this.cleMessage = cleMessage;
     }
 
+    /**
+     * Refus qui porte AUSSI le code d une regle du cahier des charges : la cle sert
+     * l ecran, le code la tracabilite — deux roles, deux champs, comme ci-dessus.
+     */
+    public RefusTraduit(String codeRegle, String cleMessage, String message) {
+        super(codeRegle, message);
+        this.cleMessage = cleMessage;
+    }
+
     public String getCleMessage() {
         return cleMessage;
     }
