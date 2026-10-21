@@ -133,7 +133,7 @@
         </p>
 
         <div class="fiche-actions" th:if="${article.disponible()}">
-            <a class="btn-cta" th:href="@{/rendez-vous/nouveau(article=${article.reference()})}"
+            <a class="btn-cta" th:href="@{/mes-rendez-vous/nouveau}"
                th:if="${typeArticle == 'service'}">Prendre rendez-vous</a>
             <!-- F12 : la prestation s'achete aussi hors rendez-vous. Modele DECOUPLE —
                  payer le service ne reserve pas le creneau, la planification reste une
