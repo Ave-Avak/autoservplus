@@ -21,6 +21,7 @@ import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * Conduit une connexion du mot de passe jusqu a son aboutissement, etape par etape.
@@ -44,11 +45,10 @@ import java.util.Optional;
 @Component
 public class ParcoursConnexion implements AuthenticationSuccessHandler {
 
-    private static final String DESTINATION_PAR_DEFAUT = "/mon-compte";
-
     private final UtilisateurRepository utilisateurs;
     private final TentativesConnexionService tentatives;
     private final LangueApresConnexionHandler langue;
+    private final PageArrivee pageArrivee;
     private final SecurityContextHolderStrategy strategie =
             SecurityContextHolder.getContextHolderStrategy();
     /** Meme composition que celle que HttpSecurity installe par defaut. */
@@ -58,10 +58,11 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
 
     public ParcoursConnexion(UtilisateurRepository utilisateurs,
                              TentativesConnexionService tentatives,
-                             LangueApresConnexionHandler langue) {
+                             LangueApresConnexionHandler langue, PageArrivee pageArrivee) {
         this.utilisateurs = utilisateurs;
         this.tentatives = tentatives;
         this.langue = langue;
+        this.pageArrivee = pageArrivee;
     }
 
     /** Le mot de passe vient d etre verifie. */
@@ -83,13 +84,28 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
 
     /**
      * Une etape vient d etre franchie : redirige vers la suivante, ou fait aboutir la
-     * connexion.
+     * connexion sur la page d arrivee du role.
      *
-     * @param destinationFinale ou aller si la connexion aboutit maintenant
      * @return la vue de redirection
      */
     public String avancer(HttpServletRequest requete, HttpServletResponse reponse,
+                          AuthentificationPartielle partielle) {
+        return avancer(requete, reponse, partielle, pageArrivee::de);
+    }
+
+    /**
+     * Comme {@link #avancer(HttpServletRequest, HttpServletResponse, AuthentificationPartielle)},
+     * mais vers une destination imposee si la connexion aboutit : les codes de secours a
+     * la fin d un enrolement, qui ne s affichent qu une fois.
+     */
+    public String avancer(HttpServletRequest requete, HttpServletResponse reponse,
                           AuthentificationPartielle partielle, String destinationFinale) {
+        return avancer(requete, reponse, partielle, complete -> destinationFinale);
+    }
+
+    private String avancer(HttpServletRequest requete, HttpServletResponse reponse,
+                           AuthentificationPartielle partielle,
+                           Function<Authentication, String> destinationFinale) {
         Optional<EtapeConnexion> etape =
                 etapeSuivante(partielle.getName(), partielle.secondFacteurValide());
         if (etape.isPresent()) {
@@ -101,7 +117,7 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
         installer(requete, reponse, complete);
         tentatives.connexionAboutie(complete.getName());
         langue.appliquerLaPreference(requete, reponse, complete);
-        return "redirect:" + destinationFinale;
+        return "redirect:" + destinationFinale.apply(complete);
     }
 
     /**
@@ -111,7 +127,7 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
      */
     public String garder(Authentication authentification, EtapeConnexion attendue) {
         if (!(authentification instanceof AuthentificationPartielle partielle)) {
-            return "redirect:" + DESTINATION_PAR_DEFAUT;
+            return "redirect:" + pageArrivee.de(authentification);
         }
         Optional<EtapeConnexion> courante =
                 etapeSuivante(partielle.getName(), partielle.secondFacteurValide());

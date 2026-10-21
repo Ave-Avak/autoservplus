@@ -131,7 +131,7 @@ class ConnexionPartiellePageErreurIT extends SocleIntegration {
         HttpResponse<String> aboutie = envoyer("/connexion/etape/second-facteur",
                 csrf(lire("/connexion/etape/second-facteur")),
                 "code", Totp.code(SECRET, Totp.pasDe(horloge.instant())));
-        assertThat(aboutie.headers().firstValue("Location").orElseThrow()).endsWith("/mon-compte");
+        assertThat(aboutie.headers().firstValue("Location").orElseThrow()).endsWith("/admin");
         assertThat(lire("/pieces").body()).contains("href=\"/mon-compte\"", "href=\"/panier\"");
     }
 }

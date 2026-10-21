@@ -1,6 +1,7 @@
 package be.autoservplus.i18n;
 
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.identite.web.PageArrivee;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -44,9 +45,10 @@ import java.util.Locale;
  * langue n etait tout simplement pas appliquee, et seul un test de bout en bout passant
  * par le vrai formulaire l a montre.</p>
  *
- * <p>Le comportement de redirection est identique a celui de
- * {@code defaultSuccessUrl("/mon-compte", true)} qu il remplace : meme classe parente,
- * memes deux reglages. Seule l application de la langue s y ajoute.</p>
+ * <p>Le comportement de redirection reprend celui de
+ * {@code defaultSuccessUrl(..., true)} qu il remplace — meme classe parente, requete
+ * sauvegardee ignoree — a ceci pres que la destination depend du role
+ * ({@link PageArrivee}).</p>
  */
 @Component
 public class LangueApresConnexionHandler extends SavedRequestAwareAuthenticationSuccessHandler {
@@ -55,13 +57,20 @@ public class LangueApresConnexionHandler extends SavedRequestAwareAuthentication
 
     private final UtilisateurRepository utilisateurs;
     private final LocaleResolver resolveur;
+    private final PageArrivee pageArrivee;
 
     public LangueApresConnexionHandler(UtilisateurRepository utilisateurs,
-                                       LocaleResolver resolveur) {
+                                       LocaleResolver resolveur, PageArrivee pageArrivee) {
         this.utilisateurs = utilisateurs;
         this.resolveur = resolveur;
-        setDefaultTargetUrl("/mon-compte");
+        this.pageArrivee = pageArrivee;
         setAlwaysUseDefaultTargetUrl(true);
+    }
+
+    @Override
+    protected String determineTargetUrl(HttpServletRequest requete, HttpServletResponse reponse,
+                                        Authentication authentification) {
+        return pageArrivee.de(authentification);
     }
 
     @Override

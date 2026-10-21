@@ -54,11 +54,15 @@ public class EtapesConnexionController {
         this.messages = messages;
     }
 
-    /** Point d entree du gestionnaire de refus : il ne connait que le prefixe. */
+    /**
+     * Point d entree du gestionnaire de refus : il ne connait que le prefixe. La garde
+     * oriente toujours — vers l etape en cours, ou vers la page d arrivee du role pour
+     * une connexion deja aboutie.
+     */
     @GetMapping
     public String aiguiller(Authentication authentification) {
         String garde = parcours.garder(authentification, null);
-        return garde == null ? "redirect:/mon-compte" : garde;
+        return garde;
     }
 
     // --- second facteur ---------------------------------------------------------------
@@ -85,8 +89,7 @@ public class EtapesConnexionController {
         }
         AuthentificationPartielle partielle = (AuthentificationPartielle) authentification;
         return switch (secondFacteur.verifier(partielle.getName(), code)) {
-            case ACCEPTE -> parcours.avancer(requete, reponse,
-                    partielle.avecSecondFacteurValide(), "/mon-compte");
+            case ACCEPTE -> parcours.avancer(requete, reponse, partielle.avecSecondFacteurValide());
             case VERROUILLE -> {
                 // La connexion partielle tombe : le verrouillage vaut pour le mot de
                 // passe aussi, et laisser l etape ouverte permettrait de continuer a
@@ -140,8 +143,7 @@ public class EtapesConnexionController {
         if (!erreurs.hasErrors()) {
             try {
                 premierMotDePasse.changerImpose(authentification.getName(), formulaire.getMotDePasse());
-                return parcours.avancer(requete, reponse,
-                        (AuthentificationPartielle) authentification, "/mon-compte");
+                return parcours.avancer(requete, reponse, (AuthentificationPartielle) authentification);
             } catch (RefusTraduit refus) {
                 erreurs.rejectValue("motDePasse", "motDePasse.identique", msg(refus.getCleMessage()));
             }

@@ -29,7 +29,12 @@
     </ul>
 
     <p class="actions-page">
-        <a class="btn-cta" th:href="@{/mon-compte}" th:text="#{codes-secours.continuer}">J'ai noté mes codes</a>
+        <!--/* Page d'arrivée du rôle : la fin d'un enrôlement à la connexion d'un administrateur
+             mène au back-office, comme toute autre fin de connexion. */-->
+        <a class="btn-cta" sec:authorize="hasRole('ADMINISTRATEUR')" th:href="@{/admin}"
+           th:text="#{codes-secours.continuer}">J'ai noté mes codes</a>
+        <a class="btn-cta" sec:authorize="!hasRole('ADMINISTRATEUR')" th:href="@{/mon-compte}"
+           th:text="#{codes-secours.continuer}">J'ai noté mes codes</a>
     </p>
 </main>
 
