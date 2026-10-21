@@ -55,7 +55,10 @@ public class PolitiqueMotDePasse {
     }
 
     public Verdict evaluer(String motDePasse) {
-        if (motDePasse == null || motDePasse.length() < MINIMUM_CARACTERES) {
+        // En points de code, comme le NIST le demande (§3.1.1.2) : length() compte les
+        // unites UTF-16, et un emoji, qui en occupe deux, y compterait double.
+        if (motDePasse == null
+                || motDePasse.codePointCount(0, motDePasse.length()) < MINIMUM_CARACTERES) {
             return Verdict.REFUSE;
         }
         if (motDePasse.getBytes(StandardCharsets.UTF_8).length > MAXIMUM_OCTETS) {

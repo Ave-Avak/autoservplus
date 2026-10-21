@@ -76,6 +76,21 @@ class PolitiqueMotDePasseTest {
         assertThatCode(() -> politique.exiger(phrase(15))).doesNotThrowAnyException();
     }
 
+    /**
+     * Treize lettres et un emoji : quinze unites UTF-16, que {@code length()} comptait
+     * comme quinze caracteres, mais quatorze points de code.
+     */
+    @Test
+    @DisplayName("quatorze caractères dont un emoji : refusés")
+    void emojiCompteUneFois() {
+        String avecEmoji = phrase(13) + "🔧";
+        assertThat(avecEmoji).hasSize(15);
+        assertThat(avecEmoji.codePointCount(0, avecEmoji.length())).isEqualTo(14);
+
+        assertThat(politique.evaluer(avecEmoji)).isEqualTo(Verdict.REFUSE);
+        assertThat(politique.evaluer(avecEmoji + "a")).isEqualTo(Verdict.CONFORME);
+    }
+
     @Test
     @DisplayName("nul : refusé, sans exception")
     void nul() {
