@@ -33,6 +33,21 @@
             <p th:text="#{compte.rdv.description}">Consultez vos rendez-vous et prenez-en
                 un nouveau.</p>
         </a>
+        <a class="carte carte-lien" th:href="@{/commandes}">
+            <h2 th:text="#{compte.commandes.titre}">Commandes et factures</h2>
+            <p th:text="#{compte.commandes.description}">Suivez vos commandes et
+                téléchargez vos factures.</p>
+        </a>
+        <a class="carte carte-lien" th:href="@{/mes-messages}">
+            <h2 th:text="#{compte.messages.titre}">Messages</h2>
+            <p th:text="#{compte.messages.description}">Écrivez au garage et lisez ses
+                réponses.</p>
+        </a>
+        <a class="carte carte-lien" th:href="@{/mes-notifications}">
+            <h2 th:text="#{compte.notifications.titre}">Notifications</h2>
+            <p th:text="#{compte.notifications.description}">Retrouvez les avis sur vos
+                rendez-vous, commandes et interventions.</p>
+        </a>
         <!-- F22 : droit d'accès (art. 15 RGPD). -->
         <a class="carte carte-lien" th:href="@{/mes-donnees}">
             <h2 th:text="#{rgpd.donnees.titre}">Mes données personnelles</h2>

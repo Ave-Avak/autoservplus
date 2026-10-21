@@ -5,7 +5,8 @@
 
 <!--/*
   En-tête des pages publiques et de l'espace membre, en trois états :
-  - visiteur anonyme : catalogue, contact, connexion et inscription ;
+  - visiteur anonyme : catalogue, prise de rendez-vous, contact, connexion et
+    inscription ;
   - connexion aboutie : en plus, les liens du compte ;
   - connexion partielle (mot de passe vérifié, étape en attente) : la seule
     déconnexion. Le jeton partiel est authentifié mais ne porte AUCUNE autorité, ce
@@ -22,6 +23,8 @@
                    th:attr="aria-current=${cheminCourant == '/services'} ? 'page' : null">Prestations</a></li>
             <li><a th:href="@{/pieces}" th:text="#{nav.pieces}"
                    th:attr="aria-current=${cheminCourant == '/pieces'} ? 'page' : null">Pièces</a></li>
+            <li><a th:href="@{/mes-rendez-vous/nouveau}" th:text="#{nav.rendez-vous}"
+                   th:attr="aria-current=${cheminCourant == '/mes-rendez-vous/nouveau'} ? 'page' : null">Prendre rendez-vous</a></li>
             <li><a th:href="@{/contact}" th:text="#{nav.contact}"
                    th:attr="aria-current=${cheminCourant == '/contact'} ? 'page' : null">Contact</a></li>
         </ul>
@@ -34,6 +37,12 @@
             <li><a th:href="@{/panier}"
                    th:text="${nombreArticlesPanier != null} ? #{panier.nav(${nombreArticlesPanier})} : #{nav.panier}"
                    th:attr="aria-current=${cheminCourant == '/panier'} ? 'page' : null">Panier</a></li>
+            <li><a th:href="@{/mes-messages}"
+                   th:text="${nombreFilsNonLus != null} ? #{messagerie.nav(${nombreFilsNonLus})} : #{nav.messages}"
+                   th:attr="aria-current=${cheminCourant == '/mes-messages'} ? 'page' : null">Messages</a></li>
+            <li><a th:href="@{/mes-notifications}"
+                   th:text="${nombreNotificationsNonLues != null} ? #{notifications.nav(${nombreNotificationsNonLues})} : #{nav.notifications}"
+                   th:attr="aria-current=${cheminCourant == '/mes-notifications'} ? 'page' : null">Notifications</a></li>
             <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}"
                    th:attr="aria-current=${cheminCourant == '/mon-compte'} ? 'page' : null">Mon compte</a></li>
             <li>
