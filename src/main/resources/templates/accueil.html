@@ -13,32 +13,7 @@
 
 <a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
-<header class="entete">
-    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
-        <a class="marque" th:href="@{/}">AutoServ+</a>
-        <!--
-          L'accueil ne portait AUCUN lien public : ni catalogue, ni contact. La moitié
-          vitrine du site n'était atteignable qu'en connaissant les adresses.
-        -->
-        <ul class="menu">
-            <li><a th:href="@{/services}" th:text="#{nav.prestations}">Prestations</a></li>
-            <li><a th:href="@{/pieces}" th:text="#{nav.pieces}">Pièces</a></li>
-            <li><a th:href="@{/contact}" th:text="#{nav.contact}">Contact</a></li>
-        </ul>
-        <ul class="menu menu-compte">
-            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}" th:text="#{nav.connexion}">Connexion</a></li>
-            <li sec:authorize="!isAuthenticated()">
-                <a class="btn-cta" th:href="@{/inscription}" th:text="#{accueil.action.compte}">Créer un compte</a></li>
-            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
-            <li sec:authorize="isAuthenticated()">
-                <form th:action="@{/deconnexion}" method="post">
-                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
-                </form>
-            </li>
-        </ul>
-    </nav>
-    <div th:replace="~{fragments/langue :: selecteur}"></div>
-</header>
+<header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
     <h1 th:text="#{accueil.titre}">Votre garage en quelques clics</h1>
