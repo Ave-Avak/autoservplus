@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{codes-secours.titre} + ' — AutoServ+'">Vos codes de secours — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{codes-secours.titre}">Vos codes de secours</h1>
+
+    <!--/* Affichés UNE fois : ils ne sont gardés qu'en empreinte, et cette page ne
+         peut pas être rouverte. */-->
+    <p class="message message-succes" role="status" th:text="#{codes-secours.une-fois}">
+        Notez-les maintenant : ils ne seront plus jamais affichés.</p>
+
+    <p th:text="#{codes-secours.aide}">
+        Chaque code permet une connexion sans votre téléphone, une seule fois.</p>
+
+    <ul class="liste-codes">
+        <li th:each="code : ${codesSecours}"><code th:text="${code}">ABCD-EFGH</code></li>
+    </ul>
+
+    <p class="actions-page">
+        <a class="btn-cta" th:href="@{/mon-compte}" th:text="#{codes-secours.continuer}">J'ai noté mes codes</a>
+    </p>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

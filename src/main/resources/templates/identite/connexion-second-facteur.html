@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{connexion.etape.second-facteur.titre} + ' — AutoServ+'">Code de vérification — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<!--/* Connexion partielle : aucun lien vers l'espace du compte, il ne serait pas
+     atteignable. Seule la déconnexion reste proposée. */-->
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{connexion.etape.second-facteur.titre}">Code de vérification</h1>
+
+    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Code incorrect.</div>
+
+    <p th:text="#{connexion.etape.second-facteur.aide}">
+        Saisissez le code à six chiffres affiché par votre application d'authentification.</p>
+
+    <form class="formulaire" th:action="@{/connexion/etape/second-facteur}" method="post">
+        <div class="champ">
+            <label for="code" th:text="#{connexion.etape.second-facteur.code}">Code de vérification</label>
+            <!--/* one-time-code : le navigateur et le téléphone proposent le code reçu ;
+                 numeric : clavier à chiffres sur mobile. Sept caractères pour l'espace
+                 que certaines applications affichent au milieu du code. */-->
+            <input type="text" id="code" name="code" autocomplete="one-time-code"
+                   inputmode="numeric" maxlength="7" required autofocus>
+        </div>
+        <button type="submit" class="btn-cta" th:text="#{connexion.etape.second-facteur.valider}">Valider</button>
+    </form>
+
+    <!--/* Champ distinct pour les codes de secours : ils comptent des lettres, qu'un
+         clavier numérique de téléphone n'offre pas. <details> natif, sans JavaScript,
+         comme le bandeau des cookies. Même route, même service : limitation et journal
+         sont ceux du code TOTP. Rouvert d'office après un refus venu de ce champ. */-->
+    <details th:open="${secoursOuvert}">
+        <summary th:text="#{connexion.etape.second-facteur.secours.lien}">Utiliser un code de secours</summary>
+        <p th:text="#{connexion.etape.second-facteur.secours}">
+            Sans votre téléphone, saisissez l'un de vos codes de secours.</p>
+        <form class="formulaire" th:action="@{/connexion/etape/second-facteur}" method="post">
+            <input type="hidden" name="mode" value="secours">
+            <div class="champ">
+                <label for="code-secours" th:text="#{connexion.etape.second-facteur.secours.champ}">Code de secours</label>
+                <!--/* autocomplete off : un code de secours ne sert qu'une fois, et ni un
+                     code reçu par SMS (one-time-code) ni un mot de passe enregistré n'a
+                     à y être proposé. */-->
+                <input type="text" id="code-secours" name="code" autocomplete="off"
+                       autocapitalize="characters" spellcheck="false" maxlength="9" required
+                       aria-describedby="aide-secours">
+                <p id="aide-secours" class="texte-info" th:text="#{connexion.etape.second-facteur.secours.format}">
+                    Huit caractères, avec ou sans le tiret.</p>
+            </div>
+            <button type="submit" class="btn-cta" th:text="#{connexion.etape.second-facteur.valider}">Valider</button>
+        </form>
+    </details>
+
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

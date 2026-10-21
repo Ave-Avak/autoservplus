@@ -29,8 +29,8 @@
 <main id="contenu">
     <h1 th:text="#{admin.administrateurs.titre}">Comptes du back-office</h1>
 
-    <!-- Cet écran n'est atteignable que par un super-administrateur : la garde est au
-         service, qui seul connaît l'auteur de la requête. -->
+    <!--/* Cet écran n'est atteignable que par un super-administrateur : la garde est au
+         service, qui seul connaît l'auteur de la requête. */-->
     <p class="texte-info" th:text="#{admin.administrateurs.aide}">
         Seul un super-administrateur peut suspendre ou réactiver ces comptes.</p>
 
@@ -64,6 +64,8 @@
     </table>
 
     <p class="actions-page">
+        <a class="btn-cta" th:href="@{/admin/comptes/administrateurs/nouveau}"
+           th:text="#{admin.administrateurs.nouveau.titre}">Nouvel administrateur</a>
         <a th:href="@{/admin/comptes}" th:text="#{admin.administrateurs.vers-membres}">Comptes membres</a>
     </p>
 </main>

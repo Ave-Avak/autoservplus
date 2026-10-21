@@ -77,8 +77,11 @@ public class LangueApresConnexionHandler extends SavedRequestAwareAuthentication
      * echouer ici renverrait l utilisateur a l ecran de connexion pour une question
      * de langue. Meme arbitrage que le courriel informationnel d {@code AdminRdvService} :
      * l accessoire ne fait pas tomber le principal.
+     *
+     * <p>Publique pour la connexion en plusieurs etapes : la langue s applique quand la
+     * connexion ABOUTIT, apres le second facteur, et non des le mot de passe.</p>
      */
-    private void appliquerLaPreference(HttpServletRequest requete, HttpServletResponse reponse,
+    public void appliquerLaPreference(HttpServletRequest requete, HttpServletResponse reponse,
                                        Authentication authentification) {
         if (choixDejaExprime(requete)) {
             return;

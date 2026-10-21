@@ -54,7 +54,8 @@ class MotDePasseServiceTest {
     void preparer() {
         encodeur = new BCryptPasswordEncoder(4);
         Clock horlogeFigee = Clock.fixed(MAINTENANT, ZoneOffset.UTC);
-        service = new MotDePasseService(repository, encodeur, courriel, horlogeFigee);
+        service = new MotDePasseService(repository, encodeur, courriel, horlogeFigee,
+                new PolitiqueMotDePasse(new MotsDePasseCourants(), motDePasse -> false));
     }
 
     @Nested
@@ -183,13 +184,14 @@ class MotDePasseServiceTest {
         }
 
         @Test
-        @DisplayName("refuse un mot de passe trop court")
+        @DisplayName("refuse, appelé directement, un mot de passe de quatorze caractères")
         void refuseUnMotDePasseTropCourt() {
             Utilisateur membre = membreActif();
             membre.enregistrerJetonVerification("jeton-valide", MAINTENANT.plusSeconds(600));
             when(repository.findByJetonVerification("jeton-valide")).thenReturn(Optional.of(membre));
 
-            assertThatThrownBy(() -> service.reinitialiser("jeton-valide", "court"))
+            // Quatorze : l ancien plancher de douze l acceptait, la politique le refuse.
+            assertThatThrownBy(() -> service.reinitialiser("jeton-valide", "atelier garage"))
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-02");
         }

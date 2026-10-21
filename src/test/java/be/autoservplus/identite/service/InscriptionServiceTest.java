@@ -54,7 +54,8 @@ class InscriptionServiceTest {
     void preparer() {
         encodeur = new BCryptPasswordEncoder(4); // cout reduit : les tests doivent rester rapides
         Clock horlogeFigee = Clock.fixed(MAINTENANT, ZoneOffset.UTC);
-        service = new InscriptionService(repository, encodeur, horlogeFigee, courriel);
+        service = new InscriptionService(repository, encodeur, horlogeFigee, courriel,
+                new PolitiqueMotDePasse(new MotsDePasseCourants(), motDePasse -> false));
     }
 
     @Nested
@@ -134,12 +135,13 @@ class InscriptionServiceTest {
         }
 
         @Test
-        @DisplayName("refuse un mot de passe de moins de douze caracteres")
+        @DisplayName("refuse, appelé directement, un mot de passe de quatorze caractères")
         void refuseUnMotDePasseTropCourt() {
             when(repository.existsByEmailIgnoreCase(any())).thenReturn(false);
 
+            // Quatorze : l ancien plancher de douze l acceptait, la politique le refuse.
             assertThatThrownBy(() -> service.inscrire(
-                    "marie@exemple.be", "court", "Dupont", "Marie", Langue.fr))
+                    "marie@exemple.be", "atelier garage", "Dupont", "Marie", Langue.fr))
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-02");
 

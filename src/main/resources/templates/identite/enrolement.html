@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{enrolement.titre} + ' — AutoServ+'">Activer la vérification en deux étapes — AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header class="entete">
+    <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <a class="marque" th:href="@{/}">AutoServ+</a>
+        <ul class="menu menu-compte">
+            <!--/* Pendant une connexion, l'espace du compte n'est pas encore atteignable. */-->
+            <li th:unless="${enConnexion}"><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
+</header>
+
+<main id="contenu">
+    <h1 th:text="#{enrolement.titre}">Activer la vérification en deux étapes</h1>
+
+    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Code incorrect.</div>
+
+    <p th:if="${enConnexion}" th:text="#{enrolement.obligatoire}">
+        La vérification en deux étapes est obligatoire pour les comptes du back-office.</p>
+
+    <ol>
+        <li th:text="#{enrolement.etape.scanner}">Scannez ce code avec votre application d'authentification.</li>
+        <li th:text="#{enrolement.etape.saisir}">Saisissez le code à six chiffres qu'elle affiche.</li>
+    </ol>
+
+    <!--/* SVG produit côté serveur à partir de chiffres et d'attributs fixes : aucun
+         contenu saisi n'y entre, d'où th:utext. */-->
+    <div class="code-qr-conteneur" th:utext="${codeQr}"></div>
+
+    <p>
+        <span th:text="#{enrolement.cle}">Ou saisissez cette clé à la main :</span>
+        <code class="cle-totp" th:text="${cle}">ABCD EFGH IJKL MNOP QRST UVWX YZ23 4567</code>
+    </p>
+
+    <form class="formulaire" th:action="@{${action}}" method="post">
+        <div class="champ">
+            <label for="code" th:text="#{enrolement.code}">Code affiché par l'application</label>
+            <input type="text" id="code" name="code" autocomplete="one-time-code"
+                   inputmode="numeric" maxlength="7" required>
+        </div>
+        <button type="submit" class="btn-cta" th:text="#{enrolement.confirmer}">Activer</button>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

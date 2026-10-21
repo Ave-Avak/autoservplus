@@ -34,18 +34,20 @@ public class MotDePasseService {
     /** Duree volontairement courte : ce jeton donne acces au compte. */
     public static final Duration VALIDITE_JETON = Duration.ofHours(1);
 
-    private static final int LONGUEUR_MINIMALE = 12;
     private static final Logger JOURNAL = LoggerFactory.getLogger(MotDePasseService.class);
 
     private final UtilisateurRepository repository;
+    private final PolitiqueMotDePasse politique;
     private final PasswordEncoder encodeur;
     private final ServiceCourriel courriel;
     private final Clock horloge;
     private final SecureRandom aleatoire = new SecureRandom();
 
     public MotDePasseService(UtilisateurRepository repository, PasswordEncoder encodeur,
-                             ServiceCourriel courriel, Clock horloge) {
+                             ServiceCourriel courriel, Clock horloge,
+                             PolitiqueMotDePasse politique) {
         this.repository = repository;
+        this.politique = politique;
         this.encodeur = encodeur;
         this.courriel = courriel;
         this.horloge = horloge;
@@ -96,7 +98,8 @@ public class MotDePasseService {
      * Applique le nouveau mot de passe et libere le compte.
      *
      * @throws RessourceIntrouvableException si le jeton est inconnu
-     * @throws RegleMetierException          si le jeton a expire ou le mot de passe est trop court
+     * @throws RegleMetierException          si le jeton a expire ou si le mot de passe ne
+     *                                       respecte pas {@link PolitiqueMotDePasse}
      */
     @Transactional
     public Utilisateur reinitialiser(String jeton, String nouveauMotDePasse) {
@@ -106,10 +109,7 @@ public class MotDePasseService {
         if (membre.jetonEstExpire(Instant.now(horloge))) {
             throw new RegleMetierException("RM-05", "Ce lien a expire. Demandez-en un nouveau.");
         }
-        if (nouveauMotDePasse == null || nouveauMotDePasse.length() < LONGUEUR_MINIMALE) {
-            throw new RegleMetierException("RM-02",
-                    "Le mot de passe doit comporter au moins %d caracteres.".formatted(LONGUEUR_MINIMALE));
-        }
+        politique.exiger(nouveauMotDePasse);
 
         membre.reinitialiserMotDePasse(encodeur.encode(nouveauMotDePasse));
         JOURNAL.info("Mot de passe reinitialise pour le compte {}", membre.getReference());

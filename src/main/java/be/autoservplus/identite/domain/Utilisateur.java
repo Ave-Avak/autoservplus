@@ -8,9 +8,11 @@ import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.SQLRestriction;
 import org.springframework.context.MessageSource;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -142,6 +144,42 @@ public class Utilisateur extends BaseEntity {
     @Column(name = "anonymise_le")
     private Instant anonymiseLe;
 
+    /**
+     * Le mot de passe en vigueur n a pas ete choisi par le titulaire : celui du compte
+     * exploitant vient d un fichier {@code .env}, celui d un administrateur cree au
+     * back-office n existe pas encore. Tant qu il est pose, la connexion s arrete a
+     * l ecran de changement.
+     */
+    @Column(name = "doit_changer_mot_de_passe", nullable = false)
+    private boolean doitChangerMotDePasse;
+
+    /** Secret TOTP chiffre (AES-256-GCM). Ne sort jamais du service du second facteur. */
+    @Column(name = "mfa_secret_chiffre")
+    private byte[] mfaSecretChiffre;
+
+    @Column(name = "mfa_cle_version")
+    private Short mfaCleVersion;
+
+    /** Nul avec un secret present : enrolement commence, pas encore confirme par un code. */
+    @Column(name = "mfa_active_le")
+    private Instant mfaActiveLe;
+
+    @Column(name = "mfa_dernier_pas")
+    private Long mfaDernierPas;
+
+    @Column(name = "mfa_echecs", nullable = false)
+    private short mfaEchecs;
+
+    @Column(name = "mfa_verrouillages", nullable = false)
+    private short mfaVerrouillages;
+
+    /** Empreinte SHA-256 du jeton de definition ; le jeton en clair ne vit que dans le lien. */
+    @Column(name = "jeton_definition_hache", length = 64)
+    private String jetonDefinitionHache;
+
+    @Column(name = "jeton_definition_expiration")
+    private Instant jetonDefinitionExpiration;
+
     protected Utilisateur() {
         // requis par JPA
     }
@@ -224,10 +262,17 @@ public class Utilisateur extends BaseEntity {
         return emailEnAttente != null;
     }
 
+    /**
+     * Appelee a la fin de la DERNIERE etape de connexion, jamais apres le seul mot de
+     * passe : remettre les compteurs a zero des la premiere etape offrirait un budget
+     * d essais neuf a qui ne detient que le mot de passe.
+     */
     public void enregistrerConnexionReussie(Instant maintenant) {
         this.derniereConnexion = maintenant;
         this.tentativesEchouees = 0;
         this.verrouilleJusquA = null;
+        this.mfaEchecs = 0;
+        this.mfaVerrouillages = 0;
     }
 
     /** Incremente le compteur d echecs et verrouille le compte au seuil atteint. */
@@ -440,6 +485,14 @@ public class Utilisateur extends BaseEntity {
         this.tentativesEchouees = 0;
         this.verrouilleJusquA = null;
         this.fonction = null;
+        // Le secret TOTP n identifie personne, mais un compte anonymise ne doit plus
+        // rien porter qui serve a s y authentifier.
+        retirerSecondFacteur();
+        this.mfaEchecs = 0;
+        this.mfaVerrouillages = 0;
+        this.doitChangerMotDePasse = false;
+        this.jetonDefinitionHache = null;
+        this.jetonDefinitionExpiration = null;
     }
 
     public boolean estAnonymise() {
@@ -450,6 +503,10 @@ public class Utilisateur extends BaseEntity {
         this.motDePasseHache = Objects.requireNonNull(nouvelleEmpreinte, "nouvelleEmpreinte");
         this.tentativesEchouees = 0;
         this.verrouilleJusquA = null;
+        // Un mot de passe choisi par le titulaire, quel que soit le chemin (changement
+        // impose, reinitialisation par courriel), leve l obligation : elle ne visait que
+        // le secret qu il n avait pas choisi.
+        this.doitChangerMotDePasse = false;
         // Reprendre la main sur son compte doit abandonner toute demande de changement
         // d adresse en cours : c est le geste qu on conseille au membre avise d une
         // demande qu il n a pas faite, et il serait vain s il laissait vivre le lien
@@ -470,6 +527,154 @@ public class Utilisateur extends BaseEntity {
         if (this.statut == StatutUtilisateur.EN_ATTENTE_VALIDATION) {
             this.statut = StatutUtilisateur.ACTIF;
         }
+    }
+
+    // --- changement impose et definition du mot de passe ----------------------------
+
+    public void exigerChangementMotDePasse() {
+        this.doitChangerMotDePasse = true;
+    }
+
+    public boolean doitChangerMotDePasse() {
+        return doitChangerMotDePasse;
+    }
+
+    /**
+     * Arme le lien de definition d un administrateur cree au back-office. Remplace un
+     * jeton precedent : renvoyer le lien invalide celui deja parti.
+     */
+    public void preparerDefinitionMotDePasse(String empreinteJeton, Instant expiration) {
+        this.jetonDefinitionHache = Objects.requireNonNull(empreinteJeton, "empreinteJeton");
+        this.jetonDefinitionExpiration = Objects.requireNonNull(expiration, "expiration");
+        this.doitChangerMotDePasse = true;
+    }
+
+    public boolean jetonDefinitionExpire(Instant maintenant) {
+        return jetonDefinitionExpiration == null || maintenant.isAfter(jetonDefinitionExpiration);
+    }
+
+    /** Compte cree au back-office dont le titulaire n a pas encore suivi son lien. */
+    public boolean motDePasseADefinir() {
+        return estAdministrateur() && statut == StatutUtilisateur.EN_ATTENTE_VALIDATION;
+    }
+
+    /**
+     * Pose le premier mot de passe choisi par le titulaire et active le compte.
+     *
+     * <p>L adresse devient verifiee : le lien n est parvenu qu a elle, et le suivre est
+     * la preuve qu elle est joignable — meme raisonnement qu a l activation d un membre.
+     * Le jeton est efface, donc a usage unique.</p>
+     */
+    public void definirMotDePasse(String empreinte) {
+        changerMotDePasse(empreinte);
+        this.jetonDefinitionHache = null;
+        this.jetonDefinitionExpiration = null;
+        this.emailVerifie = true;
+        if (this.statut == StatutUtilisateur.EN_ATTENTE_VALIDATION) {
+            this.statut = StatutUtilisateur.ACTIF;
+        }
+    }
+
+    // --- second facteur TOTP --------------------------------------------------------
+
+    /** Obligatoire pour le back-office, facultatif pour un membre. */
+    public boolean secondFacteurObligatoire() {
+        return estAdministrateur();
+    }
+
+    public boolean secondFacteurActif() {
+        return mfaActiveLe != null;
+    }
+
+    public boolean enrolementEnCours() {
+        return mfaSecretChiffre != null && mfaActiveLe == null;
+    }
+
+    /**
+     * Pose un secret en attente de confirmation. Refuse si un second facteur est deja
+     * actif : le remplacer sans passer par la desactivation contournerait ses gardes.
+     */
+    public void commencerEnrolement(byte[] secretChiffre, short versionCle) {
+        if (secondFacteurActif()) {
+            throw new IllegalStateException("Un second facteur est deja actif.");
+        }
+        this.mfaSecretChiffre = Objects.requireNonNull(secretChiffre, "secretChiffre");
+        this.mfaCleVersion = versionCle;
+        this.mfaDernierPas = null;
+    }
+
+    /**
+     * Active le secret en attente. {@code pas} est celui du code qui vient de le
+     * confirmer : il est deja consomme et ne pourra pas servir une seconde fois.
+     */
+    public void confirmerEnrolement(Instant maintenant, long pas) {
+        if (!enrolementEnCours()) {
+            throw new IllegalStateException("Aucun enrolement en attente.");
+        }
+        this.mfaActiveLe = Objects.requireNonNull(maintenant, "maintenant");
+        this.mfaDernierPas = pas;
+    }
+
+    /**
+     * Anti-rejeu : un pas inferieur ou egal au dernier accepte est refuse ici aussi, et
+     * pas seulement par le calcul qui l a trouve — l invariant appartient au compte.
+     */
+    public void accepterPas(long pas) {
+        if (!secondFacteurActif()) {
+            throw new IllegalStateException("Aucun second facteur actif.");
+        }
+        if (mfaDernierPas != null && pas <= mfaDernierPas) {
+            throw new IllegalArgumentException("Pas TOTP deja consomme : " + pas);
+        }
+        this.mfaDernierPas = pas;
+    }
+
+    public void rechiffrerSecret(byte[] secretChiffre, short versionCle) {
+        if (mfaSecretChiffre == null) {
+            throw new IllegalStateException("Aucun secret a rechiffrer.");
+        }
+        this.mfaSecretChiffre = Objects.requireNonNull(secretChiffre, "secretChiffre");
+        this.mfaCleVersion = versionCle;
+    }
+
+    /** Desactivation, reinitialisation par le super-administrateur, anonymisation. */
+    public void retirerSecondFacteur() {
+        this.mfaSecretChiffre = null;
+        this.mfaCleVersion = null;
+        this.mfaActiveLe = null;
+        this.mfaDernierPas = null;
+    }
+
+    /**
+     * Compte un echec du second facteur, code TOTP ou code de secours confondus.
+     *
+     * <p>Au seuil, le compte est verrouille pour une duree qui <b>double</b> a chaque
+     * verrouillage, plafonnee. Cinq essais par quart d heure laisseraient environ 40 %
+     * de chances sur un an a qui detient le mot de passe ; le doublement ramene le
+     * budget a cinq essais par jour une fois le plafond atteint, soit moins de 1 %. Le
+     * verrouillage reste temporaire, pour la raison deja donnee par
+     * {@code TentativesConnexionService} : un blocage definitif se retournerait contre le
+     * titulaire.</p>
+     *
+     * @return la fin du verrouillage s il vient d etre pose
+     */
+    public Optional<Instant> enregistrerEchecSecondFacteur(int seuil, Duration dureeInitiale,
+                                                           Duration plafond, Instant maintenant) {
+        this.mfaEchecs++;
+        if (this.mfaEchecs < seuil) {
+            return Optional.empty();
+        }
+        this.mfaEchecs = 0;
+        this.mfaVerrouillages++;
+        Duration duree = dureeInitiale;
+        for (int i = 1; i < mfaVerrouillages && duree.compareTo(plafond) < 0; i++) {
+            duree = duree.multipliedBy(2);
+        }
+        if (duree.compareTo(plafond) > 0) {
+            duree = plafond;
+        }
+        this.verrouilleJusquA = maintenant.plus(duree);
+        return Optional.of(this.verrouilleJusquA);
     }
 
     // --- accesseurs -----------------------------------------------------------------
@@ -510,6 +715,15 @@ public class Utilisateur extends BaseEntity {
     public void setStatut(StatutUtilisateur statut) { this.statut = statut; }
     public void setFonction(String fonction) { this.fonction = fonction; }
     public Instant getAnonymiseLe() { return anonymiseLe; }
+    public byte[] getMfaSecretChiffre() { return mfaSecretChiffre; }
+    public Short getMfaCleVersion() { return mfaCleVersion; }
+    public Instant getMfaActiveLe() { return mfaActiveLe; }
+    public Long getMfaDernierPas() { return mfaDernierPas; }
+    public short getMfaEchecs() { return mfaEchecs; }
+    public short getMfaVerrouillages() { return mfaVerrouillages; }
+    public String getJetonDefinitionHache() { return jetonDefinitionHache; }
+    public Instant getJetonDefinitionExpiration() { return jetonDefinitionExpiration; }
+
 
     @Override
     public boolean equals(Object autre) {

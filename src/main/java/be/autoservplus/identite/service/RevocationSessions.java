@@ -45,6 +45,20 @@ public class RevocationSessions {
      * @return le nombre de sessions fermees, pour que l appelant puisse le journaliser
      */
     public int revoquer(String email) {
+        return revoquerSauf(email, null);
+    }
+
+    /**
+     * Ferme toutes les sessions du compte sauf celle qui agit.
+     *
+     * <p>Pour les gestes que le titulaire fait lui-meme — activer ou retirer son second
+     * facteur. Fermer aussi la sienne le deconnecterait au moment ou il vient de
+     * renforcer son compte ; ne fermer aucune laisserait ouverte la session d un tiers
+     * que ce geste visait peut-etre a evincer.</p>
+     *
+     * @param idSessionConservee {@code null} pour tout fermer
+     */
+    public int revoquerSauf(String email, String idSessionConservee) {
         if (email == null || email.isBlank()) {
             return 0;
         }
@@ -59,12 +73,15 @@ public class RevocationSessions {
             // sans effet.
             List<SessionInformation> sessions = registre.getAllSessions(principal, false);
             for (SessionInformation session : sessions) {
+                if (session.getSessionId().equals(idSessionConservee)) {
+                    continue;
+                }
                 session.expireNow();
                 fermees++;
             }
         }
         if (fermees > 0) {
-            JOURNAL.info("{} session(s) fermee(s) a la suite d une suspension de compte.",
+            JOURNAL.info("{} session(s) fermee(s) : suspension ou changement de securite du compte.",
                     fermees);
         }
         return fermees;

@@ -50,3 +50,15 @@ Mainteneurs du projet : Daniel Miessler, Jason Haddix, Ignacio Portal, g0tmi1k.
 sécurité du contenu n'autorise `script-src` que sur `'self'`. Licence **Zero-Clause
 BSD (0BSD)**, qui n'impose aucune obligation d'attribution — la mention figure ici par
 transparence.
+
+## ZXing — génération du QR code d'enrôlement
+
+Dépendance Maven `com.google.zxing:core` (voir [`pom.xml`](pom.xml)), mentionnée ici par
+exception : elle touche au second facteur, et son périmètre d'usage mérite d'être lisible
+sans ouvrir le code.
+
+[ZXing](https://github.com/zxing/zxing), licence **Apache 2.0**. Seul le module `core`
+est employé : il calcule la matrice du QR code, que le serveur rend en **SVG inline**.
+Le module `javase` (AWT, ImageIO) n'est pas embarqué, et aucun service externe n'est
+appelé — l'URI `otpauth://` porte le secret TOTP, elle ne quitte donc jamais le serveur
+autrement que dans la page d'enrôlement elle-même.

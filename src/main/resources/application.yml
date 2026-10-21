@@ -99,6 +99,15 @@ autoservplus:
     nom: ${EXPLOITANT_NOM:Exploitant}
     prenom: ${EXPLOITANT_PRENOM:AutoServ+}
 
+  # Cle maitre AES-256 des secrets TOTP (32 octets en base 64 : openssl rand -base64 32).
+  # OBLIGATOIRE sous tout profil, poste local compris : sans elle, le demarrage est refuse (voir
+  # MfaConfig). La version est inscrite sur chaque secret chiffre ; pour une rotation,
+  # passer l ancienne cle dans cles-precedentes (« 1:base64 ») et incrementer la version.
+  mfa:
+    cle-maitre: ${MFA_CLE_MAITRE:}
+    cle-version: ${MFA_CLE_VERSION:1}
+    cles-precedentes: ${MFA_CLES_PRECEDENTES:}
+
   # Adresse publique du site, employee LA OU une URL absolue est indispensable et ou
   # aucune requete HTTP n'est disponible pour la deduire : aujourd'hui le fichier
   # iCalendar d'un rendez-vous (F38), qui est lu dans l'agenda du membre, hors du
@@ -229,6 +238,7 @@ logging:
 # demonstration ; c est l inverse de ce que le projet fait ailleurs.
 #
 # Chargement :   mvnw spring-boot:run "-Dspring-boot.run.profiles=demo"
+# (MFA_CLE_MAITRE definie au prealable, comme sous tout profil)
 # ou, plus simple pour un evaluateur : restaurer docs/dump_autoservplus.sql, qui contient
 # deja le schema ET ce jeu.
 #
@@ -242,3 +252,7 @@ spring:
       on-profile: demo
   flyway:
     locations: classpath:db/migration,classpath:db/demo
+    # La graine porte V900 : une migration de schema ajoutee apres elle a un numero
+    # inferieur, que Flyway classerait « ignored » et refuserait a la validation sur une
+    # base de demonstration persistante. Sous ce seul profil, elle s applique apres coup.
+    out-of-order: true

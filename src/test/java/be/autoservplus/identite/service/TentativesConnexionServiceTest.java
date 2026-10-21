@@ -1,5 +1,7 @@
 package be.autoservplus.identite.service;
 
+import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.identite.domain.TypeEvenementSecurite;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -11,7 +13,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.authentication.event.AuthenticationFailureBadCredentialsEvent;
-import org.springframework.security.authentication.event.AuthenticationSuccessEvent;
 import org.springframework.security.core.Authentication;
 
 import java.time.Clock;
@@ -20,6 +21,11 @@ import java.time.ZoneOffset;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -31,6 +37,10 @@ class TentativesConnexionServiceTest {
 
     @Mock
     private UtilisateurRepository repository;
+    @Mock
+    private JournalSecuriteCompte journal;
+    @Mock
+    private ServiceCourriel courriel;
 
     private TentativesConnexionService service;
     private Utilisateur membre;
@@ -38,7 +48,8 @@ class TentativesConnexionServiceTest {
     @BeforeEach
     void preparer() {
         Clock horlogeFigee = Clock.fixed(MAINTENANT, ZoneOffset.UTC);
-        service = new TentativesConnexionService(repository, horlogeFigee, TENTATIVES_MAX, 15);
+        service = new TentativesConnexionService(repository, journal, courriel, horlogeFigee,
+                TENTATIVES_MAX, 15);
         membre = new Utilisateur("marie@exemple.be", "$2a$12$empreinte",
                 "Dupont", "Marie", TypeUtilisateur.MEMBRE);
     }
@@ -70,6 +81,59 @@ class TentativesConnexionServiceTest {
     }
 
     @Test
+    @DisplayName("aucun evenement de securite avant le seuil")
+    void aucunEvenementAvantLeSeuil() {
+        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+
+        for (int i = 1; i < TENTATIVES_MAX; i++) {
+            service.surEchec(echec("marie@exemple.be"));
+        }
+
+        verifyNoInteractions(journal, courriel);
+    }
+
+    @Test
+    @DisplayName("consigne le passage en verrouillage et avertit le titulaire")
+    void consigneLePassageEnVerrouillage() {
+        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+
+        for (int i = 0; i < TENTATIVES_MAX; i++) {
+            service.surEchec(echec("marie@exemple.be"));
+        }
+
+        verify(journal).consigner(membre, TypeEvenementSecurite.CONNEXION_VERROUILLAGE, null);
+        verify(courriel).envoyerAvisVerrouillageConnexion(membre, MAINTENANT.plusSeconds(15 * 60));
+    }
+
+    @Test
+    @DisplayName("un echec sur un compte deja verrouille ne consigne rien de plus")
+    void neConsignePasDeuxFois() {
+        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        for (int i = 0; i < TENTATIVES_MAX; i++) {
+            service.surEchec(echec("marie@exemple.be"));
+        }
+
+        service.surEchec(echec("marie@exemple.be"));
+
+        verify(journal).consigner(membre, TypeEvenementSecurite.CONNEXION_VERROUILLAGE, null);
+    }
+
+    @Test
+    @DisplayName("une panne de courriel n annule pas le verrouillage")
+    void panneDeCourrielSansEffet() {
+        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        doThrow(new IllegalStateException("fournisseur indisponible"))
+                .when(courriel).envoyerAvisVerrouillageConnexion(any(), any());
+
+        for (int i = 0; i < TENTATIVES_MAX; i++) {
+            service.surEchec(echec("marie@exemple.be"));
+        }
+
+        assertThat(membre.estVerrouille(MAINTENANT)).isTrue();
+        verify(journal).consigner(membre, TypeEvenementSecurite.CONNEXION_VERROUILLAGE, null);
+    }
+
+    @Test
     @DisplayName("libere le compte apres la duree de verrouillage")
     void libereApresLaDuree() {
         when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
@@ -82,13 +146,13 @@ class TentativesConnexionServiceTest {
     }
 
     @Test
-    @DisplayName("remet le compteur a zero apres une connexion reussie")
+    @DisplayName("remet le compteur a zero quand la connexion aboutit")
     void remetLeCompteurAZero() {
         when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
         service.surEchec(echec("marie@exemple.be"));
         service.surEchec(echec("marie@exemple.be"));
 
-        service.surSucces(succes("marie@exemple.be"));
+        service.connexionAboutie("marie@exemple.be");
 
         assertThat(membre.getTentativesEchouees()).isZero();
         assertThat(membre.getVerrouilleJusquA()).isNull();
@@ -103,6 +167,7 @@ class TentativesConnexionServiceTest {
         service.surEchec(echec("inconnu@exemple.be"));
 
         assertThat(membre.getTentativesEchouees()).isZero();
+        verify(journal, never()).consigner(any(), any(), any());
     }
 
     private AuthenticationFailureBadCredentialsEvent echec(String email) {
@@ -111,8 +176,4 @@ class TentativesConnexionServiceTest {
                 new org.springframework.security.authentication.BadCredentialsException("test"));
     }
 
-    private AuthenticationSuccessEvent succes(String email) {
-        Authentication auth = UsernamePasswordAuthenticationToken.authenticated(email, null, java.util.List.of());
-        return new AuthenticationSuccessEvent(auth);
-    }
 }

@@ -16,11 +16,16 @@ import java.util.UUID;
  * de secrets d authentification, et les y faire transiter suffirait a les exposer au
  * rendu.</p>
  *
+ * <p>Du second facteur, l ecran ne recoit que deux booleens : s il est actif, et si un
+ * enrolement est commence. Ni secret, ni version de cle, ni dernier pas.</p>
+ *
  * @param suspendu etat derive, pour que le gabarit n ait pas a comparer une enumeration
  */
 public record CompteVue(UUID reference, String nom, String prenom, String email,
                         TypeUtilisateur type, StatutUtilisateur statut, boolean suspendu,
-                        boolean emailVerifie, Instant derniereConnexion) {
+                        boolean emailVerifie, Instant derniereConnexion,
+                        boolean secondFacteurActif, boolean enrolementEnCours,
+                        boolean motDePasseADefinir) {
 
     public static CompteVue de(Utilisateur compte) {
         return new CompteVue(
@@ -32,7 +37,10 @@ public record CompteVue(UUID reference, String nom, String prenom, String email,
                 compte.getStatut(),
                 compte.getStatut() == StatutUtilisateur.SUSPENDU,
                 compte.isEmailVerifie(),
-                compte.getDerniereConnexion());
+                compte.getDerniereConnexion(),
+                compte.secondFacteurActif(),
+                compte.enrolementEnCours(),
+                compte.motDePasseADefinir());
     }
 
     public String nomComplet() {

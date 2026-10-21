@@ -53,7 +53,11 @@ Puis, dans `.env` :
 DOMAINE=:80
 COOKIE_SECURE=true
 DB_PASSWORD=<un mot de passe quelconque, sans caractère dollar>
+MFA_CLE_MAITRE=<sortie de : openssl rand -base64 32>
 ```
+
+Sans `MFA_CLE_MAITRE`, l'application **refuse de démarrer**, sous tout profil : elle
+chiffre les secrets du second facteur, obligatoire pour tout compte du back-office.
 
 `COOKIE_SECURE=true` alors que Caddy sert en clair n'est pas une erreur : ce que voit
 le navigateur, c'est le tunnel, et le tunnel est en HTTPS.
@@ -325,7 +329,12 @@ DOMAINE=203-0-113-7.sslip.io
 URL_PUBLIQUE=https://203-0-113-7.sslip.io
 COOKIE_SECURE=true
 DB_PASSWORD=<mot de passe long, propre à cette machine>
+MFA_CLE_MAITRE=<sortie de : openssl rand -base64 32, propre à cette machine>
 ```
+
+**Sauvegarder `MFA_CLE_MAITRE` hors de la machine, et à part des sauvegardes de la
+base.** La perdre rend indéchiffrables tous les seconds facteurs enrôlés ; la ranger avec
+la base redonnerait d'un coup ce que le chiffrement sépare.
 
 `sslip.io` résout un nom en l'adresse IP qu'il contient. Il n'y a donc **aucun
 enregistrement DNS à créer** pour obtenir un certificat Let's Encrypt valable, ce qui
@@ -496,6 +505,121 @@ sudo systemctl restart docker
 
 La limite ne vaut que pour les conteneurs **créés ensuite** : recréer la pile après ce
 changement.
+
+### Clé maître du second facteur
+
+`MFA_CLE_MAITRE` chiffre (AES-256-GCM) les secrets TOTP en base. Sans elle,
+l'application refuse de démarrer, sous tout profil.
+
+**Générer** — une fois par machine, jamais recopiée d'un poste à l'autre :
+
+```bash
+openssl rand -base64 32
+```
+
+La valeur doit décoder en exactement 32 octets ; toute autre longueur arrête le
+démarrage avec un message qui le dit.
+
+**Sauvegarder à part de la base.** La clé se range hors de la machine — gestionnaire de
+mots de passe, coffre hors ligne — et **jamais** dans `/var/backups/autoservplus` ni dans
+la même archive que `base-*.sql.gz`. Qui détient le dump sans la clé ne lit aucun secret ;
+qui détient les deux les lit tous. Une sauvegarde de la base restaurée sans sa clé rend
+le second facteur inutilisable pour tous les comptes enrôlés.
+
+**Rotation.** La nouvelle clé prend un numéro de version supérieur ; l'ancienne reste
+lisible le temps de la migration :
+
+```
+MFA_CLE_MAITRE=<nouvelle clé>
+MFA_CLE_VERSION=2
+MFA_CLES_PRECEDENTES=1:<ancienne clé>
+```
+
+Plusieurs anciennes clés se séparent par des virgules (`1:<clé>,2:<clé>`). Après
+`docker compose -f docker-compose.prod.yml up -d`, chaque connexion réussie **par code
+TOTP** rechiffre le secret du compte sous la clé active — une connexion par code de
+secours ne le fait pas. Ce qui reste à migrer :
+
+```sql
+SELECT mfa_cle_version, count(*) FROM utilisateur
+ WHERE mfa_secret_chiffre IS NOT NULL GROUP BY mfa_cle_version;
+```
+
+L'ancienne clé ne quitte `MFA_CLES_PRECEDENTES` qu'une fois son compte à zéro. Un compte
+qui ne se connecte plus la retient indéfiniment : la garder, ou réinitialiser ce compte.
+
+**Perte de la clé.** Aucun secret enrôlé ne se déchiffre plus : chaque compte concerné
+voit « La vérification n'a pas pu aboutir » à la connexion, et le journal de
+l'application porte une ligne `ERROR` « Secret TOTP indechiffrable » avec la référence
+du compte. Aucun échec n'est compté, aucun code de secours n'est essayé.
+
+1. Générer une nouvelle clé, sous une **version supérieure** à celle qui est perdue, et
+   laisser `MFA_CLES_PRECEDENTES` vide. Redémarrer.
+2. Le super-administrateur est lui-même concerné, son second facteur étant obligatoire :
+   lui appliquer la procédure ci-dessous, puis se connecter et se réenrôler.
+3. Il réinitialise ensuite chaque compte touché depuis sa fiche
+   (`/admin/comptes/<référence>`, « Réinitialiser la vérification en deux étapes ») :
+   sessions fermées, titulaire averti, nouvel enrôlement imposé aux comptes du
+   back-office à leur connexion suivante. La liste :
+
+   ```sql
+   SELECT reference, email, type_utilisateur FROM utilisateur
+    WHERE mfa_cle_version = 1;   -- la version perdue
+   ```
+
+**Perte du seul super-administrateur** — téléphone et codes de secours perdus, ou clé
+perdue. Personne ne peut le réinitialiser depuis l'application : un super-administrateur
+ne réinitialise pas son propre second facteur. La procédure passe par la base, sur la
+machine, par quelqu'un qui en détient l'accès :
+
+```bash
+docker compose -f docker-compose.prod.yml exec -T postgres \
+    psql -U autoservplus -d autoservplus -v ON_ERROR_STOP=1 \
+         -v adresse='exploitant@garage.be' <<'SQL'
+BEGIN;
+
+-- Un seul super-administrateur vivant sous cette adresse, sinon \gset echoue et
+-- ON_ERROR_STOP arrete tout avant la moindre ecriture.
+SELECT id AS compte
+  FROM utilisateur
+ WHERE lower(email) = lower(:'adresse')
+   AND type_utilisateur = 'SUPER_ADMINISTRATEUR'
+   AND deleted_at IS NULL \gset
+
+UPDATE utilisateur
+   SET mfa_secret_chiffre  = NULL,
+       mfa_cle_version     = NULL,
+       mfa_active_le       = NULL,
+       mfa_dernier_pas     = NULL,
+       mfa_echecs          = 0,
+       mfa_verrouillages   = 0,
+       verrouille_jusqu_a  = NULL,
+       tentatives_echouees = 0,
+       updated_at          = now(),
+       updated_by          = 'procedure-exploitation'
+ WHERE id = :compte;
+
+UPDATE code_secours
+   SET invalide_le = now(), updated_at = now()
+ WHERE utilisateur_id = :compte
+   AND consomme_le IS NULL
+   AND invalide_le IS NULL;
+
+INSERT INTO evenement_securite_compte (utilisateur_id, type, horodatage, auteur_id)
+VALUES (:compte, 'MFA_REINITIALISE', now(), NULL);
+
+COMMIT;
+SQL
+```
+
+Sortie attendue : `UPDATE 1`, `UPDATE n` (codes de secours encore utilisables),
+`INSERT 0 1`, `COMMIT`. Une adresse inconnue, ou celle d'un simple administrateur,
+s'arrête sur `no rows returned for \gset` sans rien écrire. La trace apparaît au journal
+de sécurité de la fiche avec l'auteur « Système » : le geste ne vient d'aucun compte de
+l'application. À la connexion suivante, le mot de passe conduit à l'enrôlement d'un
+nouveau second facteur. Si le téléphone a pu être volé, redémarrer l'application
+(`docker compose -f docker-compose.prod.yml restart app`) : les sessions vivent en
+mémoire, et la base ne les atteint pas.
 
 ---
 

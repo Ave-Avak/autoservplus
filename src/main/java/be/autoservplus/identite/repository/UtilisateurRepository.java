@@ -3,7 +3,10 @@ package be.autoservplus.identite.repository;
 import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
+import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Lock;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -23,6 +26,27 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     Optional<Utilisateur> findByEmailIgnoreCase(String email);
 
+    /**
+     * Le compte, verrou de ligne pose jusqu a la fin de la transaction, pour verifier un
+     * second facteur. Sans lui, deux verifications simultanees lisent le meme etat : le
+     * meme code passe deux fois, et des echecs paralleles s ecrasent au lieu de s ajouter,
+     * ce qui permettrait d essayer des codes sans jamais atteindre le seuil.
+     */
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    Optional<Utilisateur> findForUpdateByEmailIgnoreCase(String email);
+
+    /**
+     * Anti-rejeu atomique : le pas n est enregistre que s il depasse strictement le
+     * dernier accepte. Zero ligne modifiee signifie qu une autre verification l a
+     * deja consomme.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query("""
+           update Utilisateur u set u.mfaDernierPas = :pas
+           where u.id = :compte and (u.mfaDernierPas is null or u.mfaDernierPas < :pas)
+           """)
+    int accepterPasSiNouveau(@Param("compte") Long compte, @Param("pas") long pas);
+
     Optional<Utilisateur> findByReference(UUID reference);
 
     Optional<Utilisateur> findByJetonVerification(String jeton);
@@ -30,6 +54,9 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
     boolean existsByEmailIgnoreCase(String email);
 
     Optional<Utilisateur> findByJetonChangementEmail(String jeton);
+
+    /** Recherche par EMPREINTE : le jeton de definition n est jamais stocke en clair. */
+    Optional<Utilisateur> findByJetonDefinitionHache(String empreinte);
 
     /**
      * Une demande de changement vise-t-elle deja cette adresse ?
