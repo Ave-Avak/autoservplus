@@ -12,29 +12,14 @@
 
 <a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
 
-<header class="entete">
-    <nav aria-label="Navigation principale">
-        <a class="marque" th:href="@{/}">AutoServ+</a>
-        <ul class="menu">
-            <li><a th:href="@{/services}">Prestations</a></li>
-            <li><a th:href="@{/pieces}">Pièces</a></li>
-        </ul>
-        <ul class="menu menu-compte">
-            <li><a th:href="@{/mon-compte}">Mon compte</a></li>
-            <li>
-                <form th:action="@{/deconnexion}" method="post">
-                    <button type="submit" class="lien-bouton">Se déconnecter</button>
-                </form>
-            </li>
-        </ul>
-    </nav>
-    <div th:replace="~{fragments/langue :: selecteur}"></div>
-</header>
+<header th:replace="~{fragments/back-office :: entete}"></header>
 
 <main id="contenu">
     <p><a th:href="@{/admin/interventions}">← Retour aux interventions</a></p>
 
     <h1 th:text="'Intervention ' + ${intervention.numero()}">Intervention INT-2026-0001</h1>
+    <p><a th:href="@{/admin/galerie/interventions/{ref}(ref=${intervention.reference()})}"
+          th:text="#{admin.galerie.lien}">Galerie d'images</a></p>
 
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>

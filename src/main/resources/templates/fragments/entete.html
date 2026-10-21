@@ -43,6 +43,7 @@
             <li><a th:href="@{/mes-notifications}"
                    th:text="${nombreNotificationsNonLues != null} ? #{notifications.nav(${nombreNotificationsNonLues})} : #{nav.notifications}"
                    th:attr="aria-current=${cheminCourant == '/mes-notifications'} ? 'page' : null">Notifications</a></li>
+            <li sec:authorize="hasRole('ADMINISTRATEUR')"><a th:href="@{/admin}" th:text="#{nav.back-office}">Back-office</a></li>
             <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}"
                    th:attr="aria-current=${cheminCourant == '/mon-compte'} ? 'page' : null">Mon compte</a></li>
             <li>

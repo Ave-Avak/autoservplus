@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Fragment back-office</title></head>
+<body>
+
+<!--/*
+  En-tête et menu de toutes les pages /admin, en sections (Charte graphique §6.4).
+
+  Section « Planning » réservée : elle n'apparaît pas tant que A24 n'a pas d'écran,
+  plutôt que d'afficher un lien mort (lot/planning).
+
+  Une entrée n'est affichée que si le rôle peut ouvrir l'écran : « Comptes du
+  back-office » est masqué à l'administrateur, et reste gardé par le service.
+
+  L'entrée active porte aria-current="page" ; une entrée couvre aussi les écrans de
+  détail rangés sous son adresse (une fiche d'intervention active « Interventions »).
+*/-->
+<header class="entete" th:fragment="entete">
+    <nav th:attr="aria-label=#{admin.nav.principale}" aria-label="Navigation du back-office">
+        <a class="marque" th:href="@{/admin}">AutoServ+ <span class="marque-espace" th:text="#{admin.nav.marque}">Back-office</span></a>
+        <ul class="menu menu-compte">
+            <li><a th:href="@{/}" th:text="#{admin.nav.voir-site}">Voir le site</a></li>
+            <li><a th:href="@{/mon-compte}" th:text="#{nav.mon-compte}">Mon compte</a></li>
+            <li>
+                <form th:action="@{/deconnexion}" method="post">
+                    <button type="submit" class="lien-bouton" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                </form>
+            </li>
+        </ul>
+    </nav>
+    <div th:replace="~{fragments/langue :: selecteur}"></div>
+    <nav class="menu-back-office" th:attr="aria-label=#{admin.nav.sections}" aria-label="Sections du back-office"
+         th:with="c=${cheminCourant != null ? cheminCourant : ''}">
+        <ul>
+            <li class="section">
+                <a th:href="@{/admin}" th:text="#{admin.tableau.titre}"
+                   th:attr="aria-current=${c == '/admin'} ? 'page' : null">Tableau de bord</a>
+            </li>
+            <li class="section">
+                <span class="section-titre" id="section-catalogue" th:text="#{admin.nav.catalogue}">Catalogue</span>
+                <ul aria-labelledby="section-catalogue">
+                    <li><a th:href="@{/admin/catalogue/prestations}" th:text="#{admin.nav.prestations}"
+                           th:attr="aria-current=${#strings.startsWith(c, '/admin/catalogue/prestations')} ? 'page' : null">Prestations</a></li>
+                    <li><a th:href="@{/admin/catalogue/pieces}" th:text="#{admin.nav.pieces}"
+                           th:attr="aria-current=${#strings.startsWith(c, '/admin/catalogue/pieces')} ? 'page' : null">Pièces</a></li>
+                    <li><a th:href="@{/admin/import}" th:text="#{admin.nav.import}"
+                           th:attr="aria-current=${#strings.startsWith(c, '/admin/import')} ? 'page' : null">Import</a></li>
+                </ul>
+            </li>
+            <li class="section">
+                <span class="section-titre" id="section-atelier" th:text="#{admin.nav.atelier}">Atelier</span>
+                <ul aria-labelledby="section-atelier">
+                    <li><a th:href="@{/admin/rendez-vous}" th:text="#{admin.nav.rendez-vous}"
+                           th:attr="aria-current=${#strings.startsWith(c, '/admin/rendez-vous')} ? 'page' : null">Rendez-vous</a></li>
+                    <li><a th:href="@{/admin/interventions}" th:text="#{admin.nav.interventions}"
+                           th:attr="aria-current=${#strings.startsWith(c, '/admin/interventions') or #strings.startsWith(c, '/admin/galerie/interventions')} ? 'page' : null">Interventions</a></li>
+                    <li><a th:href="@{/admin/commandes-a-planifier}" th:text="#{admin.nav.commandes-a-planifier}"
+                           th:attr="aria-current=${#strings.startsWith(c, '/admin/commandes-a-planifier')} ? 'page' : null">Commandes à planifier</a></li>
+                </ul>
+            </li>
+            <li class="section">
+                <span class="section-titre" id="section-commandes" th:text="#{admin.nav.commandes}">Commandes</span>
+                <ul aria-labelledby="section-commandes">
+                    <li><a th:href="@{/admin/retractations}" th:text="#{admin.nav.retractations}"
+                           th:attr="aria-current=${#strings.startsWith(c, '/admin/retractations')} ? 'page' : null">Rétractations</a></li>
+                    <li><a th:href="@{/admin/export}" th:text="#{admin.nav.export}"
+                           th:attr="aria-current=${#strings.startsWith(c, '/admin/export')} ? 'page' : null">Export comptable</a></li>
+                </ul>
+            </li>
+            <li class="section">
+                <span class="section-titre" id="section-membres" th:text="#{admin.nav.membres}">Membres</span>
+                <ul aria-labelledby="section-membres">
+                    <li><a th:href="@{/admin/comptes}" th:text="#{admin.nav.comptes}"
+                           th:attr="aria-current=${#strings.startsWith(c, '/admin/comptes') and !#strings.startsWith(c, '/admin/comptes/administrateurs')} ? 'page' : null">Comptes membres</a></li>
+                    <li><a th:href="@{/admin/messages}" th:text="#{admin.nav.messages}"
+                           th:attr="aria-current=${#strings.startsWith(c, '/admin/messages')} ? 'page' : null">Messages</a></li>
+                    <li><a th:href="@{/admin/avis}" th:text="#{admin.nav.avis}"
+                           th:attr="aria-current=${#strings.startsWith(c, '/admin/avis')} ? 'page' : null">Avis</a></li>
+                </ul>
+            </li>
+            <li class="section">
+                <span class="section-titre" id="section-parametres" th:text="#{admin.nav.parametres}">Paramètres</span>
+                <ul aria-labelledby="section-parametres">
+                    <li sec:authorize="hasRole('SUPER_ADMINISTRATEUR')"><a th:href="@{/admin/comptes/administrateurs}" th:text="#{admin.nav.administrateurs}"
+                           th:attr="aria-current=${#strings.startsWith(c, '/admin/comptes/administrateurs')} ? 'page' : null">Comptes du back-office</a></li>
+                    <li><a th:href="@{/admin/journal}" th:text="#{admin.nav.journal}"
+                           th:attr="aria-current=${#strings.startsWith(c, '/admin/journal')} ? 'page' : null">Journal</a></li>
+                </ul>
+            </li>
+        </ul>
+    </nav>
+</header>
+
+</body>
+</html>

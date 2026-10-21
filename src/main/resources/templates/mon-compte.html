@@ -23,33 +23,33 @@
             <p th:text="#{profil.carte.description}">Modifiez votre nom, vos coordonnées
                 et votre langue.</p>
         </a>
-        <a class="carte carte-lien" th:href="@{/mes-vehicules}">
+        <a class="carte carte-lien" sec:authorize="!hasRole('ADMINISTRATEUR')" th:href="@{/mes-vehicules}">
             <h2 th:text="#{compte.vehicules.titre}">Mes véhicules</h2>
             <p th:text="#{compte.vehicules.description}">Gérez votre parc et suivez le
                 kilométrage de chaque véhicule.</p>
         </a>
-        <a class="carte carte-lien" th:href="@{/mes-rendez-vous}">
+        <a class="carte carte-lien" sec:authorize="!hasRole('ADMINISTRATEUR')" th:href="@{/mes-rendez-vous}">
             <h2 th:text="#{compte.rdv.titre}">Mes rendez-vous</h2>
             <p th:text="#{compte.rdv.description}">Consultez vos rendez-vous et prenez-en
                 un nouveau.</p>
         </a>
-        <a class="carte carte-lien" th:href="@{/commandes}">
+        <a class="carte carte-lien" sec:authorize="!hasRole('ADMINISTRATEUR')" th:href="@{/commandes}">
             <h2 th:text="#{compte.commandes.titre}">Commandes et factures</h2>
             <p th:text="#{compte.commandes.description}">Suivez vos commandes et
                 téléchargez vos factures.</p>
         </a>
-        <a class="carte carte-lien" th:href="@{/mes-messages}">
+        <a class="carte carte-lien" sec:authorize="!hasRole('ADMINISTRATEUR')" th:href="@{/mes-messages}">
             <h2 th:text="#{compte.messages.titre}">Messages</h2>
             <p th:text="#{compte.messages.description}">Écrivez au garage et lisez ses
                 réponses.</p>
         </a>
-        <a class="carte carte-lien" th:href="@{/mes-notifications}">
+        <a class="carte carte-lien" sec:authorize="!hasRole('ADMINISTRATEUR')" th:href="@{/mes-notifications}">
             <h2 th:text="#{compte.notifications.titre}">Notifications</h2>
             <p th:text="#{compte.notifications.description}">Retrouvez les avis sur vos
                 rendez-vous, commandes et interventions.</p>
         </a>
         <!-- F22 : droit d'accès (art. 15 RGPD). -->
-        <a class="carte carte-lien" th:href="@{/mes-donnees}">
+        <a class="carte carte-lien" sec:authorize="!hasRole('ADMINISTRATEUR')" th:href="@{/mes-donnees}">
             <h2 th:text="#{rgpd.donnees.titre}">Mes données personnelles</h2>
             <p th:text="#{rgpd.donnees.carte.description}">Consultez le droit d'accès et
                 exportez les données que nous détenons sur vous.</p>
@@ -62,17 +62,19 @@
             <h2 th:text="#{suppression.titre}">Supprimer mon compte</h2>
             <p th:text="#{suppression.carte.description}">Effacez vos donnees personnelles.</p>
         </a>
+        <!--/* Le back-office a sa page d'arrivée et son menu : une seule carte y mène. Un
+             administrateur n'est pas client du garage — les cartes du membre lui sont
+             masquées, il garde son profil et la sécurité de son compte. */-->
         <a class="carte carte-lien" sec:authorize="hasRole('ADMINISTRATEUR')"
-           th:href="@{/admin/rendez-vous}">
-            <h2 th:text="#{compte.admin.titre}">Espace administration</h2>
-            <p th:text="#{compte.admin.description}">Gérez les demandes de rendez-vous :
-                confirmer, refuser, clôturer.</p>
+           th:href="@{/mon-profil/securite}">
+            <h2 th:text="#{compte.securite.titre}">Sécurité</h2>
+            <p th:text="#{compte.securite.description}">Second facteur et codes de secours.</p>
         </a>
         <a class="carte carte-lien" sec:authorize="hasRole('ADMINISTRATEUR')"
-           th:href="@{/admin/interventions}">
-            <h2 th:text="#{compte.interventions.titre}">Interventions</h2>
-            <p th:text="#{compte.interventions.description}">Suivez les interventions en
-                cours : démarrer, mettre en pause, terminer.</p>
+           th:href="@{/admin}">
+            <h2 th:text="#{compte.back-office.titre}">Back-office</h2>
+            <p th:text="#{compte.back-office.description}">Rendez-vous, atelier, catalogue,
+                commandes et membres.</p>
         </a>
     </nav>
 </main>
