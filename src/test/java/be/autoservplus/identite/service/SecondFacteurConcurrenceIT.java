@@ -64,6 +64,16 @@ class SecondFacteurConcurrenceIT extends SocleIntegration {
         return utilisateurs.saveAndFlush(u);
     }
 
+    /** Un code refuse sur toute la fenetre de tolerance, pas seulement au pas courant. */
+    private String codeFaux() {
+        for (int candidat = 0; ; candidat++) {
+            String code = "%06d".formatted(candidat);
+            if (Totp.verifier(SECRET, code, horloge.instant(), null).isEmpty()) {
+                return code;
+            }
+        }
+    }
+
     /** Lance les deux verifications au meme signal et rend leurs verdicts. */
     private List<Resultat> deuxFoisEnMemeTemps(String email, String code) throws Exception {
         ExecutorService fils = Executors.newFixedThreadPool(2);
@@ -112,5 +122,18 @@ class SecondFacteurConcurrenceIT extends SocleIntegration {
 
         assertThat(resultats).containsExactlyInAnyOrder(Resultat.ACCEPTE, Resultat.REFUSE);
         assertThat(codes.utilisablesDe(membre.getId())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("deux codes faux soumis en même temps comptent deux échecs, pas un")
+    void deuxEchecsSimultanes() throws Exception {
+        Utilisateur membre = enrole();
+
+        List<Resultat> resultats = deuxFoisEnMemeTemps(membre.getEmail(), codeFaux());
+
+        assertThat(resultats).containsExactly(Resultat.REFUSE, Resultat.REFUSE);
+        // Sans le verrou de ligne, les deux transactions liraient 0 et ecriraient 1.
+        assertThat(utilisateurs.findById(membre.getId()).orElseThrow().getMfaEchecs())
+                .isEqualTo((short) 2);
     }
 }
