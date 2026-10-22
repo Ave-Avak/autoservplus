@@ -138,17 +138,13 @@ public class AdminRdvController {
 
     // --- helpers privees --------------------------------------------------------------
 
+    /** Reference inconnue : 404 par GestionnaireErreursGlobal, comme partout. */
     private String preparerFormulaireMotif(UUID reference, MotifForm formulaire,
                                            Model modele, String titre, String vue) {
-        try {
-            modele.addAttribute("titre", titre);
-            modele.addAttribute("rdv", adminRdvs.vue(reference));
-            modele.addAttribute("formulaire", formulaire);
-            return vue;
-        } catch (RessourceIntrouvableException e) {
-            modele.addAttribute("erreur", e.getMessage());
-            return "admin/rendez-vous-introuvable";
-        }
+        modele.addAttribute("titre", titre);
+        modele.addAttribute("rdv", adminRdvs.vue(reference));
+        modele.addAttribute("formulaire", formulaire);
+        return vue;
     }
 
     private String appliquerTransition(UUID reference, RedirectAttributes redirection,
