@@ -457,6 +457,21 @@ class NavigationEcransIT extends SocleIntegration {
             }
             assertThat(ecarts).as("liens de menu cassés").isEmpty();
         }
+
+        /**
+         * Le droit d acces (art. 15) vaut pour tout titulaire ; la suppression, non : un
+         * compte du back-office se ferme par le super-administrateur.
+         */
+        @Test
+        @DisplayName("« Mon compte » d'un rôle du back-office : « Mes données » oui, suppression non")
+        void mesDonneesSansSuppressionAuBackOffice() throws Exception {
+            for (Role role : List.of(Role.ADMINISTRATEUR, Role.SUPER_ADMINISTRATEUR)) {
+                Set<String> liens = liens(ouvrir("/mon-compte", role).getContentAsString(), true);
+                assertThat(liens).as(role.name()).contains("/mes-donnees").doesNotContain("/supprimer-mon-compte");
+            }
+            assertThat(liens(ouvrir("/mon-compte", Role.MEMBRE).getContentAsString(), true))
+                    .contains("/mes-donnees", "/supprimer-mon-compte");
+        }
     }
 
     @Nested
