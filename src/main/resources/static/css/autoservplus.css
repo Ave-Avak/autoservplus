@@ -161,7 +161,12 @@ h1 { color: var(--bleu-marine); margin-top: 0; }
     border-radius: var(--rayon);
     font: inherit;
 }
-.champ input:invalid { border-color: var(--erreur-texte); }
+/* :user-invalid et non :invalid : un champ requis vide n est en faute qu apres une
+   saisie ou une tentative d envoi, pas des l affichage. aria-invalid garde la bordure
+   sur un champ refuse par le serveur, ou :user-invalid ne s applique pas faute
+   d interaction sur la page rendue a nouveau. */
+.champ input:user-invalid,
+.champ input[aria-invalid="true"] { border-color: var(--erreur-texte); }
 
 .texte-succes { color: var(--succes-texte); }
 .texte-alerte { color: var(--alerte-texte); }
