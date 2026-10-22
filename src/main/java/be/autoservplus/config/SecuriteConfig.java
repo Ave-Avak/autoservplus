@@ -113,7 +113,9 @@ public class SecuriteConfig {
                         // Une connexion partielle y est vue comme anonyme
                         // (ConnexionPartielleHorsEtapes filtre aussi ce dispatch).
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
-                        .requestMatchers("/", "/accueil", "/services/**", "/pieces/**",
+                        // /recherche : le formulaire de recherche est sur les pages du
+                        // catalogue, publiques ; la recherche l est donc aussi (F5).
+                        .requestMatchers("/", "/accueil", "/services/**", "/pieces/**", "/recherche",
                                 "/inscription/**", "/connexion", "/mot-de-passe/**",
                                 "/cgv", "/mentions-legales", "/confidentialite",
                                 // Texte gele d une version de document (F24). Public
