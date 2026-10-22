@@ -4,6 +4,7 @@ import be.autoservplus.identite.web.AuthentificationPartielle;
 import be.autoservplus.identite.web.ConnexionPartielleHorsEtapes;
 import be.autoservplus.identite.web.EtapeConnexion;
 import be.autoservplus.identite.web.ParcoursConnexion;
+import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -104,6 +105,14 @@ public class SecuriteConfig {
             throws Exception {
         http
                 .authorizeHttpRequests(acces -> acces
+                        // Dispatch d erreur du conteneur vers /error : la page d erreur
+                        // elle-meme. La requete d origine a deja ete autorisee ou
+                        // refusee ; refuser aussi le rendu de son echec renvoyait un
+                        // visiteur anonyme a la connexion sur une simple adresse
+                        // inconnue, et laissait la page Whitelabel aux autres cas.
+                        // Une connexion partielle y est vue comme anonyme
+                        // (ConnexionPartielleHorsEtapes filtre aussi ce dispatch).
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers("/", "/accueil", "/services/**", "/pieces/**",
                                 "/inscription/**", "/connexion", "/mot-de-passe/**",
                                 "/cgv", "/mentions-legales", "/confidentialite",

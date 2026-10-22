@@ -14,7 +14,12 @@
     <h1 th:text="${titre}">Page introuvable</h1>
     <p th:text="${messageErreur}">La page demandée n'existe pas ou ne vous appartient pas.</p>
     <p class="actions-page">
-        <a th:href="@{/}" th:text="#{erreur.retour-accueil}">Retour à l'accueil</a>
+        <a sec:authorize="hasRole('ADMINISTRATEUR')" th:href="@{/admin}"
+           th:text="#{erreur.retour-back-office}">Retour au back-office</a>
+        <a sec:authorize="isAuthenticated() and !authentication.authorities.isEmpty() and !hasRole('ADMINISTRATEUR')"
+           th:href="@{/mon-compte}" th:text="#{erreur.retour-compte}">Retour à mon compte</a>
+        <a sec:authorize="!isAuthenticated() or authentication.authorities.isEmpty()"
+           th:href="@{/}" th:text="#{erreur.retour-accueil}">Retour à l'accueil</a>
     </p>
 </main>
 <footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>

@@ -35,9 +35,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p><b>Pourquoi un vrai serveur.</b> Une erreur que le controleur ne rattrape pas
  * repasse par le conteneur ({@code sendError}, puis dispatch {@code ERROR} vers
  * {@code /error}) ; MockMvc ne fait jamais ce second passage. Deux chemins, donc : la
- * page d erreur du projet, rendue par le controleur sous le contexte anonyme de
- * {@code ConnexionPartielleHorsEtapes}, et la page du conteneur, que l autorisation de
- * {@code /error} refuse a une connexion partielle avant tout rendu.</p>
+ * page d erreur du projet, rendue par le controleur, et la page du conteneur, rendue au
+ * dispatch {@code ERROR} ; toutes deux sous le contexte anonyme de
+ * {@code ConnexionPartielleHorsEtapes}, qui filtre aussi ce dispatch.</p>
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 @DisplayName("Page d'erreur pendant une connexion partielle (serveur réel)")
@@ -118,13 +118,12 @@ class ConnexionPartiellePageErreurIT extends SocleIntegration {
         assertThat(introuvable.body()).contains("<main id=\"contenu\">");
         sansTraceDeConnexion(introuvable);
 
-        // Non rattrapee : le dispatch d erreur vers /error n est pas une route publique,
-        // il est donc refuse a la connexion partielle et renvoie a l etape. Aucune page
-        // n est rendue, et la session partielle survit.
+        // Non rattrapee : le conteneur rend sa page d erreur au dispatch ERROR, sous le
+        // meme contexte anonyme. La session partielle survit : l etape aboutit ensuite.
         HttpResponse<String> conteneur = lire("/pieces/pas-un-identifiant");
-        assertThat(conteneur.statusCode()).isEqualTo(302);
-        assertThat(conteneur.headers().firstValue("Location").orElseThrow()).endsWith(EtapeConnexion.PREFIXE);
-        assertThat(conteneur.body()).isEmpty();
+        assertThat(conteneur.statusCode()).isEqualTo(400);
+        assertThat(conteneur.body()).contains("<main id=\"contenu\">");
+        sansTraceDeConnexion(conteneur);
 
         // Contre-epreuve : la connexion aboutie, l en-tete montre bien ces liens —
         // l assertion sait donc les voir.
