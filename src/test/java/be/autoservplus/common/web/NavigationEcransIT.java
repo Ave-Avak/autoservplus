@@ -474,6 +474,24 @@ class NavigationEcransIT extends SocleIntegration {
         }
 
         /**
+         * L administrateur ne commande pas (CdC 8.4) et lit ses messages au back-office ;
+         * il recoit en revanche des notifications (avis deposes, messages recus).
+         */
+        @Test
+        @DisplayName("en-tête public d'un rôle du back-office : ni panier ni messages du membre, notifications oui")
+        void enTetePublicDuBackOffice() throws Exception {
+            for (Role role : List.of(Role.ADMINISTRATEUR, Role.SUPER_ADMINISTRATEUR)) {
+                Set<String> entete = liens(Jsoup.parse(ouvrir("/services", role).getContentAsString())
+                        .select("header").outerHtml(), false);
+                assertThat(entete).as(role.name()).doesNotContain("/panier", "/mes-messages")
+                        .contains("/mes-notifications", "/admin", "/mon-compte");
+            }
+            Set<String> membre = liens(Jsoup.parse(ouvrir("/services", Role.MEMBRE).getContentAsString())
+                    .select("header").outerHtml(), false);
+            assertThat(membre).contains("/panier", "/mes-messages", "/mes-notifications").doesNotContain("/admin");
+        }
+
+        /**
          * Motif « Disclosure Navigation » : le bouton nait cache et replie, il designe le
          * panneau qui porte les liens, et le script qui le revele est externe. Le rendu
          * replie lui-meme releve du navigateur ({@code lot/tests-navigateur}).

@@ -12,6 +12,9 @@
     déconnexion. Le jeton partiel est authentifié mais ne porte AUCUNE autorité, ce
     qui le distingue sans drapeau de modèle — et vaut aussi sur une page d'erreur, où
     les attributs des advices ne sont pas repeuplés.
+  Rôles du back-office : ni Panier (CdC §8.4, l'administrateur ne commande pas), ni
+  Messages, qu'il lit dans /admin/messages. Notifications reste : avis déposés et
+  messages reçus lui sont notifiés (AvisService, MessagerieService).
   Les compteurs sont fournis par des advices ; absents (page d'erreur), le lien reste
   sans nombre plutôt que d'afficher un zéro faux.
 
@@ -40,10 +43,10 @@
                 <li><a class="btn-cta" th:href="@{/inscription}" th:text="#{nav.inscription}">Créer un compte</a></li>
             </ul>
             <ul class="menu menu-compte" sec:authorize="isAuthenticated() and !authentication.authorities.isEmpty()">
-                <li><a th:href="@{/panier}"
+                <li sec:authorize="!hasRole('ADMINISTRATEUR')"><a th:href="@{/panier}"
                        th:text="${nombreArticlesPanier != null} ? #{panier.nav(${nombreArticlesPanier})} : #{nav.panier}"
                        th:attr="aria-current=${cheminCourant == '/panier'} ? 'page' : null">Panier</a></li>
-                <li><a th:href="@{/mes-messages}"
+                <li sec:authorize="!hasRole('ADMINISTRATEUR')"><a th:href="@{/mes-messages}"
                        th:text="${nombreFilsNonLus != null} ? #{messagerie.nav(${nombreFilsNonLus})} : #{nav.messages}"
                        th:attr="aria-current=${cheminCourant == '/mes-messages'} ? 'page' : null">Messages</a></li>
                 <li><a th:href="@{/mes-notifications}"
