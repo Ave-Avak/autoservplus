@@ -86,12 +86,15 @@ class ConnexionPartiellePageErreurIT extends SocleIntegration {
         return jeton.group(1);
     }
 
-    /** Ni lien vers l espace membre, ni compteur du panier : ce qu affiche un en-tete connecte. */
+    /**
+     * Ni lien vers l espace du compte, ni notifications, ni back-office : ce qu affiche
+     * l en-tete d un administrateur connecte. Pas de panier : cet en-tete n en porte plus.
+     */
     private static void sansTraceDeConnexion(HttpResponse<String> page) {
         assertThat(page.body())
                 .doesNotContain("href=\"/mon-compte\"")
-                .doesNotContain("href=\"/panier\"")
-                .doesNotContain("href=\"/mes-notifications\"");
+                .doesNotContain("href=\"/mes-notifications\"")
+                .doesNotContain("href=\"/admin\"");
     }
 
     @Test
@@ -131,6 +134,7 @@ class ConnexionPartiellePageErreurIT extends SocleIntegration {
                 csrf(lire("/connexion/etape/second-facteur")),
                 "code", Totp.code(SECRET, Totp.pasDe(horloge.instant())));
         assertThat(aboutie.headers().firstValue("Location").orElseThrow()).endsWith("/admin");
-        assertThat(lire("/pieces").body()).contains("href=\"/mon-compte\"", "href=\"/panier\"");
+        assertThat(lire("/pieces").body())
+                .contains("href=\"/mon-compte\"", "href=\"/mes-notifications\"", "href=\"/admin\"");
     }
 }
