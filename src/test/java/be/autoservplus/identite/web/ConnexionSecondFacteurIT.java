@@ -201,7 +201,7 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
 
         MvcResult resultat = saisirCode(session, codeCourant(SECRET));
 
-        assertThat(resultat.getResponse().getRedirectedUrl()).isEqualTo("/mon-compte");
+        assertThat(resultat.getResponse().getRedirectedUrl()).isEqualTo("/admin");
         assertThat(session.getId()).isNotEqualTo(identifiantPartiel);
         mvc.perform(get("/admin/comptes").session(session)).andExpect(status().isOk());
         assertThat(relire(admin).getDerniereConnexion()).isNotNull();
@@ -297,7 +297,7 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
         String nouveau = "une toute nouvelle phrase choisie";
         mvc.perform(post("/connexion/etape/mot-de-passe").session(session).with(csrf())
                         .param("motDePasse", nouveau).param("confirmation", nouveau))
-                .andExpect(redirectedUrl("/mon-compte"));
+                .andExpect(redirectedUrl("/admin"));
         assertThat(relire(chef).doitChangerMotDePasse()).isFalse();
         mvc.perform(get("/admin/comptes").session(session)).andExpect(status().isOk());
     }
@@ -367,7 +367,7 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
 
         MvcResult accepte = mvc.perform(post("/connexion/etape/second-facteur").session(session).with(csrf())
                 .param("mode", "secours").param("code", codes.get(0).toLowerCase())).andReturn();
-        assertThat(accepte.getResponse().getRedirectedUrl()).isEqualTo("/mon-compte");
+        assertThat(accepte.getResponse().getRedirectedUrl()).isEqualTo("/admin");
         assertThat(evenements.evenementsDe(admin.getId())).extracting(e -> e.getType())
                 .contains(TypeEvenementSecurite.CODE_SECOURS_CONSOMME);
 

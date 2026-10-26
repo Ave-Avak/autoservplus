@@ -14,25 +14,7 @@
 
 <a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
 
-<header class="entete">
-    <nav aria-label="Navigation principale">
-        <a class="marque" th:href="@{/}">AutoServ+</a>
-        <ul class="menu">
-            <li><a th:href="@{/services}">Prestations</a></li>
-            <li><a th:href="@{/pieces}">Pièces</a></li>
-            <li><a th:href="@{/contact}" th:text="#{nav.contact}">Contact</a></li>
-        </ul>
-        <ul class="menu menu-compte">
-            <li><a th:href="@{/mon-compte}">Mon compte</a></li>
-            <li>
-                <form th:action="@{/deconnexion}" method="post">
-                    <button type="submit" class="lien-bouton">Se déconnecter</button>
-                </form>
-            </li>
-        </ul>
-    </nav>
-    <div th:replace="~{fragments/langue :: selecteur}"></div>
-</header>
+<header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
     <p><a th:href="@{/mes-rendez-vous}">← Mes rendez-vous</a></p>
@@ -121,23 +103,25 @@
     </div>
 
     <h2>Travaux prévus</h2>
-    <table class="tableau">
-        <thead>
-            <tr><th scope="col">Prestation</th><th scope="col">Quantité</th></tr>
-        </thead>
-        <tbody>
-            <tr th:each="l : ${intervention.lignes()}">
-                <td th:text="${l.libelle()}">Vidange</td>
-                <td th:text="${l.quantite()}">1</td>
-            </tr>
-        </tbody>
-        <tfoot>
-            <tr>
-                <td><strong>Total TVAC estimé</strong></td>
-                <td th:text="${intervention.totalTvac()}">59,29 €</td>
-            </tr>
-        </tfoot>
-    </table>
+    <div class="defilement">
+        <table class="tableau">
+            <thead>
+                <tr><th scope="col">Prestation</th><th scope="col">Quantité</th></tr>
+            </thead>
+            <tbody>
+                <tr th:each="l : ${intervention.lignes()}">
+                    <td th:text="${l.libelle()}">Vidange</td>
+                    <td th:text="${l.quantite()}">1</td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td><strong>Total TVAC estimé</strong></td>
+                    <td th:text="${intervention.totalTvac()}">59,29 €</td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 
     <!-- BL-4 : proposé seulement si le dépôt aboutirait — travaux terminés et
          aucun avis déjà déposé (l'unicité en base refuserait le second). -->

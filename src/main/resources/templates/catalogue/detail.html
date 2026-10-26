@@ -68,23 +68,7 @@
 
 <a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
 
-<header class="entete">
-    <nav aria-label="Navigation principale">
-        <a class="marque" th:href="@{/}">AutoServ+</a>
-        <ul class="menu">
-            <li><a th:href="@{/services}">Prestations</a></li>
-            <li><a th:href="@{/pieces}">Pièces</a></li>
-            <li><a th:href="@{/contact}" th:text="#{nav.contact}">Contact</a></li>
-        </ul>
-        <ul class="menu menu-compte">
-            <li sec:authorize="!isAuthenticated()"><a th:href="@{/connexion}">Connexion</a></li>
-            <li sec:authorize="isAuthenticated()">
-                <a th:href="@{/panier}" th:text="#{panier.nav(${nombreArticlesPanier})}">Panier (0)</a></li>
-            <li sec:authorize="isAuthenticated()"><a th:href="@{/mon-compte}">Mon compte</a></li>
-        </ul>
-    </nav>
-    <div th:replace="~{fragments/langue :: selecteur}"></div>
-</header>
+<header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
 
@@ -133,7 +117,7 @@
         </p>
 
         <div class="fiche-actions" th:if="${article.disponible()}">
-            <a class="btn-cta" th:href="@{/rendez-vous/nouveau(article=${article.reference()})}"
+            <a class="btn-cta" th:href="@{/mes-rendez-vous/nouveau}"
                th:if="${typeArticle == 'service'}">Prendre rendez-vous</a>
             <!-- F12 : la prestation s'achete aussi hors rendez-vous. Modele DECOUPLE —
                  payer le service ne reserve pas le creneau, la planification reste une

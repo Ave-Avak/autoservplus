@@ -44,10 +44,15 @@ body {
     background: var(--blanc);
 }
 
-/* Le focus clavier doit rester visible : critere WCAG 2.4.7 */
+/* Le focus clavier doit rester visible : critere WCAG 2.4.7. Indicateur a deux couleurs
+   (technique W3C C40) : anneau interieur --gris-900, anneau exterieur blanc, 2 px chacun,
+   17.74:1 entre eux. Sur fond blanc, l'anneau sombre tient 17.74:1 ; sur le bleu de
+   l'en-tete, l'anneau blanc tient 11.62:1. L'ancien contour --bleu-secondaire ne tenait
+   que 2.40:1 sur ce bleu. */
 :focus-visible {
-    outline: 3px solid var(--bleu-secondaire);
-    outline-offset: 2px;
+    outline: 2px solid var(--gris-900);
+    outline-offset: 0;
+    box-shadow: 0 0 0 4px var(--blanc);
 }
 
 /* Lien d evitement, premier element focusable : critere WCAG 2.4.1 */
@@ -65,10 +70,15 @@ body {
     background: var(--bleu-marine);
     padding: var(--espace-m) var(--espace-l);
 }
-.entete nav {
+/* L'en-tete passe a la ligne au lieu de deborder. Largeurs mesurees au rendu (Chrome,
+   2026-10-26) : marque 102 px, menu 372 px, liens du compte jusqu'a 540 px (membre).
+   Sur une ligne il faut 1110 px de fenetre ; au-dessous, les liens du compte passent sur
+   une seconde ligne, qui tient jusqu'a 588 px. Sous 40em : bloc « Menu repliable ». */
+.entete > nav {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--espace-l);
+    gap: var(--espace-s) var(--espace-l);
     max-width: 1100px;
     margin: 0 auto;
 }
@@ -80,7 +90,8 @@ body {
 }
 .menu {
     display: flex;
-    gap: var(--espace-m);
+    flex-wrap: wrap;
+    gap: var(--espace-s) var(--espace-m);
     list-style: none;
     margin: 0;
     padding: 0;
@@ -88,8 +99,39 @@ body {
 }
 .menu-compte { margin-left: auto; }
 .menu a { color: var(--blanc); text-decoration: none; }
+/* Un libelle ne se coupe pas : « Prendre rendez-vous » sur trois lignes etait le
+   symptome d'un menu comprime au lieu d'etre replie. */
+.menu a, .menu .lien-bouton, .menu-back-office a { white-space: nowrap; }
 .menu a:hover { text-decoration: underline; }
 .menu-langue a { font-size: 0.875rem; }
+
+/* Menu du back-office : sections sur fond marine, blanc sur #1F3864 (11.62:1). L'entree
+   active est soulignee et en gras : jamais signalee par la couleur seule (WCAG 1.4.1). */
+.marque-espace { font-weight: 400; font-size: 1rem; margin-left: var(--espace-s); }
+.menu-back-office {
+    flex-basis: 100%;
+    max-width: 1100px;
+    margin: var(--espace-s) auto 0;
+}
+.menu-back-office ul { list-style: none; margin: 0; padding: 0; }
+.menu-back-office > ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--espace-m) var(--espace-l);
+}
+.menu-back-office .section-titre {
+    display: block;
+    color: var(--blanc);
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+.menu-back-office .section > ul { display: flex; flex-wrap: wrap; gap: var(--espace-s) var(--espace-m); }
+.menu-back-office a { color: var(--blanc); text-decoration: none; }
+.menu-back-office a:hover { text-decoration: underline; }
+.menu-back-office a[aria-current="page"],
+.menu a[aria-current="page"] { font-weight: 700; text-decoration: underline; }
 
 .lien-bouton {
     background: none;
@@ -109,6 +151,17 @@ main {
 }
 
 h1 { color: var(--bleu-marine); margin-top: 0; }
+
+/* Un tableau de donnees defile dans son conteneur, la page jamais : exception de WCAG
+   1.4.10 pour les contenus a deux dimensions. Pas de display:block sur le <table>,
+   qui lui ferait perdre sa semantique de tableau dans certains navigateurs. Le
+   conteneur defilant est atteint au clavier par le navigateur (Chrome 130+, Firefox).
+   position: relative retient les libelles .visuellement-cache des cellules, places en
+   absolu : sans elle, ils debordaient de la page malgre le conteneur. */
+.defilement { position: relative; max-width: 100%; overflow-x: auto; }
+
+/* Un exemple de format (en-tete CSV de l'import) se coupe plutot que d'elargir la page. */
+main code { overflow-wrap: anywhere; }
 
 .btn-cta {
     display: inline-block;
@@ -134,7 +187,12 @@ h1 { color: var(--bleu-marine); margin-top: 0; }
     border-radius: var(--rayon);
     font: inherit;
 }
-.champ input:invalid { border-color: var(--erreur-texte); }
+/* :user-invalid et non :invalid : un champ requis vide n est en faute qu apres une
+   saisie ou une tentative d envoi, pas des l affichage. aria-invalid garde la bordure
+   sur un champ refuse par le serveur, ou :user-invalid ne s applique pas faute
+   d interaction sur la page rendue a nouveau. */
+.champ input:user-invalid,
+.champ input[aria-invalid="true"] { border-color: var(--erreur-texte); }
 
 .texte-succes { color: var(--succes-texte); }
 .texte-alerte { color: var(--alerte-texte); }
@@ -175,25 +233,59 @@ h1 { color: var(--bleu-marine); margin-top: 0; }
     list-style: none;
     padding: 0;
     display: flex;
-    gap: var(--espace-m);
+    flex-wrap: wrap;
+    gap: var(--espace-s) var(--espace-m);
     justify-content: center;
 }
 .pied a { color: var(--gris-700); }
 
-@media (max-width: 640px) {
-    .entete nav { flex-wrap: wrap; gap: var(--espace-s); }
+/* Menu repliable. Sous 40em, la ligne du compte ne tient plus (588 px mesures pour le
+   membre, 572 px pour la ligne du back-office) : les listes passent en colonne sur toute
+   la largeur, ou un libelle peut se couper plutot que deborder. En em et non en px : un
+   texte agrandi par le visiteur deplace la rupture avec lui (WCAG 1.4.4). */
+/* Au-dessus de la rupture, le panneau s'efface de la mise en page (display: contents) :
+   ses listes se rangent dans la ligne de l'en-tete comme s'il n'existait pas. Sous la
+   rupture, il devient un bloc que menu.js replie (.est-replie). Sans script, le bouton
+   garde son attribut hidden et le panneau reste deplie. */
+.menu-panneau { display: contents; }
+.bouton-menu {
+    display: none;
+    margin-left: auto;
+    padding: 0.25rem var(--espace-m);
+    background: transparent;
+    color: var(--blanc);
+    border: 2px solid var(--blanc);
+    border-radius: var(--rayon);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+/* Etat deplie : fond plein, blanc et marine inverses (11.62:1), en plus d'aria-expanded. */
+.bouton-menu[aria-expanded="true"] { background: var(--blanc); color: var(--bleu-marine); }
+
+@media (max-width: 40em) {
+    .bouton-menu:not([hidden]) { display: inline-block; }
+    .menu-panneau { display: block; flex-basis: 100%; }
+    .menu-panneau.est-replie { display: none; }
+    .menu-panneau > .menu,
+    .menu-back-office > ul { flex-direction: column; align-items: flex-start; }
+    .menu-panneau > * + * { margin-top: var(--espace-m); }
+    .menu-back-office .section > ul { flex-direction: column; }
     .menu-compte { margin-left: 0; }
+    .menu a, .menu .lien-bouton, .menu-back-office a { white-space: normal; }
 }
 /* --- Catalogue ------------------------------------------------------------------ */
 
 .recherche {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--espace-s);
     margin-bottom: var(--espace-l);
     max-width: 32rem;
 }
 .recherche input {
-    flex: 1;
+    flex: 1 1 12rem;
+    min-width: 0;
     padding: var(--espace-s);
     border: 1px solid var(--gris-200);
     border-radius: var(--rayon);
@@ -235,7 +327,7 @@ h1 { color: var(--bleu-marine); margin-top: 0; }
 
 .grille-articles {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
     gap: var(--espace-l);
     list-style: none;
     padding: 0;
@@ -384,7 +476,7 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 .formulaire-rdv fieldset { border: 1px solid var(--gris-200); border-radius: var(--rayon); padding: var(--espace-m) var(--espace-l); margin-bottom: var(--espace-l); }
 .formulaire-rdv legend { font-weight: 600; padding: 0 var(--espace-s); }
 .groupe-prestations h2 { font-size: 1rem; margin: var(--espace-m) 0 var(--espace-s); }
-.liste-cases { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--espace-s); grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
+.liste-cases { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--espace-s); grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr)); }
 .liste-cases li { display: flex; align-items: flex-start; gap: var(--espace-s); }
 .liste-cases label { display: flex; flex-direction: column; }
 .liste-cases small { color: var(--gris-500); }
@@ -631,7 +723,7 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     display: inline-block;
     padding: 0.125rem var(--espace-s);
     border-radius: var(--rayon);
-    color: var(--gris-700);
+    color: var(--blanc);  /* 11.62:1 sur le bleu de l'en-tete ; --gris-700 n'y tenait que 1.13:1 */
     text-decoration: none;
     font-size: 0.875rem;
 }
@@ -640,11 +732,12 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 .selecteur-langue a:focus-visible { text-decoration: underline; }
 
 /* La langue active est signalee par le fond ET par la graisse : jamais par la couleur
-   seule (WCAG 1.4.1). L'information est aussi portee par aria-current dans le gabarit,
-   pour les technologies d'assistance qui ne voient aucun style. */
+   seule (WCAG 1.4.1). Fond blanc et texte marine (11.62:1) : un fond marine se confondait
+   avec celui de l'en-tete. L'information est aussi portee par aria-current dans le
+   gabarit, pour les technologies d'assistance qui ne voient aucun style. */
 .selecteur-langue a.est-active {
-    background: var(--bleu-marine);
-    color: var(--blanc);
+    background: var(--blanc);
+    color: var(--bleu-marine);
     font-weight: 600;
 }
 

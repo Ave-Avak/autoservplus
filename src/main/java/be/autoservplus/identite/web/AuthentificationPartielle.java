@@ -1,6 +1,7 @@
 package be.autoservplus.identite.web;
 
 import org.springframework.security.authentication.AbstractAuthenticationToken;
+import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
 import java.util.List;
@@ -36,6 +37,19 @@ public class AuthentificationPartielle extends AbstractAuthenticationToken {
         // gestionnaire de refus, qui renvoie vers l etape, et non a la page de connexion
         // — ce qui ferait recommencer le mot de passe a chaque clic.
         setAuthenticated(true);
+    }
+
+    /**
+     * Vrai pour une connexion aboutie : ni absente, ni anonyme, ni partielle. Les
+     * compteurs de l en-tete s y tiennent : un jeton partiel satisfait
+     * {@code isAuthenticated()}, et ses comptages s afficheraient avant la fin de la
+     * connexion.
+     */
+    public static boolean aboutie(Authentication authentification) {
+        return authentification != null
+                && authentification.isAuthenticated()
+                && !(authentification instanceof AnonymousAuthenticationToken)
+                && !(authentification instanceof AuthentificationPartielle);
     }
 
     public AuthentificationPartielle avecSecondFacteurValide() {

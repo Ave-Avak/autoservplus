@@ -1,6 +1,7 @@
 package be.autoservplus.i18n;
 
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.identite.web.PageArrivee;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -17,15 +18,15 @@ import java.io.IOException;
 import java.util.Locale;
 
 /**
- * Applique a la session la langue enregistree au profil, <b>au moment de la
- * connexion</b> et a ce moment-la seulement (F6).
+ * Applique a la session la langue enregistree au profil, au moment de la
+ * connexion et a ce moment-la seulement (F6).
  *
  * <p>La restriction au seul evenement de connexion n est pas un detail
  * d implementation, c est la regle. Une premiere version appliquait la preference a
  * chaque requete authentifiee dont la session n avait pas de langue choisie : quatre
  * tests deja en place sont passes au rouge et ont montre pourquoi c etait faux.
  * {@code utilisateur.langue} vaut {@code fr} par defaut pour tout le monde et
- * <b>aucun ecran ne l ecrit</b> ; la generalisation revenait donc a servir du
+ * aucun ecran ne l ecrit ; la generalisation revenait donc a servir du
  * francais a tout membre connecte, y compris celui dont le navigateur reclame du
  * neerlandais et qui n a jamais rien choisi. C etait une regression deguisee en
  * fonctionnalite. Applique a la connexion seule, le profil ne prend la main qu au
@@ -33,20 +34,21 @@ import java.util.Locale;
  * decider partout ailleurs.</p>
  *
  * <p>La garde reste l attribut de session du resolveur : il n est ecrit que lorsqu une
- * langue a ete <b>explicitement choisie</b>. Un visiteur qui bascule en neerlandais
- * puis se connecte garde donc son neerlandais — la protection contre la fixation de
- * session recopie les attributs, l attribut survit a la migration.</p>
+ * langue a ete explicitement choisie. Un visiteur qui bascule en neerlandais
+ * puis se connecte garde donc son neerlandais : la protection contre la fixation de
+ * session recopie les attributs, et celui-ci survit a la migration.</p>
  *
- * <p>Le resolveur est <b>injecte</b> et non lu par {@code RequestContextUtils} : cet
+ * <p>Le resolveur est injecte et non lu par {@code RequestContextUtils} : cet
  * utilitaire s appuie sur un attribut de requete pose par le {@code DispatcherServlet},
  * or un POST vers {@code /connexion} est traite par la chaine de filtres de securite et
- * n atteint jamais le servlet. La version qui l employait echouait silencieusement — la
- * langue n etait tout simplement pas appliquee, et seul un test de bout en bout passant
+ * n atteint jamais le servlet. La version qui l employait echouait sans bruit : la
+ * langue n etait pas appliquee, et seul un test de bout en bout passant
  * par le vrai formulaire l a montre.</p>
  *
- * <p>Le comportement de redirection est identique a celui de
- * {@code defaultSuccessUrl("/mon-compte", true)} qu il remplace : meme classe parente,
- * memes deux reglages. Seule l application de la langue s y ajoute.</p>
+ * <p>Le comportement de redirection reprend celui de
+ * {@code defaultSuccessUrl(..., true)} qu il remplace (meme classe parente, requete
+ * sauvegardee ignoree), a ceci pres que la destination depend du role
+ * ({@link PageArrivee}).</p>
  */
 @Component
 public class LangueApresConnexionHandler extends SavedRequestAwareAuthenticationSuccessHandler {
@@ -55,13 +57,20 @@ public class LangueApresConnexionHandler extends SavedRequestAwareAuthentication
 
     private final UtilisateurRepository utilisateurs;
     private final LocaleResolver resolveur;
+    private final PageArrivee pageArrivee;
 
     public LangueApresConnexionHandler(UtilisateurRepository utilisateurs,
-                                       LocaleResolver resolveur) {
+                                       LocaleResolver resolveur, PageArrivee pageArrivee) {
         this.utilisateurs = utilisateurs;
         this.resolveur = resolveur;
-        setDefaultTargetUrl("/mon-compte");
+        this.pageArrivee = pageArrivee;
         setAlwaysUseDefaultTargetUrl(true);
+    }
+
+    @Override
+    protected String determineTargetUrl(HttpServletRequest requete, HttpServletResponse reponse,
+                                        Authentication authentification) {
+        return pageArrivee.de(authentification);
     }
 
     @Override

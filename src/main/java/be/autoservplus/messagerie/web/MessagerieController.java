@@ -46,7 +46,6 @@ public class MessagerieController {
     @GetMapping
     public String liste(@AuthenticationPrincipal UserDetails membre, Model modele) {
         modele.addAttribute("titre", msg("messagerie.titre"));
-        modele.addAttribute("nombreFilsNonLus", messagerie.nombreFilsNonLus(membre.getUsername()));
         modele.addAttribute("fils", messagerie.mesFils(membre.getUsername()));
         return "messagerie/fils";
     }
