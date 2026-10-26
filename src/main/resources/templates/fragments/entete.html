@@ -4,14 +4,13 @@
 <body>
 
 <!--/*
-  En-tête des pages publiques et de l'espace membre, en trois états :
-  - visiteur anonyme : catalogue, prise de rendez-vous, contact, connexion et
-    inscription ;
-  - connexion aboutie : en plus, les liens du compte ;
-  - connexion partielle (mot de passe vérifié, étape en attente) : la seule
-    déconnexion. Le jeton partiel est authentifié mais ne porte AUCUNE autorité, ce
-    qui le distingue sans drapeau de modèle — et vaut aussi sur une page d'erreur, où
-    les attributs des advices ne sont pas repeuplés.
+  En-tête des pages publiques et de l'espace membre. Le visiteur anonyme voit le
+  catalogue, la prise de rendez-vous, le contact, la connexion et l'inscription. Une
+  connexion aboutie y ajoute les liens du compte. Une connexion partielle (mot de passe
+  vérifié, étape en attente) ne montre que la déconnexion. Le jeton partiel est
+  authentifié mais ne porte aucune autorité : c'est ce qui le distingue, sans drapeau
+  de modèle. Cela vaut aussi sur une page d'erreur, où les attributs des advices ne
+  sont pas repeuplés.
   Rôles du back-office : ni Panier (CdC §8.4, l'administrateur ne commande pas), ni
   Messages, qu'il lit dans /admin/messages. Notifications reste : avis déposés et
   messages reçus lui sont notifiés (AvisService, MessagerieService).

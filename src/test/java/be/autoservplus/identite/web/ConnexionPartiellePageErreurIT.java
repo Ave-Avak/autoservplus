@@ -32,7 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Une page d erreur rendue pendant une connexion partielle ne montre ni le lien
  * « Mon compte » ni les compteurs de l en-tete.
  *
- * <p><b>Pourquoi un vrai serveur.</b> Une erreur que le controleur ne rattrape pas
+ * <p>Le test demarre un vrai serveur. Une erreur que le controleur ne rattrape pas
  * repasse par le conteneur ({@code sendError}, puis dispatch {@code ERROR} vers
  * {@code /error}) ; MockMvc ne fait jamais ce second passage. Deux chemins, donc : la
  * page d erreur du projet, rendue par le controleur, et la page du conteneur, rendue au

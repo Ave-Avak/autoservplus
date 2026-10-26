@@ -25,7 +25,7 @@ import static org.mockito.Mockito.when;
 /**
  * Les trois compteurs de l en-tete commun ne comptent que pour une connexion aboutie.
  *
- * <p>Le cas qui compte est la connexion <b>partielle</b> : elle satisfait
+ * <p>Le cas qui compte est la connexion partielle : elle satisfait
  * {@code isAuthenticated()}, et les advices, devenus globaux, interrogeraient la base
  * pour un compte dont le second facteur n est pas encore saisi.</p>
  */

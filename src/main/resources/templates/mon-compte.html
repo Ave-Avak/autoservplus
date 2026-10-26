@@ -48,7 +48,7 @@
             <p th:text="#{compte.notifications.description}">Retrouvez les avis sur vos
                 rendez-vous, commandes et interventions.</p>
         </a>
-        <!--/* F22 : droit d'accès (art. 15 RGPD), ouvert à tout titulaire de compte — un
+        <!--/* F22 : droit d'accès (art. 15 RGPD), ouvert à tout titulaire de compte : un
              administrateur est aussi une personne concernée (CdC §8.4, export « le sien »). */-->
         <a class="carte carte-lien" th:href="@{/mes-donnees}">
             <h2 th:text="#{rgpd.donnees.titre}">Mes données personnelles</h2>
@@ -57,7 +57,7 @@
         </a>
         <!-- F23 : droit a l'effacement (art. 17 RGPD). Place apres l'export : la
              portabilite se propose avant la suppression, pas apres. Reserve au
-             membre — un compte du back-office se ferme par le super-administrateur :
+             membre. Un compte du back-office se ferme par le super-administrateur :
              le garage garde un gestionnaire, et le journal d'audit ses auteurs. -->
         <a class="carte carte-lien" sec:authorize="!hasRole('ADMINISTRATEUR')"
            th:href="@{/supprimer-mon-compte}">
@@ -65,7 +65,7 @@
             <p th:text="#{suppression.carte.description}">Effacez vos donnees personnelles.</p>
         </a>
         <!--/* Le back-office a sa page d'arrivée et son menu : une seule carte y mène. Un
-             administrateur n'est pas client du garage — les cartes du membre lui sont
+             administrateur n'est pas client du garage : les cartes du membre lui sont
              masquées, il garde son profil, ses données et la sécurité de son compte. */-->
         <a class="carte carte-lien" sec:authorize="hasRole('ADMINISTRATEUR')"
            th:href="@{/mon-profil/securite}">

@@ -39,9 +39,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 
 /**
  * Pages d erreur 403, 404 et 500 : traduites, sans detail technique, avec un retour vers
- * la page d arrivee du role — et plus jamais la page Whitelabel de Spring Boot.
+ * la page d arrivee du role, a la place de la page Whitelabel de Spring Boot.
  *
- * <p><b>Pourquoi un vrai serveur.</b> Une erreur que le controleur ne rattrape pas
+ * <p>Le test demarre un vrai serveur. Une erreur que le controleur ne rattrape pas
  * repasse par le conteneur ({@code sendError}, puis dispatch {@code ERROR} vers
  * {@code /error}) ; MockMvc ne fait jamais ce second passage. Seul le cas 500, qu aucune
  * requete ne sait provoquer proprement, est rendu en appelant {@code /error} avec le

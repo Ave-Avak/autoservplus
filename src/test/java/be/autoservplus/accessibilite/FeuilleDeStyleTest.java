@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * n agit qu apres interaction ; le retour de {@code :invalid}, raccourci tentant, est
  * refuse ici.</p>
  *
- * <p><b>Contrastes calcules depuis la feuille.</b> Les liens de langue (1.13:1) et
+ * <p>Les contrastes sont calcules depuis la feuille. Les liens de langue (1.13:1) et
  * l indicateur de focus (2.40:1) etaient illisibles sur le bleu de l en-tete, alors que
  * le commentaire de tete de la feuille annoncait des contrastes conformes. Les couleurs
  * sont relues dans la feuille, variables resolues, et le ratio est celui de WCAG 2.1.</p>

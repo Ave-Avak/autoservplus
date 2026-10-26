@@ -41,7 +41,7 @@ public class AuthentificationPartielle extends AbstractAuthenticationToken {
 
     /**
      * Vrai pour une connexion aboutie : ni absente, ni anonyme, ni partielle. Les
-     * compteurs de l en-tete s y tiennent — un jeton partiel satisfait
+     * compteurs de l en-tete s y tiennent : un jeton partiel satisfait
      * {@code isAuthenticated()}, et ses comptages s afficheraient avant la fin de la
      * connexion.
      */

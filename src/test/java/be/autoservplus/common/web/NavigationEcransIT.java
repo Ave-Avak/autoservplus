@@ -42,24 +42,24 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  * Navigation des ecrans : chaque route GET est classee, chaque menu s ouvre, chaque
  * ecran est atteignable par des clics.
  *
- * <p><b>Pourquoi ce test.</b> Le tableau de bord du back-office n avait aucun lien
+ * <p>Le tableau de bord du back-office n avait aucun lien
  * entrant, cinq ecrans n etaient atteints que par leur adresse, un lien menait un
- * administrateur a un 403 et un autre a un 404 — et le {@code verify} restait vert, aucun
+ * administrateur a un 403 et un autre a un 404. Le {@code verify} restait vert, aucun
  * test n ouvrant ce qu un utilisateur ouvre. Trois volets :</p>
  * <ol>
- *   <li><b>Balayage</b> : les routes GET sont lues dans le mapping de Spring MVC et
+ *   <li>Balayage : les routes GET sont lues dans le mapping de Spring MVC et
  *       confrontees a la table {@link #ROUTES}. Une route absente de la table, ou une
  *       entree sans route, fait echouer le test : une route neuve doit etre classee.
- *       Pour chaque role — anonyme, membre, administrateur, super-administrateur — le
- *       statut attendu est verifie. Les variables de chemin recoivent une reference
- *       aleatoire : le role autorise recoit 404, le role refuse 403 — le refus precede
- *       toute recherche, ce que le volet « refus sans oracle » verifie avec une
- *       ressource reelle.</li>
- *   <li><b>Coherence des menus</b> : la page d arrivee de chaque role est rendue, ses
+ *       Le statut attendu est verifie pour chaque role : anonyme, membre,
+ *       administrateur, super-administrateur. Les variables de chemin recoivent une
+ *       reference aleatoire : le role autorise recoit 404, le role refuse 403. Le
+ *       refus precede toute recherche, ce que le volet « refus sans oracle » verifie
+ *       avec une ressource reelle.</li>
+ *   <li>Coherence des menus : la page d arrivee de chaque role est rendue, ses
  *       liens d en-tete, de menu et de cartes sont ouverts un a un ; aucun ne doit
  *       repondre 403, 404 ou 500.</li>
- *   <li><b>Atteignabilite</b> : chaque ecran sans variable figure dans un menu d un role
- *       autorise, ou dans {@link #ATTEINTS_DEPUIS}, qui nomme la page qui y mene — et
+ *   <li>Atteignabilite : chaque ecran sans variable figure dans un menu d un role
+ *       autorise, ou dans {@link #ATTEINTS_DEPUIS}, qui nomme la page qui y mene ;
  *       le test verifie que cette page porte bien le lien. Les ecrans qu aucun clic
  *       n atteint par construction (lien de courriel, etape de connexion) sont dans
  *       {@link #HORS_NAVIGATION}, avec leur motif.</li>
@@ -192,7 +192,7 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/admin/catalogue/pieces/nouvelle", Acces.BACK_OFFICE),
             variable("/admin/catalogue/pieces/{reference}/modifier", Acces.BACK_OFFICE),
             variable("/admin/catalogue/pieces/{reference}/supprimer", Acces.BACK_OFFICE),
-            // Reference inconnue : galerie vide, rendue en 200 — l ecran ne verifie pas que
+            // Reference inconnue : galerie vide, rendue en 200. L ecran ne verifie pas que
             // la fiche existe. Ecart releve, non traite ici.
             new Route("/admin/galerie/{type}/{reference}", "/admin/galerie/interventions/" + REF,
                     Acces.BACK_OFFICE, true, 200),

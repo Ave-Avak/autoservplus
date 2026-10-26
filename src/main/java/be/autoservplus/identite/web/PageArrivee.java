@@ -8,13 +8,13 @@ import org.springframework.stereotype.Component;
  * Page ou arrive une connexion aboutie : le tableau de bord pour le back-office,
  * « Mon compte » pour le membre.
  *
- * <p>Calculee a travers la <b>hierarchie des roles</b> : un super-administrateur ne
+ * <p>Calculee a travers la hierarchie des roles : un super-administrateur ne
  * porte que {@code ROLE_SUPER_ADMINISTRATEUR}, et un test direct de
  * {@code ROLE_ADMINISTRATEUR} sur ses autorites l enverrait chez le membre.</p>
  *
- * <p>Une seule source pour les six fins de parcours — mot de passe seul, second facteur,
- * changement impose, enrolement suivi des codes, etape rouverte une fois connecte —
- * qui ecrivaient chacune {@code /mon-compte} en dur.</p>
+ * <p>Une seule source pour les six fins de parcours, qui ecrivaient chacune
+ * {@code /mon-compte} en dur : mot de passe seul, second facteur, changement impose,
+ * enrolement suivi des codes, etape rouverte une fois connecte.</p>
  */
 @Component
 public class PageArrivee {

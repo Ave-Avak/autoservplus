@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
  *
  * <p>Injection par {@link ObjectProvider} : les tests {@code @WebMvcTest} d autres
  * controleurs instancient tous les {@code @ControllerAdvice} du projet sans fournir
- * {@code PanierService} — le provider rend l advice inerte (compteur a 0) plutot
+ * {@code PanierService}. Le provider rend l advice inerte (compteur a 0) plutot
  * que de faire echouer leur contexte.</p>
  */
 @ControllerAdvice

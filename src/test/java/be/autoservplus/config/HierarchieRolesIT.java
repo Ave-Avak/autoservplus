@@ -24,18 +24,18 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * La hierarchie {@code SUPER_ADMINISTRATEUR > ADMINISTRATEUR} couvre-t-elle les
- * <b>trois</b> surfaces d autorisation du projet : la chaine de filtres, la securite de
+ * trois surfaces d autorisation du projet : la chaine de filtres, la securite de
  * methode et le dialecte {@code sec:} des gabarits ?
  *
  * <p>Depuis Spring Security 6.3, un bean {@code RoleHierarchy} unique est repris par
  * l autorisation web et par la securite de methode. Le projet ne s en remet pas a
- * cette lecture : un comportement de framework <i>suppose</i> lui a deja coute trois
- * formulaires publics — {@code @ConditionalOnProperty} jugeant presente une propriete
- * declaree vide. Les surfaces sont donc verifiees <b>separement</b>, et une
+ * cette lecture : un comportement de framework suppose lui a deja coute trois
+ * formulaires publics : {@code @ConditionalOnProperty} jugeait presente une propriete
+ * declaree vide. Les surfaces sont donc verifiees separement, et une
  * regression sur l une seule ferait echouer un cas precis plutot que de passer
  * inapercue.</p>
  *
- * <p>Chaque surface porte aussi son cas de <b>discrimination</b> : sans lui, une
+ * <p>Chaque surface porte aussi son cas de discrimination : sans lui, une
  * configuration qui autoriserait tout le monde satisferait les cas positifs.</p>
  */
 @SpringBootTest

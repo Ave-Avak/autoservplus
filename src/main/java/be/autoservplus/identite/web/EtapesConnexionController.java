@@ -56,7 +56,7 @@ public class EtapesConnexionController {
 
     /**
      * Point d entree du gestionnaire de refus : il ne connait que le prefixe. La garde
-     * oriente toujours — vers l etape en cours, ou vers la page d arrivee du role pour
+     * oriente toujours, vers l etape en cours ou vers la page d arrivee du role pour
      * une connexion deja aboutie.
      */
     @GetMapping

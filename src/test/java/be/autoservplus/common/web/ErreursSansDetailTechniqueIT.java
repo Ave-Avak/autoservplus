@@ -33,12 +33,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Aucune reponse d erreur ne porte de detail technique ni la page Whitelabel, en HTML
  * comme en JSON, sur un vrai serveur.
  *
- * <p><b>Pourquoi un vrai serveur.</b> Une exception non rattrapee repasse par le
+ * <p>Le test demarre un vrai serveur. Une exception non rattrapee repasse par le
  * conteneur ({@code sendError}, puis dispatch {@code ERROR} vers {@code /error}) ;
  * MockMvc ne fait jamais ce second passage, c est donc la que la trace sortait sans
  * qu aucun test la voie.</p>
  *
- * <p><b>Pourquoi les valeurs de devtools.</b> Hors devtools, Spring Boot ne revele deja
+ * <p>Il reprend les valeurs de devtools. Hors devtools, Spring Boot ne revele deja
  * rien : un test sans elles passerait avec ou sans le reglage d {@code application.yml}.
  * L initialiseur les inscrit en derniere position, comme devtools : le test echoue des
  * que {@code server.error.*} cesse d etre pose explicitement.</p>
