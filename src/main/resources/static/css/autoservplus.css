@@ -44,10 +44,15 @@ body {
     background: var(--blanc);
 }
 
-/* Le focus clavier doit rester visible : critere WCAG 2.4.7 */
+/* Le focus clavier doit rester visible : critere WCAG 2.4.7. Indicateur a deux couleurs
+   (technique W3C C40) : anneau interieur --gris-900, anneau exterieur blanc, 2 px chacun,
+   17.74:1 entre eux. Sur fond blanc, l'anneau sombre tient 17.74:1 ; sur le bleu de
+   l'en-tete, l'anneau blanc tient 11.62:1. L'ancien contour --bleu-secondaire ne tenait
+   que 2.40:1 sur ce bleu. */
 :focus-visible {
-    outline: 3px solid var(--bleu-secondaire);
-    outline-offset: 2px;
+    outline: 2px solid var(--gris-900);
+    outline-offset: 0;
+    box-shadow: 0 0 0 4px var(--blanc);
 }
 
 /* Lien d evitement, premier element focusable : critere WCAG 2.4.1 */
@@ -718,7 +723,7 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     display: inline-block;
     padding: 0.125rem var(--espace-s);
     border-radius: var(--rayon);
-    color: var(--gris-700);
+    color: var(--blanc);  /* 11.62:1 sur le bleu de l'en-tete ; --gris-700 n'y tenait que 1.13:1 */
     text-decoration: none;
     font-size: 0.875rem;
 }
@@ -727,11 +732,12 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 .selecteur-langue a:focus-visible { text-decoration: underline; }
 
 /* La langue active est signalee par le fond ET par la graisse : jamais par la couleur
-   seule (WCAG 1.4.1). L'information est aussi portee par aria-current dans le gabarit,
-   pour les technologies d'assistance qui ne voient aucun style. */
+   seule (WCAG 1.4.1). Fond blanc et texte marine (11.62:1) : un fond marine se confondait
+   avec celui de l'en-tete. L'information est aussi portee par aria-current dans le
+   gabarit, pour les technologies d'assistance qui ne voient aucun style. */
 .selecteur-langue a.est-active {
-    background: var(--bleu-marine);
-    color: var(--blanc);
+    background: var(--blanc);
+    color: var(--bleu-marine);
     font-weight: 600;
 }
 
