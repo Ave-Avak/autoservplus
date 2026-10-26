@@ -39,10 +39,10 @@ class VersionnageDocumentsIT extends SocleIntegration {
         void troisLanguesParVersion() {
             // Une version = un jeu de trois textes publies ensemble. Le compte total croit
             // donc de trois a chaque publication, et non de un : V33 amorce trois documents,
-            // V35 publie une seconde version des CGV.
+            // V35 publie une seconde version des CGV, V43 une nouvelle version des trois.
             assertThat(versions.count())
-                    .isEqualTo((TypeDocumentVersionne.values().length + 1)
-                            * (long) Langue.values().length);
+                    .isEqualTo((2L * TypeDocumentVersionne.values().length + 1)
+                            * Langue.values().length);
 
             for (TypeDocumentVersionne type : TypeDocumentVersionne.values()) {
                 String courante = versionsDocuments.versionCourante(type);
@@ -87,15 +87,14 @@ class VersionnageDocumentsIT extends SocleIntegration {
         @Test
         @DisplayName("resout la version en vigueur, y compris apres une publication")
         void continuite() {
-            // CGV a change de version avec V35 (article 9, conservation portee a dix ans) ;
-            // les deux autres documents portent encore l identifiant des constantes que F24
-            // a remplacees, ce qui reste l engagement de compatibilite pris a sa livraison.
+            // CGV a change de version avec V35 (article 9, conservation portee a dix ans),
+            // puis les trois documents avec V43 (typographie).
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.CGV))
-                    .isEqualTo("CGV-2026-02");
+                    .isEqualTo("CGV-2026-03");
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.COOKIES))
-                    .isEqualTo("COOKIES-2026-01");
+                    .isEqualTo("COOKIES-2026-02");
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.RENONCIATION_RETRACTATION))
-                    .isEqualTo("VI53-2026-01");
+                    .isEqualTo("VI53-2026-02");
         }
 
         @Test
@@ -161,7 +160,7 @@ class VersionnageDocumentsIT extends SocleIntegration {
 
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.CGV))
                     .as("La version annoncee pour dans trente jours ne s applique pas aujourd hui")
-                    .isEqualTo("CGV-2026-02");
+                    .isEqualTo("CGV-2026-03");
         }
     }
 
@@ -209,7 +208,7 @@ class VersionnageDocumentsIT extends SocleIntegration {
                     .isFalse();
 
             TexteArchiveVue courante = versionsDocuments
-                    .archive(TypeDocumentVersionne.CGV, "CGV-2026-02", Locale.FRENCH)
+                    .archive(TypeDocumentVersionne.CGV, "CGV-2026-03", Locale.FRENCH)
                     .orElseThrow();
             assertThat(courante.contenu()).contains("conservées dix ans");
             assertThat(courante.actif()).isTrue();
