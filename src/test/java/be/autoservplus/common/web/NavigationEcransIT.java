@@ -472,6 +472,31 @@ class NavigationEcransIT extends SocleIntegration {
             assertThat(liens(ouvrir("/mon-compte", Role.MEMBRE).getContentAsString(), true))
                     .contains("/mes-donnees", "/supprimer-mon-compte");
         }
+
+        /**
+         * Motif « Disclosure Navigation » : le bouton nait cache et replie, il designe le
+         * panneau qui porte les liens, et le script qui le revele est externe. Le rendu
+         * replie lui-meme releve du navigateur ({@code lot/tests-navigateur}).
+         */
+        @Test
+        @DisplayName("menu repliable : bouton caché sans script, lié au panneau des liens, script externe")
+        void menuRepliable() throws Exception {
+            for (Role role : Role.values()) {
+                Document page = Jsoup.parse(ouvrir(PAGES_ARRIVEE.get(role), role).getContentAsString());
+                Element bouton = page.selectFirst("header button.bouton-menu");
+                assertThat(bouton).as(role.name()).isNotNull();
+                assertThat(bouton.attr("type")).isEqualTo("button");
+                assertThat(bouton.hasAttr("hidden")).as("caché tant que le script ne l'a pas révélé").isTrue();
+                assertThat(bouton.attr("aria-expanded")).isEqualTo("false");
+                assertThat(bouton.text()).isEqualTo("Menu");
+                Element panneau = page.getElementById(bouton.attr("aria-controls"));
+                assertThat(panneau).as("panneau désigné par aria-controls").isNotNull();
+                assertThat(panneau.select("a[href=/mon-compte], a[href=/connexion]")).as(role.name()).isNotEmpty();
+                assertThat(page.select("header script[src=/js/menu.js]")).hasSize(1);
+                assertThat(page.select("script:not([src])").stream()
+                        .filter(s -> !"application/ld+json".equals(s.attr("type")))).as("script en ligne").isEmpty();
+            }
+        }
     }
 
     @Nested

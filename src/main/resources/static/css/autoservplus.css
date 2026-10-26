@@ -69,7 +69,7 @@ body {
    2026-10-26) : marque 102 px, menu 372 px, liens du compte jusqu'a 540 px (membre).
    Sur une ligne il faut 1110 px de fenetre ; au-dessous, les liens du compte passent sur
    une seconde ligne, qui tient jusqu'a 588 px. Sous 40em : bloc « Menu repliable ». */
-.entete nav {
+.entete > nav {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
@@ -104,8 +104,9 @@ body {
    active est soulignee et en gras : jamais signalee par la couleur seule (WCAG 1.4.1). */
 .marque-espace { font-weight: 400; font-size: 1rem; margin-left: var(--espace-s); }
 .menu-back-office {
+    flex-basis: 100%;
     max-width: 1100px;
-    margin: var(--espace-m) auto 0;
+    margin: var(--espace-s) auto 0;
 }
 .menu-back-office ul { list-style: none; margin: 0; padding: 0; }
 .menu-back-office > ul {
@@ -237,9 +238,33 @@ main code { overflow-wrap: anywhere; }
    membre, 572 px pour la ligne du back-office) : les listes passent en colonne sur toute
    la largeur, ou un libelle peut se couper plutot que deborder. En em et non en px : un
    texte agrandi par le visiteur deplace la rupture avec lui (WCAG 1.4.4). */
+/* Au-dessus de la rupture, le panneau s'efface de la mise en page (display: contents) :
+   ses listes se rangent dans la ligne de l'en-tete comme s'il n'existait pas. Sous la
+   rupture, il devient un bloc que menu.js replie (.est-replie). Sans script, le bouton
+   garde son attribut hidden et le panneau reste deplie. */
+.menu-panneau { display: contents; }
+.bouton-menu {
+    display: none;
+    margin-left: auto;
+    padding: 0.25rem var(--espace-m);
+    background: transparent;
+    color: var(--blanc);
+    border: 2px solid var(--blanc);
+    border-radius: var(--rayon);
+    font: inherit;
+    font-weight: 600;
+    cursor: pointer;
+}
+/* Etat deplie : fond plein, blanc et marine inverses (11.62:1), en plus d'aria-expanded. */
+.bouton-menu[aria-expanded="true"] { background: var(--blanc); color: var(--bleu-marine); }
+
 @media (max-width: 40em) {
-    .entete nav > .menu,
-    .menu-back-office > ul { flex-basis: 100%; flex-direction: column; align-items: flex-start; }
+    .bouton-menu:not([hidden]) { display: inline-block; }
+    .menu-panneau { display: block; flex-basis: 100%; }
+    .menu-panneau.est-replie { display: none; }
+    .menu-panneau > .menu,
+    .menu-back-office > ul { flex-direction: column; align-items: flex-start; }
+    .menu-panneau > * + * { margin-top: var(--espace-m); }
     .menu-back-office .section > ul { flex-direction: column; }
     .menu-compte { margin-left: 0; }
     .menu a, .menu .lien-bouton, .menu-back-office a { white-space: normal; }
