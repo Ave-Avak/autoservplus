@@ -43,20 +43,22 @@
 
     <section>
         <h2 th:text="#{legal.confidentialite.finalites.titre}">Finalités et bases légales</h2>
-        <table class="tableau">
-            <thead>
-            <tr>
-                <th scope="col" th:text="#{legal.confidentialite.finalites.colonne.finalite}">Finalité</th>
-                <th scope="col" th:text="#{legal.confidentialite.finalites.colonne.base}">Base légale</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="finalite : ${registre.finalites()}">
-                <td th:text="${finalite.libelle()}">Gestion de votre compte</td>
-                <td th:text="${finalite.baseLegale()}">Exécution du contrat</td>
-            </tr>
-            </tbody>
-        </table>
+        <div class="defilement">
+            <table class="tableau">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{legal.confidentialite.finalites.colonne.finalite}">Finalité</th>
+                    <th scope="col" th:text="#{legal.confidentialite.finalites.colonne.base}">Base légale</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="finalite : ${registre.finalites()}">
+                    <td th:text="${finalite.libelle()}">Gestion de votre compte</td>
+                    <td th:text="${finalite.baseLegale()}">Exécution du contrat</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </section>
 
     <section>
@@ -70,22 +72,24 @@
 
     <section>
         <h2 th:text="#{legal.confidentialite.destinataires.titre}">Destinataires et sous-traitants</h2>
-        <table class="tableau">
-            <thead>
-            <tr>
-                <th scope="col" th:text="#{legal.confidentialite.destinataires.colonne.nom}">Destinataire</th>
-                <th scope="col" th:text="#{legal.confidentialite.destinataires.colonne.role}">Rôle</th>
-                <th scope="col" th:text="#{legal.confidentialite.destinataires.colonne.pays}">Pays</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="destinataire : ${registre.destinataires()}">
-                <td th:text="${destinataire.nom()}">Mollie B.V.</td>
-                <td th:text="${destinataire.role()}">Traitement des paiements</td>
-                <td th:text="${destinataire.pays()}">Pays-Bas</td>
-            </tr>
-            </tbody>
-        </table>
+        <div class="defilement">
+            <table class="tableau">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{legal.confidentialite.destinataires.colonne.nom}">Destinataire</th>
+                    <th scope="col" th:text="#{legal.confidentialite.destinataires.colonne.role}">Rôle</th>
+                    <th scope="col" th:text="#{legal.confidentialite.destinataires.colonne.pays}">Pays</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="destinataire : ${registre.destinataires()}">
+                    <td th:text="${destinataire.nom()}">Mollie B.V.</td>
+                    <td th:text="${destinataire.role()}">Traitement des paiements</td>
+                    <td th:text="${destinataire.pays()}">Pays-Bas</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </section>
 
     <section>
@@ -95,20 +99,22 @@
 
     <section>
         <h2 th:text="#{legal.confidentialite.durees.titre}">Durées de conservation</h2>
-        <table class="tableau">
-            <thead>
-            <tr>
-                <th scope="col" th:text="#{legal.confidentialite.durees.colonne.donnees}">Données</th>
-                <th scope="col" th:text="#{legal.confidentialite.durees.colonne.duree}">Durée</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="duree : ${registre.dureesConservation()}">
-                <td th:text="${duree.donnees()}">Commandes et factures</td>
-                <td th:text="${duree.duree()}">10 ans</td>
-            </tr>
-            </tbody>
-        </table>
+        <div class="defilement">
+            <table class="tableau">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{legal.confidentialite.durees.colonne.donnees}">Données</th>
+                    <th scope="col" th:text="#{legal.confidentialite.durees.colonne.duree}">Durée</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="duree : ${registre.dureesConservation()}">
+                    <td th:text="${duree.donnees()}">Commandes et factures</td>
+                    <td th:text="${duree.duree()}">10 ans</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
         <!-- L'arbitrage entre l'article 17 et l'obligation comptable est énoncé plutôt
              que laissé à déduire : c'est la question que pose tout membre qui demande
              la suppression de son compte et voit ses factures survivre. -->
@@ -119,20 +125,22 @@
 
     <section>
         <h2 th:text="#{legal.confidentialite.droits.titre}">Vos droits</h2>
-        <table class="tableau">
-            <thead>
-            <tr>
-                <th scope="col" th:text="#{legal.confidentialite.droits.colonne.droit}">Droit</th>
-                <th scope="col" th:text="#{legal.confidentialite.droits.colonne.article}">Fondement</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="droit : ${registre.droits()}">
-                <td th:text="${droit.libelle()}">Droit d'accès</td>
-                <td th:text="${droit.article()}">Article 15 du RGPD</td>
-            </tr>
-            </tbody>
-        </table>
+        <div class="defilement">
+            <table class="tableau">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{legal.confidentialite.droits.colonne.droit}">Droit</th>
+                    <th scope="col" th:text="#{legal.confidentialite.droits.colonne.article}">Fondement</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="droit : ${registre.droits()}">
+                    <td th:text="${droit.libelle()}">Droit d'accès</td>
+                    <td th:text="${droit.article()}">Article 15 du RGPD</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </section>
 
     <section>

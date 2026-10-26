@@ -26,32 +26,34 @@
 
     <p th:if="${#lists.isEmpty(comptes)}" th:text="#{admin.comptes.aucun}">Aucun compte ne correspond.</p>
 
-    <table class="tableau" th:unless="${#lists.isEmpty(comptes)}">
-        <caption th:text="#{admin.comptes.legende}">Comptes membres, par ordre alphabétique.</caption>
-        <thead>
-        <tr>
-            <th scope="col" th:text="#{admin.comptes.colonne.nom}">Nom</th>
-            <th scope="col" th:text="#{admin.comptes.colonne.email}">Adresse</th>
-            <th scope="col" th:text="#{admin.comptes.colonne.statut}">Statut</th>
-            <th scope="col" th:text="#{admin.comptes.colonne.action}">Action</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="c : ${comptes}">
-            <td th:text="${c.nomComplet()}">Marie Dupont</td>
-            <td th:text="${c.email()}">marie@exemple.be</td>
-            <td>
-                <span class="badge" th:classappend="${c.suspendu()} ? 'badge-suspendu' : 'badge-actif'"
-                      th:text="#{'admin.comptes.statut.' + ${c.statut()}}">Actif</span>
-            </td>
-            <td>
-                <a th:href="@{/admin/comptes/{ref}(ref=${c.reference()})}"
-                   th:text="#{admin.comptes.consulter}"
-                   th:attr="aria-label=#{admin.comptes.consulter.aria(${c.nomComplet()})}">Consulter</a>
-            </td>
-        </tr>
-        </tbody>
-    </table>
+    <div class="defilement" th:unless="${#lists.isEmpty(comptes)}">
+        <table class="tableau">
+            <caption th:text="#{admin.comptes.legende}">Comptes membres, par ordre alphabétique.</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.comptes.colonne.nom}">Nom</th>
+                <th scope="col" th:text="#{admin.comptes.colonne.email}">Adresse</th>
+                <th scope="col" th:text="#{admin.comptes.colonne.statut}">Statut</th>
+                <th scope="col" th:text="#{admin.comptes.colonne.action}">Action</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${comptes}">
+                <td th:text="${c.nomComplet()}">Marie Dupont</td>
+                <td th:text="${c.email()}">marie@exemple.be</td>
+                <td>
+                    <span class="badge" th:classappend="${c.suspendu()} ? 'badge-suspendu' : 'badge-actif'"
+                          th:text="#{'admin.comptes.statut.' + ${c.statut()}}">Actif</span>
+                </td>
+                <td>
+                    <a th:href="@{/admin/comptes/{ref}(ref=${c.reference()})}"
+                       th:text="#{admin.comptes.consulter}"
+                       th:attr="aria-label=#{admin.comptes.consulter.aria(${c.nomComplet()})}">Consulter</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </main>
 
 <footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>

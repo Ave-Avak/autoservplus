@@ -34,19 +34,21 @@
     </div>
 
     <h2>Travaux soumis à votre accord</h2>
-    <table class="tableau">
-        <caption class="texte-info">Montants hors TVA, comme votre devis initial.</caption>
-        <thead>
-            <tr><th scope="col">Désignation</th><th scope="col">Quantité</th><th scope="col">Montant HTVA</th></tr>
-        </thead>
-        <tbody>
-            <tr th:each="l : ${demande.lignesEnAttente()}">
-                <td th:text="${l.libelle()}">Remplacement plaquettes</td>
-                <td th:text="${l.quantite()}">1</td>
-                <td th:text="${l.totalHtva()}">89,00 €</td>
-            </tr>
-        </tbody>
-    </table>
+    <div class="defilement">
+        <table class="tableau">
+            <caption class="texte-info">Montants hors TVA, comme votre devis initial.</caption>
+            <thead>
+                <tr><th scope="col">Désignation</th><th scope="col">Quantité</th><th scope="col">Montant HTVA</th></tr>
+            </thead>
+            <tbody>
+                <tr th:each="l : ${demande.lignesEnAttente()}">
+                    <td th:text="${l.libelle()}">Remplacement plaquettes</td>
+                    <td th:text="${l.quantite()}">1</td>
+                    <td th:text="${l.totalHtva()}">89,00 €</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
     <h2>Récapitulatif</h2>
     <dl class="vehicule-details">

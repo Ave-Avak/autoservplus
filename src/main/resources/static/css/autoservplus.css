@@ -65,10 +65,15 @@ body {
     background: var(--bleu-marine);
     padding: var(--espace-m) var(--espace-l);
 }
+/* L'en-tete passe a la ligne au lieu de deborder. Largeurs mesurees au rendu (Chrome,
+   2026-10-26) : marque 102 px, menu 372 px, liens du compte jusqu'a 540 px (membre).
+   Sur une ligne il faut 1110 px de fenetre ; au-dessous, les liens du compte passent sur
+   une seconde ligne, qui tient jusqu'a 588 px. Sous 40em : bloc « Menu repliable ». */
 .entete nav {
     display: flex;
+    flex-wrap: wrap;
     align-items: center;
-    gap: var(--espace-l);
+    gap: var(--espace-s) var(--espace-l);
     max-width: 1100px;
     margin: 0 auto;
 }
@@ -80,7 +85,8 @@ body {
 }
 .menu {
     display: flex;
-    gap: var(--espace-m);
+    flex-wrap: wrap;
+    gap: var(--espace-s) var(--espace-m);
     list-style: none;
     margin: 0;
     padding: 0;
@@ -88,6 +94,9 @@ body {
 }
 .menu-compte { margin-left: auto; }
 .menu a { color: var(--blanc); text-decoration: none; }
+/* Un libelle ne se coupe pas : « Prendre rendez-vous » sur trois lignes etait le
+   symptome d'un menu comprime au lieu d'etre replie. */
+.menu a, .menu .lien-bouton, .menu-back-office a { white-space: nowrap; }
 .menu a:hover { text-decoration: underline; }
 .menu-langue a { font-size: 0.875rem; }
 
@@ -136,6 +145,17 @@ main {
 }
 
 h1 { color: var(--bleu-marine); margin-top: 0; }
+
+/* Un tableau de donnees defile dans son conteneur, la page jamais : exception de WCAG
+   1.4.10 pour les contenus a deux dimensions. Pas de display:block sur le <table>,
+   qui lui ferait perdre sa semantique de tableau dans certains navigateurs. Le
+   conteneur defilant est atteint au clavier par le navigateur (Chrome 130+, Firefox).
+   position: relative retient les libelles .visuellement-cache des cellules, places en
+   absolu : sans elle, ils debordaient de la page malgre le conteneur. */
+.defilement { position: relative; max-width: 100%; overflow-x: auto; }
+
+/* Un exemple de format (en-tete CSV de l'import) se coupe plutot que d'elargir la page. */
+main code { overflow-wrap: anywhere; }
 
 .btn-cta {
     display: inline-block;
@@ -207,25 +227,35 @@ h1 { color: var(--bleu-marine); margin-top: 0; }
     list-style: none;
     padding: 0;
     display: flex;
-    gap: var(--espace-m);
+    flex-wrap: wrap;
+    gap: var(--espace-s) var(--espace-m);
     justify-content: center;
 }
 .pied a { color: var(--gris-700); }
 
-@media (max-width: 640px) {
-    .entete nav { flex-wrap: wrap; gap: var(--espace-s); }
+/* Menu repliable. Sous 40em, la ligne du compte ne tient plus (588 px mesures pour le
+   membre, 572 px pour la ligne du back-office) : les listes passent en colonne sur toute
+   la largeur, ou un libelle peut se couper plutot que deborder. En em et non en px : un
+   texte agrandi par le visiteur deplace la rupture avec lui (WCAG 1.4.4). */
+@media (max-width: 40em) {
+    .entete nav > .menu,
+    .menu-back-office > ul { flex-basis: 100%; flex-direction: column; align-items: flex-start; }
+    .menu-back-office .section > ul { flex-direction: column; }
     .menu-compte { margin-left: 0; }
+    .menu a, .menu .lien-bouton, .menu-back-office a { white-space: normal; }
 }
 /* --- Catalogue ------------------------------------------------------------------ */
 
 .recherche {
     display: flex;
+    flex-wrap: wrap;
     gap: var(--espace-s);
     margin-bottom: var(--espace-l);
     max-width: 32rem;
 }
 .recherche input {
-    flex: 1;
+    flex: 1 1 12rem;
+    min-width: 0;
     padding: var(--espace-s);
     border: 1px solid var(--gris-200);
     border-radius: var(--rayon);
@@ -267,7 +297,7 @@ h1 { color: var(--bleu-marine); margin-top: 0; }
 
 .grille-articles {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(min(17rem, 100%), 1fr));
     gap: var(--espace-l);
     list-style: none;
     padding: 0;
@@ -416,7 +446,7 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 .formulaire-rdv fieldset { border: 1px solid var(--gris-200); border-radius: var(--rayon); padding: var(--espace-m) var(--espace-l); margin-bottom: var(--espace-l); }
 .formulaire-rdv legend { font-weight: 600; padding: 0 var(--espace-s); }
 .groupe-prestations h2 { font-size: 1rem; margin: var(--espace-m) 0 var(--espace-s); }
-.liste-cases { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--espace-s); grid-template-columns: repeat(auto-fill, minmax(16rem, 1fr)); }
+.liste-cases { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--espace-s); grid-template-columns: repeat(auto-fill, minmax(min(16rem, 100%), 1fr)); }
 .liste-cases li { display: flex; align-items: flex-start; gap: var(--espace-s); }
 .liste-cases label { display: flex; flex-direction: column; }
 .liste-cases small { color: var(--gris-500); }

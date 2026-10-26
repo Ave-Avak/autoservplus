@@ -58,29 +58,31 @@
         Aucune entrée ne correspond à ces critères.
     </p>
 
-    <table class="tableau" th:unless="${#lists.isEmpty(entrees)}">
-        <caption th:text="#{admin.journal.legende}">Traces d'audit, de la plus récente à la plus ancienne.</caption>
-        <thead>
-        <tr>
-            <th scope="col" th:text="#{admin.journal.colonne.date}">Date</th>
-            <th scope="col" th:text="#{admin.journal.colonne.type}">Type</th>
-            <th scope="col" th:text="#{admin.journal.colonne.acteur}">Acteur</th>
-            <th scope="col" th:text="#{admin.journal.colonne.cible}">Objet</th>
-            <th scope="col" th:text="#{admin.journal.colonne.detail}">Changement</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="e : ${entrees}">
-            <td th:text="${e.date()}">23 août 2026</td>
-            <td th:text="#{'admin.journal.type.' + ${e.type()}}">Catalogue</td>
-            <!-- Auteur inconnu : compte anonymisé (F23) ou écriture système. On le dit
-                 plutôt que de laisser une cellule vide, qui se lirait comme une perte. -->
-            <td th:text="${e.acteurConnu()} ? ${e.acteur()} : #{admin.journal.acteur-inconnu}">Marie Dupont</td>
-            <td th:text="${e.cible()}">ITV-2026-0011</td>
-            <td th:text="${e.detail()}">EN_COURS → TERMINEE</td>
-        </tr>
-        </tbody>
-    </table>
+    <div class="defilement" th:unless="${#lists.isEmpty(entrees)}">
+        <table class="tableau">
+            <caption th:text="#{admin.journal.legende}">Traces d'audit, de la plus récente à la plus ancienne.</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.journal.colonne.date}">Date</th>
+                <th scope="col" th:text="#{admin.journal.colonne.type}">Type</th>
+                <th scope="col" th:text="#{admin.journal.colonne.acteur}">Acteur</th>
+                <th scope="col" th:text="#{admin.journal.colonne.cible}">Objet</th>
+                <th scope="col" th:text="#{admin.journal.colonne.detail}">Changement</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="e : ${entrees}">
+                <td th:text="${e.date()}">23 août 2026</td>
+                <td th:text="#{'admin.journal.type.' + ${e.type()}}">Catalogue</td>
+                <!-- Auteur inconnu : compte anonymisé (F23) ou écriture système. On le dit
+                     plutôt que de laisser une cellule vide, qui se lirait comme une perte. -->
+                <td th:text="${e.acteurConnu()} ? ${e.acteur()} : #{admin.journal.acteur-inconnu}">Marie Dupont</td>
+                <td th:text="${e.cible()}">ITV-2026-0011</td>
+                <td th:text="${e.detail()}">EN_COURS → TERMINEE</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </main>
 <footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 <div th:replace="~{fragments/cookies :: bandeau}"></div>

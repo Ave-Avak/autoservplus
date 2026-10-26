@@ -20,59 +20,61 @@
 
     <p th:if="${#lists.isEmpty(avis)}" th:text="#{admin.avis.aucun}">Aucun avis déposé.</p>
 
-    <table class="tableau" th:unless="${#lists.isEmpty(avis)}">
-        <caption th:text="#{admin.avis.legende}">Tous les avis, masqués compris, du plus récent au plus ancien.</caption>
-        <thead>
-        <tr>
-            <th scope="col" th:text="#{admin.avis.colonne.intervention}">Intervention</th>
-            <th scope="col" th:text="#{admin.avis.colonne.auteur}">Auteur</th>
-            <th scope="col" th:text="#{admin.avis.colonne.note}">Note</th>
-            <th scope="col" th:text="#{admin.avis.colonne.commentaire}">Commentaire</th>
-            <th scope="col" th:text="#{admin.avis.colonne.date}">Date</th>
-            <th scope="col" th:text="#{admin.avis.colonne.etat}">État</th>
-            <th scope="col" th:text="#{admin.avis.colonne.actions}">Actions</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="a : ${avis}">
-            <td th:text="${a.numeroIntervention()}">ITV-2026-0011</td>
-            <td th:text="${a.prenomAuteur()}">Marie</td>
-            <td th:text="#{avis.note(${a.note()})}">4 sur 5</td>
-            <td th:text="${a.aUnCommentaire()} ? ${a.commentaire()} : ''">Travail soigné.</td>
-            <td th:text="${a.date()}">23 août 2026</td>
-            <td>
-                <span th:text="${a.publie()} ? #{admin.avis.etat.publie} : #{admin.avis.etat.masque}">Publié</span>
-                <span th:if="${a.signale()}" class="badge" th:text="#{admin.avis.etat.signale}">Signalé</span>
-            </td>
-            <td>
-                <!-- Masquer et publier sont exclusifs : proposer les deux inviterait
-                     a cliquer sur celui qui ne change rien. -->
-                <form th:if="${a.publie()}" th:action="@{/admin/avis/{ref}/masquer(ref=${a.reference()})}"
-                      method="post" class="en-ligne">
-                    <button type="submit" class="lien-bouton" th:aria-label="#{admin.avis.action.masquer.aria(${a.prenomAuteur()})}"
-                            th:text="#{admin.avis.action.masquer}">Masquer</button>
-                </form>
-                <form th:unless="${a.publie()}" th:action="@{/admin/avis/{ref}/publier(ref=${a.reference()})}"
-                      method="post" class="en-ligne">
-                    <button type="submit" class="lien-bouton" th:aria-label="#{admin.avis.action.publier.aria(${a.prenomAuteur()})}"
-                            th:text="#{admin.avis.action.publier}">Republier</button>
-                </form>
+    <div class="defilement" th:unless="${#lists.isEmpty(avis)}">
+        <table class="tableau">
+            <caption th:text="#{admin.avis.legende}">Tous les avis, masqués compris, du plus récent au plus ancien.</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.avis.colonne.intervention}">Intervention</th>
+                <th scope="col" th:text="#{admin.avis.colonne.auteur}">Auteur</th>
+                <th scope="col" th:text="#{admin.avis.colonne.note}">Note</th>
+                <th scope="col" th:text="#{admin.avis.colonne.commentaire}">Commentaire</th>
+                <th scope="col" th:text="#{admin.avis.colonne.date}">Date</th>
+                <th scope="col" th:text="#{admin.avis.colonne.etat}">État</th>
+                <th scope="col" th:text="#{admin.avis.colonne.actions}">Actions</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="a : ${avis}">
+                <td th:text="${a.numeroIntervention()}">ITV-2026-0011</td>
+                <td th:text="${a.prenomAuteur()}">Marie</td>
+                <td th:text="#{avis.note(${a.note()})}">4 sur 5</td>
+                <td th:text="${a.aUnCommentaire()} ? ${a.commentaire()} : ''">Travail soigné.</td>
+                <td th:text="${a.date()}">23 août 2026</td>
+                <td>
+                    <span th:text="${a.publie()} ? #{admin.avis.etat.publie} : #{admin.avis.etat.masque}">Publié</span>
+                    <span th:if="${a.signale()}" class="badge" th:text="#{admin.avis.etat.signale}">Signalé</span>
+                </td>
+                <td>
+                    <!-- Masquer et publier sont exclusifs : proposer les deux inviterait
+                         a cliquer sur celui qui ne change rien. -->
+                    <form th:if="${a.publie()}" th:action="@{/admin/avis/{ref}/masquer(ref=${a.reference()})}"
+                          method="post" class="en-ligne">
+                        <button type="submit" class="lien-bouton" th:aria-label="#{admin.avis.action.masquer.aria(${a.prenomAuteur()})}"
+                                th:text="#{admin.avis.action.masquer}">Masquer</button>
+                    </form>
+                    <form th:unless="${a.publie()}" th:action="@{/admin/avis/{ref}/publier(ref=${a.reference()})}"
+                          method="post" class="en-ligne">
+                        <button type="submit" class="lien-bouton" th:aria-label="#{admin.avis.action.publier.aria(${a.prenomAuteur()})}"
+                                th:text="#{admin.avis.action.publier}">Republier</button>
+                    </form>
 
-                <form th:unless="${a.signale()}" th:action="@{/admin/avis/{ref}/signaler(ref=${a.reference()})}"
-                      method="post" class="en-ligne">
-                    <button type="submit" class="lien-bouton" th:aria-label="#{admin.avis.action.signaler.aria(${a.prenomAuteur()})}"
-                            th:text="#{admin.avis.action.signaler}">Signaler</button>
-                </form>
-                <form th:if="${a.signale()}" th:action="@{/admin/avis/{ref}/lever-signalement(ref=${a.reference()})}"
-                      method="post" class="en-ligne">
-                    <button type="submit" class="lien-bouton"
-                            th:aria-label="#{admin.avis.action.lever-signalement.aria(${a.prenomAuteur()})}"
-                            th:text="#{admin.avis.action.lever-signalement}">Lever le signalement</button>
-                </form>
-            </td>
-        </tr>
-        </tbody>
-    </table>
+                    <form th:unless="${a.signale()}" th:action="@{/admin/avis/{ref}/signaler(ref=${a.reference()})}"
+                          method="post" class="en-ligne">
+                        <button type="submit" class="lien-bouton" th:aria-label="#{admin.avis.action.signaler.aria(${a.prenomAuteur()})}"
+                                th:text="#{admin.avis.action.signaler}">Signaler</button>
+                    </form>
+                    <form th:if="${a.signale()}" th:action="@{/admin/avis/{ref}/lever-signalement(ref=${a.reference()})}"
+                          method="post" class="en-ligne">
+                        <button type="submit" class="lien-bouton"
+                                th:aria-label="#{admin.avis.action.lever-signalement.aria(${a.prenomAuteur()})}"
+                                th:text="#{admin.avis.action.lever-signalement}">Lever le signalement</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 </main>
 
 <footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>

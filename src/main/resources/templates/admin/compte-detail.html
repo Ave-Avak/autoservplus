@@ -88,54 +88,58 @@
     <p th:if="${#lists.isEmpty(journal)}" th:text="#{admin.compte.journal.aucun}">
         Aucun changement de statut enregistré.</p>
 
-    <table class="tableau" th:unless="${#lists.isEmpty(journal)}">
-        <caption th:text="#{admin.compte.journal.legende}">Du plus récent au plus ancien.</caption>
-        <thead>
-        <tr>
-            <th scope="col" th:text="#{admin.compte.journal.date}">Date</th>
-            <th scope="col" th:text="#{admin.compte.journal.transition}">Transition</th>
-            <th scope="col" th:text="#{admin.compte.journal.auteur}">Auteur</th>
-            <th scope="col" th:text="#{admin.compte.journal.motif}">Motif</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="e : ${journal}">
-            <td th:text="${e.horodatage()}">2026-09-22</td>
-            <td>
-                <span th:text="#{'admin.comptes.statut.' + ${e.statutAvant()}}">Actif</span>
-                &rarr;
-                <span th:text="#{'admin.comptes.statut.' + ${e.statutApres()}}">Suspendu</span>
-            </td>
-            <!--/* Auteur nul : la trace survit à la disparition de son auteur. */-->
-            <td th:text="${e.auteur()} ?: #{admin.compte.journal.auteur-inconnu}">Chef Garage</td>
-            <td th:text="${e.motif()} ?: '—'">Impayés répétés.</td>
-        </tr>
-        </tbody>
-    </table>
+    <div class="defilement" th:unless="${#lists.isEmpty(journal)}">
+        <table class="tableau">
+            <caption th:text="#{admin.compte.journal.legende}">Du plus récent au plus ancien.</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.compte.journal.date}">Date</th>
+                <th scope="col" th:text="#{admin.compte.journal.transition}">Transition</th>
+                <th scope="col" th:text="#{admin.compte.journal.auteur}">Auteur</th>
+                <th scope="col" th:text="#{admin.compte.journal.motif}">Motif</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="e : ${journal}">
+                <td th:text="${e.horodatage()}">2026-09-22</td>
+                <td>
+                    <span th:text="#{'admin.comptes.statut.' + ${e.statutAvant()}}">Actif</span>
+                    &rarr;
+                    <span th:text="#{'admin.comptes.statut.' + ${e.statutApres()}}">Suspendu</span>
+                </td>
+                <!--/* Auteur nul : la trace survit à la disparition de son auteur. */-->
+                <td th:text="${e.auteur()} ?: #{admin.compte.journal.auteur-inconnu}">Chef Garage</td>
+                <td th:text="${e.motif()} ?: '—'">Impayés répétés.</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 
     <h2 th:text="#{admin.compte.securite.titre}">Journal de sécurité</h2>
     <p th:if="${#lists.isEmpty(journalSecurite)}" th:text="#{admin.compte.securite.aucun}">
         Aucun événement de sécurité enregistré.</p>
 
-    <table class="tableau" th:unless="${#lists.isEmpty(journalSecurite)}">
-        <caption th:text="#{admin.compte.securite.legende}">Du plus récent au plus ancien.</caption>
-        <thead>
-        <tr>
-            <th scope="col" th:text="#{admin.compte.journal.date}">Date</th>
-            <th scope="col" th:text="#{admin.compte.securite.evenement}">Événement</th>
-            <th scope="col" th:text="#{admin.compte.journal.auteur}">Auteur</th>
-        </tr>
-        </thead>
-        <tbody>
-        <tr th:each="e : ${journalSecurite}">
-            <td th:text="${#temporals.format(e.horodatage(), 'dd/MM/yyyy HH:mm')}">01/10/2026 09:12</td>
-            <td th:text="#{'admin.compte.securite.type.' + ${e.type()}}">Second facteur activé</td>
-            <!--/* Auteur nul : le système a constaté (échec, verrouillage) sans savoir qui saisissait. */-->
-            <td th:text="${e.parTitulaire()} ? #{admin.compte.securite.titulaire}
-                         : (${e.auteur()} ?: #{admin.compte.securite.systeme})">Titulaire</td>
-        </tr>
-        </tbody>
-    </table>
+    <div class="defilement" th:unless="${#lists.isEmpty(journalSecurite)}">
+        <table class="tableau">
+            <caption th:text="#{admin.compte.securite.legende}">Du plus récent au plus ancien.</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.compte.journal.date}">Date</th>
+                <th scope="col" th:text="#{admin.compte.securite.evenement}">Événement</th>
+                <th scope="col" th:text="#{admin.compte.journal.auteur}">Auteur</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="e : ${journalSecurite}">
+                <td th:text="${#temporals.format(e.horodatage(), 'dd/MM/yyyy HH:mm')}">01/10/2026 09:12</td>
+                <td th:text="#{'admin.compte.securite.type.' + ${e.type()}}">Second facteur activé</td>
+                <!--/* Auteur nul : le système a constaté (échec, verrouillage) sans savoir qui saisissait. */-->
+                <td th:text="${e.parTitulaire()} ? #{admin.compte.securite.titulaire}
+                             : (${e.auteur()} ?: #{admin.compte.securite.systeme})">Titulaire</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
 
     <p class="actions-page">
         <a th:href="@{/admin/comptes}" th:text="#{admin.compte.retour}">Retour à la liste</a>

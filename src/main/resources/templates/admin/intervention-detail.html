@@ -103,43 +103,45 @@
     </p>
 
     <h2>Lignes</h2>
-    <table class="tableau">
-        <thead>
-            <tr><th scope="col">Type</th><th scope="col">Libellé</th><th scope="col">État</th><th scope="col">Qté</th><th scope="col">PU HTVA</th><th scope="col">Total HTVA</th><th scope="col"><span class="visuellement-cache" th:text="#{admin.intervention.colonne.actions}">Actions</span></th></tr>
-        </thead>
-        <tbody>
-            <!-- Une ligne hors total (en attente ou refusée) reste affichée : c'est le
-                 dossier de travail du garage, pas la facture. La classe la distingue. -->
-            <tr th:each="l : ${intervention.lignes()}"
-                th:classappend="${l.compteDansLeTotal()} ? null : 'ligne-hors-total'">
-                <td th:text="${l.type()}">MAIN_OEUVRE</td>
-                <td th:text="${l.libelle()}">Vidange</td>
-                <td th:text="${l.etat()}">Devis initial</td>
-                <td th:text="${l.quantite()}">1</td>
-                <td th:text="${l.prixUnitaireHtva()}">49,00 €</td>
-                <td th:text="${l.totalHtva()}">49,00 €</td>
-                <td>
-                    <form th:if="${intervention.estEditable()}"
-                          th:action="@{/admin/interventions/{ref}/lignes/{id}/supprimer(ref=${intervention.reference()},id=${l.id()})}"
-                          method="post" style="display:inline">
-                        <button type="submit" class="lien-bouton texte-erreur">Retirer</button>
-                    </form>
-                </td>
-            </tr>
-        </tbody>
-        <tfoot>
-            <tr>
-                <td colspan="5"><strong>Total facturable</strong></td>
-                <td th:text="${intervention.totalHtva()}">49,00 €</td>
-                <td></td>
-            </tr>
-            <tr>
-                <td colspan="5"><strong>Total facturable TVAC</strong></td>
-                <td th:text="${intervention.totalTvac()}">59,29 €</td>
-                <td></td>
-            </tr>
-        </tfoot>
-    </table>
+    <div class="defilement">
+        <table class="tableau">
+            <thead>
+                <tr><th scope="col">Type</th><th scope="col">Libellé</th><th scope="col">État</th><th scope="col">Qté</th><th scope="col">PU HTVA</th><th scope="col">Total HTVA</th><th scope="col"><span class="visuellement-cache" th:text="#{admin.intervention.colonne.actions}">Actions</span></th></tr>
+            </thead>
+            <tbody>
+                <!-- Une ligne hors total (en attente ou refusée) reste affichée : c'est le
+                     dossier de travail du garage, pas la facture. La classe la distingue. -->
+                <tr th:each="l : ${intervention.lignes()}"
+                    th:classappend="${l.compteDansLeTotal()} ? null : 'ligne-hors-total'">
+                    <td th:text="${l.type()}">MAIN_OEUVRE</td>
+                    <td th:text="${l.libelle()}">Vidange</td>
+                    <td th:text="${l.etat()}">Devis initial</td>
+                    <td th:text="${l.quantite()}">1</td>
+                    <td th:text="${l.prixUnitaireHtva()}">49,00 €</td>
+                    <td th:text="${l.totalHtva()}">49,00 €</td>
+                    <td>
+                        <form th:if="${intervention.estEditable()}"
+                              th:action="@{/admin/interventions/{ref}/lignes/{id}/supprimer(ref=${intervention.reference()},id=${l.id()})}"
+                              method="post" style="display:inline">
+                            <button type="submit" class="lien-bouton texte-erreur">Retirer</button>
+                        </form>
+                    </td>
+                </tr>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td colspan="5"><strong>Total facturable</strong></td>
+                    <td th:text="${intervention.totalHtva()}">49,00 €</td>
+                    <td></td>
+                </tr>
+                <tr>
+                    <td colspan="5"><strong>Total facturable TVAC</strong></td>
+                    <td th:text="${intervention.totalTvac()}">59,29 €</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
 
     <!-- RM-14 : l'ajout n'est ouvert qu'en cours de réalisation. Le domaine le refuse
          ailleurs (exigerAjoutEnCours) ; on n'invite pas à une action condamnée.

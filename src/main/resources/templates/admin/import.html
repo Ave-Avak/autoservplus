@@ -25,21 +25,23 @@
         <p th:text="#{admin.import.bilan(${rapport.crees()}, ${rapport.misAJour()}, ${rapport.erreurs().size()})}">
             3 créées, 2 mises à jour, 0 erreur
         </p>
-        <table class="tableau" th:unless="${rapport.sansErreur()}">
-            <caption th:text="#{admin.import.erreurs}">Lignes à corriger dans votre fichier</caption>
-            <thead>
-            <tr>
-                <th scope="col" th:text="#{admin.import.colonne.ligne}">Ligne</th>
-                <th scope="col" th:text="#{admin.import.colonne.motif}">Motif</th>
-            </tr>
-            </thead>
-            <tbody>
-            <tr th:each="e : ${rapport.erreurs()}">
-                <td th:text="${e.ligne()}">4</td>
-                <td th:text="${e.motif()}">Colonne « prix_htva » vide.</td>
-            </tr>
-            </tbody>
-        </table>
+        <div class="defilement" th:unless="${rapport.sansErreur()}">
+            <table class="tableau">
+                <caption th:text="#{admin.import.erreurs}">Lignes à corriger dans votre fichier</caption>
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{admin.import.colonne.ligne}">Ligne</th>
+                    <th scope="col" th:text="#{admin.import.colonne.motif}">Motif</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="e : ${rapport.erreurs()}">
+                    <td th:text="${e.ligne()}">4</td>
+                    <td th:text="${e.motif()}">Colonne « prix_htva » vide.</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </section>
 
     <h2 th:text="#{admin.import.prestations}">Prestations</h2>
