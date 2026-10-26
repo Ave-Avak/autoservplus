@@ -109,7 +109,7 @@
                 </td>
                 <!--/* Auteur nul : la trace survit à la disparition de son auteur. */-->
                 <td th:text="${e.auteur()} ?: #{admin.compte.journal.auteur-inconnu}">Chef Garage</td>
-                <td th:text="${e.motif()} ?: '—'">Impayés répétés.</td>
+                <td th:text="${e.motif()} ?: #{admin.compte.journal.sans-motif}">Impayés répétés.</td>
             </tr>
             </tbody>
         </table>

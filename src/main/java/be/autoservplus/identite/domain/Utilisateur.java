@@ -415,10 +415,13 @@ public class Utilisateur extends BaseEntity {
      * Pays d un compte anonymise. Marqueur d absence, et non un pays de substitution :
      * reecrire « Belgique » sur le dossier d une personne qui resida ailleurs
      * n anonymise pas, cela <b>affirme</b> une donnee peut-etre fausse. La colonne est
-     * NOT NULL, d ou un marqueur plutot que NULL — c est le meme tiret cadratin que les
-     * gabarits emploient deja pour dire « rien ».
+     * NOT NULL, d ou un marqueur plutot que NULL.
+     *
+     * <p>Valeur stockee et jamais affichee : l adresse etant videe, aucun document ne
+     * l imprime. Elle reste le tiret long, ecrit en sequence d echappement, pour que les
+     * comptes deja anonymises et les suivants portent le meme marqueur.</p>
      */
-    public static final String PAYS_ANONYME = "—";
+    public static final String PAYS_ANONYME = "\u2014";
 
     /**
      * Vide le compte de toute donnee personnelle et le marque anonymise.
