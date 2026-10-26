@@ -15,7 +15,7 @@
 <header th:replace="~{fragments/back-office :: entete}"></header>
 
 <main id="contenu">
-    <p><a th:href="@{/admin/interventions}">← Retour aux interventions</a></p>
+    <p><a th:href="@{/admin/interventions}">Retour aux interventions</a></p>
 
     <h1 th:text="'Intervention ' + ${intervention.numero()}">Intervention INT-2026-0001</h1>
     <p><a th:href="@{/admin/galerie/interventions/{ref}(ref=${intervention.reference()})}"

@@ -398,7 +398,7 @@ class NavigationEcransIT extends SocleIntegration {
                                 || String.valueOf(reponse.getRedirectedUrl()).endsWith("/connexion"));
                     if (!conforme) {
                         ecarts.add(role + " " + route.appel() + " : " + reponse.getStatus()
-                                + " (attendu " + attendu + ") → " + reponse.getRedirectedUrl());
+                                + " (attendu " + attendu + "), redirige vers " + reponse.getRedirectedUrl());
                     }
                 }
             }

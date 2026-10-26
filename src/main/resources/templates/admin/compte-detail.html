@@ -102,11 +102,9 @@
             <tbody>
             <tr th:each="e : ${journal}">
                 <td th:text="${e.horodatage()}">2026-09-22</td>
-                <td>
-                    <span th:text="#{'admin.comptes.statut.' + ${e.statutAvant()}}">Actif</span>
-                    &rarr;
-                    <span th:text="#{'admin.comptes.statut.' + ${e.statutApres()}}">Suspendu</span>
-                </td>
+                <td th:text="${#messages.msg('admin.compte.journal.passage',
+                                             #messages.msg('admin.comptes.statut.' + e.statutAvant()),
+                                             #messages.msg('admin.comptes.statut.' + e.statutApres()))}">Actif, puis Suspendu</td>
                 <!--/* Auteur nul : la trace survit à la disparition de son auteur. */-->
                 <td th:text="${e.auteur()} ?: #{admin.compte.journal.auteur-inconnu}">Chef Garage</td>
                 <td th:text="${e.motif()} ?: #{admin.compte.journal.sans-motif}">Impayés répétés.</td>

@@ -78,7 +78,7 @@
                      plutôt que de laisser une cellule vide, qui se lirait comme une perte. -->
                 <td th:text="${e.acteurConnu()} ? ${e.acteur()} : #{admin.journal.acteur-inconnu}">Marie Dupont</td>
                 <td th:text="${e.cible()}">ITV-2026-0011</td>
-                <td th:text="${e.detail()}">EN_COURS → TERMINEE</td>
+                <td th:text="${e.detail()}">EN_COURS, puis TERMINEE</td>
             </tr>
             </tbody>
         </table>

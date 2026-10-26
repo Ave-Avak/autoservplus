@@ -15,7 +15,7 @@
 
 <main id="contenu">
     <p><a th:href="@{/admin/catalogue/prestations}"
-          th:text="'← ' + #{admin.catalogue.retour}">← Retour à la liste</a></p>
+          th:text="#{admin.catalogue.retour}">Retour à la liste</a></p>
 
     <h1 th:text="${titre}">Nouvelle prestation</h1>
     <p th:if="${edition}"><a th:href="@{/admin/galerie/prestations/{ref}(ref=${reference})}"

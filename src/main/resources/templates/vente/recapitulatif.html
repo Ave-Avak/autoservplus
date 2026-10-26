@@ -14,7 +14,7 @@
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <p><a th:href="@{/panier}" th:text="'← ' + #{commande.recap.retour}">← Retour au panier</a></p>
+    <p><a th:href="@{/panier}" th:text="#{commande.recap.retour}">Retour au panier</a></p>
 
     <h1 th:text="#{commande.recap.titre}">Récapitulatif de commande</h1>
 

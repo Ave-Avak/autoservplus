@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Journal d audit du garage (BL-7), en <b>consultation seule</b>.
@@ -119,18 +120,21 @@ public class JournalService {
      * Compose la colonne « ce qui a change ».
      *
      * <p>Une valeur absente est rendue par un libelle traduit et non par une chaine
-     * vide : « (vide) → 45,00 » se lit, « → 45,00 » ressemble a un bug d affichage.</p>
+     * vide : « (vide), puis 45,00 » se lit, « , puis 45,00 » ressemble a un bug
+     * d affichage.</p>
      */
     private String detail(String type, String champ, String avant, String apres, String motif) {
-        String vide = messages.getMessage("admin.journal.valeur-vide", null,
-                LocaleContextHolder.getLocale());
-        String transition = "%s → %s".formatted(
+        Locale langue = LocaleContextHolder.getLocale();
+        String vide = messages.getMessage("admin.journal.valeur-vide", null, langue);
+        String transition = messages.getMessage("admin.journal.transition", new Object[]{
                 avant == null || avant.isBlank() ? vide : avant,
-                apres == null || apres.isBlank() ? vide : apres);
+                apres == null || apres.isBlank() ? vide : apres}, langue);
 
         if (EntreeJournal.TYPE_CATALOGUE.equals(type)) {
             return "%s : %s".formatted(champ, transition);
         }
-        return motif == null || motif.isBlank() ? transition : "%s — %s".formatted(transition, motif);
+        return motif == null || motif.isBlank()
+                ? transition
+                : messages.getMessage("admin.journal.transition-motif", new Object[]{transition, motif}, langue);
     }
 }

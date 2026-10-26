@@ -14,7 +14,7 @@
     <p><a th:href="${type == 'interventions'}
               ? @{/admin/interventions/{ref}(ref=${reference})}
               : @{/admin/catalogue/{type}/{ref}/modifier(type=${type},ref=${reference})}"
-          th:text="'← ' + #{admin.galerie.retour}">← Retour à la fiche</a></p>
+          th:text="#{admin.galerie.retour}">Retour à la fiche</a></p>
     <h1 th:text="#{admin.galerie.titre}">Galerie d'images</h1>
 
     <p role="status" class="message" th:if="${message}" th:text="${message}">2 image(s) ajoutée(s).</p>

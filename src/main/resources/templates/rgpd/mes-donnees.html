@@ -14,7 +14,7 @@
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <p><a th:href="@{/mon-compte}" th:text="'← ' + #{rgpd.donnees.retour}">← Retour à mon compte</a></p>
+    <p><a th:href="@{/mon-compte}" th:text="#{rgpd.donnees.retour}">Retour à mon compte</a></p>
 
     <h1 th:text="#{rgpd.donnees.titre}">Mes données personnelles</h1>
 
