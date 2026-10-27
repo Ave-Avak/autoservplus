@@ -1,4 +1,4 @@
-# Conventions de développement — AutoServ+
+# Conventions de développement d'AutoServ+
 
 ## Rythme de dépôt
 
@@ -35,8 +35,8 @@ Convention *Conventional Commits*, rédigée en français.
 
 ### Portées
 
-Les sept modules métier — `identite`, `catalogue`, `reservation`, `vente`, `atelier`,
-`communication`, `annexes` — plus les portées transverses `securite`, `bd`, `i18n`, `config`.
+Les sept modules métier (`identite`, `catalogue`, `reservation`, `vente`, `atelier`,
+`communication`, `annexes`) et les portées transverses `securite`, `bd`, `i18n`, `config`.
 
 ### Exemple
 

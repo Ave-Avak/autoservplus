@@ -17,15 +17,14 @@ Application web monolithique, mono-tenant, destinée à un seul garage.
 | Internationalisation | FR / NL / EN |
 | Tests | JUnit 5, Mockito, Testcontainers |
 
-OpenPDF est employé à la place d'iText : iText 5 et supérieur est sous AGPL, dont les
-obligations sont incompatibles avec une distribution propriétaire. OpenPDF dérive
-d'iText 4, antérieur à ce changement de licence.
+OpenPDF remplace iText. Depuis la version 5, iText est sous AGPL, dont les obligations
+sont incompatibles avec une distribution propriétaire. OpenPDF dérive d'iText 4,
+antérieur à ce changement de licence.
 
 ## Prérequis
 
-- **Java 21** (Temurin recommandé)
-- **Docker**, pour la base de données et les tests d'intégration
-- **PostgreSQL 16**, si vous préférez une instance locale au conteneur
+Il faut Java 21 (Temurin recommandé) et Docker, pour la base de données et les tests
+d'intégration. Une instance locale de PostgreSQL 16 peut remplacer le conteneur.
 
 Maven n'a pas à être installé : le dépôt fournit le wrapper (`mvnw`, `mvnw.cmd`).
 
@@ -40,59 +39,59 @@ export MFA_CLE_MAITRE='<valeur conservée>'
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=demo
 ```
 
-Sous Windows, employer `mvnw.cmd` et encadrer le paramètre ; en PowerShell, la clé se
+Sous Windows, employer `mvnw.cmd` et encadrer le paramètre. En PowerShell, la clé se
 définit par `$env:MFA_CLE_MAITRE = '<valeur conservée>'` :
 `mvnw.cmd spring-boot:run "-Dspring-boot.run.profiles=demo"`
 
-**La clé maître est requise en local aussi.** Sans `MFA_CLE_MAITRE`, l'application refuse
-de démarrer, quel que soit le profil : elle chiffre les secrets du second facteur. La
-générer **une fois** et la réutiliser à chaque démarrage — une clé neuve rendrait
+La clé maître est requise en local aussi. Sans `MFA_CLE_MAITRE`, l'application refuse de
+démarrer, quel que soit le profil, car elle chiffre les secrets du second facteur. Il
+faut la générer une fois et la réutiliser à chaque démarrage. Une clé neuve rendrait
 illisibles les seconds facteurs déjà enrôlés. `openssl` est fourni avec Git pour Windows.
 
 L'application écoute sur <http://localhost:8080>.
 
-Le profil `demo` charge un jeu de données couvrant l'ensemble des parcours :
-rendez-vous dans leurs six statuts, dossiers d'atelier dans leurs six états, une
-commande payée et sa facture, avis, messagerie et notifications.
+Le profil `demo` charge un jeu de données qui couvre tous les parcours : rendez-vous
+dans leurs six statuts, dossiers d'atelier dans leurs six états, une commande payée et
+sa facture, avis, messagerie et notifications.
 
 | Rôle | Adresse | Mot de passe |
 |---|---|---|
 | Administrateur | `admin@autoservplus.be` | `atelier-demonstration-2026` |
 | Membre | `marie.dupont@demo.test` | `marie-conduit-une-golf-bleue` |
 
-**Second facteur de l'administrateur de démonstration.** La vérification en deux étapes
-est obligatoire au back-office, démonstration comprise : aucun profil n'en dispense.
+### Second facteur de l'administrateur de démonstration
+
+La vérification en deux étapes est obligatoire au back-office, démonstration comprise.
 Après le mot de passe, l'application demande un code. Ajoutez le compte dans une
-application d'authentification (Google Authenticator, Aegis, 2FAS…) en saisissant à la
-main la clé publiée ci-dessous, puis entrez le code à six chiffres qu'elle affiche :
+application d'authentification (Google Authenticator, Aegis, 2FAS...) en saisissant à la
+main la clé publiée ci-dessous, puis entrez le code à six chiffres qu'elle affiche.
 
 | Clé TOTP publiée | Paramètres |
 |---|---|
 | `IF2X I32T MVZH MK2E MVWW 6LKU J5KF AMRW` | SHA-1, six chiffres, trente secondes |
 
-Au démarrage sous le profil `demo`, le secret est posé si l'administrateur n'en a pas, ou
-si celui en place ne se déchiffre plus — après un changement de clé maître ; un secret
-lisible n'est jamais réécrit. La base restaurée depuis le dump ci-dessous démarre sans le
-profil `demo` : le secret n'y est pas posé, et l'enrôlement est demandé à la première
-connexion.
+Au démarrage sous le profil `demo`, le secret est posé si l'administrateur n'en a pas,
+ou si celui en place ne se déchiffre plus après un changement de clé maître. Un secret
+lisible n'est jamais réécrit. La base restaurée depuis le dump démarre sans le profil
+`demo` : le secret n'y est pas posé, et l'enrôlement est demandé à la première connexion.
 
-> **Le profil `demo` ne doit jamais être activé en production.** Il crée des comptes
-> dont les mots de passe sont publiés dans ce dépôt, et des données fictives.
+> Le profil `demo` ne doit jamais être activé en production. Il crée des comptes dont
+> les mots de passe sont publiés dans ce dépôt, et des données fictives.
 
-Sans ce profil, l'application démarre sur une base ne contenant que les données de
+Sans ce profil, l'application démarre sur une base qui ne contient que les données de
 référence (catalogue, postes d'atelier, horaires) et aucun compte membre.
 
 ## Restaurer la base de démonstration
 
-> **Le dump publié date d'avant V36 et ne démarre plus selon la procédure ci-dessous** :
-> sans le profil `demo`, Flyway refuse les migrations V36 à V42, de numéro inférieur à la
-> graine V900 qu'il porte déjà. Seul le profil `demo` les accepte hors ordre — une base de
-> démonstration persistante n'a donc pas à être remise à zéro quand une migration
-> s'ajoute. Le dump sera régénéré au gel du code par
-> [`docs/regenerer-dump.sh`](docs/regenerer-dump.sh) ; d'ici là, employer la commande de
+> Le dump publié date d'avant V36 et ne démarre plus selon la procédure ci-dessous.
+> Sans le profil `demo`, Flyway refuse les migrations V36 à V43, de numéro inférieur à
+> la graine V900 qu'il porte déjà. Seul le profil `demo` les accepte hors ordre, si bien
+> qu'une base de démonstration persistante n'a pas à être remise à zéro quand une
+> migration s'ajoute. Le dump sera régénéré au gel du code par
+> [`docs/regenerer-dump.sh`](docs/regenerer-dump.sh). D'ici là, employer la commande de
 > démarrage ci-dessus.
 
-Alternative à la commande précédente, sans passer par Maven ni Flyway :
+Cette procédure remplace la commande précédente, sans passer par Maven ni Flyway :
 
 ```bash
 docker compose up -d
@@ -100,17 +99,17 @@ docker exec -i autoservplus-db psql -U autoservplus -d autoservplus < docs/dump_
 ./mvnw spring-boot:run
 ```
 
-Le dump contient le schéma et les données. L'application démarre ensuite **sans** le
-profil `demo`, les migrations étant déjà enregistrées. L'en-tête de
-[`docs/dump_autoservplus.sql`](docs/dump_autoservplus.sql) détaille la procédure et
-ses limites.
+Le dump contient le schéma et les données. L'application démarre ensuite sans le profil
+`demo`, les migrations étant déjà enregistrées. L'en-tête de
+[`docs/dump_autoservplus.sql`](docs/dump_autoservplus.sql) détaille la procédure et ses
+limites.
 
 ## Déploiement
 
-`docker-compose.yml` ne démarre qu'une base de données : c'est le compose de
-**développement**, et il reste tel quel. Le déploiement s'appuie sur des fichiers
-distincts — `Dockerfile`, `docker-compose.prod.yml` et `deploy/Caddyfile` — qui
-démarrent la base, l'application et un proxy Caddy terminant le HTTPS.
+`docker-compose.yml` ne démarre qu'une base de données. C'est le compose de
+développement, et il reste tel quel. Le déploiement s'appuie sur des fichiers distincts
+(`Dockerfile`, `docker-compose.prod.yml` et `deploy/Caddyfile`), qui démarrent la base,
+l'application et un proxy Caddy chargé du HTTPS.
 
 ```bash
 cp .env.example .env    # puis renseigner DOMAINE, URL_PUBLIQUE, DB_PASSWORD
@@ -118,10 +117,10 @@ docker compose -f docker-compose.prod.yml up -d --build
 ```
 
 Les mêmes fichiers servent à répéter le déploiement sur le poste de développement,
-derrière un tunnel Cloudflare, et à déployer sur un serveur : seule la variable
-`DOMAINE` change. La procédure complète — chargement du jeu de démonstration, mise en
-service sur un serveur Hetzner, sauvegardes, limites connues — figure dans
-[`docs/deploiement.md`](docs/deploiement.md).
+derrière un tunnel Cloudflare, et à déployer sur un serveur. Seule la variable `DOMAINE`
+change. La procédure complète figure dans [`docs/deploiement.md`](docs/deploiement.md) :
+chargement du jeu de démonstration, mise en service sur un serveur Hetzner, sauvegardes
+et limites connues.
 
 ## Tests
 
@@ -129,23 +128,24 @@ service sur un serveur Hetzner, sauvegardes, limites connues — figure dans
 ./mvnw verify
 ```
 
-Exécute les tests unitaires (Surefire, suffixe `Test`), les tests d'intégration
-(Failsafe, suffixe `IT`) et la vérification de couverture — soit **907 tests unitaires**
-et **406 tests d'intégration** répartis sur 84 et 49 classes.
+La commande exécute les tests unitaires (Surefire, suffixe `Test`), les tests
+d'intégration (Failsafe, suffixe `IT`) et la vérification de couverture.
 
-- Les tests d'intégration démarrent **un seul** PostgreSQL 16 via **Testcontainers**,
-  partagé par les 49 classes d'intégration : Docker doit être disponible et démarré.
-- Chaque classe d'intégration reçoit néanmoins **sa propre base de données** dans ce
-  conteneur. L'isolation est donc celle d'un serveur par classe, pour le prix d'un seul.
-- La **planification est désactivée** en test : l'ordonnanceur n'y rend aucun service, et
-  chaque contexte gardait le sien vivant jusqu'à la fin de la machine virtuelle. Le job
-  concerné (expiration des commandes impayées) est couvert par un test unitaire qui
-  l'appelle directement, avec une horloge figée.
-- **JaCoCo** échoue sous **60 %** d'instructions couvertes sur l'ensemble du projet.
+Les tests d'intégration démarrent un seul PostgreSQL 16 par Testcontainers, partagé par
+toutes les classes d'intégration. Docker doit donc être disponible et démarré. Chaque
+classe reçoit sa propre base de données dans ce conteneur, avec l'isolation d'un serveur
+par classe pour le prix d'un seul.
+
+La planification est désactivée en test. L'ordonnanceur n'y rend aucun service, et chaque
+contexte gardait le sien vivant jusqu'à la fin de la machine virtuelle. Le job concerné
+(expiration des commandes impayées) est couvert par un test unitaire qui l'appelle
+directement, avec une horloge figée.
+
+JaCoCo fait échouer la build sous 60 % d'instructions couvertes sur l'ensemble du projet.
 
 L'intégration continue (GitHub Actions, `.github/workflows/ci.yml`) exécute
-`./mvnw -B compile` puis `./mvnw -B verify` sur Ubuntu avec Java 21, à chaque
-poussée et à chaque demande de tirage visant `main`.
+`./mvnw -B compile` puis `./mvnw -B verify` sur Ubuntu avec Java 21, à chaque poussée et
+à chaque demande de tirage visant `main`.
 
 ## Structure
 
@@ -164,7 +164,7 @@ src/main/java/be/autoservplus/
 ├── vitrine/         pages publiques (contact, horaires)
 ├── communication/   courriels transactionnels
 ├── notification/    notifications applicatives
-├── messagerie/      fils de discussion membre ↔ garage
+├── messagerie/      fils de discussion entre membre et garage
 ├── avis/            avis et modération
 ├── galerie/         photographies de prestations et d'interventions
 ├── pilotage/        tableau de bord
@@ -178,33 +178,33 @@ src/main/java/be/autoservplus/
 └── config/          sécurité, horloge, propriétés
 
 src/main/resources/db/
-├── migration/       schéma et données de référence — appliquées toujours (V1 à V33, puis V35)
-└── demo/            jeu de démonstration — appliqué sous le profil `demo` seulement (V900)
+├── migration/       schéma et données de référence, toujours appliqués (V1 à V43, sans V34)
+└── demo/            jeu de démonstration, appliqué sous le profil `demo` seulement (V900, V901)
 ```
 
-La séparation entre `migration` et `demo` n'est pas cosmétique : les tests
-d'intégration partent d'une base dépourvue de données transactionnelles, et plusieurs
-vérifient des états initiaux qu'un jeu de démonstration rendrait faux.
+La séparation entre `migration` et `demo` a une raison. Les tests d'intégration partent
+d'une base sans données transactionnelles, et plusieurs vérifient des états initiaux
+qu'un jeu de démonstration rendrait faux.
 
-**Le numéro V34 est libre, et le trou est voulu.** La graine de démonstration l'occupait ;
-elle est devenue `db/demo/V900`. Flyway ne tolère une migration *appliquée mais non
-résolue* — ce qu'est `db/demo` pour toute base démarrée sans le profil `demo` — que si son
-numéro dépasse toutes les migrations connues ; en dessous, la validation échoue et
-l'application refuse de démarrer. Numérotée 34, la graine n'était donc tolérée que par
-accident de numérotation, et n'attendait que la migration suivante. Une migration ne se
-renumérote pas après coup : le trou reste.
+Le numéro V34 est libre, et le trou est voulu. La graine de démonstration l'occupait,
+puis elle est devenue `db/demo/V900`. Flyway ne tolère une migration appliquée mais non
+résolue (ce qu'est `db/demo` pour toute base démarrée sans le profil `demo`) que si son
+numéro dépasse toutes les migrations connues. En dessous, la validation échoue et
+l'application refuse de démarrer. Numérotée 34, la graine n'était tolérée que par un
+hasard de numérotation, et la migration suivante l'aurait fait échouer. Une migration ne
+se renumérote pas après coup, donc le trou reste.
 
-**V16 et V17 portent « demo » dans leur nom alors qu'elles sont toujours appliquées.**
-L'écart est assumé : elles sèment le catalogue et les postes d'atelier, sans lesquels la
-réservation ne propose aucun créneau. Ce sont donc des données de référence, que leur nom
-décrit mal. Une migration déjà appliquée ne se renomme pas — son empreinte changerait et
-Flyway refuserait toute base existante — et le nom reste tel quel.
+V16 et V17 portent « demo » dans leur nom alors qu'elles sont toujours appliquées.
+L'écart est assumé. Elles sèment le catalogue et les postes d'atelier, sans lesquels la
+réservation ne propose aucun créneau. Ce sont donc des données de référence, que leur
+nom décrit mal. Une migration déjà appliquée ne se renomme pas, car son empreinte
+changerait et Flyway refuserait toute base existante.
 
 ## Configuration
 
 Toutes les valeurs sont surchargeables par variable d'environnement. Les valeurs par
-défaut conviennent à un poste de développement et **ne doivent pas être employées en
-production**.
+défaut conviennent à un poste de développement et ne doivent pas être employées en
+production.
 
 | Variable | Défaut | Rôle |
 |---|---|---|
@@ -212,29 +212,28 @@ production**.
 | `DB_USER` / `DB_PASSWORD` | `autoservplus` | Identifiants de la base |
 | `SERVER_PORT` | `8080` | Port d'écoute |
 | `SPRING_PROFILES_ACTIVE` | `dev` | Profil actif |
-| `DOMAINE` | — | Lu par Caddy au déploiement. `:80` sert en HTTP derrière un tunnel ; un nom de domaine déclenche l'obtention d'un certificat Let's Encrypt |
+| `DOMAINE` | *aucun* | Lu par Caddy au déploiement. `:80` sert en HTTP derrière un tunnel. Un nom de domaine déclenche l'obtention d'un certificat Let's Encrypt |
 | `COOKIE_SECURE` | `false` | Pose l'attribut `Secure` sur le cookie de session. À mettre à `true` dès que le site est joint en HTTPS |
 | `JAVA_OPTS` | `-XX:MaxRAMPercentage=75` | Options de la machine virtuelle Java dans le conteneur |
 | `URL_PUBLIQUE` | `http://localhost:8080` | Adresse publique, employée là où une URL absolue est indispensable |
 | `FACTURES_ARCHIVE` | `./data/factures` | Répertoire d'archivage des factures (conservation dix ans) |
 | `MEDIAS_RACINE` | `./data/uploads` | Répertoire des fichiers déposés |
-| `GARAGE_RAISON_SOCIALE`, `GARAGE_TVA`, `GARAGE_BCE`, `GARAGE_IBAN`, … | valeurs de démonstration | Identité légale imprimée sur les factures et les mentions légales |
-| `MOLLIE_API_KEY` | *vide* | Clé ou jeton Mollie. **Vide, le paiement passe par une passerelle bouchonnée** |
+| `GARAGE_RAISON_SOCIALE`, `GARAGE_TVA`, `GARAGE_BCE`, `GARAGE_IBAN`, etc. | valeurs de démonstration | Identité légale imprimée sur les factures et les mentions légales |
+| `MOLLIE_API_KEY` | *vide* | Clé ou jeton Mollie. Vide, le paiement passe par une passerelle bouchonnée |
 | `MOLLIE_PROFILE_ID` | *vide* | Identifiant de profil Mollie, requis avec un jeton d'organisation |
 | `MOLLIE_MODE_TEST` | `true` | Emploie le mode test de Mollie plutôt que des paiements réels |
-| `MFA_CLE_MAITRE` | *vide* | Clé AES-256 des secrets du second facteur (`openssl rand -base64 32`). **Obligatoire sous tout profil, en local comme en production : sans elle, le démarrage est refusé** |
-
+| `MFA_CLE_MAITRE` | *vide* | Clé AES-256 des secrets du second facteur (`openssl rand -base64 32`). Obligatoire sous tout profil, en local comme en production. Sans elle, le démarrage est refusé |
 | `MFA_CLE_VERSION` / `MFA_CLES_PRECEDENTES` | `1` / *vide* | Rotation de la clé : version active, et anciennes clés au format `1:base64` |
 | `EXPLOITANT_EMAIL` / `EXPLOITANT_MOT_DE_PASSE` | *vides* | Compte super-administrateur créé au premier démarrage. Son mot de passe doit être changé à la première connexion |
 
-Les valeurs `GARAGE_*` livrées sont des valeurs de démonstration explicites : une
+Les valeurs `GARAGE_*` livrées sont des valeurs de démonstration explicites, car une
 facture portant un faux numéro de TVA n'est pas une facture. La liste complète figure
 dans [`src/main/resources/application.yml`](src/main/resources/application.yml).
 
-Le prestataire de paiement est choisi sur la **présence d'un identifiant**, non sur le
-profil actif : sans `MOLLIE_API_KEY`, une passerelle bouchonnée simule le parcours de
-bout en bout, ce qui permet de payer une commande et d'obtenir sa facture sans compte
-Mollie. Avec un identifiant, les appels partent chez le prestataire.
+Le prestataire de paiement est choisi sur la présence d'un identifiant, et non sur le
+profil actif. Sans `MOLLIE_API_KEY`, une passerelle bouchonnée simule le parcours de bout
+en bout, ce qui permet de payer une commande et d'obtenir sa facture sans compte Mollie.
+Avec un identifiant, les appels partent chez le prestataire.
 
 Aucun secret réel n'est versionné dans ce dépôt.
 
@@ -248,6 +247,5 @@ Les conventions de commit, de branches et de tests sont décrites dans
 Projet réalisé dans le cadre d'une épreuve intégrée de bachelier en informatique
 (ICC Bruxelles, 2025-2026).
 
-Aucune licence n'est actuellement déclarée : en l'absence de fichier `LICENSE`, le
-code reste sous droit d'auteur exclusif de son auteur, et aucun droit de réutilisation
-n'est accordé.
+Aucune licence n'est déclarée. En l'absence de fichier `LICENSE`, le code reste sous
+droit d'auteur exclusif de son auteur, et aucun droit de réutilisation n'est accordé.

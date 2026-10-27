@@ -1,19 +1,19 @@
 # Ressources tierces
 
-Ce fichier recense les ressources tierces **embarquées dans le dépôt** et leurs
+Ce fichier recense les ressources tierces embarquées dans le dépôt et leurs
 licences. Les dépendances Maven ne figurent pas ici : elles sont déclarées dans
 [`pom.xml`](pom.xml), avec leurs licences respectives.
 
-## SecLists — liste de mots de passe courants
+## SecLists, liste de mots de passe courants
 
 `src/main/resources/securite/mots-de-passe-courants.txt`
 
 Extrait de [SecLists](https://github.com/danielmiessler/SecLists), fichier
-`Passwords/Common-Credentials/xato-net-10-million-passwords-1000000.txt`, **filtré aux
-entrées de quinze caractères ou plus** — le seuil minimal de la politique de mot de
-passe du projet. Les entrées plus courtes sont déjà refusées par la longueur : les
+`Passwords/Common-Credentials/xato-net-10-million-passwords-1000000.txt`, filtré aux
+entrées de quinze caractères ou plus, le seuil minimal de la politique de mot de passe
+du projet. Les entrées plus courtes sont déjà refusées par la longueur : les
 embarquer n'aurait servi à rien. Le filtrage ramène 1 000 000 d'entrées (8,6 Mo) à
-**10 908 (188 Ko)**.
+10 908 (188 Ko).
 
 Usage : refuser à l'inscription et au changement les mots de passe connus pour être
 fréquents, conformément aux recommandations du NIST sur les listes de refus.
@@ -47,18 +47,18 @@ Mainteneurs du projet : Daniel Miessler, Jason Haddix, Ignacio Portal, g0tmi1k.
 `src/main/resources/static/js/htmx.min.js`
 
 [HTMX](https://htmx.org), servi localement et non depuis un CDN : la politique de
-sécurité du contenu n'autorise `script-src` que sur `'self'`. Licence **Zero-Clause
-BSD (0BSD)**, qui n'impose aucune obligation d'attribution — la mention figure ici par
+sécurité du contenu n'autorise `script-src` que sur `'self'`. Licence Zero-Clause
+BSD (0BSD), qui n'impose aucune obligation d'attribution. La mention figure ici par
 transparence.
 
-## ZXing — génération du QR code d'enrôlement
+## ZXing, génération du QR code d'enrôlement
 
 Dépendance Maven `com.google.zxing:core` (voir [`pom.xml`](pom.xml)), mentionnée ici par
 exception : elle touche au second facteur, et son périmètre d'usage mérite d'être lisible
 sans ouvrir le code.
 
-[ZXing](https://github.com/zxing/zxing), licence **Apache 2.0**. Seul le module `core`
-est employé : il calcule la matrice du QR code, que le serveur rend en **SVG inline**.
+[ZXing](https://github.com/zxing/zxing), licence Apache 2.0. Seul le module `core`
+est employé : il calcule la matrice du QR code, que le serveur rend en SVG inline.
 Le module `javase` (AWT, ImageIO) n'est pas embarqué, et aucun service externe n'est
-appelé — l'URI `otpauth://` porte le secret TOTP, elle ne quitte donc jamais le serveur
+appelé. L'URI `otpauth://` porte le secret TOTP et ne quitte donc jamais le serveur
 autrement que dans la page d'enrôlement elle-même.
