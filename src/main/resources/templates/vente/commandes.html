@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{commandes.titre} + ' — AutoServ+'">Mes commandes — AutoServ+</title>
+    <title th:text="#{commandes.titre} + ' | AutoServ+'">Mes commandes | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -55,11 +55,12 @@
                         Télécharger la facture 2026-0001
                     </a>
                     <span th:unless="${commande.estFacturee()}" class="carte-meta"
-                          th:text="#{commandes.sans-facture}">—</span>
+                          th:text="${commande.statut().name() == 'EN_ATTENTE_PAIEMENT'}
+                                   ? #{commandes.facture.apres-paiement} : #{commandes.facture.aucune}">Aucune facture</span>
                 </td>
                 <!-- Etat de retractation : porte par une carte separee, indexee par
-                     reference de commande. Le module vente ignore la retractation ;
-                     c'est le gabarit qui fait la jointure. -->
+                     reference de commande. Le module vente ignore la retractation.
+                     C'est le gabarit qui fait la jointure. -->
                 <td th:with="retractation=${retractations[commande.reference()]}">
                     <!-- Note de credit disponible : la demande a ete validee. -->
                     <a th:if="${retractation != null and retractation.aUnAvoir()}"
@@ -81,7 +82,7 @@
                                   or (!retractation.demandable()
                                       and !retractation.estEnAttente()
                                       and !retractation.aUnAvoir())}"
-                          class="carte-meta" th:text="#{commandes.sans-facture}">—</span>
+                          class="carte-meta" th:text="#{commandes.annulation.indisponible}">Annulation non disponible</span>
                 </td>
                 <!-- Reprise du paiement. Le bouton de la page de confirmation ne sert
                      qu'une fois : onglet fermé, prestataire indisponible au premier essai
@@ -104,7 +105,7 @@
                                 th:text="#{commande.payer}">Procéder au paiement</button>
                     </form>
                     <span th:unless="${commande.peutEtrePayee()}" class="carte-meta"
-                          th:text="#{commandes.sans-facture}">—</span>
+                          th:text="#{commandes.paiement.aucun}">Aucun paiement attendu</span>
                 </td>
             </tr>
             </tbody>

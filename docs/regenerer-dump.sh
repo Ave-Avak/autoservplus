@@ -12,11 +12,11 @@
 #
 # Pourquoi passer par l application et non par psql : la graine db/demo et les
 # migrations Java eventuelles ne s appliquent que par Flyway, au demarrage, sous le
-# profil demo — exactement comme le documente l en-tete du dump.
+# profil demo, exactement comme le documente l en-tete du dump.
 #
 # Le secret TOTP de l admin de demonstration est retire AVANT le dump : chiffre sous la
 # cle de CE poste, il serait illisible sur toute autre base. Sous le profil demo,
-# SecondFacteurDemonstration le repose ; sans ce profil, l enrolement est demande.
+# SecondFacteurDemonstration le repose. Sans ce profil, l enrolement est demande.
 #
 # L en-tete du dump actuel est conserve, ses mentions datees recalculees (versions,
 # nombre de tables) et le paragraphe d avertissement « produit AVANT » retire.
@@ -83,7 +83,7 @@ TABLES=$("${BASE[@]}" "SELECT count(*) FROM information_schema.tables
                        WHERE table_schema = 'public' AND table_type = 'BASE TABLE'
                          AND table_name <> 'flyway_schema_history'")
 
-# L en-tete s arrete avant le bloc « PostgreSQL database dump » de pg_dump ; les trois
+# L en-tete s arrete avant le bloc « PostgreSQL database dump » de pg_dump. Les trois
 # dernieres lignes retenues sont la ligne vide et le « -- » qui le precedent.
 sed -n '1,/^-- PostgreSQL database dump$/p' "$DUMP" | head -n -3 \
     | sed -E \

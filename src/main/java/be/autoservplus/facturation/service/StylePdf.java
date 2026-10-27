@@ -23,8 +23,8 @@ import java.util.Locale;
  * la charte, cellules, formatage des montants et des dates.
  *
  * <p>Extraites de {@code GenerateurPdfFacture} quand la note de credit est arrivee.
- * Une facture et un avoir sont deux documents differents — titre, mentions legales,
- * blocs de reference — mais ils doivent se ressembler au pixel pres : meme bandeau,
+ * Une facture et un avoir sont deux documents differents (titre, mentions legales,
+ * blocs de reference) mais ils doivent se ressembler au pixel pres : meme bandeau,
  * meme tableau, meme pied. Dupliquer ces trente lignes aurait garanti qu elles
  * divergent a la premiere retouche de charte, et un client qui recoit une facture et
  * son avoir les compare cote a cote.</p>
@@ -35,7 +35,7 @@ import java.util.Locale;
  *
  * <p><b>Ecart de charte assume</b> : les couleurs sont celles de la charte
  * (bleu marine {@code #1F3864}, gris), mais la typographie est Helvetica et non
- * Inter. Inter est une police web ; l embarquer dans un PDF suppose de livrer le
+ * Inter. Inter est une police web. L embarquer dans un PDF suppose de livrer le
  * fichier de fonte dans le depot. Helvetica est une des quatorze polices garanties
  * par le format PDF, donc lisible partout sans embarquement.</p>
  */

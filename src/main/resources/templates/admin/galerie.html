@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{admin.galerie.titre} + ' — AutoServ+'">Galerie — AutoServ+</title>
+    <title th:text="#{admin.galerie.titre} + ' | AutoServ+'">Galerie | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -14,7 +14,7 @@
     <p><a th:href="${type == 'interventions'}
               ? @{/admin/interventions/{ref}(ref=${reference})}
               : @{/admin/catalogue/{type}/{ref}/modifier(type=${type},ref=${reference})}"
-          th:text="'← ' + #{admin.galerie.retour}">← Retour à la fiche</a></p>
+          th:text="#{admin.galerie.retour}">Retour à la fiche</a></p>
     <h1 th:text="#{admin.galerie.titre}">Galerie d'images</h1>
 
     <p role="status" class="message" th:if="${message}" th:text="${message}">2 image(s) ajoutée(s).</p>

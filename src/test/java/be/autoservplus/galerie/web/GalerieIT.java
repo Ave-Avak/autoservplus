@@ -38,7 +38,7 @@ import be.autoservplus.support.SocleIntegration;
  * <p>Deux choses ne se verifient qu ici : le nouveau CHECK
  * {@code ck_photo_origine_unique} pose par V30, qui doit refuser une photo sans
  * origine comme une photo a deux origines, et le service des images par notre propre
- * controleur — c est lui qui permet a la CSP de rester {@code img-src 'self'}.</p>
+ * controleur. C est lui qui permet a la CSP de rester {@code img-src 'self'}.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -99,7 +99,7 @@ class GalerieIT extends SocleIntegration {
         @DisplayName("la base refuse une photo a deux origines")
         void deuxOrigines() {
             // Le seed ne cree AUCUNE piece : sans celle-ci, piece_id vaudrait NULL,
-            // num_nonnulls tomberait a 1 et l'insert passerait — le test verifierait
+            // num_nonnulls tomberait a 1 et l'insert passerait, et le test verifierait
             // alors exactement le contraire de ce qu'il annonce.
             Long piece = creerPieceDeTest();
 

@@ -11,14 +11,14 @@ import org.springframework.context.annotation.Configuration;
  *
  * <p><b>Pourquoi une classe a part.</b> {@link PlanificationConfig} n existe que si la
  * planification est active : quand elle ne l est pas, aucun de ses beans n est cree,
- * donc elle ne peut rien dire. Le silence est precisement le probleme — une
+ * donc elle ne peut rien dire. Le silence est precisement le probleme : une
  * planification eteinte par erreur en production ne se verrait qu au moment ou
  * quelqu un s etonnerait qu une commande impayee ne soit jamais annulee, c est-a-dire
  * trop tard. Les deux configurations portent donc la meme propriete avec des valeurs
  * opposees : l une des deux est toujours active.</p>
  *
  * <p>Le message <b>nomme la consequence</b> et pas seulement le reglage. « Planification
- * desactivee » n apprend rien a qui lit un journal sans connaitre le code ; ce qui
+ * desactivee » n apprend rien a qui lit un journal sans connaitre le code. Ce qui
  * compte est que le job RM-21 ne tournera pas et qu une commande non payee restera en
  * attente indefiniment.</p>
  *

@@ -290,7 +290,7 @@ class InscriptionServiceTest {
         /**
          * Le coeur de la garantie : les trois situations doivent etre indiscernables du
          * dehors. Verifie ici sur le service, et de nouveau sur la reponse HTTP complete
-         * par RenvoiVerificationIT — un ecran peut trahir ce que le service tait.
+         * par RenvoiVerificationIT : un ecran peut trahir ce que le service tait.
          */
         @Test
         @DisplayName("ne leve rien sur une adresse inconnue et n envoie aucun courriel")

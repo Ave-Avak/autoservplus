@@ -8,12 +8,12 @@ import java.util.UUID;
  * <p><b>Il porte l adresse, contrairement aux autres evenements du projet</b>, qui ne
  * transportent qu une reference et laissent le listener recharger. Ici recharger ne
  * donnerait rien : l anonymisation vient precisement d effacer l adresse, et la ligne
- * rechargee porterait le jeton {@code anonyme-…@supprime.invalid}, non routable. Le
+ * rechargee porterait le jeton {@code anonyme-...@supprime.invalid}, non routable. Le
  * service capture donc l adresse et le prenom <b>avant</b> l ecrasement, et les
  * confie a l evenement.</p>
  *
  * <p>Arbitrage assume avec le CdC, qui demande un courriel « avant la suppression
- * effective ». Le patron du projet interdit l envoi dans la transaction — un
+ * effective ». Le patron du projet interdit l envoi dans la transaction : un
  * fournisseur de courriel indisponible ne doit pas annuler un droit exerce. La
  * capture avant ecrasement puis l envoi apres commit respectent les deux : le membre
  * est prevenu, et l envoi reste decouple. L ecart porte sur l instant, pas sur le

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{legal.cgv.titre} + ' — AutoServ+'">Conditions générales de vente — AutoServ+</title>
+    <title th:text="#{legal.cgv.titre} + ' | AutoServ+'">Conditions générales de vente | AutoServ+</title>
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
@@ -23,7 +23,7 @@
          qui restera lisible quand la page publique aura changé. -->
     <p class="version-document" th:if="${versionEnVigueur != null}">
         <span th:text="#{legal.version.mention(${versionEnVigueur.version()}, ${#temporals.format(versionEnVigueur.dateEffet(), 'dd/MM/yyyy')})}">
-            Version CGV-2026-02 — en vigueur depuis le 25/08/2026
+            Version CGV-2026-03, en vigueur depuis le 27/10/2026
         </span>
         <a th:href="@{/documents/{type}/{version}(type=${typeDocument}, version=${versionEnVigueur.version()})}"
            th:text="#{legal.version.archive-lien}">Consulter le texte archivé</a>
@@ -34,42 +34,42 @@
     </p>
 
     <section>
-        <h2 th:text="#{legal.cgv.art1.titre}">Article 1 — Vendeur</h2>
+        <h2 th:text="#{legal.cgv.art1.titre}">Article 1. Vendeur</h2>
         <p th:text="#{legal.cgv.art1.corps}">Le vendeur est le garage identifié ci-dessous.</p>
         <div th:replace="~{fragments/legal :: identite}"></div>
     </section>
 
     <section>
-        <h2 th:text="#{legal.cgv.art2.titre}">Article 2 — Champ d'application et acceptation</h2>
+        <h2 th:text="#{legal.cgv.art2.titre}">Article 2. Champ d'application et acceptation</h2>
         <p th:text="#{legal.cgv.art2.corps}">L'acceptation est recueillie au récapitulatif.</p>
     </section>
 
     <section>
-        <h2 th:text="#{legal.cgv.art3.titre}">Article 3 — Prix et taxe sur la valeur ajoutée</h2>
+        <h2 th:text="#{legal.cgv.art3.titre}">Article 3. Prix et taxe sur la valeur ajoutée</h2>
         <p th:text="#{legal.cgv.art3.corps}">Les prix sont exprimés en euros.</p>
     </section>
 
     <section>
-        <h2 th:text="#{legal.cgv.art4.titre}">Article 4 — Commande</h2>
+        <h2 th:text="#{legal.cgv.art4.titre}">Article 4. Commande</h2>
         <p th:text="#{legal.cgv.art4.corps}">La commande se forme en trois temps.</p>
     </section>
 
     <section>
-        <h2 th:text="#{legal.cgv.art5.titre}">Article 5 — Paiement</h2>
+        <h2 th:text="#{legal.cgv.art5.titre}">Article 5. Paiement</h2>
         <p th:text="#{legal.cgv.art5.corps}">Le paiement s'effectue en ligne.</p>
     </section>
 
     <section>
-        <h2 th:text="#{legal.cgv.art6.titre}">Article 6 — Retrait et exécution</h2>
+        <h2 th:text="#{legal.cgv.art6.titre}">Article 6. Retrait et exécution</h2>
         <p th:text="#{legal.cgv.art6.corps}">Les pièces sont retirées au garage.</p>
-        <p th:text="#{legal.cgv.art6.completer}">Les biens sont retirés sur place ; aucune expédition n'est proposée.</p>
+        <p th:text="#{legal.cgv.art6.completer}">Les biens sont retirés sur place. Aucune expédition n'est proposée.</p>
     </section>
 
     <section>
         <!-- Le nombre de jours vient de RetractationService.DELAI_LEGAL, la constante
              qui refuse effectivement une demande hors délai. Écrire « quatorze » en
              dur dans le message laisserait le texte survivre à un changement de règle. -->
-        <h2 th:text="#{legal.cgv.art7.titre}">Article 7 — Droit de rétractation</h2>
+        <h2 th:text="#{legal.cgv.art7.titre}">Article 7. Droit de rétractation</h2>
         <p th:text="#{legal.cgv.art7.corps(${delaiRetractationJours})}">
             Le consommateur dispose d'un délai de quatorze jours.
         </p>
@@ -77,33 +77,33 @@
     </section>
 
     <section>
-        <h2 th:text="#{legal.cgv.art8.titre}">Article 8 — Prestations pleinement exécutées</h2>
+        <h2 th:text="#{legal.cgv.art8.titre}">Article 8. Prestations pleinement exécutées</h2>
         <p th:text="#{legal.cgv.art8.corps}">La renonciation est facultative et jamais pré-cochée.</p>
     </section>
 
     <section>
-        <h2 th:text="#{legal.cgv.art9.titre}">Article 9 — Facture</h2>
+        <h2 th:text="#{legal.cgv.art9.titre}">Article 9. Facture</h2>
         <p th:text="#{legal.cgv.art9.corps}">Une facture est émise pour toute commande payée.</p>
     </section>
 
     <section>
-        <h2 th:text="#{legal.cgv.art10.titre}">Article 10 — Garantie légale de conformité</h2>
+        <h2 th:text="#{legal.cgv.art10.titre}">Article 10. Garantie légale de conformité</h2>
         <p th:text="#{legal.cgv.art10.completer}">La garantie légale de conformité de deux ans s'applique aux biens vendus.</p>
     </section>
 
     <section>
-        <h2 th:text="#{legal.cgv.art11.titre}">Article 11 — Responsabilité</h2>
+        <h2 th:text="#{legal.cgv.art11.titre}">Article 11. Responsabilité</h2>
         <p th:text="#{legal.cgv.art11.completer}">Le garage répond de la bonne exécution des prestations vendues.</p>
     </section>
 
     <section>
-        <h2 th:text="#{legal.cgv.art12.titre}">Article 12 — Données personnelles</h2>
+        <h2 th:text="#{legal.cgv.art12.titre}">Article 12. Données personnelles</h2>
         <p th:text="#{legal.cgv.art12.corps}">Le traitement est décrit dans la politique de confidentialité.</p>
         <p><a th:href="@{/confidentialite}" th:text="#{legal.lien.confidentialite}">Politique de confidentialité</a></p>
     </section>
 
     <section>
-        <h2 th:text="#{legal.cgv.art13.titre}">Article 13 — Droit applicable et litiges</h2>
+        <h2 th:text="#{legal.cgv.art13.titre}">Article 13. Droit applicable et litiges</h2>
         <p th:text="#{legal.cgv.art13.completer}">Les présentes conditions sont régies par le droit belge.</p>
     </section>
 

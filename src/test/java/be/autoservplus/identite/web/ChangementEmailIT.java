@@ -198,9 +198,9 @@ class ChangementEmailIT extends SocleIntegration {
 
         /**
          * <b>La propriete de securite qui justifie la migration V38.</b> Le jeton de
-         * changement part vers une adresse NON ENCORE PROUVEE ; s il etait accepte par
-         * la reinitialisation de mot de passe — qui partage {@code jeton_verification}
-         * avec l activation de compte — son porteur fixerait le mot de passe du compte.
+         * changement part vers une adresse NON ENCORE PROUVEE. S il etait accepte par
+         * la reinitialisation de mot de passe (qui partage {@code jeton_verification}
+         * avec l activation de compte) son porteur fixerait le mot de passe du compte.
          * Le flux destine a verifier une adresse deviendrait un flux de prise de
          * controle.
          */
@@ -216,7 +216,7 @@ class ChangementEmailIT extends SocleIntegration {
                     .andExpect(content().string(containsString("Ce lien n'est plus valable")));
 
             // Et le forcage direct ne change rien : l empreinte est intacte. C est
-            // l effet qui repond, pas le code HTTP — la page de refus est rendue en 200.
+            // l effet qui repond, pas le code HTTP : la page de refus est rendue en 200.
             String empreinteAvant = relire(email).getMotDePasseHache();
             mvc.perform(post("/mot-de-passe/nouveau").with(csrf())
                             .param("jeton", jeton)

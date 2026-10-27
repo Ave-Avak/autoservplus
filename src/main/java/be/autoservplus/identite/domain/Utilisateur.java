@@ -173,7 +173,7 @@ public class Utilisateur extends BaseEntity {
     @Column(name = "mfa_verrouillages", nullable = false)
     private short mfaVerrouillages;
 
-    /** Empreinte SHA-256 du jeton de definition ; le jeton en clair ne vit que dans le lien. */
+    /** Empreinte SHA-256 du jeton de definition. Le jeton en clair ne vit que dans le lien. */
     @Column(name = "jeton_definition_hache", length = 64)
     private String jetonDefinitionHache;
 
@@ -217,7 +217,7 @@ public class Utilisateur extends BaseEntity {
      * Enregistre une demande de changement d adresse, sans rien appliquer.
      *
      * <p>Remplace une demande precedente encore en cours : le dernier choix du membre
-     * fait foi, et le lien deja parti cesse d etre exploitable. C est voulu — laisser
+     * fait foi, et le lien deja parti cesse d etre exploitable. C est voulu : laisser
      * deux liens vivants ferait dependre l adresse finale de l ordre des clics.</p>
      */
     public void demanderChangementEmail(String nouvelleAdresse, String jeton, Instant expiration) {
@@ -238,7 +238,7 @@ public class Utilisateur extends BaseEntity {
      * recu a cette adresse EST la preuve qu elle est joignable et controlee. C est le
      * meme raisonnement qu a l activation du compte.</p>
      *
-     * @return l ancienne adresse, que l appelant doit avoir capturee pour l aviser —
+     * @return l ancienne adresse, que l appelant doit avoir capturee pour l aviser :
      *         apres cet appel, la ligne ne la porte plus nulle part
      */
     public String appliquerChangementEmail() {
@@ -301,11 +301,11 @@ public class Utilisateur extends BaseEntity {
      * change d un coup, ou pas du tout.</p>
      *
      * <p><b>Ce qui n est PAS modifiable ici</b> : l adresse de courriel, qui est
-     * l identifiant de connexion et suit une procedure de verification propre ; le
-     * statut, qui releve de l administration ; le type d utilisateur, qui ne change
+     * l identifiant de connexion et suit une procedure de verification propre. Le
+     * statut, qui releve de l administration. Le type d utilisateur, qui ne change
      * jamais.</p>
      *
-     * <p>L adresse postale est <b>complete ou vide</b> — la garde est portee par le
+     * <p>L adresse postale est <b>complete ou vide</b>. La garde est portee par le
      * formulaire, qui peut dire a l utilisateur ce qui manque. L entite accepte les
      * deux etats parce que le schema les accepte : les colonnes sont nullables depuis
      * le socle et des comptes anciens n ont jamais renseigne d adresse.</p>
@@ -327,7 +327,7 @@ public class Utilisateur extends BaseEntity {
     /**
      * Vide devient {@code null} : la base distingue les deux, pas l utilisateur. Sans
      * cela, un champ efface au formulaire vaudrait la chaine vide, et
-     * {@code adresseLisible()} de la facture — qui teste {@code null} — imprimerait
+     * {@code adresseLisible()} de la facture (qui teste {@code null}) imprimerait
      * une adresse faite d espaces.
      */
     private static String normaliser(String valeur) {
@@ -354,7 +354,7 @@ public class Utilisateur extends BaseEntity {
      * confort : l unique appelant de ce predicat est la garde de {@link #anonymiser}
      * qui refuse d effacer un compte dont les decisions sont tracees. Le limiter a
      * {@code ADMINISTRATEUR} rendrait un super-administrateur <b>anonymisable</b>,
-     * c est-a-dire exactement l inverse de ce que la garde protege — ses decisions
+     * c est-a-dire exactement l inverse de ce que la garde protege : ses decisions
      * sont les plus engageantes du systeme, puisqu il cree et suspend les autres
      * administrateurs. Le piege est etroit et silencieux : ajouter une valeur a
      * l enumeration n aurait rien casse, la garde aurait simplement cesse de couvrir
@@ -376,11 +376,11 @@ public class Utilisateur extends BaseEntity {
     /**
      * Nom affichable dans la langue d un document.
      *
-     * <p>Un compte anonymise rend le marqueur <b>traduit</b> ; un compte ordinaire rend
+     * <p>Un compte anonymise rend le marqueur <b>traduit</b>. Un compte ordinaire rend
      * son vrai nom, qui ne se traduit pas. Utile partout ou le document a une langue
      * propre : une facture est emise dans celle du client, pas dans celle de la session
      * qui la telecharge, et le PDF regenere apres anonymisation doit suivre la meme
-     * regle — un client neerlandophone ne doit pas recevoir « Client supprime ».</p>
+     * regle. Un client neerlandophone ne doit pas recevoir « Client supprime ».</p>
      *
      * <p>Le {@link MessageSource} arrive en <b>parametre</b> et non en champ : l entite
      * reste un POJO, sans dependance vers le contexte Spring. C est l appelant, qui
@@ -415,10 +415,13 @@ public class Utilisateur extends BaseEntity {
      * Pays d un compte anonymise. Marqueur d absence, et non un pays de substitution :
      * reecrire « Belgique » sur le dossier d une personne qui resida ailleurs
      * n anonymise pas, cela <b>affirme</b> une donnee peut-etre fausse. La colonne est
-     * NOT NULL, d ou un marqueur plutot que NULL — c est le meme tiret cadratin que les
-     * gabarits emploient deja pour dire « rien ».
+     * NOT NULL, d ou un marqueur plutot que NULL.
+     *
+     * <p>Valeur stockee et jamais affichee : l adresse etant videe, aucun document ne
+     * l imprime. Elle reste le tiret long, ecrit en sequence d echappement, pour que les
+     * comptes deja anonymises et les suivants portent le meme marqueur.</p>
      */
-    public static final String PAYS_ANONYME = "—";
+    public static final String PAYS_ANONYME = "\u2014";
 
     /**
      * Vide le compte de toute donnee personnelle et le marque anonymise.
@@ -450,7 +453,7 @@ public class Utilisateur extends BaseEntity {
      * @param jetonEmail     adresse de substitution, unique et non routable
      * @param hachageInerte  empreinte BCrypt d un secret aleatoire perdu
      * @throws IllegalStateException si le compte est deja anonymise, ou s il s agit
-     *         d un administrateur — F23 est un droit du membre sur son propre compte,
+     *         d un administrateur, F23 est un droit du membre sur son propre compte,
      *         et anonymiser un administrateur romprait la tracabilite des decisions
      *         qu il a signees (validations de retractation, historiques de catalogue)
      */
@@ -562,7 +565,7 @@ public class Utilisateur extends BaseEntity {
      * Pose le premier mot de passe choisi par le titulaire et active le compte.
      *
      * <p>L adresse devient verifiee : le lien n est parvenu qu a elle, et le suivre est
-     * la preuve qu elle est joignable — meme raisonnement qu a l activation d un membre.
+     * la preuve qu elle est joignable, meme raisonnement qu a l activation d un membre.
      * Le jeton est efface, donc a usage unique.</p>
      */
     public void definirMotDePasse(String empreinte) {
@@ -617,7 +620,7 @@ public class Utilisateur extends BaseEntity {
 
     /**
      * Anti-rejeu : un pas inferieur ou egal au dernier accepte est refuse ici aussi, et
-     * pas seulement par le calcul qui l a trouve — l invariant appartient au compte.
+     * pas seulement par le calcul qui l a trouve. L invariant appartient au compte.
      */
     public void accepterPas(long pas) {
         if (!secondFacteurActif()) {
@@ -650,7 +653,7 @@ public class Utilisateur extends BaseEntity {
      *
      * <p>Au seuil, le compte est verrouille pour une duree qui <b>double</b> a chaque
      * verrouillage, plafonnee. Cinq essais par quart d heure laisseraient environ 40 %
-     * de chances sur un an a qui detient le mot de passe ; le doublement ramene le
+     * de chances sur un an a qui detient le mot de passe. Le doublement ramene le
      * budget a cinq essais par jour une fois le plafond atteint, soit moins de 1 %. Le
      * verrouillage reste temporaire, pour la raison deja donnee par
      * {@code TentativesConnexionService} : un blocage definitif se retournerait contre le

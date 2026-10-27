@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Mes rendez-vous — AutoServ+</title>
+    <title>Mes rendez-vous | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -30,7 +30,7 @@
             </p>
             <h2>
                 <span th:text="${#strings.capitalize(r.jourLisible())}">Mercredi 16 septembre 2026</span><br>
-                <span th:text="${r.heureDebut()} + ' – ' + ${r.heureFin()}">10:00 – 11:00</span>
+                <span th:text="${r.heureDebut()} + ' - ' + ${r.heureFin()}">10:00 - 11:00</span>
             </h2>
             <p th:text="${r.vehicule()}">VW Golf (1-ABC-123)</p>
             <p th:text="${#strings.listJoin(r.prestations(), ', ')}">Vidange, Plaquettes</p>

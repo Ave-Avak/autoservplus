@@ -22,14 +22,14 @@ import java.util.UUID;
  * archivee, qui, elle, est immuable.</p>
  *
  * <p>Les totaux viennent de la <b>commande</b> et non d une somme recalculee sur les
- * lignes. Ce sont eux qui ont ete factures et encaisses ; les recalculer ferait de
+ * lignes. Ce sont eux qui ont ete factures et encaisses. Les recalculer ferait de
  * cet ecran une seconde source de verite, susceptible de diverger de la facture au
  * moindre arrondi.</p>
  *
  * <p>Les champs de facture sont nuls a la sortie du module vente, qui ignore la
  * facturation : le controleur les complete via {@link #avecFacture}, exactement
  * comme pour {@link CommandeHistoriqueVue}. L etat de retractation, lui, n entre pas
- * du tout dans cette vue — il voyage a part, pour la meme raison.</p>
+ * du tout dans cette vue : il voyage a part, pour la meme raison.</p>
  */
 public record CommandeDetailVue(
         UUID reference,
@@ -76,7 +76,7 @@ public record CommandeDetailVue(
 
     /**
      * @param paiement paiement abouti de la commande, ou {@code null} si elle n a
-     *                 jamais ete payee — l ecran affiche alors son statut, pas un
+     *                 jamais ete payee : l ecran affiche alors son statut, pas un
      *                 moyen de paiement fabrique
      */
     public static CommandeDetailVue de(Commande commande, List<LignePanier> lignes,
@@ -112,14 +112,14 @@ public record CommandeDetailVue(
                 statutPaiement, referenceFacture, numeroFacture);
     }
 
-    /** Le lien de telechargement n apparait que si la facture existe — condition de la liste. */
+    /** Le lien de telechargement n apparait que si la facture existe : condition de la liste. */
     public boolean estFacturee() {
         return referenceFacture != null;
     }
 
     /**
      * La commande attend encore son paiement : l'écran peut proposer de le reprendre.
-     * Condition de la liste, sur la même règle — voir
+     * Condition de la liste, sur la même règle : voir
      * {@link CommandeHistoriqueVue#peutEtrePayee()}.
      */
     public boolean peutEtrePayee() {

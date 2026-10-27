@@ -5,7 +5,7 @@ package be.autoservplus.retractation.domain;
  * {@code ck_demande_annulation_statut} (V27).
  *
  * <p>Deux transitions, et deux seulement : une demande en attente est validee ou
- * refusee par l administrateur. Aucun retour en arriere — une validation a
+ * refusee par l administrateur. Aucun retour en arriere : une validation a
  * rembourse le client et emis une note de credit, un refus est une decision
  * motivee opposee au consommateur. Revenir sur l une ou l autre n est pas une
  * transition d etat mais un evenement nouveau, qui passera par une nouvelle

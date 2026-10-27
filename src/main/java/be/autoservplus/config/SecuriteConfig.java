@@ -49,7 +49,7 @@ public class SecuriteConfig {
      * (CdC 5.2.3).
      *
      * <p><b>Pourquoi une hierarchie plutot que treize annotations doublees.</b> Un
-     * compte ne porte qu une autorite — {@code UtilisateurDetailsService} fait
+     * compte ne porte qu une autorite : {@code UtilisateurDetailsService} fait
      * {@code .roles(typeUtilisateur.name())}. Sans ce bean, le super-administrateur
      * serait refuse partout ou l administrateur est admis, et il faudrait reecrire les
      * <b>treize</b> {@code @PreAuthorize("hasRole('ADMINISTRATEUR')")} du projet plus
@@ -60,7 +60,7 @@ public class SecuriteConfig {
      * figure pas parce qu il n est <b>garde nulle part</b> : aucun
      * {@code hasRole('MEMBRE')} n existe dans le projet, et les ecrans personnels
      * ({@code /mes-vehicules}, {@code /panier}, {@code /commandes}) sont couverts par
-     * {@code anyRequest().authenticated()} seul — leur cloisonnement vient de
+     * {@code anyRequest().authenticated()} seul. Leur cloisonnement vient de
      * l <i>ownership</i>, chacun projetant les donnees du principal. L inscrire dans la
      * hierarchie ne changerait donc rien du tout : ce serait du bruit dans une
      * declaration dont toute la valeur est d etre lisible d un coup d oeil.
@@ -107,14 +107,14 @@ public class SecuriteConfig {
                 .authorizeHttpRequests(acces -> acces
                         // Dispatch d erreur du conteneur vers /error : la page d erreur
                         // elle-meme. La requete d origine a deja ete autorisee ou
-                        // refusee ; refuser aussi le rendu de son echec renvoyait un
+                        // refusee. Refuser aussi le rendu de son echec renvoyait un
                         // visiteur anonyme a la connexion sur une simple adresse
                         // inconnue, et laissait la page Whitelabel aux autres cas.
                         // Une connexion partielle y est vue comme anonyme
                         // (ConnexionPartielleHorsEtapes filtre aussi ce dispatch).
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         // /recherche : le formulaire de recherche est sur les pages du
-                        // catalogue, publiques ; la recherche l est donc aussi (F5).
+                        // catalogue, publiques. La recherche l est donc aussi (F5).
                         .requestMatchers("/", "/accueil", "/services/**", "/pieces/**", "/recherche",
                                 "/inscription/**", "/connexion", "/mot-de-passe/**",
                                 "/cgv", "/mentions-legales", "/confidentialite",
@@ -129,7 +129,7 @@ public class SecuriteConfig {
                                 // Page de contact : l article VI.45 CDE veut que
                                 // l identite du professionnel, son adresse, son
                                 // telephone et son courriel soient accessibles AVANT
-                                // que le consommateur ne soit lie — donc avant toute
+                                // que le consommateur ne soit lie, donc avant toute
                                 // creation de compte. Derriere une authentification,
                                 // l information arriverait apres le moment ou elle
                                 // doit eclairer la decision.
@@ -148,8 +148,8 @@ public class SecuriteConfig {
                                 "/compte-supprime",
                                 // Confirmation d un changement d adresse (CdC 5.2.2).
                                 // Le lien arrive dans la NOUVELLE boite, souvent
-                                // ouverte ailleurs que dans la session du membre ;
-                                // exiger une authentification y renverrait vers un
+                                // ouverte ailleurs que dans la session du membre.
+                                // Exiger une authentification y renverrait vers un
                                 // formulaire de connexion portant l ANCIENNE adresse,
                                 // et la bascule deviendrait impossible a conclure. Le
                                 // jeton porte l autorisation, comme pour l activation
@@ -160,7 +160,7 @@ public class SecuriteConfig {
                                 // cree au back-office. Le compte n a encore AUCUN mot de
                                 // passe utilisable : il ne peut pas s authentifier pour
                                 // atteindre cette page. Le jeton du lien porte
-                                // l autorisation — 256 bits, a usage unique, 24 h.
+                                // l autorisation : 256 bits, a usage unique, 24 h.
                                 "/compte/definition")
                         .permitAll()
                         // Etapes d une connexion commencee : seule surface ouverte a une
@@ -173,7 +173,7 @@ public class SecuriteConfig {
                         .requestMatchers("/actuator/health").permitAll()
                         // API publique en LECTURE SEULE (BL-8) et sa documentation.
                         // Anonyme par construction : elle n expose que ce qui figure
-                        // deja sur le site public — catalogue des prestations et
+                        // deja sur le site public, a savoir le catalogue des prestations et
                         // identite commerciale du garage. Aucun verbe d ecriture n y
                         // est declare, donc aucune authentification a exiger. La table
                         // clef_api du socle reste volontairement inexploitee : y
@@ -183,7 +183,7 @@ public class SecuriteConfig {
                         // Les deux routes sont ENUMEREES, et non couvertes par un joker
                         // /api/v1/**. Le joker est fail-open : le troisieme endpoint,
                         // quel qu il soit, naitrait public sans que personne ne l ait
-                        // decide — y compris un endpoint qui exposerait des donnees de
+                        // decide, y compris un endpoint qui exposerait des donnees de
                         // membre. L enumeration est fail-closed : ajouter une route
                         // publique devient un geste explicite, verifiable en revue.
                         // ApiPubliqueIT.surfaceFermeeParDefaut verrouille l ecart entre
@@ -194,7 +194,7 @@ public class SecuriteConfig {
                         .permitAll()
                         // Webhook du prestataire de paiement : appel serveur a serveur,
                         // sans session. L authenticite ne vient pas d un jeton mais de
-                        // la strategie securite §11 — le payload n est jamais cru, le
+                        // la strategie securite §11 : le payload n est jamais cru, le
                         // statut est relu aupres du prestataire via la passerelle.
                         .requestMatchers("/webhooks/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMINISTRATEUR")
@@ -203,7 +203,7 @@ public class SecuriteConfig {
                 .exceptionHandling(exceptions -> exceptions
                         .accessDeniedHandler(new RefusAccesEnEtapes()))
                 // Apres l autorisation : ce qui est public voit une connexion partielle
-                // comme anonyme ; voir ConnexionPartielleHorsEtapes.
+                // comme anonyme. Voir ConnexionPartielleHorsEtapes.
                 .addFilterAfter(new ConnexionPartielleHorsEtapes(), AuthorizationFilter.class)
 
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/webhooks/**"))
@@ -211,7 +211,7 @@ public class SecuriteConfig {
                         .loginPage("/connexion")
                         .usernameParameter("email")
                         // Remplace defaultSuccessUrl("/mon-compte", true) a comportement
-                        // strictement egal — meme classe, memes deux reglages — en y
+                        // strictement egal (meme classe, memes deux reglages) en y
                         // ajoutant l application de la langue enregistree au profil (F6).
                         .successHandler(succesHandler)
                         .failureHandler(echecHandler)

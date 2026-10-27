@@ -5,10 +5,10 @@ import be.autoservplus.common.exception.RegleMetierException;
 /**
  * Contrainte de <b>F13</b> : seule une piece active peut etre ajoutee au panier.
  * Une piece devenue inactive APRES son ajout reste dans le panier et le
- * recapitulatif la signale — mais on ne peut plus en acquerir davantage.
+ * recapitulatif la signale, mais on ne peut plus en acquerir davantage.
  *
  * <p>Pas de code RM : la contrainte est portee par la fonctionnalite F13 du CdC,
- * pas par une regle metier numerotee — d ou le constructeur sans code.</p>
+ * pas par une regle metier numerotee, d ou le constructeur sans code.</p>
  */
 public class PieceInactiveException extends RegleMetierException {
 

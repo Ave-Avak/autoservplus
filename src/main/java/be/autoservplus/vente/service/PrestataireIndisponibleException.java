@@ -8,7 +8,7 @@ package be.autoservplus.vente.service;
  * porte : celle-ci dit que la commande n admet pas de paiement (deja payee,
  * annulee), fait metier que le membre doit comprendre et qui ne changera pas s il
  * reessaie. Celle-la dit que la demande etait legitime mais que le tiers n a pas
- * repondu — reessayer a donc du sens. Les confondre conduirait a decourager un
+ * repondu : reessayer a donc du sens. Les confondre conduirait a decourager un
  * membre dont la commande est parfaitement payable.</p>
  *
  * <p>Elle porte une cause quand il y en a une, mais son message n est JAMAIS

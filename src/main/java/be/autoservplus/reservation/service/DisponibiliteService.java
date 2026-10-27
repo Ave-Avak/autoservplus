@@ -21,7 +21,7 @@ import java.util.Optional;
  * respecte le delai minimal et l horizon, et si au moins un poste actif n a ni
  * indisponibilite ni rendez-vous sur l intervalle elargi du tampon.</p>
  *
- * <p>Les plages sont exprimees en heure locale du garage ; tout le reste est en
+ * <p>Les plages sont exprimees en heure locale du garage. Tout le reste est en
  * instants UTC. La projection passe par le fuseau parametre, ce qui rend les
  * changements d heure corrects sans traitement particulier.</p>
  */
@@ -73,7 +73,7 @@ public class DisponibiliteService {
             return List.of();
         }
 
-        // Une requete par source pour toute la journee ; le filtrage par candidat se
+        // Une requete par source pour toute la journee. Le filtrage par candidat se
         // fait en memoire, sur quelques dizaines de lignes au plus.
         List<Indisponibilite> fermetures = indisponibilites.chevauchant(debutJour, finJour);
         List<Rdv> occupes = rdvs.actifsChevauchant(

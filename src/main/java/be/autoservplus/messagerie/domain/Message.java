@@ -65,7 +65,7 @@ public class Message extends BaseEntity {
     }
 
     /**
-     * @throws IllegalArgumentException corps vide — un message sans texte n a rien a
+     * @throws IllegalArgumentException corps vide : un message sans texte n a rien a
      *                                  transmettre et la colonne est {@code NOT NULL}
      */
     public Message(Conversation conversation, Utilisateur expediteur, RoleExpediteur role,

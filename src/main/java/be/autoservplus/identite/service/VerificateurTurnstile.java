@@ -21,13 +21,13 @@ import java.util.Map;
  * <p>Le widget depose un jeton dans le formulaire. Ce jeton ne vaut rien tant qu il n
  * a pas ete presente a Cloudflare : sans cette verification, il suffirait de poster le
  * formulaire sans passer par le widget, ou d y mettre n importe quelle chaine. C est
- * la meme regle que pour le webhook de paiement — <b>le payload n est jamais cru, le
+ * la meme regle que pour le webhook de paiement : <b>le payload n est jamais cru, le
  * statut est relu chez le prestataire</b>.</p>
  *
  * <h2>Panne</h2>
  *
  * <p><b>Une panne de Cloudflare ne bloque pas l inscription.</b> Les trois autres
- * couches — champ piege, delai minimal, plafond par IP — restent en vigueur, et
+ * couches (champ piege, delai minimal, plafond par IP) restent en vigueur, et
  * refuser tout le monde parce qu un tiers est indisponible serait lui confier la
  * disponibilite du site. Choix inverse de celui du paiement, ou un prestataire
  * injoignable interrompt le parcours : la, il n y a rien a encaisser sans lui.</p>
@@ -59,7 +59,7 @@ public class VerificateurTurnstile {
      *
      * @param jeton valeur du champ {@value #CHAMP_JETON}
      * @param ip    adresse du visiteur, transmise a Cloudflare pour affiner son
-     *              analyse ; facultative de son cote
+     *              analyse. Facultative de son cote
      */
     public boolean jetonValide(String jeton, String ip) {
         if (jeton == null || jeton.isBlank()) {

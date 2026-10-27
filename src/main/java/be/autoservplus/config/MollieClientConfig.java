@@ -23,7 +23,7 @@ import org.springframework.web.client.RestClient;
  *
  * <p>Les delais sont bornes des l etablissement de la connexion : un prestataire qui
  * ne repond pas doit echouer vite. Sans borne, un appel sortant immobiliserait un
- * thread de traitement — et, pour la relecture de statut, une connexion de base de
+ * thread de traitement et, pour la relecture de statut, une connexion de base de
  * donnees avec lui.</p>
  */
 @Configuration

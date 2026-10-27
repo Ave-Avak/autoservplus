@@ -82,7 +82,7 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
      * <p>Sert l invariant  il doit rester un super-administrateur actif  : la question
      * posee avant de suspendre est  combien en resterait-il ? , donc le compte vise
      * doit sortir du decompte. L exclusion est faite ICI plutot que par une
-     * soustraction cote service — soustraire un supposerait que le compte vise est
+     * soustraction cote service : soustraire un supposerait que le compte vise est
      * lui-meme actif, ce qui est vrai a la suspension et faux partout ailleurs.</p>
      */
     @Query("""
@@ -99,7 +99,7 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
      * <p><b>Le motif est un MOTIF, jamais un terme, et jamais nul.</b> La version
      * precedente testait {@code :filtre is null} pour rendre tout le monde quand rien
      * n etait cherche : PostgreSQL ne sait pas inferer le type d un parametre nul et
-     * echouait sur {@code function lower(bytea) does not exist} — l ecran repondait
+     * echouait sur {@code function lower(bytea) does not exist}. L ecran repondait
      * 500 des son ouverture. Meme piege que celui deja consigne pour le journal
      * d audit (BL-7).
      *

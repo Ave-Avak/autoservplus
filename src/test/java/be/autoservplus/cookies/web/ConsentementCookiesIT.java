@@ -240,7 +240,7 @@ class ConsentementCookiesIT extends SocleIntegration {
             assertThat(analytique.get(0).getAdresseIp()).isNotBlank();
             assertThat(analytique.get(0).getDateConsentement()).isNotNull();
             assertThat(analytique.get(0).getVersionAcceptee())
-                    .isEqualTo("COOKIES-2026-01");
+                    .isEqualTo("COOKIES-2026-02");
 
             assertThat(marketing).hasSize(1);
             assertThat(marketing.get(0).isAccorde()).isFalse();

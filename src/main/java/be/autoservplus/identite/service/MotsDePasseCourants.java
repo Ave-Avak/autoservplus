@@ -20,7 +20,7 @@ import java.util.Set;
  * distant.
  *
  * <p><b>Filtree a quinze caracteres et plus</b> : en deca, la longueur minimale refuse
- * deja. Le filtrage ramene le million d entrees de la source a 10 908, soit 188 Ko —
+ * deja. Le filtrage ramene le million d entrees de la source a 10 908, soit 188 Ko :
  * assez petit pour tenir en memoire sans qu il faille y reflechir. Source et licence :
  * {@code THIRD-PARTY.md}.</p>
  *
@@ -58,7 +58,7 @@ public class MotsDePasseCourants {
 
     /**
      * Echoue bruyamment si la ressource manque. Un demarrage silencieux avec une liste
-     * vide laisserait croire que la couche fonctionne alors qu elle accepterait tout —
+     * vide laisserait croire que la couche fonctionne alors qu elle accepterait tout :
      * exactement le genre de panne qu on ne decouvre jamais.
      */
     private static Set<String> charger() {

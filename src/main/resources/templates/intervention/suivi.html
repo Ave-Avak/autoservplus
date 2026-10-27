@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="'Suivi ' + ${intervention.numero()} + ' — AutoServ+'">Suivi — AutoServ+</title>
+    <title th:text="'Suivi ' + ${intervention.numero()} + ' | AutoServ+'">Suivi | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <!-- HTMX injecte par defaut une feuille de style en ligne pour ses indicateurs,
          ce que la CSP interdit. On la desactive et on stylise nous-memes. -->
@@ -17,7 +17,7 @@
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <p><a th:href="@{/mes-rendez-vous}">← Mes rendez-vous</a></p>
+    <p><a th:href="@{/mes-rendez-vous}">Retour à mes rendez-vous</a></p>
 
     <h1 th:text="'Intervention ' + ${intervention.numero()}">Intervention INT-2026-0001</h1>
     <p th:text="${intervention.vehicule()}">VW Golf (1-ABC-123)</p>
@@ -40,7 +40,7 @@
          th:hx-swap="${intervention.estTerminale()} ? null : 'outerHTML'">
 
         <!-- Badge : le TEXTE affiche est le statut percu (RM-16, projection sur
-             4 valeurs pour le membre) ; la classe CSS reste derivee du statut
+             4 valeurs pour le membre). La classe CSS reste derivee du statut
              technique (invisible au membre, sert uniquement au styling). -->
         <p>
             <span th:class="'badge badge-' + ${#strings.toLowerCase(intervention.statut())}"
@@ -76,7 +76,7 @@
 
         <div th:if="${intervention.commentaireAdmin() != null}" class="message" role="note">
             <strong>Message du garage :</strong>
-            <span th:text="${intervention.commentaireAdmin()}">…</span>
+            <span th:text="${intervention.commentaireAdmin()}">...</span>
         </div>
 
         <p th:if="${intervention.statut() == 'TERMINEE'}" class="message message-succes" role="status">
@@ -123,7 +123,7 @@
         </table>
     </div>
 
-    <!-- BL-4 : proposé seulement si le dépôt aboutirait — travaux terminés et
+    <!-- BL-4 : proposé seulement si le dépôt aboutirait, travaux terminés et
          aucun avis déjà déposé (l'unicité en base refuserait le second). -->
     <p class="actions-page" th:if="${peutDeposerAvis}">
         <a th:href="@{/mes-avis/{ref}/nouveau(ref=${intervention.reference()})}"

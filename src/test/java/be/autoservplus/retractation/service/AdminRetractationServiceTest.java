@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Decision du garage sur une retractation (F30) : la validation contre-passe,
- * rembourse et bascule les etats dans une seule transaction ; le refus n ecrit
+ * rembourse et bascule les etats dans une seule transaction. Le refus n ecrit
  * aucun mouvement comptable.
  */
 @ExtendWith(MockitoExtension.class)
@@ -230,7 +230,7 @@ class AdminRetractationServiceTest {
 
             // Rien n a ete lu ni ecrit : sans ce fail-fast, un second clic irait
             // jusqu au remboursement pour echouer sur « aucun paiement encaisse »,
-            // ce qui est vrai mais trompeur — le paiement est deja REMBOURSE.
+            // ce qui est vrai mais trompeur, car le paiement est deja REMBOURSE.
             verify(commandes, never()).verrouillerParId(any());
             verify(factures, never()).findByCommande(any());
             verify(avoirs, never()).contrePasser(any(), any());

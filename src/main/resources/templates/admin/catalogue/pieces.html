@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{admin.catalogue.pieces.titre} + ' — AutoServ+'">Catalogue — pièces — AutoServ+</title>
+    <title th:text="#{admin.catalogue.pieces.titre} + ' | AutoServ+'">Catalogue des pièces | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -20,7 +20,7 @@
         <strong th:text="#{admin.catalogue.nav.pieces}">Gérer les pièces</strong>
     </p>
 
-    <h1 th:text="#{admin.catalogue.pieces.titre}">Catalogue — pièces</h1>
+    <h1 th:text="#{admin.catalogue.pieces.titre}">Catalogue des pièces</h1>
 
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>

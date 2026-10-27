@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${article.libelle()} + ' — AutoServ+'">Article — AutoServ+</title>
+    <title th:text="${article.libelle()} + ' | AutoServ+'">Article | AutoServ+</title>
     <meta name="description" th:content="${article.description()}">
 
     <!--
@@ -119,7 +119,7 @@
         <div class="fiche-actions" th:if="${article.disponible()}">
             <a class="btn-cta" th:href="@{/mes-rendez-vous/nouveau}"
                th:if="${typeArticle == 'service'}">Prendre rendez-vous</a>
-            <!-- F12 : la prestation s'achete aussi hors rendez-vous. Modele DECOUPLE —
+            <!-- F12 : la prestation s'achete aussi hors rendez-vous. Modele DECOUPLE :
                  payer le service ne reserve pas le creneau, la planification reste une
                  etape separee. Reserve aux membres connectes, comme le panier. -->
             <form th:action="@{/panier/ajouter-service}" method="post"
@@ -132,7 +132,7 @@
                         th:text="#{panier.ajout.service}">Ajouter au panier</button>
             </form>
             <!-- F13 : ajout au panier en POST (jeton CSRF injecte par th:action), avec
-                 quantite choisie ici. Un GET mutateur — l'ancien lien — contournerait
+                 quantite choisie ici. Un GET mutateur (l'ancien lien) contournerait
                  la protection CSRF et le pattern PRG. -->
             <form th:action="@{/panier/ajouter}" method="post" th:if="${typeArticle == 'piece'}">
                 <input type="hidden" name="reference" th:value="${article.reference()}">
@@ -156,7 +156,7 @@
         </ul>
     </section>
 
-    <!-- BL-4 : avis publies. Reserve aux prestations — un avis porte sur un travail
+    <!-- BL-4 : avis publies. Reserve aux prestations : un avis porte sur un travail
          effectue sur le vehicule, pas sur un article de stock. -->
     <section th:if="${typeArticle == 'service'}" class="avis">
         <h2 th:text="#{avis.section.titre}">Avis des clients</h2>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{panier.vider.titre} + ' — AutoServ+'">Vider le panier — AutoServ+</title>
+    <title th:text="#{panier.vider.titre} + ' | AutoServ+'">Vider le panier | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -14,7 +14,7 @@
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <p><a th:href="@{/panier}" th:text="'← ' + #{panier.titre}">← Mon panier</a></p>
+    <p><a th:href="@{/panier}" th:text="#{commande.recap.retour}">Retour au panier</a></p>
 
     <h1 th:text="#{panier.vider.titre}">Vider le panier</h1>
 

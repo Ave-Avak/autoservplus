@@ -27,11 +27,11 @@ import static org.mockito.Mockito.when;
  * <p>Le point defendu ici n est pas evident : l instantane client d une facture
  * <b>n est pas fige a l emission</b>. {@code PdfFactureService} lit l entite vive au
  * moment de produire le document, si bien qu une adresse effacee aujourd hui sortirait
- * sur une facture emise il y a des mois — privee de sa mention obligatoire
+ * sur une facture emise il y a des mois : privee de sa mention obligatoire
  * (AR n°1, art. 5). Les PDF deja archives, eux, sont immuables et ne bougent pas.</p>
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ProfilService — adresse et factures")
+@DisplayName("ProfilService : adresse et factures")
 class ProfilServiceTest {
 
     private static final String EMAIL = "marie@exemple.be";

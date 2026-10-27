@@ -14,7 +14,7 @@ import java.time.Duration;
  * levier d epuisement de ressources bon marche.
  *
  * <p>Porte le temps restant a attendre pour que la couche web puisse le restituer :
- * un refus sans echeance n est pas actionnable — meme raisonnement que la quantite
+ * un refus sans echeance n est pas actionnable, meme raisonnement que la quantite
  * disponible de {@code StockInsuffisantException}.
  *
  * <p>Pas de code RM : la limite vient de F22, pas d une regle numerotee du CdC.

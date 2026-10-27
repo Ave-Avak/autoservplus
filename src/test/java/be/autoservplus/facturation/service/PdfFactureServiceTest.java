@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * Politique de cache du PDF : fabrique une fois a la demande, sert l archive
- * ensuite. Servir l archive n est pas une optimisation — c est le document remis
+ * ensuite. Servir l archive n est pas une optimisation : c est le document remis
  * au client qui doit etre reservi, pas ce que le code produirait aujourd hui.
  */
 @ExtendWith(MockitoExtension.class)

@@ -29,10 +29,10 @@ import be.autoservplus.support.SocleIntegration;
  * de presence dans SchemaIT localise le trou (poste manquant), ce test-ci prouve
  * que la reservation est effectivement possible bout en bout.</p>
  *
- * <p>Horloge figee sur un vendredi connu ; le lundi suivant est vise pour la
+ * <p>Horloge figee sur un vendredi connu. Le lundi suivant est vise pour la
  * requete (jour ouvre, +3 jours = au-dela du delai minimal de 24 h, largement
  * dans l horizon de 60 j). Le choix est independant du jour d execution du
- * test — cf. le meme pattern que RdvServiceIT.</p>
+ * test : cf. le meme pattern que RdvServiceIT.</p>
  */
 @SpringBootTest
 @Import(DisponibiliteIT.HorlogeFixe.class)

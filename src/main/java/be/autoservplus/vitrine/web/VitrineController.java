@@ -13,13 +13,13 @@ import org.springframework.web.bind.annotation.GetMapping;
  * droit economique impose au professionnel qui vend a distance de rendre
  * accessibles son identite, son adresse geographique, son telephone et son adresse
  * de courriel <b>avant</b> que le consommateur ne soit lie. Le site les portait
- * jusqu ici sur les seules mentions legales, atteignables depuis le pied de page ;
- * une page de contact nommee comme telle est la forme sous laquelle un visiteur les
+ * jusqu ici sur les seules mentions legales, atteignables depuis le pied de page.
+ * Une page de contact nommee comme telle est la forme sous laquelle un visiteur les
  * cherche reellement.</p>
  *
  * <p><b>Rien n est ecrit en dur ici.</b> L identite vient de la configuration
- * {@code autoservplus.garage.*} — la meme qui imprime l en-tete des factures et
- * alimente les pages legales — et les horaires viennent de {@code plage_ouverture},
+ * {@code autoservplus.garage.*} (la meme qui imprime l en-tete des factures et
+ * alimente les pages legales) et les horaires viennent de {@code plage_ouverture},
  * la table dont sont deduits les creneaux reservables. Les deux blocs de cette page
  * sont donc, par construction, ceux que le client rencontrera ensuite sur son devis
  * et dans l agenda de reservation.</p>

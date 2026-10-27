@@ -212,7 +212,7 @@ class InterventionTemplatesIT extends SocleIntegration {
                 .andExpect(status().isOk())
                 // Titre et libelles resolus par le MessageSource (cles i18n, locale fr).
                 .andExpect(content().string(containsString("Chronologie")))
-                // 08:00Z le 1er decembre = 09:00 a Bruxelles ; date pre-formatee cote DTO.
+                // 08:00Z le 1er decembre = 09:00 a Bruxelles. Date pre-formatee cote DTO.
                 .andExpect(content().string(containsString("Mardi 1 décembre 2026 09:00")))
                 .andExpect(content().string(containsString("En attente")))
                 .andExpect(content().string(containsString("En cours")))

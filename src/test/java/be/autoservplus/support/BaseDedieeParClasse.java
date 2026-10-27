@@ -24,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p><b>Ce que cette fabrique protege.</b> La cle du cache de contexte de Spring ne
  * contient pas la classe de test : deux classes aux memes annotations partagent un
  * contexte. En y injectant un {@link ContextCustomizer} dont l egalite depend de la
- * classe racine, on force un contexte — donc une base — par classe. Sans cela, les
+ * classe racine, on force un contexte (donc une base) par classe. Sans cela, les
  * vingt-six classes {@code @SpringBootTest @AutoConfigureMockMvc} se retrouveraient
  * dans une seule base et se marcheraient dessus.</p>
  */
@@ -35,7 +35,7 @@ public class BaseDedieeParClasse implements ContextCustomizerFactory {
      * et non a chaque montage de contexte, n est pas une optimisation : une classe
      * {@code @Nested} peut provoquer un second montage pendant que sa classe hote
      * s execute, et un {@code DROP} a cet instant effacerait sous ses pieds les
-     * donnees qu elle vient d ecrire — silencieusement.
+     * donnees qu elle vient d ecrire, silencieusement.
      */
     private static final Set<String> DEJA_CREEES = ConcurrentHashMap.newKeySet();
 
@@ -67,7 +67,7 @@ public class BaseDedieeParClasse implements ContextCustomizerFactory {
     }
 
     /**
-     * Nom lisible et unique. Le nom simple aide a lire un journal ; l empreinte du nom
+     * Nom lisible et unique. Le nom simple aide a lire un journal. L empreinte du nom
      * complet evite la collision entre deux classes homonymes de paquets differents.
      * PostgreSQL tronque les identifiants a 63 octets, d ou la coupe.
      */
@@ -106,7 +106,7 @@ public class BaseDedieeParClasse implements ContextCustomizerFactory {
                             "spring.datasource.hikari.minimum-idle=0",
                             // Ordonnanceur eteint : voir PlanificationConfig. Pose ici
                             // et non dans un application.yml de test, qui masquerait
-                            // celui de production — src/test/resources n en contient
+                            // celui de production : src/test/resources n en contient
                             // volontairement aucun.
                             "autoservplus.planification.activee=false",
                             // Aucun appel sortant depuis les tests : la verification
@@ -121,7 +121,7 @@ public class BaseDedieeParClasse implements ContextCustomizerFactory {
          * {@code DROP} puis {@code CREATE}, et une seule fois par nom de base : le
          * {@code DROP} met la base a neuf pour la classe qui commence, sans jamais
          * repasser derriere elle ensuite. {@code WITH (FORCE)} coupe les sessions
-         * survivantes d une execution precedente — sans lui, un pool pas encore ferme
+         * survivantes d une execution precedente : sans lui, un pool pas encore ferme
          * ferait echouer le DROP.
          */
         private void creerBaseVierge() {

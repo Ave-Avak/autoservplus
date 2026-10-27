@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Journal d audit du garage (BL-7), en <b>consultation seule</b>.
@@ -24,7 +25,7 @@ import java.util.List;
  * (V25, une ligne par champ reellement change) et les transitions d intervention
  * (V23, append-only, ecrites dans la transaction de chaque transition). Ni l une ni
  * l autre n est modifiable depuis l application, et ce service n expose aucune
- * ecriture — un journal qu on peut retoucher ne prouve rien.</p>
+ * ecriture. Un journal qu on peut retoucher ne prouve rien.</p>
  *
  * <p>{@code @PreAuthorize} de classe en defense en profondeur : la protection d URL
  * {@code /admin/**} filtre deja le role, le service refuse en second. Le journal
@@ -57,7 +58,7 @@ public class JournalService {
      * Entrees correspondant aux filtres, de la plus recente a la plus ancienne.
      *
      * <p>Les bornes de date sont fournies en jours locaux et converties dans le fuseau
-     * de l atelier ; {@code jusqua} est rendu <b>inclusif</b> en avancant d un jour, ce
+     * de l atelier. {@code jusqua} est rendu <b>inclusif</b> en avancant d un jour, ce
      * que l utilisateur attend d un champ « jusqu au ».</p>
      */
     public List<EntreeJournal> rechercher(String type, String acteur,
@@ -99,7 +100,7 @@ public class JournalService {
      * l ecran tombait en {@code ClassCastException} des qu une SEULE ligne existait.
      * Le defaut est reste invisible parce que les deux tables d historique n avaient
      * jamais ete alimentees hors des tests, et que ceux-ci verifient l execution des
-     * quatre variantes de l UNION et le cas « aucune trace » — jamais la conversion
+     * quatre variantes de l UNION et le cas « aucune trace » : jamais la conversion
      * d une ligne reelle. Une requete native rend des {@code Object[]} : c est a
      * l appelant de ne rien presumer de leur type.</p>
      */
@@ -119,18 +120,21 @@ public class JournalService {
      * Compose la colonne « ce qui a change ».
      *
      * <p>Une valeur absente est rendue par un libelle traduit et non par une chaine
-     * vide : « (vide) → 45,00 » se lit, « → 45,00 » ressemble a un bug d affichage.</p>
+     * vide : « (vide), puis 45,00 » se lit, « , puis 45,00 » ressemble a un bug
+     * d affichage.</p>
      */
     private String detail(String type, String champ, String avant, String apres, String motif) {
-        String vide = messages.getMessage("admin.journal.valeur-vide", null,
-                LocaleContextHolder.getLocale());
-        String transition = "%s → %s".formatted(
+        Locale langue = LocaleContextHolder.getLocale();
+        String vide = messages.getMessage("admin.journal.valeur-vide", null, langue);
+        String transition = messages.getMessage("admin.journal.transition", new Object[]{
                 avant == null || avant.isBlank() ? vide : avant,
-                apres == null || apres.isBlank() ? vide : apres);
+                apres == null || apres.isBlank() ? vide : apres}, langue);
 
         if (EntreeJournal.TYPE_CATALOGUE.equals(type)) {
             return "%s : %s".formatted(champ, transition);
         }
-        return motif == null || motif.isBlank() ? transition : "%s — %s".formatted(transition, motif);
+        return motif == null || motif.isBlank()
+                ? transition
+                : messages.getMessage("admin.journal.transition-motif", new Object[]{transition, motif}, langue);
     }
 }

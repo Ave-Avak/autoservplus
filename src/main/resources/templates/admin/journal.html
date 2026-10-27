@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{admin.journal.titre} + ' — AutoServ+'">Journal d'audit — AutoServ+</title>
+    <title th:text="#{admin.journal.titre} + ' | AutoServ+'">Journal d'audit | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -78,7 +78,7 @@
                      plutôt que de laisser une cellule vide, qui se lirait comme une perte. -->
                 <td th:text="${e.acteurConnu()} ? ${e.acteur()} : #{admin.journal.acteur-inconnu}">Marie Dupont</td>
                 <td th:text="${e.cible()}">ITV-2026-0011</td>
-                <td th:text="${e.detail()}">EN_COURS → TERMINEE</td>
+                <td th:text="${e.detail()}">EN_COURS, puis TERMINEE</td>
             </tr>
             </tbody>
         </table>

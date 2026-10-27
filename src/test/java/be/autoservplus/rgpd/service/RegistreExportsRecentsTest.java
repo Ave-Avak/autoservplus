@@ -77,7 +77,7 @@ class RegistreExportsRecentsTest {
         horloge.avancerDe(RegistreExportsRecents.DELAI_ENTRE_EXPORTS);
 
         // Borne inclusive : la fenetre est « moins de 24 heures », pas
-        // « 24 heures ou moins » — a l'echeance exacte, le droit se rouvre.
+        // « 24 heures ou moins » : a l'echeance exacte, le droit se rouvre.
         assertThat(registre.attenteRestante(MARIE)).isEmpty();
         assertThat(registre.dernierExport(MARIE)).isEmpty();
     }

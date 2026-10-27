@@ -39,7 +39,7 @@ public record InterventionVueAdmin(
         boolean estEditable,
         /**
          * RM-14 : le formulaire d ajout de ligne n a de sens qu en EN_COURS. Le
-         * domaine refuse deja l ajout ailleurs ; ce flag evite d afficher un
+         * domaine refuse deja l ajout ailleurs. Ce flag evite d afficher un
          * formulaire condamne, il ne le remplace pas.
          */
         boolean peutAjouterLigne,

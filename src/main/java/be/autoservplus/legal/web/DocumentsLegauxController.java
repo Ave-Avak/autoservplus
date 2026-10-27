@@ -17,8 +17,8 @@ import org.springframework.web.bind.annotation.PathVariable;
  * politique de confidentialite.
  *
  * <p>Ces trois adresses etaient <b>declarees ouvertes</b> dans la configuration de
- * securite et referencees par treize liens de gabarits — dont celui qui accompagne
- * la case d acceptation obligatoire du recapitulatif de commande — sans qu aucun
+ * securite et referencees par treize liens de gabarits (dont celui qui accompagne
+ * la case d acceptation obligatoire du recapitulatif de commande) sans qu aucun
  * controleur ne les serve : elles repondaient 404. Faire accepter des conditions
  * generales qu on ne peut pas lire n est pas une maladresse d ergonomie, c est un
  * defaut de formation du contrat.</p>
@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.PathVariable;
  *
  * <p>Le contenu redactionnel est <b>complet</b> : les onze clauses laissees en blanc
  * a la livraison initiale sont redigees. La <b>banniere de brouillon</b> reste
- * pourtant en tete de chaque page, et ce n est pas un oubli — elle n a jamais
+ * pourtant en tete de chaque page, et ce n est pas un oubli : elle n a jamais
  * annonce qu il manquait du texte, mais qu <b>aucun juriste n a relu celui-ci</b>.
  * Les deux etats sont distincts, et le second est le plus dangereux : un document
  * inacheve se voit, un document complet mais non valide se lit comme definitif.
@@ -68,7 +68,7 @@ public class DocumentsLegauxController {
         // regle change, le texte affiche change avec elle plutot que de mentir.
         modele.addAttribute("delaiRetractationJours", RetractationService.DELAI_LEGAL.toDays());
         // F24 : le lecteur doit pouvoir nommer le texte qu il lit. Sans cette mention,
-        // le numero de version figé sur sa preuve d acceptation ne lui apprend rien —
+        // le numero de version figé sur sa preuve d acceptation ne lui apprend rien :
         // il designerait un document qu il ne peut pas identifier.
         modele.addAttribute("versionEnVigueur",
                 versionsDocuments.versionEnVigueur(TypeDocumentVersionne.CGV).orElse(null));
@@ -87,7 +87,7 @@ public class DocumentsLegauxController {
      *
      * <p>C est le point qui manquait a la preuve de consentement : sans lui,
      * {@code consentement.version_acceptee} porte un numero que rien ne permet de
-     * rapporter a un texte. Publique et non reservee au titulaire — a la difference
+     * rapporter a un texte. Publique et non reservee au titulaire : a la difference
      * d une facture, un document contractuel general n est le secret de personne, et
      * exiger une connexion pour lire les conditions qu on a acceptees serait une
      * entrave sans motif.</p>

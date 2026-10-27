@@ -16,8 +16,8 @@ import java.util.UUID;
  * <p>Les champs de facture sont nuls a la sortie du module vente, qui ne connait pas
  * la facturation : c est le controleur qui les complete depuis le module
  * {@code facturation}, via {@link #avecFacture}. Faire dependre la vente de la
- * facturation pour un simple lien de telechargement inverserait la dependance —
- * c est la facture qui nait de la commande, pas l inverse.</p>
+ * facturation pour un simple lien de telechargement inverserait la dependance.
+ * C est la facture qui nait de la commande, pas l inverse.</p>
  *
  * <p>{@code statut} est expose brut : le libelle affiche est une cle i18n construite
  * dans le gabarit, aucune chaine visible n est fabriquee ici.</p>
@@ -58,12 +58,12 @@ public record CommandeHistoriqueVue(
      * reprendre.
      *
      * <p>Même calcul que {@code ConfirmationCommandeVue.enAttenteDePaiement}, et
-     * même règle que la garde de {@code PaiementService.initierPaiement} — celle-ci
+     * même règle que la garde de {@code PaiementService.initierPaiement}, celle-ci
      * reste seule à décider : le gabarit affiche, il n'autorise pas.</p>
      *
      * <p>Aucune notion de délai ici. L'expiration RM-21 n'est pas une durée à
      * comparer, c'est {@code ExpirationCommandesJob} qui fait passer la commande en
-     * ANNULEE au bout de trente minutes ; le statut porte donc déjà le verdict.</p>
+     * ANNULEE au bout de trente minutes. Le statut porte donc déjà le verdict.</p>
      */
     public boolean peutEtrePayee() {
         return statut == StatutCommande.EN_ATTENTE_PAIEMENT;

@@ -14,22 +14,22 @@ import java.util.Set;
  * <ul>
  *   <li>une <b>cle API</b> {@code test_...} ou {@code live_...} : elle est creee POUR
  *       un profil de site et porte le mode dans son prefixe. Elle designe donc a elle
- *       seule ou imputer le paiement et s il est de test ; Mollie refuse d ailleurs
- *       qu on le lui repete. Rien d autre a fournir ;</li>
- *   <li>tout <b>jeton d acces</b> — jeton d organisation {@code access_...}, jeton
+ *       seule ou imputer le paiement et s il est de test. Mollie refuse d ailleurs
+ *       qu on le lui repete. Rien d autre a fournir.</li>
+ *   <li>tout <b>jeton d acces</b>, jeton d organisation {@code access_...}, jeton
  *       d acces avance cree depuis le tableau de bord, jeton d application OAuth : il
  *       authentifie une organisation, pas un site. Mollie ne peut alors deduire ni a
- *       quel profil rattacher un paiement, ni si l on travaille en test ou en reel —
+ *       quel profil rattacher un paiement, ni si l on travaille en test ou en reel :
  *       il faut le lui dire, d ou {@link #profilId} et {@link #modeTest}.</li>
  * </ul>
  *
  * <p><b>La reconnaissance se fait par EXCLUSION, et c est le point a defendre.</b>
  * Le premier jet enumerait les prefixes acceptes ({@code access_}), ce qui traitait
- * en cle API tout ce qui n y figurait pas — donc sans {@code profileId} ni
+ * en cle API tout ce qui n y figurait pas, donc sans {@code profileId} ni
  * {@code testmode}. Mollie a depuis unifie ses pages de jetons et propose des
  * « jetons d acces avances » dont la documentation publique ne donne aucun prefixe :
  * une liste ne peut pas etre tenue a jour contre une valeur qui n est pas publiee.
- * La documentation est en revanche nette sur le comportement — la cle API est la
+ * La documentation est en revanche nette sur le comportement : la cle API est la
  * SEULE forme qui porte profil et mode. C est donc cette forme-la qui est reconnue,
  * a son prefixe documente et stable, et tout le reste qui exige le contexte.</p>
  *
@@ -45,7 +45,7 @@ import java.util.Set;
  * une donnee que l exploitant lit dans son tableau de bord elargirait le jeton sans
  * necessite : l application n a besoin de savoir ni combien de sites possede
  * l organisation, ni lesquels. Le moindre privilege se defend mieux qu il ne se
- * rattrape — les quatre permissions de paiement et de remboursement suffisent.</p>
+ * rattrape : les quatre permissions de paiement et de remboursement suffisent.</p>
  *
  * @param cleApi   cle API ou jeton d acces. JAMAIS journalise, ni en clair ni
  *                 tronque : un identifiant partiel dans un journal reste un
@@ -63,7 +63,7 @@ public record MollieProprietes(
 
     /**
      * Prefixes des cles API, seule forme qui porte a elle seule un profil et un mode.
-     * Les deux sont documentes par Mollie et stables depuis l origine de l API — a la
+     * Les deux sont documentes par Mollie et stables depuis l origine de l API : a la
      * difference des prefixes de jetons, dont certains ne sont pas publies.
      */
     private static final Set<String> PREFIXES_CLE_API = Set.of("test_", "live_");
@@ -78,8 +78,8 @@ public record MollieProprietes(
      * porte pas ? Vrai pour toute forme de jeton d acces, faux pour une cle API.
      *
      * <p>Nomme par ce qu il commande et non par ce qu il croit reconnaitre : la
-     * methode ne sait plus dire de quelle sorte de jeton il s agit — la documentation
-     * ne le permet plus — elle sait seulement que ce n est pas une cle API, et c est
+     * methode ne sait plus dire de quelle sorte de jeton il s agit (la documentation
+     * ne le permet plus) elle sait seulement que ce n est pas une cle API, et c est
      * exactement ce dont les appelants ont besoin.</p>
      */
     public boolean exigeContexteOrganisation() {
@@ -103,7 +103,7 @@ public record MollieProprietes(
      * demarrage vaut mieux : l exploitant le voit tout de suite, et surtout
      * l alternative serait pire que l arret. Se rabattre silencieusement sur le
      * bouchon parce que la configuration est incoherente ferait croire a un garage
-     * qu il encaisse alors qu il simule — un defaut qui ne se decouvre qu au moment
+     * qu il encaisse alors qu il simule : un defaut qui ne se decouvre qu au moment
      * de compter la caisse.</p>
      *
      * @throws IllegalStateException si le couple identifiant / profil est incoherent
@@ -113,12 +113,12 @@ public record MollieProprietes(
             throw new IllegalStateException("""
                     Configuration du prestataire de paiement incomplete : l identifiant \
                     fourni n est pas une cle API (test_/live_), c est donc un jeton \
-                    d acces — jeton d organisation access_..., ou jeton d acces avance \
-                    cree depuis le tableau de bord. Un jeton de ce type ne designe aucun \
+                    d acces (jeton d organisation access_..., ou jeton d acces avance \
+                    cree depuis le tableau de bord). Un jeton de ce type ne designe aucun \
                     profil de site et Mollie exige profileId a la creation d un paiement. \
                     Renseignez autoservplus.paiement.mollie.profil-id \
                     (variable MOLLIE_PROFILE_ID), lisible dans le tableau de bord Mollie \
-                    sous la forme pfl_... — ou employez une cle API test_/live_, qui \
+                    sous la forme pfl_..., ou employez une cle API test_/live_, qui \
                     porte le profil elle-meme.""");
         }
     }

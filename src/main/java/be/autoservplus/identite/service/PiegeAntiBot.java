@@ -15,10 +15,10 @@ import java.time.Instant;
  *
  * <h2>Ce qu ils valent, et ce qu ils ne valent pas</h2>
  *
- * <p>Ils arretent les robots simples — ceux qui remplissent tous les champs d un
- * formulaire et le postent aussitot — et <b>rien d autre</b>. Un robot ecrit pour ce
+ * <p>Ils arretent les robots simples (ceux qui remplissent tous les champs d un
+ * formulaire et le postent aussitot) et <b>rien d autre</b>. Un robot ecrit pour ce
  * site les contourne en une ligne. Ils sont la premiere couche d un dispositif dont
- * Turnstile est la seconde, et la limitation de debit la troisieme ; aucune ne suffit
+ * Turnstile est la seconde, et la limitation de debit la troisieme. Aucune ne suffit
  * seule.</p>
  *
  * <p>Leur interet tient a ce qu ils ne coutent rien au visiteur : ni epreuve, ni
@@ -28,14 +28,14 @@ import java.time.Instant;
  * <h2>Le champ piege</h2>
  *
  * <p>Un champ de formulaire ordinaire, masque par le CSS et retire du parcours
- * d accessibilite. Un humain ne le voit pas et ne le remplit pas ; un robot qui
+ * d accessibilite. Un humain ne le voit pas et ne le remplit pas. Un robot qui
  * remplit tout le trahit. Le nom du champ evite deliberement {@code honeypot} et
  * consorts, qu un robot pourrait reconnaitre : {@code societe} passe pour un champ
  * metier plausible sur un site de garage.</p>
  *
  * <p><b>Accessibilite</b> : le champ porte {@code autocomplete="off"},
  * {@code tabindex="-1"} et {@code aria-hidden="true"}. Sans cela un lecteur d ecran
- * l annoncerait et un gestionnaire de mots de passe pourrait le remplir — le piege se
+ * l annoncerait et un gestionnaire de mots de passe pourrait le remplir : le piege se
  * refermerait sur les utilisateurs qu il est cense servir.</p>
  *
  * <h2>Le delai minimal</h2>
@@ -43,12 +43,12 @@ import java.time.Instant;
  * <p>Le formulaire porte l horodatage de son affichage. Une soumission plus rapide que
  * {@link #DELAI_MINIMAL} n a pas ete saisie par un humain. Le seuil est volontairement
  * bas : il s agit d ecarter la soumission instantanee, pas de mesurer une vitesse de
- * frappe — un utilisateur rapide, ou qui colle des valeurs depuis un gestionnaire de
+ * frappe. Un utilisateur rapide, ou qui colle des valeurs depuis un gestionnaire de
  * mots de passe, ne doit jamais etre refuse.</p>
  *
  * <p>L horodatage n est ni signe ni chiffre : le falsifier est trivial. Le signer
  * donnerait une fausse impression de solidite pour une couche qui n en revendique
- * aucune — c est Turnstile qui porte la resistance a un adversaire determine.</p>
+ * aucune : c est Turnstile qui porte la resistance a un adversaire determine.</p>
  */
 @Service
 public class PiegeAntiBot {
@@ -85,8 +85,8 @@ public class PiegeAntiBot {
     /**
      * Dit si la soumission a l allure d un envoi automatique.
      *
-     * @param piege      valeur du champ piege ; toute valeur non vide condamne
-     * @param horodatage valeur du champ d horodatage, telle que recue — illisible ou
+     * @param piege      valeur du champ piege. Toute valeur non vide condamne
+     * @param horodatage valeur du champ d horodatage, telle que recue, illisible ou
      *                   absente, elle est traitee comme suspecte : un formulaire
      *                   legitime la porte toujours
      */

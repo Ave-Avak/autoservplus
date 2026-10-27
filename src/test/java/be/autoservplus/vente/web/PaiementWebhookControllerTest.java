@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Endpoint webhook : accessible sans session ni jeton CSRF (configuration miroir
  * de SecuriteConfig), il delegue au service qui relit le statut aupres du
- * prestataire — le corps de la requete n est jamais cru.
+ * prestataire. Le corps de la requete n est jamais cru.
  */
 @WebMvcTest(controllers = PaiementWebhookController.class,
         excludeAutoConfiguration = ThymeleafAutoConfiguration.class)
@@ -95,7 +95,7 @@ class PaiementWebhookControllerTest {
     @Test
     @DisplayName("prestataire injoignable : aucune ligne n annonce un statut non relu")
     void pasDeTraceQuandLeStatutNAPuEtreRelu(CapturedOutput journal) {
-        // Le 500 provoque un rejeu ; ecrire « statut relu = ... » alors que la
+        // Le 500 provoque un rejeu. Ecrire « statut relu = ... » alors que la
         // relecture a echoue rendrait la trace mensongere au moment exact ou
         // l exploitant s y fie.
         doThrow(new PrestataireIndisponibleException("injoignable"))
@@ -109,7 +109,7 @@ class PaiementWebhookControllerTest {
     }
 
     @Test
-    @DisplayName("reference inconnue : 404 — un identifiant forge ne revele rien")
+    @DisplayName("reference inconnue : 404, un identifiant forge ne revele rien")
     void referenceInconnue() throws Exception {
         doThrow(new RessourceIntrouvableException("Paiement", "tr_forge"))
                 .when(service).traiterNotification("tr_forge");

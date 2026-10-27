@@ -37,7 +37,7 @@ import static be.autoservplus.facturation.service.StylePdf.tableauInvisible;
  * <p>Toutes les mentions obligatoires d une facture belge y figurent : numero et
  * date d emission, identification complete de l emetteur (denomination, siege, BCE,
  * TVA), identification du client, detail par ligne avec taux applique, et
- * <b>ventilation de la base imposable par taux</b> — c est cette derniere qui rend
+ * <b>ventilation de la base imposable par taux</b>. C est cette derniere qui rend
  * une facture multi-taux verifiable par l administration.</p>
  *
  * <p>Aucune chaine en dur : chaque libelle passe par le {@code MessageSource}, dans
@@ -205,7 +205,7 @@ public class GenerateurPdfFacture {
                 police(8, Font.NORMAL, GRIS_TEXTE)));
         mentions.add(new Phrase(libelle(document, "facture.mention.conservation") + "\n\n",
                 police(8, Font.NORMAL, GRIS_TEXTE)));
-        mentions.add(new Phrase("%s — %s %s — %s %s — %s %s".formatted(
+        mentions.add(new Phrase("%s, %s %s, %s %s, %s %s".formatted(
                         garage.raisonSociale(),
                         libelle(document, "facture.emetteur.bce"), garage.numeroBce(),
                         libelle(document, "facture.emetteur.tva"), garage.numeroTva(),

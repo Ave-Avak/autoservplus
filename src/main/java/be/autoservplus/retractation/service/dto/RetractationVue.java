@@ -11,12 +11,12 @@ import java.util.UUID;
  * disponible ?
  *
  * <p>Une seule vue par commande, portant la <b>derniere</b> demande. Un membre peut
- * en avoir plusieurs — un refus n eteint pas son droit — mais l ecran ne montre que
+ * en avoir plusieurs (un refus n eteint pas son droit) mais l ecran ne montre que
  * la situation actuelle. L historique complet reste en base.</p>
  *
  * <p>{@code statutDemande} est expose brut ({@code null} s il n y a jamais eu de
  * demande) : le libelle affiche est une cle i18n construite dans le gabarit, aucune
- * chaine visible n est fabriquee ici — convention du projet.</p>
+ * chaine visible n est fabriquee ici, convention du projet.</p>
  */
 public record RetractationVue(
         UUID referenceCommande,

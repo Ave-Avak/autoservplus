@@ -6,7 +6,7 @@ import java.math.BigDecimal;
  * Donnees saisies par l administrateur pour creer (A1) ou modifier (A2) une prestation.
  *
  * <p>Le meme objet sert aux deux operations : les champs sont identiques, seule
- * l interpretation du {@code code} differe — exige a la creation, ignore a la
+ * l interpretation du {@code code} differe, exige a la creation, ignore a la
  * modification (le code est l identite technique de la prestation, immuable).</p>
  */
 public record DonneesPrestation(

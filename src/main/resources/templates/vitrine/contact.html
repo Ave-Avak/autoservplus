@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{vitrine.contact.titre} + ' — AutoServ+'">Contact — AutoServ+</title>
+    <title th:text="#{vitrine.contact.titre} + ' | AutoServ+'">Contact | AutoServ+</title>
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
@@ -22,7 +22,7 @@
           Identité reprise du fragment partagé avec les pages légales : dénomination,
           adresse, BCE, TVA, téléphone et courriel sont les mentions exigées de tout
           professionnel vendant à distance (art. VI.45 CDE). Le fragment garantit
-          qu'elles soient rigoureusement les mêmes ici et sur les mentions légales —
+          qu'elles soient rigoureusement les mêmes ici et sur les mentions légales :
           deux copies finiraient par diverger, et une coordonnée périmée sur la page
           que le client consulte est exactement le défaut que l'article vise.
         -->
@@ -35,7 +35,7 @@
         <!--
           Les horaires viennent de plage_ouverture, la table dont sont déduits les
           créneaux réservables : ce qui est affiché ici et ce que propose l'agenda ne
-          peuvent pas diverger. Les sept jours sont rendus, fermetures comprises —
+          peuvent pas diverger. Les sept jours sont rendus, fermetures comprises :
           sauter une ligne ne dirait pas au lecteur si le garage ferme ce jour-là ou
           si la saisie manque.
         -->
@@ -45,7 +45,7 @@
                 <dd th:if="${jour.ferme()}" class="horaire-ferme" th:text="#{vitrine.horaires.ferme}">Fermé</dd>
                 <dd th:unless="${jour.ferme()}">
                     <span th:each="plage, statut : ${jour.plages()}">
-                        <span th:text="${plage}">08:00 – 12:00</span><span th:unless="${statut.last}">, </span>
+                        <span th:text="${plage}">08:00 - 12:00</span><span th:unless="${statut.last}">, </span>
                     </span>
                 </dd>
             </th:block>
@@ -62,7 +62,7 @@
           Plan d'accès = un LIEN sortant, pas une carte embarquée. Une carte interactive
           exigerait du JavaScript tiers et un assouplissement de la CSP (script-src reste
           'self'), et chargerait des tuiles depuis un domaine externe dès l'ouverture de
-          la page — donc un traceur potentiel sur une page publique, ce que le bandeau
+          la page : donc un traceur potentiel sur une page publique, ce que le bandeau
           cookies F25 ne couvre pas. La carte embarquée relève de F33, hors périmètre.
           rel="noopener noreferrer" : le service externe n'obtient ni handle sur notre
           fenêtre ni référent (la politique du site est déjà SAME_ORIGIN).

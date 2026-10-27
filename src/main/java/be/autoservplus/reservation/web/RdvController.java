@@ -125,7 +125,7 @@ public class RdvController {
             // Creneau indisponible (RM-08) et tout refus metier futur : sous le champ
             // date, comme l ancien default. Le routage par TYPE remplace le switch sur
             // getCodeRegle() : plus de NPE possible sur un code null, et le case
-            // « RM-06 -> vehicule » disparait — aucune exception ne portait ce code,
+            // « RM-06 -> vehicule » disparait. Aucune exception ne portait ce code,
             // le controle d appartenance du vehicule repond deja 404 en amont.
             erreurs.addError(new FieldError("formulaire", "debut", e.getMessage()));
             return retourFormulaire(membre, formulaire, modele);
@@ -148,7 +148,7 @@ public class RdvController {
      * <p>{@code Content-Disposition: attachment} et non {@code inline} : le fichier
      * n a aucun sens affiche dans un navigateur, il doit etre remis a l application
      * de calendrier du systeme. L appartenance et l etat CONFIRME sont verifies par
-     * le service, qui repond {@code 404} dans les deux cas — jamais {@code 403},
+     * le service, qui repond {@code 404} dans les deux cas : jamais {@code 403},
      * conformement au patron des autres telechargements du projet.</p>
      */
     @GetMapping(value = "/{reference}/agenda.ics", produces = "text/calendar;charset=UTF-8")

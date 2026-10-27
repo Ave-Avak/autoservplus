@@ -36,13 +36,13 @@ import static org.mockito.Mockito.when;
 /**
  * Les quatre gardes de la gestion des comptes (CdC 5.2.3).
  *
- * <p>Chaque garde est verifiee <b>par son effet</b> — statut inchange, journal non
- * ecrit — et non par le seul fait qu une exception parte : un refus qui laisserait
+ * <p>Chaque garde est verifiee <b>par son effet</b> (statut inchange, journal non
+ * ecrit) et non par le seul fait qu une exception parte : un refus qui laisserait
  * une ligne de journal derriere lui serait pire qu un refus silencieux, puisqu il
  * documenterait un evenement qui n a pas eu lieu.</p>
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("GestionComptesService — gardes")
+@DisplayName("GestionComptesService : gardes")
 class GestionComptesServiceTest {
 
     private static final Instant MAINTENANT = Instant.parse("2026-09-22T09:00:00Z");
@@ -67,7 +67,7 @@ class GestionComptesServiceTest {
         chef = compte(3L, "chef@exemple.be", TypeUtilisateur.SUPER_ADMINISTRATEUR);
     }
 
-    /** L identifiant et la reference sont poses par la base ; le test les impose. */
+    /** L identifiant et la reference sont poses par la base. Le test les impose. */
     private Utilisateur compte(long id, String email, TypeUtilisateur type) {
         Utilisateur u = new Utilisateur(email, "$2a$12$empreinte", "Nom", "Prenom", type);
         u.confirmerAdresseEmail();
@@ -151,7 +151,7 @@ class GestionComptesServiceTest {
     }
 
     @Nested
-    @DisplayName("garde 1 — personne ne se suspend soi-même")
+    @DisplayName("garde 1 : personne ne se suspend soi-même")
     class PasSoiMeme {
 
         @Test
@@ -169,7 +169,7 @@ class GestionComptesServiceTest {
     }
 
     @Nested
-    @DisplayName("garde 2 — il doit rester un super-administrateur actif")
+    @DisplayName("garde 2 : il doit rester un super-administrateur actif")
     class DernierSuperAdmin {
 
         /**
@@ -226,7 +226,7 @@ class GestionComptesServiceTest {
     }
 
     @Nested
-    @DisplayName("garde 3 — pouvoirs exclusifs sur les comptes du back-office")
+    @DisplayName("garde 3 : pouvoirs exclusifs sur les comptes du back-office")
     class PouvoirsExclusifs {
 
         @Test
@@ -280,7 +280,7 @@ class GestionComptesServiceTest {
     }
 
     @Nested
-    @DisplayName("garde 4 — motif obligatoire à la suspension")
+    @DisplayName("garde 4 : motif obligatoire à la suspension")
     class MotifObligatoire {
 
         @Test

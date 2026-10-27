@@ -36,7 +36,7 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
      * module catalogue de dependre des entites des modules vente et intervention.
      * La table {@code photo}, en CASCADE, est une illustration propre a la piece et
      * ne bloque pas. Toute nouvelle table referencant {@code piece} doit s ajouter
-     * ici — en cas d oubli, le RESTRICT en base refuse quand meme la suppression.
+     * ici : en cas d oubli, le RESTRICT en base refuse quand meme la suppression.
      */
     @Query(value = """
             SELECT (SELECT count(*) FROM ligne_panier WHERE piece_id = :id)
@@ -70,7 +70,7 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
      * Verrou pessimiste (SELECT FOR UPDATE) pour le decrement du stock au paiement
      * confirme : la table piece n a pas de colonne version, et deux webhooks payes
      * portant sur la meme piece doivent se serialiser plutot que se perdre. Verrouiller
-     * les pieces dans un ordre deterministe (id croissant) — voir CommandeRepository#lignesDe.
+     * les pieces dans un ordre deterministe (id croissant) : voir CommandeRepository#lignesDe.
      */
     @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT p FROM Piece p WHERE p.id = :id")

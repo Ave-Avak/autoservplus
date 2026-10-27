@@ -32,8 +32,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>Il prouve le <b>cablage</b> : le widget est rendu quand une cle de site existe, le
  * jeton est transmis, la verification serveur est appelee et son verdict respecte.</p>
  *
- * <p>Les deux cas retenus ne dependent pas du reseau. Un troisieme — « jeton factice
- * accepte, donc compte cree » — a ete ecrit puis <b>retire</b> : la frontiere accepte
+ * <p>Les deux cas retenus ne dependent pas du reseau. Un troisieme (« jeton factice
+ * accepte, donc compte cree ») a ete ecrit puis <b>retire</b> : la frontiere accepte
  * la soumission quand Cloudflare est injoignable, si bien que ce cas passait au vert
  * avec ou sans reseau, et ne discriminait rien. Le respect du verdict est verifie par
  * {@code VerificateurTurnstileTest}, sur serveur simule.</p>
@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * trame vers {@code challenges.cloudflare.com}. Une directive manquante ne se verrait
  * donc pas ici. C est exactement ce qui s est produit avec {@code form-action} : la
  * passerelle bouchonnee redirigeait vers une page interne, le defaut n existait que sur
- * le chemin du vrai prestataire, et aucune build ne l a vu — seuls Chrome et Edge, en
+ * le chemin du vrai prestataire, et aucune build ne l a vu, seuls Chrome et Edge, en
  * production, l auraient revele. Voir registre §4.</p>
  */
 @SpringBootTest(properties = {
@@ -91,7 +91,7 @@ class TurnstileIT extends SocleIntegration {
 
     /**
      * <b>Le defaut que ce cas verrouille.</b> {@code @ConditionalOnProperty} considere
-     * une propriete presente des qu elle est declaree, meme vide — or
+     * une propriete presente des qu elle est declaree, meme vide. Or
      * {@code application.yml} la declare avec une valeur par defaut vide. Le
      * verificateur naissait donc sur TOUT deploiement, avec une cle vide, et refusait
      * chaque soumission en silence : inscription, renvoi de verification et mot de

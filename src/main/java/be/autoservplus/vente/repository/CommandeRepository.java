@@ -27,7 +27,7 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
     /**
      * Verrou pessimiste (SELECT FOR UPDATE) : la table commande n a pas de colonne
      * version, et la course webhook / job d expiration se resout en serialisant les
-     * deux ecritures — le second lecteur voit le statut deja change et sa garde
+     * deux ecritures. Le second lecteur voit le statut deja change et sa garde
      * d entite tranche, au lieu d ecraser silencieusement l etat de l autre.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
@@ -37,7 +37,7 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
     /**
      * Historique des commandes d un membre, de la plus recente a la plus ancienne
      * (F32). Le membre est identifie par son courriel, comme partout ailleurs a
-     * partir du contexte de securite — jamais par un identifiant de requete.
+     * partir du contexte de securite : jamais par un identifiant de requete.
      */
     @Query("""
             SELECT c FROM Commande c
@@ -60,7 +60,7 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
      *
      * <p><b>Ne rend QUE les lignes de piece.</b> Le {@code JOIN FETCH} est une jointure
      * interne : une ligne de service, dont {@code piece} est nul, en est exclue. C est
-     * voulu — cette requete sert le decrement de stock, qui ne concerne que des pieces,
+     * voulu : cette requete sert le decrement de stock, qui ne concerne que des pieces,
      * et son tri par identifiant de piece n aurait pas de sens autrement. Pour les
      * prestations, voir {@link #lignesServiceDe}.</p>
      */

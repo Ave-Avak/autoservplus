@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{commande.confirmation.titre} + ' — AutoServ+'">Commande enregistrée — AutoServ+</title>
+    <title th:text="#{commande.confirmation.titre} + ' | AutoServ+'">Commande enregistrée | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -35,7 +35,7 @@
       Le bouton de paiement ne s'affiche QUE tant que la commande en attend un. Cette
       page est desormais le point de chute du retour de paiement : proposer « Procéder
       au paiement » a un membre qui vient de payer serait au mieux deroutant, au pire
-      une seconde tentative. Le POST part vers la passerelle — page simulee si aucun
+      une seconde tentative. Le POST part vers la passerelle : page simulee si aucun
       prestataire n'est configure, Mollie sinon (frontiere MollieGateway).
     -->
     <form th:if="${commande.enAttenteDePaiement()}"

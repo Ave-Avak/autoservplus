@@ -41,7 +41,7 @@ public interface PrestationRepository extends JpaRepository<Prestation, Long> {
      * ({@code fk_rdv_service_svc}, {@code fk_ligne_panier_service},
      * {@code fk_ligne_interv_service}) sans dependance inverse vers les autres
      * modules. La table {@code photo}, en CASCADE, ne bloque pas. Toute nouvelle
-     * table referencant {@code service} doit s ajouter ici — en cas d oubli, le
+     * table referencant {@code service} doit s ajouter ici : en cas d oubli, le
      * RESTRICT en base refuse quand meme la suppression.
      */
     @Query(value = """

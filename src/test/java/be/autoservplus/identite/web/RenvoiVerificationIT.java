@@ -32,7 +32,7 @@ import be.autoservplus.support.SocleIntegration;
  *
  * <p>Test d integration et non {@code @WebMvcTest} : le defaut a corriger etait qu une
  * methode de service existait sans qu aucun ecran ne l atteigne. Un test a doublures
- * aurait verifie la methode — celle-la etait deja verte — sans jamais dire qu elle
+ * aurait verifie la methode (celle-la etait deja verte) sans jamais dire qu elle
  * etait inatteignable. C est le rendu HTTP complet qui fait foi.</p>
  *
  * <p>{@code Accept-Language: fr} est fixe partout : sans cela ces cas dependraient de
@@ -80,7 +80,7 @@ class RenvoiVerificationIT extends SocleIntegration {
 
         /**
          * Le lien depuis la connexion est la moitie utile de la fonctionnalite : sans
-         * lui l ecran existe mais reste introuvable — exactement le defaut que ce lot
+         * lui l ecran existe mais reste introuvable, exactement le defaut que ce lot
          * corrige, deplace d un cran.
          */
         @Test
@@ -108,12 +108,12 @@ class RenvoiVerificationIT extends SocleIntegration {
     class Neutralite {
 
         /**
-         * LE cas qui compte. Les trois situations — adresse inconnue, adresse deja
-         * verifiee, renvoi reellement effectue — doivent produire la MEME page. Si
+         * LE cas qui compte. Les trois situations (adresse inconnue, adresse deja
+         * verifiee, renvoi reellement effectue) doivent produire la MEME page. Si
          * elles differaient, ce formulaire public deviendrait un oracle d existence de
          * compte : il suffirait de le soumettre en boucle pour enumerer les membres.
          *
-         * <p>La comparaison porte sur le corps ENTIER, jetons CSRF neutralises — eux
+         * <p>La comparaison porte sur le corps ENTIER, jetons CSRF neutralises : eux
          * seuls varient legitimement d une requete a l autre. Comparer trois fragments
          * choisis a la main laisserait passer une difference ailleurs dans la page.</p>
          */
@@ -130,7 +130,7 @@ class RenvoiVerificationIT extends SocleIntegration {
 
         /**
          * L adresse soumise n est meme pas reaffichee. La reafficher ne dirait rien de
-         * plus a son titulaire — il vient de la taper — mais elle ferait de la page un
+         * plus a son titulaire (il vient de la taper) mais elle ferait de la page un
          * echo exploitable, et rendrait la comparaison ci-dessus impossible a tenir.
          */
         @Test
@@ -156,7 +156,7 @@ class RenvoiVerificationIT extends SocleIntegration {
 
         /**
          * La neutralite de l ecran ne doit pas se payer d une inaction : le compte non
-         * verifie recoit bien un jeton NEUF. Verifie en base et non sur la page — la
+         * verifie recoit bien un jeton NEUF. Verifie en base et non sur la page : la
          * page, elle, a justement pour consigne de n en rien dire.
          */
         @Test
@@ -220,7 +220,7 @@ class RenvoiVerificationIT extends SocleIntegration {
     /**
      * Horodatage d affichage d un formulaire, place assez loin dans le passe pour
      * satisfaire le delai minimal de {@code PiegeAntiBot} sans faire attendre le test.
-     * Un formulaire servi par l application porte ce champ ; ne pas l envoyer
+     * Un formulaire servi par l application porte ce champ. Ne pas l envoyer
      * reviendrait a tester un robot.
      */
     private static String affiche() {

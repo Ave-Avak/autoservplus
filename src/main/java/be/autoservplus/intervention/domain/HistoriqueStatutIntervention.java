@@ -17,7 +17,7 @@ import java.util.Objects;
  *
  * <p>Journal append-only : une ligne est ecrite a chaque transition, dans la meme
  * transaction que la transition elle-meme, et n est jamais modifiee ensuite. Pas de
- * suppression logique — rien ne se « supprime » dans un journal (meme precedent que
+ * suppression logique. Rien ne se « supprime » dans un journal (meme precedent que
  * {@link LigneIntervention}, qui ne porte pas non plus de {@code deleted_at}).</p>
  *
  * <p>{@code statutAvant} est {@code null} pour la ligne de creation : le dossier n a
@@ -27,7 +27,7 @@ import java.util.Objects;
  *
  * <p>{@code auteur} est nullable : une transition peut venir d un traitement systeme,
  * et la trace doit survivre a la disparition du compte (FK {@code ON DELETE SET NULL}).
- * Cote membre, l auteur n est jamais expose — il ne sert qu au dossier interne.</p>
+ * Cote membre, l auteur n est jamais expose : il ne sert qu au dossier interne.</p>
  */
 @Entity
 @Table(name = "historique_statut_intervention")

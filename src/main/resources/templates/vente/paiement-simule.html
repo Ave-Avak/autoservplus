@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{paiement.simule.titre} + ' — AutoServ+'">Paiement simulé — AutoServ+</title>
+    <title th:text="#{paiement.simule.titre} + ' | AutoServ+'">Paiement simulé | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -16,7 +16,7 @@
   du prestataire de paiement, qui n'affiche jamais la navigation du marchand. Y
   laisser le menu et le compteur de panier inviterait à quitter un paiement en cours,
   et donnerait à voir un écran que le parcours réel ne montre pas. Le sélecteur de
-  langue reste — une page de paiement multilingue est la norme, chez Mollie comme
+  langue reste : une page de paiement multilingue est la norme, chez Mollie comme
   ailleurs.
 -->
 <header th:replace="~{fragments/entete :: entete}"></header>
@@ -25,12 +25,12 @@
 
     <!--
       Reprend .avis-brouillon plutôt que d'introduire une classe : même rôle
-      sémantique — « ceci n'est pas la chose réelle » — et surtout un contraste déjà
+      sémantique (« ceci n'est pas la chose réelle ») et surtout un contraste déjà
       CALCULÉ (5.08:1). Une bannière d'avertissement dont le contraste serait choisi
       à l'œil manquerait sa cible auprès des lecteurs qu'elle vise en premier.
     -->
     <aside class="avis-brouillon" role="note">
-        <h2 th:text="#{paiement.simule.banniere}">Paiement simulé — démonstration</h2>
+        <h2 th:text="#{paiement.simule.banniere}">Paiement simulé (démonstration)</h2>
         <p th:text="#{paiement.simule.explication}">
             Aucun prestataire de paiement n'est configuré : aucun débit réel n'a lieu.
         </p>
@@ -40,7 +40,7 @@
 
     <!--
       Numéro et montant affichés parce que c'est ce que le membre doit confronter à
-      son récapitulatif avant de payer — la seule vérification qui compte à cet
+      son récapitulatif avant de payer : la seule vérification qui compte à cet
       instant, chez un prestataire réel comme ici.
     -->
     <dl class="identite-garage">

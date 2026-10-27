@@ -166,7 +166,7 @@ class PanierServiceTest {
             PanierVue.LignePanierVue ligne = vue.lignes().get(0);
             assertThat(ligne.prixUnitaireHtva()).isEqualTo(FormatageRdv.euros(new BigDecimal("19.99")));
             assertThat(ligne.tauxTva()).isEqualTo("21");
-            // 19,99 x 2 = 39,98 HTVA — sur le prix d'entree au panier, pas les 99,99 du jour.
+            // 19,99 x 2 = 39,98 HTVA : sur le prix d'entree au panier, pas les 99,99 du jour.
             assertThat(ligne.totalHtva()).isEqualTo(FormatageRdv.euros(new BigDecimal("39.98")));
         }
 
@@ -255,7 +255,7 @@ class PanierServiceTest {
         private Panier panierAvecLigne() {
             Panier panier = panierExistant();
             LignePanier ligne = panier.ajouterPiece(plaquettes, 2);
-            // L'id est pose par la base a la persistence ; en test unitaire, on le
+            // L'id est pose par la base a la persistence. En test unitaire, on le
             // fixe par reflexion pour pouvoir adresser la ligne comme le fera le web.
             ReflectionTestUtils.setField(ligne, "id", 1L);
             return panier;
@@ -363,11 +363,11 @@ class PanierServiceTest {
         /**
          * Cas a taux mixtes, verifie a la main :
          * <pre>
-         * Ampoule H7   : 10,01 x 3 = 30,03 HTVA ; TVAC = 30,03 x 1,06 = 31,8318 -> 31,83 ;
+         * Ampoule H7   : 10,01 x 3 = 30,03 HTVA. TVAC = 30,03 x 1,06 = 31,8318 -> 31,83.
          *                TVA = 31,83 - 30,03 = 1,80  (taux 6 %)
-         * Plaquettes   : 19,99 x 2 = 39,98 HTVA ; TVAC = 39,98 x 1,21 = 48,3758 -> 48,38 ;
+         * Plaquettes   : 19,99 x 2 = 39,98 HTVA. TVAC = 39,98 x 1,21 = 48,3758 -> 48,38.
          *                TVA = 48,38 - 39,98 = 8,40  (taux 21 %)
-         * Totaux       : HTVA 70,01 ; TVA 10,20 ; TVAC 80,21
+         * Totaux       : HTVA 70,01, TVA 10,20, TVAC 80,21
          * </pre>
          * Un calcul « TVA sur le total » serait faux ici : aucun taux unique ne
          * transforme 70,01 en 80,21 (cela ferait ~14,57 %). La somme ligne a ligne

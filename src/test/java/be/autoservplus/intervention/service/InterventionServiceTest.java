@@ -122,7 +122,7 @@ class InterventionServiceTest {
 
         Intervention creee = service.creerDepuisRdv(rdv);
 
-        // La vidange vaut 49.00 HTVA ; le devis doit valoir le HT, pas le TVAC (59.29).
+        // La vidange vaut 49.00 HTVA. Le devis doit valoir le HT, pas le TVAC (59.29).
         assertThat(creee.getMontantDevisInitialHtva())
                 .as("Sans devis fige, RM-15 n'a aucune base de comparaison")
                 .isNotNull()
@@ -321,7 +321,7 @@ class InterventionServiceTest {
 
         /**
          * RM-14 vu du service : le trou de RM-15 se refermait a la source. Un ajout en
-         * PLANIFIEE ne passait par aucun controle de seuil ; il est desormais refuse,
+         * PLANIFIEE ne passait par aucun controle de seuil. Il est desormais refuse,
          * donc toute ligne parvenue au dossier a franchi le controle. Rien n est
          * persiste, et aucun courriel de depassement ne part.
          */

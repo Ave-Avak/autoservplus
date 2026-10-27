@@ -32,7 +32,7 @@ import java.util.UUID;
  * autant que de securite.</p>
  *
  * <p>Patron PRG : POST puis redirection vers la liste avec un flash message. Sans
- * lui, un rafraichissement du navigateur reposterait la demande — que l index partiel
+ * lui, un rafraichissement du navigateur reposterait la demande, que l index partiel
  * refuserait, mais avec une erreur au lieu d un ecran normal.</p>
  *
  * <p>{@code RessourceIntrouvableException} est <b>catchee</b> et traduite en page

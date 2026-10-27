@@ -66,7 +66,7 @@ import static org.mockito.Mockito.when;
  *
  * <p>Le {@link CatalogueTraitements} n est pas bouchonne : le rappel legal fait
  * partie de ce que l export doit contenir, un bouchon rendrait la verification
- * vide de sens. Le serialiseur non plus — les assertions d exclusion (mot de passe,
+ * vide de sens. Le serialiseur non plus : les assertions d exclusion (mot de passe,
  * carte bancaire) portent sur le document reellement produit, seul endroit ou une
  * fuite serait visible.
  */
@@ -378,7 +378,7 @@ class ExportDonneesServiceTest {
             when(factures.pourMembre(EMAIL)).thenReturn(List.of(facture));
 
             // L export est un document de donnees : il dit qu un PDF est conserve,
-            // il ne le transporte pas — ni le fichier, ni son emplacement sur le
+            // il ne le transporte pas, ni le fichier, ni son emplacement sur le
             // serveur, qui ne decrit pas la personne.
             ExportDonnees.FactureExport exportee =
                     service.assembler(EMAIL).donneesPersonnelles().factures().get(0);
@@ -403,7 +403,7 @@ class ExportDonneesServiceTest {
             List<ExportDonnees.VehiculeExport> exportes =
                     service.assembler(EMAIL).donneesPersonnelles().vehicules();
 
-            // La ligne reste en base — l'effacer effacerait l'historique d'atelier —
+            // La ligne reste en base : l'effacer effacerait l'historique d'atelier,
             // donc la donnee est detenue et l'article 15 impose de la restituer.
             assertThat(exportes).singleElement().satisfies(vehicule -> {
                 assertThat(vehicule.plaque()).isEqualTo("1-ABC-123");
@@ -501,7 +501,7 @@ class ExportDonneesServiceTest {
             ExportDonnees.PanierExport exporte =
                     service.assembler(EMAIL).donneesPersonnelles().panierEnCours();
 
-            // Une section vide affirme que rien n'est detenu ; l'absence de
+            // Une section vide affirme que rien n'est detenu. L'absence de
             // section laisserait planer un doute sur un oubli.
             assertThat(exporte.lignes()).isEmpty();
             assertThat(exporte.nombreArticles()).isZero();
@@ -604,7 +604,7 @@ class ExportDonneesServiceTest {
                     TypeDocumentConsentement.NEWSLETTER, "NL-2026-01", "81.240.10.7",
                     Instant.parse("2026-02-01T10:00:00Z"));
             // La table est append-only : un retrait s'ecrit en nouvelle ligne
-            // accorde = false. Aucune fabrique publique ne le fait encore (F25) —
+            // accorde = false. Aucune fabrique publique ne le fait encore (F25) :
             // le test simule la ligne que la base sait deja porter.
             Consentement retrait = Consentement.acceptation(marie,
                     TypeDocumentConsentement.NEWSLETTER, "NL-2026-01", "81.240.10.7",

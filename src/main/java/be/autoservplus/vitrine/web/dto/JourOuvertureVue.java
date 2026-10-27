@@ -8,11 +8,11 @@ import java.util.List;
  *
  * @param cleJour  cle i18n du nom du jour ({@code vitrine.jour.lundi} ...). Le nom
  *                 n est pas resolu ici : la vue est construite par le service, qui
- *                 ne connait pas la langue d affichage — c est le gabarit, donc la
+ *                 ne connait pas la langue d affichage. C est le gabarit, donc la
  *                 locale de la requete, qui tranche.
  * @param plages   intervalles horaires du jour, deja formates {@code HH:mm}, dans
  *                 l ordre. Une journee peut en compter plusieurs (matin,
- *                 apres-midi) ; la liste est vide si le garage est ferme.
+ *                 apres-midi). La liste est vide si le garage est ferme.
  * @param ferme    vrai si aucune plage active ne couvre ce jour. Redondant avec
  *                 {@code plages.isEmpty()}, mais nomme l intention pour le gabarit,
  *                 qui affiche « Fermé » plutot qu une ligne vide.

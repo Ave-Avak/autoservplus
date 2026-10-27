@@ -18,7 +18,7 @@ import java.util.Objects;
 /**
  * Article facturable d une intervention : main d oeuvre (prestation du catalogue)
  * ou piece detachee. Le libelle et les prix sont figes a la creation, pour que
- * l historique reste stable meme si le catalogue evolue — invariant de conception
+ * l historique reste stable meme si le catalogue evolue : invariant de conception
  * sans numero de regle au CdC, meme recopie que
  * {@link be.autoservplus.reservation.domain.LigneRdv}.
  *
@@ -39,7 +39,7 @@ import java.util.Objects;
  * <p>Un champ a trois valeurs plutot que deux booleens : l etat absurde
  * « acceptee ET refusee » devient <b>inexprimable</b> au lieu d etre interdit par
  * un CHECK. Le seul CHECK restant, {@code ck_ligne_interv_accord}, verrouille la
- * premiere ligne du tableau — une ligne du devis initial ne porte aucun accord.</p>
+ * premiere ligne du tableau : une ligne du devis initial ne porte aucun accord.</p>
  */
 @Entity
 @Table(name = "ligne_intervention")
@@ -84,7 +84,7 @@ public class LigneIntervention {
      * Reponse du membre sur une ligne ajoutee en cours (RM-15). {@code null} vaut
      * « pas de reponse » : soit la ligne n en attend aucune (devis initial), soit
      * elle attend celle du membre. C est le couple avec {@link #ajouteeEnCours} qui
-     * tranche — voir les predicats derives plus bas.
+     * tranche : voir les predicats derives plus bas.
      *
      * <p>{@link Boolean} et non {@code boolean} : le troisieme etat est porteur de
      * sens metier, pas un trou de donnee. Aucun DEFAULT en base pour la meme raison.</p>
@@ -180,8 +180,8 @@ public class LigneIntervention {
     }
 
     /**
-     * Le membre ecarte cette ligne. Elle reste dans le dossier — elle documente le
-     * defaut constate par le garage — mais sort definitivement du total facturable
+     * Le membre ecarte cette ligne. Elle reste dans le dossier (elle documente le
+     * defaut constate par le garage) mais sort definitivement du total facturable
      * et ne sera pas executee.
      */
     void refuser() {
@@ -192,11 +192,11 @@ public class LigneIntervention {
     //
     // Aucun de ces quatre etats n est stocke : ils se lisent tous du couple, ce qui
     // rend impossible la divergence entre un drapeau et la realite. Ils sont exclusifs
-    // et exhaustifs — toute ligne est dans exactement un des quatre.
+    // et exhaustifs : toute ligne est dans exactement un des quatre.
 
     /**
      * Ligne issue du rendez-vous : elle compose le devis initial, accepte par le
-     * membre a la reservation. Hors dispositif RM-15 — on ne redemande pas un accord
+     * membre a la reservation. Hors dispositif RM-15 : on ne redemande pas un accord
      * sur ce qui a deja ete commande. Le CHECK {@code ck_ligne_interv_accord}
      * garantit qu une telle ligne ne porte jamais d accord.
      */
@@ -221,7 +221,7 @@ public class LigneIntervention {
 
     /**
      * La ligne entre-t-elle dans le total facturable ? Le devis initial y entre
-     * toujours ; un ajout n y entre qu une fois accepte.
+     * toujours. Un ajout n y entre qu une fois accepte.
      *
      * <p>Sont donc exclues les lignes <b>en attente</b> et les lignes <b>refusees</b>,
      * pour des raisons differentes : la premiere n est pas encore acquise, la seconde

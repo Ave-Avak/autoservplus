@@ -160,7 +160,7 @@ class CommandeTemplatesIT extends SocleIntegration {
         // ce que ce test doit etablir, c est que la conversion fige la version du jour,
         // pas laquelle elle est. Le litteral « CGV-2026-01 » qui figurait la a fait
         // echouer ce test a la publication de CGV-2026-02 (V35), alors que le
-        // comportement verifie n avait pas bouge — un test couple au calendrier
+        // comportement verifie n avait pas bouge : un test couple au calendrier
         // editorial des conditions generales, ce qui n est pas son sujet.
         assertThat(preuves.get(0).getVersionAcceptee())
                 .isEqualTo(versionsDocuments.versionCourante(TypeDocumentVersionne.CGV));
@@ -168,7 +168,7 @@ class CommandeTemplatesIT extends SocleIntegration {
         assertThat(preuves.get(0).getAdresseIp()).isEqualTo("127.0.0.1");
 
         // Les lignes ont ete DEPLACEES : preuve COTE BASE, apres vidage de la session
-        // (le clear ci-dessus) — le panier RECHARGE depuis PostgreSQL n'a plus aucune
+        // (le clear ci-dessus). Le panier RECHARGE depuis PostgreSQL n'a plus aucune
         // ligne, ce n'est pas un etat d'instance en memoire. La gestion du piege
         // orphanRemoval est donc verifiee la ou elle compte : sur les FK.
         Panier recharge = paniers.findByMembreEmail("marie@exemple.be").orElseThrow();

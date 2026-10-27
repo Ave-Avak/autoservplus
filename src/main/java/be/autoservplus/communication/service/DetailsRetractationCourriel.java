@@ -13,7 +13,7 @@ package be.autoservplus.communication.service;
  * @param adresseEmail   adresse du membre
  * @param prenom         prenom du membre, pour la salutation
  * @param numeroCommande numero lisible de la commande concernee (CMD-...)
- * @param montantTvac    montant rembourse, formate en euros TVAC ; {@code null} au refus
+ * @param montantTvac    montant rembourse, formate en euros TVAC. {@code null} au refus
  * @param acceptee       {@code true} si la retractation est acceptee
  * @param numeroAvoir    numero de la note de credit (AV-...), {@code null} au refus
  * @param motifRefus     constat oppose au membre, {@code null} a l acceptation

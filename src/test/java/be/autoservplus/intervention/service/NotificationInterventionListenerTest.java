@@ -98,7 +98,7 @@ class NotificationInterventionListenerTest {
     @DisplayName("intervention sans titulaire (entree directe) : aucun membre a prevenir")
     void sansRdvAucunCourriel() {
         // Entree directe au garage : ni rendez-vous ni commande, donc aucun titulaire.
-        // Depuis F12-b le listener interroge titulaire() et non getRdv() — une
+        // Depuis F12-b le listener interroge titulaire() et non getRdv() : une
         // intervention nee d une commande de services a bien un membre a prevenir,
         // meme sans rendez-vous.
         Intervention sansRdv = mock(Intervention.class);

@@ -190,7 +190,7 @@ class AdminCatalogueTemplatesIT extends SocleIntegration {
     void listeEnNeerlandais() throws Exception {
         mvc.perform(get("/admin/catalogue/prestations").locale(Locale.forLanguageTag("nl")))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Catalogus — diensten")))
+                .andExpect(content().string(containsString("Catalogus van diensten")))
                 .andExpect(content().string(containsString("Nieuwe dienst")));
     }
 

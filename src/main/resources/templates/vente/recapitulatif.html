@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{commande.recap.titre} + ' — AutoServ+'">Récapitulatif de commande — AutoServ+</title>
+    <title th:text="#{commande.recap.titre} + ' | AutoServ+'">Récapitulatif de commande | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -14,7 +14,7 @@
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <p><a th:href="@{/panier}" th:text="'← ' + #{commande.recap.retour}">← Retour au panier</a></p>
+    <p><a th:href="@{/panier}" th:text="#{commande.recap.retour}">Retour au panier</a></p>
 
     <h1 th:text="#{commande.recap.titre}">Récapitulatif de commande</h1>
 
@@ -82,7 +82,7 @@
         </div>
 
         <!-- F12 / art. VI.53 CDE : présentée UNIQUEMENT si le panier contient un
-             service, et JAMAIS pré-cochée — une case pré-cochée vaudrait consentement
+             service, et JAMAIS pré-cochée, une case pré-cochée vaudrait consentement
              implicite. Elle n'est pas non plus « required » : le client reste libre de
              conserver son droit de rétractation. Son état est enregistré dans les DEUX
              cas, sans quoi l'absence de trace serait ambiguë entre « a refusé » et

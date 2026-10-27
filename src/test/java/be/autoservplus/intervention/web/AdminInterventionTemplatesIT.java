@@ -100,7 +100,7 @@ class AdminInterventionTemplatesIT extends SocleIntegration {
 
     /**
      * RM-14, defense en profondeur : le domaine refuse l ajout hors EN_COURS, l ecran
-     * ne doit pas y inviter. On verifie sur le rendu reel, pas sur le flag du DTO —
+     * ne doit pas y inviter. On verifie sur le rendu reel, pas sur le flag du DTO :
      * c est le template qui decide ce que le garage voit.
      */
     @Test

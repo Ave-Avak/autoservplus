@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{verification.renvoi.envoye.titre} + ' — AutoServ+'">Vérifiez votre courriel — AutoServ+</title>
+    <title th:text="#{verification.renvoi.envoye.titre} + ' | AutoServ+'">Vérifiez votre courriel | AutoServ+</title>
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
@@ -12,7 +12,7 @@
 <main id="contenu">
     <h1 th:text="#{verification.renvoi.envoye.titre}">Vérifiez votre courriel</h1>
 
-    <!-- Message VOLONTAIREMENT identique dans les trois cas — adresse inconnue, adresse
+    <!-- Message VOLONTAIREMENT identique dans les trois cas : adresse inconnue, adresse
          deja verifiee, renvoi effectue. L'adresse saisie n'est meme pas reaffichee : la
          reafficher ne dirait rien de plus, mais un ecran qui varierait selon le sort de
          la demande deviendrait un oracle d'existence de compte. -->

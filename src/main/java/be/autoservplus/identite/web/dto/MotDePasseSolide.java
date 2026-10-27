@@ -15,8 +15,8 @@ import static java.lang.annotation.RetentionPolicy.RUNTIME;
 /**
  * Mot de passe conforme a la politique du projet.
  *
- * <p>La regle elle-meme — quinze caracteres au minimum, 72 octets UTF-8 au maximum,
- * liste de refus, service de compromission — vit dans
+ * <p>La regle elle-meme (quinze caracteres au minimum, 72 octets UTF-8 au maximum,
+ * liste de refus, service de compromission) vit dans
  * {@link be.autoservplus.identite.service.PolitiqueMotDePasse}, que les services
  * appliquent aussi. Cette annotation ne fait que la brancher sur le formulaire, pour
  * afficher le refus a cote du champ.</p>

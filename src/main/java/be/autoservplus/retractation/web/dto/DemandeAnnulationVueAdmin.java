@@ -12,14 +12,14 @@ import java.util.UUID;
 /**
  * Une demande de retractation telle que l ecran du garage en a besoin (F30).
  *
- * <p>Montants et dates pre-formates, convention du module vente ; {@code statut}
+ * <p>Montants et dates pre-formates, convention du module vente. {@code statut}
  * expose brut, le libelle affiche etant une cle i18n construite dans le gabarit.</p>
  *
  * <p>{@code joursDepuisLaDemande} n est pas decoratif. Le professionnel doit
  * rembourser dans les quatorze jours de la demande (CDE, art. VI.50) : sans ce
  * compteur sous les yeux, l administrateur n a aucun moyen de voir qu un dossier
  * approche de l echeance, et {@code urgent} le lui signale avant qu il ne soit trop
- * tard. Il est calcule a l affichage plutot que stocke — un delai qui court se
+ * tard. Il est calcule a l affichage plutot que stocke : un delai qui court se
  * recalcule, il ne se persiste pas.</p>
  */
 public record DemandeAnnulationVueAdmin(

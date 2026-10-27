@@ -12,21 +12,21 @@ import java.nio.charset.StandardCharsets;
  * <p><b>Un seul porteur pour deux appelants.</b> Le validateur du formulaire
  * ({@code @MotDePasseSolide}) et les services qui posent un mot de passe l appliquent
  * tous deux : le formulaire pour afficher le refus a cote du champ, le service pour
- * qu aucun chemin — appel direct, futur ecran, test — ne pose un mot de passe hors
+ * qu aucun chemin (appel direct, futur ecran, test) ne pose un mot de passe hors
  * regle. Deux copies avaient diverge : les services gardaient un plancher de douze
  * caracteres quand le formulaire en exigeait quinze.</p>
  *
- * <p><b>Longueur, pas composition.</b> Quinze caracteres au minimum — le mot de passe
- * est l unique facteur des membres — et aucune regle de composition, qui produit des
+ * <p><b>Longueur, pas composition.</b> Quinze caracteres au minimum (le mot de passe
+ * est l unique facteur des membres) et aucune regle de composition, qui produit des
  * mots de passe previsibles. Puis la liste embarquee des mots de passe frequents, puis
  * le service de compromission.</p>
  *
  * <p><b>Le maximum se compte en octets UTF-8 : 72.</b> BCrypt n en lit pas davantage,
- * et la version de Spring Security employee refuse au-dela par une exception — un mot
+ * et la version de Spring Security employee refuse au-dela par une exception. Un mot
  * de passe de cent caracteres passait le formulaire puis echouait au hachage. Une
  * limite en caracteres ne suffit pas : une lettre accentuee occupe deux octets, certains
  * symboles trois ou quatre. Soixante-douze caracteres sans accent restent acceptes, au-
- * dessus des 64 que le NIST demande d admettre ; une phrase tres accentuee l est moins,
+ * dessus des 64 que le NIST demande d admettre. Une phrase tres accentuee l est moins,
  * ecart assume plutot que de tronquer en silence ce que l utilisateur a choisi.</p>
  */
 @Component
@@ -41,7 +41,7 @@ public class PolitiqueMotDePasse {
     /**
      * {@code REFUSE} reunit trop court, frequent et compromis : un message unique, faute
      * de quoi l ecran dirait a un attaquant qu une chaine figure dans une fuite connue.
-     * {@code TROP_LONG} a le sien — la longueur n apprend rien a personne.
+     * {@code TROP_LONG} a le sien : la longueur n apprend rien a personne.
      */
     public enum Verdict { CONFORME, REFUSE, TROP_LONG }
 

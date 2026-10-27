@@ -29,9 +29,9 @@ import java.util.UUID;
  * Ecrans d administration des prestations (A1, A2, A3) sous
  * /admin/catalogue/prestations.
  *
- * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR ;
+ * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR.
  * {@link AdminCatalogueService} redouble par {@code @PreAuthorize} en defense en
- * profondeur, comme les autres controleurs admin. Pattern PRG + flash ; les
+ * profondeur, comme les autres controleurs admin. Pattern PRG + flash. Les
  * messages passent par le {@code MessageSource} (cles {@code admin.catalogue.*}),
  * comme le panier. Les refus d unicite sont raccroches au champ fautif du
  * formulaire plutot que jetes en message global : l administrateur corrige sans
@@ -40,7 +40,7 @@ import java.util.UUID;
  *
  * <p>Le retrait passe par une page de confirmation qui applique le diagnostic
  * RM-29 : suppression definitive proposee seulement si aucun historique ne
- * reference la prestation, desactivation sinon — jamais les deux.</p>
+ * reference la prestation, desactivation sinon, jamais les deux.</p>
  */
 @Controller
 @RequestMapping("/admin/catalogue/prestations")
@@ -186,7 +186,7 @@ public class AdminPrestationController {
         modele.addAttribute("categories", service.categoriesDePrestations());
         modele.addAttribute("tauxAdmis", TauxTvaBelge.TAUX_ADMIS);
         // BL-7 : historique des modifications de CET article. La methode existait depuis
-        // l historisation A2/A5 (V25) sans aucun appelant de production ; c est ici
+        // l historisation A2/A5 (V25) sans aucun appelant de production. C est ici
         // qu elle sert, au plus pres de ce qu elle decrit.
         if (edition) {
             modele.addAttribute("historique", service.historiquePrestation(reference));

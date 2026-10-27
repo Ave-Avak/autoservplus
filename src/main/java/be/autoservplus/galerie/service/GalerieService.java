@@ -16,7 +16,7 @@ import java.util.UUID;
  * pieces illustrent des fiches publiques ({@code /services/**} et {@code /pieces/**}
  * sont en {@code permitAll}). Seules celles d intervention sont privees, et leur
  * cloisonnement se fait chez l appelant, qui a deja verifie a qui appartient
- * l intervention — le refaire ici demanderait de repasser le courriel du membre a
+ * l intervention : le refaire ici demanderait de repasser le courriel du membre a
  * chaque lecture d image.</p>
  */
 @Service

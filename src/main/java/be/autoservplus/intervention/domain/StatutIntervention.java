@@ -13,7 +13,7 @@ import java.util.Map;
  * SUSPENDUE : suspension temporaire (attente de piece, autre urgence) sans
  * cloture. ATTENTE_VALIDATION_MEMBRE : depassement de devis &gt; 10 % (RM-15),
  * la poursuite exige l accord expres du membre. TERMINEE : travaux acheves,
- * {@code finReelle} figee ; c est au passage vers cet etat que le module
+ * {@code finReelle} figee. C est au passage vers cet etat que le module
  * facturation (post-V1) declenchera la generation de la facture (RM-17).
  * ANNULEE : arret definitif de l intervention sans passage a TERMINEE.</p>
  *
@@ -75,7 +75,7 @@ public enum StatutIntervention {
     /**
      * Le dossier accepte-t-il une nouvelle ligne ? <b>RM-14</b> : uniquement
      * pendant la realisation. Le CdC ouvre l ajout « en cours d intervention »
-     * et nulle part ailleurs — ni avant le demarrage, ni a l arret, ni pendant
+     * et nulle part ailleurs : ni avant le demarrage, ni a l arret, ni pendant
      * qu une question est posee au membre.
      *
      * <p>Source de verite unique de la regle : l entite la fait respecter, le DTO
@@ -91,7 +91,7 @@ public enum StatutIntervention {
     /**
      * Projection RM-16 : le membre ne voit pas la mecanique interne du garage.
      * Les trois statuts nominaux (En attente, En cours, Terminee) resument le
-     * cycle percu par le client ; ANNULEE s ajoute comme cas terminal explicite
+     * cycle percu par le client. ANNULEE s ajoute comme cas terminal explicite
      * pour ne pas laisser un membre devant une intervention qui « disparait ».
      *
      * <p>SUSPENDUE et ATTENTE_VALIDATION_MEMBRE relevent de la mecanique
@@ -121,7 +121,7 @@ public enum StatutIntervention {
 
     /**
      * Les quatre etats percus du CdC. Chaque valeur porte les deux representations
-     * d un meme percu — le libelle francais historique et la cle i18n — pour que la
+     * d un meme percu (le libelle francais historique et la cle i18n) pour que la
      * projection statut technique -&gt; percu reste definie a un seul endroit,
      * {@link #PERCUS}, quel que soit le canal d affichage.
      */
@@ -152,7 +152,7 @@ public enum StatutIntervention {
         for (StatutIntervention s : values()) {
             if (!m.containsKey(s)) {
                 throw new IllegalStateException(
-                        "StatutIntervention." + s + " n a pas de statut percu — completer PERCUS.");
+                        "StatutIntervention." + s + " n a pas de statut percu : completer PERCUS.");
             }
         }
         PERCUS = Collections.unmodifiableMap(m);

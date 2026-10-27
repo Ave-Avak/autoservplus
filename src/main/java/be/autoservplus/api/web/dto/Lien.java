@@ -10,7 +10,7 @@ package be.autoservplus.api.web.dto;
  * simple : une liste de couples {@code rel} / {@code href}, suffisante pour naviguer,
  * et qu on peut remplacer par HAL le jour ou l API grandit.</p>
  *
- * @param rel  relation au sens RFC 8288 : {@code self}, {@code next}, {@code prev}…
+ * @param rel  relation au sens RFC 8288 : {@code self}, {@code next}, {@code prev}...
  * @param href URL absolue, construite depuis la requete courante
  */
 public record Lien(String rel, String href) {

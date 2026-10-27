@@ -21,8 +21,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Emission des factures (F31). Ce bloc ne traite que la facture de <b>commande</b> ;
- * la facturation d intervention (RM-17) reutilisera l entite sans la modifier.
+ * Emission des factures (F31). Ce bloc ne traite que la facture de <b>commande</b>.
+ * La facturation d intervention (RM-17) reutilisera l entite sans la modifier.
  *
  * <p>L emission est le seul moment ou un numero est attribue : le compteur est
  * incremente dans cette transaction, si bien qu une emission qui echoue ne consomme
@@ -33,7 +33,7 @@ import java.util.UUID;
  * existante et la retourne telle quelle. Deux rejeux <b>simultanes</b> passeraient
  * tous deux ce controle : l index partiel {@code uq_facture_commande} refuse alors
  * le second insert, sa transaction est annulee et son numero rendu. Une verification
- * applicative seule ne suffirait pas ; l index seul transformerait chaque rejeu en
+ * applicative seule ne suffirait pas. L index seul transformerait chaque rejeu en
  * erreur.</p>
  *
  * <p>Le PDF n est pas produit ici : la facture existe en base des l encaissement,
@@ -91,7 +91,7 @@ public class FactureService {
 
     /**
      * Charge une facture en verifiant qu elle appartient bien au membre. La facture
-     * d autrui remonte comme {@link RessourceIntrouvableException} — donc 404, le
+     * d autrui remonte comme {@link RessourceIntrouvableException}, donc 404, le
      * meme code qu une reference inconnue : confirmer l existence d une facture a un
      * tiers serait deja une fuite, s agissant d un document nominatif.
      */
@@ -122,7 +122,7 @@ public class FactureService {
     /**
      * Ventilation TVA de la facture, recalculee des lignes figees de sa commande.
      * Elle n est pas stockee : les lignes etant immuables des leur rattachement a
-     * une commande, la recalculer donne toujours le meme resultat — une table de
+     * une commande, la recalculer donne toujours le meme resultat. Une table de
      * lignes de facture serait une duplication exacte, avec le risque de divergence
      * qui va avec.
      */

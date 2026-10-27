@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Vérifiez votre courriel — AutoServ+</title>
+    <title>Vérifiez votre courriel | AutoServ+</title>
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
@@ -14,7 +14,7 @@
          verification. La reafficher permettrait de faire porter a cette page une
          adresse arbitraire : un lien forge menant ici donnerait a n'importe quelle
          adresse l'apparence d'une confirmation legitime emise par le site. Le message
-         est par ailleurs identique que le compte existe ou non — c'est le courriel,
+         est par ailleurs identique que le compte existe ou non : c'est le courriel,
          et lui seul, qui renseigne le titulaire. -->
     <div class="message message-succes" role="status">
         <p>Si un compte est associé à cette adresse, vous recevrez un message dans
@@ -22,7 +22,7 @@
         <p>Le lien qu'il contient reste valable une heure.</p>
         <!-- Meme ligne de plafond qu'au parcours de renvoi, et meme motif : elle parle
              du demandeur, pas du compte. Seul texte i18n de cet ecran encore en
-             francais en dur — une chaine ajoutee aujourd'hui n'a pas de raison de
+             francais en dur : une chaine ajoutee aujourd'hui n'a pas de raison de
              naitre non traduite, la traduction de l'ecran entier restant un chantier
              a part. -->
         <p th:if="${debitDepasse}" th:text="#{securite.debit.trop-de-demandes}">Trop de demandes ont été envoyées depuis peu. Réessayez dans quelques minutes.</p>

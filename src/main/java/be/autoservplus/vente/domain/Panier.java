@@ -27,14 +27,14 @@ import java.util.function.Function;
  *
  * <p>Les prix, libelles et taux TVA des lignes sont <b>figes a l ajout</b>, copies
  * depuis la piece : une evolution du catalogue ne reecrit jamais un panier existant.
- * Invariant de conception partage avec {@code LigneRdv} et {@code LigneIntervention}
- * — la recopie a l ajout preserve l integrite historique — sans numero de regle
+ * Invariant de conception partage avec {@code LigneRdv} et {@code LigneIntervention} :
+ * la recopie a l ajout preserve l integrite historique, sans numero de regle
  * au CdC.</p>
  *
  * <p>L entite porte les calculs (RM-30 : totaux ligne a ligne, jamais sur un total
  * global d abord) et la mecanique des lignes (fusion des doublons, quantites
- * positives). Les regles qui dependent de l etat du <i>catalogue</i> — piece active
- * et stock disponible, contraintes de F13 — vivent dans le service : le panier n a
+ * positives). Les regles qui dependent de l etat du <i>catalogue</i> (piece active
+ * et stock disponible, contraintes de F13) vivent dans le service : le panier n a
  * pas a interroger le stock, il recoit des ajouts deja arbitres.</p>
  *
  * <p>Colonnes non mappees en V1 : {@code date_expiration} appartient a la
@@ -75,7 +75,7 @@ public class Panier extends BaseEntity {
     /**
      * Ajoute une piece au panier, ou <b>incremente la ligne existante</b> si la piece
      * y figure deja : jamais deux lignes pour la meme piece. En cas de fusion, les
-     * valeurs figees a la premiere entree (prix, libelle, taux) sont conservees —
+     * valeurs figees a la premiere entree (prix, libelle, taux) sont conservees :
      * c est la date d entree au panier qui fait foi, pas le catalogue du jour.
      */
     public LignePanier ajouterPiece(Piece piece, int quantite) {
@@ -116,7 +116,7 @@ public class Panier extends BaseEntity {
      * <p>Garde qui evite la retractation PARTIELLE. Une commande mixte serait
      * insoluble en V1 : une piece reste retractable quand un service pleinement
      * execute sous renonciation VI.53 ne l est plus, et annuler une partie de la
-     * commande demanderait de lever {@code uq_avoir_facture} — ce que F30 a remis a
+     * commande demanderait de lever {@code uq_avoir_facture}, ce que F30 a remis a
      * la V2.</p>
      *
      * <p>La garde vit ICI, au plus tot, plutot qu au passage en commande : refuser
@@ -145,7 +145,7 @@ public class Panier extends BaseEntity {
         return lignePour(prestation).map(ligne -> (int) ligne.getQuantite()).orElse(0);
     }
 
-    /** Quantite deja au panier pour cette piece — sert au controle de stock cumule. */
+    /** Quantite deja au panier pour cette piece : sert au controle de stock cumule. */
     public int quantitePour(Piece piece) {
         return lignePour(piece).map(l -> (int) l.getQuantite()).orElse(0);
     }

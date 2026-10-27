@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{admin.tableau.titre} + ' — AutoServ+'">Tableau de bord — AutoServ+</title>
+    <title th:text="#{admin.tableau.titre} + ' | AutoServ+'">Tableau de bord | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -77,8 +77,8 @@
         <p th:if="${#lists.isEmpty(bord.topPrestations())}" th:text="#{admin.tableau.aucune-vente}">Aucune vente.</p>
         <ol th:unless="${#lists.isEmpty(bord.topPrestations())}">
             <li th:each="l : ${bord.topPrestations()}"
-                th:text="${l.libelle()} + ' — ' + ${l.quantite()} + ' × / ' + ${l.montantHtva()} + ' € HTVA'">
-                Vidange — 4 × / 240,00 € HTVA
+                th:text="#{admin.tableau.vente.ligne(${l.libelle()}, ${l.quantite()}, ${#numbers.formatDecimal(l.montantHtva(), 1, 2)})}">
+                Vidange : 4 vendu(s), 240,00 € HTVA
             </li>
         </ol>
 
@@ -86,8 +86,8 @@
         <p th:if="${#lists.isEmpty(bord.topPieces())}" th:text="#{admin.tableau.aucune-vente}">Aucune vente.</p>
         <ol th:unless="${#lists.isEmpty(bord.topPieces())}">
             <li th:each="l : ${bord.topPieces()}"
-                th:text="${l.libelle()} + ' — ' + ${l.quantite()} + ' × / ' + ${l.montantHtva()} + ' € HTVA'">
-                Filtre à huile — 6 × / 54,00 € HTVA
+                th:text="#{admin.tableau.vente.ligne(${l.libelle()}, ${l.quantite()}, ${#numbers.formatDecimal(l.montantHtva(), 1, 2)})}">
+                Filtre à huile : 6 vendu(s), 54,00 € HTVA
             </li>
         </ol>
     </section>

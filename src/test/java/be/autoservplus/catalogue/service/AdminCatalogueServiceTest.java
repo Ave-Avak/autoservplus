@@ -567,7 +567,7 @@ class AdminCatalogueServiceTest {
                         assertThat(ligne.getEntiteId()).isEqualTo(9L);
                     })
                     .extracting(HistoriqueModificationCatalogue::getChampModifie)
-                    // La description, seule inchangee, est absente ; la reference
+                    // La description, seule inchangee, est absente. La reference
                     // fabricant est immuable, elle n est jamais comparee.
                     .containsExactly("categorie", "libelle", "marque", "prixHtva", "tauxTva",
                             "quantiteStock", "seuilAlerte", "actif");

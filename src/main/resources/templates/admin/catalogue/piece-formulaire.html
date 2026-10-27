@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${titre} + ' — AutoServ+'">Nouvelle pièce — AutoServ+</title>
+    <title th:text="${titre} + ' | AutoServ+'">Nouvelle pièce | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -15,7 +15,7 @@
 
 <main id="contenu">
     <p><a th:href="@{/admin/catalogue/pieces}"
-          th:text="'← ' + #{admin.catalogue.retour}">← Retour à la liste</a></p>
+          th:text="#{admin.catalogue.retour}">Retour à la liste</a></p>
 
     <h1 th:text="${titre}">Nouvelle pièce</h1>
     <p th:if="${edition}"><a th:href="@{/admin/galerie/pieces/{ref}(ref=${reference})}"
@@ -29,7 +29,7 @@
         <div class="champ">
             <label for="codeCategorie" th:text="#{admin.catalogue.champ.categorie}">Catégorie</label>
             <select id="codeCategorie" th:field="*{codeCategorie}" required>
-                <option value="" th:text="#{admin.catalogue.champ.categorie-choisir}">— Choisir —</option>
+                <option value="" th:text="#{admin.catalogue.champ.categorie-choisir}">Choisir une catégorie</option>
                 <option th:each="c : ${categories}" th:value="${c.code}"
                         th:text="${c.libelle}">Filtres</option>
             </select>

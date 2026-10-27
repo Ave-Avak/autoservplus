@@ -35,7 +35,7 @@ public final class RedacteurCsv {
         ligne((Object[]) entetes);
     }
 
-    /** Ajoute une ligne ; {@code null} devient une cellule vide. */
+    /** Ajoute une ligne. {@code null} devient une cellule vide. */
     public RedacteurCsv ligne(Object... cellules) {
         for (int i = 0; i < cellules.length; i++) {
             if (i > 0) {

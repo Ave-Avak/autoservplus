@@ -6,7 +6,7 @@ import be.autoservplus.common.exception.RegleMetierException;
  * L ajout ou la modification demandee depasse le stock physique de la piece (F13).
  *
  * <p>Porte la quantite encore disponible pour que la couche web puisse la restituer
- * au membre — « stock insuffisant » seul n est pas actionnable, « il en reste 2 »
+ * au membre : « stock insuffisant » seul n est pas actionnable, « il en reste 2 »
  * l est. Pas de code RM : le refus sur stock est une exigence de F13, pas une regle
  * numerotee du CdC (le constructeur sans code existe pour ce cas).</p>
  *

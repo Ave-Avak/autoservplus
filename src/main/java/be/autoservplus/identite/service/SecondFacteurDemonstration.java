@@ -19,9 +19,9 @@ import java.time.Clock;
  * {@code demo} seulement.
  *
  * <p><b>Pourquoi un secret publie, et pas une exemption.</b> Le second facteur est
- * obligatoire au back-office ; l exempter sous un profil creerait un chemin de connexion
+ * obligatoire au back-office. L exempter sous un profil creerait un chemin de connexion
  * qui le contourne, et ce chemin existerait dans le binaire livre. Publier le secret du
- * compte de demonstration est de meme nature que publier son mot de passe — ce que le
+ * compte de demonstration est de meme nature que publier son mot de passe, ce que le
  * projet fait deja, et proscrit deja en production.</p>
  *
  * <p><b>Pourquoi Java et non SQL.</b> Le secret est chiffre sous la cle maitre DU
@@ -35,7 +35,7 @@ import java.time.Clock;
  *
  * <p><b>Un secret indechiffrable compte comme manquant.</b> C est le cas apres un
  * changement de {@code MFA_CLE_MAITRE} sans que l ancienne ait ete conservee dans
- * {@code MFA_CLES_PRECEDENTES} — sur un poste de demonstration, l oubli le plus probable.
+ * {@code MFA_CLES_PRECEDENTES} : sur un poste de demonstration, l oubli le plus probable.
  * Le laisser enfermerait l admin de demonstration hors du back-office, alors que le secret
  * publie au README est le seul qu il puisse connaitre.</p>
  */

@@ -5,12 +5,12 @@ package be.autoservplus.identite.domain;
  *
  * <p>{@code UtilisateurDetailsService} fait {@code .roles(typeUtilisateur.name())} :
  * chaque valeur produit donc exactement une autorite, {@code ROLE_} suivi du nom.
- * Ce n est <b>pas</b> un discriminant JPA — l entite ne declare ni
- * {@code @Inheritance} ni {@code @DiscriminatorColumn} — de sorte qu ajouter une
+ * Ce n est <b>pas</b> un discriminant JPA (l entite ne declare ni
+ * {@code @Inheritance} ni {@code @DiscriminatorColumn}) de sorte qu ajouter une
  * valeur n ajoute aucune classe.</p>
  *
  * <p><b>Le super-administrateur n herite pas ici, mais par la hierarchie.</b> Une
- * enumeration Java ne se derive pas ; c est le bean {@code RoleHierarchy} de
+ * enumeration Java ne se derive pas. C est le bean {@code RoleHierarchy} de
  * {@code SecuriteConfig} qui fait que {@code ROLE_SUPER_ADMINISTRATEUR} implique
  * {@code ROLE_ADMINISTRATEUR}. Les treize services annotes
  * {@code hasRole('ADMINISTRATEUR')} n ont donc pas a connaitre ce role.</p>

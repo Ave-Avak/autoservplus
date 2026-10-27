@@ -83,7 +83,7 @@ class PolitiqueMotDePasseTest {
     @Test
     @DisplayName("quatorze caractères dont un emoji : refusés")
     void emojiCompteUneFois() {
-        String avecEmoji = phrase(13) + "🔧";
+        String avecEmoji = phrase(13) + "\uD83D\uDD27";
         assertThat(avecEmoji).hasSize(15);
         assertThat(avecEmoji.codePointCount(0, avecEmoji.length())).isEqualTo(14);
 

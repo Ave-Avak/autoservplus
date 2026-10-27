@@ -14,18 +14,18 @@ import java.util.List;
  * <p>Repository propre au module rgpd plutot qu une methode ajoutee a
  * {@code VehiculeRepository} : le perimetre n est pas le meme.
  * {@code VehiculeRepository.findByMembre} alimente le formulaire de reservation et
- * ne rend que les vehicules actifs et non supprimes ; l article 15 porte sur les
+ * ne rend que les vehicules actifs et non supprimes. L article 15 porte sur les
  * donnees <i>detenues</i>, pas sur celles qui restent utilisables.
  *
  * <p><b>Requete native, et pourquoi.</b> Le {@code @SQLRestriction} de l entite
  * ajoute {@code deleted_at IS NULL} a toute requete HQL et a tout chargement par
- * identifiant ; il ne se desactive pas a la demande, contrairement a un
+ * identifiant. Il ne se desactive pas a la demande, contrairement a un
  * {@code @Filter} Hibernate. Passer l entite en {@code @Filter} aurait exige de
  * l activer dans <i>chaque</i> session du reste de l application, sous peine de
  * faire reapparaitre les vehicules supprimes dans le parc du membre et dans la
  * reservation : un risque disproportionne pour un besoin de lecture. Une requete
  * native ecrit son propre SQL, la restriction ne s y applique pas, et le
- * changement reste confine a ce fichier — le filtrage normal de l application est
+ * changement reste confine a ce fichier : le filtrage normal de l application est
  * intact.
  *
  * <p>La lecture reste sans danger : {@link Repository} n herite d aucune methode

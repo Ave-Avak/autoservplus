@@ -7,7 +7,7 @@
 #
 # Un seul jeu de fichiers sert aux deux usages, seule la variable DOMAINE change :
 #   - repetition locale : DOMAINE=:80        Caddy sert en HTTP, cloudflared apporte
-#                                            le HTTPS depuis l'exterieur ;
+#                                            le HTTPS depuis l'exterieur.
 #   - serveur           : DOMAINE=exemple.tld  Caddy obtient et renouvelle seul son
 #                                            certificat aupres de Let's Encrypt.
 #
@@ -27,7 +27,7 @@ services:
 
   postgres:
     image: postgres:16-alpine
-    # AUCUN port publie. La base n'est joignable que par le reseau du compose ; la
+    # AUCUN port publie. La base n'est joignable que par le reseau du compose. La
     # publier exposerait PostgreSQL a l'internet entier pour un confort d'administration
     # que « docker compose exec » rend inutile.
     environment:

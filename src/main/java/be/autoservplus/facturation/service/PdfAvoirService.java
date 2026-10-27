@@ -22,9 +22,9 @@ import java.util.Locale;
  *
  * <p>Meme politique que {@code PdfFactureService}, et pour les memes raisons.
  * <b>Genere a la demande</b> : rien n oblige a produire un PDF que personne ne
- * reclamera — l avoir existe en base des la validation, c est lui qui fait foi.
+ * reclamera. L avoir existe en base des la validation, c est lui qui fait foi.
  * <b>Archive une fois</b> : le document conserve dix ans doit rester celui qui a ete
- * remis au client, pas ce que le code produirait aujourd hui ; une evolution du
+ * remis au client, pas ce que le code produirait aujourd hui. Une evolution du
  * gabarit ne doit pas reecrire retroactivement des pieces deja transmises.</p>
  *
  * <p>Si le fichier archive a disparu, le service reconstruit plutot que d echouer :
@@ -93,7 +93,7 @@ public class PdfAvoirService {
 
     /**
      * Constitue le document a imprimer. La locale est celle du membre, pas celle de
-     * la session : la note de credit est emise dans la langue du client — la meme que
+     * la session : la note de credit est emise dans la langue du client, la meme que
      * celle de la facture qu elle corrige.
      */
     private DocumentAvoir documentDe(Avoir avoir) {

@@ -31,20 +31,20 @@ import java.util.UUID;
  * <p><b>Pourquoi deux temps.</b> Le controle automatique sait verifier ce que le
  * systeme connait : la commande appartient bien au demandeur, elle est payee, les
  * quatorze jours legaux courent encore, aucune demande n est deja pendante. Il ne
- * sait rien de l etat physique de la piece — montee sur le vehicule, deballee,
+ * sait rien de l etat physique de la piece : montee sur le vehicule, deballee,
  * abimee. Ce constat appartient a l atelier, et c est lui qui fonde les exceptions
  * legales au droit de retractation. La demande porte donc la part automatisable de
  * la decision et laisse l autre a un humain, qui peut refuser avec motif.</p>
  *
  * <p><b>Machine a etats dans l entite</b>, comme partout dans le projet : seules
  * {@code EN_ATTENTE -> VALIDEE} et {@code EN_ATTENTE -> REFUSEE} passent, et la garde
- * vit ici plutot que dans le service — un second appelant (reprise, tache planifiee,
+ * vit ici plutot que dans le service. Un second appelant (reprise, tache planifiee,
  * test) ne peut pas la contourner en oubliant de la recopier.</p>
  *
  * <p><b>Validation et avoir posés d un seul geste</b> ({@link #valider}) : la base
  * exige par {@code ck_demande_annulation_avoir} qu une demande validee porte son
  * avoir. Transitionner d abord puis rattacher l avoir ensuite produirait, entre les
- * deux ecritures, un etat que le CHECK refuse — l invariant impose donc une seule
+ * deux ecritures, un etat que le CHECK refuse. L invariant impose donc une seule
  * mutation, pas deux.</p>
  *
  * <p>{@code @Version} : la validation est une ressource critique concurrente. Un
@@ -52,7 +52,7 @@ import java.util.UUID;
  * rembourseraient deux fois. Le verrou optimiste fait perdre le second, avant meme
  * que l index unique de l avoir n ait a trancher.</p>
  *
- * <p><b>Perimetre V1 : annulation totale.</b> Aucune ligne n est designee — la
+ * <p><b>Perimetre V1 : annulation totale.</b> Aucune ligne n est designee. La
  * demande porte sur la commande entiere. L annulation partielle par ligne (V2)
  * ajoutera une table de lignes et devra lever l unicite {@code uq_avoir_facture}.</p>
  */
@@ -131,7 +131,7 @@ public class DemandeAnnulation extends BaseEntity {
      * L administrateur accepte la retractation : la demande porte desormais l avoir
      * qui contre-passe la facture, son auteur et sa date.
      *
-     * @param avoir la note de credit emise dans la meme transaction — obligatoire,
+     * @param avoir la note de credit emise dans la meme transaction : obligatoire,
      *              {@code ck_demande_annulation_avoir} refuse une validation sans elle
      */
     public void valider(Avoir avoir, Utilisateur administrateur, Instant maintenant) {
@@ -186,8 +186,8 @@ public class DemandeAnnulation extends BaseEntity {
      * s appuie sur {@link #estEnAttente}. Elle existe parce que la validation
      * contre-passe une facture et rembourse un paiement avant d en arriver a la
      * transition : sans fail-fast, un second clic de l administrateur echouerait
-     * bien, mais sur « aucun paiement encaisse » — le paiement etant deja
-     * REMBOURSE — au lieu de dire que la demande est deja traitee. Le resultat
+     * bien, mais sur « aucun paiement encaisse » (le paiement etant deja
+     * REMBOURSE) au lieu de dire que la demande est deja traitee. Le resultat
      * serait le meme, le message serait faux.</p>
      */
     public void exigerEnAttente() {

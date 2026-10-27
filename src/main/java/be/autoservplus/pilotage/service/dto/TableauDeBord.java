@@ -14,7 +14,7 @@ import java.util.List;
  * invalide a chaque ecriture metier, et finirait par mentir.</p>
  *
  * @param minutesReservees minutes de rendez-vous non annules du mois
- * @param minutesCapacite  minutes ouvrables du mois, postes actifs compris ; zero si
+ * @param minutesCapacite  minutes ouvrables du mois, postes actifs compris. Zero si
  *                         aucune plage d ouverture n est definie
  */
 public record TableauDeBord(
@@ -33,7 +33,7 @@ public record TableauDeBord(
     /**
      * Taux d occupation de l atelier, en pourcentage entier.
      *
-     * <p>Rend {@code null} quand la capacite est inconnue — aucune plage d ouverture,
+     * <p>Rend {@code null} quand la capacite est inconnue : aucune plage d ouverture,
      * ou aucun poste actif. Afficher « 0 % » laisserait croire a un atelier vide alors
      * que la question n a pas de reponse, et un taux calcule sur une capacite nulle
      * n aurait aucun sens.</p>

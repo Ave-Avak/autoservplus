@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{admin.catalogue.supprimer.titre} + ' — AutoServ+'">Retirer du catalogue — AutoServ+</title>
+    <title th:text="#{admin.catalogue.supprimer.titre} + ' | AutoServ+'">Retirer du catalogue | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -15,7 +15,7 @@
 
 <main id="contenu">
     <p><a th:href="@{/admin/catalogue/prestations}"
-          th:text="'← ' + #{admin.catalogue.retour}">← Retour à la liste</a></p>
+          th:text="#{admin.catalogue.retour}">Retour à la liste</a></p>
 
     <h1 th:text="#{admin.catalogue.supprimer.titre}">Retirer du catalogue</h1>
 
@@ -32,7 +32,7 @@
 
     <!-- RM-29 : le systeme detecte le cas et ne propose QUE l'action permise.
          Suppression definitive apres confirmation si zero reference d'historique,
-         desactivation (RM-28) sinon — jamais les deux boutons. -->
+         desactivation (RM-28) sinon : jamais les deux boutons. -->
     <div th:if="${proposition.suppressionPossible()}">
         <p th:text="#{admin.catalogue.supprimer.question}">
             Aucun historique ne référence cet élément : le supprimer définitivement ?</p>

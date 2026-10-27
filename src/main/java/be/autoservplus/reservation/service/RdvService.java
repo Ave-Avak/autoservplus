@@ -170,7 +170,7 @@ public class RdvService {
         return disponibilites.creneauxDuJour(jour, duree).stream()
                 .map(c -> new CreneauVue(
                         c.debut().toString(),
-                        FormatageRdv.heureLisible(c.debut(), zone) + " – " + FormatageRdv.heureLisible(c.fin(), zone),
+                        FormatageRdv.heureLisible(c.debut(), zone) + " - " + FormatageRdv.heureLisible(c.fin(), zone),
                         c.postesLibres()))
                 .toList();
     }

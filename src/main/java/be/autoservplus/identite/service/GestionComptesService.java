@@ -28,7 +28,7 @@ import java.util.UUID;
  * {@code UtilisateurDetailsService} construit deja le {@code UserDetails} avec
  * {@code .disabled(statut != ACTIF)} : ecrire {@code SUSPENDU} suffit a refuser toute
  * nouvelle connexion. Ce service ecrit donc le statut, le journalise, et rien de
- * plus — aucune garde a ajouter ailleurs.</p>
+ * plus, aucune garde a ajouter ailleurs.</p>
  *
  * <p><b>Ce qu il ne fait PAS, et qu il faut savoir dire.</b> {@code disabled} est lu
  * dans {@code loadUserByUsername}, donc <b>a l authentification seulement</b> : une
@@ -42,7 +42,7 @@ import java.util.UUID;
  *       porte, et personne d autre ne peut necessairement la rouvrir. Le refus est
  *       plus utile que la liberte.</li>
  *   <li><b>Il doit rester un super-administrateur actif</b> : suspendre le dernier
- *       rendrait la creation d administrateurs definitivement impossible — un systeme
+ *       rendrait la creation d administrateurs definitivement impossible, un systeme
  *       dont on ne peut plus sortir sans acces a la base.</li>
  *   <li><b>Un administrateur n agit pas sur un autre compte privilegie</b> : les
  *       pouvoirs sur le back-office sont exclusifs au super-administrateur. Sans
@@ -108,7 +108,7 @@ public class GestionComptesService {
     /**
      * Suspend un compte : il ne pourra plus se connecter.
      *
-     * @param motif obligatoire — voir la garde correspondante
+     * @param motif obligatoire : voir la garde correspondante
      * @throws RegleMetierException si une des quatre gardes s y oppose
      */
     @Transactional
@@ -150,7 +150,7 @@ public class GestionComptesService {
 
         // Les sessions deja ouvertes tombent AUSSI. Sans cela, la suspension serait
         // immediate pour toute nouvelle connexion et differee pour celle qui est en
-        // cours — l inverse de ce qu on attend d une mesure prise en urgence. Le
+        // cours : l inverse de ce qu on attend d une mesure prise en urgence. Le
         // registre ne porte que des sessions de cette instance : voir la limite
         // enoncee a RegistreSessionsConfig.
         revocation.revoquer(suspendu.getEmail());
@@ -207,7 +207,7 @@ public class GestionComptesService {
     }
 
     /**
-     * Un administrateur ordinaire n agit que sur des membres ; les comptes du
+     * Un administrateur ordinaire n agit que sur des membres. Les comptes du
      * back-office sont reserves au super-administrateur.
      */
     private void exigerPouvoirSurLaCible(Utilisateur auteur, Utilisateur cible) {

@@ -18,15 +18,15 @@ import java.util.Locale;
  *
  * <h2>Ce qui sort, et ce qui ne sort pas</h2>
  *
- * <p>Le mot de passe est hache en SHA-1 localement ; <b>seuls les cinq premiers
+ * <p>Le mot de passe est hache en SHA-1 localement. <b>seuls les cinq premiers
  * caracteres hexadecimaux de l empreinte</b> quittent le serveur. Le service repond
- * la liste des suffixes qu il connait pour ce prefixe — plusieurs centaines — et la
+ * la liste des suffixes qu il connait pour ce prefixe (plusieurs centaines) et la
  * comparaison se fait ici. Le service ne peut donc pas savoir quel mot de passe a ete
  * verifie, et <b>aucune adresse ni aucun identifiant ne l accompagne</b> : la requete
  * ne porte que cinq caracteres.</p>
  *
  * <p>SHA-1 n est pas un choix de securite mais le format impose par l interface du
- * service. Il ne sert pas a proteger le mot de passe — c est BCrypt qui le fait — mais
+ * service. Il ne sert pas a proteger le mot de passe (c est BCrypt qui le fait) mais
  * a l indexer.</p>
  *
  * <h2>Panne et lenteur</h2>
@@ -34,7 +34,7 @@ import java.util.Locale;
  * <p>Deux secondes au plus, et <b>toute erreur rend {@code false}</b> : un service
  * injoignable ne bloque pas une inscription. La liste embarquee a deja tranche, et
  * refuser un mot de passe correct parce qu un tiers est en panne serait un deni de
- * service inflige a l utilisateur. L echec est journalise — silencieux pour le
+ * service inflige a l utilisateur. L echec est journalise, silencieux pour le
  * visiteur, pas pour l exploitant.</p>
  *
  * <p>Le delai est plus court que les cinq secondes de la passerelle de paiement : ici

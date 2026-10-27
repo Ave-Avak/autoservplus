@@ -13,16 +13,16 @@
 
     --gris-900: #111827;
     --gris-700: #374151;
-    --gris-500: #6B7280;  /* 4.83:1 — placeholders et metadonnees */
-    --gris-400: #9CA3AF;  /* 2.54:1 — elements DESACTIVES uniquement */
+    --gris-500: #6B7280;  /* 4.83:1, placeholders et metadonnees */
+    --gris-400: #9CA3AF;  /* 2.54:1, elements DESACTIVES uniquement */
     --gris-200: #E5E7EB;
     --gris-50:  #F9FAFB;
     --blanc:    #FFFFFF;
 
     /* Couleurs semantiques pour du TEXTE, conformes AA */
-    --succes-texte: #047857;  /* 5.48:1 — remplace #10B981 (2.54:1, non conforme) */
-    --alerte-texte: #B45309;  /* 5.02:1 — remplace #F59E0B (2.15:1, non conforme) */
-    --info-texte:   #1D4ED8;  /* 6.70:1 — remplace #3B82F6 (3.68:1, non conforme) */
+    --succes-texte: #047857;  /* 5.48:1, remplace #10B981 (2.54:1, non conforme) */
+    --alerte-texte: #B45309;  /* 5.02:1, remplace #F59E0B (2.15:1, non conforme) */
+    --info-texte:   #1D4ED8;  /* 6.70:1, remplace #3B82F6 (3.68:1, non conforme) */
     --erreur-texte: #DC2626;  /* 4.83:1 */
 
     --police: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -46,7 +46,7 @@ body {
 
 /* Le focus clavier doit rester visible : critere WCAG 2.4.7. Indicateur a deux couleurs
    (technique W3C C40) : anneau interieur --gris-900, anneau exterieur blanc, 2 px chacun,
-   17.74:1 entre eux. Sur fond blanc, l'anneau sombre tient 17.74:1 ; sur le bleu de
+   17.74:1 entre eux. Sur fond blanc, l'anneau sombre tient 17.74:1. Sur le bleu de
    l'en-tete, l'anneau blanc tient 11.62:1. L'ancien contour --bleu-secondaire ne tenait
    que 2.40:1 sur ce bleu. */
 :focus-visible {
@@ -72,7 +72,7 @@ body {
 }
 /* L'en-tete passe a la ligne au lieu de deborder. Largeurs mesurees au rendu (Chrome,
    2026-10-26) : marque 102 px, menu 372 px, liens du compte jusqu'a 540 px (membre).
-   Sur une ligne il faut 1110 px de fenetre ; au-dessous, les liens du compte passent sur
+   Sur une ligne il faut 1110 px de fenetre. Au-dessous, les liens du compte passent sur
    une seconde ligne, qui tient jusqu'a 588 px. Sous 40em : bloc « Menu repliable ». */
 .entete > nav {
     display: flex;
@@ -200,7 +200,7 @@ main code { overflow-wrap: anywhere; }
 .texte-erreur { color: var(--erreur-texte); }
 
 /* Ligne d intervention hors total facturable : en attente d accord du membre ou
-   refusee par lui (RM-15). --gris-500 tient le 4.83:1 requis en AA ; l italique
+   refusee par lui (RM-15). --gris-500 tient le 4.83:1 requis en AA. L italique
    double l information pour ne pas la porter par la seule couleur (WCAG 1.4.1),
    et la colonne « Etat » l ecrit en toutes lettres. */
 .ligne-hors-total td {
@@ -492,7 +492,7 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 
 /* Badges de statut : texte semantique AA sur fond pale de la meme teinte. */
 .badge { display: inline-block; padding: .15rem .6rem; border-radius: 1rem; font-size: .85rem; font-weight: 600; }
-.badge-en_attente { background: #FEF3C7; color: var(--alerte-texte); }   /* 4.51:1 — le plus juste de la palette : toute retouche de #FEF3C7 le fait passer sous 4.5 */
+.badge-en_attente { background: #FEF3C7; color: var(--alerte-texte); }   /* 4.51:1, le plus juste de la palette : toute retouche de #FEF3C7 le fait passer sous 4.5 */
 .badge-confirme   { background: #DCFCE7; color: var(--succes-texte); }   /* 4.99:1 */
 .badge-honore     { background: #E0E7FF; color: var(--info-texte); }     /* 5.44:1 */
 .badge-refuse, .badge-annule, .badge-absent { background: var(--gris-200); color: var(--gris-700); } /* 8.33:1 */
@@ -543,11 +543,11 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     gap: var(--espace-s);
 }
 
-/* Les trois actions — « Tout accepter », « Tout refuser », « Personnaliser » —
+/* Les trois actions (« Tout accepter », « Tout refuser », « Personnaliser »)
    partagent CE seul style, donc les mêmes dimensions, la même couleur et le même
    contraste : blanc sur --bleu-marine, soit 11.62:1, très au-delà du 4.5:1 exigé
    en AA. Peindre « Tout accepter » avec la couleur d'appel --orange-cta rendrait le
-   refus visuellement secondaire ; l'Autorité de Protection des Données y voit un
+   refus visuellement secondaire. L'Autorité de Protection des Données y voit un
    consentement qui n'est plus librement donné. Ne pas introduire de variante par
    action : c'est une exigence de conformité, pas une préférence graphique. */
 .btn-cookies {
@@ -649,7 +649,7 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 /* Banniere de brouillon. Elle emprunte la couleur d'alerte deja calculee du systeme
    (--alerte-texte, 5.08:1 sur blanc) plutot qu'un ton nouveau : un contraste
    « choisi a l'oeil » est exactement ce que WCAG 2.1 AA interdit de supposer.
-   Volontairement voyante — un document legal provisoire qui ne se distingue pas d'un
+   Volontairement voyante : un document legal provisoire qui ne se distingue pas d'un
    document definitif ne remplit pas son role d'avertissement. */
 .avis-brouillon {
     border: 2px solid var(--alerte-texte);
@@ -671,7 +671,7 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 
 /* Listes de definition « libelle / valeur » : identite legale du garage (pages
    legales et contact) et horaires d ouverture. Meme mise en page parce que c est
-   la meme structure de lecture ; deux blocs de regles identiques finiraient par
+   la meme structure de lecture. Deux blocs de regles identiques finiraient par
    diverger a la premiere retouche. */
 .identite-garage,
 .horaires {
@@ -723,7 +723,7 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     display: inline-block;
     padding: 0.125rem var(--espace-s);
     border-radius: var(--rayon);
-    color: var(--blanc);  /* 11.62:1 sur le bleu de l'en-tete ; --gris-700 n'y tenait que 1.13:1 */
+    color: var(--blanc);  /* 11.62:1 sur le bleu de l'en-tete. --gris-700 n'y tenait que 1.13:1 */
     text-decoration: none;
     font-size: 0.875rem;
 }

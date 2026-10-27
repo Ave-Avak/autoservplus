@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{admin.retractations.refus.titre} + ' — AutoServ+'">Refuser une annulation — AutoServ+</title>
+    <title th:text="#{admin.retractations.refus.titre} + ' | AutoServ+'">Refuser une annulation | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -14,7 +14,7 @@
 <header th:replace="~{fragments/back-office :: entete}"></header>
 
 <main id="contenu">
-    <p><a th:href="@{/admin/retractations}" th:text="#{admin.retractations.retour}">← Retour à la liste</a></p>
+    <p><a th:href="@{/admin/retractations}" th:text="#{admin.retractations.retour}">Retour à la liste</a></p>
 
     <h1 th:text="#{admin.retractations.refus.titre}">Refuser une demande d'annulation</h1>
 

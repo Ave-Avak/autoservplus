@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * existant ({@code findByEmailIgnoreCase(...).ifPresent}), donc il ne compterait jamais
  * une adresse inconnue : la difference observable serait exactement l oracle que ces
  * formulaires doivent taire. Et il ecrit {@code verrouille_jusqu_a} sur
- * {@code utilisateur} — un tiers martelant le formulaire verrouillerait le compte de
+ * {@code utilisateur} : un tiers martelant le formulaire verrouillerait le compte de
  * sa victime, ce que le Javadoc de {@code TentativesConnexionService} interdit en
  * toutes lettres. Compter les adresses inconnues en base supposerait enfin de stocker
  * durablement des adresses de personnes non inscrites, sans finalite (art. 5.1.c).</p>
@@ -44,12 +44,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * limiteur compatible avec la neutralite anti-oracle : le compteur monte identiquement
  * pour une adresse servie et pour une adresse inconnue, donc comparer le comportement
  * entre deux adresses n apprend rien. Deplacer un jour ce decompte apres la recherche
- * du compte suffirait a transformer l ecran en oracle — un test le verrouille.</p>
+ * du compte suffirait a transformer l ecran en oracle : un test le verrouille.</p>
  *
  * <h2>Deux cles, deux abus</h2>
  *
  * <p>Par <b>adresse</b> contre le harcelement d un titulaire precis depuis des IP
- * changeantes ; par <b>IP</b> contre un attaquant qui balaie beaucoup d adresses. Les
+ * changeantes. Par <b>IP</b> contre un attaquant qui balaie beaucoup d adresses. Les
  * deux compteurs sont consommes a chaque demande, meme si le premier refuse deja :
  * sans cela, marteler une seule adresse ne couterait rien au budget de l IP.</p>
  *
@@ -63,10 +63,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * des adresses toutes differentes feraient enfler la carte sans fin. D ou un plafond
  * dur, et surtout le choix de ce qui arrive une fois atteint.</p>
  *
- * <p>Refuser toute nouvelle cle bloquerait les visiteurs legitimes ; les accepter
+ * <p>Refuser toute nouvelle cle bloquerait les visiteurs legitimes. Les accepter
  * toutes rendrait la limite contournable en saturant la carte. <b>Retenu : la carte
  * des adresses sature en silence et le plafond par IP continue seul de s appliquer.</b>
- * Aucun visiteur legitime n est bloque, et rien n est contourne — parce que la carte
+ * Aucun visiteur legitime n est bloque, et rien n est contourne, parce que la carte
  * des adresses ne peut pas etre saturee sans epuiser d abord des budgets d IP : avec
  * vingt demandes par IP et par fenetre, atteindre cent mille adresses distinctes exige
  * cinq mille IP sources dans le meme quart d heure. Les deux cartes sont separees,
@@ -76,7 +76,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * <h2>Limites connues</h2>
  *
  * <p>Compteurs <b>en memoire, par instance, perdus au redemarrage</b>. Un redemarrage
- * rend donc un budget neuf ; il est rare et a la main de l exploitant. Les mettre en
+ * rend donc un budget neuf. Il est rare et a la main de l exploitant. Les mettre en
  * base rouvrirait le point RGPD ci-dessus pour un gain theorique. Le deploiement ne
  * lance qu une instance d application ({@code docker-compose.prod.yml}) : une montee
  * en charge horizontale rendrait la limite valable par instance.</p>
@@ -114,11 +114,11 @@ public class LimiteurDemandesCourriel {
     /**
      * Enregistre une demande et dit si elle peut etre servie.
      *
-     * <p>A appeler <b>avant</b> tout acces a la base — voir « Neutralite ». Les deux
+     * <p>A appeler <b>avant</b> tout acces a la base : voir « Neutralite ». Les deux
      * compteurs sont consommes meme quand le premier refuse.</p>
      *
-     * @param adresse adresse soumise, telle que saisie ; peut etre inconnue, vide ou
-     *                nulle — elle est comptee dans tous les cas, c est le principe
+     * @param adresse adresse soumise, telle que saisie. Peut etre inconnue, vide ou
+     *                nulle, elle est comptee dans tous les cas, c est le principe
      * @param ip      adresse de la requete, celle du visiteur et non celle du proxy
      *                ({@code server.forward-headers-strategy: native})
      */
@@ -156,7 +156,7 @@ public class LimiteurDemandesCourriel {
 
     /**
      * Fenetre reellement glissante : les horodatages sortis de la fenetre sont purges
-     * a chaque passage, et l entree disparait quand elle se vide — c est ce qui borne
+     * a chaque passage, et l entree disparait quand elle se vide. C est ce qui borne
      * la carte en regime normal, le plafond dur n etant qu un filet. Une fenetre fixe
      * remise a zero d un coup laisserait passer deux fois le plafond a cheval sur deux
      * periodes.

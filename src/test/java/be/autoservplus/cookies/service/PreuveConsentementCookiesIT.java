@@ -25,13 +25,13 @@ import be.autoservplus.support.SocleIntegration;
  * <p>Ce test existe pour que le commit qui livre le modele porte lui-meme sa preuve
  * base, sans dependre du bandeau : ce qu il etablit, aucun test a doublure ne le
  * peut. Les deux finalites {@code COOKIES_ANALYTIQUE} et {@code COOKIES_MARKETING}
- * n existaient pas avant la migration V29 ; une insertion les portant aurait ete
+ * n existaient pas avant la migration V29. Une insertion les portant aurait ete
  * rejetee par le CHECK {@code ck_consentement_type}. Qu elles s ecrivent et se
- * relisent <b>est</b> la verification que V29 a bien elargi la contrainte — et si
+ * relisent <b>est</b> la verification que V29 a bien elargi la contrainte, et si
  * quelqu un revenait dessus, ce test tomberait, la ou le service en doublure
  * continuerait de passer.</p>
  *
- * <p>Le cas choisi est asymetrique — accorde d un cote, refuse de l autre — parce
+ * <p>Le cas choisi est asymetrique (accorde d un cote, refuse de l autre) parce
  * qu il est le seul qu un modele a ligne unique ne saurait pas restituer : c est
  * lui qui justifie la granularite par finalite.</p>
  *
@@ -78,7 +78,7 @@ class PreuveConsentementCookiesIT extends SocleIntegration {
                 preuveUnique(marie.getEmail(), TypeDocumentConsentement.COOKIES_ANALYTIQUE);
         assertThat(analytique.isAccorde()).isTrue();
         assertThat(analytique.getVersionAcceptee())
-                .isEqualTo("COOKIES-2026-01");
+                .isEqualTo("COOKIES-2026-02");
         assertThat(analytique.getAdresseIp()).isEqualTo(IP);
         assertThat(analytique.getDateConsentement()).isNotNull();
 

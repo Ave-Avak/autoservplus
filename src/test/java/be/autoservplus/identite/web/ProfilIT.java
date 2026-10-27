@@ -165,8 +165,8 @@ class ProfilIT extends SocleIntegration {
 
         /**
          * <b>Le test qui solde F6.</b> Deux moities a distinguer : la langue doit
-         * s appliquer <b>aussitot</b> — sans quoi le membre verrait sa confirmation
-         * dans l ancienne langue et croirait son choix perdu — et elle doit <b>revenir
+         * s appliquer <b>aussitot</b> (sans quoi le membre verrait sa confirmation
+         * dans l ancienne langue et croirait son choix perdu) et elle doit <b>revenir
          * seule</b> a la connexion suivante. C est l aller-retour de session qui separe
          * « applique » de « memorise » : la colonne etait deja lue a la connexion, mais
          * aucun ecran ne l ecrivait, si bien qu elle valait {@code fr} pour tout le
@@ -200,7 +200,7 @@ class ProfilIT extends SocleIntegration {
             //    La connexion passe par le VRAI formulaire. Les post-processeurs
             //    d authentification de MockMvc ne publient aucun evenement de
             //    connexion, donc LangueApresConnexionHandler ne tournerait pas et le
-            //    test passerait au vert sans rien prouver — piege deja rencontre au
+            //    test passerait au vert sans rien prouver : piege deja rencontre au
             //    lot F6, et consigne au registre.
             MockHttpSession nouvelleSession = new MockHttpSession();
             mvc.perform(post("/connexion").with(csrf()).session(nouvelleSession)

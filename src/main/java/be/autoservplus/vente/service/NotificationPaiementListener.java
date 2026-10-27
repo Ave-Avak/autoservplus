@@ -16,12 +16,12 @@ import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
  * Previent le membre (recu par courriel) et le garage quand une commande passe a
- * PAYEE. Meme patron que {@code NotificationInterventionListener} : AFTER_COMMIT
- * — un rollback emporte l evenement, un courriel n annonce jamais un encaissement
- * non acquis — et exceptions du fournisseur avalees apres journal.
+ * PAYEE. Meme patron que {@code NotificationInterventionListener} : AFTER_COMMIT :
+ * un rollback emporte l evenement, un courriel n annonce jamais un encaissement
+ * non acquis, et exceptions du fournisseur avalees apres journal.
  *
  * <p>Cote garage : pas d infrastructure d adresse admin ni d ecran commandes a ce
- * stade — la notification est un journal structure, que le tableau de bord admin
+ * stade, la notification est un journal structure, que le tableau de bord admin
  * a venir relaiera (le drapeau {@code rupture_a_honorer} y est deja persiste).</p>
  */
 @Component
@@ -54,7 +54,7 @@ public class NotificationPaiementListener {
                     membre.getEmail(), membre.getPrenom(), commande.getNumero(), montant));
             log.info("Commande {} payee ({}) : a preparer par le garage{}.",
                     commande.getNumero(), montant,
-                    commande.isRuptureAHonorer() ? " — RUPTURE A HONORER" : "");
+                    commande.isRuptureAHonorer() ? ", RUPTURE A HONORER" : "");
         } catch (RuntimeException e) {
             log.warn("Notification de paiement impossible pour la commande {} : {}",
                     evenement.referenceCommande(), e.getMessage());

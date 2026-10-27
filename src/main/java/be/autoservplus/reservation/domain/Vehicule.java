@@ -144,18 +144,18 @@ public class Vehicule extends BaseEntity {
      * {@code ON DELETE RESTRICT}). La plaque est une donnee a caractere personnel :
      * elle identifie indirectement une personne aupres de la DIV. Le numero de
      * chassis en est une autre, et le kilometrage renseigne sur les habitudes de
-     * deplacement — les trois partent.</p>
+     * deplacement. Les trois partent.</p>
      *
      * <p><b>Marque, modele, motorisation et annee restent</b> : ils decrivent un
      * objet technique, ne designent personne, et sont ce qui rend l historique encore
      * lisible pour le garage.</p>
      *
      * <p><b>L annee a longtemps ete effacee ici, par exces de prudence.</b> C etait une
-     * incoherence : elle releve de la meme categorie que la marque et le modele — une
+     * incoherence : elle releve de la meme categorie que la marque et le modele, une
      * caracteristique du vehicule, pas de son proprietaire. « Golf diesel de 2015 » ne
      * designe pas davantage quelqu un que « Golf diesel ». Le critere retenu est net :
      * part ce qui identifie une personne (plaque, chassis) ou renseigne sur son
-     * comportement (kilometrage) ; reste ce qui decrit l objet.</p>
+     * comportement (kilometrage). Reste ce qui decrit l objet.</p>
      *
      * <p>La plaque de substitution doit rester unique : {@code uq_vehicule_plaque_active}
      * s applique a tout vehicule non supprime logiquement, y compris anonymise.

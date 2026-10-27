@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="'Rendez-vous ' + ${rdv.numero()} + ' — AutoServ+'">Rendez-vous — AutoServ+</title>
+    <title th:text="'Rendez-vous ' + ${rdv.numero()} + ' | AutoServ+'">Rendez-vous | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -14,7 +14,7 @@
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <p><a th:href="@{/mes-rendez-vous}">← Mes rendez-vous</a></p>
+    <p><a th:href="@{/mes-rendez-vous}">Retour à mes rendez-vous</a></p>
 
     <h1 th:text="'Rendez-vous ' + ${rdv.numero()}">Rendez-vous RDV-2026-0001</h1>
 
@@ -33,7 +33,7 @@
         </div>
         <div>
             <dt>Heure</dt>
-            <dd th:text="${rdv.heureDebut()} + ' – ' + ${rdv.heureFin()}">10:00 – 11:00</dd>
+            <dd th:text="${rdv.heureDebut()} + ' - ' + ${rdv.heureFin()}">10:00 - 11:00</dd>
         </div>
         <div>
             <dt>Véhicule</dt>
@@ -70,7 +70,7 @@
       Export iCalendar (F38), proposé sur les seuls rendez-vous CONFIRMÉS. Une demande
       encore en attente n'a pas de date arrêtée : déposée dans l'agenda du membre, elle
       s'y installerait comme un fait et rien ne viendrait l'en retirer si le garage
-      refusait — le fichier vit chez lui, hors de portée du site. Le contrôleur applique
+      refusait, le fichier vit chez lui, hors de portée du site. Le contrôleur applique
       la même condition, un accès direct à l'adresse répond 404.
     -->
     <p th:if="${rdv.statut()} == 'CONFIRME'" class="actions-page">

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${titre} + ' — AutoServ+'">Commande CMD-2026-0001 — AutoServ+</title>
+    <title th:text="${titre} + ' | AutoServ+'">Commande CMD-2026-0001 | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -33,7 +33,7 @@
         <th:block th:if="${commande.estPayee()}">
             <dt th:text="#{commande.detail.mode-paiement}">Mode de paiement</dt>
             <dd th:if="${commande.methodePaiementConnue()}" th:text="${commande.methodePaiement()}">Bancontact</dd>
-            <!-- Le moyen employe est constate chez le prestataire ; le bouchon de
+            <!-- Le moyen employe est constate chez le prestataire. Le bouchon de
                  developpement ne le renseigne pas. On le dit plutot que d'afficher un
                  moyen inventé. -->
             <dd th:unless="${commande.methodePaiementConnue()}" class="carte-meta"
@@ -97,7 +97,7 @@
     <ul class="liste-actions">
         <!-- Reprise du paiement, même raison qu'à la liste : le bouton de la page de
              confirmation ne sert qu'une fois, et une commande non payée reste payable
-             pendant tout son délai RM-21. La condition n'est qu'un affichage — la
+             pendant tout son délai RM-21. La condition n'est qu'un affichage : la
              garde vit dans PaiementService.initierPaiement, qui refuse une commande
              déjà payée, annulée ou appartenant à autrui. En tête de liste : c'est la
              seule démarche qui expire. -->

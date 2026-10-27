@@ -106,7 +106,7 @@ public class EtapesConnexionController {
             case REFUSE -> {
                 modele.addAttribute("titre", msg("connexion.etape.second-facteur.titre"));
                 modele.addAttribute("erreur", msg("connexion.etape.second-facteur.erreur"));
-                // Le champ de secours ne sert qu a la saisie ; le verdict est celui du
+                // Le champ de secours ne sert qu a la saisie. Le verdict est celui du
                 // meme service. Le rouvrir evite de faire chercher a nouveau le lien.
                 modele.addAttribute("secoursOuvert", MODE_SECOURS.equals(mode));
                 yield VUE_SECOND_FACTEUR;

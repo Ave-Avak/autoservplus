@@ -12,7 +12,7 @@ import java.util.List;
  * @param page    index de la page rendue, a partir de zero
  * @param taille  nombre d elements demandes par page
  * @param total   nombre total d elements, toutes pages confondues
- * @param liens   navigation hypermedia ; {@code next} et {@code prev} n apparaissent
+ * @param liens   navigation hypermedia. {@code next} et {@code prev} n apparaissent
  *                que lorsqu ils menent quelque part
  */
 public record PagePublique<T>(

@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Machines a etats du paiement et de la commande : les gardes vivent dans les
  * entites, en particulier celles qui tranchent la course job d expiration /
- * webhook tardif — une PAYEE ne redevient pas ANNULEE, une ANNULEE ne devient
+ * webhook tardif, une PAYEE ne redevient pas ANNULEE, une ANNULEE ne devient
  * pas PAYEE, un REUSSI est irreversible.
  */
 @DisplayName("Machines a etats paiement et commande")

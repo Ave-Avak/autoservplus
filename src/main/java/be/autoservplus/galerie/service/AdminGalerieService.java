@@ -22,14 +22,14 @@ import java.util.UUID;
  * {@code /admin/**} filtre deja le role, le service refuse en second.</p>
  *
  * <p><b>Ordre d ecriture : fichier puis base.</b> Le fichier est ecrit avant la ligne
- * pour qu un echec de stockage — disque plein, droits — fasse echouer la transaction
+ * pour qu un echec de stockage (disque plein, droits) fasse echouer la transaction
  * avant qu elle ne cree une ligne pointant un fichier absent. L inverse laisserait des
- * images cassees en base. Le cas residuel — transaction annulee apres ecriture du
- * fichier — laisse un fichier orphelin sur le disque : c est un cout de place, pas une
+ * images cassees en base. Le cas residuel (transaction annulee apres ecriture du
+ * fichier) laisse un fichier orphelin sur le disque : c est un cout de place, pas une
  * incoherence visible, et c est le sens dans lequel il vaut mieux se tromper.</p>
  *
- * <p><b>Suppression : base puis fichier.</b> Symetriquement, la ligne part d abord ;
- * si le fichier resiste, {@code StockageMedia.supprimer} journalise sans lever, et
+ * <p><b>Suppression : base puis fichier.</b> Symetriquement, la ligne part d abord.
+ * Si le fichier resiste, {@code StockageMedia.supprimer} journalise sans lever, et
  * l image a deja disparu de l ecran.</p>
  */
 @Service

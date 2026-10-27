@@ -22,7 +22,7 @@ import java.util.UUID;
 /**
  * Messagerie cote garage (BL-5), sous {@code /admin/messages}.
  *
- * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR ;
+ * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR.
  * {@link AdminMessagerieService} redouble par {@code @PreAuthorize} en defense en
  * profondeur.</p>
  */

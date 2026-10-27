@@ -32,7 +32,7 @@ import java.util.function.Supplier;
  * <p><b>Toute exception est avalee apres journal.</b> Le patron est celui de
  * {@code NotificationPaiementListener} : la transaction metier est deja committee et
  * ne peut plus etre defaite, faire remonter l echec ne rendrait service a personne. Une
- * notification manquante est un desagrement ; une transition de rendez-vous perdue est
+ * notification manquante est un desagrement. Une transition de rendez-vous perdue est
  * un incident. Le courriel, lui, part par son propre chemin et n est pas affecte.</p>
  *
  * <p><b>Journalisation sans donnee personnelle</b> : seules les references techniques
@@ -117,9 +117,9 @@ public class NotificationEvenementListener {
     }
 
     /**
-     * Decision de retractation (F30). L evenement couvre les deux issues ; le libelle
+     * Decision de retractation (F30). L evenement couvre les deux issues. Le libelle
      * se choisit sur le statut committe. Une validation porte le <b>numero d avoir</b>,
-     * qui est ce que le membre doit retrouver ; un refus porte le numero de commande,
+     * qui est ce que le membre doit retrouver. Un refus porte le numero de commande,
      * puisqu aucun avoir n a ete emis. Le <b>motif du refus n est pas notifie</b> : il
      * est redige librement par l administrateur et reste sur l ecran authentifie.
      */

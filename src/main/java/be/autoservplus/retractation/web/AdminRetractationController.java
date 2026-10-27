@@ -30,11 +30,11 @@ import java.util.UUID;
  * <p>Calque sur {@code AdminRdvController} : la protection d URL {@code /admin/**}
  * de {@code SecuriteConfig} filtre le role ADMINISTRATEUR,
  * {@code AdminRetractationService} redouble par {@code @PreAuthorize} en defense en
- * profondeur, et le controleur ne duplique pas l annotation — patron du projet.</p>
+ * profondeur, et le controleur ne duplique pas l annotation, patron du projet.</p>
  *
  * <p>Les deux decisions suivent PRG : POST, flash message ou erreur, redirection vers
  * la file. Le refus exige un motif et passe donc par une page dediee plutot que par
- * un champ inline dans la liste — lisible, et testable independamment.</p>
+ * un champ inline dans la liste, lisible, et testable independamment.</p>
  *
  * <p><b>Validation sans page intermediaire</b>, contrairement au refus : la
  * validation est le geste attendu, le dossier a deja ete examine, et le bouton porte
@@ -76,7 +76,7 @@ public class AdminRetractationController {
             redirection.addFlashAttribute("erreur", e.getMessage());
         } catch (PrestataireIndisponibleException e) {
             // Le remboursement est appele DANS la transaction de validation : un refus
-            // du prestataire annule tout — avoir, numero rendu au compteur, bascule de
+            // du prestataire annule tout (avoir, numero rendu au compteur, bascule de
             // la commande. L administrateur doit donc lire que rien n a ete fait et
             // qu il peut reessayer, pas une page d erreur qui laisserait croire a un
             // etat indetermine. Le message de l exception n est pas affiche : il peut

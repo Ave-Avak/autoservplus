@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * etaient morts sur tout deploiement sans Turnstile.</p>
  *
  * <p>Une cle vide n est pas une cle : la condition le dit desormais, et ce test le
- * verifie par l effet — un compte est reellement cree.</p>
+ * verifie par l effet, un compte est reellement cree.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc

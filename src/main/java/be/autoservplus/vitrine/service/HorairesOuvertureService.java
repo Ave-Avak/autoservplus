@@ -23,7 +23,7 @@ import java.util.Map;
  * simple a ecrire et fausse a la premiere modification : le garage aurait ferme le
  * samedi dans le moteur de reservation et serait reste ouvert sur sa page de
  * contact. Un horaire affiche qui contredit l agenda reel est pire qu un horaire
- * absent — le client se deplace.</p>
+ * absent, car le client se deplace.</p>
  *
  * <p>Le format d heure est {@code HH:mm}, volontairement <b>insensible a la
  * locale</b> d affichage : le neerlandais et l anglais britannique ne notent pas
@@ -37,8 +37,8 @@ public class HorairesOuvertureService {
 
     private static final DateTimeFormatter HEURE = DateTimeFormatter.ofPattern("HH:mm");
 
-    /** Tiret demi-cadratin : ponctuation, pas un libelle — rien a traduire. */
-    private static final String SEPARATEUR = " – ";
+    /** Trait d union entre deux heures : ponctuation, pas un libelle, donc rien a traduire. */
+    private static final String SEPARATEUR = " - ";
 
     private final PlageOuvertureRepository plages;
 
@@ -50,8 +50,8 @@ public class HorairesOuvertureService {
      * Les sept jours dans l ordre ISO (lundi ... dimanche), fermetures comprises.
      *
      * <p>La semaine est rendue <b>entiere</b> et non reduite aux jours ouverts :
-     * afficher « Fermé » est une information, sauter la ligne n en est pas une —
-     * le lecteur ne saurait pas distinguer un dimanche de fermeture d un oubli de
+     * afficher « Fermé » est une information, sauter la ligne n en est pas une.
+     * Le lecteur ne saurait pas distinguer un dimanche de fermeture d un oubli de
      * saisie.</p>
      */
     public List<JourOuvertureVue> semaine() {

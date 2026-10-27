@@ -32,23 +32,23 @@ import static be.autoservplus.facturation.service.StylePdf.pourcentage;
 import static be.autoservplus.facturation.service.StylePdf.tableauInvisible;
 
 /**
- * Composition du PDF d une note de credit (F30), avec OpenPDF — jamais iText, dont
+ * Composition du PDF d une note de credit (F30), avec OpenPDF : jamais iText, dont
  * la licence AGPL est incompatible avec un logiciel proprietaire.
  *
  * <p><b>Mentions obligatoires du document rectificatif</b> (AR n°1, art. 12) : outre
- * celles d une facture — numero, date, identification complete de l emetteur et du
- * client, detail par ligne, ventilation de la base imposable par taux — la note de
+ * celles d une facture (numero, date, identification complete de l emetteur et du
+ * client, detail par ligne, ventilation de la base imposable par taux) la note de
  * credit porte la <b>reference precise de la facture qu elle corrige</b> (numero et
  * date) et la mention de restitution de TVA. Sans ce rattachement, elle ne corrige
  * rien de verifiable.</p>
  *
  * <p>Meme charte et memes primitives que la facture ({@link StylePdf}) : le client
  * recoit les deux documents et les compare. Seuls changent le titre, le bloc de
- * reference a l original et les mentions de pied — c est-a-dire exactement ce qui
+ * reference a l original et les mentions de pied, c est-a-dire exactement ce qui
  * distingue les deux documents, et rien d autre.</p>
  *
  * <p>Aucune chaine en dur : chaque libelle passe par le {@code MessageSource}, dans
- * la langue du membre — la meme que celle de la facture corrigee.</p>
+ * la langue du membre, la meme que celle de la facture corrigee.</p>
  */
 @Component
 public class GenerateurPdfAvoir {
@@ -88,7 +88,7 @@ public class GenerateurPdfAvoir {
     // --- blocs du document -------------------------------------------------------------
 
     /**
-     * Bandeau : emetteur a gauche, identite du document a droite — avec la reference
+     * Bandeau : emetteur a gauche, identite du document a droite, avec la reference
      * a la facture corrigee, qui est la mention distinctive de l avoir.
      */
     private PdfPTable enTete(DocumentAvoir document) {
@@ -149,7 +149,7 @@ public class GenerateurPdfAvoir {
 
     /**
      * Detail par ligne, identique a celui de la facture : c est le meme achat qui est
-     * annule. Les montants restent positifs — le sens du document est porte par son
+     * annule. Les montants restent positifs : le sens du document est porte par son
      * titre et par sa mention de pied, pas par un signe que le lecteur devrait
      * interpreter.
      */
@@ -221,7 +221,7 @@ public class GenerateurPdfAvoir {
                 police(8, Font.NORMAL, GRIS_TEXTE)));
         mentions.add(new Phrase(libelle(document, "facture.mention.conservation") + "\n\n",
                 police(8, Font.NORMAL, GRIS_TEXTE)));
-        mentions.add(new Phrase("%s — %s %s — %s %s — %s %s".formatted(
+        mentions.add(new Phrase("%s, %s %s, %s %s, %s %s".formatted(
                         garage.raisonSociale(),
                         libelle(document, "facture.emetteur.bce"), garage.numeroBce(),
                         libelle(document, "facture.emetteur.tva"), garage.numeroTva(),

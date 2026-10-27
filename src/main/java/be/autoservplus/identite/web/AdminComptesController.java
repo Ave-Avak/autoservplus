@@ -30,7 +30,7 @@ import java.util.UUID;
 /**
  * Gestion des comptes depuis le back-office (CdC 5.2.3).
  *
- * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR ; le service
+ * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR. Le service
  * redouble par {@code @PreAuthorize}, et c est lui qui porte l exclusivite des
  * pouvoirs sur les comptes privilegies. Le controleur n arbitre rien : il affiche,
  * transmet, et traduit les refus.</p>

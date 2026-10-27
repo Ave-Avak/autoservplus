@@ -194,7 +194,7 @@ public class AdminRdvService {
      * <p>Point d ecriture <b>unique</b> des transitions : c est donc ici, et nulle part
      * ailleurs, qu est publie {@link RdvStatutModifieEvent} (BL-6). Toute transition
      * ajoutee plus tard a la machine a etats notifiera le membre sans qu on ait a y
-     * penser — l oubli n est pas possible. L evenement part meme si le courriel a
+     * penser : l oubli n est pas possible. L evenement part meme si le courriel a
      * echoue : les deux canaux sont independants, et {@code notifierSansEchouer} a deja
      * absorbe l echec avant ce point.</p>
      */
@@ -218,7 +218,7 @@ public class AdminRdvService {
      * <p>Un echec rend {@code null} au lieu de remonter. La hierarchie est explicite :
      * la confirmation est l information que le membre attend, le fichier d agenda en
      * est le confort. Laisser l exception remonter la ferait absorber un cran plus
-     * haut par {@code notifierSansEchouer} — la transition survivrait, mais le
+     * haut par {@code notifierSansEchouer} : la transition survivrait, mais le
      * courriel ne partirait pas du tout, c est-a-dire qu on priverait le membre de
      * l essentiel faute d accessoire.</p>
      */

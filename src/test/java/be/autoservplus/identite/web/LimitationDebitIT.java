@@ -30,7 +30,7 @@ import be.autoservplus.support.SocleIntegration;
  *
  * <p><b>Chaque cas fixe sa propre adresse IP.</b> MockMvc ne traverse pas Tomcat :
  * sans cela toutes les requetes viendraient de {@code 127.0.0.1} et se partageraient
- * un unique budget d IP, ce qui coupleraient des cas qui n ont rien a voir — et
+ * un unique budget d IP, ce qui coupleraient des cas qui n ont rien a voir, et
  * ferait echouer le dernier ecrit plutot que le fautif. Les adresses employees sont
  * dans {@code 203.0.113.0/24}, plage reservee a la documentation (RFC 5737).</p>
  *
@@ -268,7 +268,7 @@ class LimitationDebitIT extends SocleIntegration {
          * recherche du compte, l inconnue ne serait jamais plafonnee et la difference
          * de comportement revelerait l existence du compte.
          *
-         * <p>Les deux corps sont compares apres normalisation — voir
+         * <p>Les deux corps sont compares apres normalisation : voir
          * {@link #corpsNormalise}. Comparer les octets bruts ferait echouer le test
          * sur le seul jeton CSRF, qui varie legitimement a chaque requete.</p>
          */
@@ -306,7 +306,7 @@ class LimitationDebitIT extends SocleIntegration {
             assertThat(corps).doesNotContain(email);
             // Le message parle du demandeur, pas du titulaire : « ce compte » y ferait
             // entrer l existence du compte par la porte du texte. Assertion portee sur
-            // le texte SERVI, commentaires retires — voir sansCommentaires : un
+            // le texte SERVI, commentaires retires, voir sansCommentaires : un
             // commentaire de gabarit s adresse au developpeur, pas au visiteur, et la
             // premiere version de ce cas echouait sur le commentaire qui explique
             // precisement que le message ne dit pas « ce compte ».
@@ -318,7 +318,7 @@ class LimitationDebitIT extends SocleIntegration {
         void statutIdentique() throws Exception {
             String inconnue = "personne-" + COMPTEUR.getAndIncrement() + "@exemple.be";
             for (int i = 0; i <= MAX_PAR_ADRESSE; i++) {
-                // Chaque appel affirme deja isOk() ; le depassement ne fait pas exception.
+                // Chaque appel affirme deja isOk(). Le depassement ne fait pas exception.
                 demander(RENVOI, inconnue, "203.0.113.24");
             }
         }
@@ -336,7 +336,7 @@ class LimitationDebitIT extends SocleIntegration {
          *
          * <p>MockMvc ne traverse pas la vanne RemoteIp de Tomcat : on ne peut pas y
          * eprouver l extraction de {@code X-Forwarded-For}. Ce que ce cas verrouille
-         * est l autre moitie, et c est celle dont le limiteur depend — le compteur est
+         * est l autre moitie, et c est celle dont le limiteur depend : le compteur est
          * bien tenu par {@code getRemoteAddr()}, donc deux visiteurs distincts ont des
          * budgets distincts, et un en-tete que Tomcat n a pas valide ne vient pas s y
          * substituer.</p>
@@ -367,7 +367,7 @@ class LimitationDebitIT extends SocleIntegration {
 
     private MockHttpServletRequestBuilder requete(String route, String email, String ip) {
         return post(route).param("email", email)
-                // Un formulaire servi par l application porte cet horodatage ; ne pas
+                // Un formulaire servi par l application porte cet horodatage. Ne pas
                 // l envoyer reviendrait a tester un robot, que PiegeAntiBot ecarte.
                 .param(PiegeAntiBot.CHAMP_HORODATAGE, affiche())
                 .with(anonymous()).with(csrf()).header("Accept-Language", "fr")
@@ -385,7 +385,7 @@ class LimitationDebitIT extends SocleIntegration {
      * Corps de la reponse, <b>jeton CSRF neutralise</b>. La normalisation est ecrite
      * ici en clair plutot que cachee dans un utilitaire : ce qu une comparaison de
      * neutralite choisit d ignorer fait partie de ce qu elle affirme. Seul le jeton
-     * CSRF varie d une reponse a l autre — la politique de securite du projet ne pose
+     * CSRF varie d une reponse a l autre : la politique de securite du projet ne pose
      * aucun nonce, {@code script-src} valant {@code 'self'} sans nonce ni hachage.
      */
     private String corpsNormalise(String route, String email, String ip) throws Exception {
@@ -399,7 +399,7 @@ class LimitationDebitIT extends SocleIntegration {
      * Retire les commentaires HTML. Ils sont rendus au visiteur par Thymeleaf mais ne
      * font pas partie de ce qu il LIT : une assertion sur la formulation du message ne
      * doit etre ni satisfaite ni mise en defaut par eux. Normalisation distincte de
-     * celle de {@link #corpsNormalise}, et appliquee au seul cas qui parle du texte —
+     * celle de {@link #corpsNormalise}, et appliquee au seul cas qui parle du texte :
      * l egalite de deux pages, elle, doit continuer de voir les commentaires, au cas
      * ou l un d eux deviendrait un jour conditionnel.
      */
@@ -432,7 +432,7 @@ class LimitationDebitIT extends SocleIntegration {
     /**
      * Horodatage d affichage d un formulaire, place assez loin dans le passe pour
      * satisfaire le delai minimal de {@code PiegeAntiBot} sans faire attendre le test.
-     * Un formulaire servi par l application porte ce champ ; ne pas l envoyer
+     * Un formulaire servi par l application porte ce champ. Ne pas l envoyer
      * reviendrait a tester un robot.
      */
     private static String affiche() {

@@ -22,8 +22,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Menu du back-office, carte « Back-office » de « Mon compte » et lien de l en-tete
  * public, selon le role.
  *
- * <p>L ouverture effective de chaque lien est l affaire de {@code MenusCoherentsIT} ;
- * ici, seulement ce que chaque role voit et ne voit pas.</p>
+ * <p>L ouverture effective de chaque lien est l affaire de {@code MenusCoherentsIT}.
+ * Ici, seulement ce que chaque role voit et ne voit pas.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc

@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{admin.rdv.annuler.titre} + ' — AutoServ+'">Annuler un rendez-vous — AutoServ+</title>
+    <title th:text="#{admin.rdv.annuler.titre} + ' | AutoServ+'">Annuler un rendez-vous | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -15,7 +15,7 @@
 <header th:replace="~{fragments/back-office :: entete}"></header>
 
 <main id="contenu">
-    <p><a th:href="@{/admin/rendez-vous}">← Retour à la liste</a></p>
+    <p><a th:href="@{/admin/rendez-vous}">Retour à la liste</a></p>
 
     <h1>Annuler un rendez-vous</h1>
 
@@ -37,7 +37,7 @@
         </div>
         <div>
             <dt>Heure</dt>
-            <dd th:text="${rdv.heureDebut()} + ' – ' + ${rdv.heureFin()}">10:00 – 11:00</dd>
+            <dd th:text="${rdv.heureDebut()} + ' - ' + ${rdv.heureFin()}">10:00 - 11:00</dd>
         </div>
         <div>
             <dt>Véhicule</dt>

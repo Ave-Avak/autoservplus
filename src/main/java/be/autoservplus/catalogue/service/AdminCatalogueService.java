@@ -47,13 +47,13 @@ import java.util.UUID;
  * lignes de panier, de commande, de RDV et d intervention recopient prix, libelle
  * et taux a leur creation (valeurs figees), le catalogue du jour n a pas voix au
  * chapitre sur l historique. Le service s appuie sur cette recopie, il n a donc
- * aucune precaution supplementaire a prendre ici — l invariant est prouve par
+ * aucune precaution supplementaire a prendre ici. L invariant est prouve par
  * {@code AdminCatalogueServiceIT}.</p>
  *
  * <p>A2/A5 exigent aussi que les modifications soient <b>historisees (qui, quand,
  * quoi)</b> : chaque champ metier reellement modifie ecrit une ligne de
  * {@code historique_modification_catalogue}, dans la meme transaction que la
- * modification. Ce journal trace l evolution du <b>catalogue</b> et rien d autre —
+ * modification. Ce journal trace l evolution du <b>catalogue</b> et rien d autre :
  * il ne dit rien des documents deja emis, qui par construction n ont pas bouge.</p>
  */
 @Service
@@ -141,7 +141,7 @@ public class AdminCatalogueService {
                     "Le code de prestation « %s » est deja utilise.".formatted(donnees.code()));
         }
         // A1 : le nom du service est unique, validation serveur (le schema n impose
-        // l unicite que sur le code — ajouter une contrainte en base demanderait une
+        // l unicite que sur le code : ajouter une contrainte en base demanderait une
         // migration, hors perimetre de ce lot).
         if (prestations.existsByLibelleIgnoreCase(donnees.libelle())) {
             throw new DoublonCatalogueException("libelle", donnees.libelle(),
@@ -191,7 +191,7 @@ public class AdminCatalogueService {
     /**
      * Modifie une prestation (A2). Le code, identite technique, est immuable : le
      * champ {@code code} des donnees est ignore. Les documents deja emis ne sont pas
-     * touches — leurs lignes portent des valeurs figees.
+     * touches : leurs lignes portent des valeurs figees.
      *
      * @throws DoublonCatalogueException si le nouveau nom est pris par une autre prestation
      * @throws RegleMetierException      si la categorie visee est du mauvais type
@@ -288,8 +288,8 @@ public class AdminCatalogueService {
 
     /**
      * Supprime definitivement une prestation (A3), sous la garde <b>RM-29</b> : refuse
-     * des qu un historique (reservation, panier, commande, intervention) la reference —
-     * seule la desactivation est alors permise.
+     * des qu un historique (reservation, panier, commande, intervention) la reference.
+     * Seule la desactivation est alors permise.
      *
      * <p>Divergence assumee avec le principe « aucune suppression physique » du socle
      * ({@code BaseEntity}) : pour un element jamais reference, la suppression definitive
@@ -370,13 +370,13 @@ public class AdminCatalogueService {
     /**
      * Ecrit l historique d une modification (A2, A5) : <b>une ligne par champ
      * reellement modifie</b>, dans la meme transaction que la modification elle-meme.
-     * Un echec ulterieur annule le changement et sa trace ensemble — le journal ne
+     * Un echec ulterieur annule le changement et sa trace ensemble : le journal ne
      * peut ni manquer une modification ni en inventer une.
      *
      * <p>Le diff se fait sur deux photos <b>textuelles</b> de l entite plutot que
      * champ a champ en Java. Deux consequences voulues : la normalisation (echelle des
      * montants notamment) a lieu une seule fois, si bien qu un prix re-soumis
-     * « 75.0 » contre « 75.00 » stocke ne produit aucune ligne fantome ; et la valeur
+     * « 75.0 » contre « 75.00 » stocke ne produit aucune ligne fantome. Et la valeur
      * comparee est exactement celle qui sera stockee, sans traduction intermediaire.</p>
      *
      * <p>Une seule lecture de l horloge et une seule resolution de l auteur pour tout
@@ -399,7 +399,7 @@ public class AdminCatalogueService {
     /**
      * Photo des champs <b>metier</b> d une prestation, dans l ordre du formulaire.
      * Les colonnes d audit ({@code created_*}, {@code updated_*}) en sont exclues :
-     * elles decrivent l ecriture, pas la decision de gestion — les historiser
+     * elles decrivent l ecriture, pas la decision de gestion. Les historiser
      * reviendrait a journaliser le journal. Le code n y figure pas non plus : identite
      * technique immuable, la modification ne peut pas le changer.
      *
@@ -419,7 +419,7 @@ public class AdminCatalogueService {
         return etat;
     }
 
-    /** Photo des champs metier d une piece ; la reference fabricant, immuable, en est exclue. */
+    /** Photo des champs metier d une piece. La reference fabricant, immuable, en est exclue. */
     private static Map<String, String> etatDe(Piece piece) {
         Map<String, String> etat = new LinkedHashMap<>();
         etat.put("categorie", piece.getCategorie().getCode());
@@ -446,7 +446,7 @@ public class AdminCatalogueService {
 
     /**
      * Execute le DELETE avec flush immediat : si une reference est apparue entre le
-     * comptage et la suppression, la FK {@code ON DELETE RESTRICT} refuse — seconde
+     * comptage et la suppression, la FK {@code ON DELETE RESTRICT} refuse, seconde
      * ligne de defense de RM-29, la course est traduite en refus metier plutot qu en
      * erreur 500 au commit.
      */
@@ -471,7 +471,7 @@ public class AdminCatalogueService {
     /**
      * Charge une categorie et verifie sa coherence de type : une prestation vit dans
      * une categorie SERVICE, une piece dans une categorie PIECE. L entite redouble
-     * cette garde dans {@code changerCategorie} — ici, le refus produit un message
+     * cette garde dans {@code changerCategorie} : ici, le refus produit un message
      * metier uniforme pour la creation comme pour la modification.
      */
     private Categorie categorieDeType(String code, TypeCategorie typeAttendu) {

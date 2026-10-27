@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{retractation.titre} + ' — AutoServ+'">Demander l'annulation — AutoServ+</title>
+    <title th:text="#{retractation.titre} + ' | AutoServ+'">Demander l'annulation | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -14,7 +14,7 @@
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <p><a th:href="@{/commandes}" th:text="#{retractation.retour}">← Retour à mes commandes</a></p>
+    <p><a th:href="@{/commandes}" th:text="#{retractation.retour}">Retour à mes commandes</a></p>
 
     <h1 th:text="#{retractation.titre}">Demander l'annulation et le remboursement</h1>
 
@@ -50,7 +50,7 @@
             <!-- Facultatif, et dit comme tel : le droit de retractation est
                  inconditionnel, exiger une justification serait une entrave. -->
             <p id="aide-motif" class="texte-info" th:text="#{retractation.motif.aide}">
-                Vous n'avez pas à vous justifier ; ce champ aide seulement le garage.
+                Vous n'avez pas à vous justifier. Ce champ aide seulement le garage.
             </p>
             <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motif')}" th:errors="*{motif}"></p>
         </div>

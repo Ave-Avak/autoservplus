@@ -9,10 +9,10 @@ import be.autoservplus.vente.domain.StatutPaiement;
  *
  * <p><b>Pourquoi la methode qui relit rend cette information au lieu de la
  * journaliser elle-meme.</b> Le meme traitement idempotent est declenche par deux
- * evenements distincts — le retour du membre depuis la page du prestataire, et la
- * notification serveur a serveur — et la documentation de deploiement demande de les
+ * evenements distincts (le retour du membre depuis la page du prestataire, et la
+ * notification serveur a serveur) et la documentation de deploiement demande de les
  * voir arriver « tour a tour ». Une ligne ecrite au fond du service serait identique
- * dans les deux cas et ne permettrait pas de les distinguer ; ce sont donc les deux
+ * dans les deux cas et ne permettrait pas de les distinguer. Ce sont donc les deux
  * appelants qui redigent la leur, avec le meme constat.</p>
  *
  * <p>Le statut seul ne suffirait pas a montrer l idempotence promise : deux « paye »
@@ -33,12 +33,12 @@ public record IssueRelecture(StatutPaiement statutRelu, Effet effet) {
 
         /**
          * Constat deja fait. Couvre le rejeu d une notification sur une commande deja
-         * payee, et la course perdue contre le job d expiration RM-21 — cette
+         * payee, et la course perdue contre le job d expiration RM-21 : cette
          * derniere ecrit par ailleurs son propre avertissement, qui porte le detail.
          */
         DEJA_TRAITE("deja traite, aucune ecriture"),
 
-        /** Echec ou expiration de CETTE tentative ; la commande reste payable. */
+        /** Echec ou expiration de CETTE tentative. La commande reste payable. */
         TENTATIVE_CLOSE("tentative close, la commande reste payable"),
 
         /** Le paiement n a pas encore abouti, et peut encore aboutir. */

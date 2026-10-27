@@ -30,7 +30,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * substitue par {@link MockRestServiceServer}, qui controle la requete emise autant
  * que la reponse rendue.
  *
- * <p>C est la moitie que ni le bouchon ni un test d integration ne couvrent —
+ * <p>C est la moitie que ni le bouchon ni un test d integration ne couvrent :
  * l integration ne peut pas verifier qu on envoie {@code profileId}, et le bouchon
  * ne parle pas Mollie.</p>
  */
@@ -280,7 +280,7 @@ class MollieGatewayTest {
         @Test
         @DisplayName("un statut inconnu leve plutot que de deviner")
         void statutInconnu() {
-            // Se rabattre sur ECHOUE annulerait peut-etre un paiement reussi ; sur
+            // Se rabattre sur ECHOUE annulerait peut-etre un paiement reussi. Sur
             // REUSSI, livrerait sans encaissement. L incertitude doit remonter.
             serveur.expect(requestTo(API + "/payments/tr_reel1?testmode=true"))
                     .andRespond(withSuccess(paiementJson("chargeback_pending"),

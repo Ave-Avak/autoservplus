@@ -64,7 +64,7 @@ public class ProfilForm {
      *
      * <p>Une adresse partielle n a pas de sens : {@code adresseLisible()} de la
      * facture rend {@code null} des qu il en manque un, et le document sortirait sans
-     * adresse — mention pourtant obligatoire (AR n°1, art. 5). Autant le dire au
+     * adresse, mention pourtant obligatoire (AR n°1, art. 5). Autant le dire au
      * moment de la saisie.</p>
      *
      * <p>Le numero de rue n en fait pas partie : la facture s en passe, et certaines

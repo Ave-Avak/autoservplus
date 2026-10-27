@@ -34,7 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * comme en JSON, sur un vrai serveur.
  *
  * <p>Le test demarre un vrai serveur. Une exception non rattrapee repasse par le
- * conteneur ({@code sendError}, puis dispatch {@code ERROR} vers {@code /error}) ;
+ * conteneur ({@code sendError}, puis dispatch {@code ERROR} vers {@code /error}).
  * MockMvc ne fait jamais ce second passage, c est donc la que la trace sortait sans
  * qu aucun test la voie.</p>
  *

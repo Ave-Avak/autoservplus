@@ -9,12 +9,12 @@ package be.autoservplus.facturation.service;
  * facture et le premier avoir de l annee. Un client qui cite un numero au telephone,
  * un comptable qui classe une piece, doivent pouvoir dire de quel document il s agit
  * sans ouvrir le fichier. Le prefixe suit d ailleurs l usage des autres numeros du
- * projet (CMD-, INT-, RDV-) ; c est la facture qui fait exception, l usage comptable
+ * projet (CMD-, INT-, RDV-). C est la facture qui fait exception, l usage comptable
  * belge voulant qu elle ouvre sur son exercice.</p>
  *
  * <p>Contrairement a la facture, l exercice et la sequence ne sont pas stockes en
  * colonnes separees : la table {@code avoir} du socle ne les prevoit pas et n en a
- * pas besoin — l unicite est portee par {@code uq_avoir_numero} seul, la ou la
+ * pas besoin. L unicite est portee par {@code uq_avoir_numero} seul, la ou la
  * facture doit en plus garantir {@code uq_facture_sequence}. L exercice se relit du
  * numero quand l archivage en a besoin.</p>
  */

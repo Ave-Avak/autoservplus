@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>{@code :invalid} colorait en rouge tout champ requis des l affichage, avant toute
  * saisie : un formulaire vierge se presentait comme une erreur. {@code :user-invalid}
- * n agit qu apres interaction ; le retour de {@code :invalid}, raccourci tentant, est
+ * n agit qu apres interaction. Le retour de {@code :invalid}, raccourci tentant, est
  * refuse ici.</p>
  *
  * <p>Les contrastes sont calcules depuis la feuille. Les liens de langue (1.13:1) et

@@ -20,7 +20,7 @@ import java.util.UUID;
 /**
  * Page de paiement de substitution, servie a l adresse que le prestataire
  * bouchonne annonce. Elle rend la chaine marchande parcourable a l ecran sans
- * aucun service externe — c est le repli lisible quand aucune cle de prestataire
+ * aucun service externe : c est le repli lisible quand aucune cle de prestataire
  * n est fournie.
  *
  * <p><b>Elle s annonce pour ce qu elle est.</b> Banniere permanente « paiement
@@ -31,7 +31,7 @@ import java.util.UUID;
  * serait, elle, indefendable.</p>
  *
  * <p>Active tant qu aucun identifiant de prestataire n est fourni, comme le bouchon
- * qu elle donne a voir — y compris en production, ou un repli annonce vaut mieux
+ * qu elle donne a voir, y compris en production, ou un repli annonce vaut mieux
  * qu une rupture au paiement.</p>
  */
 @Controller

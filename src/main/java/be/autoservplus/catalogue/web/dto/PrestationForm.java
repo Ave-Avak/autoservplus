@@ -14,7 +14,7 @@ import java.math.BigDecimal;
  *
  * <p>Les messages de contrainte sont des cles i18n resolues par le MessageSource
  * de l application (fichiers {@code i18n/messages*}), pas des chaines en dur. Le
- * champ {@code code} n est saisissable qu a la creation ; en edition il voyage en
+ * champ {@code code} n est saisissable qu a la creation. En edition il voyage en
  * champ cache pour satisfaire la validation, et le service l ignore de toute
  * facon (identite technique immuable).</p>
  */

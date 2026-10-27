@@ -48,7 +48,7 @@ import be.autoservplus.support.SocleIntegration;
  *
  * <p>Volontairement <b>sans</b> {@code @Transactional} de classe, contrairement aux
  * autres IT : envelopper les tests dans une transaction rollbackee empecherait tout
- * commit, et le listener {@code AFTER_COMMIT} ne se declencherait jamais — le contrat
+ * commit, et le listener {@code AFTER_COMMIT} ne se declencherait jamais. Le contrat
  * teste est precisement le commit. Consequence : les donnees inserees restent en base
  * du conteneur (jetable, un par classe), d ou les fixtures a suffixe unique.</p>
  */
@@ -90,7 +90,7 @@ class NotificationInterventionIT extends SocleIntegration {
      * Un RDV sur un creneau unique (contrainte d exclusion) et son intervention
      * EN_COURS. La fixture est construite DANS une transaction : le constructeur de
      * {@code Rdv} verifie RM-06 via {@code vehicule.appartientA(membre)}, et le membre
-     * d un vehicule recharge est un proxy lazy — hors session, il ne s initialise pas.
+     * d un vehicule recharge est un proxy lazy, hors session, il ne s initialise pas.
      * La transaction est committee avant le test : c est le commit de {@code terminer},
      * pas celui-ci, que le test observe.
      */

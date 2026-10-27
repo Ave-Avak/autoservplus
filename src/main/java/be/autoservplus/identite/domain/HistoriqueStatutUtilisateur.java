@@ -28,12 +28,12 @@ import java.util.Objects;
  *
  * <p>Journal append-only, sur le patron de {@code HistoriqueStatutIntervention} : une
  * ligne par transition, ecrite dans la transaction de la transition, jamais modifiee
- * ensuite. Aucun {@code deleted_at} — rien ne se supprime dans un journal.</p>
+ * ensuite. Aucun {@code deleted_at}. Rien ne se supprime dans un journal.</p>
  *
  * <p><b>Pourquoi cette table alors que {@code utilisateur} porte deja
  * {@code updated_by}.</b> Les colonnes d audit gardent le DERNIER geste, jamais la
  * suite : suspendre, reactiver, resuspendre n y laisse qu une ligne. Or la question
- * qu on pose a un journal — qui a suspendu ce compte, quand, et pourquoi — porte
+ * qu on pose a un journal (qui a suspendu ce compte, quand, et pourquoi) porte
  * precisement sur ce que l audit ecrase.</p>
  *
  * <p>{@code horodatage} est l instant <b>metier</b>, fourni par l horloge injectee du
@@ -97,7 +97,7 @@ public class HistoriqueStatutUtilisateur {
     }
 
     /**
-     * @param motif obligatoire a la suspension, sans objet a la reactivation —
+     * @param motif obligatoire a la suspension, sans objet a la reactivation :
      *              l obligation est portee par le service, la ou la distinction entre
      *              les deux gestes existe, et non par la base qui sert les deux
      */

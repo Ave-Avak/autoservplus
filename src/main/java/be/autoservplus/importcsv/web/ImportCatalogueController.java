@@ -20,7 +20,7 @@ import java.io.UncheckedIOException;
 /**
  * Import CSV du catalogue (BL-2), sous {@code /admin/import}.
  *
- * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR ;
+ * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR.
  * {@link ImportCatalogueService} redouble par {@code @PreAuthorize}. CSRF actif sur le
  * POST multipart.</p>
  *

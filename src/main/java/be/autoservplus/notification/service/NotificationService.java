@@ -27,7 +27,7 @@ import java.util.Locale;
  *
  * <p><b>Pas de {@code @PreAuthorize} de classe, contrairement au reste du projet.</b>
  * {@link #deposer} est appele par {@code NotificationEvenementListener} <b>apres
- * commit</b>, dans une transaction neuve ou aucun contexte de securite n est etabli —
+ * commit</b>, dans une transaction neuve ou aucun contexte de securite n est etabli :
  * une transition de rendez-vous decidee par l administrateur produit une notification
  * destinee au membre, et l evenement se rejoue hors requete (tache planifiee, webhook
  * du prestataire de paiement). Une garde de classe y leverait
@@ -38,7 +38,7 @@ import java.util.Locale;
  * <p><b>Ownership.</b> Toutes les lectures et le marquage passent par le couple
  * (identifiant, membre) : la table {@code notification} n a pas de reference UUID, son
  * identifiant est un entier sequentiel devinable. Une notification d autrui remonte en
- * {@link RessourceIntrouvableException}, donc 404 et non 403 — meme code qu un
+ * {@link RessourceIntrouvableException}, donc 404 et non 403 : meme code qu un
  * identifiant inconnu, pour ne pas confirmer l existence de la ligne.</p>
  *
  * <p><b>Rendu a la lecture.</b> Le texte est resolu ici, dans la locale courante du
@@ -75,7 +75,7 @@ public class NotificationService {
      * <p>Sans garde de securite : voir le Javadoc de classe. L appelant est un listener
      * {@code AFTER_COMMIT}, jamais un controleur.</p>
      *
-     * @param argument numero metier affiche au membre ; jamais de donnee sensible
+     * @param argument numero metier affiche au membre. Jamais de donnee sensible
      */
     @Transactional
     public void deposer(Utilisateur membre, TypeNotification type, String argument) {

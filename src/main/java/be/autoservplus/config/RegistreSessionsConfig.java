@@ -15,7 +15,7 @@ import org.springframework.security.web.session.HttpSessionEventPublisher;
  * {@code loadUserByUsername}, donc <b>a l authentification seulement</b> : un compte
  * suspendu pendant qu il navigue gardait son acces jusqu a expiration de sa session.
  * La suspension etait immediate sur toute NOUVELLE connexion, et differee sur celles
- * deja ouvertes — ce qui est exactement l inverse de ce qu on attend d une mesure
+ * deja ouvertes, ce qui est exactement l inverse de ce qu on attend d une mesure
  * prise en urgence.</p>
  *
  * <p><b>Le publieur d evenements n est pas un detail.</b> Sans
@@ -26,10 +26,10 @@ import org.springframework.security.web.session.HttpSessionEventPublisher;
  *
  * <p><b>Limite assumee, a savoir enoncer.</b> {@link SessionRegistryImpl} vit en
  * memoire de l instance : les sessions sont perdues au redemarrage, et ne sont pas
- * partagees entre instances. Le redemarrage n est pas un probleme — il invalide de
+ * partagees entre instances. Le redemarrage n est pas un probleme : il invalide de
  * toute facon les sessions, qui vivent dans la meme memoire. Le partage en serait un
  * le jour d une montee en charge horizontale, ou une suspension ne couperait que les
- * sessions portees par l instance qui la traite ; {@code docker-compose.prod.yml} n en
+ * sessions portees par l instance qui la traite. {@code docker-compose.prod.yml} n en
  * lance qu une. Meme famille que les compteurs de debit du lot robustesse, et meme
  * correctif eventuel : un magasin partage.</p>
  */

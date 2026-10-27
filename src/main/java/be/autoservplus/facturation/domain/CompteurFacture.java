@@ -15,12 +15,12 @@ import java.time.Instant;
  * Compteur des factures d un exercice comptable, garant de la numerotation
  * <b>continue</b> exigee par la loi belge (AR n°1, art. 5 : suite ininterrompue).
  *
- * <p>Une ligne par annee civile, l exercice servant de cle primaire — la
+ * <p>Une ligne par annee civile, l exercice servant de cle primaire : la
  * numerotation repart a 1 chaque annee, l annee etant portee par le numero lui-meme.
  * L increment se fait <b>en table</b>, donc dans la transaction qui insere la
  * facture : si celle-ci echoue, l increment est annule avec elle et le numero
  * reste disponible. C est precisement ce qu une sequence PostgreSQL ne sait pas
- * faire — {@code nextval} est non transactionnel par conception et creuse un trou
+ * faire, {@code nextval} est non transactionnel par conception et creuse un trou
  * a chaque rollback.</p>
  *
  * <p>Pas de suppression logique ni de {@code created_at} : ce n est pas une entite

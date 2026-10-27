@@ -12,7 +12,7 @@ import java.util.UUID;
  *
  * <p>L entite ne franchit pas la couche service. Ce qui est <b>volontairement absent</b>
  * importe autant que ce qui est present : ni empreinte de mot de passe, ni jeton de
- * verification, ni jeton de changement d adresse — un ecran de gestion n a aucun usage
+ * verification, ni jeton de changement d adresse. Un ecran de gestion n a aucun usage
  * de secrets d authentification, et les y faire transiter suffirait a les exposer au
  * rendu.</p>
  *

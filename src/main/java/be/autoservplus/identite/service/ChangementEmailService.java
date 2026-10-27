@@ -23,14 +23,14 @@ import java.util.Locale;
 /**
  * Changement d adresse de courriel avec verification prealable (CdC 5.2.2).
  *
- * <p><b>L adresse ne bascule qu une fois la nouvelle prouvee.</b> L alternative —
- * appliquer tout de suite, verifier ensuite — enferme hors de son compte tout membre
+ * <p><b>L adresse ne bascule qu une fois la nouvelle prouvee.</b> L alternative
+ * (appliquer tout de suite, verifier ensuite) enferme hors de son compte tout membre
  * qui se trompe d une lettre : l adresse en base ne lui appartient plus, la
  * reinitialisation de mot de passe part vers une boite qui n existe pas, et plus rien
  * ne le rattache a sa ligne. L erreur de saisie n est pas un cas rare, c est le cas
  * ordinaire.</p>
  *
- * <p><b>Trois gardes, de natures differentes.</b> Le mot de passe etablit QUI agit —
+ * <p><b>Trois gardes, de natures differentes.</b> Le mot de passe etablit QUI agit :
  * une session volee ne suffit pas a deplacer l adresse, qui est la cle de toutes les
  * recuperations ulterieures. L exigence d une adresse d origine deja verifiee empeche
  * d enchainer les adresses sans jamais en prouver aucune. Le lien envoye a la nouvelle
@@ -39,7 +39,7 @@ import java.util.Locale;
  * <p><b>Neutralite.</b> Le membre qui demande ne doit jamais apprendre si l adresse
  * visee appartient deja a quelqu un : la reponse serait un oracle d existence de
  * compte, sur un formulaire accessible a tout inscrit. Le service se comporte donc a
- * l identique — meme ecran, meme avis a l ancienne adresse — et se contente de ne pas
+ * l identique (meme ecran, meme avis a l ancienne adresse) et se contente de ne pas
  * envoyer le lien. Meme parti que {@link MotDePasseService#demanderReinitialisation}
  * et {@link InscriptionService#demanderRenvoiVerification}.</p>
  */
@@ -49,8 +49,8 @@ public class ChangementEmailService {
     private static final Logger JOURNAL = LoggerFactory.getLogger(ChangementEmailService.class);
 
     /**
-     * Validite volontairement courte. Ce jeton ne donne pas acces au compte — il
-     * deplace seulement l adresse — mais une demande qui traine est une prise ouverte :
+     * Validite volontairement courte. Ce jeton ne donne pas acces au compte (il
+     * deplace seulement l adresse) mais une demande qui traine est une prise ouverte :
      * un lien recu il y a des semaines s applique encore alors que le membre a oublie
      * l avoir demande, et le simple fait de le suivre par curiosite ferait basculer le
      * compte.
@@ -87,7 +87,7 @@ public class ChangementEmailService {
      *
      * @throws ChangementEmailRefuseException si le mot de passe est faux, l adresse
      *                              d origine non verifiee, l adresse identique a
-     *                              l actuelle, ou le plafond de demandes atteint —
+     *                              l actuelle, ou le plafond de demandes atteint,
      *                              tous des refus qui ne parlent que du compte de
      *                              l appelant
      */
@@ -179,7 +179,7 @@ public class ChangementEmailService {
 
         // Revalidation obligatoire : l index partiel reserve l adresse contre une autre
         // DEMANDE, pas contre une INSCRIPTION intervenue depuis. Sans ce controle, la
-        // bascule echouerait sur uq_utilisateur_email au flush — c est-a-dire par une
+        // bascule echouerait sur uq_utilisateur_email au flush, c est-a-dire par une
         // erreur technique, au pire moment et sans message exploitable.
         if (repository.existsByEmailIgnoreCase(membre.getEmailEnAttente())) {
             membre.annulerChangementEmail();

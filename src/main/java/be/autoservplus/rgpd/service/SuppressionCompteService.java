@@ -24,14 +24,14 @@ import java.util.Base64;
 import java.util.List;
 
 /**
- * Suppression de compte par anonymisation (F23, RM-05 — article 17 RGPD).
+ * Suppression de compte par anonymisation (F23, RM-05 : article 17 RGPD).
  *
  * <p><b>Le droit a l effacement n est pas absolu.</b> L article 17.3.b ecarte
  * l obligation d effacer quand le traitement sert une obligation legale : le Code de
  * la TVA (art. 60) impose dix ans de conservation des factures, et une facture doit
  * porter l identite du client. Les deux exigences ne s opposent pas, elles ne portent
- * pas sur le meme objet. Le document comptable reste intact — ni regenere, ni
- * modifie ; la ligne applicative qui designe la personne est videe.</p>
+ * pas sur le meme objet. Le document comptable reste intact, ni regenere, ni
+ * modifie. La ligne applicative qui designe la personne est videe.</p>
  *
  * <p><b>Ce service n ecrit donc jamais une donnee comptable.</b> Les tables facture,
  * avoir et paiement ne stockent aucun nom : elles pointent {@code commande} puis
@@ -41,11 +41,11 @@ import java.util.List;
  *
  * <p><b>Deux gardes avant tout effet de bord</b>, et dans cet ordre : le mot de passe
  * prouve l identite, le mot recopie prouve l intention. Un echec de l une ou l autre
- * ne laisse aucune trace d ecriture — les verifications precedent la premiere
+ * ne laisse aucune trace d ecriture. Les verifications precedent la premiere
  * mutation, elles ne la rattrapent pas.</p>
  *
  * <p><b>Ordre transactionnel</b> : capture de l adresse, vehicules, compte, flush,
- * puis balayage des traces d audit. Le flush n est pas cosmetique — sans lui, l audit
+ * puis balayage des traces d audit. Le flush n est pas cosmetique. Sans lui, l audit
  * JPA reecrirait {@code updated_by} avec l adresse du membre <i>apres</i> le passage
  * du balayage, et l adresse reapparaitrait sur la ligne qu on vient de vider.</p>
  *
@@ -139,7 +139,7 @@ public class SuppressionCompteService {
         int supprimes = anonymiserLeParc(membre);
         int avisNeutralises = anonymiserLesAvis(membre);
         membre.anonymiser(jetonEmail(membre), hachageInerte(), horloge.instant());
-        // Le secret TOTP part avec anonymiser() ; les codes de secours encore valables
+        // Le secret TOTP part avec anonymiser(). Les codes de secours encore valables
         // sont invalides, et non supprimes : leur date reste la trace de leur fin.
         codesSecours.invaliderUtilisables(membre.getId(), horloge.instant());
         // Flush avant le balayage : voir TracesAuditRepository, l ordre est impose.
@@ -188,7 +188,7 @@ public class SuppressionCompteService {
     // --- anonymisation ------------------------------------------------------------------
 
     /**
-     * Traite le parc du membre, vehicules supprimes logiquement compris — ils portent
+     * Traite le parc du membre, vehicules supprimes logiquement compris : ils portent
      * encore leur plaque.
      *
      * <p><b>Ecart assume avec la lettre du CdC</b>, qui dit « suppression des
@@ -197,7 +197,7 @@ public class SuppressionCompteService {
      * une reservation de parking reference ne peut pas disparaitre sans emporter
      * l historique que la loi et le garage conservent. Le patron est celui de RM-29
      * pour les prestations et pieces : suppression physique si rien ne reference,
-     * anonymisation sinon. L esprit du CdC — plus aucune donnee identifiante — est
+     * anonymisation sinon. L esprit du CdC (plus aucune donnee identifiante) est
      * tenu dans les deux cas.</p>
      *
      * @return le nombre de vehicules reellement supprimes physiquement
@@ -222,7 +222,7 @@ public class SuppressionCompteService {
      *
      * <p><b>Le texte disparait, la note reste.</b> Le commentaire est du champ libre :
      * le membre a pu y ecrire son nom, sa plaque, le nom de son garagiste. La note est
-     * un chiffre de 1 a 5, qui ne designe personne — rattachee a une ligne dont
+     * un chiffre de 1 a 5, qui ne designe personne : rattachee a une ligne dont
      * l auteur porte desormais le jeton anonyme, elle n est pas plus identifiante
      * apres qu avant. L effacer fausserait des moyennes publiques deja affichees, sans
      * rien ajouter au droit a l effacement.</p>
@@ -247,7 +247,7 @@ public class SuppressionCompteService {
 
     /**
      * Adresse de substitution, unique et non routable. L identifiant technique la rend
-     * unique — {@code uq_utilisateur_email} porte sur toute la table, sans exception
+     * unique : {@code uq_utilisateur_email} porte sur toute la table, sans exception
      * pour les lignes supprimees logiquement. Consequence <b>voulue</b> : l adresse
      * reelle redevient libre, la personne peut se reinscrire.
      */
@@ -270,7 +270,7 @@ public class SuppressionCompteService {
      * <p>Un vrai hachage et non une constante : la colonne fait soixante caracteres et
      * l encodeur compare des empreintes au format attendu. Une chaine hors format
      * ferait echouer la verification sur une exception technique au lieu d un refus
-     * propre. Le secret n est stocke nulle part et n est jamais retourne — plus
+     * propre. Le secret n est stocke nulle part et n est jamais retourne : plus
      * personne, y compris le garage, ne peut se connecter a ce compte.</p>
      */
     private String hachageInerte() {

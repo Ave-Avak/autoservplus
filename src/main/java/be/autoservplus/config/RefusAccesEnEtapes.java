@@ -15,7 +15,7 @@ import java.io.IOException;
 /**
  * Un refus d acces pendant une connexion partielle renvoie a l etape en cours.
  *
- * <p>Le refus lui-meme est deja acquis — la connexion partielle n a aucune autorite, et
+ * <p>Le refus lui-meme est deja acquis : la connexion partielle n a aucune autorite, et
  * {@code AuthentificationAboutie} l ecarte des routes authentifiees. Ce gestionnaire ne
  * decide rien, il oriente : un 403 brut laisserait l utilisateur devant une page
  * d erreur, sans savoir qu il lui reste un code a saisir. Tout autre refus suit le

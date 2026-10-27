@@ -10,7 +10,7 @@
   Le champ piege porte un nom metier plausible (societe) et non « honeypot », qu'un
   robot reconnaitrait. Il est retire du parcours d'accessibilite : sans tabindex="-1"
   et aria-hidden="true", un lecteur d'ecran l'annoncerait et un gestionnaire de mots
-  de passe pourrait le remplir — le piege se refermerait sur les utilisateurs qu'il
+  de passe pourrait le remplir, le piege se refermerait sur les utilisateurs qu'il
   est cense servir. autocomplete="off" pour la meme raison.
 
   Le masquage passe par une classe CSS et non par type="hidden" : un champ cache par
@@ -30,7 +30,7 @@
   le formulaire fonctionne sur les trois autres couches, et afficher un widget vide
   n'apprendrait rien au visiteur sinon que quelque chose ne va pas.
 
-  Le script vient de challenges.cloudflare.com, autorise dans script-src ; la trame
+  Le script vient de challenges.cloudflare.com, autorise dans script-src. La trame
   qu'il ouvre l'est par frame-src. Voir SecuriteConfig pour la politique complete.
 -->
 <th:block th:fragment="turnstile(cleSite)" th:if="${cleSite != null and !cleSite.isEmpty()}">

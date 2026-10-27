@@ -19,15 +19,15 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
- * Rubrique « Supprimer mon compte » (F23, RM-05 — droit a l effacement, article 17
+ * Rubrique « Supprimer mon compte » (F23, RM-05 : droit a l effacement, article 17
  * RGPD).
  *
  * <p>Self-service strict : le membre supprime <b>son</b> compte. L identite vient de
- * {@code @AuthenticationPrincipal}, jamais d un parametre — il n existe aucune URL
+ * {@code @AuthenticationPrincipal}, jamais d un parametre : il n existe aucune URL
  * permettant de designer un autre titulaire, et donc aucun ecran administrateur a
  * proteger.</p>
  *
- * <p><b>Deux gardes, deux natures.</b> Le mot de passe prouve qui agit ; le mot
+ * <p><b>Deux gardes, deux natures.</b> Le mot de passe prouve qui agit. Le mot
  * recopie prouve que l action est voulue. L operation est irreversible : elle ne se
  * declenche pas sur un clic depuis un poste laisse sans surveillance.</p>
  *
@@ -35,9 +35,9 @@ import org.springframework.web.bind.annotation.RequestParam;
  * {@link SecurityContextLogoutHandler}, le mecanisme meme du {@code /deconnexion}
  * configure. Verification faite sur {@code SecuriteConfig} : pas de
  * {@code rememberMe}, pas de {@code SessionRegistry}, pas de {@code spring-session},
- * pas de table {@code persistent_logins} — il n existe donc pas d autre porte a
+ * pas de table {@code persistent_logins}, il n existe donc pas d autre porte a
  * fermer. Une revocation qui oublierait un jeton persistant laisserait un acces
- * ouvert sur un compte suppose efface ; ce n est pas le cas ici, et le jour ou un
+ * ouvert sur un compte suppose efface. Ce n est pas le cas ici, et le jour ou un
  * remember-me sera ajoute, ce point devra etre repris.</p>
  *
  * <p>Le refus voyage en <b>code</b> dans l URL et le GET le retraduit en message
@@ -76,7 +76,7 @@ public class SuppressionCompteController {
      *
      * <p>La deconnexion suit le commit du service : invalider la session avant
      * laisserait, si la transaction echouait, un membre deconnecte d un compte
-     * toujours actif — l inverse exact de ce qu on veut.</p>
+     * toujours actif, l inverse exact de ce qu on veut.</p>
      */
     @PostMapping("/supprimer-mon-compte")
     public String supprimer(@AuthenticationPrincipal UserDetails membre,
@@ -102,7 +102,7 @@ public class SuppressionCompteController {
 
     /**
      * Page publique de confirmation. Publique par necessite : a l instant ou elle
-     * s affiche, la session vient d etre invalidee et le compte n existe plus — une
+     * s affiche, la session vient d etre invalidee et le compte n existe plus. Une
      * page authentifiee renverrait vers la connexion, avec un formulaire que plus
      * aucun identifiant ne satisfait.
      */
@@ -117,7 +117,7 @@ public class SuppressionCompteController {
             case ERREUR_MOT_DE_PASSE -> java.util.Optional.of(msg("suppression.erreur.mot-de-passe"));
             case ERREUR_CONFIRMATION -> java.util.Optional.of(msg("suppression.erreur.confirmation"));
             case ERREUR_IMPOSSIBLE -> java.util.Optional.of(msg("suppression.erreur.impossible"));
-            // Un code inconnu — l URL est modifiable a la main — ne produit aucun
+            // Un code inconnu (l URL est modifiable a la main) ne produit aucun
             // message plutot qu une page en erreur.
             default -> java.util.Optional.empty();
         };

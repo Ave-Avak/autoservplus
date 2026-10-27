@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Connexion en plusieurs etapes, de bout en bout, par le VRAI formulaire de connexion.
  *
  * <p>Aucun cas n emploie {@code user(...)} pour etablir la connexion : ce raccourci
- * installe une authentification complete et sauterait precisement ce qui est a prouver —
+ * installe une authentification complete et sauterait precisement ce qui est a prouver,
  * que le mot de passe seul n ouvre rien. C est la lecon du registre sur les tests qui
  * court-circuitent une couche.</p>
  */

@@ -25,17 +25,17 @@ import java.util.UUID;
 /**
  * Note de credit : <b>seul moyen legal de corriger une facture deja emise</b> (F30).
  *
- * <p>La facture ne se rectifie pas et ne s annule pas — le trigger
+ * <p>La facture ne se rectifie pas et ne s annule pas : le trigger
  * {@code tg_facture_immuable} (V6) le refuse en base, et c est precisement ce refus
  * qui justifie l existence de cette entite. Corriger une facture, c est emettre un
- * second document qui la contre-passe ; l original reste au dossier, les deux se
+ * second document qui la contre-passe. L original reste au dossier, les deux se
  * lisent ensemble.</p>
  *
  * <p><b>Contre-passation exacte</b> : les trois montants sont ceux de la facture
  * d origine, recopies tels quels et <b>positifs</b>. Le sens est porte par la nature
- * du document, pas par le signe des montants — le CHECK {@code ck_avoir_montants} du
+ * du document, pas par le signe des montants : le CHECK {@code ck_avoir_montants} du
  * socle exige d ailleurs des montants positifs ou nuls. Un avoir de 48,38 EUR annule
- * une facture de 48,38 EUR ; le stocker en -48,38 obligerait chaque lecteur a savoir
+ * une facture de 48,38 EUR. Le stocker en -48,38 obligerait chaque lecteur a savoir
  * quelle convention de signe a ete retenue.</p>
  *
  * <p><b>Pas de suppression logique</b>, comme {@link Facture} : la loi impose sept
@@ -43,7 +43,7 @@ import java.util.UUID;
  * correction. L entite n herite donc pas de {@code BaseEntity}, qui porterait
  * {@code deleted_at}. Elle est immuable apres emission, defendue a deux etages :
  * {@code updatable = false} au mapping, {@code tg_avoir_immuable} (V27) en base.
- * Seul {@code cheminPdf} bouge — le document est archive apres coup, sans que son
+ * Seul {@code cheminPdf} bouge. Le document est archive apres coup, sans que son
  * contenu comptable change.</p>
  *
  * <p><b>Motif</b> : stocke sous une forme stable et non traduite (le nom du motif
@@ -160,7 +160,7 @@ public class Avoir {
     /**
      * Exercice comptable de la note de credit, lu de son numero.
      *
-     * <p>Le numero a ete attribue par le compteur de l exercice ; le relire est donc
+     * <p>Le numero a ete attribue par le compteur de l exercice. Le relire est donc
      * exact par construction, la ou deduire l annee de {@code date_emission}
      * dependrait du fuseau retenu pour la conversion et pourrait basculer d un
      * exercice a l autre dans la nuit du 31 decembre.</p>

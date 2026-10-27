@@ -17,17 +17,17 @@ import java.util.Objects;
 
 /**
  * Ligne d un panier : une piece detachee et sa quantite, aux conditions <b>figees
- * a l ajout</b> (libelle, prix unitaire HTVA, taux TVA copies depuis la piece) —
- * un changement de catalogue ulterieur ne touche pas un panier existant. Invariant
- * de conception, meme recopie que {@code LigneRdv} et {@code LigneIntervention} ;
- * aucun numero de regle au CdC ne couvre le figeage lui-meme.
+ * a l ajout</b> (libelle, prix unitaire HTVA, taux TVA copies depuis la piece).
+ * Un changement de catalogue ulterieur ne touche pas un panier existant. Invariant
+ * de conception, meme recopie que {@code LigneRdv} et {@code LigneIntervention}.
+ * Aucun numero de regle au CdC ne couvre le figeage lui-meme.
  *
  * <p>Pas de suppression logique : la ligne n existe que par son panier, un retrait
  * passe par {@code orphanRemoval} de la relation parente.</p>
  *
  * <p>La table {@code ligne_panier} sert aussi aux commandes : a la conversion
  * (F14), la meme ligne passe de {@code panier_id} a {@code commande_id} via
- * {@link #rattacherA} — pas de recopie, les valeurs figees voyagent telles
+ * {@link #rattacherA}, pas de recopie, les valeurs figees voyagent telles
  * quelles, le CHECK {@code ck_ligne_rattachement_unique} garantit le XOR.
  * La colonne {@code service_id} (ligne de service, F12) reste volontairement
  * non mappee dans ce bloc.</p>
@@ -37,7 +37,7 @@ import java.util.Objects;
 @EntityListeners(AuditingEntityListener.class)
 public class LignePanier {
 
-    /** Borne physique de la colonne SMALLINT — refusee avant tout debordement. */
+    /** Borne physique de la colonne SMALLINT : refusee avant tout debordement. */
     private static final int QUANTITE_MAX = Short.MAX_VALUE;
 
     @Id
@@ -46,7 +46,7 @@ public class LignePanier {
 
     // panier_id, commande_id et piece_id sont NULLABLES en base (XOR panier/commande
     // et piece/service) : le mapping reste aussi permissif que le schema. Le
-    // constructeur garantit qu une ligne nait avec panier et piece poses ; la
+    // constructeur garantit qu une ligne nait avec panier et piece poses. La
     // conversion (rattacherA) bascule ensuite panier -> commande.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "panier_id")
@@ -151,7 +151,7 @@ public class LignePanier {
     /**
      * <b>Immuabilite comptable</b> : une ligne rattachee a une commande est une piece
      * comptable (conservee 10 ans), plus une ligne de panier. Toute mutation est
-     * refusee ICI, dans l entite — pas par convention d appel : meme un appelant qui
+     * refusee ICI, dans l entite, pas par convention d appel : meme un appelant qui
      * tiendrait encore une reference (la collection du panier n est pas purgee dans
      * la transaction de conversion, voir {@link #rattacherA}) se heurte a la garde.
      */
@@ -165,13 +165,13 @@ public class LignePanier {
 
     /**
      * Conversion F14 : la ligne quitte son panier pour la commande, valeurs figees
-     * inchangees. Definitif — une ligne de commande ne revient jamais au panier
+     * inchangees. Definitif : une ligne de commande ne revient jamais au panier
      * (le CHECK XOR garantit qu elle n appartient qu a un seul des deux).
      *
      * <p><b>Piege {@code orphanRemoval}</b> : la ligne ne doit PAS etre retiree de
-     * la collection {@code Panier.lignes} dans la meme session — ce retrait la
+     * la collection {@code Panier.lignes} dans la meme session, car ce retrait la
      * marquerait orpheline et Hibernate la SUPPRIMERAIT physiquement, commande
-     * comprise. Seul ce changement de FK fait foi ; le panier se recharge vide.</p>
+     * comprise. Seul ce changement de FK fait foi. Le panier se recharge vide.</p>
      */
     void rattacherA(Commande commande) {
         exigerHorsCommande(); // definitif : une ligne ne change jamais de commande

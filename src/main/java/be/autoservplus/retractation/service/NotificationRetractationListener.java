@@ -21,15 +21,15 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * <p>{@code AFTER_COMMIT}, comme {@code NotificationPaiementListener} et
  * {@code FacturationPaiementListener} : un courriel n annonce jamais un remboursement
  * qui pourrait encore etre annule par un rollback. C est d autant plus vrai ici que
- * la validation appelle un prestataire externe — si ce dernier refuse le Refund, la
+ * la validation appelle un prestataire externe, si ce dernier refuse le Refund, la
  * transaction entiere tombe, et l evenement meurt avec elle plutot que d annoncer au
  * membre un argent qu il ne recevra pas.</p>
  *
  * <p>Ce patron, et non l envoi inline d {@code AdminRdvService} : l administrateur
  * doit voir sa validation reussir meme si le fournisseur de courriel est en panne,
- * et cette transaction-ci ecrit beaucoup (avoir, commande, demande, paiement) — un
+ * et cette transaction-ci ecrit beaucoup (avoir, commande, demande, paiement). Un
  * envoi inline qui echouerait dans la transaction risquerait de l emporter avec lui.
- * La divergence entre les deux patrons est documentee au projet ; c est le cas
+ * La divergence entre les deux patrons est documentee au projet. C est le cas
  * ecrivant qui justifie AFTER_COMMIT.</p>
  *
  * <p>Exceptions du fournisseur avalees apres journal : le remboursement est fait, la

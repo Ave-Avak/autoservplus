@@ -14,11 +14,11 @@
   Rôles du back-office : ni Panier (CdC §8.4, l'administrateur ne commande pas), ni
   Messages, qu'il lit dans /admin/messages. Notifications reste : avis déposés et
   messages reçus lui sont notifiés (AvisService, MessagerieService).
-  Les compteurs sont fournis par des advices ; absents (page d'erreur), le lien reste
+  Les compteurs sont fournis par des advices. Absents (page d'erreur), le lien reste
   sans nombre plutôt que d'afficher un zéro faux.
 
   Menu repliable sous 40em, motif « Disclosure Navigation » (WAI-ARIA APG) : le bouton
-  naît caché et menu.js le révèle ; sans script, les liens restent tous affichés.
+  naît caché et menu.js le révèle. Sans script, les liens restent tous affichés.
 */-->
 <header class="entete" th:fragment="entete">
     <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">

@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * Format du fichier remis a la personne : nommage des champs, dates, montants et
  * encodage. Ce sont des engagements vis-a-vis d un destinataire exterieur au
- * projet, pas des details d implementation — d ou un test dedie.
+ * projet, pas des details d implementation : d ou un test dedie.
  *
  * <p>Les assertions portent sur l arbre JSON relu, pas sur la chaine brute :
  * l indentation ne doit pas rendre le test cassant, seule la structure compte.
@@ -123,7 +123,7 @@ class SerialiseurExportJsonTest {
     @DisplayName("conserve les champs vides plutot que de les omettre")
     void champsNulsConserves() throws Exception {
         // Une absence explicite informe la personne que la donnee n est pas
-        // detenue ; un champ escamote laisse croire a un oubli.
+        // detenue. Un champ escamote laisse croire a un oubli.
         JsonNode commande = arbre().path("donnees_personnelles").path("commandes").get(0);
 
         assertThat(commande.has("date_annulation")).isTrue();

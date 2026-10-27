@@ -19,7 +19,7 @@ class MfaConfigTest {
 
     /**
      * Plus de profil d exception : le refus ne depend que de la presence de la cle. La
-     * methode ne recoit d ailleurs plus l environnement — aucun profil ne peut l assouplir.
+     * methode ne recoit d ailleurs plus l environnement : aucun profil ne peut l assouplir.
      */
     @ParameterizedTest(name = "cle « {0} »")
     @NullAndEmptySource

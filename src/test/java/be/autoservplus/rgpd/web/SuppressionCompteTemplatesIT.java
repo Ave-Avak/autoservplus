@@ -28,7 +28,7 @@ import be.autoservplus.support.SocleIntegration;
  * complet : c est ici qu une cle i18n manquante se voit, pas dans un
  * {@code @WebMvcTest} qui court-circuite le gabarit.
  *
- * <p>Les requetes fixent la locale — MockMvc est anglophone par defaut, et un test
+ * <p>Les requetes fixent la locale : MockMvc est anglophone par defaut, et un test
  * qui ne la fixerait pas ne prouverait rien sur les fichiers FR et NL.</p>
  */
 @SpringBootTest

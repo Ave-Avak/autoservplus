@@ -26,7 +26,7 @@ import java.util.UUID;
  * depuis une autre origine. Les melanger ferait grossir un controleur deja charge de
  * dix routes.</p>
  *
- * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR ;
+ * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR.
  * {@link InterventionService} redouble par {@code @PreAuthorize} de classe.
  * POST-redirect-flash : la creation est idempotente cote service, mais un
  * rafraichissement ne doit pas rejouer la requete.</p>

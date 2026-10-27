@@ -15,13 +15,13 @@ import java.util.Optional;
  * <p><b>La decision d afficher le bandeau se prend au rendu, cote serveur.</b> Un
  * masquage effectue apres coup en JavaScript ferait apparaitre le bandeau une
  * fraction de seconde a chaque page, y compris pour un visiteur ayant deja
- * repondu ; l afficher au serveur ou pas du tout supprime ce clignotement au lieu
+ * repondu. L afficher au serveur ou pas du tout supprime ce clignotement au lieu
  * de le corriger. C est aussi ce qui permet a l ensemble de fonctionner sans une
  * ligne de JavaScript.</p>
  *
  * <p>Passer par un {@code @ControllerAdvice} evite d ajouter l attribut dans chacun
  * des controleurs : le bandeau doit apparaitre sur toutes les pages, publiques
- * comme authentifiees, et un controleur oublie serait une page sans bandeau —
+ * comme authentifiees, et un controleur oublie serait une page sans bandeau,
  * defaut invisible en developpement et fautif en production.</p>
  */
 @ControllerAdvice
@@ -49,7 +49,7 @@ public class BandeauCookiesAdvice {
 
     /**
      * Adresse a laquelle ramener le visiteur apres son choix, pour qu il reprenne sa
-     * lecture ou il l avait laissee — le bandeau ne doit rien interrompre. La chaine
+     * lecture ou il l avait laissee : le bandeau ne doit rien interrompre. La chaine
      * de requete est conservee : sans elle, un choix exprime depuis une page de
      * resultats filtres renverrait sur la liste non filtree.
      */

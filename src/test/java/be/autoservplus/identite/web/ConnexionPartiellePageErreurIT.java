@@ -34,9 +34,9 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Le test demarre un vrai serveur. Une erreur que le controleur ne rattrape pas
  * repasse par le conteneur ({@code sendError}, puis dispatch {@code ERROR} vers
- * {@code /error}) ; MockMvc ne fait jamais ce second passage. Deux chemins, donc : la
+ * {@code /error}). MockMvc ne fait jamais ce second passage. Deux chemins, donc : la
  * page d erreur du projet, rendue par le controleur, et la page du conteneur, rendue au
- * dispatch {@code ERROR} ; toutes deux sous le contexte anonyme de
+ * dispatch {@code ERROR}. Toutes deux sous le contexte anonyme de
  * {@code ConnexionPartielleHorsEtapes}, qui filtre aussi ce dispatch.</p>
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -128,8 +128,8 @@ class ConnexionPartiellePageErreurIT extends SocleIntegration {
         assertThat(conteneur.body()).contains("<main id=\"contenu\">");
         sansTraceDeConnexion(conteneur);
 
-        // Contre-epreuve : la connexion aboutie, l en-tete montre bien ces liens —
-        // l assertion sait donc les voir.
+        // Contre-epreuve : la connexion aboutie, l en-tete montre bien ces liens.
+        // L assertion sait donc les voir.
         HttpResponse<String> aboutie = envoyer("/connexion/etape/second-facteur",
                 csrf(lire("/connexion/etape/second-facteur")),
                 "code", Totp.code(SECRET, Totp.pasDe(horloge.instant())));

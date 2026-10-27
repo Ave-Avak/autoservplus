@@ -14,22 +14,22 @@ import java.util.Objects;
 
 /**
  * Modification d un seul champ d un element du catalogue, telle qu elle s est
- * produite (A2, A5 : « les modifications sont historisees — qui, quand, quoi »).
+ * produite (A2, A5 : « les modifications sont historisees, qui, quand, quoi »).
  *
  * <p>Le grain est le <b>champ</b>, pas l enregistrement : changer le prix et la duree
- * d une prestation ecrit deux lignes. C est ce qui rend le « quoi » requetable — la
+ * d une prestation ecrit deux lignes. C est ce qui rend le « quoi » requetable : la
  * question « qui a touche au prix de cette piece ? » se lit sans comparer deux photos
  * completes de l entite. Le corollaire tient aussi : une modification qui ne change
  * aucune valeur n ecrit aucune ligne.</p>
  *
  * <p>Journal append-only ecrit dans la meme transaction que la modification qu il
- * trace, jamais modifie ensuite, sans suppression logique — meme precedent que
+ * trace, jamais modifie ensuite, sans suppression logique, meme precedent que
  * {@code HistoriqueStatutIntervention}. Il n herite donc pas de {@code BaseEntity}
  * (qui porte {@code deleted_at}), seulement de ses quatre colonnes d audit.</p>
  *
  * <p>La cible est designee par le couple {@code (typeEntite, entiteId)} plutot que par
  * une association JPA : la colonne est polymorphe, et A3/A6 autorisent la suppression
- * physique d un element jamais reference (RM-29) — une association obligerait a choisir
+ * physique d un element jamais reference (RM-29). Une association obligerait a choisir
  * entre bloquer la suppression et effacer la trace de ce qui a ete supprime.</p>
  *
  * <p>{@code auteur} est nullable : la trace survit a la disparition du compte

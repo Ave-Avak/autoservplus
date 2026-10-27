@@ -14,7 +14,7 @@ import java.util.List;
  * <p>Repository propre au module rgpd plutot qu une methode ajoutee a
  * {@code VehiculeRepository}, meme raison que pour {@link VehiculeExportRepository} :
  * le perimetre n est pas celui du parc utilisable. {@code findByMembre} ne rend que
- * les vehicules actifs et non supprimes ; l anonymisation doit atteindre <b>tous</b>
+ * les vehicules actifs et non supprimes. L anonymisation doit atteindre <b>tous</b>
  * ceux qui portent encore une plaque, y compris ceux que le membre avait retires.
  * Un vehicule supprime logiquement garde sa plaque en base : le laisser intact
  * viderait le compte sans vider la donnee.</p>
@@ -46,7 +46,7 @@ public interface VehiculeAnonymisationRepository extends JpaRepository<Vehicule,
      *
      * <p>Requete native pour ne pas faire dependre le module rgpd des entites des
      * modules atelier et annexes. Toute nouvelle table referencant {@code vehicule}
-     * doit s ajouter ici — en cas d oubli, le RESTRICT en base refuse quand meme la
+     * doit s ajouter ici : en cas d oubli, le RESTRICT en base refuse quand meme la
      * suppression, et la transaction echoue plutot que de laisser passer une
      * incoherence.</p>
      */

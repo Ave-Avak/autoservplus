@@ -40,7 +40,7 @@ import be.autoservplus.support.SocleIntegration;
 /**
  * Chaine de paiement de bout en bout contre le BOUCHON : conversion, initiation
  * (URL du prestataire), webhook anonyme sans CSRF traite via la relecture du
- * statut, decrement du stock, idempotence du rejeu. Aucun appel Mollie reel —
+ * statut, decrement du stock, idempotence du rejeu. Aucun appel Mollie reel :
  * la passerelle de production n est active qu en profil prod.
  */
 @SpringBootTest
@@ -77,7 +77,7 @@ class PaiementIT extends SocleIntegration {
         ampoule = pieces.save(ampoule);
     }
 
-    /** Panier RM-30 du module converti en commande ; retourne la reference de la commande. */
+    /** Panier RM-30 du module converti en commande. Retourne la reference de la commande. */
     private UUID commander() throws Exception {
         panierService.ajouterPiece("marie@exemple.be", ampoule.getReference(), 3);
         panierService.ajouterPiece("marie@exemple.be", plaquettes.getReference(), 2);

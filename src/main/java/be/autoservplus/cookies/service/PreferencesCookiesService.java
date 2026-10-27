@@ -22,7 +22,7 @@ import java.util.Optional;
  * <p><b>Deux supports, deux roles.</b> Le cookie de preference porte l <i>etat
  * courant</i> et sert a decider, a chaque page, s il faut reposer la question. La
  * table {@code consentement} porte l <i>historique</i> : une ligne par finalite et
- * par decision, jamais modifiee. Le premier se remplace, la seconde s empile — ce
+ * par decision, jamais modifiee. Le premier se remplace, la seconde s empile : ce
  * n est pas une redondance, ce sont deux besoins differents. Un cookie efface par
  * le navigateur ne doit pas emporter la preuve avec lui.</p>
  *
@@ -70,9 +70,9 @@ public class PreferencesCookiesService {
      * se refusent pas, donc ils ne se consentent pas.</p>
      *
      * @param email      titulaire du choix, {@code null} pour un visiteur non
-     *                   connecte — le choix reste alors dans son seul navigateur
-     * @param adresseIp  adresse de la requete, conservee comme element de preuve ;
-     *                   peut etre absente
+     *                   connecte, le choix reste alors dans son seul navigateur
+     * @param adresseIp  adresse de la requete, conservee comme element de preuve.
+     *                   Peut etre absente
      */
     @Transactional
     public void enregistrer(String email, PreferencesCookies preferences, String adresseIp) {

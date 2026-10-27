@@ -20,10 +20,10 @@ import java.io.IOException;
  * sachent qui elles servent. Sur une route publique, il etait donc lu comme une
  * connexion : {@code @AuthenticationPrincipal} le resolvait, et le choix des cookies
  * s enregistrait au nom du compte, les compteurs du panier et des notifications
- * s affichaient — avant que le second facteur ait ete fourni.</p>
+ * s affichaient, avant que le second facteur ait ete fourni.</p>
  *
  * <p>Place APRES {@code AuthorizationFilter} : les routes protegees ont deja refuse le
- * jeton partiel et renvoye a l etape ({@code RefusAccesEnEtapes}) ; ce filtre ne touche
+ * jeton partiel et renvoye a l etape ({@code RefusAccesEnEtapes}). Ce filtre ne touche
  * que ce qui a ete autorise, c est-a-dire le public. Le contexte n est remplace que pour
  * la duree de la requete, jamais enregistre : la session garde la connexion partielle,
  * et l etape reste reprenable.</p>

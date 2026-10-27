@@ -19,17 +19,17 @@ import java.util.concurrent.ConcurrentHashMap;
  * ajouter une colonne « date du dernier export » a la table {@code utilisateur}
  * demanderait une migration pour stocker un compteur de service. La table
  * {@code utilisateur} porte deja le seul precedent de limitation du projet
- * ({@code tentatives_echouees}, {@code verrouille_jusqu_a}) — mais celui-la
+ * ({@code tentatives_echouees}, {@code verrouille_jusqu_a}), mais celui-la
  * protege le compte lui-meme et survit volontairement au redemarrage, ce qui n est
  * pas le cas ici.
  *
  * <p><b>Limites assumees</b>, a documenter au rapport ecrit :
  * <ul>
- *   <li>la memoire est perdue au redemarrage — un membre pourrait obtenir un
+ *   <li>la memoire est perdue au redemarrage, un membre pourrait obtenir un
  *       second export apres un deploiement. Le risque est celui d une lecture
  *       supplementaire de son propre dossier, sans consequence sur la
- *       confidentialite ;</li>
- *   <li>elle n est pas partagee entre instances. La V1 est mono-instance ; une
+ *       confidentialite.</li>
+ *   <li>elle n est pas partagee entre instances. La V1 est mono-instance. Une
  *       execution repartie demanderait un magasin commun (cache distribue ou
  *       table dediee, donc migration).</li>
  * </ul>
@@ -37,7 +37,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * <p>L horloge est injectee : la limite est une regle temporelle, elle doit se
  * tester sans attendre vingt-quatre heures.
  *
- * <p>Les adresses sont normalisees en minuscules — {@code Locale.ROOT} et non la
+ * <p>Les adresses sont normalisees en minuscules : {@code Locale.ROOT} et non la
  * locale par defaut, dont la casse turque transformerait un {@code I} en
  * {@code ı} et ferait diverger la clef.
  */
@@ -79,7 +79,7 @@ public class RegistreExportsRecents {
      *
      * <p>Purge au passage les entrees sorties de la fenetre : sans elle, la carte
      * grandirait indefiniment avec la population des membres. Le nettoyage a lieu
-     * ici plutot que dans une tache planifiee — l ecriture est rare, et une tache
+     * ici plutot que dans une tache planifiee : l ecriture est rare, et une tache
      * de plus pour quelques entrees perimees serait disproportionnee.
      */
     public void enregistrer(String email) {

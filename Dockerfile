@@ -7,7 +7,7 @@
 # =====================================================================================
 
 # ---------------------------------------------------------------------------------
-# Etape 1 — compilation
+# Etape 1 : compilation
 # ---------------------------------------------------------------------------------
 FROM eclipse-temurin:21-jdk AS build
 
@@ -22,7 +22,7 @@ COPY .mvn/ .mvn/
 COPY pom.xml ./
 
 # Deux precautions liees au poste de developpement, sous Windows :
-#   - le bit d'execution ne survit pas au clone ;
+#   - le bit d'execution ne survit pas au clone.
 #   - le wrapper y est presente avec des fins de ligne CRLF, et le retour chariot du
 #     shebang fait echouer le build sur un « ./mvnw: not found » qui ne designe pas
 #     le vrai probleme. Le depot, lui, stocke bien du LF (.gitattributes), donc
@@ -33,12 +33,12 @@ RUN sed -i 's/\r$//' mvnw && chmod +x mvnw && ./mvnw -B -q dependency:go-offline
 COPY src/ src/
 
 # Tests ignores volontairement : ils exigent Docker (Testcontainers), indisponible
-# dans un conteneur de build. C'est l'integration continue qui execute « verify » ;
-# construire l'image ne doit pas etre une seconde execution partielle de la suite.
+# dans un conteneur de build. C'est l'integration continue qui execute « verify ».
+# Construire l'image ne doit pas etre une seconde execution partielle de la suite.
 RUN ./mvnw -B -q package -DskipTests
 
 # ---------------------------------------------------------------------------------
-# Etape 2 — execution
+# Etape 2 : execution
 # ---------------------------------------------------------------------------------
 # Base Debian/Ubuntu et non Alpine : Alpine repose sur musl, dont les differences de
 # comportement avec la glibc sont une source connue d'ennuis en JVM (resolution DNS,
@@ -91,7 +91,7 @@ HEALTHCHECK --interval=30s --timeout=5s --start-period=90s --retries=3 \
 #
 # Le « exec » interne n est pas decoratif : sans lui le shell reste PID 1 et java
 # devient son enfant. Docker adresse SIGTERM au seul PID 1, et dash ne le relaie pas
-# a ses enfants — l application ne recevrait donc jamais l ordre d arret et serait
+# a ses enfants : l application ne recevrait donc jamais l ordre d arret et serait
 # SIGKILL au bout du delai de grace, a chaque « compose down » comme a chaque
 # redeploiement. Verifie : sans exec, /proc/1 porte sh et java tourne en PID 7.
 ENTRYPOINT ["sh","-c","exec java $JAVA_OPTS -jar app.jar"]

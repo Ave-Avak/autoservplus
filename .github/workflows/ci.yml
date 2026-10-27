@@ -37,7 +37,7 @@ jobs:
 
     # En parallele de « build » et non a sa suite : les deux partent du meme commit et
     # ne dependent pas l'un de l'autre. Les enchainer doublerait le delai de retour
-    # sans rien verifier de plus — un Dockerfile casse doit se voir tout de suite, pas
+    # sans rien verifier de plus : un Dockerfile casse doit se voir tout de suite, pas
     # apres les tests d'integration.
     steps:
       - name: Recuperation du code
@@ -45,7 +45,7 @@ jobs:
 
       # Aucune poussee vers un registre : le depot n'en a pas, et le deploiement
       # construit l'image sur le serveur. Ce qui est verifie ici est donc exactement ce
-      # qui compte — que le Dockerfile aboutisse encore, a chaque commit. Une
+      # qui compte : que le Dockerfile aboutisse encore, a chaque commit. Une
       # dependance ajoutee au pom.xml ou un fichier deplace hors du contexte de build
       # casserait le deploiement sans casser aucun test.
       - name: Construction de l'image

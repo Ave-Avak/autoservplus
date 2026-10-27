@@ -61,7 +61,7 @@ import be.autoservplus.support.SocleIntegration;
 @DisplayName("Export iCalendar d un rendez-vous (integration)")
 class ExportAgendaIT extends SocleIntegration {
 
-    /** Le numero de rendez-vous est unique en base ; chaque test forge le sien. */
+    /** Le numero de rendez-vous est unique en base. Chaque test forge le sien. */
     private static final AtomicInteger COMPTEUR = new AtomicInteger(1);
 
     private static final Instant DEBUT = Instant.parse("2026-09-16T08:00:00Z");
@@ -104,7 +104,7 @@ class ExportAgendaIT extends SocleIntegration {
      * Annule le pliage a 75 octets de la RFC 5545 avant toute recherche de texte.
      * Sans cela, un test ne prouverait rien de fiable : la valeur cherchee peut se
      * trouver a cheval sur deux lignes, et l assertion echouerait sur un fichier
-     * parfaitement valide — ou pire, passerait par hasard tant que la valeur reste
+     * parfaitement valide, ou pire, passerait par hasard tant que la valeur reste
      * courte, pour casser le jour ou le nom du garage s allonge.
      */
     private static String deplier(String ics) {
@@ -154,7 +154,7 @@ class ExportAgendaIT extends SocleIntegration {
 
             assertThat(ics)
                     .contains("SUMMARY:Rendez-vous au AutoServ+ SRL")
-                    // L adresse vient de autoservplus.garage.* ; ses virgules sont
+                    // L adresse vient de autoservplus.garage.*. Ses virgules sont
                     // echappees, sans quoi LOCATION serait scinde en trois valeurs.
                     .contains("LOCATION:AutoServ+ SRL\\, Rue de l'Atelier 12\\, 1000 Bruxelles\\, Belgique")
                     .contains("DTSTART:20260916T080000Z")
@@ -307,7 +307,7 @@ class ExportAgendaIT extends SocleIntegration {
 
         /**
          * Le bouton et le controleur appliquent la meme condition : sans ce test,
-         * l ecran pourrait proposer un lien que la route refuse — ou l inverse.
+         * l ecran pourrait proposer un lien que la route refuse, ou l inverse.
          */
         @Test
         @DisplayName("ne le propose pas sur une demande en attente")

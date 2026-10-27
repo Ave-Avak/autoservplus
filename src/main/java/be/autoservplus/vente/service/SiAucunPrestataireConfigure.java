@@ -14,7 +14,7 @@ import java.lang.annotation.Target;
  *
  * <p>Le repli vaut <b>y compris en production</b>, et c est delibere : une
  * plateforme deployee sans cle doit rester parcourable de bout en bout plutot que
- * de rompre au paiement. Il n est pas silencieux pour autant — le bouchon
+ * de rompre au paiement. Il n est pas silencieux pour autant : le bouchon
  * l annonce au demarrage, et la page de paiement simulee le dit au membre.</p>
  */
 @Target({ElementType.TYPE, ElementType.METHOD})

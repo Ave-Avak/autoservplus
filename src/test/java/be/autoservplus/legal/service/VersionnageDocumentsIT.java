@@ -39,10 +39,10 @@ class VersionnageDocumentsIT extends SocleIntegration {
         void troisLanguesParVersion() {
             // Une version = un jeu de trois textes publies ensemble. Le compte total croit
             // donc de trois a chaque publication, et non de un : V33 amorce trois documents,
-            // V35 publie une seconde version des CGV.
+            // V35 publie une seconde version des CGV, V43 une nouvelle version des trois.
             assertThat(versions.count())
-                    .isEqualTo((TypeDocumentVersionne.values().length + 1)
-                            * (long) Langue.values().length);
+                    .isEqualTo((2L * TypeDocumentVersionne.values().length + 1)
+                            * Langue.values().length);
 
             for (TypeDocumentVersionne type : TypeDocumentVersionne.values()) {
                 String courante = versionsDocuments.versionCourante(type);
@@ -87,15 +87,14 @@ class VersionnageDocumentsIT extends SocleIntegration {
         @Test
         @DisplayName("resout la version en vigueur, y compris apres une publication")
         void continuite() {
-            // CGV a change de version avec V35 (article 9, conservation portee a dix ans) ;
-            // les deux autres documents portent encore l identifiant des constantes que F24
-            // a remplacees, ce qui reste l engagement de compatibilite pris a sa livraison.
+            // CGV a change de version avec V35 (article 9, conservation portee a dix ans),
+            // puis les trois documents avec V43 (typographie).
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.CGV))
-                    .isEqualTo("CGV-2026-02");
+                    .isEqualTo("CGV-2026-03");
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.COOKIES))
-                    .isEqualTo("COOKIES-2026-01");
+                    .isEqualTo("COOKIES-2026-02");
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.RENONCIATION_RETRACTATION))
-                    .isEqualTo("VI53-2026-01");
+                    .isEqualTo("VI53-2026-02");
         }
 
         @Test
@@ -114,8 +113,8 @@ class VersionnageDocumentsIT extends SocleIntegration {
         /**
          * Le point que F24 devait rendre vrai : une preuve de consentement ne designe plus
          * un numero en l air. On confronte ici l ENSEMBLE des valeurs distinctes
-         * reellement presentes en base — celles du seed comme celles ecrites par les
-         * parcours — a la table des versions.
+         * reellement presentes en base (celles du seed comme celles ecrites par les
+         * parcours) a la table des versions.
          */
         @Test
         @Transactional
@@ -148,7 +147,7 @@ class VersionnageDocumentsIT extends SocleIntegration {
         void publicationAnticipee() {
             // Publier a l avance est la pratique attendue quand un changement de conditions
             // doit etre annonce avant de s appliquer. Sans le filtre sur date_effet, la
-            // nouvelle version prendrait effet a l instant de son insertion — et des
+            // nouvelle version prendrait effet a l instant de son insertion, et des
             // membres accepteraient un texte annonce comme pas encore applicable.
             for (Langue langue : Langue.values()) {
                 jdbc.update("""
@@ -161,7 +160,7 @@ class VersionnageDocumentsIT extends SocleIntegration {
 
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.CGV))
                     .as("La version annoncee pour dans trente jours ne s applique pas aujourd hui")
-                    .isEqualTo("CGV-2026-02");
+                    .isEqualTo("CGV-2026-03");
         }
     }
 
@@ -198,18 +197,18 @@ class VersionnageDocumentsIT extends SocleIntegration {
         void versionRemplacee() {
             // Le point que V35 met a l epreuve : apres publication de CGV-2026-02, la preuve
             // d un membre qui a accepte 2026-01 doit toujours pouvoir montrer CE qu il a
-            // accepte — donc l ancienne redaction, celle qui annoncait sept ans.
+            // accepte, donc l ancienne redaction, celle qui annoncait sept ans.
             TexteArchiveVue vue = versionsDocuments
                     .archive(TypeDocumentVersionne.CGV, "CGV-2026-01", Locale.FRENCH)
                     .orElseThrow();
 
             assertThat(vue.contenu()).contains("conservées sept ans");
             assertThat(vue.actif())
-                    .as("Elle est archivee, donc plus en vigueur — et le lecteur doit le savoir")
+                    .as("Elle est archivee, donc plus en vigueur, et le lecteur doit le savoir")
                     .isFalse();
 
             TexteArchiveVue courante = versionsDocuments
-                    .archive(TypeDocumentVersionne.CGV, "CGV-2026-02", Locale.FRENCH)
+                    .archive(TypeDocumentVersionne.CGV, "CGV-2026-03", Locale.FRENCH)
                     .orElseThrow();
             assertThat(courante.contenu()).contains("conservées dix ans");
             assertThat(courante.actif()).isTrue();

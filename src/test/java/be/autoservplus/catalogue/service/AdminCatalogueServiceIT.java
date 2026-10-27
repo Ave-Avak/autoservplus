@@ -48,7 +48,7 @@ import be.autoservplus.support.SocleIntegration;
 /**
  * RM-29 et RM-28 contre un vrai PostgreSQL 16 : les references d historique sont
  * de vraies lignes {@code rdv_service} et {@code ligne_panier}, comptees par les
- * requetes natives des repositories — un JPQL mocke ne prouverait rien ici.
+ * requetes natives des repositories. Un JPQL mocke ne prouverait rien ici.
  *
  * <p>Prouve aussi les invariants transverses du lot : la suppression definitive est
  * bien <b>physique</b> (verification JDBC, car {@code @SQLRestriction} masquerait un
@@ -139,7 +139,7 @@ class AdminCatalogueServiceIT extends SocleIntegration {
                 .isInstanceOf(SuppressionRefuseeException.class)
                 .hasFieldOrPropertyWithValue("codeRegle", "RM-29");
 
-        // RM-28 : la desactivation, elle, passe — et la prestation disparait du
+        // RM-28 : la desactivation, elle, passe, et la prestation disparait du
         // catalogue public tout en restant chargee par reference pour les historiques.
         admin.desactiverPrestation(vidange.getReference());
         assertThat(cataloguePublic.prestationsActives())

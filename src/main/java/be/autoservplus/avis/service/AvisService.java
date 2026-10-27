@@ -33,7 +33,7 @@ import java.util.UUID;
  *
  * <p><b>Trois conditions au depot</b>, toutes verifiees avant la premiere ecriture :
  * l intervention appartient au demandeur, elle est TERMINEE, et elle n a pas deja son
- * avis. La derniere est doublee par {@code uq_avis_intervention} en base — le controle
+ * avis. La derniere est doublee par {@code uq_avis_intervention} en base. Le controle
  * applicatif donne un message utile, l index empeche la course entre deux onglets.</p>
  *
  * <p><b>L intervention d autrui remonte en {@link RessourceIntrouvableException}</b>,
@@ -91,7 +91,7 @@ public class AvisService {
 
     /**
      * Indique si le membre peut encore deposer un avis sur cette intervention. Sert a
-     * n afficher le lien que lorsqu il menera quelque part — le controle reel reste
+     * n afficher le lien que lorsqu il menera quelque part : le controle reel reste
      * fait au depot, un bouton absent n etant pas une securite.
      */
     @PreAuthorize("isAuthenticated()")

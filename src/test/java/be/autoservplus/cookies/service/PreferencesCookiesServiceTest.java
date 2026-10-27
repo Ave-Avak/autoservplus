@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
 /**
  * Ecriture de la preuve de consentement aux cookies (F25). Le comportement
  * append-only de bout en bout, contre une vraie base, est couvert par
- * {@code ConsentementCookiesIT} ; ici on verifie la regle de granularite.
+ * {@code ConsentementCookiesIT}. Ici on verifie la regle de granularite.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("PreferencesCookiesService")
@@ -101,7 +101,7 @@ class PreferencesCookiesServiceTest {
         }
 
         @Test
-        @DisplayName("« Tout refuser » ecrit bien deux preuves, refusees — un refus se prouve")
+        @DisplayName("« Tout refuser » ecrit bien deux preuves, refusees, car un refus se prouve")
         void toutRefuser() {
             compteExiste();
 

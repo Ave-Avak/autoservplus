@@ -8,7 +8,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  * Active l execution des taches planifiees ({@code @Scheduled}). Premier
  * consommateur : le job d expiration des commandes non payees (RM-21).
  * Tout job planifie du projet lit le temps via l horloge injectee
- * ({@code java.time.Clock}), jamais {@code Instant.now()} — la planification
+ * ({@code java.time.Clock}), jamais {@code Instant.now()} : la planification
  * declenche, l horloge date.
  *
  * <p><b>Desactivable</b> par {@code autoservplus.planification.activee=false}, et
@@ -21,7 +21,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  *
  * <p>Rien n est perdu cote couverture : {@code ExpirationCommandesJobTest} est un test
  * Mockito pur qui appelle {@code annulerLesCommandesExpirees} directement, avec une
- * horloge figee — c est la methode qui est verifiee, jamais le declenchement. Aucun
+ * horloge figee. C est la methode qui est verifiee, jamais le declenchement. Aucun
  * test d integration ne cite ce job.</p>
  */
 @Configuration

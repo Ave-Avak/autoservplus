@@ -56,11 +56,11 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  *       refus precede toute recherche, ce que le volet « refus sans oracle » verifie
  *       avec une ressource reelle.</li>
  *   <li>Coherence des menus : la page d arrivee de chaque role est rendue, ses
- *       liens d en-tete, de menu et de cartes sont ouverts un a un ; aucun ne doit
+ *       liens d en-tete, de menu et de cartes sont ouverts un a un. Aucun ne doit
  *       repondre 403, 404 ou 500.</li>
  *   <li>Atteignabilite : chaque ecran sans variable figure dans un menu d un role
- *       autorise, ou dans {@link #ATTEINTS_DEPUIS}, qui nomme la page qui y mene ;
- *       le test verifie que cette page porte bien le lien. Les ecrans qu aucun clic
+ *       autorise, ou dans {@link #ATTEINTS_DEPUIS}, qui nomme la page qui y mene.
+ *       Le test verifie que cette page porte bien le lien. Les ecrans qu aucun clic
  *       n atteint par construction (lien de courriel, etape de connexion) sont dans
  *       {@link #HORS_NAVIGATION}, avec leur motif.</li>
  * </ol>
@@ -80,7 +80,7 @@ class NavigationEcransIT extends SocleIntegration {
      * Une route GET classee.
      *
      * @param appel           adresse concrete appelee (variables remplacees, parametres requis)
-     * @param ecran           page HTML de navigation ; {@code false} pour un fichier, un
+     * @param ecran           page HTML de navigation. {@code false} pour un fichier, un
      *                        fragment HTMX ou un retour de prestataire
      * @param statutAutorise  statut attendu pour un role autorise
      */
@@ -218,7 +218,7 @@ class NavigationEcransIT extends SocleIntegration {
     /**
      * Routes GET qui ne sont pas des ecrans de l application : API publique et sa
      * documentation, page d erreur du conteneur. Classees pour que le balayage reste
-     * exhaustif ; leur comportement est tenu ailleurs ({@code ApiPubliqueIT},
+     * exhaustif. Leur comportement est tenu ailleurs ({@code ApiPubliqueIT},
      * {@code PagesErreurIT}).
      */
     private static final Set<String> HORS_ECRANS_PREFIXES = Set.of("/api/", "/v3/api-docs", "/swagger-ui", "/error");
@@ -328,7 +328,7 @@ class NavigationEcransIT extends SocleIntegration {
         return HORS_ECRANS_PREFIXES.stream().anyMatch(route::startsWith);
     }
 
-    /** Statut attendu pour un role ; une redirection est notee 302. */
+    /** Statut attendu pour un role. Une redirection est notee 302. */
     private static int attendu(Route route, Role role) {
         boolean anonyme = role == Role.ANONYME;
         return switch (route.acces()) {
@@ -398,7 +398,7 @@ class NavigationEcransIT extends SocleIntegration {
                                 || String.valueOf(reponse.getRedirectedUrl()).endsWith("/connexion"));
                     if (!conforme) {
                         ecarts.add(role + " " + route.appel() + " : " + reponse.getStatus()
-                                + " (attendu " + attendu + ") → " + reponse.getRedirectedUrl());
+                                + " (attendu " + attendu + "), redirige vers " + reponse.getRedirectedUrl());
                     }
                 }
             }
@@ -459,7 +459,7 @@ class NavigationEcransIT extends SocleIntegration {
         }
 
         /**
-         * Le droit d acces (art. 15) vaut pour tout titulaire ; la suppression, non : un
+         * Le droit d acces (art. 15) vaut pour tout titulaire. La suppression, non : un
          * compte du back-office se ferme par le super-administrateur.
          */
         @Test
@@ -474,8 +474,8 @@ class NavigationEcransIT extends SocleIntegration {
         }
 
         /**
-         * L administrateur ne commande pas (CdC 8.4) et lit ses messages au back-office ;
-         * il recoit en revanche des notifications (avis deposes, messages recus).
+         * L administrateur ne commande pas (CdC 8.4) et lit ses messages au back-office.
+         * Il recoit en revanche des notifications (avis deposes, messages recus).
          */
         @Test
         @DisplayName("en-tête public d'un rôle du back-office : ni panier ni messages du membre, notifications oui")

@@ -25,22 +25,22 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- * Rubrique « Mes donnees personnelles » du compte (F22 — droit d acces,
+ * Rubrique « Mes donnees personnelles » du compte (F22, droit d acces,
  * article 15 RGPD) : explication du droit, confirmation du mot de passe,
  * telechargement du fichier.
  *
  * <p>La zone exige une authentification ({@code anyRequest().authenticated()} de la
- * configuration de securite) ; le service redouble par {@code @PreAuthorize}, et
+ * configuration de securite). Le service redouble par {@code @PreAuthorize}, et
  * l identite vient du contexte de securite, jamais d un parametre de requete. Un
- * membre ne peut donc exporter que son propre dossier — il n existe aucune URL
+ * membre ne peut donc exporter que son propre dossier : il n existe aucune URL
  * permettant de designer un autre titulaire.
  *
  * <p><b>Refus par redirection codee.</b> Le POST rend soit un fichier
- * ({@code ResponseEntity}), soit une redirection vers l ecran — deux natures de
+ * ({@code ResponseEntity}), soit une redirection vers l ecran : deux natures de
  * reponse que Spring MVC ne sait pas resoudre depuis un type de retour
  * {@code Object}. Le refus voyage donc en <b>code</b> dans l URL
  * ({@code ?erreur=motdepasse}), que le GET retraduit en message i18n. Ecart assume
- * au patron PRG+flash des autres controleurs, impose par la reponse binaire ; le
+ * au patron PRG+flash des autres controleurs, impose par la reponse binaire. Le
  * code ne divulgue rien et le delai restant est <b>recalcule</b> au GET plutot que
  * transporte, ce qui evite d afficher une echeance perimee.
  */
@@ -117,8 +117,8 @@ public class DonneesPersonnellesController {
     }
 
     /**
-     * Traduit un code de refus en message. Un code inconnu — l URL est modifiable
-     * a la main — ne produit aucun message plutot qu une page en erreur.
+     * Traduit un code de refus en message. Un code inconnu (l URL est modifiable
+     * a la main) ne produit aucun message plutot qu une page en erreur.
      *
      * <p>Le refus de quota n est affiche que si l echeance n est pas deja passee :
      * entre le POST et le GET, le delai a pu expirer, et annoncer une attente

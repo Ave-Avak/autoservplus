@@ -57,7 +57,7 @@ public record VentilationTva(List<TrancheTva> tranches) {
      * Le taux de la facture s il est unique.
      *
      * @return le taux, ou {@link Optional#empty()} si la facture melange plusieurs
-     *         taux — la colonne {@code taux_tva_applique} vaut alors NULL, la
+     *         taux : la colonne {@code taux_tva_applique} vaut alors NULL, la
      *         ventilation faisant seule foi (V26)
      */
     public Optional<BigDecimal> tauxUnique() {

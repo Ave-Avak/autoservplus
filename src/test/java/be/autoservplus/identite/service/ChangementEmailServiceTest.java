@@ -35,7 +35,7 @@ import static org.mockito.Mockito.when;
  * <p>Les cas de neutralite sont les plus importants du lot : ils verifient que deux
  * situations qui different en base produisent un comportement <b>indiscernable</b>
  * pour celui qui demande. Un test qui se contenterait de constater l absence
- * d exception ne prouverait rien — c est l egalite des effets observables qui
+ * d exception ne prouverait rien : c est l egalite des effets observables qui
  * compte.</p>
  */
 @ExtendWith(MockitoExtension.class)

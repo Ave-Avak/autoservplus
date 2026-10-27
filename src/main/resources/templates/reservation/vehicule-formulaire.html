@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${titre} + ' — AutoServ+'">Véhicule — AutoServ+</title>
+    <title th:text="${titre} + ' | AutoServ+'">Véhicule | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -52,7 +52,7 @@
         <div class="champ">
             <label for="motorisation">Motorisation</label>
             <select id="motorisation" th:field="*{motorisation}" required>
-                <option value="">Choisissez…</option>
+                <option value="">Choisissez...</option>
                 <option th:each="m : ${motorisations}" th:value="${m}" th:text="${m}">Diesel</option>
             </select>
             <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motorisation')}" th:errors="*{motorisation}"></p>

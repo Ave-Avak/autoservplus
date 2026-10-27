@@ -35,7 +35,7 @@ public class IndicateursRepository {
      *
      * <p>Assis sur les <b>factures</b> et non sur les commandes payees : la facture
      * porte le montant legal, fige a l emission, et c est elle qui fait foi devant
-     * l administration. Une commande remboursee garde son montant ; c est l avoir qui
+     * l administration. Une commande remboursee garde son montant. C est l avoir qui
      * la contre-passe, et il est compte a part.</p>
      */
     public MontantPeriode chiffreAffaireFacture(Instant debut, Instant fin) {
@@ -83,13 +83,13 @@ public class IndicateursRepository {
      * Minutes de rendez-vous non annules sur la periode, tous postes confondus.
      *
      * <p>Les statuts REFUSE et ANNULE sont exclus : un creneau libere n a occupe
-     * personne. ABSENT est <b>conserve</b> — le poste est bien reste bloque, le client
+     * personne. ABSENT est <b>conserve</b> : le poste est bien reste bloque, le client
      * ne s est simplement pas presente, et masquer ce temps ferait croire a une
      * capacite disponible qui ne l etait pas.</p>
      */
     public long minutesReservees(Instant debut, Instant fin) {
         // Requete native : HQL ne sait pas convertir un intervalle en minutes.
-        // FUNCTION('EXTRACT', EPOCH FROM ...) n est pas du HQL valide — l analyseur
+        // FUNCTION('EXTRACT', EPOCH FROM ...) n est pas du HQL valide : l analyseur
         // s arrete sur le FROM interne. Le projet est PostgreSQL seul (contrainte
         // d exclusion btree_gist, index partiels), descendre en SQL ici ne ferme
         // aucune porte. Le filtre deleted_at reproduit le @SQLRestriction de Rdv,
@@ -112,8 +112,8 @@ public class IndicateursRepository {
      *
      * <p><b>Lu sur les lignes d intervention, pas sur le panier.</b> C est la seule
      * source possible : {@code ligne_panier.service_id} existe au schema mais reste
-     * volontairement non mappe tant que F12 (services au panier) n est pas livre —
-     * aucune prestation ne transite donc par la vente en ligne. Le classement porte sur
+     * volontairement non mappe tant que F12 (services au panier) n est pas livre.
+     * Aucune prestation ne transite donc par la vente en ligne. Le classement porte sur
      * ce que l atelier a reellement execute.</p>
      *
      * <p>Borne sur {@code finReelle} : une prestation compte quand elle est faite, pas
@@ -143,7 +143,7 @@ public class IndicateursRepository {
      * <p><b>Ventes en ligne seulement</b> : les pieces posees par l atelier passent par
      * {@code ligne_intervention} et ne sont pas comptees ici. Melanger les deux sources
      * dans un meme classement additionnerait des chiffres qui ne se facturent pas de la
-     * meme facon — le garage lit ici ce que sa boutique a vendu.</p>
+     * meme facon : le garage lit ici ce que sa boutique a vendu.</p>
      */
     @SuppressWarnings("unchecked")
     public List<LigneClassement> topPieces(Instant debut, Instant fin, int limite) {
@@ -170,7 +170,7 @@ public class IndicateursRepository {
      * {@code CommandePayeeEvent} et {@code date_echeance} est laissee nulle : toute
      * facture existante est donc payee par construction, un compteur de factures
      * impayees vaudrait toujours zero. Ce qui reste reellement a encaisser, ce sont
-     * les commandes en attente de paiement — c est cela qui est affiche.</p>
+     * les commandes en attente de paiement : c est cela qui est affiche.</p>
      */
     public MontantPeriode commandesAEncaisser() {
         Object[] ligne = (Object[]) em.createQuery("""

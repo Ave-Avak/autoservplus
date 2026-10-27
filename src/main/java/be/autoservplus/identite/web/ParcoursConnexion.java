@@ -30,7 +30,7 @@ import java.util.function.Function;
  * 6.5 n a pas de MFA natif. Apres le mot de passe, ce gestionnaire remplace
  * l authentification complete par une {@link AuthentificationPartielle} sans autorite,
  * tant qu une etape reste. Un filtre aurait du redecouvrir a chaque requete ce que le
- * gestionnaire sait au moment exact ou le mot de passe vient d etre verifie ; un
+ * gestionnaire sait au moment exact ou le mot de passe vient d etre verifie. Un
  * intercepteur MVC, lui, ne verrait pas les refus de la chaine de securite.</p>
  *
  * <p><b>L etape suivante se deduit du compte</b>, relu en base a chaque pas, et non d un
@@ -38,7 +38,7 @@ import java.util.function.Function;
  * pendant qu une connexion est en cours change la suite de cette connexion.</p>
  *
  * <p><b>A l aboutissement</b> : nouvel identifiant de session (protection contre la
- * fixation — l identifiant connu d un tiers pendant l etape partielle ne doit pas
+ * fixation : l identifiant connu d un tiers pendant l etape partielle ne doit pas
  * devenir celui d une session complete), compteurs remis a zero, langue du profil
  * appliquee.</p>
  */
@@ -123,7 +123,7 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
     /**
      * Garde d un ecran d etape : {@code null} si la requete est bien a cette etape,
      * sinon la redirection qui y remet de l ordre. Un compte deja connecte n a rien a
-     * faire ici ; une connexion partielle ne choisit pas son etape.
+     * faire ici. Une connexion partielle ne choisit pas son etape.
      */
     public String garder(Authentication authentification, EtapeConnexion attendue) {
         if (!(authentification instanceof AuthentificationPartielle partielle)) {
@@ -132,7 +132,7 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
         Optional<EtapeConnexion> courante =
                 etapeSuivante(partielle.getName(), partielle.secondFacteurValide());
         if (courante.isEmpty()) {
-            // Plus rien a franchir — un tiers a pu lever l obligation entre-temps. On
+            // Plus rien a franchir : un tiers a pu lever l obligation entre-temps. On
             // ne fait pas aboutir sur un GET : l utilisateur recommence proprement.
             return "redirect:/connexion";
         }

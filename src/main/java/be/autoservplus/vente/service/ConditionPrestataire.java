@@ -11,8 +11,8 @@ import org.springframework.core.type.AnnotatedTypeMetadata;
  * <p><b>Ce qui decide est la CLE, plus le profil Spring.</b> Le projet choisissait
  * jusqu ici par {@code @Profile("prod")}, ce qui liait deux questions
  * independantes. Deployer en {@code prod} sans cle levait une
- * {@code UnsupportedOperationException} au clic sur « payer » — l exception au
- * milieu d un parcours d achat, soit le pire point de rupture possible ; et
+ * {@code UnsupportedOperationException} au clic sur « payer » : l exception au
+ * milieu d un parcours d achat, soit le pire point de rupture possible. Et
  * demarrer en {@code demo} avec une cle valide l ignorait. La presence d un
  * identifiant est la seule question qui compte, et elle se pose telle quelle.</p>
  *

@@ -27,9 +27,9 @@ import be.autoservplus.support.SocleIntegration;
  * Tableau de bord de bout en bout (BL-1), sur un PostgreSQL reel.
  *
  * <p>L essentiel de ce qui peut casser ici est <b>dans les requetes</b> : expressions
- * de construction JPQL, {@code EXTRACT(EPOCH …)} pour convertir un intervalle en
+ * de construction JPQL, {@code EXTRACT(EPOCH ...)} pour convertir un intervalle en
  * minutes, agregats sur des tables vides. Aucune ne se verifie a la compilation, et un
- * mock de repository les rendrait invisibles — d ou un test qui les execute vraiment,
+ * mock de repository les rendrait invisibles : d ou un test qui les execute vraiment,
  * y compris sur une base sans donnee.</p>
  */
 @SpringBootTest

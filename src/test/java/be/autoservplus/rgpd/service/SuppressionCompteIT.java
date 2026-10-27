@@ -56,7 +56,7 @@ import be.autoservplus.support.SocleIntegration;
 
 /**
  * Suppression de compte contre une vraie base (F23) : c est ici que se verifient les
- * points qu aucun test unitaire ne peut voir — les documents comptables restent
+ * points qu aucun test unitaire ne peut voir, les documents comptables restent
  * intacts, le balayage des colonnes d audit porte reellement, la ligne anonymisee
  * reste jointe malgre le {@code @SQLRestriction}, et l ancienne adresse redevient
  * libre.
@@ -66,9 +66,9 @@ import be.autoservplus.support.SocleIntegration;
  * englobante rollbackee ne prouverait rien. Consequence : les donnees restent en base
  * du conteneur, d ou les adresses uniques par test.</p>
  *
- * <p>Ce fichier n exerce que le <b>service</b> : ce qui passe par le controleur — le
+ * <p>Ce fichier n exerce que le <b>service</b> : ce qui passe par le controleur (le
  * refus sans confirmation, l impossibilite de viser le compte d autrui, la revocation
- * de session — vit dans {@code SuppressionCompteWebIT}. La separation n est pas
+ * de session) vit dans {@code SuppressionCompteWebIT}. La separation n est pas
  * cosmetique : elle laisse ce fichier compiler et passer sans la couche web, donc
  * prouver l anonymisation dans le commit qui la livre.</p>
  */
@@ -199,7 +199,7 @@ class SuppressionCompteIT extends SocleIntegration {
 
         // Le piege du @SQLRestriction : renseigner deleted_at masquerait la ligne de
         // toutes les requetes, et une facture conservee ne pourrait plus resoudre son
-        // titulaire. findById passe par la restriction — s il rend la ligne, elle
+        // titulaire. findById passe par la restriction : s il rend la ligne, elle
         // n est pas masquee.
         assertThat(jdbc.queryForObject(
                 "SELECT deleted_at FROM utilisateur WHERE id = ?", Object.class, marie.getId()))
@@ -227,7 +227,7 @@ class SuppressionCompteIT extends SocleIntegration {
                 String.class, facture.getId())).isEqualTo(numeroAvant);
         assertThat(jdbc.queryForObject("SELECT montant_tvac FROM facture WHERE id = ?",
                 BigDecimal.class, facture.getId())).isEqualByComparingTo(montantAvant);
-        // La commande garde ses montants ; seule la ligne utilisateur a change.
+        // La commande garde ses montants. Seule la ligne utilisateur a change.
         assertThat(jdbc.queryForObject("SELECT montant_tvac FROM commande WHERE reference = ?",
                 BigDecimal.class, commande)).isEqualByComparingTo(montantAvant);
     }
@@ -265,7 +265,7 @@ class SuppressionCompteIT extends SocleIntegration {
 
         supprimer(marie);
 
-        // Le PDF archive n est jamais regenere ; mais s il a disparu, la
+        // Le PDF archive n est jamais regenere. Mais s il a disparu, la
         // reconstruction lit le compte anonymise. La langue, elle, n est pas effacee
         // par l anonymisation : ce n est pas une donnee identifiante.
         byte[] pdf = transactions.execute(s -> pdfFactures.pdfDe(
@@ -338,7 +338,7 @@ class SuppressionCompteIT extends SocleIntegration {
         // Le point delicat : l audit JPA pose updated_by au flush. Si le balayage
         // passait AVANT ce flush, ou si un re-tampon survenait au commit, l adresse
         // reapparaitrait sur la ligne meme qu on vient de vider. L assertion porte
-        // donc sur l etat en base APRES commit, lu en SQL brut — la lire par
+        // donc sur l etat en base APRES commit, lu en SQL brut : la lire par
         // l entite ne prouverait rien, le cache de session pouvant la masquer.
         assertThat(jdbc.queryForObject(
                 "SELECT updated_by FROM utilisateur WHERE id = ?", String.class, marie.getId()))
@@ -359,8 +359,8 @@ class SuppressionCompteIT extends SocleIntegration {
         supprimer(marie);
 
         // Les colonnes d audit sont nullables : NULL passerait. Le jeton est prefere
-        // parce qu il reste resoluble — savoir QUE la ligne a ete creee par le compte
-        // 42, desormais anonymise, est encore de la tracabilite ; un NULL la perdrait.
+        // parce qu il reste resoluble : savoir QUE la ligne a ete creee par le compte
+        // 42, desormais anonymise, est encore de la tracabilite. Un NULL la perdrait.
         assertThat(jdbc.queryForList(
                 "SELECT created_by FROM vehicule WHERE membre_id = ?", String.class, marie.getId()))
                 .allSatisfy(valeur -> assertThat(valeur).isEqualTo(jeton));
@@ -384,7 +384,7 @@ class SuppressionCompteIT extends SocleIntegration {
         Utilisateur marie = membre();
         Vehicule golf = vehicule(marie, "1-SUP-" + COMPTEUR.getAndIncrement());
         // Un RDV suffit : fk_rdv_vehicule est en ON DELETE RESTRICT. poste_id est
-        // NOT NULL et V17 seede les postes ; l intervalle est decale par vehicule
+        // NOT NULL et V17 seede les postes. L intervalle est decale par vehicule
         // pour ne pas heurter l exclusion ex_rdv_poste_intervalle.
         jdbc.update("""
                 INSERT INTO rdv (numero, membre_id, vehicule_id, poste_id, statut, debut, fin)
@@ -434,7 +434,7 @@ class SuppressionCompteIT extends SocleIntegration {
         // L ancienne adresse ne resout plus aucun compte : c est la garde
         // d existence qui refuse, avant meme celle du mot de passe. L entite en
         // porte une troisieme (estAnonymise), qu on n atteint donc jamais par ce
-        // chemin — trois etages pour une operation irreversible.
+        // chemin : trois etages pour une operation irreversible.
         assertThatThrownBy(() -> executerEn(adresseReelle, () -> {
             suppression.supprimer(adresseReelle, MOT_DE_PASSE, "SUPPRIMER");
             return null;

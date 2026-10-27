@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code Vehicule} sans figurer dans aucun fichier de messages. Une cle introuvable
  * n est pas une erreur au sens de Bean Validation : le message est rendu <b>tel
  * quel</b>. Le formulaire public d inscription affichait donc
- * {@code {validation.email.format}} a l utilisateur — constate en soumettant le
+ * {@code {validation.email.format}} a l utilisateur, constate en soumettant le
  * formulaire sur une application demarree, pas deduit.</p>
  *
  * <p>Le defaut avait survecu parce que <b>rien ne le regardait</b> : aucun test ne
@@ -55,7 +55,7 @@ class ClesValidationTest {
     /**
      * Ne retient que l attribut {@code message} d une annotation, et seulement quand
      * sa valeur est <b>entierement</b> une cle entre accolades. Bean Validation ne
-     * resout que cette forme-la ; un message litteral ne concerne pas ce test.
+     * resout que cette forme-la. Un message litteral ne concerne pas ce test.
      */
     private static final Pattern MESSAGE = Pattern.compile("message\\s*=\\s*\"\\{([^}]+)}\"");
 

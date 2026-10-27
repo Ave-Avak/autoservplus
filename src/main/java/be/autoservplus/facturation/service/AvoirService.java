@@ -22,25 +22,25 @@ import java.util.UUID;
  * <p><b>Pourquoi un avoir et non une correction de la facture.</b> Le trigger
  * {@code tg_facture_immuable} (V6) refuse tout UPDATE sur les donnees comptables
  * d une facture emise, et ce refus n est pas un obstacle a contourner : c est la
- * regle. Une facture transmise au client et declaree a la TVA ne se reecrit pas ; on
+ * regle. Une facture transmise au client et declaree a la TVA ne se reecrit pas. On
  * emet un second document qui la contre-passe, et les deux se lisent ensemble. Toute
  * la retractation repose sur ce point.</p>
  *
  * <p><b>Idempotence a deux etages</b>, comme pour la facture. Le controle applicatif
  * rend l operation rejouable : une validation redistribuee retrouve l avoir existant
  * et le retourne tel quel. Deux validations <b>simultanees</b> passeraient toutes
- * deux ce controle ; l index unique {@code uq_avoir_facture} (V27) refuse alors la
- * seconde insertion, sa transaction est annulee — et avec elle son numero, rendu au
+ * deux ce controle. L index unique {@code uq_avoir_facture} (V27) refuse alors la
+ * seconde insertion, sa transaction est annulee, et avec elle son numero, rendu au
  * compteur, ainsi que le remboursement qu elle portait.</p>
  *
  * <p><b>Propagation.MANDATORY</b> sur l emission : elle consomme un numero de la
- * suite legale et doit partager le sort de la transaction qui l a demandee — celle
+ * suite legale et doit partager le sort de la transaction qui l a demandee, celle
  * qui rembourse et qui bascule la commande. Ouvrir sa propre transaction laisserait
  * exister un avoir sans remboursement si la suite echouait.</p>
  *
  * <p>Le PDF n est pas produit ici : l avoir existe en base des la validation, le
  * document n est fabrique qu a la premiere demande de telechargement
- * ({@code PdfAvoirService}). Emettre et imprimer sont deux gestes distincts — meme
+ * ({@code PdfAvoirService}). Emettre et imprimer sont deux gestes distincts : meme
  * choix que pour la facture.</p>
  */
 @Service
@@ -65,7 +65,7 @@ public class AvoirService {
      *
      * <p>Les montants ne sont pas passes en parametre : ils sont ceux de la facture,
      * lus d elle. Laisser l appelant les fournir ouvrirait la porte a un avoir qui
-     * n annule pas exactement la facture qu il pretend corriger — precisement
+     * n annule pas exactement la facture qu il pretend corriger, precisement
      * l erreur qu un controle de TVA cherche.</p>
      *
      * @param motif motif legal retenu, sous forme stable et non traduite
@@ -94,7 +94,7 @@ public class AvoirService {
     }
 
     /**
-     * Charge un avoir en verifiant qu il appartient bien au membre — via la facture
+     * Charge un avoir en verifiant qu il appartient bien au membre : via la facture
      * qu il corrige, qui porte le titulaire. L avoir d autrui remonte comme
      * {@link RessourceIntrouvableException}, donc 404 et non 403 : confirmer
      * l existence d une note de credit a un tiers serait deja une fuite, s agissant

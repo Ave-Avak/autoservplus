@@ -4,8 +4,8 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${terme != null ? 'Recherche : ' + terme : 'Recherche'} + ' — AutoServ+'">
-        Recherche — AutoServ+</title>
+    <title th:text="${terme != null ? 'Recherche : ' + terme : 'Recherche'} + ' | AutoServ+'">
+        Recherche | AutoServ+</title>
     <!-- Une page de resultats n a pas vocation a etre indexee : son contenu depend
          du terme saisi et n apporte rien aux moteurs de recherche. -->
     <meta name="robots" content="noindex, follow">
@@ -23,7 +23,7 @@
     <form class="recherche" th:action="@{/recherche}" method="get" role="search">
         <label for="q" class="visuellement-cache">Rechercher dans le catalogue</label>
         <input type="search" id="q" name="q" th:value="${terme}"
-               placeholder="Vidange, plaquettes, filtre…" autofocus>
+               placeholder="Vidange, plaquettes, filtre..." autofocus>
         <button type="submit" class="btn-cta">Rechercher</button>
     </form>
 
