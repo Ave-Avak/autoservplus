@@ -74,7 +74,7 @@ import be.autoservplus.support.SocleIntegration;
  *       requete valide les clauses {@code WHERE};</li>
  *   <li>les {@code JOIN FETCH} du module : {@code open-in-view} est desactive et
  *       les entites sont converties en objets de transfert, un chargement paresseux
- *       oublie se verrait ici ;</li>
+ *       oublie se verrait ici.</li>
  *   <li>le rendu reel du template et la resolution des cles i18n.</li>
  * </ul>
  *

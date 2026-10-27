@@ -28,7 +28,7 @@ import java.util.concurrent.ConcurrentHashMap;
  *   <li>la memoire est perdue au redemarrage, un membre pourrait obtenir un
  *       second export apres un deploiement. Le risque est celui d une lecture
  *       supplementaire de son propre dossier, sans consequence sur la
- *       confidentialite ;</li>
+ *       confidentialite.</li>
  *   <li>elle n est pas partagee entre instances. La V1 est mono-instance. Une
  *       execution repartie demanderait un magasin commun (cache distribue ou
  *       table dediee, donc migration).</li>

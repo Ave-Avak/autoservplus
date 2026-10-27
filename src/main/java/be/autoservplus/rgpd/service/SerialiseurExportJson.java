@@ -20,11 +20,11 @@ import java.nio.charset.StandardCharsets;
  * fonctionnalite pourrait modifier un jour. Quatre choix, tous voulus :
  * <ul>
  *   <li><b>snake_case</b> : le fichier se lit hors de Java, ses noms de champs
- *       suivent la convention JSON et non celle du code ;</li>
+ *       suivent la convention JSON et non celle du code.</li>
  *   <li><b>dates ISO 8601</b> plutot qu horodatages numeriques : un
- *       {@code 2026-08-22T09:15:00Z} se lit sans outil, un epoch non ;</li>
+ *       {@code 2026-08-22T09:15:00Z} se lit sans outil, un epoch non.</li>
  *   <li><b>indentation</b> : l article 12 exige une forme intelligible, le
- *       destinataire est une personne, pas un programme ;</li>
+ *       destinataire est une personne, pas un programme.</li>
  *   <li><b>UTF-8 explicite</b> : les libelles portent des accents, et la
  *       plateforme est trilingue.</li>
  * </ul>

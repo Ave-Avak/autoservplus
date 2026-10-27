@@ -51,7 +51,7 @@ import java.util.stream.Collectors;
  * <p><b>Deux gardes</b> avant qu un octet ne soit produit, dans cet ordre :
  * <ol>
  *   <li>le mot de passe est reconfirme, une session ouverte ne suffit pas a
- *       rassembler tout le dossier d une personne en un seul fichier ;</li>
+ *       rassembler tout le dossier d une personne en un seul fichier.</li>
  *   <li>la limite d un export par 24 heures est verifiee.</li>
  * </ol>
  * L ordre n est pas indifferent : une mauvaise saisie de mot de passe ne doit ni

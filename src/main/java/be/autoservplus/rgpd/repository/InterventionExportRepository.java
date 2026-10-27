@@ -17,7 +17,7 @@ import java.util.List;
  * <ul>
  *   <li>{@code rdv_id} est nullable en base (une intervention peut naitre d une
  *       entree directe au garage) donc filtrer sur le RDV laisserait echapper des
- *       dossiers du membre le jour ou ce chemin de creation existera ;</li>
+ *       dossiers du membre le jour ou ce chemin de creation existera.</li>
  *   <li>une jointure vers {@code Vehicule} porterait son {@code @SQLRestriction} :
  *       retirer un vehicule du parc effacerait ses interventions de l export, alors
  *       que la suppression logique existe precisement pour <i>preserver</i> cet

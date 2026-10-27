@@ -32,9 +32,9 @@ import java.util.Map;
  *
  * <p>Trois blocs :
  * <ul>
- *   <li>{@code donneesPersonnelles} : les donnees du membre, lues en base ;</li>
+ *   <li>{@code donneesPersonnelles} : les donnees du membre, lues en base.</li>
  *   <li>{@code informationsTraitement} : le rappel legal exige par l article 15,
- *       qui decrit le traitement et ne vient pas du dossier du membre ;</li>
+ *       qui decrit le traitement et ne vient pas du dossier du membre.</li>
  *   <li>{@code exclusions} : ce qui n est volontairement pas communique, et
  *       pourquoi. Le silence serait ambigu : une absence peut se lire comme un
  *       oubli. La note sur la carte bancaire, notamment, affirme une absence de
@@ -138,7 +138,7 @@ public record ExportDonnees(
      * <p><b>Deux etats distincts</b>, souvent confondus :
      * <ul>
      *   <li>{@code actif} : le vehicule ne circule plus, le membre ne le propose
-     *       plus a la reservation. Drapeau metier ;</li>
+     *       plus a la reservation. Drapeau metier.</li>
      *   <li>{@code supprime} : le membre a retire le vehicule de son parc. La ligne
      *       reste en base (l effacer reviendrait a effacer des factures deja
      *       emises) donc la donnee est toujours <b>detenue</b> et l article 15

@@ -13,10 +13,10 @@ package be.autoservplus.common.exception;
  * <p>Les deux besoins sont donc separes plutot qu opposes :</p>
  * <ul>
  *   <li>{@link #getMessage()} rend la <b>phrase destinee a l utilisateur</b>, seule,
- *       affichable sans retouche ;</li>
+ *       affichable sans retouche.</li>
  *   <li>{@link #getCodeRegle()} rend le <b>code de tracabilite</b>, pour le routage
  *       applicatif et les tests, c est deja ainsi que {@code RdvController} choisit
- *       le champ de formulaire a annoter ;</li>
+ *       le champ de formulaire a annoter.</li>
  *   <li>{@link #toString()} accole le code, de sorte que journaux et traces de pile
  *       le portent encore. La tracabilite n est pas perdue, elle est deplacee la ou
  *       elle sert.</li>

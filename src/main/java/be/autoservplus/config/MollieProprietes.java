@@ -15,7 +15,7 @@ import java.util.Set;
  *   <li>une <b>cle API</b> {@code test_...} ou {@code live_...} : elle est creee POUR
  *       un profil de site et porte le mode dans son prefixe. Elle designe donc a elle
  *       seule ou imputer le paiement et s il est de test. Mollie refuse d ailleurs
- *       qu on le lui repete. Rien d autre a fournir ;</li>
+ *       qu on le lui repete. Rien d autre a fournir.</li>
  *   <li>tout <b>jeton d acces</b>, jeton d organisation {@code access_...}, jeton
  *       d acces avance cree depuis le tableau de bord, jeton d application OAuth : il
  *       authentifie une organisation, pas un site. Mollie ne peut alors deduire ni a
