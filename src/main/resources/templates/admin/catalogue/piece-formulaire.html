@@ -29,7 +29,7 @@
         <div class="champ">
             <label for="codeCategorie" th:text="#{admin.catalogue.champ.categorie}">Catégorie</label>
             <select id="codeCategorie" th:field="*{codeCategorie}" required>
-                <option value="" th:text="#{admin.catalogue.champ.categorie-choisir}">— Choisir —</option>
+                <option value="" th:text="#{admin.catalogue.champ.categorie-choisir}">Choisir une catégorie</option>
                 <option th:each="c : ${categories}" th:value="${c.code}"
                         th:text="${c.libelle}">Filtres</option>
             </select>
