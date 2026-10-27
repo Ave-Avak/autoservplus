@@ -25,11 +25,11 @@ import java.util.UUID;
  * administrateur, lui renvoyer son lien, reinitialiser un second facteur.
  *
  * <p><b>Aucun mot de passe ne transite par courriel.</b> Le compte nait avec l empreinte
- * d un secret aleatoire aussitot jete — le patron de l anonymisation : la colonne est
+ * d un secret aleatoire aussitot jete, le patron de l anonymisation : la colonne est
  * NOT NULL et la verification passe par l encodeur, une valeur hors format echouerait
  * sur une exception au lieu d un refus. Le titulaire choisit le sien en suivant un lien
  * a usage unique. Un mot de passe envoye par courriel resterait lisible dans une boite de
- * reception pendant des annees ; un lien consomme ne vaut plus rien.</p>
+ * reception pendant des annees. Un lien consomme ne vaut plus rien.</p>
  */
 @Service
 @Transactional(readOnly = true)

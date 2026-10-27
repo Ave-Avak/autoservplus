@@ -6,7 +6,7 @@ package be.autoservplus.vente.domain;
  *
  * <p>Naissance en EN_ATTENTE_PAIEMENT (RM-19). Le bloc paiement exerce
  * EN_ATTENTE_PAIEMENT vers PAYEE (webhook confirme) et vers ANNULEE (timeout
- * RM-21) ; la retractation (F30, RM-23) exerce PAYEE vers REMBOURSEE, a la
+ * RM-21). La retractation (F30, RM-23) exerce PAYEE vers REMBOURSEE, a la
  * validation de la demande d annulation par l administrateur.</p>
  */
 public enum StatutCommande {

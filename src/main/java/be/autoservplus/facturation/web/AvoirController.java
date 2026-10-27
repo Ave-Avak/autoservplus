@@ -22,9 +22,9 @@ import java.util.UUID;
  *
  * <p>Jumeau de {@code FactureController}, et volontairement identique dans ses
  * gardes : la note de credit est adressee par sa reference publique et
- * l appartenance est verifiee au service — l avoir d autrui remonte en <b>404, jamais
+ * l appartenance est verifiee au service, l avoir d autrui remonte en <b>404, jamais
  * en 403</b>. Un 403 confirmerait a un tiers que cette note de credit existe, alors
- * qu il s agit d un document nominatif ; et il apprendrait au passage que le
+ * qu il s agit d un document nominatif. Et il apprendrait au passage que le
  * titulaire a exerce son droit de retractation.</p>
  *
  * <p>L identite vient du contexte de securite, jamais d un parametre de requete :
@@ -33,7 +33,7 @@ import java.util.UUID;
  *
  * <p>{@code RessourceIntrouvableException} porte deja
  * {@code @ResponseStatus(NOT_FOUND)} : ce controleur n a rien a catcher pour rendre
- * un 404 propre — il sert des octets ou rien.</p>
+ * un 404 propre, il sert des octets ou rien.</p>
  */
 @Controller
 @RequestMapping("/avoirs")

@@ -451,7 +451,7 @@ class InterventionTest {
     /**
      * RM-15 : « un depassement de PLUS DE dix pour cent du devis exige un accord
      * expres du client avant poursuite ». Le devis de reference est la vidange seule
-     * (49,00 € HTVA), le seuil vaut donc 53,90 € — la borne exacte est testee dans les
+     * (49,00 € HTVA), le seuil vaut donc 53,90 € : la borne exacte est testee dans les
      * deux sens, c est elle qui distingue une lecture stricte d une lecture large.
      */
     @Nested

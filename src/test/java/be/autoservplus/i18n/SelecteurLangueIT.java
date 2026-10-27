@@ -35,7 +35,7 @@ import be.autoservplus.support.SocleIntegration;
  *
  * <p>Chaque cas verifie <b>deux choses ensemble</b> : que les libelles changent, et
  * que l attribut {@code lang} du document change avec eux. Les dissocier laisserait
- * passer exactement le defaut d origine — un site qui sert du neerlandais en
+ * passer exactement le defaut d origine, un site qui sert du neerlandais en
  * annoncant {@code lang="fr"}, ce qui fait prononcer un texte neerlandais avec la
  * phonetique francaise par un lecteur d ecran (<b>WCAG 3.1.1</b>).</p>
  *
@@ -209,7 +209,7 @@ class SelecteurLangueIT extends SocleIntegration {
          * monde et aucun ecran ne l ecrit : appliquer la preference a chaque requete
          * authentifiee revenait a servir du francais a tout membre connecte, y compris
          * celui dont le navigateur reclame du neerlandais et qui n a jamais rien choisi.
-         * Quatre tests deja en place l ont montre ; celui-ci le dit a l endroit ou la
+         * Quatre tests deja en place l ont montre. Celui-ci le dit a l endroit ou la
          * regle est ecrite.
          */
         @Test

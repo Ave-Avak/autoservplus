@@ -17,12 +17,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  * Ecran « Mes notifications » (BL-6).
  *
  * <p>La protection d URL de {@code SecuriteConfig} exige deja une authentification
- * ({@code anyRequest().authenticated()}) ; {@link NotificationService} redouble par
+ * ({@code anyRequest().authenticated()}). {@link NotificationService} redouble par
  * {@code @PreAuthorize} en defense en profondeur, et porte le controle de propriete.
  * L identite vient du contexte de securite, jamais d un parametre de requete.</p>
  *
  * <p>POST-redirect-flash sur les deux actions : un rafraichissement apres marquage ne
- * doit pas rejouer la requete. Aucun {@code try/catch} —
+ * doit pas rejouer la requete. Aucun {@code try/catch} :
  * {@code RessourceIntrouvableException} porte {@code @ResponseStatus(NOT_FOUND)}, donc
  * un identifiant inconnu ou une notification d autrui produit un 404 sans code
  * supplementaire.</p>

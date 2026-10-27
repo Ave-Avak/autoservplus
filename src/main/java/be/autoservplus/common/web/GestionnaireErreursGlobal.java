@@ -20,14 +20,14 @@ import org.springframework.web.servlet.NoHandlerFoundException;
  * <p><b>Ce n est pas ce qui rend le 404.</b>
  * {@link RessourceIntrouvableException} porte deja
  * {@code @ResponseStatus(NOT_FOUND)} : une reference inconnue produisait donc
- * <b>deja</b> un 404, jamais un 500 — la dette qui annoncait l inverse etait
+ * <b>deja</b> un 404, jamais un 500, la dette qui annoncait l inverse etait
  * perimee. Ce que cet advice apporte, c est la <b>page</b> : sans lui, ce 404
  * s affiche sur la page Whitelabel de Spring Boot, qui ne parle aucune des trois
  * langues du projet et ne ramene nulle part.</p>
  *
  * <p><b>Deux exceptions seulement, jamais un attrape-tout.</b> Un
  * {@code @ExceptionHandler(Exception.class)} capturerait aussi les exceptions de
- * Spring MVC — parametre absent, verbe non supporte — auxquelles le framework
+ * Spring MVC (parametre absent, verbe non supporte) auxquelles le framework
  * associe deja le bon statut, et les degraderait en 500. Le detail de la tentative
  * et de son retrait est en commentaire plus bas.</p>
  *
@@ -43,12 +43,12 @@ import org.springframework.web.servlet.NoHandlerFoundException;
  *       quand un {@code @ExceptionHandler} rend une vue : le fragment recevrait
  *       {@code choixCookiesExprime} a {@code null} et casserait le rendu. Une page
  *       d erreur qui plante est le pire endroit ou planter. L omission est sans effet
- *       sur la conformite — cette page ne depose aucun cookie, ne charge aucun
+ *       sur la conformite : cette page ne depose aucun cookie, ne charge aucun
  *       traceur, et le bandeau reparait des la page suivante. A revoir le jour ou un
  *       traceur optionnel sera cable.</li>
  *   <li>Un commentaire HTML est <b>servi au navigateur</b>. Y expliquer le
  *       fonctionnement interne expedierait des noms de classes du projet a chaque
- *       404 — c est ce qu a rattrape {@code aucuneFuiteTechnique}, sur ce fichier
+ *       404 : c est ce qu a rattrape {@code aucuneFuiteTechnique}, sur ce fichier
  *       meme. Le pourquoi vit donc ici, dans du code qui ne part jamais sur le
  *       reseau.</li>
  * </ul>
@@ -94,15 +94,15 @@ public class GestionnaireErreursGlobal {
 
     // PAS de @ExceptionHandler(Exception.class) ici, et c est deliberе.
     //
-    // Un attrape-tout parait etre un filet de securite ; c en est un piege. Il
-    // capture aussi les exceptions de Spring MVC — parametre absent, verbe non
-    // supporte, type de contenu refuse — auxquelles le framework associe deja le
+    // Un attrape-tout parait etre un filet de securite. C en est un piege. Il
+    // capture aussi les exceptions de Spring MVC : parametre absent, verbe non
+    // supporte, type de contenu refuse : auxquelles le framework associe deja le
     // bon statut, et les degrade toutes en 500. Essaye puis retire : il faisait
     // passer PaiementWebhookControllerTest.parametreManquant de 400 a 500, soit
     // exactement le contraire du but recherche.
     //
-    // Le besoin qu il devait couvrir — ne pas divulguer de detail technique sur une
-    // erreur imprevue — est deja tenu par Spring Boot, dont server.error
+    // Le besoin qu il devait couvrir : ne pas divulguer de detail technique sur une
+    // erreur imprevue : est deja tenu par Spring Boot, dont server.error
     // .include-stacktrace et include-message valent « never » par defaut : la page
     // d erreur ne montre que le statut et le chemin. Rien a ajouter, donc rien
     // ajoute.

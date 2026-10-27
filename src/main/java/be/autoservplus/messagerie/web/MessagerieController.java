@@ -23,7 +23,7 @@ import java.util.UUID;
 /**
  * Messagerie cote membre (BL-5), sous {@code /mes-messages}.
  *
- * <p>La protection d URL exige l authentification ; {@link MessagerieService} redouble
+ * <p>La protection d URL exige l authentification. {@link MessagerieService} redouble
  * par {@code @PreAuthorize} de classe et porte le controle de propriete. L identite
  * vient du contexte de securite, jamais de l URL.</p>
  *

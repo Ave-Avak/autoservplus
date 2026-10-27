@@ -11,7 +11,7 @@ import java.util.Locale;
  *
  * <p>Le choix du support n est pas technique. Un cookie de langue serait un cookie
  * de plus, et il faudrait alors trancher s il est « strictement necessaire » au
- * sens de l exemption de l article 129 de la loi du 13 juin 2005 — ce qui rouvrirait
+ * sens de l exemption de l article 129 de la loi du 13 juin 2005 : ce qui rouvrirait
  * la question reglee par F25, pour un confort. La session existe deja, elle est
  * couverte par les cookies strictement necessaires deja declares au bandeau, et
  * elle suffit : la preference d un membre connecte est <b>persistee en base</b>
@@ -31,7 +31,7 @@ public class ResolveurLangueSession extends SessionLocaleResolver {
     /**
      * Langue heritee quand aucun choix n a ete exprime dans la session.
      *
-     * <p>L en-tete {@code Accept-Language} du navigateur reste consulte — c est le
+     * <p>L en-tete {@code Accept-Language} du navigateur reste consulte : c est le
      * comportement qui existait avant F6, et le supprimer aurait servi du francais a
      * un visiteur neerlandophone qui n a rien demande. Il est simplement <b>ramene a
      * l ensemble admis</b> : une langue inconnue donne du francais, pas un document

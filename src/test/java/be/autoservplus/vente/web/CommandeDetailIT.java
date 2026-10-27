@@ -41,8 +41,8 @@ import be.autoservplus.support.SocleIntegration;
 /**
  * Detail d une commande passee de bout en bout (F32), sur un PostgreSQL reel.
  *
- * <p>La commande est fabriquee par la <b>vraie chaine</b> — panier, conversion,
- * paiement, webhook — et non montee a la main : c est ainsi que les lignes portent
+ * <p>La commande est fabriquee par la <b>vraie chaine</b> (panier, conversion,
+ * paiement, webhook) et non montee a la main : c est ainsi que les lignes portent
  * de vrais prix figes, que le paiement existe reellement et que la facture est
  * emise par son evenement. Un montage direct en base testerait le gabarit, pas
  * l ecran.</p>
@@ -99,7 +99,7 @@ class CommandeDetailIT extends SocleIntegration {
         });
     }
 
-    /** Panier converti en commande, pour le membre indique ; rend sa reference. */
+    /** Panier converti en commande, pour le membre indique. Rend sa reference. */
     private UUID commander(String email, Piece piece, int quantite) throws Exception {
         panierService.ajouterPiece(email, piece.getReference(), quantite);
         String redirection = mvc.perform(post("/commande").with(user(email).roles("MEMBRE"))
@@ -136,8 +136,8 @@ class CommandeDetailIT extends SocleIntegration {
     class Appartenance {
 
         /**
-         * La garde du bloc. Un 403 confirmerait a Jean que cette commande existe ;
-         * seul un 404 ne dit rien — meme code qu une reference inventee.
+         * La garde du bloc. Un 403 confirmerait a Jean que cette commande existe.
+         * Seul un 404 ne dit rien : meme code qu une reference inventee.
          */
         @Test
         @DisplayName("la commande d'un autre membre remonte en 404, jamais en 403")
@@ -290,7 +290,7 @@ class CommandeDetailIT extends SocleIntegration {
         /**
          * Le POST avec jeton, qui part vers la passerelle bouchonnee, est deja
          * exerce par {@link CommandeDetailIT#payer} et par
-         * {@code ParcoursPaiementSimuleIT.urlDePaiement} — inutile de le redire. Le
+         * {@code ParcoursPaiementSimuleIT.urlDePaiement} : inutile de le redire. Le
          * refus sans jeton, lui, n etait verifie que sur {@code POST /commande} :
          * ce bouton place la reprise sur deux ecrans de plus, d ou la garde ici.
          */

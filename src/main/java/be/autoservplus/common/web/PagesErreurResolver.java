@@ -14,7 +14,7 @@ import java.util.Map;
  * Page d erreur du conteneur ({@code /error}) : le gabarit {@code erreur.html} du projet,
  * pour tout statut, a la place de la page Whitelabel de Spring Boot.
  *
- * <p>403, 404 et 500 ont leur titre et leur message ; tout autre statut (400, 405…)
+ * <p>403, 404 et 500 ont leur titre et leur message. Tout autre statut (400, 405...)
  * recoit un message generique. Le meme gabarit sert deja les erreurs rattrapees par
  * {@code GestionnaireErreursGlobal} : une seule page, un seul retour vers la page
  * d arrivee du role.</p>

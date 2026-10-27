@@ -29,7 +29,7 @@ import java.util.UUID;
  * {@code uq_avis_intervention}) et c est le bon niveau : le membre juge un travail
  * reellement effectue sur son vehicule, a une date donnee, pas une ligne de
  * catalogue. La note moyenne d une prestation se deduit ensuite par jointure sur les
- * lignes d intervention — un avis nourrit donc autant de moyennes qu il y avait de
+ * lignes d intervention, un avis nourrit donc autant de moyennes qu il y avait de
  * prestations dans le travail.</p>
  *
  * <p><b>Un seul avis par intervention</b>, garanti en base et non seulement dans le
@@ -39,12 +39,12 @@ import java.util.UUID;
  * <p><b>Note immuable, commentaire effacable.</b> La note ne bouge plus une fois
  * deposee : elle entre dans une moyenne publique, et la reecrire changerait
  * retroactivement une statistique deja affichee. Le commentaire, lui, est du texte
- * libre pouvant contenir des donnees personnelles — il doit pouvoir etre neutralise
+ * libre pouvant contenir des donnees personnelles, il doit pouvoir etre neutralise
  * sans que la note disparaisse (voir {@link #anonymiserCommentaire}, F23).</p>
  *
  * <p><b>Publication a priori, moderation a posteriori.</b> {@code publie} vaut
  * {@code true} par defaut en base : un avis est visible des son depot. Le garage n a
- * pas a valider ce qui le concerne avant publication — un avis retenu jusqu a
+ * pas a valider ce qui le concerne avant publication : un avis retenu jusqu a
  * approbation ne serait plus un avis mais une recommandation. La moderation existe
  * pour retirer ce qui est illicite ou hors sujet, pas pour filtrer ce qui deplait.</p>
  */
@@ -148,7 +148,7 @@ public class Avis extends BaseEntity {
      *
      * <p><b>La note numerique est conservee, le texte disparait.</b> Le commentaire est
      * du texte libre : le membre a pu y ecrire son nom, sa plaque, celui de son
-     * garagiste. La note, elle, ne designe personne — c est un chiffre entre 1 et 5,
+     * garagiste. La note, elle, ne designe personne : c est un chiffre entre 1 et 5,
      * qui n est pas plus identifiant apres l anonymisation qu avant, et qui reste
      * rattache a une ligne dont l auteur porte desormais le jeton anonyme. L effacer
      * fausserait retroactivement les moyennes publiques d une prestation, sans rien

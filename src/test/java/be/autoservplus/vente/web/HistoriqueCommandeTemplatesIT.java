@@ -34,7 +34,7 @@ import be.autoservplus.support.SocleIntegration;
  * Rendu reel de l ecran d historique contre le contexte Spring complet : c est ici
  * qu une cle i18n manquante ou une expression Thymeleaf fautive se voit, pas dans
  * le {@code @WebMvcTest} qui court-circuite le gabarit. Les requetes fixent la
- * locale — MockMvc est anglophone par defaut.
+ * locale : MockMvc est anglophone par defaut.
  */
 @SpringBootTest
 @AutoConfigureMockMvc

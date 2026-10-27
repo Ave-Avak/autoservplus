@@ -38,19 +38,19 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * Export des donnees personnelles d un membre (F22 — droit d acces, article 15
+ * Export des donnees personnelles d un membre (F22 : droit d acces, article 15
  * RGPD).
  *
  * <p>Service d agregation <b>strictement en lecture</b> : {@code readOnly = true}
  * sur toute la classe, et les repositories du module etendent
  * {@code Repository} sans methode d ecriture. Exercer un droit d acces ne modifie
- * rien — la seule trace laissee est l horodatage en memoire de
+ * rien : la seule trace laissee est l horodatage en memoire de
  * {@link RegistreExportsRecents}, qui sert la limite de frequence et ne touche pas
  * au dossier de la personne.
  *
  * <p><b>Deux gardes</b> avant qu un octet ne soit produit, dans cet ordre :
  * <ol>
- *   <li>le mot de passe est reconfirme — une session ouverte ne suffit pas a
+ *   <li>le mot de passe est reconfirme, une session ouverte ne suffit pas a
  *       rassembler tout le dossier d une personne en un seul fichier ;</li>
  *   <li>la limite d un export par 24 heures est verifiee.</li>
  * </ol>
@@ -62,18 +62,18 @@ import java.util.stream.Collectors;
  * adresse de courriel par le controleur ({@code @AuthenticationPrincipal}), jamais
  * d un parametre de requete. Chaque requete du module filtre sur cette adresse : il
  * n existe aucun chemin par lequel l export d un membre pourrait contenir la donnee
- * d un autre — l ownership n est pas verifie apres coup, il est la condition meme du
+ * d un autre, l ownership n est pas verifie apres coup, il est la condition meme du
  * chargement.
  *
  * <p><b>Chargement</b> : {@code open-in-view} etant desactive, chaque requete
  * charge d avance ce que la conversion en objet de transfert lira. Le cout est
- * borne — une requete par section, deux pour les commandes et leurs lignes —
+ * borne (une requete par section, deux pour les commandes et leurs lignes)
  * independamment du volume : aucun N+1.
  *
  * <p><b>Suppressions logiques</b> : une ligne masquee par {@code deleted_at} est
  * toujours detenue, l article 15 la vise donc. Le parc du membre est lu par
- * requete native pour passer outre le {@code @SQLRestriction} de {@code Vehicule}
- * — seule entite que l application supprime effectivement de facon logique — et
+ * requete native pour passer outre le {@code @SQLRestriction} de {@code Vehicule} :
+ * seule entite que l application supprime effectivement de facon logique, et
  * chaque vehicule sort marque {@code supprime} avec sa date. Les sections atelier
  * en dependent : joindre {@code Vehicule} y aurait fait disparaitre les
  * rendez-vous et interventions d un vehicule retire du parc, alors que la
@@ -87,7 +87,7 @@ import java.util.stream.Collectors;
  *
  * <p><b>Factures</b> : restituees depuis l entite {@code Facture} du module
  * facturation, et non deduites des commandes payees. Une commande payee n est pas
- * une facture — cette derniere porte un numero legal d une suite continue, sa
+ * une facture : cette derniere porte un numero legal d une suite continue, sa
  * propre date d emission et des montants figes a l emission. Les deux sections
  * coexistent : une commande annulee n a pas de facture, et la commande reste une
  * donnee detenue a part entiere.
@@ -176,7 +176,7 @@ public class ExportDonneesService {
     }
 
     /**
-     * Temps restant avant un nouvel export ; vide si le membre peut exporter.
+     * Temps restant avant un nouvel export. Vide si le membre peut exporter.
      *
      * <p>Expose au controleur ce que la garde utilise elle-meme : l ecran annonce
      * l echeance avant la tentative, il ne la decouvre pas par un refus.
@@ -194,7 +194,7 @@ public class ExportDonneesService {
      * fichier se relit longtemps apres la session qui l a produit.
      *
      * @throws RessourceIntrouvableException si l adresse ne correspond a aucun
-     *         compte — impossible pour un utilisateur authentifie, mais un export
+     *         compte : impossible pour un utilisateur authentifie, mais un export
      *         ne se construit pas sur un titulaire suppose
      */
     public ExportDonnees assembler(String email) {
@@ -206,8 +206,8 @@ public class ExportDonneesService {
      *
      * <p>La comparaison passe par l encodeur du projet ({@code BCrypt}, cout 12),
      * jamais par une egalite de chaines : l empreinte ne se compare pas, elle se
-     * verifie. Le {@code null} est ecarte avant l appel — {@code BCrypt} ne
-     * l accepte pas — et vaut echec, pas exception technique.
+     * verifie. Le {@code null} est ecarte avant l appel ({@code BCrypt} ne
+     * l accepte pas) et vaut echec, pas exception technique.
      */
     private void exigerMotDePasse(Utilisateur membre, String motDePasse) {
         if (motDePasse == null || motDePasse.isEmpty()
@@ -240,7 +240,7 @@ public class ExportDonneesService {
 
         // Parc complet du membre, suppressions logiques comprises : c'est la seule
         // liste qui dise ce qui est reellement detenu, et elle sert de reference
-        // aux sections atelier — dont les jointures vers Vehicule auraient filtre
+        // aux sections atelier : dont les jointures vers Vehicule auraient filtre
         // les dossiers d'un vehicule retire du parc.
         List<Vehicule> parc = vehicules.pourMembre(membre.getId());
         Map<Long, String> plaques = parc.stream()
@@ -290,7 +290,7 @@ public class ExportDonneesService {
      * <p>Lire {@code vehicule.getPlaque()} directement ferait initialiser le proxy
      * paresseux, et l initialisation par identifiant applique le
      * {@code @SQLRestriction} : un vehicule supprime leverait
-     * {@code EntityNotFoundException}. Seul l identifiant est lu sur le proxy — il
+     * {@code EntityNotFoundException}. Seul l identifiant est lu sur le proxy : il
      * vient de la cle etrangere, sans acces a la base.
      */
     private static String plaque(Map<Long, String> plaques, Vehicule vehicule) {
@@ -306,7 +306,7 @@ public class ExportDonneesService {
      * mappe {@code created_at} mais ne l expose pas, et lui ajouter un accesseur
      * modifierait {@code vente}.
      *
-     * <p>Une lecture ne cree jamais de panier — RM-19 reserve le trouve-ou-cree aux
+     * <p>Une lecture ne cree jamais de panier : RM-19 reserve le trouve-ou-cree aux
      * chemins d ecriture. Un membre sans panier obtient une section vide, pas une
      * ligne en base.
      */

@@ -20,23 +20,23 @@ import java.util.UUID;
  * Facture emise : document comptable legal, immuable des sa creation (F31).
  *
  * <p><b>Pas de suppression logique</b>, contrairement aux entites metier du socle :
- * une facture ne se supprime pas, meme logiquement — la loi impose sa conservation
+ * une facture ne se supprime pas, meme logiquement, la loi impose sa conservation
  * dix ans et sa seule correction legale est la note de credit (table {@code avoir}).
- * Elle n herite donc pas de {@code BaseEntity}, qui porterait {@code deleted_at} ;
- * meme precedent que les journaux append-only du projet.</p>
+ * Elle n herite donc pas de {@code BaseEntity}, qui porterait {@code deleted_at}.
+ * Meme precedent que les journaux append-only du projet.</p>
  *
  * <p><b>Immuabilite</b> defendue en base par le trigger {@code tg_facture_immuable}
  * (V6), qui refuse toute modification du numero, des montants, du taux et de la date
  * d emission. Le mapping le redouble par {@code updatable = false} : la garde de
  * l entite evite l aller-retour vers la base, celle de la base survit a n importe
- * quel appelant. Seul {@code cheminPdf} reste modifiable — le document est archive
+ * quel appelant. Seul {@code cheminPdf} reste modifiable, le document est archive
  * apres coup, sans que son contenu comptable bouge.</p>
  *
  * <p><b>Source</b> : une commande OU une intervention, jamais les deux (CHECK
- * {@code ck_facture_origine_unique}). Ce bloc ne livre que la facture de commande ;
+ * {@code ck_facture_origine_unique}). Ce bloc ne livre que la facture de commande.
  * {@code interventionId} est mappe en identifiant brut plutot qu en association pour
  * que la colonne existe des maintenant sans faire dependre la facturation du module
- * intervention — le bloc RM-17 futur promouvra l association s il en a besoin.</p>
+ * intervention, le bloc RM-17 futur promouvra l association s il en a besoin.</p>
  *
  * <p><b>Montants figes</b> : recopies de la commande a l emission, jamais relus du
  * catalogue. Une modification de prix posterieure ne reecrit donc aucune facture,
@@ -122,7 +122,7 @@ public class Facture {
      * Emet la facture d une commande payee. Les montants sont ceux de la commande,
      * recopies tels quels : l identite HTVA + TVA = TVAC, deja garantie par la
      * commande, est reverifiee ici plutot qu attendue du CHECK
-     * {@code ck_facture_coherence} — le meme invariant, defendu aux deux etages.
+     * {@code ck_facture_coherence}, le meme invariant, defendu aux deux etages.
      *
      * @param tauxTvaApplique le taux unique, ou {@code null} si la facture est multi-taux
      */

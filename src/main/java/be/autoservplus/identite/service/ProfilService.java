@@ -70,11 +70,11 @@ public class ProfilService {
     }
 
     /**
-     * Le controle ne porte pas sur les PDF deja archives — ceux-la sont immuables et
+     * Le controle ne porte pas sur les PDF deja archives : ceux-la sont immuables et
      * gardent l adresse qu ils portaient. Il porte sur les factures dont le document
      * <b>n a pas encore ete genere</b> : {@code PdfFactureService} lit l entite vive au
      * moment de le produire, si bien qu une adresse effacee aujourd hui sortirait sur
-     * une facture emise il y a des mois — sans sa mention obligatoire.
+     * une facture emise il y a des mois, sans sa mention obligatoire.
      */
     private boolean aDesFactures(String email) {
         return factures.countByMembreEmailIgnoreCase(email) > 0;

@@ -24,7 +24,7 @@ import be.autoservplus.support.SocleIntegration;
  * garage et ses horaires. Un test a doublures resterait vert si la page se
  * construisait a vide.</p>
  *
- * <p>Les horaires attendus sont ceux du seed V10 — ouverture du lundi au vendredi
+ * <p>Les horaires attendus sont ceux du seed V10 : ouverture du lundi au vendredi
  * plus le samedi matin, dimanche ferme. Le test lit donc la meme source que
  * l agenda de reservation, ce qui est precisement le point defendu : deux sources
  * finiraient par diverger.</p>
@@ -95,7 +95,7 @@ class VitrineIT extends SocleIntegration {
 
         /**
          * WCAG 3.1.1 : l attribut de langue suit la locale servie. Le libelle traduit
-         * et l attribut sont verifies <b>ensemble</b> — les dissocier laisserait
+         * et l attribut sont verifies <b>ensemble</b> : les dissocier laisserait
          * revenir le defaut que F6 a corrige, une page annoncant une langue et en
          * servant une autre.
          */

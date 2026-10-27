@@ -20,7 +20,7 @@ import java.time.LocalDate;
 /**
  * Export comptable CSV (BL-3), sous {@code /admin/export}.
  *
- * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR ;
+ * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR.
  * {@link ExportComptableService} redouble par {@code @PreAuthorize}.</p>
  *
  * <p><b>Que des {@code GET}</b> : un export est une lecture, et l URL doit pouvoir

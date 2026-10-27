@@ -27,7 +27,7 @@ import be.autoservplus.support.SocleIntegration;
  *
  * <p>Ce formulaire est anonyme : tout ce qui distingue une adresse servie d une
  * adresse inconnue en fait un oracle d existence de compte, donc un moyen d enumerer
- * les membres. Le service portait deja cette neutralite ; le controleur la rompait en
+ * les membres. Le service portait deja cette neutralite. Le controleur la rompait en
  * renvoyant l adresse saisie au modele.</p>
  *
  * <p>Test d integration et non {@code @WebMvcTest} : c est le HTML reellement rendu
@@ -44,7 +44,7 @@ class MotDePasseDemandeIT extends SocleIntegration {
 
     /**
      * IP fixe et propre a cette classe. Le plafond de debit des formulaires publics
-     * compte par adresse IP ; sans cette epingle, tous les cas de tous les tests
+     * compte par adresse IP. Sans cette epingle, tous les cas de tous les tests
      * partageraient le budget de {@code 127.0.0.1}, que MockMvc attribue par defaut,
      * et un cas ajoute plus tard ferait echouer un cas ecrit avant lui.
      * {@code 203.0.113.0/24} est la plage reservee a la documentation (RFC 5737).
@@ -82,7 +82,7 @@ class MotDePasseDemandeIT extends SocleIntegration {
 
     /**
      * Le pendant : la neutralite ne doit pas etre obtenue en ne faisant rien. Une
-     * adresse servie voit son jeton pose, une inconnue ne cree evidemment rien — la
+     * adresse servie voit son jeton pose, une inconnue ne cree evidemment rien : la
      * difference existe en base, elle ne sort simplement pas par la reponse.
      */
     @Test
@@ -140,7 +140,7 @@ class MotDePasseDemandeIT extends SocleIntegration {
     /**
      * Horodatage d affichage d un formulaire, place assez loin dans le passe pour
      * satisfaire le delai minimal de {@code PiegeAntiBot} sans faire attendre le test.
-     * Un formulaire servi par l application porte ce champ ; ne pas l envoyer
+     * Un formulaire servi par l application porte ce champ. Ne pas l envoyer
      * reviendrait a tester un robot.
      */
     private static String affiche() {

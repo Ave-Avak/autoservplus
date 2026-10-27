@@ -65,7 +65,7 @@ public class InscriptionController {
                 && !turnstile.get().jetonValide(jeton, requete.getRemoteAddr());
     }
 
-    /** Pose de quoi rendre le widget ; vide, le fragment ne rend rien. */
+    /** Pose de quoi rendre le widget. Vide, le fragment ne rend rien. */
     private void armerFormulaire(Model modele) {
         modele.addAttribute("horodatageAntiBot", pieges.horodatageActuel());
         modele.addAttribute("cleTurnstile", cleTurnstile);

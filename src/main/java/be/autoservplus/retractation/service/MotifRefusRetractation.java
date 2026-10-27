@@ -7,7 +7,7 @@ package be.autoservplus.retractation.service;
  * <p>Un enum plutot qu un message : la couche web le traduit en cle i18n, si bien
  * que le service ne fabrique aucune chaine destinee a l utilisateur. C est aussi ce
  * qui permet aux tests d assertar la <b>raison</b> du refus et pas seulement le fait
- * qu il y en ait eu un — deux gardes differentes qui rendraient le meme message
+ * qu il y en ait eu un : deux gardes differentes qui rendraient le meme message
  * passeraient l une pour l autre.</p>
  *
  * <p>Cette liste ne couvre que ce que le systeme <b>sait</b>. Les exceptions legales
@@ -22,7 +22,7 @@ public enum MotifRefusRetractation {
 
     /**
      * Les quatorze jours legaux sont ecoules (CDE, art. VI.47). Le delai court depuis
-     * la conclusion de la commande — voir {@code RetractationService}.
+     * la conclusion de la commande : voir {@code RetractationService}.
      */
     DELAI_EXPIRE,
 
@@ -39,7 +39,7 @@ public enum MotifRefusRetractation {
      * l article VI.53, 1° du Code de droit economique fait perdre le droit de
      * retractation seulement quand le service a ete <b>pleinement execute</b> ET que le
      * consommateur avait donne son accord prealable expres. Une renonciation cochee sur
-     * un service pas encore execute ne suffit pas — le client garde son droit tant que
+     * un service pas encore execute ne suffit pas : le client garde son droit tant que
      * rien n a ete fait.</p>
      */
     SERVICE_EXECUTE_APRES_RENONCIATION

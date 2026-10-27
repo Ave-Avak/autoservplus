@@ -15,14 +15,14 @@ import java.util.Map;
  * Cle maitre des secrets TOTP.
  *
  * <p><b>Demarrage refuse sans cle, sous tout profil.</b> Une application qui demarrerait
- * sans cle devrait soit refuser tout enrolement — et les administrateurs, pour qui le
- * second facteur est obligatoire, ne pourraient plus se connecter —, soit en inventer une
+ * sans cle devrait soit refuser tout enrolement (et les administrateurs, pour qui le
+ * second facteur est obligatoire, ne pourraient plus se connecter), soit en inventer une
  * a chaque demarrage, et chaque redemarrage rendrait indechiffrables tous les secrets deja
- * enroles. Les deux echouent au pire moment ; un refus au demarrage echoue au bon, devant
+ * enroles. Les deux echouent au pire moment. Un refus au demarrage echoue au bon, devant
  * l exploitant.</p>
  *
  * <p><b>Aucune exception de profil, developpement compris.</b> Une cle tiree au hasard
- * sous {@code dev} se perdait a chaque redemarrage — devtools compris —, et un poste qui
+ * sous {@code dev} se perdait a chaque redemarrage (devtools compris), et un poste qui
  * tourne sous une regle differente de la production ne revele pas les defauts de
  * celle-ci. Les tests recoivent une cle fixe par leur propre configuration
  * ({@code src/test/resources/config/application.properties}) : le code de production ne

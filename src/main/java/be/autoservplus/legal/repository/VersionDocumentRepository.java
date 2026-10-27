@@ -22,7 +22,7 @@ public interface VersionDocumentRepository extends JpaRepository<VersionDocument
      * trois textes complets a chaque commande.</p>
      *
      * <p>Le filtre porte sur {@code date_effet <= maintenant} et pas seulement sur
-     * {@code actif} : une version peut etre publiee a l avance — c est meme la pratique
+     * {@code actif} : une version peut etre publiee a l avance, c est meme la pratique
      * attendue quand un changement de conditions doit etre annonce avant de
      * s appliquer. Sans ce filtre, elle prendrait effet a l instant de son insertion.</p>
      */
@@ -43,7 +43,7 @@ public interface VersionDocumentRepository extends JpaRepository<VersionDocument
                                                                     Langue langue);
 
     /**
-     * Toutes les langues d une version donnee — l archive doit pouvoir servir le texte
+     * Toutes les langues d une version donnee : l archive doit pouvoir servir le texte
      * neerlandais a qui l a accepte, quelle que soit la langue de sa session du jour.
      */
     List<VersionDocument> findByTypeDocumentAndVersionOrderByLangue(TypeDocumentVersionne type,

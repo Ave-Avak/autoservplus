@@ -21,7 +21,7 @@ import java.util.Set;
 
 /**
  * Passerelle Mollie : UNIQUE point de contact avec l API du prestataire
- * (strategie securite §11). Active des qu un identifiant est configure — partout
+ * (strategie securite §11). Active des qu un identifiant est configure : partout
  * ailleurs, {@link PrestatairePaiementFictif} tient le role sans reseau.
  *
  * <p><b>La cle decide, plus le profil.</b> Le choix se faisait par
@@ -38,7 +38,7 @@ import java.util.Set;
  *
  * <p><b>Le vocabulaire Mollie ne sort pas d ici.</b> Les records de dialogue sont
  * confines a cette classe, les statuts sont projetes vers {@link StatutPaiement}, et
- * aucune route d AutoServ+ n est composee ici — les URL de retour et de
+ * aucune route d AutoServ+ n est composee ici : les URL de retour et de
  * notification arrivent toutes faites dans {@link DemandePaiement}. Changer de
  * prestataire ne toucherait que ce fichier.</p>
  */
@@ -54,7 +54,7 @@ public class MollieGateway implements PrestatairePaiement {
     /**
      * Hotes que le prestataire ne peut pas joindre depuis l exterieur. Une URL de
      * notification pointant l un d eux ferait rejeter la creation du paiement par
-     * Mollie ; mieux vaut ne pas la transmettre du tout et laisser la reconciliation
+     * Mollie. Mieux vaut ne pas la transmettre du tout et laisser la reconciliation
      * au retour faire le travail.
      */
     private static final Set<String> HOTES_NON_JOIGNABLES =
@@ -68,7 +68,7 @@ public class MollieGateway implements PrestatairePaiement {
      * (voir {@link MollieProprietes#verifierCoherence()}). L arret vaut mieux que
      * les deux alternatives : rompre devant un client au moment de payer, ou se
      * rabattre en silence sur la simulation alors qu un identifiant reel a ete
-     * fourni — c est-a-dire faire croire a un encaissement qui n a pas lieu.
+     * fourni, c est-a-dire faire croire a un encaissement qui n a pas lieu.
      */
     public MollieGateway(RestClient clientMollie, MollieProprietes proprietes) {
         proprietes.verifierCoherence();
@@ -110,7 +110,7 @@ public class MollieGateway implements PrestatairePaiement {
     }
 
     /**
-     * Mollie REFUSE une URL de notification qu il ne peut pas joindre — donc toute
+     * Mollie REFUSE une URL de notification qu il ne peut pas joindre : donc toute
      * adresse locale. La transmettre ferait echouer la creation du paiement en
      * developpement, la ou tout le reste fonctionne.
      *
@@ -138,7 +138,7 @@ public class MollieGateway implements PrestatairePaiement {
                 return false;
             }
             String normalise = hote.toLowerCase(Locale.ROOT);
-            // Un hote sans point ne porte aucun domaine public ; les TLD reserves
+            // Un hote sans point ne porte aucun domaine public. Les TLD reserves
             // (RFC 2606 / RFC 6761) ne se resolvent nulle part hors du poste.
             return !HOTES_NON_JOIGNABLES.contains(normalise)
                     && normalise.contains(".")
@@ -154,7 +154,7 @@ public class MollieGateway implements PrestatairePaiement {
     /**
      * Un jeton d acces n est rattache a aucun profil de site : Mollie ne peut deduire
      * ni ou imputer le paiement, ni s il est de test. Une cle API porte les deux, et
-     * Mollie refuse alors ces memes champs — d ou la condition plutot qu un envoi
+     * Mollie refuse alors ces memes champs : d ou la condition plutot qu un envoi
      * systematique.
      */
     private void ajouterContexteOrganisation(Map<String, Object> corps) {
@@ -294,15 +294,15 @@ public class MollieGateway implements PrestatairePaiement {
      *
      * <p>Le message conserve l operation mais jamais le corps de la reponse, qui peut
      * porter des identifiants de requete et des details d infrastructure. La cause est
-     * attachee pour le journal ; ce qui s affiche au membre vient de l i18n.</p>
+     * attachee pour le journal. Ce qui s affiche au membre vient de l i18n.</p>
      *
      * <p><b>Garantie dont depend la journalisation des echecs</b> (voir les deux
      * {@code catch} de {@code CommandeController}) : aucun message construit dans cette
      * classe ne porte l identifiant d acces, ni entier ni tronque. Les sept sites qui
      * levent une {@link PrestataireIndisponibleException} composent des chaines fixes,
      * au plus completees du nom de l operation, du statut rendu par Mollie ou de la
-     * reference du paiement — la seule donnee que le journal reprend deliberement par
-     * ailleurs. Le message est donc journalisable tel quel ; c est l affichage a
+     * reference du paiement : la seule donnee que le journal reprend deliberement par
+     * ailleurs. Le message est donc journalisable tel quel. C est l affichage a
      * l ecran, lui, qui reste interdit.</p>
      */
     private <T> T appeler(java.util.function.Supplier<T> appel, String operation) {

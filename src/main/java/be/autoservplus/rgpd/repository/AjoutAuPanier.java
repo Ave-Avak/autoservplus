@@ -8,7 +8,7 @@ import java.time.Instant;
  * <p>Existe pour une seule raison : {@code ligne_panier.created_at} est bien
  * mappe sur l entite {@code LignePanier}, mais celle-ci n en expose aucun
  * accesseur. Ajouter un {@code getCreatedAt()} modifierait le module
- * {@code vente} ; une projection HQL lit l attribut persistant directement,
+ * {@code vente}. Une projection HQL lit l attribut persistant directement,
  * sans toucher a l entite.
  *
  * @param ligneId   identifiant de la ligne, clef de rapprochement

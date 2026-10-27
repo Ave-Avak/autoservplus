@@ -26,7 +26,7 @@ import java.util.Locale;
  * chaque requete authentifiee dont la session n avait pas de langue choisie : quatre
  * tests deja en place sont passes au rouge et ont montre pourquoi c etait faux.
  * {@code utilisateur.langue} vaut {@code fr} par defaut pour tout le monde et
- * aucun ecran ne l ecrit ; la generalisation revenait donc a servir du
+ * aucun ecran ne l ecrit. La generalisation revenait donc a servir du
  * francais a tout membre connecte, y compris celui dont le navigateur reclame du
  * neerlandais et qui n a jamais rien choisi. C etait une regression deguisee en
  * fonctionnalite. Applique a la connexion seule, le profil ne prend la main qu au

@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Anonymisation d un vehicule (F23, art. 17 RGPD).
  *
  * <p>Le critere que ce test verrouille : <b>part ce qui identifie une personne ou
- * renseigne sur son comportement ; reste ce qui decrit l objet.</b> Sans lui, rien
+ * renseigne sur son comportement. Reste ce qui decrit l objet.</b> Sans lui, rien
  * n empeche de reintroduire l effacement de l annee, qui contredisait ce principe et
  * qu il a fallu retirer en consolidation.</p>
  */

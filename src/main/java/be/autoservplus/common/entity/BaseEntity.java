@@ -50,7 +50,7 @@ public abstract class BaseEntity {
      * <p>L instant vient de l <b>appelant</b>, jamais de {@code Instant.now()} : le
      * projet injecte une {@link java.time.Clock} partout ou le temps intervient, pour
      * qu un test puisse se placer a la date de son choix. Cette methode faisait
-     * exception, et elle etait la seule du domaine — {@code Rdv.annulerParLeGarage},
+     * exception, et elle etait la seule du domaine, {@code Rdv.annulerParLeGarage},
      * {@code Commande.annuler}, {@code Paiement.expirer} et {@code Consentement}
      * recoivent tous leur instant.</p>
      *

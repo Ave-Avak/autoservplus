@@ -38,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * super-administrateur est le cas qui discrimine : il ne porte que
  * {@code ROLE_SUPER_ADMINISTRATEUR}, et seule la hierarchie des roles l envoie au
  * back-office. Les parcours avec second facteur et changement impose sont tenus par
- * {@code ConnexionSecondFacteurIT} ; ici, les fins qui n y figuraient pas.</p>
+ * {@code ConnexionSecondFacteurIT}. Ici, les fins qui n y figuraient pas.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -115,8 +115,8 @@ class PageArriveeParRoleIT extends SocleIntegration {
     }
 
     /**
-     * L enrolement aboutit sur les codes de secours, qui ne s affichent qu une fois ;
-     * c est leur bouton de sortie qui doit alors mener au back-office.
+     * L enrolement aboutit sur les codes de secours, qui ne s affichent qu une fois.
+     * C est leur bouton de sortie qui doit alors mener au back-office.
      */
     @Test
     @DisplayName("enrôlement d'un administrateur : les codes de secours mènent au back-office")

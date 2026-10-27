@@ -15,7 +15,7 @@ import java.util.List;
  * Consigne les evenements de securite d un compte.
  *
  * <p>{@code MANDATORY} : l evenement s ecrit dans la transaction du geste qu il trace.
- * Ecrit apres coup, il pourrait manquer si le geste echoue — ou survivre a un geste
+ * Ecrit apres coup, il pourrait manquer si le geste echoue : ou survivre a un geste
  * annule, ce qui serait pire.</p>
  */
 @Component

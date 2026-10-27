@@ -29,14 +29,14 @@ import java.util.UUID;
  * Messagerie entre un membre et le garage (BL-5), cote membre.
  *
  * <p><b>Ownership systematique.</b> Chaque acces passe par le couple (reference,
- * membre) ; le fil d autrui remonte en {@link RessourceIntrouvableException}, donc 404
- * et non 403 — repondre « interdit » confirmerait que la reference existe.</p>
+ * membre). Le fil d autrui remonte en {@link RessourceIntrouvableException}, donc 404
+ * et non 403 : repondre « interdit » confirmerait que la reference existe.</p>
  *
  * <p><b>Rattachement facultatif a une intervention seulement.</b> Le socle V7 ne
- * prevoit que {@code conversation.intervention_id} ; il n existe ni {@code rdv_id} ni
+ * prevoit que {@code conversation.intervention_id}. Il n existe ni {@code rdv_id} ni
  * {@code commande_id}. Un fil peut donc porter sur des travaux, ou rester libre. Le
  * membre qui veut parler d une commande ouvre un fil libre et cite sa reference dans
- * le message — arbitrage retenu contre l ajout d une migration et d un ecran de choix
+ * le message, arbitrage retenu contre l ajout d une migration et d un ecran de choix
  * de contexte.</p>
  *
  * <p><b>Notification dans la transaction</b>, contrairement aux listeners d evenement :

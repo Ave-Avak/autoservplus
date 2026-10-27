@@ -18,13 +18,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link CourrielConsole} etait la seule implementation de {@link ServiceCourriel}
  * et portait {@code @Profile("!prod")} : demarrer en profil {@code prod} echouait
  * au cablage, faute de bean a injecter. Le probleme ne se voyait dans aucun test,
- * puisqu aucun ne demarre sous ce profil — il ne serait apparu qu au premier
+ * puisqu aucun ne demarre sous ce profil, il ne serait apparu qu au premier
  * deploiement reel, c est-a-dire au pire moment.</p>
  *
  * <p>La regle est generale et se lit telle quelle : tant qu il n existe qu une
  * implementation, elle ne peut etre conditionnee par rien. Le jour ou une seconde
  * apparaitra (Brevo), ce test echouera et devra etre reecrit pour verifier que les
- * conditions des deux <b>partitionnent</b> les environnements — ce qui est
+ * conditions des deux <b>partitionnent</b> les environnements : ce qui est
  * exactement la question a se reposer a ce moment-la.</p>
  */
 @DisplayName("Disponibilite du service de courriel")
@@ -51,7 +51,7 @@ class ServiceCourrielDisponibleTest {
                         %s est la seule implementation de ServiceCourriel : la conditionner \
                         a un profil prive les autres environnements de tout envoi, et le \
                         contexte Spring echoue au cablage. Si une seconde implementation \
-                        vient d etre ajoutee, c est ce test qu il faut reecrire — pour \
+                        vient d etre ajoutee, c est ce test qu il faut reecrire, pour \
                         verifier que les conditions des deux couvrent tous les cas.""",
                         unique.getSimpleName())
                 .isNull();

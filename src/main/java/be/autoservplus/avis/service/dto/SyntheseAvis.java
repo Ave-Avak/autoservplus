@@ -7,7 +7,7 @@ import java.math.RoundingMode;
  * Note moyenne et volume d avis publies d une prestation (BL-4).
  *
  * <p>{@code moyenne} est {@code null} quand la prestation n a recu aucun avis : c est
- * la valeur que rend {@code AVG} sur un ensemble vide. Le distinguer de zero importe —
+ * la valeur que rend {@code AVG} sur un ensemble vide. Le distinguer de zero importe :
  * le CHECK {@code ck_avis_note} interdit la note zero, donc une moyenne nulle ne peut
  * pas signifier « tres mauvais », seulement « pas encore note ».</p>
  *

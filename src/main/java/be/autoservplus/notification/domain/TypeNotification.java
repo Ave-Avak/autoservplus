@@ -10,8 +10,8 @@ package be.autoservplus.notification.domain;
  * projet est devenu trilingue depuis : un texte fige a l ecriture serait rendu dans
  * la langue de l evenement (souvent une action d administrateur), pas dans celle du
  * membre qui le lit. Le rendu se fait donc a la <b>lecture</b>, depuis ce type et
- * l argument conserve. Les deux colonnes du socle restent remplies — elles sont
- * {@code NOT NULL} — et servent de trace lisible en base.</p>
+ * l argument conserve. Les deux colonnes du socle restent remplies (elles sont
+ * {@code NOT NULL}) et servent de trace lisible en base.</p>
  *
  * <p>Chaque valeur resout deux cles : {@code notification.type.<NOM>.titre} et
  * {@code notification.type.<NOM>.corps}, cette derniere prenant l argument metier
@@ -38,7 +38,7 @@ public enum TypeNotification {
         return "notification.type." + name() + ".titre";
     }
 
-    /** Cle i18n du corps affiche ; le message attend l argument metier en {0}. */
+    /** Cle i18n du corps affiche. Le message attend l argument metier en {0}. */
     public String cleCorps() {
         return "notification.type." + name() + ".corps";
     }

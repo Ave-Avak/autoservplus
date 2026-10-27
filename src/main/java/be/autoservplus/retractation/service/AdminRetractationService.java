@@ -35,13 +35,12 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Decision du garage sur une demande de retractation (F30, RM-23) : validation —
- * remboursement, note de credit, changements d etat — ou refus motive.
+ * Decision du garage sur une demande de retractation (F30, RM-23) : validation (* remboursement, note de credit, changements d etat) ou refus motive.
  *
  * <p><b>Pourquoi ce service vit dans {@code retractation} et non dans {@code vente}
  * ou {@code facturation}.</b> Valider une retractation touche les deux : il faut
  * rembourser un paiement (vente) et contre-passer une facture (facturation). Le
- * projet a deja tranche que la vente ignore la facturation — c est la facture qui
+ * projet a deja tranche que la vente ignore la facturation : c est la facture qui
  * nait de la commande, jamais l inverse. Loger l orchestration dans l un des deux
  * modules creerait donc la dependance que ce choix evitait. Un module dedie, qui
  * depend des deux sans qu aucun ne depende de lui, laisse la fleche dans le bon
@@ -51,7 +50,7 @@ import java.util.UUID;
  * commande basculee, demande tranchee, puis seulement l appel au prestataire, puis
  * l ecriture de la reference de remboursement. Si le prestataire refuse, tout est
  * annule : aucun avoir, aucun numero consomme dans la suite legale, aucune commande
- * remboursee sans argent rendu. Reste la fenetre inverse — le prestataire accepte
+ * remboursee sans argent rendu. Reste la fenetre inverse, le prestataire accepte
  * mais le commit echoue : le remboursement a eu lieu, la base n en sait rien. C est
  * la que sert la cle d idempotence <b>derivee du paiement</b> : rejouer la validation
  * envoie la meme cle, le prestataire reconnait le mouvement et ne rend pas l argent
@@ -191,7 +190,7 @@ public class AdminRetractationService {
      * Oppose une exception au droit de retractation (piece montee, deballee, abimee).
      *
      * <p>Rien n est rembourse, aucun avoir n est emis, la facture reste seule au
-     * dossier — un refus ne produit aucun mouvement comptable. Le motif est
+     * dossier : un refus ne produit aucun mouvement comptable. Le motif est
      * obligatoire, l entite le refuse s il est vide : c est le professionnel qui doit
      * se justifier quand il refuse, pas le consommateur quand il demande.</p>
      */
@@ -216,7 +215,7 @@ public class AdminRetractationService {
 
     /**
      * Le paiement encaisse de la commande. Une commande peut porter plusieurs
-     * paiements — chaque nouvelle tentative en cree un — mais un seul a abouti :
+     * paiements (chaque nouvelle tentative en cree un) mais un seul a abouti :
      * c est celui-la qu on rembourse. Son absence signale une incoherence (commande
      * PAYEE sans paiement REUSSI) qui doit remonter, pas etre contournee.
      */

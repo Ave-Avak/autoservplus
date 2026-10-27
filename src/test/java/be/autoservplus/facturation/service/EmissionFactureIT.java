@@ -40,7 +40,7 @@ import be.autoservplus.support.SocleIntegration;
 
 /**
  * Emission de la facture au bout de la chaine reelle : panier, commande, paiement,
- * webhook — puis la facture, produite par le listener AFTER_COMMIT (F31).
+ * webhook, puis la facture, produite par le listener AFTER_COMMIT (F31).
  *
  * <p>Volontairement <b>sans</b> {@code @Transactional} de classe, comme
  * {@code NotificationInterventionIT} : le contrat teste EST le commit. Une
@@ -94,7 +94,7 @@ class EmissionFactureIT extends SocleIntegration {
         });
     }
 
-    /** Panier converti en commande ; retourne la reference de la commande. */
+    /** Panier converti en commande. Retourne la reference de la commande. */
     private UUID commander(Piece piece, int quantite) throws Exception {
         panierService.ajouterPiece("marie@exemple.be", piece.getReference(), quantite);
         String redirection = mvc.perform(post("/commande").with(csrf()).param("cgv", "true"))

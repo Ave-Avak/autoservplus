@@ -26,7 +26,7 @@ spring:
         # temporelles SANS fuseau, et le schema n'en compte aucune : les 51 champs
         # Instant sont tous sur TIMESTAMPTZ, ou le fuseau est porte par la donnee.
         # Son unique effet observable etait donc de fausser les deux seules colonnes
-        # TIME du schema — plage_ouverture.heure_debut et heure_fin, lues en LocalTime
+        # TIME du schema : plage_ouverture.heure_debut et heure_fin, lues en LocalTime
         # avec une heure d'ecart. Une heure sans date se rapporte a l'epoch, ou
         # Europe/Brussels vaut UTC+1 : le garage ouvrait a 08:00 en base et le systeme
         # lisait 09:00, en affichage comme au calcul des creneaux reservables.
@@ -54,14 +54,14 @@ server:
   #
   # « native » plutot que « framework » : la vanne RemoteIp de Tomcat n honore
   # X-Forwarded-* que si le pas precedent appartient a une plage privee. Le filtre du
-  # framework, lui, fait confiance a l en-tete quel qu en soit l emetteur — donc a
+  # framework, lui, fait confiance a l en-tete quel qu en soit l emetteur : donc a
   # quiconque atteindrait le port de l application directement.
   forward-headers-strategy: native
 
   # Aucun detail technique dans une reponse d erreur, sous TOUS les profils. Ces valeurs
   # sont deja celles de Spring Boot, mais devtools les passe a « always » en
   # developpement, profil demo compris : la reponse JSON de /error portait alors la
-  # trace complete (NoResourceFoundException…). Posees ici, elles priment sur les
+  # trace complete (NoResourceFoundException...). Posees ici, elles priment sur les
   # valeurs de devtools, inscrites en derniere position.
   # La page Whitelabel est coupee : PagesErreurResolver rend erreur.html pour tout
   # statut, et un repli silencieux sur la page de Spring ne doit plus exister.
@@ -107,7 +107,7 @@ autoservplus:
   #
   # Un compte existant n'est JAMAIS reecrit : la variable devient perimee des le
   # premier changement de mot de passe, et la reappliquer ramenerait indefiniment le
-  # compte au secret initial — celui qui vit dans un fichier .env.
+  # compte au secret initial : celui qui vit dans un fichier .env.
   exploitant:
     email: ${EXPLOITANT_EMAIL:}
     mot-de-passe: ${EXPLOITANT_MOT_DE_PASSE:}
@@ -116,7 +116,7 @@ autoservplus:
 
   # Cle maitre AES-256 des secrets TOTP (32 octets en base 64 : openssl rand -base64 32).
   # OBLIGATOIRE sous tout profil, poste local compris : sans elle, le demarrage est refuse (voir
-  # MfaConfig). La version est inscrite sur chaque secret chiffre ; pour une rotation,
+  # MfaConfig). La version est inscrite sur chaque secret chiffre. Pour une rotation,
   # passer l ancienne cle dans cles-precedentes (« 1:base64 ») et incrementer la version.
   mfa:
     cle-maitre: ${MFA_CLE_MAITRE:}
@@ -126,12 +126,12 @@ autoservplus:
   # Adresse publique du site, employee LA OU une URL absolue est indispensable et ou
   # aucune requete HTTP n'est disponible pour la deduire : aujourd'hui le fichier
   # iCalendar d'un rendez-vous (F38), qui est lu dans l'agenda du membre, hors du
-  # site — un chemin relatif n'y designerait rien.
+  # site : un chemin relatif n'y designerait rien.
   #
   # Ailleurs le projet emet des liens RELATIFS dans ses courriels et continue de le
   # faire : cette propriete n'est pas une invitation a les absolutiser. Elle vaut
   # aussi pour le telechargement direct plutot que l'URL de la requete, afin que le
-  # fichier servi et le fichier joint au courriel soient identiques a l'octet pres —
+  # fichier servi et le fichier joint au courriel soient identiques a l'octet pres :
   # deux variantes du meme UID se remplaceraient l'une l'autre dans l'agenda.
   url-publique: ${URL_PUBLIQUE:http://localhost:8080}
 
@@ -139,7 +139,7 @@ autoservplus:
   # Code TVA art. 53, AR n°1 art. 5). Mono-tenant V1 : un seul garage, donc en
   # configuration plutot qu'en base. Les valeurs livrees sont des valeurs de
   # DEMONSTRATION : chacune doit etre surchargee en production par sa variable
-  # d'environnement — une facture portant un faux numero de TVA n'est pas une facture.
+  # d'environnement : une facture portant un faux numero de TVA n'est pas une facture.
   garage:
     nom-commercial: ${GARAGE_NOM_COMMERCIAL:AutoServ+}
     raison-sociale: ${GARAGE_RAISON_SOCIALE:AutoServ+ SRL}
@@ -165,17 +165,17 @@ autoservplus:
 
   facturation:
     # Racine de l'archive des factures PDF, conservees DIX ANS (Code TVA art. 60, tel
-    # que modifie par la loi du 20 novembre 2022 — sept ans avant le 1er janvier 2023).
-    # En production : un volume sauvegarde, distinct du repertoire de deploiement —
+    # que modifie par la loi du 20 novembre 2022 : sept ans avant le 1er janvier 2023).
+    # En production : un volume sauvegarde, distinct du repertoire de deploiement,
     # une archive legale ne peut pas disparaitre avec un redeploiement.
     archive: ${FACTURES_ARCHIVE:./data/factures}
   retractation:
     delai-jours: 14
   # Prestataire de paiement en ligne (F14). AUCUNE valeur n'est livree : sans
   # identifiant, l'application se rabat sur un prestataire bouchonne et sert une page
-  # de paiement qui s'annonce comme simulee. Le repli vaut y compris en production —
+  # de paiement qui s'annonce comme simulee. Le repli vaut y compris en production :
   # une plateforme deployee sans cle doit rester parcourable de bout en bout plutot
-  # que de rompre au moment de payer — et il n'est pas silencieux : avertissement au
+  # que de rompre au moment de payer, et il n'est pas silencieux : avertissement au
   # demarrage cote exploitant, banniere sur la page cote membre.
   #
   # Deux formes d'identifiant sont acceptees, et elles ne demandent pas la meme chose :
@@ -213,7 +213,7 @@ autoservplus:
     #
     # Deux cles : par adresse contre le harcelement d un titulaire precis, par IP
     # contre le balayage de beaucoup d adresses. Les valeurs suivent celles du
-    # verrouillage — cinq tentatives, quinze minutes — pour qu un exploitant n ait
+    # verrouillage (cinq tentatives, quinze minutes) pour qu un exploitant n ait
     # qu une echelle a comprendre.
     debit:
       demandes-max-par-adresse: 5
@@ -222,7 +222,7 @@ autoservplus:
 
     # Turnstile (Cloudflare) sur les formulaires publics. Les deux cles sont vides par
     # defaut : sans elles, ni le widget ni la verification n'existent et le site
-    # fonctionne sur ses trois autres couches — champ piege, delai minimal, plafond par
+    # fonctionne sur ses trois autres couches : champ piege, delai minimal, plafond par
     # IP. Une cle absente est un deploiement sans Turnstile, pas un deploiement casse.
     #
     # Cles de test publiees par Cloudflare, pour un poste de developpement :
@@ -240,17 +240,17 @@ logging:
 # =====================================================================================
 # Profil « demo » : jeu de donnees transactionnelles pour l evaluation.
 #
-# Les migrations de db/migration decrivent le SCHEMA et ses donnees de reference ; elles
+# Les migrations de db/migration decrivent le SCHEMA et ses donnees de reference. Elles
 # s appliquent toujours. Le jeu de demonstration vit a part, dans db/demo, et n est
 # charge que sous ce profil.
 #
 # La separation n est pas cosmetique. Les tests d integration partent d une base vierge
 # de donnees transactionnelles : plusieurs comptent des lignes (« aucune commande avant
 # la conversion ») ou vident des tables de reference entre deux cas. Y semer des
-# rendez-vous et des commandes casse vingt-trois d entre eux — non parce qu ils seraient
+# rendez-vous et des commandes casse vingt-trois d entre eux : non parce qu ils seraient
 # fragiles, mais parce qu ils verifient des etats initiaux qui cesseraient d etre vrais.
 # Les adapter reviendrait a affaiblir des tests justes pour accommoder des donnees de
-# demonstration ; c est l inverse de ce que le projet fait ailleurs.
+# demonstration. C est l inverse de ce que le projet fait ailleurs.
 #
 # Chargement :   mvnw spring-boot:run "-Dspring-boot.run.profiles=demo"
 # (MFA_CLE_MAITRE definie au prealable, comme sous tout profil)

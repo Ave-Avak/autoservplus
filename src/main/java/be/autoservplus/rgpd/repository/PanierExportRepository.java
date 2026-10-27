@@ -12,7 +12,7 @@ import java.util.List;
  *
  * <p>Le contenu du panier est lu par {@code PanierRepository.findByMembreEmail},
  * du module {@code vente} : sa requete charge deja le panier, ses lignes et leurs
- * pieces, exactement ce dont l export a besoin — la dupliquer ici n aurait servi
+ * pieces, exactement ce dont l export a besoin, la dupliquer ici n aurait servi
  * a rien.
  *
  * <p>Ce repository ne couvre que ce que cette requete ne peut pas rendre : la

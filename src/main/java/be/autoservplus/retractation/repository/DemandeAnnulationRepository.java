@@ -15,7 +15,7 @@ public interface DemandeAnnulationRepository extends JpaRepository<DemandeAnnula
 
     /**
      * Une demande pendante existe-t-elle deja sur cette commande ? Controle applicatif
-     * de l idempotence ; l index partiel {@code uq_demande_annulation_en_attente}
+     * de l idempotence. L index partiel {@code uq_demande_annulation_en_attente}
      * tranche la course entre deux soumissions simultanees.
      */
     boolean existsByCommandeAndStatut(Commande commande, StatutDemandeAnnulation statut);
@@ -35,7 +35,7 @@ public interface DemandeAnnulationRepository extends JpaRepository<DemandeAnnula
     /**
      * File de traitement du garage : les demandes non tranchees, de la plus ancienne
      * a la plus recente. Le delai legal de remboursement court a partir de la demande
-     * (14 jours, CDE art. VI.50) — c est donc la plus vieille qui presse, pas la
+     * (14 jours, CDE art. VI.50) : c est donc la plus vieille qui presse, pas la
      * derniere arrivee.
      */
     @Query("""
@@ -63,7 +63,7 @@ public interface DemandeAnnulationRepository extends JpaRepository<DemandeAnnula
     /**
      * Demandes du membre connecte, pour pastiller sa liste de commandes. Le membre
      * est identifie par son courriel, comme partout ailleurs a partir du contexte de
-     * securite — jamais par un identifiant de requete.
+     * securite : jamais par un identifiant de requete.
      */
     @Query("""
             SELECT d FROM DemandeAnnulation d

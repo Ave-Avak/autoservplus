@@ -80,7 +80,7 @@ class RetractationServiceVi53IT extends SocleIntegration {
                 Motorisation.ESSENCE));
     }
 
-    /** Les gestes reserves au garage ; ce n est pas l objet du test. */
+    /** Les gestes reserves au garage. Ce n est pas l objet du test. */
     private void enAdministrateur(Runnable action) {
         SecurityContext avant = SecurityContextHolder.getContext();
         try {
@@ -104,8 +104,8 @@ class RetractationServiceVi53IT extends SocleIntegration {
     }
 
     /**
-     * Paiement par la VRAIE chaine — depart, statut programme chez le prestataire
-     * bouchonne, webhook — et non un UPDATE direct : c est le webhook qui fait basculer
+     * Paiement par la VRAIE chaine (depart, statut programme chez le prestataire
+     * bouchonne, webhook) et non un UPDATE direct : c est le webhook qui fait basculer
      * la commande a PAYEE, et court-circuiter ce chemin testerait autre chose.
      */
     private void payer(UUID reference) throws Exception {

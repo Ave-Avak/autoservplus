@@ -41,7 +41,7 @@ import java.util.OptionalLong;
  * <p><b>Les echecs se comptent meme quand le geste est refuse.</b> Les methodes qui
  * levent un refus apres avoir verifie un code portent {@code noRollbackFor} : sans
  * cela, le refus annulerait la transaction et l echec qu il signale ne serait jamais
- * compte — essayer des codes depuis l ecran de desactivation deviendrait gratuit.</p>
+ * compte, essayer des codes depuis l ecran de desactivation deviendrait gratuit.</p>
  */
 @Service
 @Transactional(readOnly = true)
@@ -148,7 +148,7 @@ public class SecondFacteurService {
      * Confirme l enrolement par un premier code, emet les codes de secours et ferme les
      * autres sessions du compte.
      *
-     * @return les codes de secours EN CLAIR — la seule fois ou ils existent ainsi
+     * @return les codes de secours EN CLAIR : la seule fois ou ils existent ainsi
      */
     @Transactional
     public List<String> confirmerEnrolement(String email, String code, String idSessionCourante) {
@@ -221,7 +221,7 @@ public class SecondFacteurService {
 
     /**
      * Retire le second facteur sur decision d un tiers : reinitialisation par le
-     * super-administrateur. Ni journal ni notification ici — c est l appelant qui sait
+     * super-administrateur. Ni journal ni notification ici : c est l appelant qui sait
      * qui agit et a qui l annoncer.
      */
     @Transactional(propagation = Propagation.MANDATORY)
@@ -274,7 +274,7 @@ public class SecondFacteurService {
         if (pas.isEmpty()) {
             return false;
         }
-        // L UPDATE conditionnel tranche entre deux verifications simultanees du meme code ;
+        // L UPDATE conditionnel tranche entre deux verifications simultanees du meme code.
         // le compte en memoire est ensuite aligne, pour ne pas reecrire un pas perime.
         if (utilisateurs.accepterPasSiNouveau(compte.getId(), pas.getAsLong()) == 0) {
             return false;

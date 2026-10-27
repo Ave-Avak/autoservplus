@@ -9,10 +9,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
  *
  * <p>En configuration et non en base : la V1 est mono-tenant, ces valeurs sont
  * celles d un seul garage et ne changent pas a chaud. Chaque champ est surchargeable
- * par variable d environnement — aucune valeur d exploitation n est figee dans le
+ * par variable d environnement : aucune valeur d exploitation n est figee dans le
  * code, et les defauts livres sont des valeurs de demonstration explicites. Le
  * passage au multi-tenant (V2) deplacera ces donnees vers une table portant la cle
- * du garage ; c est alors le fournisseur qui changera, pas le document.</p>
+ * du garage. C est alors le fournisseur qui changera, pas le document.</p>
  *
  * <p>Premier usage de {@code @ConfigurationProperties} dans le projet, qui n employait
  * jusqu ici que {@code @Value} : douze champs lies ensemble et valides d un bloc au

@@ -4,7 +4,7 @@
  *
  * Amelioration progressive. Le bouton nait avec l attribut hidden : sans ce script, il
  * reste cache et le panneau s affiche en entier. Le script revele le bouton et replie
- * le panneau ; la feuille de style ne masque un panneau replie que sous la rupture
+ * le panneau. La feuille de style ne masque un panneau replie que sous la rupture
  * (40em), au-dessus le menu reste deplie quel que soit l etat du bouton.
  *
  * Aucune chaine ici : le libelle du bouton vient du gabarit, donc de l i18n. Fichier

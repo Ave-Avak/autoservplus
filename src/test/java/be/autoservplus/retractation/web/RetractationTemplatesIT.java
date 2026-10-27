@@ -38,7 +38,7 @@ import be.autoservplus.support.SocleIntegration;
 /**
  * Rendu reel des ecrans de retractation (F30) contre le contexte Spring complet.
  *
- * <p>C est ici qu une cle i18n manquante se voit — pas dans un {@code @WebMvcTest},
+ * <p>C est ici qu une cle i18n manquante se voit : pas dans un {@code @WebMvcTest},
  * qui court-circuite le gabarit. Le projet a deja perdu un bloc entier de cles a un
  * merge sans que rien ne le signale avant l execution : ces trois ecrans sont neufs
  * et entierement traduits, ils doivent etre rendus au moins une fois dans chaque

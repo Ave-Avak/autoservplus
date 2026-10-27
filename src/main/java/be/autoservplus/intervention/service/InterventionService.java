@@ -107,7 +107,7 @@ public class InterventionService {
                 .orElseGet(() -> {
                     Intervention creee = ecrire(new Intervention(numeros.prochain(), rdv));
                     // Ligne de naissance de la chronologie (F17) : pas d etat anterieur.
-                    // Dans la branche orElseGet uniquement — un second appel idempotent
+                    // Dans la branche orElseGet uniquement : un second appel idempotent
                     // ne doit pas inventer une seconde naissance.
                     historiser(creee, null, StatutIntervention.PLANIFIEE, null);
                     return creee;
@@ -118,7 +118,7 @@ public class InterventionService {
     //
     // Chaque transition ecrit sa ligne de chronologie (F17) dans la meme transaction :
     // l etat AVANT est capture avant l appel au domaine, qui peut refuser (auquel cas
-    // rien n est historise — l exception sort avant historiser). Un echec ulterieur de
+    // rien n est historise : l exception sort avant historiser). Un echec ulterieur de
     // l ecriture annule transition ET chronologie ensemble : elles ne divergent jamais.
 
     /**
@@ -126,7 +126,7 @@ public class InterventionService {
      *
      * <p><b>Seconde origine, qui ne remplace pas la premiere.</b>
      * {@link #creerDepuisRdv} et son invariant de creation atomique au marquage HONORE
-     * restent inchanges ; celle-ci s ajoute a cote. La machine a etats est la meme, les
+     * restent inchanges. Celle-ci s ajoute a cote. La machine a etats est la meme, les
      * statuts ne sont pas dedoubles, et la chronologie F17 s ouvre de la meme facon.</p>
      *
      * <p><b>Idempotent</b>, comme {@code creerDepuisRdv} : un second appel sur la meme
@@ -136,7 +136,7 @@ public class InterventionService {
      * <p><b>Le vehicule est choisi par le garage</b> : {@code intervention.vehicule_id}
      * est {@code NOT NULL} et une prestation achetee en ligne n est rattachee a aucun
      * vehicule au moment de l achat. Le vehicule doit appartenir au titulaire de la
-     * commande — sinon on creerait un dossier d atelier sur la voiture d un tiers.</p>
+     * commande : sinon on creerait un dossier d atelier sur la voiture d un tiers.</p>
      *
      * @throws RegleMetierException commande non payee, sans ligne de service, ou
      *                              vehicule n appartenant pas au titulaire
@@ -200,7 +200,7 @@ public class InterventionService {
     /**
      * Terminaison des travaux. Publie {@link InterventionTermineeEvent} : le courriel
      * « venez recuperer votre vehicule » (F17) part apres commit, via le listener
-     * {@code AFTER_COMMIT} — jamais pendant la transaction, ou un rollback annoncerait
+     * {@code AFTER_COMMIT}, jamais pendant la transaction, ou un rollback annoncerait
      * une cloture qui n a pas eu lieu. Seule cette transition publie : c est la seule
      * qui appelle le membre a se deplacer.
      */
@@ -217,7 +217,7 @@ public class InterventionService {
 
     /**
      * Annulation definitive. Depuis PLANIFIEE, EN_COURS, SUSPENDUE ou
-     * ATTENTE_VALIDATION_MEMBRE ; refusee si l intervention est deja terminale.
+     * ATTENTE_VALIDATION_MEMBRE. Refusee si l intervention est deja terminale.
      */
     @Transactional
     public Intervention annuler(UUID reference) {
@@ -240,7 +240,7 @@ public class InterventionService {
     /**
      * Ajoute une prestation au dossier. Si l ajout porte le total au-dela du devis
      * majore de 10 %, l entite bascule d elle-meme en ATTENTE_VALIDATION_MEMBRE
-     * (RM-15) ; le service se contente de constater la bascule et de prevenir le
+     * (RM-15). Le service se contente de constater la bascule et de prevenir le
      * membre. La regle vit dans le domaine, pas ici.
      */
     @Transactional
@@ -252,7 +252,7 @@ public class InterventionService {
         LigneIntervention ligne = it.ajouterLigneMainOeuvre(prestation, quantite,
                 prestation.getPrixHtva(), prestation.getTauxTva());
         // La bascule RM-15 est une transition comme une autre : si l entite a change
-        // d etat d elle-meme, la chronologie (F17) le consigne — sinon l historique
+        // d etat d elle-meme, la chronologie (F17) le consigne : sinon l historique
         // aurait des trous (un EN_COURS -> EN_COURS apparent) et perdrait sa coherence.
         if (it.getStatut() != avant) {
             historiser(it, avant, it.getStatut(), null);
@@ -378,8 +378,8 @@ public class InterventionService {
     /**
      * Ecrit une ligne de chronologie (F17) : la transition telle qu elle vient de se
      * produire, horodatee par l horloge injectee. L auteur vient de
-     * {@link AuteurCourant}, donc du contexte de securite — jamais d un parametre de
-     * requete — et vaut {@code null} pour un traitement sans utilisateur authentifie.
+     * {@link AuteurCourant}, donc du contexte de securite (jamais d un parametre de
+     * requete) et vaut {@code null} pour un traitement sans utilisateur authentifie.
      */
     private void historiser(Intervention it, StatutIntervention avant,
                             StatutIntervention apres, String motif) {

@@ -20,7 +20,7 @@ import java.time.Instant;
  *
  * <p>Meme mecanique et meme justification qu en V26 : l increment se fait en table,
  * donc dans la transaction qui insere l avoir. Une emission annulee rend son numero
- * au lieu de creuser un trou, ce qu une sequence PostgreSQL ne sait pas faire —
+ * au lieu de creuser un trou, ce qu une sequence PostgreSQL ne sait pas faire :
  * {@code nextval} est non transactionnel par conception. La discipline vaut pour le
  * document rectificatif comme pour la facture qu il corrige (AR n°1, art. 5 et 12).</p>
  *

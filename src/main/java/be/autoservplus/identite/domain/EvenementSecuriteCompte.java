@@ -17,7 +17,7 @@ import java.util.Objects;
  *
  * <p>Journal append-only, sur le patron de {@link HistoriqueStatutUtilisateur}, mais dans
  * une table a part : celle-ci consigne des <b>transitions</b> d etat, dont le CHECK exige
- * un avant et un apres differents ; un evenement de securite n a ni l un ni l autre.</p>
+ * un avant et un apres differents. Un evenement de securite n a ni l un ni l autre.</p>
  *
  * <p><b>Ce que la ligne ne porte jamais</b> : secret, code saisi, adresse IP. Le fait et
  * sa date suffisent a l enquete, et un journal qui porterait un code deviendrait lui-meme
@@ -46,10 +46,10 @@ public class EvenementSecuriteCompte {
     private Instant horodatage;
 
     /**
-     * Qui a agi. Le titulaire lui-meme pour ses propres gestes ; un autre compte pour une
-     * creation ou une reinitialisation ; nul quand le systeme constate (echec, verrouillage),
+     * Qui a agi. Le titulaire lui-meme pour ses propres gestes. Un autre compte pour une
+     * creation ou une reinitialisation. Nul quand le systeme constate (echec, verrouillage),
      * l auteur de la saisie restant inconnu. Distinguer les deux premiers cas du troisieme
-     * est ce que la fiche affiche — un nul unique les confondait.
+     * est ce que la fiche affiche : un nul unique les confondait.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "auteur_id", updatable = false)

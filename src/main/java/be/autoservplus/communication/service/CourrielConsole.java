@@ -19,7 +19,7 @@ import java.time.Instant;
  * desabonnements, et ces quatre elements ne s eprouvent pas sans une adresse
  * d envoi legitime. Un envoi mal configure part en indesirable, ce qui est pire
  * qu un envoi assume comme absent : le membre ne recoit rien ET personne ne le
- * sait. La frontiere {@link ServiceCourriel} est en place et c est elle qui compte —
+ * sait. La frontiere {@link ServiceCourriel} est en place et c est elle qui compte,
  * brancher Brevo ne touchera que ce fichier.</p>
  *
  * <p><b>Le profil ne conditionne plus cette classe.</b> Elle portait
@@ -100,7 +100,7 @@ public class CourrielConsole implements ServiceCourriel {
 
     /**
      * La console ne peut pas joindre un fichier : elle en annonce le nom et la
-     * taille. C est ce qui rend la piece jointe <b>observable</b> en developpement —
+     * taille. C est ce qui rend la piece jointe <b>observable</b> en developpement :
      * sans cette ligne, un fichier vide ou absent passerait inapercu jusqu a la mise
      * en production, ou plus personne ne regarde les journaux.
      */
@@ -203,7 +203,7 @@ public class CourrielConsole implements ServiceCourriel {
                     Bonjour {}, votre demande d'annulation est acceptee.
                     Un remboursement de {} a ete demande a notre prestataire
                     de paiement ; il apparaitra sur le compte ayant servi a payer.
-                    Note de credit : {} — telechargeable depuis « Mes commandes ».
+                    Note de credit : {}, telechargeable depuis « Mes commandes ».
                     -------------------------------------------------------------
                     """, details.prenom(), details.adresseEmail(),
                     details.numeroCommande(), details.prenom(),

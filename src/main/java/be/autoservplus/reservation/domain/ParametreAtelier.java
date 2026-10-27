@@ -63,7 +63,7 @@ public class ParametreAtelier {
     private String updatedBy;
 
     public ParametreAtelier() {
-        // requis par JPA ; la ligne est creee par la migration V13
+        // requis par JPA. La ligne est creee par la migration V13
     }
 
     public void modifier(String fuseauHoraire, int pasMinutes, int tamponMinutes,

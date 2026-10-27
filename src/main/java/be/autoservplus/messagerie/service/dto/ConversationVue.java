@@ -11,7 +11,7 @@ import java.util.UUID;
  * autant de requetes que de fils.</p>
  *
  * @param numeroIntervention numero des travaux rattaches, ou {@code null} pour un fil
- *                           libre — le socle ne prevoit pas d autre accroche
+ *                           libre, le socle ne prevoit pas d autre accroche
  */
 public record ConversationVue(
         UUID reference,

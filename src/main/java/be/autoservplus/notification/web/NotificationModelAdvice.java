@@ -10,7 +10,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 /**
  * Expose le compteur de notifications non lues ({@code nombreNotificationsNonLues}) a
  * toutes les pages, pour l en-tete commun. Limite a deux ecrans tant que l en-tete
- * etait recopie page par page ; le fragment commun le rend global en une edition.
+ * etait recopie page par page. Le fragment commun le rend global en une edition.
  *
  * <p>Le comptage s appuie sur {@code ix_notification_membre (membre_id, statut)}.</p>
  *

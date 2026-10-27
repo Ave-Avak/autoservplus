@@ -30,9 +30,9 @@ import java.util.function.Function;
  * annees apres l achat.</p>
  *
  * <p>Le rapprochement commande / facture / retractation se fait <b>ici</b> et non
- * dans un service : chaque module repond sur son propre domaine — la vente ignore la
+ * dans un service : chaque module repond sur son propre domaine (la vente ignore la
  * facturation et la retractation, celles-ci connaissent la commande dont elles
- * decoulent — et le controleur assemble les vues. Faire descendre ce rapprochement
+ * decoulent) et le controleur assemble les vues. Faire descendre ce rapprochement
  * dans {@code CommandeService} inverserait la dependance entre les modules.</p>
  *
  * <p>L etat de retractation arrive dans une <b>carte a part</b>, indexee par
@@ -87,7 +87,7 @@ public class HistoriqueCommandeController {
      * <p>Meme assemblage que la liste, et pour les memes raisons : la vente fournit
      * la commande et ses lignes, la facturation le lien de telechargement, la
      * retractation l etat d annulation. Les trois vues se rejoignent ici, pas dans un
-     * service — faire descendre ce rapprochement dans {@code CommandeService}
+     * service, faire descendre ce rapprochement dans {@code CommandeService}
      * inverserait la dependance entre les modules.</p>
      *
      * <p>L eligibilite a la retractation vient de
@@ -95,8 +95,8 @@ public class HistoriqueCommandeController {
      * liste : le bouton ne peut pas apparaitre ici et manquer la-bas.</p>
      *
      * <p>Aucun {@code try/catch} : {@code RessourceIntrouvableException} porte deja
-     * {@code @ResponseStatus(NOT_FOUND)}, donc une commande inconnue — ou celle d un
-     * autre membre — produit un 404 sans code supplementaire. En catcher une pour la
+     * {@code @ResponseStatus(NOT_FOUND)}, donc une commande inconnue (ou celle d un
+     * autre membre) produit un 404 sans code supplementaire. En catcher une pour la
      * retraduire en 404 n ajouterait qu une occasion de se tromper de code.</p>
      */
     @GetMapping("/{reference}")

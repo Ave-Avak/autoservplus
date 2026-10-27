@@ -27,7 +27,7 @@ import be.autoservplus.support.SocleIntegration;
  *
  * <p>Tout est joue <b>en anonyme</b> : c est le seul mode d acces de cette API, et un
  * test authentifie ne prouverait pas qu elle est ouverte. Le test verifie aussi ce
- * qu elle ne doit <b>pas</b> exposer — donnee de gestion, verbe d ecriture — car c est
+ * qu elle ne doit <b>pas</b> exposer (donnee de gestion, verbe d ecriture) car c est
  * la que se situe le risque d une surface publique.</p>
  */
 @SpringBootTest

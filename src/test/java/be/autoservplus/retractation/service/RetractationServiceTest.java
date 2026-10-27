@@ -119,7 +119,7 @@ class RetractationServiceTest {
         void quatorzeJoursPile() {
             // 14 x 24 h exactement : le delai est ecoule. Legerement plus strict que
             // le calcul calendaire legal, et l ecart joue contre le garage, jamais
-            // contre le consommateur — seul sens dans lequel l approximation tient.
+            // contre le consommateur : seul sens dans lequel l approximation tient.
             Commande commande = commandePayeeIlYA(14);
             commandeExiste(commande);
 
@@ -294,7 +294,7 @@ class RetractationServiceTest {
          * Le detail d une commande et la liste doivent proposer la retractation aux
          * memes conditions : un bouton visible d un cote et absent de l autre, pour la
          * meme commande, serait incomprehensible pour le membre. Les deux chemins
-         * partagent {@code refusEventuel} et la construction de la vue ; ce test le
+         * partagent {@code refusEventuel} et la construction de la vue. Ce test le
          * verifie sur le resultat plutot que sur la structure du code, de sorte qu il
          * tombe si quelqu un reecrit l un des deux calculs.
          */

@@ -7,7 +7,7 @@ import java.util.Locale;
  * Base 32 de la RFC 4648, sans remplissage : le format que les applications
  * d authentification attendent dans l URI {@code otpauth://} et a la saisie manuelle.
  *
- * <p>Le JDK n en fournit pas ; {@code commons-codec} le ferait, mais une dependance pour
+ * <p>Le JDK n en fournit pas. {@code commons-codec} le ferait, mais une dependance pour
  * trente lignes verifiees par les vecteurs de la RFC n apporte rien.</p>
  */
 public final class Base32 {
@@ -35,7 +35,7 @@ public final class Base32 {
         return resultat.toString();
     }
 
-    /** Insensible a la casse et aux espaces ; le remplissage eventuel est ignore. */
+    /** Insensible a la casse et aux espaces. Le remplissage eventuel est ignore. */
     public static byte[] decoder(String texte) {
         String propre = texte.replaceAll("[\\s=]", "").toUpperCase(Locale.ROOT);
         ByteArrayOutputStream resultat = new ByteArrayOutputStream(propre.length() * 5 / 8);

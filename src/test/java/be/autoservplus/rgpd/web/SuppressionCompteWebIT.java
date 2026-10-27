@@ -25,7 +25,7 @@ import be.autoservplus.support.SocleIntegration;
 
 /**
  * Suppression de compte par le chemin HTTP (F23) : ce que seule la couche web peut
- * prouver — l impossibilite de viser le compte d autrui, le refus sans confirmation,
+ * prouver, l impossibilite de viser le compte d autrui, le refus sans confirmation,
  * et la revocation effective de la session.
  *
  * <p>Separe de {@code SuppressionCompteIT}, qui exerce le service : celui-ci doit
@@ -123,7 +123,7 @@ class SuppressionCompteWebIT extends SocleIntegration {
                 .andReturn().getRequest().getSession(false);
 
         // SecurityContextLogoutHandler invalide la session cote serveur. Sans cela,
-        // l onglet reste ouvert sur un compte suppose efface — un acces vivant sur
+        // l onglet reste ouvert sur un compte suppose efface : un acces vivant sur
         // une identite qui n existe plus.
         assertThat(session == null || !estValide(session))
                 .as("La session doit etre morte apres la suppression")

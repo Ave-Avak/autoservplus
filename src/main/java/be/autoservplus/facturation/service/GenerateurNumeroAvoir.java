@@ -15,7 +15,7 @@ import java.time.Year;
  *
  * <p>Jumeau de {@link GenerateurNumeroFacture}, et pour la meme raison : un document
  * rectificatif est soumis a la discipline de numerotation de l AR n°1 (art. 5, suite
- * ininterrompue ; art. 12 pour la note de credit). Reprendre ici la sequence
+ * ininterrompue. Art. 12 pour la note de credit). Reprendre ici la sequence
  * {@code seq_numero_avoir} du socle V9 aurait ete plus court d une classe, mais
  * aurait fait cohabiter deux raisonnements contradictoires dans le meme module :
  * V26 a disqualifie la sequence pour la facture au motif qu elle laisse des trous au
@@ -28,7 +28,7 @@ import java.time.Year;
  * <p>{@code Propagation.MANDATORY} verrouille la regle dans le code : un numero ne
  * peut pas etre tire hors d une transaction existante. Un appel isole echoue
  * immediatement au lieu d ouvrir sa propre transaction, de committer l increment,
- * puis de laisser l emission echouer plus loin — exactement le trou qu on evite.</p>
+ * puis de laisser l emission echouer plus loin : exactement le trou qu on evite.</p>
  */
 @Component
 public class GenerateurNumeroAvoir {

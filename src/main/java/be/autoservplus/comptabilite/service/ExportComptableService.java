@@ -22,7 +22,7 @@ import java.time.format.DateTimeFormatter;
  * et sort en JSON structure pour la portabilite (art. 20). Celui-ci sert le garage :
  * il est declenche par l administrateur, porte toutes les pieces d une periode, et
  * sort en CSV parce que le destinataire est un tableur comptable. Meme mot, deux
- * finalites, deux bases legales — d ou deux dispositifs.</p>
+ * finalites, deux bases legales, d ou deux dispositifs.</p>
  *
  * <p>{@code @PreAuthorize} de classe en defense en profondeur : la protection d URL
  * {@code /admin/**} filtre deja le role, le service refuse en second. Ces fichiers

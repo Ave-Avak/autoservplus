@@ -23,19 +23,19 @@ import java.time.Instant;
  *
  * <p><b>Archive, pas contenu editorial.</b> Une ligne s ecrit une fois et ne se
  * modifie jamais : aucun setter, aucun soft delete. Corriger une clause ne se fait pas
- * en retouchant cette ligne mais en publiant une version de plus — sinon les preuves
+ * en retouchant cette ligne mais en publiant une version de plus : sinon les preuves
  * d acceptation deja enregistrees se mettraient a designer un texte que personne n a
  * lu, ce qui est exactement le defaut que F24 corrige.</p>
  *
  * <p><b>Une ligne par langue, un numero de version pour les trois.</b> Le membre
- * neerlandophone a accepte le texte neerlandais ; lui opposer la version francaise
+ * neerlandophone a accepte le texte neerlandais. Lui opposer la version francaise
  * reviendrait a lui opposer un document qu il n a jamais vu. La version est donc un
  * jeu de trois textes publies ensemble, pas un texte unique traduit a la volee.</p>
  *
  * <p><b>Ce que le contenu ne contient pas</b> : ni l identite du garage, ni le registre
  * des traitements. Tous deux restent resolus a chaque rendu (configuration
  * {@code autoservplus.garage.*} et {@code CatalogueTraitements}) parce qu ils
- * <i>informent</i> sans engager — un demenagement du garage ne doit pas invalider un
+ * <i>informent</i> sans engager : un demenagement du garage ne doit pas invalider un
  * consentement, et le registre publie doit rester le meme objet que celui joint a
  * l export RGPD de l article 15.</p>
  */

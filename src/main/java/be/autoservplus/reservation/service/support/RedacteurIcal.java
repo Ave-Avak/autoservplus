@@ -10,7 +10,7 @@ import java.time.format.DateTimeFormatter;
  *
  * <p><b>Ecrit a la main, sans bibliotheque.</b> Un seul {@code VEVENT} sans
  * recurrence, sans fuseau embarque et sans piece jointe demande trois regles de
- * serialisation — echappement, pliage de ligne, horodatage UTC — toutes enoncees
+ * serialisation (echappement, pliage de ligne, horodatage UTC) toutes enoncees
  * ci-dessous. Ajouter une dependance pour les trois aurait coute davantage a
  * justifier qu a ecrire : une bibliotheque de calendrier traine son propre modele
  * objet, ses formats de date et sa licence, pour un fichier de vingt lignes.</p>
@@ -18,16 +18,16 @@ import java.time.format.DateTimeFormatter;
  * <p>Les trois regles, chacune un piege classique :</p>
  * <ul>
  *   <li><b>Fins de ligne CRLF</b> (RFC 5545 §3.1). Un fichier en LF seul est
- *       accepte par certains clients et rejete par d autres ; l ecrire correctement
+ *       accepte par certains clients et rejete par d autres. L ecrire correctement
  *       coute un caractere.</li>
  *   <li><b>Pliage a 75 octets</b> (§3.1), et bien <b>octets</b>, pas caracteres :
  *       le pliage doit se faire sur la representation UTF-8, et jamais au milieu
- *       d une sequence multi-octets — sans quoi un « é » coupe en deux produit un
+ *       d une sequence multi-octets, sans quoi un « é » coupe en deux produit un
  *       fichier invalide. C est la raison du calcul sur {@code byte[]} plus bas.</li>
  *   <li><b>Echappement des valeurs de texte</b> (§3.3.11) : la barre oblique
  *       inverse, le point-virgule et la virgule doivent etre echappes, et un retour
- *       a la ligne devient {@code \n}. Une adresse belge contient une virgule ;
- *       sans echappement, elle scinderait la valeur de {@code LOCATION} en deux.</li>
+ *       a la ligne devient {@code \n}. Une adresse belge contient une virgule.
+ *       Sans echappement, elle scinderait la valeur de {@code LOCATION} en deux.</li>
  * </ul>
  *
  * <p><b>Tous les instants sont ecrits en UTC</b> (suffixe {@code Z}, forme dite
@@ -48,7 +48,7 @@ public final class RedacteurIcal {
 
     /**
      * Identifie le producteur du fichier (§3.7.3). La forme {@code -//...//...//EN}
-     * est celle des identifiants de produit prives ; le suffixe de langue est
+     * est celle des identifiants de produit prives. Le suffixe de langue est
      * conventionnel et ne decrit pas la langue du contenu.
      */
     private static final String PRODUCTEUR = "-//AutoServ+//Rendez-vous//EN";
@@ -67,7 +67,7 @@ public final class RedacteurIcal {
         // PUBLISH et non REQUEST : le garage diffuse une information, il n envoie pas
         // une invitation a laquelle le membre devrait repondre. REQUEST ferait
         // apparaitre des boutons « Accepter / Refuser » dans l agenda, alors que la
-        // decision se prend sur le site — et une reponse partie du calendrier
+        // decision se prend sur le site : et une reponse partie du calendrier
         // n arriverait nulle part.
         ligne(ics, "METHOD", "PUBLISH");
 
@@ -99,7 +99,7 @@ public final class RedacteurIcal {
 
     /**
      * Duree relative negative de la RFC 5545 §3.3.6, exprimee en heures :
-     * {@code -PT24H}. Le signe porte la semantique « avant le debut » ; le format
+     * {@code -PT24H}. Le signe porte la semantique « avant le debut ». Le format
      * {@code Duration.toString()} de Java produit {@code PT24H} mais aussi des
      * formes que la RFC ignore (fractions de seconde), d ou la construction
      * explicite.

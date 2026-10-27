@@ -39,7 +39,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * n appelle jamais : sous MockMvc, ce test passerait ou echouerait pour une raison sans
  * rapport avec la production. S il echouait en production, l identifiant de la session
  * complete serait inconnu du registre, et la suspension ou la reinitialisation ne la
- * fermerait pas — en silence, puisque le filtre de sessions laisse passer ce qu il ne
+ * fermerait pas : en silence, puisque le filtre de sessions laisse passer ce qu il ne
  * connait pas.</p>
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)

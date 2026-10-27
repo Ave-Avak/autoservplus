@@ -17,7 +17,7 @@ import java.util.UUID;
  *
  * <p><b>Pourquoi cette classe existe.</b> Le bouchon rendait depuis toujours une
  * URL {@code /paiement-fictif/{reference}} vers laquelle le controleur de commande
- * redirige — mais rien ne servait cette adresse. Le membre qui cliquait
+ * redirige : mais rien ne servait cette adresse. Le membre qui cliquait
  * « Procéder au paiement » tombait sur un 404, et la chaine marchande n etait
  * achevable que par un appel HTTP direct au webhook, ce que seuls les tests
  * faisaient. Le parcours etait donc vert en integration et impraticable a
@@ -28,7 +28,7 @@ import java.util.UUID;
  * encaissement reel le ferait, puis laisse {@link PaiementService#traiterNotification}
  * relire ce statut et decider. Rien ici n ecrit dans la commande, ne decremente le
  * stock ni ne publie d evenement. Une simulation qui appellerait directement les
- * transitions du domaine validerait un chemin que la production n emprunte pas —
+ * transitions du domaine validerait un chemin que la production n emprunte pas,
  * et c est precisement le defaut qu elle repare.</p>
  *
  * <p>Active sous la condition exacte du bouchon dont elle est la face visible
@@ -63,8 +63,8 @@ public class SimulationPaiementService {
      *
      * <p><b>Volontairement NON transactionnelle.</b> Elle doit laisser
      * {@code traiterNotification} ouvrir la sienne : ouverte ici en lecture seule
-     * (convention du projet), la transaction englobante empecherait l ecriture ;
-     * ouverte en ecriture, elle placerait le verrou pessimiste sur la commande hors
+     * (convention du projet), la transaction englobante empecherait l ecriture.
+     * Ouverte en ecriture, elle placerait le verrou pessimiste sur la commande hors
      * du perimetre que le service a concu. Les deux lectures qui l encadrent se
      * suffisent d une transaction chacune.</p>
      *
@@ -85,11 +85,11 @@ public class SimulationPaiementService {
 
     /**
      * Un membre ne pilote que ses propres paiements. Reference inconnue et paiement
-     * d autrui repondent la meme chose — 404, jamais 403, comme les autres
+     * d autrui repondent la meme chose, 404, jamais 403, comme les autres
      * ressources nominatives du projet : un 403 confirmerait l existence de la
      * ressource a qui n y a pas droit.
      *
-     * <p>Sans {@code @Transactional} — appelee en interne, elle ne passerait pas par
+     * <p>Sans {@code @Transactional} : appelee en interne, elle ne passerait pas par
      * le proxy et l annotation serait un mensonge. Elle n en a pas besoin :
      * {@code findByReferenceMollie} charge la commande et le membre par JOIN FETCH,
      * donc les deux dereferencements ci-dessous tiennent hors session.</p>

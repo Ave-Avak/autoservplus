@@ -73,7 +73,7 @@ class DocumentsLegauxIT extends SocleIntegration {
     class SourcesReelles {
 
         /**
-         * L identite affichee vient de {@code autoservplus.garage.*} — la meme
+         * L identite affichee vient de {@code autoservplus.garage.*} : la meme
          * configuration qui imprime l en-tete des factures. Le test s appuie sur les
          * valeurs de demonstration livrees : si quelqu un recopiait une identite en
          * dur dans le gabarit, la surcharge par variable d environnement cesserait
@@ -92,7 +92,7 @@ class DocumentsLegauxIT extends SocleIntegration {
         /**
          * La politique publiee et le registre joint a l export de l article 15 sont
          * resolus par le meme composant. Verifier ici une base legale du registre,
-         * c est verifier que la page n a pas sa propre redaction parallele — laquelle
+         * c est verifier que la page n a pas sa propre redaction parallele : laquelle
          * finirait tot ou tard par contredire l export.
          */
         @Test
@@ -122,14 +122,14 @@ class DocumentsLegauxIT extends SocleIntegration {
          * Ce test verrouillait l inverse : il exigeait la presence de
          * {@code [A COMPLETER}, parce qu un blanc devait rester VISIBLE tant qu il
          * n etait pas comble. Les onze clauses etant desormais redigees, il aurait
-         * fallu le supprimer — ce qui aurait laisse le defaut symetrique sans garde :
+         * fallu le supprimer, ce qui aurait laisse le defaut symetrique sans garde :
          * plus rien n aurait empeche une clause de revenir a l etat de marqueur, ni
          * une section de se vider en silence.
          *
          * <p>Il verifie donc maintenant ce qui doit etre vrai : <b>aucun marqueur
          * residuel</b> sur aucune des trois pages. Le controle porte sur les trois et
-         * non sur les seules mentions legales, parce que les blancs y etaient repartis
-         * — cinq aux conditions generales, quatre aux mentions, deux a la politique de
+         * non sur les seules mentions legales, parce que les blancs y etaient repartis :
+         * cinq aux conditions generales, quatre aux mentions, deux a la politique de
          * confidentialite.</p>
          */
         @ParameterizedTest(name = "{0} ne porte plus aucun marqueur")
@@ -148,7 +148,7 @@ class DocumentsLegauxIT extends SocleIntegration {
          * n annonce pas qu il manque du texte, mais qu aucun juriste n a relu celui-ci.
          * Completer les clauses ne valide rien. Un texte complet mais non valide est
          * plus dangereux qu un texte visiblement inacheve, parce qu il se lit comme
-         * definitif — c est donc precisement au moment ou les blancs disparaissent
+         * definitif : c est donc precisement au moment ou les blancs disparaissent
          * que cette banniere devient utile, et qu il faut empecher qu on la retire
          * en croyant le travail fini.
          */
@@ -164,7 +164,7 @@ class DocumentsLegauxIT extends SocleIntegration {
         /**
          * Mollie est une societe NEERLANDAISE ({@code Mollie B.V.}). Le texte de la
          * politique annoncait la Belgique, en contradiction avec le registre des
-         * traitements rendu sur la MEME page — et avec celui que l export RGPD de
+         * traitements rendu sur la MEME page : et avec celui que l export RGPD de
          * l article 15 remet au membre, puisque les deux sont resolus par le meme
          * composant. Une politique de confidentialite qui situe mal un sous-traitant
          * informe mal sur le sort des donnees.

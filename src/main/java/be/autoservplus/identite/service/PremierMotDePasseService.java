@@ -20,7 +20,7 @@ import java.time.Duration;
  * connexion du compte exploitant.
  *
  * <p>Deux chemins, un seul ecran : dans les deux cas, le secret en vigueur n a pas ete
- * choisi par la personne qui va s en servir. Seule change la preuve d identite — le
+ * choisi par la personne qui va s en servir. Seule change la preuve d identite : le
  * jeton du lien dans un cas, le mot de passe initial dans l autre.</p>
  */
 @Service
@@ -56,7 +56,7 @@ public class PremierMotDePasseService {
     /**
      * Pose le mot de passe et consomme le jeton.
      *
-     * @throws RessourceIntrouvableException jeton inconnu ou deja consomme — les deux cas
+     * @throws RessourceIntrouvableException jeton inconnu ou deja consomme, les deux cas
      *         sont indiscernables, et c est voulu : l ecran n a pas a dire qu un lien a
      *         existe
      * @throws RefusTraduit                  jeton expire, ou mot de passe hors

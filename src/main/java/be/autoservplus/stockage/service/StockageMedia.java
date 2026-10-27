@@ -20,7 +20,7 @@ import java.util.UUID;
  *
  * <p><b>Hors du webroot.</b> La racine par defaut est {@code ./data/uploads}, un
  * repertoire que rien ne sert statiquement : aucun fichier depose n est atteignable par
- * son chemin. Les images passent par un controleur qui verifie ce qu il sert — c est
+ * son chemin. Les images passent par un controleur qui verifie ce qu il sert : c est
  * ce qui permet a la CSP de rester {@code img-src 'self'} sans rien relacher, puisque
  * les images sont servies par l application elle-meme.</p>
  *
@@ -60,7 +60,7 @@ public class StockageMedia {
      * stocke en base casserait au premier changement de machine ou de volume.</p>
      *
      * @param sousDossier rangement logique ({@code prestations}, {@code interventions})
-     * @return chemin relatif du type {@code prestations/3f2a….jpg}
+     * @return chemin relatif du type {@code prestations/3f2a....jpg}
      * @throws TypeFichierRefuseException      contenu non reconnu comme image admise
      * @throws FichierTropVolumineuxException  au-dela du plafond applicatif
      */

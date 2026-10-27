@@ -15,7 +15,7 @@ public interface HistoriqueModificationCatalogueRepository
      * Historique d un element du catalogue, du plus recent au plus ancien (A2, A5).
      * Le tri secondaire sur l id departage les lignes d une meme modification : elles
      * partagent l horodatage a la milliseconde pres (une seule lecture de l horloge),
-     * et l ordre d insertion — donc l ordre des champs — fait alors foi.
+     * et l ordre d insertion (donc l ordre des champs) fait alors foi.
      *
      * <p>JOIN FETCH sur l auteur : la vue affiche son nom pour chaque ligne, et une
      * association LAZY produirait ici un N+1 sur un journal potentiellement long.

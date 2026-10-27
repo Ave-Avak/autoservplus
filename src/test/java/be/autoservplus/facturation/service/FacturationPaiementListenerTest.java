@@ -71,7 +71,7 @@ class FacturationPaiementListenerTest {
         when(factures.emettrePourCommande(reference))
                 .thenThrow(new IllegalStateException("base indisponible"));
 
-        // Le paiement est committe ; laisser l exception remonter ne le defairait
+        // Le paiement est committe. Laisser l exception remonter ne le defairait
         // pas et polluerait le traitement du webhook. L erreur part en journal.
         assertThatCode(() -> listener.surCommandePayee(new CommandePayeeEvent(reference)))
                 .doesNotThrowAnyException();

@@ -32,10 +32,10 @@ import java.util.UUID;
  *
  * <p><b>Atomicite</b> : gardes (CGV, panier non vide, pieces actives, stock),
  * creation de la commande, reaffectation des lignes et preuve d acceptation des
- * CGV vivent dans UNE transaction — un refus n ecrit rien, ni commande partielle,
+ * CGV vivent dans UNE transaction, un refus n ecrit rien, ni commande partielle,
  * ni panier a moitie converti, ni preuve orpheline.</p>
  *
- * <p><b>Stock</b> : reverifie ligne a ligne au moment de convertir — deux membres
+ * <p><b>Stock</b> : reverifie ligne a ligne au moment de convertir, deux membres
  * ont pu paniériser la meme piece, aucun n a reserve (la reservation soft RM-21
  * est une evolution V2). Le stock n est PAS decremente ici : le dictionnaire le
  * decremente au paiement confirme. Fenetre de course residuelle assumee entre
@@ -44,7 +44,7 @@ import java.util.UUID;
  * <p><b>Lignes deplacees, jamais recopiees</b> : la meme ligne passe de
  * {@code panier_id} a {@code commande_id}, valeurs figees intactes (RM-30). Le
  * panier-contenant survit et se recharge vide. Attention : ne PAS retirer les
- * lignes de la collection du panier dans cette transaction — {@code orphanRemoval}
+ * lignes de la collection du panier dans cette transaction, {@code orphanRemoval}
  * les supprimerait physiquement, commande comprise (voir
  * {@code LignePanier#rattacherA}).</p>
  */
@@ -80,9 +80,9 @@ public class CommandeService {
     /**
      * Convertit le panier du membre en commande EN_ATTENTE_PAIEMENT (RM-19).
      *
-     * @param cgvAcceptees etat REEL de la case cote serveur — un POST forge sans
+     * @param cgvAcceptees etat REEL de la case cote serveur : un POST forge sans
      *                     le parametre est refuse ici, pas par le navigateur
-     * @param adresseIp    IP de la requete pour la preuve d acceptation ; peut etre
+     * @param adresseIp    IP de la requete pour la preuve d acceptation. Peut etre
      *                     nulle, ne transite ni par les URL ni par les journaux
      */
     @Transactional
@@ -120,10 +120,10 @@ public class CommandeService {
         }
 
         // Montants figes (RM-30) : sommes ligne a ligne des valeurs figees du panier,
-        // TVA = TVAC - HTVA par construction — le CHECK ck_commande_coherence passera.
+        // TVA = TVAC - HTVA par construction : le CHECK ck_commande_coherence passera.
         // VI.53 (F12) : la renonciation n a de sens que pour un panier de services.
         // Sur un panier de pieces, une case cochee par un client bricolant le
-        // formulaire est IGNOREE — validation serveur, jamais confiance au client.
+        // formulaire est IGNOREE : validation serveur, jamais confiance au client.
         boolean panierDeServices = panier.estPanierDeServices();
         boolean renonciationRetenue = panierDeServices && renonciationVi53;
 
@@ -134,7 +134,7 @@ public class CommandeService {
         commande.reprendreLignes(lignes);
 
         // Preuve contractuelle F24, dans la MEME transaction : un rollback de la
-        // conversion emporte la preuve — jamais de consentement orphelin.
+        // conversion emporte la preuve : jamais de consentement orphelin.
         // La version vient de version_document (F24) et non plus d une constante : elle
         // designe une ligne dont le texte est archive, donc une preuve qui dit QUOI a
         // ete accepte et pas seulement QUE quelque chose l a ete. Resolue DANS la
@@ -145,7 +145,7 @@ public class CommandeService {
                 versionsDocuments.versionCourante(TypeDocumentVersionne.CGV),
                 adresseIp, horloge.instant()));
 
-        // Preuve VI.53 (F12), ecrite UNIQUEMENT si la question a ete posee — donc si
+        // Preuve VI.53 (F12), ecrite UNIQUEMENT si la question a ete posee : donc si
         // le panier contient des services. Le refus s enregistre autant que l accord :
         // sans ligne, l absence serait ambigue entre « a refuse » et « jamais
         // interroge », exactement le raisonnement tenu pour les cookies en V29.
@@ -165,7 +165,7 @@ public class CommandeService {
 
     /**
      * Page de confirmation. Une commande d autrui remonte comme introuvable (404,
-     * meme code qu une reference inconnue) — meme mecanisme que le reste.
+     * meme code qu une reference inconnue) : meme mecanisme que le reste.
      */
     public ConfirmationCommandeVue confirmation(UUID reference, String email) {
         return ConfirmationCommandeVue.de(commandeDuMembre(reference, email));
@@ -176,7 +176,7 @@ public class CommandeService {
      * son paiement.
      *
      * <p>Les liens vers la facture et vers la retractation ne sont pas resolus ici :
-     * la vente ignore ces deux modules, c est le controleur qui assemble — meme
+     * la vente ignore ces deux modules, c est le controleur qui assemble, meme
      * partage que pour la liste.</p>
      */
     public CommandeDetailVue detail(UUID reference, String email) {
@@ -188,7 +188,7 @@ public class CommandeService {
     /**
      * Le paiement qui a effectivement abouti, ou {@code null}. REMBOURSE compte au
      * meme titre que REUSSI : l encaissement a bien eu lieu, et c est un second
-     * mouvement qui le contre-passe — masquer le moyen de paiement d une commande
+     * mouvement qui le contre-passe, masquer le moyen de paiement d une commande
      * remboursee reviendrait a nier qu elle a ete payee.
      *
      * <p>Les tentatives echouees ou expirees sont ecartees : une commande peut en
@@ -204,7 +204,7 @@ public class CommandeService {
 
     /**
      * Charge une commande en verifiant qu elle appartient au membre. La commande
-     * d autrui remonte comme introuvable — 404, le meme code qu une reference
+     * d autrui remonte comme introuvable, 404, le meme code qu une reference
      * inconnue : un 403 confirmerait a un tiers que cette commande existe.
      */
     private Commande commandeDuMembre(UUID reference, String email) {

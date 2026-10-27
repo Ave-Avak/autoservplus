@@ -32,7 +32,7 @@ import java.util.Locale;
  * modifiables.</p>
  *
  * <p><b>La langue solde la dette F6.</b> La colonne {@code utilisateur.langue} etait
- * lue — a la connexion, et par les documents PDF — mais <b>aucun ecran ne l ecrivait
+ * lue (a la connexion, et par les documents PDF) mais <b>aucun ecran ne l ecrivait
  * jamais</b> : elle valait {@code fr} pour tout le monde. Un membre neerlandophone
  * devait donc recliquer « NL » a chaque session.</p>
  */
@@ -88,7 +88,7 @@ public class ProfilController {
         } catch (RegleMetierException refus) {
             // Code d erreur SPRING, pas un code RM : le premier argument de reject sert
             // a la resolution de message cote framework. Il valait jusqu ici
-            // getCodeRegle(), devenu nul — le refus ne correspond a aucune exigence du
+            // getCodeRegle(), devenu nul : le refus ne correspond a aucune exigence du
             // CdC. Le texte affiche reste la cle i18n, pour suivre la langue de session.
             erreurs.reject("adresse.requise.facture", msg("profil.erreur.adresse-facture"));
             preparer(modele, service.profilDe(membre.getUsername()));
@@ -100,7 +100,7 @@ public class ProfilController {
         // Post/Redirect/Get, et non un rendu direct. Deux raisons, dont une decouverte
         // en ecrivant le test : la langue posee ci-dessus vit en SESSION, alors que la
         // locale de la requete courante est deja resolue quand le gestionnaire
-        // s execute — rendre ici servirait la page de confirmation dans l ANCIENNE
+        // s execute : rendre ici servirait la page de confirmation dans l ANCIENNE
         // langue, et le membre croirait son choix perdu. Le detour par une redirection
         // fait resoudre la locale a neuf. Il evite par ailleurs qu un rafraichissement
         // rejoue l enregistrement.

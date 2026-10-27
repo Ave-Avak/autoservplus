@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Le drapeau existe pour les tests d integration, ou l ordonnanceur ne rend aucun
  * service. Le risque n est donc pas qu il soit mal ecrit, c est qu il <b>fuite en
- * production</b> — ou que son extinction y passe inapercue. Ces trois cas verrouillent
+ * production</b> : ou que son extinction y passe inapercue. Ces trois cas verrouillent
  * les deux moities : la valeur par defaut, et le bruit qu une extinction doit faire.</p>
  *
  * <p>{@link ApplicationContextRunner} plutot qu un {@code @SpringBootTest} : c est le
@@ -31,7 +31,7 @@ class PlanificationConfigTest {
 
     /**
      * Le cas qui compte le plus. Une planification qui exigerait un reglage explicite
-     * pour tourner serait eteinte partout ou personne n y a pense — a commencer par le
+     * pour tourner serait eteinte partout ou personne n y a pense : a commencer par le
      * deploiement, qui ne connait pas ce drapeau et n a pas a le connaitre.
      */
     @Test

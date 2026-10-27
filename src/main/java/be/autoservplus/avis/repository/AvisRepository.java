@@ -46,7 +46,7 @@ public interface AvisRepository extends JpaRepository<Avis, Long> {
      * obligerait l appelant a caster position par position, et une inversion de
      * colonnes ne se verrait qu a l execution.</p>
      *
-     * <p>{@code AVG} rend {@code null} quand aucun avis ne correspond — l appelant
+     * <p>{@code AVG} rend {@code null} quand aucun avis ne correspond, l appelant
      * distingue « pas encore note » de « note a zero », qui n existe pas puisque le
      * CHECK borne la note a 1.</p>
      */

@@ -39,10 +39,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>Verifie que les bornes de la fenetre de reservation sont poussees dans le HTML au
  * format ISO yyyy-MM-dd. C est ce format qu attend l input HTML5 <code>type="date"</code> :
  * le rendre au format belge dd/MM/yyyy casserait la validation cote navigateur. Les
- * valeurs viennent du service ; le test fige la fenetre pour verifier la sortie exacte.</p>
+ * valeurs viennent du service. Le test fige la fenetre pour verifier la sortie exacte.</p>
  */
 @WebMvcTest(RdvController.class)
-@DisplayName("RdvController — formulaire")
+@DisplayName("RdvController : formulaire")
 class RdvControllerFormulaireTest {
 
     @Autowired private MockMvc mvc;
@@ -100,7 +100,7 @@ class RdvControllerFormulaireTest {
 
     @Test
     @WithMockUser(username = "membre@exemple.be")
-    @DisplayName("prestation indisponible : erreur sous « prestations », message sans prefixe [RM-…]")
+    @DisplayName("prestation indisponible : erreur sous « prestations », message sans prefixe [RM-...]")
     void prestationIndisponibleSousLeChampPrestations() throws Exception {
         stubsFormulaire();
         when(rdvs.reserver(any(), any(), any(), any(), any()))
@@ -139,7 +139,7 @@ class RdvControllerFormulaireTest {
 
     @Test
     @WithMockUser(username = "membre@exemple.be")
-    @DisplayName("creneau indisponible : erreur sous « debut », message sans prefixe [RM-…]")
+    @DisplayName("creneau indisponible : erreur sous « debut », message sans prefixe [RM-...]")
     void creneauIndisponibleSousLeChampDebut() throws Exception {
         stubsFormulaire();
         when(rdvs.reserver(any(), any(), any(), any(), any()))

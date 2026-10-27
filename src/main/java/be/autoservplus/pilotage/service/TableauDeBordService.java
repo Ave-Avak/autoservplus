@@ -97,7 +97,7 @@ public class TableauDeBordService {
      *
      * <p><b>Approximation assumee</b> : les indisponibilites ponctuelles (conges,
      * panne d un pont) ne sont pas deduites, faute d etre bornees a un poste dans le
-     * modele actuel. Le taux affiche est donc <b>minorant</b> — la capacite reelle est
+     * modele actuel. Le taux affiche est donc <b>minorant</b> : la capacite reelle est
      * inferieure ou egale a celle-ci, jamais superieure. Un taux qui se tromperait dans
      * l autre sens ferait croire a de la marge inexistante. Les jours feries belges ne
      * sont pas exclus non plus, meme limite que {@code dernierJourReservable}.</p>

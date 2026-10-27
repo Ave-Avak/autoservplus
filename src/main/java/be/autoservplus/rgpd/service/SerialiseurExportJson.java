@@ -23,7 +23,7 @@ import java.nio.charset.StandardCharsets;
  *       suivent la convention JSON et non celle du code ;</li>
  *   <li><b>dates ISO 8601</b> plutot qu horodatages numeriques : un
  *       {@code 2026-08-22T09:15:00Z} se lit sans outil, un epoch non ;</li>
- *   <li><b>indentation</b> : l article 12 exige une forme intelligible — le
+ *   <li><b>indentation</b> : l article 12 exige une forme intelligible, le
  *       destinataire est une personne, pas un programme ;</li>
  *   <li><b>UTF-8 explicite</b> : les libelles portent des accents, et la
  *       plateforme est trilingue.</li>
@@ -44,7 +44,7 @@ public class SerialiseurExportJson {
 
     /**
      * @return le document JSON encode en UTF-8, pret a etre servi en telechargement
-     * @throws IllegalStateException si la serialisation echoue — un export
+     * @throws IllegalStateException si la serialisation echoue : un export
      *         partiellement ecrit ne doit jamais atteindre le membre
      */
     public byte[] enJson(ExportDonnees export) {

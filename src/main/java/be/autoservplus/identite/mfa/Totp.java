@@ -11,14 +11,14 @@ import java.util.OptionalLong;
 
 /**
  * Mot de passe a usage unique fonde sur le temps (TOTP, RFC 6238) : HMAC-SHA1, pas de
- * 30 secondes, six chiffres — les parametres que toutes les applications
+ * 30 secondes, six chiffres, les parametres que toutes les applications
  * d authentification acceptent sans configuration.
  *
  * <p><b>Implementation maison plutot qu une bibliotheque.</b> Les candidates
  * ({@code dev.samstevens.totp}, {@code googleauth}) ne sont plus publiees depuis 2020,
  * et aucune ne gere ce qui demande reellement du soin ici : la persistance du dernier pas
  * accepte, donc l anti-rejeu. Le calcul lui-meme tient en quelques lignes de
- * {@code javax.crypto} et se verifie contre les vecteurs de l annexe B de la RFC —
+ * {@code javax.crypto} et se verifie contre les vecteurs de l annexe B de la RFC :
  * c est ce qui rend ce choix defendable, pas sa brievete.</p>
  */
 public final class Totp {
@@ -67,7 +67,7 @@ public final class Totp {
      * sortie anticipee laisserait le temps de reponse dire lequel a correspondu.</p>
      *
      * @param dernierPasAccepte {@code null} si aucun code n a encore ete accepte
-     * @return le pas accepte, a memoriser par l appelant ; vide si la saisie est refusee
+     * @return le pas accepte, a memoriser par l appelant. Vide si la saisie est refusee
      */
     public static OptionalLong verifier(byte[] secret, String saisie, Instant maintenant,
                                         Long dernierPasAccepte) {

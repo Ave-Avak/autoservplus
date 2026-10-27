@@ -8,7 +8,7 @@ import java.util.UUID;
  * <p>Le systeme detecte lui-meme le cas et propose l action adequate : suppression
  * definitive apres confirmation quand aucun historique ne reference l element,
  * desactivation (RM-28) sinon. L ecran de confirmation n affiche que l action
- * permise — le service reste l arbitre final au POST.</p>
+ * permise : le service reste l arbitre final au POST.</p>
  */
 public record PropositionSuppression(
         UUID reference,

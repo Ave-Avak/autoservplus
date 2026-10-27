@@ -12,7 +12,7 @@ import java.util.UUID;
  * publication.</p>
  *
  * <p><b>Un seul evenement pour les cinq transitions</b> (confirme, refuse, annule,
- * honore, absent), et non cinq evenements : elles declenchent toutes le meme geste —
+ * honore, absent), et non cinq evenements : elles declenchent toutes le meme geste,
  * prevenir le membre que son dossier a bouge. Le listener lit le statut d arrivee pour
  * choisir le libelle. Scinder l evenement obligerait a le republier a chaque nouvelle
  * transition ajoutee a la machine a etats.</p>

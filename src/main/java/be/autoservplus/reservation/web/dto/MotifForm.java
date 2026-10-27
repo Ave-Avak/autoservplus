@@ -5,7 +5,7 @@ import jakarta.validation.constraints.Size;
 
 /**
  * Motif saisi par l administrateur pour un refus ou une annulation de rendez-vous.
- * Le domaine exige un motif non blank ; on le rejette cote formulaire pour un message
+ * Le domaine exige un motif non blank. On le rejette cote formulaire pour un message
  * lisible avant meme d atteindre l entite.
  */
 public class MotifForm {

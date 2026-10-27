@@ -27,7 +27,7 @@ import java.util.UUID;
  * Fil de discussion entre un membre et l administration du garage (BL-5). Table
  * {@code conversation} du socle V7, restee vide jusqu ici.
  *
- * <p><b>Membre ↔ garage, jamais membre ↔ membre.</b> Le schema le dit deja : un seul
+ * <p><b>Membre et garage, jamais membre et membre.</b> Le schema le dit deja : un seul
  * {@code membre_id}, et le camp d en face est designe par un role
  * ({@link RoleExpediteur#ADMINISTRATEUR}) et non par un second titulaire. Il n existe
  * donc aucun chemin par lequel deux clients se parleraient, et rien a bloquer entre
@@ -36,14 +36,14 @@ import java.util.UUID;
  * <p><b>Rattachement a une intervention, facultatif.</b> {@code intervention_id} est
  * la seule accroche prevue au socle et elle est nullable : un fil peut donc porter sur
  * des travaux precis ou rester libre. <b>Aucun rattachement a un rendez-vous ni a une
- * commande</b> — le schema n a pas ces colonnes, et le membre qui veut parler d une
+ * commande</b> : le schema n a pas ces colonnes, et le membre qui veut parler d une
  * commande ouvre un fil libre en citant sa reference dans le message. Ajouter ces
  * accroches supposerait une migration et un ecran qui fasse choisir le contexte
  * (evolution documentee, arbitree en faveur de l option sans migration).</p>
  *
  * <p><b>Cloture reversible.</b> {@code cloturee} ferme le fil sans le supprimer : la
  * trace reste lisible, et le garage peut rouvrir si le sujet revient. Un fil clos
- * n accepte plus de message — la garde vit ici et non dans le service, pour qu aucun
+ * n accepte plus de message : la garde vit ici et non dans le service, pour qu aucun
  * appelant ne puisse l oublier.</p>
  */
 @Entity
@@ -106,7 +106,7 @@ public class Conversation extends BaseEntity {
     /**
      * Ajoute un message au fil.
      *
-     * @throws IllegalStateException fil clos — rouvrir est un geste explicite du
+     * @throws IllegalStateException fil clos : rouvrir est un geste explicite du
      *                               garage, pas un effet de bord de la reponse
      */
     public Message ajouter(Utilisateur expediteur, RoleExpediteur role, String corps,

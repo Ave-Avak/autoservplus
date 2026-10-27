@@ -17,14 +17,14 @@ import java.util.Objects;
  *
  * <p><b>Chiffre, et non hache</b> : un code TOTP se recalcule a partir du secret, qu il
  * faut donc pouvoir relire. Une fuite de la base seule ne doit pas suffire a fabriquer
- * des codes — d ou une cle maitre hors base, tenue par l environnement.</p>
+ * des codes, d ou une cle maitre hors base, tenue par l environnement.</p>
  *
  * <p><b>Donnee authentifiee : identifiant du compte et version de cle.</b> GCM authentifie
  * ces octets sans les chiffrer. Un chiffre recopie sur la ligne d un autre compte, ou
  * relu sous une autre version, echoue a la verification du tag au lieu de produire un
  * secret valide pour la mauvaise personne.</p>
  *
- * <p><b>Rotation.</b> La version active chiffre ; les versions precedentes, si elles sont
+ * <p><b>Rotation.</b> La version active chiffre. Les versions precedentes, si elles sont
  * fournies, ne servent plus qu a dechiffrer. Le service rechiffre sous la version active
  * a chaque verification reussie : une rotation se resorbe a l usage, et la colonne
  * {@code mfa_cle_version} dit ce qu il reste a migrer.</p>
@@ -41,7 +41,7 @@ public class ChiffrementSecretMfa {
 
     /**
      * @param cles          toutes les cles connues, active comprise, par version
-     * @param versionActive celle qui chiffre ; doit figurer dans {@code cles}
+     * @param versionActive celle qui chiffre. Doit figurer dans {@code cles}
      */
     public ChiffrementSecretMfa(Map<Short, SecretKey> cles, short versionActive) {
         this.cles = Map.copyOf(cles);
@@ -76,7 +76,7 @@ public class ChiffrementSecretMfa {
 
     /**
      * @throws SecretIndechiffrableException si la version est inconnue ou si le tag ne
-     *         verifie pas — donnees alterees, mauvais compte, ou cle remplacee sans que
+     *         verifie pas : donnees alterees, mauvais compte, ou cle remplacee sans que
      *         l ancienne ait ete conservee
      */
     public byte[] dechiffrer(byte[] donnees, short version, long idCompte) {

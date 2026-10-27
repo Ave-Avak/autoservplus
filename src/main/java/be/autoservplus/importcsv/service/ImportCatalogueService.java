@@ -26,7 +26,7 @@ import java.util.List;
  * que ligne apres ligne.</p>
  *
  * <p><b>Trouve-ou-cree sur le code.</b> Une ligne dont le code existe deja met a jour
- * l article ; sinon elle le cree. C est ce qui rend l import rejouable : le garage
+ * l article. Sinon elle le cree. C est ce qui rend l import rejouable : le garage
  * corrige son tableur et le renvoie sans avoir a purger quoi que ce soit.</p>
  *
  * <p><b>En-tete obligatoire.</b> Sans elle, l ordre des colonnes serait implicite et
@@ -41,7 +41,7 @@ import java.util.List;
 @PreAuthorize("hasRole('ADMINISTRATEUR')")
 public class ImportCatalogueService {
 
-    /** Colonnes attendues pour les prestations ; l ordre dans le fichier est libre. */
+    /** Colonnes attendues pour les prestations. L ordre dans le fichier est libre. */
     private static final List<String> COLONNES_PRESTATION =
             List.of("categorie", "code", "libelle", "description", "prix_htva", "taux_tva",
                     "duree_minutes");
@@ -123,7 +123,7 @@ public class ImportCatalogueService {
         RapportImport rapport = new RapportImport(crees, misAJour, erreurs);
         if (!rapport.sansErreur()) {
             // Tout ou rien : la transaction est annulee, les compteurs du rapport ne
-            // decrivent alors que ce qui AURAIT ete fait. Le rapport reste utile — il
+            // decrivent alors que ce qui AURAIT ete fait. Le rapport reste utile : il
             // dit exactement quelles lignes corriger.
             throw new ImportRefuseException(rapport);
         }

@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.GetMapping;
  * donne acces aux autres ecrans d administration, qui n avaient jusqu ici aucun point
  * d entree commun.</p>
  *
- * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR ;
+ * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR.
  * {@link TableauDeBordService} redouble par {@code @PreAuthorize} en defense en
  * profondeur. <b>Aucune logique ici</b> : le controleur passe la locale et rend la vue,
  * tout le calcul appartient au service.</p>

@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Les cas verifies sont ceux qu un fichier ecrit a la main rate en silence :
  * fins de ligne, echappement, pliage sur les octets. Aucun ne se voit a la lecture
- * du fichier — ils se voient a l import, chez le membre, dans un client de
+ * du fichier : ils se voient a l import, chez le membre, dans un client de
  * calendrier qu on n a pas sous la main.</p>
  */
 @DisplayName("Redacteur iCalendar (RFC 5545)")
@@ -192,7 +192,7 @@ class RedacteurIcalTest {
         @Test
         @DisplayName("ne coupe jamais un caractere accentue en deux")
         void pasDeCoupureAuMilieuDUnCaractere() {
-            String accentue = "Rendez-vous à l'atelier — révision élémentaire ".repeat(4);
+            String accentue = "Rendez-vous à l'atelier \u2014 révision élémentaire ".repeat(4);
 
             String plie = RedacteurIcal.plier("SUMMARY:" + RedacteurIcal.echapper(accentue));
 

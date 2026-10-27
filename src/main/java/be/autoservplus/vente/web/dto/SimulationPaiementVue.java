@@ -12,7 +12,7 @@ import java.util.UUID;
  * <p>Elle porte le numero et le montant pour une raison precise : c est ce que le
  * membre doit pouvoir confronter a son recapitulatif avant de payer, chez Mollie
  * comme ici. Une page de simulation qui n afficherait que des boutons ne
- * simulerait pas la seule chose qui compte a cet instant — verifier qu on paie le
+ * simulerait pas la seule chose qui compte a cet instant, verifier qu on paie le
  * bon montant pour la bonne commande.</p>
  *
  * <p>{@code referenceCommande} n est pas affichee : elle sert a ramener le membre

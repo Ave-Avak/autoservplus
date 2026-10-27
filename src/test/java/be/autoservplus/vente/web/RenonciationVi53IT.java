@@ -34,8 +34,8 @@ import be.autoservplus.support.SocleIntegration;
 /**
  * Renonciation VI.53 (F12-a), sur un PostgreSQL reel.
  *
- * <p>Verifie ce qui ne se voit qu en base : les <b>deux</b> ecritures de V31 — l etat
- * sur {@code commande.renonciation_vi53} et la preuve dans {@code consentement} — et
+ * <p>Verifie ce qui ne se voit qu en base : les <b>deux</b> ecritures de V31, l etat
+ * sur {@code commande.renonciation_vi53} et la preuve dans {@code consentement}, et
  * le fait que le refus s ecrit autant que l accord.</p>
  */
 @SpringBootTest

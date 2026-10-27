@@ -17,7 +17,7 @@ import java.util.UUID;
  * <b>figees</b> des lignes, jamais du catalogue courant.</p>
  *
  * <p>Contrainte de <b>F13</b> : une piece devenue inactive apres son ajout reste
- * listee — le drapeau {@code pieceActive} de la ligne et
+ * listee, le drapeau {@code pieceActive} de la ligne et
  * {@code contientPieceInactive} du panier permettent au recapitulatif de la
  * signaler.</p>
  */

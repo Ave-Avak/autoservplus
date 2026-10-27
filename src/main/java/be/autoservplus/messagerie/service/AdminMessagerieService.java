@@ -30,7 +30,7 @@ import java.util.UUID;
  * {@code /admin/**} filtre deja le role, le service refuse en second.</p>
  *
  * <p><b>La cloture est reversible</b> : elle ferme le fil sans effacer la trace, et le
- * garage peut rouvrir si le sujet revient. Repondre ne rouvre pas automatiquement —
+ * garage peut rouvrir si le sujet revient. Repondre ne rouvre pas automatiquement :
  * la reouverture est un geste explicite, sans quoi une reponse malencontreuse
  * relancerait un dossier que le garage venait de clore.</p>
  */
@@ -60,7 +60,7 @@ public class AdminMessagerieService {
         this.horloge = horloge;
     }
 
-    /** Tous les fils ; les ouverts avant les clos. */
+    /** Tous les fils. Les ouverts avant les clos. */
     public List<ConversationVue> tous() {
         ZoneId zone = parametres.courants().zone();
         return conversations.tousPourLeGarage().stream()
@@ -68,7 +68,7 @@ public class AdminMessagerieService {
                 .toList();
     }
 
-    /** Detail d un fil ; ouvrir vaut lecture, comme cote membre. */
+    /** Detail d un fil. Ouvrir vaut lecture, comme cote membre. */
     @Transactional
     public ConversationVue lire(UUID reference) {
         Conversation fil = charger(reference);

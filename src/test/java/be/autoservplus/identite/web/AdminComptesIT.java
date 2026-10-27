@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>Le point que seul un test d integration etablit : une suspension ecrite par
  * l ecran <b>refuse effectivement la connexion suivante</b>. Le service ne fait
- * qu ecrire un statut ; c est {@code UtilisateurDetailsService} qui en tire
+ * qu ecrire un statut. C est {@code UtilisateurDetailsService} qui en tire
  * {@code disabled}, et rien dans le service ne le prouve.</p>
  */
 @SpringBootTest
@@ -87,7 +87,7 @@ class AdminComptesIT extends SocleIntegration {
 
         /**
          * <b>Le cas que seul un test d integration etablit.</b> Le service ecrit un
-         * statut ; c est {@code UtilisateurDetailsService} qui en tire {@code disabled}.
+         * statut. C est {@code UtilisateurDetailsService} qui en tire {@code disabled}.
          * Verifier l un sans l autre laisserait croire qu une suspension protege, alors
          * que le lien entre les deux n est atteste nulle part ailleurs.
          */
@@ -143,7 +143,7 @@ class AdminComptesIT extends SocleIntegration {
          * <b>Le cas qui manquait, et que la recette a trouve a ma place.</b> Aucun test
          * n ouvrait cet ecran : la requete testait {@code :filtre is null} pour rendre
          * tout le monde, et PostgreSQL, incapable d inferer le type d un parametre nul,
-         * repondait {@code function lower(bytea) does not exist} — 500 des l ouverture.
+         * repondait {@code function lower(bytea) does not exist}, 500 des l ouverture.
          * Meme piege que celui deja consigne pour le journal d audit (BL-7), et meme
          * motif que le 404 du paiement : ce qu aucun test ne traverse, seule
          * l exploitation le traverse.

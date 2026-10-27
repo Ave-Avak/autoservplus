@@ -22,13 +22,13 @@ import java.util.UUID;
  * Export d un rendez-vous confirme vers l agenda du membre (F38, RFC 5545).
  *
  * <p>Perimetre V1 : un <b>fichier</b> par rendez-vous. L URL d abonnement recurrent
- * evoquee au cahier des charges est renvoyee en V2 — elle suppose un jeton d acces
+ * evoquee au cahier des charges est renvoyee en V2, elle suppose un jeton d acces
  * porte par l adresse elle-meme, puisqu un client de calendrier ne s authentifie
  * pas : c est un sujet de securite entier, pas une variante du meme ecran.</p>
  *
  * <p><b>Confirme seulement.</b> Une demande en attente n a pas de date arretee : le
  * garage peut encore la refuser ou proposer autre chose. La deposer dans l agenda
- * du membre l installerait comme un fait, et rien ne viendrait l en retirer — le
+ * du membre l installerait comme un fait, et rien ne viendrait l en retirer : le
  * fichier vit chez lui, hors de portee du site. Un rendez-vous non confirme est
  * donc traite comme un fichier qui n existe pas ({@code 404}), pas comme un acces
  * refuse : ce n est pas une question de droits, le membre est bien chez lui.</p>
@@ -63,7 +63,7 @@ public class ExportAgendaService {
      *
      * <p>L appartenance est verifiee par {@link RdvService#rdvDuMembre} : reference
      * inconnue et rendez-vous d autrui produisent la meme exception, donc la meme
-     * reponse. Le controle n est pas reecrit ici — le dupliquer serait le laisser
+     * reponse. Le controle n est pas reecrit ici : le dupliquer serait le laisser
      * diverger.</p>
      */
     @Transactional(readOnly = true)
@@ -78,7 +78,7 @@ public class ExportAgendaService {
     /**
      * Fichier joint au courriel de confirmation. La langue est celle enregistree au
      * profil du membre et non celle de l administrateur qui confirme : c est le
-     * meme choix que pour les factures PDF, et pour la meme raison — le document
+     * meme choix que pour les factures PDF, et pour la meme raison, le document
      * part chez le membre.
      *
      * <p><b>Deliberement SANS {@code @Transactional}</b>, contrairement a la methode
@@ -86,7 +86,7 @@ public class ExportAgendaService {
      * transaction d ecriture : ouvrir ici une transaction imbriquee n apporterait
      * rien et couterait cher au premier incident. Une transaction en propagation
      * {@code REQUIRED} rejoint celle de l appelant, et toute exception qui traverse
-     * son intercepteur la marque <i>rollback-only</i> — la confirmation du
+     * son intercepteur la marque <i>rollback-only</i> : la confirmation du
      * rendez-vous, deja ecrite, echouerait alors au commit sur une
      * {@code UnexpectedRollbackException}, pour un fichier d agenda. Sans
      * annotation, l echec reste un simple echec de methode que l appelant absorbe.

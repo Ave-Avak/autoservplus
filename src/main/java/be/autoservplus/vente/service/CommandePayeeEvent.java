@@ -7,7 +7,7 @@ import java.util.UUID;
  *
  * <p>Meme modele que {@code InterventionTermineeEvent} : la reference seule,
  * jamais l entite (le listener post-commit recharge dans sa propre transaction).
- * Publie UNE seule fois par commande — l idempotence du webhook garantit qu un
+ * Publie UNE seule fois par commande : l idempotence du webhook garantit qu un
  * rejeu ne republie pas. C est le point d accroche de la generation de facture
  * (RM-22, bloc suivant) : aucun listener de facturation n existe encore.</p>
  */

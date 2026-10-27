@@ -21,8 +21,8 @@ import static org.mockito.Mockito.when;
 
 /**
  * Forme du numero et lecture de l exercice depuis l horloge injectee. Les
- * proprietes qui ne se prouvent que contre une vraie base — verrou, absence de
- * trou au rollback, concurrence — sont couvertes par {@code NumerotationFactureIT}.
+ * proprietes qui ne se prouvent que contre une vraie base (verrou, absence de
+ * trou au rollback, concurrence) sont couvertes par {@code NumerotationFactureIT}.
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("GenerateurNumeroFacture")

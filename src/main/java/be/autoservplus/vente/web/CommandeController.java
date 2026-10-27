@@ -32,7 +32,7 @@ import java.util.UUID;
 /**
  * Recapitulatif et validation de commande (F14, sans paiement), sous /commande.
  *
- * <p>Le POST porte l acceptation des CGV (revalidee cote serveur — l attribut
+ * <p>Le POST porte l acceptation des CGV (revalidee cote serveur, l attribut
  * {@code required} de la case n est qu un confort) et capture l adresse IP de la
  * requete pour la preuve contractuelle : l IP ne transite ni par l URL ni par les
  * journaux, elle part au service et ne vit qu en colonne de preuve. Le bouton de
@@ -42,7 +42,7 @@ import java.util.UUID;
  * <p>Refus metier : le recapitulatif est reaffiche avec le message sous la zone
  * concernee (CGV ou lignes). Succes : PRG vers la page de confirmation, adressee
  * par la reference publique de la commande. {@code RessourceIntrouvableException}
- * n est pas catchee — commande d autrui ou inconnue : 404.</p>
+ * n est pas catchee, commande d autrui ou inconnue : 404.</p>
  */
 @Controller
 @RequestMapping("/commande")
@@ -104,7 +104,7 @@ public class CommandeController {
 
     /**
      * Depart vers la page de paiement du prestataire (F14). L URL de redirection
-     * vient de la passerelle — factice hors production, Mollie en production.
+     * vient de la passerelle : factice hors production, Mollie en production.
      */
     @PostMapping("/{reference}/payer")
     public String payer(@AuthenticationPrincipal UserDetails membre,
@@ -119,7 +119,7 @@ public class CommandeController {
             // Le pire point de rupture d un parcours d achat est une page d erreur au
             // moment de payer. La commande, elle, reste valide et payable : le membre
             // est ramene sur elle avec un message qui invite a reessayer, et non un 500.
-            // Le message de l exception n est PAS affiche — il peut porter des details
+            // Le message de l exception n est PAS affiche : il peut porter des details
             // du prestataire.
             // Il est en revanche JOURNALISE, avec sa cause. Sans cela l exploitant voit
             // un parcours qui echoue et n a rien pour dire pourquoi : c est ce qui s est
@@ -143,7 +143,7 @@ public class CommandeController {
      *
      * <p>La session survit au detour : le prestataire ramene le navigateur par une
      * navigation GET de premier niveau, que le cookie {@code SameSite=Lax} accompagne.
-     * Elle ne survivrait pas a un POST de retour — raison de plus pour que la
+     * Elle ne survivrait pas a un POST de retour : raison de plus pour que la
      * notification serveur a serveur reste le chemin nominal quand elle est
      * possible.</p>
      */

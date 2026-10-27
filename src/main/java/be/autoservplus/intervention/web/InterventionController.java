@@ -45,7 +45,7 @@ public class InterventionController {
                         Model modele) {
         InterventionVueMembre vue = service.interventionDuMembre(reference, membre.getUsername());
         modele.addAttribute("titre", "Suivi de l'intervention " + vue.numero());
-        // BL-4 : le lien de depot n apparait que si le depot aboutirait — travaux
+        // BL-4 : le lien de depot n apparait que si le depot aboutirait, travaux
         // termines et aucun avis deja depose. Le controle reel reste fait au depot,
         // un lien absent n etant pas une securite.
         modele.addAttribute("peutDeposerAvis", avis.peutDeposer(membre.getUsername(), reference));
@@ -90,7 +90,7 @@ public class InterventionController {
                              @PathVariable UUID reference,
                              Model modele) {
         DemandeValidationVue vue = service.demandeValidation(reference, membre.getUsername());
-        modele.addAttribute("titre", "Validation des travaux — " + vue.numero());
+        modele.addAttribute("titre", "Validation des travaux " + vue.numero());
         modele.addAttribute("demande", vue);
         return "intervention/validation";
     }
@@ -120,7 +120,7 @@ public class InterventionController {
      *
      * <p>{@link RessourceIntrouvableException} n est volontairement PAS catchee : elle
      * doit remonter en 404, comme sur les GET. La rattraper en message d erreur ferait
-     * repondre 302 a un membre qui vise le dossier d autrui — un canal qui distingue
+     * repondre 302 a un membre qui vise le dossier d autrui : un canal qui distingue
      * « reference inexistante » de « reference existante mais pas a vous ».</p>
      */
     private String repondre(UUID reference, RedirectAttributes redirection,

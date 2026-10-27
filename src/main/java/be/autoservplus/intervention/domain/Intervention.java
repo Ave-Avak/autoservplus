@@ -65,7 +65,7 @@ public class Intervention extends BaseEntity {
     /**
      * Commande de services payee dont cette intervention execute les lignes (F12-b).
      *
-     * <p><b>Seconde origine, exclusive de {@link #rdv}</b> — CHECK
+     * <p><b>Seconde origine, exclusive de {@link #rdv}</b> : CHECK
      * {@code ck_intervention_origine_unique}. Les deux nuls restent admis : c est
      * l entree directe au garage que le socle prevoit. Ce lien est ce qui permet a F30
      * de savoir si un service vendu sous renonciation VI.53 a ete pleinement
@@ -91,7 +91,7 @@ public class Intervention extends BaseEntity {
     /**
      * Devis initial HTVA, fige a la creation depuis les lignes du RDV. Reference de
      * comparaison de RM-15 : le seuil se calcule sur ce montant, jamais sur un total
-     * recalcule apres coup — sinon chaque ajout deplacerait la base de comparaison et
+     * recalcule apres coup, sinon chaque ajout deplacerait la base de comparaison et
      * aucun depassement ne serait jamais atteint.
      *
      * <p>Colonne {@code montant_devis_htva} posee des V5 (dictionnaire, RM-15) et
@@ -129,7 +129,7 @@ public class Intervention extends BaseEntity {
      * <p>Les lignes naissent {@code ajouteeEnCours = false}, donc {@code accordMembre}
      * a {@code null} et pour toujours : le membre les a acceptees en reservant, on ne
      * lui redemande pas un accord sur ce qu il a commande. Ce devis est
-     * fige ici dans {@link #montantDevisInitialHtva} — c est l invariant que RM-15
+     * fige ici dans {@link #montantDevisInitialHtva} : c est l invariant que RM-15
      * compare. Le figer dans l entite plutot que dans le service garantit qu aucun
      * chemin de creation ne puisse produire une intervention sans devis de reference.</p>
      */
@@ -153,13 +153,13 @@ public class Intervention extends BaseEntity {
      * (RM-14/15/16) est inchange. La machine a etats est la MEME quelle que soit
      * l origine : on n a pas dedouble les statuts.</p>
      *
-     * <p>Les lignes reprennent les valeurs <b>figees a la commande</b> — prix, libelle,
-     * taux — et non le catalogue du jour : c est ce que le client a paye qui fait foi,
+     * <p>Les lignes reprennent les valeurs <b>figees a la commande</b> (prix, libelle,
+     * taux) et non le catalogue du jour : c est ce que le client a paye qui fait foi,
      * comme partout ailleurs (RM-30).</p>
      *
      * <p>Le vehicule est <b>choisi par le garage</b> a la creation : la colonne est
      * {@code NOT NULL} et une prestation achetee en ligne n est rattachee a aucun
-     * vehicule au moment de l achat. C est aussi le bon moment pour le demander —
+     * vehicule au moment de l achat. C est aussi le bon moment pour le demander :
      * l atelier sait sur quoi il va travailler.</p>
      *
      * @param lignes lignes de service de la commande, deja filtrees par l appelant
@@ -193,7 +193,7 @@ public class Intervention extends BaseEntity {
      * Membre concerne, quelle que soit l origine.
      *
      * <p>Centralise ce que plusieurs appelants faisaient a la main via
-     * {@code getRdv().getMembre()} — expression qui levait une NPE des qu une
+     * {@code getRdv().getMembre()} : expression qui levait une NPE des qu une
      * intervention ne venait pas d un rendez-vous. Rend {@code null} pour une entree
      * directe au garage, seul cas ou personne n est rattache.</p>
      */
@@ -219,7 +219,7 @@ public class Intervention extends BaseEntity {
 
     /**
      * Reprend le travail depuis SUSPENDUE ou ATTENTE_VALIDATION_MEMBRE. La
-     * machine a etats garde les deux cas via {@code peutPasserA} ; le domaine
+     * machine a etats garde les deux cas via {@code peutPasserA}. Le domaine
      * n a pas besoin de distinguer, le service peut proposer deux boutons
      * distincts a l ecran si necessaire.
      *
@@ -303,11 +303,11 @@ public class Intervention extends BaseEntity {
      * reste la regle du commentaire admin et du retrait de ligne. Trois etats
      * editables perdent donc le droit d ajout, chacun pour une raison propre :</p>
      * <ul>
-     *   <li>PLANIFIEE : rien n a commence. C etait le trou de RM-15 — un ajout ici
+     *   <li>PLANIFIEE : rien n a commence. C etait le trou de RM-15, un ajout ici
      *       echappait au controle de seuil (voir {@link #appliquerSeuilDepassement}),
      *       et le devis pouvait grossir sans que le membre ne soit jamais consulte.</li>
      *   <li>SUSPENDUE : le travail est a l arret, le garage reprend d abord.</li>
-     *   <li>ATTENTE_VALIDATION_MEMBRE : une question est deja posee au membre ; on
+     *   <li>ATTENTE_VALIDATION_MEMBRE : une question est deja posee au membre. On
      *       n en empile pas une seconde avant sa reponse.</li>
      * </ul>
      *
@@ -335,7 +335,7 @@ public class Intervention extends BaseEntity {
      * l intervention avec elle.
      *
      * <p>Aucune garde de statut ici : {@link #exigerAjoutEnCours()} a deja etabli
-     * que l intervention est EN_COURS. C est ce qui ferme le trou de RM-15 — tant
+     * que l intervention est EN_COURS. C est ce qui ferme le trou de RM-15, tant
      * que l ajout etait ouvert a PLANIFIEE, une exemption de statut vivait dans
      * cette methode et laissait passer un devis gonfle sans accord du membre.</p>
      *
@@ -346,7 +346,7 @@ public class Intervention extends BaseEntity {
     private void appliquerSeuilDepassement(LigneIntervention nouvelle) {
         // La ligne naît sans réponse. Sous le seuil, le garage tranche d office : le
         // membre a accepte cette marge en acceptant le devis, on ne l interrompt pas
-        // pour 2 %. Au-dela, la ligne reste sans reponse — c est la question posee.
+        // pour 2 %. Au-dela, la ligne reste sans reponse : c est la question posee.
         // Aucune ligne ne sort d ici indecise par omission : les deux cas ecrivent.
         if (totalProposeHtva().compareTo(seuilDepassementHtva()) <= 0) {
             nouvelle.accepter();
@@ -380,8 +380,8 @@ public class Intervention extends BaseEntity {
 
     /**
      * Le membre refuse le depassement : les lignes proposees passent
-     * {@code accordMembre = false} — conservees comme trace du defaut constate, hors
-     * total, non executees — et le travail reprend sur le perimetre initial.
+     * {@code accordMembre = false} (conservees comme trace du defaut constate, hors
+     * total, non executees) et le travail reprend sur le perimetre initial.
      */
     public void refuserDepassement() {
         exigerAttenteValidation();
@@ -432,7 +432,7 @@ public class Intervention extends BaseEntity {
     /**
      * Montant de reference de RM-15 : le devis fige, ou a defaut le devis recalcule
      * depuis les lignes d origine. Le repli couvre les interventions creees avant que
-     * la colonne ne soit mappee ; sans lui, un {@code null} rendrait tout seuil
+     * la colonne ne soit mappee. Sans lui, un {@code null} rendrait tout seuil
      * incalculable et desactiverait la regle sans que personne ne le voie.
      */
     public BigDecimal devisReferenceHtva() {
@@ -442,7 +442,7 @@ public class Intervention extends BaseEntity {
     /**
      * Ce qui sera reellement facture : le devis initial, plus les seuls ajouts que le
      * membre a acceptes. Exclut donc a la fois les lignes <b>en attente</b> de sa
-     * reponse et celles qu il a <b>refusees</b> — la premiere n est pas encore acquise,
+     * reponse et celles qu il a <b>refusees</b> : la premiere n est pas encore acquise,
      * la seconde ne le sera jamais. C est ce total, et lui seul, qui s affiche au
      * membre comme au garage.
      */

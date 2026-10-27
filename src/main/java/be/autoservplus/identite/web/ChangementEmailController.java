@@ -83,7 +83,7 @@ public class ChangementEmailController {
      *
      * <p>Le nom d utilisateur EST l adresse de courriel : apres la bascule, le
      * principal en session designe une adresse que plus aucune ligne ne porte. Le
-     * laisser vivre donnerait une session dont l identite ne se resout plus — mieux
+     * laisser vivre donnerait une session dont l identite ne se resout plus : mieux
      * vaut une reconnexion explicite, qui a le merite de prouver que le membre connait
      * toujours son mot de passe. Meme geste qu a la suppression de compte (F23).</p>
      */

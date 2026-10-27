@@ -16,7 +16,7 @@ import java.util.UUID;
 /**
  * Tentative de paiement d une commande aupres du prestataire (F14).
  *
- * <p>La machine a etats est portee par l entite ({@link StatutPaiement#peutPasserA}) ;
+ * <p>La machine a etats est portee par l entite ({@link StatutPaiement#peutPasserA}).
  * {@code @Version} (V24) protege la course entre le webhook et le job d expiration.
  * La cle d idempotence, generee a la creation et unique en base, accompagne l appel
  * au prestataire pour qu une requete rejouee ne debite pas deux fois.</p>
@@ -37,7 +37,7 @@ public class Paiement {
     private UUID reference;
 
     // commande_id est nullable en base (un paiement pourra couvrir une reservation
-    // de parking) ; dans ce bloc, le constructeur la pose toujours.
+    // de parking). Dans ce bloc, le constructeur la pose toujours.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "commande_id")
     private Commande commande;
@@ -66,7 +66,7 @@ public class Paiement {
     private String devise = "EUR";
 
     /**
-     * Moyen effectivement employe (Bancontact, carte, virement…), tel que le
+     * Moyen effectivement employe (Bancontact, carte, virement...), tel que le
      * prestataire le rapporte. Affiche au detail d une commande (F32, CdC P384).
      *
      * <p><b>Ecrit a la relecture, jamais a la creation</b> : le moyen n est pas choisi
@@ -79,7 +79,7 @@ public class Paiement {
      * de lui-meme le jour ou MollieGateway serait cable ». C etait faux : ainsi mappe,
      * Hibernate ne l ecrit jamais, et l ecran aurait continue d afficher « moyen non
      * communique » avec un prestataire reel branche. Un commentaire faux coute plus
-     * cher qu un commentaire absent — il dispense de verifier.</p>
+     * cher qu un commentaire absent, il dispense de verifier.</p>
      *
      * <p>Un prestataire bouchonne n en rapporte aucun : la valeur reste nulle et
      * l ecran le dit, plutot que d inventer un moyen.</p>
@@ -132,7 +132,7 @@ public class Paiement {
 
     /**
      * Reference attribuee par le prestataire, posee UNE fois a l initiation.
-     * Elle identifie le paiement dans les notifications entrantes ; la reecrire
+     * Elle identifie le paiement dans les notifications entrantes. La reecrire
      * casserait ce lien.
      */
     public void enregistrerReferencePrestataire(String referencePrestataire) {
@@ -171,7 +171,7 @@ public class Paiement {
      * <p>{@code dateFinalisation} n est PAS reecrite : elle date l encaissement, et
      * c est cette date-la que porte la facture immuable. La date du remboursement
      * vit sur la demande d annulation qui l a declenche ({@code decide_le}) et sur
-     * la note de credit ({@code date_emission}) — trois evenements distincts, trois
+     * la note de credit ({@code date_emission}) : trois evenements distincts, trois
      * horodatages distincts, aucun ecrase par le suivant.</p>
      *
      * @param referencePrestataire identifiant du Refund, pour le rapprochement

@@ -19,7 +19,7 @@ import java.util.Locale;
  * une locale allemande : les messages retomberaient sur le fichier par defaut, donc
  * en francais, mais l attribut {@code lang} du document annoncerait
  * {@code de}. Un lecteur d ecran prononcerait alors du francais avec une phonetique
- * allemande — exactement la non-conformite <b>WCAG 3.1.1</b> que F6 corrige, sous
+ * allemande : exactement la non-conformite <b>WCAG 3.1.1</b> que F6 corrige, sous
  * une autre forme. Toute locale inconnue est donc ramenee au francais.</p>
  */
 public final class LanguesSupportees {

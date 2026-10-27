@@ -25,7 +25,7 @@ import java.util.Locale;
  * (V25, une ligne par champ reellement change) et les transitions d intervention
  * (V23, append-only, ecrites dans la transaction de chaque transition). Ni l une ni
  * l autre n est modifiable depuis l application, et ce service n expose aucune
- * ecriture — un journal qu on peut retoucher ne prouve rien.</p>
+ * ecriture, un journal qu on peut retoucher ne prouve rien.</p>
  *
  * <p>{@code @PreAuthorize} de classe en defense en profondeur : la protection d URL
  * {@code /admin/**} filtre deja le role, le service refuse en second. Le journal
@@ -58,7 +58,7 @@ public class JournalService {
      * Entrees correspondant aux filtres, de la plus recente a la plus ancienne.
      *
      * <p>Les bornes de date sont fournies en jours locaux et converties dans le fuseau
-     * de l atelier ; {@code jusqua} est rendu <b>inclusif</b> en avancant d un jour, ce
+     * de l atelier. {@code jusqua} est rendu <b>inclusif</b> en avancant d un jour, ce
      * que l utilisateur attend d un champ « jusqu au ».</p>
      */
     public List<EntreeJournal> rechercher(String type, String acteur,
@@ -100,7 +100,7 @@ public class JournalService {
      * l ecran tombait en {@code ClassCastException} des qu une SEULE ligne existait.
      * Le defaut est reste invisible parce que les deux tables d historique n avaient
      * jamais ete alimentees hors des tests, et que ceux-ci verifient l execution des
-     * quatre variantes de l UNION et le cas « aucune trace » — jamais la conversion
+     * quatre variantes de l UNION et le cas « aucune trace » : jamais la conversion
      * d une ligne reelle. Une requete native rend des {@code Object[]} : c est a
      * l appelant de ne rien presumer de leur type.</p>
      */

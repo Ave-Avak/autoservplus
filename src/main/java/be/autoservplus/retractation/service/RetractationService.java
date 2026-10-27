@@ -31,7 +31,7 @@ import java.util.UUID;
  *
  * <p><b>Ce que le systeme peut trancher seul</b> : la commande appartient bien au
  * demandeur, elle a ete payee, le delai legal court encore, aucune demande n est
- * deja pendante. Tout le reste — la piece a-t-elle ete montee, deballee, abimee —
+ * deja pendante. Tout le reste (la piece a-t-elle ete montee, deballee, abimee)
  * suppose un constat physique que seul l atelier peut faire, et part donc a la
  * validation administrateur ({@code AdminRetractationService}). Ce partage est la
  * raison d etre du flux en deux temps voulu par le CdC (P372-373).</p>
@@ -47,8 +47,8 @@ import java.util.UUID;
  *
  * <p>Arithmetique en {@link Duration} de 14 x 24 h, et non en jours calendaires
  * arretes a minuit : legerement plus stricte que le calcul legal, dans le meme sens
- * que ci-dessus. L horloge est injectee ({@link Clock}), jamais {@code Instant.now()}
- * — c est ce qui rend la fenetre testable a date gelee.</p>
+ * que ci-dessus. L horloge est injectee ({@link Clock}), jamais {@code Instant.now()} :
+ * c est ce qui rend la fenetre testable a date gelee.</p>
  */
 @Service
 @Transactional(readOnly = true)
@@ -80,7 +80,7 @@ public class RetractationService {
      *
      * <p>L identite vient du contexte de securite et la commande est retrouvee par sa
      * reference publique : une commande qui n est pas celle du demandeur remonte
-     * comme introuvable, donc 404 et jamais 403 — meme mecanisme que partout ailleurs,
+     * comme introuvable, donc 404 et jamais 403, meme mecanisme que partout ailleurs,
      * un 403 confirmerait a un tiers que cette commande existe.</p>
      *
      * @param motifMembre facultatif : le droit de retractation est inconditionnel, le
@@ -104,7 +104,7 @@ public class RetractationService {
 
     /**
      * Etat de la retractation pour chaque commande du membre, indexe par reference de
-     * commande — de quoi decider, ligne par ligne, s il faut afficher le bouton de
+     * commande : de quoi decider, ligne par ligne, s il faut afficher le bouton de
      * demande, un rappel « demande en cours », ou le lien vers la note de credit.
      *
      * <p>Une seule requete pour les commandes et une pour les demandes, jamais une
@@ -129,13 +129,13 @@ public class RetractationService {
     }
 
     /**
-     * Le meme etat, pour une seule commande — ce dont le detail d une commande a
+     * Le meme etat, pour une seule commande : ce dont le detail d une commande a
      * besoin (F32).
      *
      * <p>Passe par {@link #vuePour} comme {@link #etatsDuMembre} : l eligibilite est
      * calculee par le <b>meme</b> {@link #refusEventuel}, et la vue construite par le
      * meme code. Recalculer la regle ici la ferait diverger de la liste au premier
-     * amendement — le membre verrait un bouton sur un ecran et pas sur l autre, pour
+     * amendement : le membre verrait un bouton sur un ecran et pas sur l autre, pour
      * la meme commande.</p>
      *
      * <p>La commande d autrui remonte en 404 via {@link #commandeDuMembre}, comme
@@ -171,7 +171,7 @@ public class RetractationService {
      *
      * <p>Un {@code null} plutot qu un {@code Optional} : la methode est privee, et le
      * seul appelant public la traduit immediatement en exception ou en booleen.
-     * L ordre des gardes n est pas neutre — l etat de la commande est verifie avant
+     * L ordre des gardes n est pas neutre : l etat de la commande est verifie avant
      * le delai, pour qu une commande jamais payee reponde « non payee » et non
      * « delai expire » deux semaines plus tard.</p>
      */
@@ -190,12 +190,12 @@ public class RetractationService {
      * revient exactement a « cette intervention est terminee ».</p>
      *
      * <p><b>Limites du critere</b>, a assumer : il repose sur la declaration du garage,
-     * qui marque lui-meme TERMINEE — le systeme ne constate pas l execution, il
+     * qui marque lui-meme TERMINEE, le systeme ne constate pas l execution, il
      * l enregistre. Et une commande de services SANS dossier ouvert reste retractable,
      * ce qui est le comportement voulu : rien ne prouve qu on a travaille.</p>
      *
      * <p><b>On lit l ETAT, jamais la preuve.</b> {@code commande.renonciation_vi53} est
-     * la donnee de decision ; la ligne {@code consentement} est la trace juridique, qui
+     * la donnee de decision. La ligne {@code consentement} est la trace juridique, qui
      * n a pas a etre interrogee pour trancher.</p>
      */
     private boolean serviceExecuteApresRenonciation(Commande commande) {

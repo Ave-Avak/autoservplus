@@ -15,7 +15,7 @@ import java.util.UUID;
  *
  * <p>C est la seule vue membre qui expose des prix a la ligne. Le suivi
  * ({@link InterventionVueMembre}) s en tient au libelle et a la quantite, aligne sur
- * {@code RdvVue} ; ici l information tarifaire est l objet meme de la question posee.
+ * {@code RdvVue}. Ici l information tarifaire est l objet meme de la question posee.
  * Un accord donne sans voir le prix de chaque poste ne serait pas un accord expres.</p>
  *
  * <p>Tous les montants sont en HTVA, comme le seuil qu ils servent a expliquer.</p>

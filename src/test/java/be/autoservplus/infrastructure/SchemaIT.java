@@ -153,7 +153,7 @@ class SchemaIT extends SocleIntegration {
         // derivation au runtime : celle-ci couvrait tout automatiquement mais ne
         // s enoncait pas, alors qu un effacement legal doit pouvoir dire exactement
         // ce qu il ecrase. Ici la liste est ecrite noir sur blanc dans V28, et ce
-        // test echoue le jour ou une table arrive sans y etre ajoutee — au moment ou
+        // test echoue le jour ou une table arrive sans y etre ajoutee : au moment ou
         // l on peut encore agir, pas au moment de l effacement.
         List<String> oubliees = jdbc.queryForList("""
                 SELECT c.table_name || '.' || c.column_name
@@ -177,7 +177,7 @@ class SchemaIT extends SocleIntegration {
     void listeSansColonneFantome() {
         // L inverse du test precedent : une entree qui ne correspond a rien ferait
         // echouer le balayage a l execution, c est-a-dire pendant une suppression de
-        // compte — le pire moment pour decouvrir une faute de frappe.
+        // compte : le pire moment pour decouvrir une faute de frappe.
         List<String> fantomes = jdbc.queryForList("""
                 SELECT d.nom_table || '.' || d.nom_colonne
                 FROM fn_tables_traces_audit() d
@@ -219,7 +219,7 @@ class SchemaIT extends SocleIntegration {
     void balayageCompatibleAvecLImmuabilite() {
         // La reponse a « vous disiez ne jamais toucher une facture » : on ne touche
         // que des metadonnees techniques d audit. Le contenu comptable, lui, reste
-        // aussi verrouille qu avant — les deux assertions le prouvent cote a cote.
+        // aussi verrouille qu avant : les deux assertions le prouvent cote a cote.
         Long membreId = jdbc.queryForObject(
                 "SELECT id FROM utilisateur WHERE email = 'admin@autoservplus.be'", Long.class);
         Long commandeId = jdbc.queryForObject("""
@@ -390,7 +390,7 @@ class SchemaIT extends SocleIntegration {
 
     /**
      * Verifie que la colonne porte bien du HORS TVA. Le montant insere est la somme
-     * {@code prix_unitaire_htva * quantite} des lignes ; le test echouerait si une
+     * {@code prix_unitaire_htva * quantite} des lignes. Le test echouerait si une
      * evolution y rangeait un TVAC, puisque le total TVAC (121 % au taux belge normal)
      * s ecarte necessairement de cette somme.
      */
@@ -449,7 +449,7 @@ class SchemaIT extends SocleIntegration {
      * V22 a remplace le couple validee/refusee par le seul {@code accord_membre}
      * nullable du dictionnaire. L etat « acceptee ET refusee » n a plus besoin d etre
      * interdit : il est devenu inexprimable. Ce qui reste a verrouiller est l autre
-     * incoherence, celle que deux booleens ne savaient pas dire — une ligne du devis
+     * incoherence, celle que deux booleens ne savaient pas dire : une ligne du devis
      * initial qui porterait un accord alors qu on ne lui en a jamais demande.
      */
     @Test

@@ -21,7 +21,7 @@ import java.util.Locale;
  * <p><b>Genere a la demande, archive une fois.</b> Le document n est pas fabrique a
  * l emission : rien n oblige a produire un PDF que personne ne reclamera. A la
  * premiere demande il est compose, ecrit dans l archive, et le chemin est inscrit
- * sur la facture ; toutes les demandes suivantes relisent ce fichier.</p>
+ * sur la facture. Toutes les demandes suivantes relisent ce fichier.</p>
  *
  * <p>Servir l archive plutot que regenerer n est pas une optimisation mais une
  * exigence : la facture conservee dix ans doit rester le document remis au client,

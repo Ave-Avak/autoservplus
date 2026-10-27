@@ -17,11 +17,11 @@ import org.springframework.transaction.event.TransactionalEventListener;
 /**
  * Envoie le courriel de cloture (F17) quand une intervention passe a TERMINEE.
  *
- * <p>{@code AFTER_COMMIT} : le courriel n annonce jamais un etat non acquis — si la
+ * <p>{@code AFTER_COMMIT} : le courriel n annonce jamais un etat non acquis, si la
  * transaction de {@code terminer} est rollbackee, l evenement meurt avec elle. C est
  * la lecon tiree de {@code AdminRdvService.notifierSansEchouer} (envoi inline, protege
  * seulement tant que l envoi ne touche pas la base) : ici le decouplage est structurel,
- * pas seulement defensif. {@code REQUIRES_NEW} ouvre la transaction de lecture — la
+ * pas seulement defensif. {@code REQUIRES_NEW} ouvre la transaction de lecture, la
  * transaction d origine est terminee, on ne peut pas s y joindre.</p>
  *
  * <p>Le listener vit dans le module {@code intervention}, pas {@code communication} :
@@ -43,7 +43,7 @@ public class NotificationInterventionListener {
     }
 
     /**
-     * Recharge l intervention par reference — l evenement ne transporte pas l entite —
+     * Recharge l intervention par reference (l evenement ne transporte pas l entite)
      * et previent le membre. Toute {@link RuntimeException} est avalee apres journal :
      * la cloture est committee, un fournisseur mail en panne ne doit ni la faire
      * echouer ni faire retomber une 500 sur l ecran de l admin.

@@ -45,7 +45,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  *
  * <p>Classe a part : l espion sur le depot des codes de secours change le contexte
  * Spring, et le reste des cas de connexion n en a pas besoin. L espion est la seule
- * preuve que la recherche des codes n a pas eu lieu — un code non consomme le serait
+ * preuve que la recherche des codes n a pas eu lieu : un code non consomme le serait
  * aussi apres une comparaison sans succes.</p>
  */
 @SpringBootTest

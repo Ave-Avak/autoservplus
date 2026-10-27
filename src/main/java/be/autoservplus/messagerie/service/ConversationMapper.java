@@ -16,8 +16,8 @@ import java.util.List;
  * Projection des fils de discussion vers leurs DTO (BL-5).
  *
  * <p><b>Composant separe et non methodes partagees entre les deux services.</b> Les
- * deux services portent un {@code @PreAuthorize} de classe — l un
- * {@code isAuthenticated()}, l autre {@code hasRole('ADMINISTRATEUR')} — et se
+ * deux services portent un {@code @PreAuthorize} de classe (l un
+ * {@code isAuthenticated()}, l autre {@code hasRole('ADMINISTRATEUR')}) et se
  * passer une methode de projection de l un a l autre la ferait traverser un proxy de
  * securite dont ce n est pas le role. La conversion n a aucune autorisation a
  * verifier : elle recoit une entite deja chargee par un appelant qui, lui, a fait le

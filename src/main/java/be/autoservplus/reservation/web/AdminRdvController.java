@@ -24,7 +24,7 @@ import java.util.UUID;
  * Actions administratives sur les rendez-vous depuis l espace garage.
  *
  * <p>La protection d URL {@code /admin/**} de {@code SecuriteConfig} filtre le role
- * ADMINISTRATEUR ; {@code AdminRdvService} redouble par {@code @PreAuthorize} en
+ * ADMINISTRATEUR. {@code AdminRdvService} redouble par {@code @PreAuthorize} en
  * defense en profondeur. Le controleur ne duplique pas l annotation : le pattern
  * projet n en met pas sur les controleurs (verifie sur RdvController, VehiculeController).</p>
  *

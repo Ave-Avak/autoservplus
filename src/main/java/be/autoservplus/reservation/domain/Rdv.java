@@ -24,7 +24,7 @@ import java.util.UUID;
  * <p>La fin est deduite de la somme des durees des prestations, arrondie au pas de
  * l atelier. La machine a etats est portee par l entite. Le non-chevauchement de deux
  * rendez-vous actifs sur un meme poste est garanti par une contrainte d exclusion
- * PostgreSQL ; {@code @Version} protege quant a lui les transitions d etat
+ * PostgreSQL. {@code @Version} protege quant a lui les transitions d etat
  * concurrentes (l admin confirme pendant que le membre annule).</p>
  */
 @Entity
@@ -143,11 +143,11 @@ public class Rdv extends BaseEntity {
      * les deux (RM-10). Ce Javadoc disait « apres confirmation » : il decrivait une
      * restriction que le code n a jamais eue, et
      * {@code RdvTest$AnnulationGarage.depuisEnAttente} prouve le contraire depuis le
-     * debut. Le cas est reel — le garage peut fermer un jour donne et annuler des
+     * debut. Le cas est reel, le garage peut fermer un jour donne et annuler des
      * demandes qu il n avait pas encore tranchees.</p>
      *
      * <p>A ne pas confondre avec {@link #refuser} : refuser, c est decliner une demande
-     * que l on n accepte pas ; annuler, c est revenir sur un creneau que l on ne peut
+     * que l on n accepte pas. Annuler, c est revenir sur un creneau que l on ne peut
      * plus tenir. Les deux liberent le creneau, mais ne disent pas la meme chose au
      * membre et n aboutissent pas au meme statut.</p>
      */

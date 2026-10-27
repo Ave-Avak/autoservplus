@@ -66,7 +66,7 @@ class HierarchieRolesIT extends SocleIntegration {
         }
 
         /**
-         * Sans ce cas, une hierarchie trop large — ou un matcher devenu permissif —
+         * Sans ce cas, une hierarchie trop large (ou un matcher devenu permissif)
          * satisferait les deux precedents sans que rien ne le signale.
          */
         @Test

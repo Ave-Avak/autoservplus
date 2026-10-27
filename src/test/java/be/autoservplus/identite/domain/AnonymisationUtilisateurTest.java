@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Anonymisation du compte (F23, article 17 RGPD) : ce que l entite garantit
  * elle-meme, sans service ni base.
  */
-@DisplayName("Utilisateur — anonymisation")
+@DisplayName("Utilisateur : anonymisation")
 class AnonymisationUtilisateurTest {
 
     private static final Instant MAINTENANT = Instant.parse("2026-08-23T10:00:00Z");
@@ -171,7 +171,7 @@ class AnonymisationUtilisateurTest {
      * <b>Le piege que l ajout de SUPER_ADMINISTRATEUR a failli ouvrir.</b> La garde
      * reposait sur {@code typeUtilisateur == ADMINISTRATEUR}, egalite stricte : une
      * troisieme valeur d enumeration l aurait rendue fausse pour le compte le PLUS
-     * sensible du systeme — celui qui cree, suspend et reactive les autres
+     * sensible du systeme, celui qui cree, suspend et reactive les autres
      * administrateurs. Rien n aurait casse : la garde aurait simplement cesse de
      * couvrir ce cas, en silence. Elle repose desormais sur
      * {@code TypeUtilisateur.estPrivilegie()}, et ce cas echoue si quelqu un revient a

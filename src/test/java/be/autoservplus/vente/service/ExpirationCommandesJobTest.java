@@ -91,7 +91,7 @@ class ExpirationCommandesJobTest {
     /**
      * Course job / webhook : la commande etait EN_ATTENTE au scan, mais un webhook
      * « paid » a commite entre le scan et le verrou. La relecture sous verrou voit
-     * PAYEE et le job passe son chemin — une PAYEE ne redevient jamais ANNULEE.
+     * PAYEE et le job passe son chemin : une PAYEE ne redevient jamais ANNULEE.
      */
     @Test
     @DisplayName("payee entre le scan et le verrou : le job passe, aucun etat incoherent")

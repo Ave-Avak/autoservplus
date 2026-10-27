@@ -12,7 +12,7 @@ import java.util.List;
  *
  * <p>{@code LEFT JOIN FETCH} sur la commande, pour deux raisons distinctes. Le
  * {@code FETCH} d abord : {@code open-in-view} est desactive et l objet de
- * transfert lit le numero de la commande liee — sans lui, une initialisation
+ * transfert lit le numero de la commande liee, sans lui, une initialisation
  * paresseuse par facture, donc un N+1 sur un membre fidele. Le {@code LEFT}
  * ensuite : la source d une facture est une commande <b>ou</b> une intervention
  * (CHECK {@code ck_facture_origine_unique}), et une jointure interne ferait
@@ -21,8 +21,8 @@ import java.util.List;
  * dans {@code CommandeExportRepository}.
  *
  * <p>{@code FactureRepository.facturesDuMembre} du module facturation ne convient
- * pas ici : sa jointure sur la commande est <b>interne</b> — elle sert un ecran
- * qui n affiche que des factures de commande — et son ordre est decroissant, pour
+ * pas ici : sa jointure sur la commande est <b>interne</b> (elle sert un ecran
+ * qui n affiche que des factures de commande) et son ordre est decroissant, pour
  * un historique. L export, lui, restitue chronologiquement, comme toutes ses
  * autres sections.
  *

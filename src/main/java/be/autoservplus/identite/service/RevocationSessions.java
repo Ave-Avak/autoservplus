@@ -19,14 +19,14 @@ import java.util.List;
  * mesure prise en urgence etait la seule a ne pas s appliquer tout de suite.</p>
  *
  * <p><b>La cle du registre est le principal, pas l entite.</b> Spring Security y range
- * les sessions sous l objet qu il a authentifie — un {@code UserDetails} dont le nom
+ * les sessions sous l objet qu il a authentifie, un {@code UserDetails} dont le nom
  * est l adresse de courriel. On cherche donc par adresse, et la comparaison est
  * insensible a la casse comme partout ailleurs dans le projet.</p>
  *
  * <p><b>Expiration plutot que suppression.</b> {@link SessionInformation#expireNow()}
  * marque la session : le filtre de Spring Security la refuse a la requete suivante et
  * redirige vers la connexion. La retirer du registre la rendrait invisible sans la
- * fermer — l utilisateur continuerait de naviguer, et plus rien ne saurait qu il le
+ * fermer : l utilisateur continuerait de naviguer, et plus rien ne saurait qu il le
  * fait.</p>
  */
 @Component
@@ -51,9 +51,9 @@ public class RevocationSessions {
     /**
      * Ferme toutes les sessions du compte sauf celle qui agit.
      *
-     * <p>Pour les gestes que le titulaire fait lui-meme — activer ou retirer son second
+     * <p>Pour les gestes que le titulaire fait lui-meme : activer ou retirer son second
      * facteur. Fermer aussi la sienne le deconnecterait au moment ou il vient de
-     * renforcer son compte ; ne fermer aucune laisserait ouverte la session d un tiers
+     * renforcer son compte. Ne fermer aucune laisserait ouverte la session d un tiers
      * que ce geste visait peut-etre a evincer.</p>
      *
      * @param idSessionConservee {@code null} pour tout fermer
@@ -69,7 +69,7 @@ public class RevocationSessions {
             }
             // false : les sessions deja expirees sont incluses. Les exclure ferait
             // dependre le resultat d un menage asynchrone, donc le rendrait variable
-            // d une execution a l autre ; expireNow() sur une session deja expiree est
+            // d une execution a l autre. expireNow() sur une session deja expiree est
             // sans effet.
             List<SessionInformation> sessions = registre.getAllSessions(principal, false);
             for (SessionInformation session : sessions) {

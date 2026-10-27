@@ -21,8 +21,8 @@ import org.springframework.web.bind.annotation.RequestParam;
  * Definition du premier mot de passe d un administrateur cree au back-office, depuis le
  * lien recu par courriel.
  *
- * <p><b>Le GET ne consomme rien.</b> Il verifie le jeton et le place en champ cache ;
- * seul le POST le consomme. Les messageries et antivirus suivent les liens pour les
+ * <p><b>Le GET ne consomme rien.</b> Il verifie le jeton et le place en champ cache.
+ * Seul le POST le consomme. Les messageries et antivirus suivent les liens pour les
  * analyser : un jeton consomme a l ouverture serait brule avant que le titulaire n ait
  * clique.</p>
  *

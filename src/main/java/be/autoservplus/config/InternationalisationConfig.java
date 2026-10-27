@@ -32,7 +32,7 @@ import org.springframework.web.servlet.i18n.LocaleChangeInterceptor;
  * <p><b>La preference du profil n est PAS appliquee ici.</b> Elle l est a la
  * connexion seule, par {@code LangueApresConnexionHandler}, qui documente pourquoi :
  * appliquee a chaque requete authentifiee, elle servait du francais a tout membre
- * connecte — la colonne vaut {@code fr} par defaut et aucun ecran ne l ecrit — et
+ * connecte (la colonne vaut {@code fr} par defaut et aucun ecran ne l ecrit) et
  * faisait donc perdre l en-tete du navigateur a ceux qui n avaient jamais rien
  * choisi. Quatre tests deja en place l ont montre.</p>
  */
@@ -82,7 +82,7 @@ public class InternationalisationConfig implements WebMvcConfigurer {
      * projet, c est-a-dire par {@code i18n/messages*.properties}.
      *
      * <p><b>Le defaut corrige.</b> Sans ce bean, l interpolateur de Bean Validation
-     * cherche les cles dans un {@code ValidationMessages.properties} — que ce projet
+     * cherche les cles dans un {@code ValidationMessages.properties} : que ce projet
      * n a jamais eu. Une cle introuvable n est pas une erreur au sens de la
      * specification : le message est rendu <b>tel quel, accolades comprises</b>. Le
      * formulaire public d inscription affichait donc
@@ -91,7 +91,7 @@ public class InternationalisationConfig implements WebMvcConfigurer {
      *
      * <p>Les huit cles manquantes sont ajoutees par ailleurs, mais les ajouter aurait
      * suffi a faire disparaitre le symptome <b>sans</b> corriger la cause : le projet
-     * serait reste avec deux mecanismes de resolution — celui-ci, muet, et la
+     * serait reste avec deux mecanismes de resolution, celui-ci, muet, et la
      * resolution par codes d erreur de Spring, qui faisait fonctionner les cles
      * {@code admin.catalogue.validation.*}. Une cle ajoutee demain serait retombee
      * dans le meme piege.</p>

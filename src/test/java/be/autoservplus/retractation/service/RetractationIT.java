@@ -55,7 +55,7 @@ import be.autoservplus.support.SocleIntegration;
 
 /**
  * Retractation au bout de la chaine reelle (F30, RM-23) : panier, commande,
- * paiement, facture, demande du membre, decision du garage — puis la note de credit
+ * paiement, facture, demande du membre, decision du garage, puis la note de credit
  * et le remboursement.
  *
  * <p>Volontairement <b>sans</b> {@code @Transactional} de classe, comme
@@ -269,7 +269,7 @@ class RetractationIT extends SocleIntegration {
     @Test
     @DisplayName("apres un refus, le membre peut redemander tant que le delai court")
     void redemandeApresRefus() throws Exception {
-        // Un refus porte sur un constat date ; il ne prive pas le consommateur de
+        // Un refus porte sur un constat date. Il ne prive pas le consommateur de
         // son droit pour toujours. L index partiel ne contraint que EN_ATTENTE.
         UUID commande = commandePayee(piece("10.00", "21.00"), 1);
         DemandeAnnulation premiere = demanderAnnulation(commande);
@@ -288,7 +288,7 @@ class RetractationIT extends SocleIntegration {
         DemandeAnnulation demande = demanderAnnulation(commande);
 
         // Defense en profondeur : la protection d URL /admin/** n est pas la seule
-        // garde — l appel direct au service est refuse lui aussi.
+        // garde : l appel direct au service est refuse lui aussi.
         assertThatThrownBy(() -> executerEn(MARIE, MEMBRE, () ->
                 adminRetractations.valider(demande.getReference(), "marie@exemple.be")))
                 .isInstanceOf(AccessDeniedException.class);
@@ -346,7 +346,7 @@ class RetractationIT extends SocleIntegration {
     // --- helpers d execution sous l identite de l administrateur -----------------------------
 
     /**
-     * L administrateur de seed (V10) : il existe reellement en base, ce qui compte —
+     * L administrateur de seed (V10) : il existe reellement en base, ce qui compte,
      * la demande stocke son decideur en cle etrangere, un principal purement fictif
      * ne suffirait pas.
      */
@@ -368,7 +368,7 @@ class RetractationIT extends SocleIntegration {
      * a la fin de chaque requete MockMvc, si bien qu un appel de service direct
      * effectue apres un {@code mvc.perform} ne trouverait plus d authentification et
      * echouerait sur le {@code @PreAuthorize} du service. Poser le contexte ici rend
-     * chaque appel independant de ce qui le precede — et permet d exercer les deux
+     * chaque appel independant de ce qui le precede : et permet d exercer les deux
      * roles dans un meme test.</p>
      */
     private <T> T executerEn(String email, String role, java.util.function.Supplier<T> action) {

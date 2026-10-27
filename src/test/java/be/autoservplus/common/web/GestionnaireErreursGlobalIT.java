@@ -23,7 +23,7 @@ import be.autoservplus.support.SocleIntegration;
  * Traitement global des erreurs (passe de consolidation).
  *
  * <p><b>Ce que ce test verrouille n est pas ce que la dette annoncait.</b> Le
- * registre disait « 500 brut sur reference absente » ; c etait perime —
+ * registre disait « 500 brut sur reference absente ». C etait perime :
  * {@code RessourceIntrouvableException} porte {@code @ResponseStatus(NOT_FOUND)}
  * depuis F32 et rendait deja 404. Le test fige donc ce 404 pour qu il ne
  * regresse pas, et verifie surtout les deux apports reels : une page rendue au

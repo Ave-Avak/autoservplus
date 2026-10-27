@@ -15,15 +15,15 @@ import java.util.Objects;
  * Preuve horodatee de l acceptation d un document par un utilisateur.
  *
  * <p><b>Append-only</b> : une ligne s ecrit, ne se modifie jamais et ne se
- * supprime jamais — c est une preuve (pas de soft delete en base, aucun setter
+ * supprime jamais, c est une preuve (pas de soft delete en base, aucun setter
  * ici). Un refus ou un retrait s exprime par une <i>nouvelle</i> ligne
  * {@code accorde = false}, jamais en retouchant celle-ci : voir la fabrique
  * {@link #decision}, employee par le consentement aux cookies (F25) ou l on
  * change d avis autant de fois qu on veut.</p>
  *
- * <p>Pour les CGV a la commande (F24), il s agit d une preuve <b>contractuelle</b>
- * — l acceptation des conditions exigee avant la vente (execution du contrat,
- * art. 6.1.b RGPD) — pas d un consentement optionnel : elle conditionne la
+ * <p>Pour les CGV a la commande (F24), il s agit d une preuve <b>contractuelle</b> :
+ * l acceptation des conditions exigee avant la vente (execution du contrat,
+ * art. 6.1.b RGPD), pas d un consentement optionnel : elle conditionne la
  * commande, elle ne se « refuse » pas apres coup. L adresse IP est une donnee
  * personnelle conservee ici pour ce seul usage de preuve : elle ne transite ni
  * par les URL ni par les journaux.</p>
@@ -54,7 +54,7 @@ public class Consentement {
      * <b>resolue en base</b> par {@code VersionsDocumentsService}, et elle designe une
      * ligne reelle de {@code version_document} dont le texte est archive langue par
      * langue. C est ce qui manquait : la colonne existait depuis le socle, mais rien ne
-     * reliait le numero qu elle porte au texte qu il designe — une preuve pouvait dire
+     * reliait le numero qu elle porte au texte qu il designe, une preuve pouvait dire
      * QU ON avait accepte, jamais QUOI.</p>
      *
      * <p>Aucune FK vers {@code version_document} : la preuve doit survivre a tout,
@@ -108,7 +108,7 @@ public class Consentement {
 
     /**
      * Preuve d acceptation d un document. L instant vient de l horloge injectee de
-     * l appelant, jamais de {@code Instant.now()} ; l adresse IP peut etre absente
+     * l appelant, jamais de {@code Instant.now()}. L adresse IP peut etre absente
      * (colonne nullable) si la requete ne permet pas de la determiner.
      */
     public static Consentement acceptation(Utilisateur utilisateur,
@@ -126,7 +126,7 @@ public class Consentement {
      * <p>Distincte de {@link #acceptation} parce que les deux issues sont ici
      * legitimes et doivent toutes deux se prouver : demontrer qu un consentement a
      * ete recueilli suppose de pouvoir montrer aussi bien le oui que le non, faute
-     * de quoi l absence de ligne resterait ambigue — refus explicite ou visiteur
+     * de quoi l absence de ligne resterait ambigue, refus explicite ou visiteur
      * jamais interroge ? Un refus s enregistre donc, il ne s omet pas.</p>
      */
     public static Consentement decision(Utilisateur utilisateur,

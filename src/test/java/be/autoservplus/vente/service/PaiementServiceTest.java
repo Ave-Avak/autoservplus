@@ -150,7 +150,7 @@ class PaiementServiceTest {
 
             // Les deux adresses remises au prestataire sont ABSOLUES et derivees de
             // l URL publique : le prestataire renvoie un navigateur depuis l exterieur,
-            // et notifie un serveur sans session — ni l un ni l autre ne saurait quoi
+            // et notifie un serveur sans session : ni l un ni l autre ne saurait quoi
             // faire d un chemin relatif. La barre finale de la configuration est retiree.
             assertThat(demande.getValue().urlRetour())
                     .isEqualTo("https://garage.example/commande/"
@@ -184,7 +184,7 @@ class PaiementServiceTest {
     }
 
     @Nested
-    @DisplayName("webhook — statut relu, jamais le payload")
+    @DisplayName("webhook : statut relu, jamais le payload")
     class Webhook {
 
         @Test

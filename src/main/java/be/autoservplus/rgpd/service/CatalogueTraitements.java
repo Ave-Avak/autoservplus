@@ -14,8 +14,8 @@ import java.util.Locale;
  *
  * <p>Le contenu est <b>structurel dans le code, textuel dans l i18n</b> : les
  * listes ci-dessous fixent quels traitements, destinataires, durees et droits sont
- * declares — c est une decision de conformite, elle doit se relire d un coup d oeil
- * et se defendre a l oral — tandis que chaque libelle vit dans
+ * declares (c est une decision de conformite, elle doit se relire d un coup d oeil
+ * et se defendre a l oral) tandis que chaque libelle vit dans
  * {@code i18n/messages*.properties} sous le prefixe {@code rgpd.export.*}. Aucune
  * chaine destinee a la personne n est ecrite en dur ici.
  *
@@ -48,7 +48,7 @@ public class CatalogueTraitements {
      * Sous-traitants et destinataires effectivement mobilises : Mollie pour le
      * paiement, Brevo pour le courriel, l hebergeur pour l application et la base,
      * Cloudflare pour la protection des formulaires publics, Have I Been Pwned pour
-     * le controle des mots de passe compromis. Aucun autre n est declare — la liste
+     * le controle des mots de passe compromis. Aucun autre n est declare : la liste
      * doit rester le miroir de la realite technique, pas une liste de precaution.
      *
      * <p><b>Have I Been Pwned n est pas un sous-traitant</b> au sens de l article 28 :

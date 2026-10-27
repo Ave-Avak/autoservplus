@@ -49,13 +49,13 @@ import be.autoservplus.support.SocleIntegration;
  * {@code PaiementIT} couvrait deja la meme chaine, mais il sautait une marche :
  * apres avoir constate que l initiation redirige vers {@code /paiement-fictif/*},
  * il abandonnait cette URL et appelait {@code POST /webhooks/paiement} en direct.
- * Or aucun controleur ne servait cette adresse — le membre qui suivait la
+ * Or aucun controleur ne servait cette adresse, le membre qui suivait la
  * redirection recevait un 404, et la chaine marchande etait donc verte en
  * integration et impraticable a l ecran.</p>
  *
  * <p>La lecon vaut au-dela du defaut : <b>un test qui construit lui-meme l etape
  * suivante ne prouve pas que l utilisateur peut l atteindre</b>. Ici aucune URL
- * n est fabriquee — toutes sont lues dans la reponse precedente. C est ce qui rend
+ * n est fabriquee : toutes sont lues dans la reponse precedente. C est ce qui rend
  * le 404 impossible a reintroduire en silence.</p>
  */
 @SpringBootTest
@@ -90,7 +90,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
         filtre = pieces.save(filtre);
     }
 
-    /** Panier puis commande ; rend la reference lue dans la redirection. */
+    /** Panier puis commande. Rend la reference lue dans la redirection. */
     private UUID commander() throws Exception {
         panierService.ajouterPiece("marie@exemple.be", filtre.getReference(), 2);
         String redirection = mvc.perform(post("/commande").with(csrf()).param("cgv", "true"))
@@ -100,7 +100,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
                 .replace("/commande/", "").replace("/confirmation", ""));
     }
 
-    /** Initiation ; rend l URL de paiement TELLE QUE le membre la recoit. */
+    /** Initiation. Rend l URL de paiement TELLE QUE le membre la recoit. */
     private String urlDePaiement(UUID commande) throws Exception {
         return mvc.perform(post("/commande/{ref}/payer", commande).with(csrf()))
                 .andExpect(status().is3xxRedirection())
@@ -181,7 +181,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
         String urlPaiement = urlDePaiement(reference);
         String referencePrestataire = urlPaiement.substring(urlPaiement.lastIndexOf('/') + 1);
 
-        // Le paiement aboutit CHEZ le prestataire, et rien ne le notifie — exactement
+        // Le paiement aboutit CHEZ le prestataire, et rien ne le notifie : exactement
         // ce qui se produit lorsque le site n est pas joignable depuis l exterieur et
         // qu aucune URL de notification n a donc ete transmise.
         prestataireFictif.programmerStatut(referencePrestataire, StatutPaiement.REUSSI);
@@ -204,7 +204,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
         UUID reference = commander();
         urlDePaiement(reference);
 
-        // Le membre revient sans avoir paye — le prestataire renvoie aussi apres un
+        // Le membre revient sans avoir paye : le prestataire renvoie aussi apres un
         // abandon. Visiter l adresse ne doit rien confirmer.
         mvc.perform(get("/commande/{ref}/retour", reference))
                 .andExpect(status().is3xxRedirection());
@@ -255,7 +255,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
         String urlPaiement = urlDePaiement(commander());
 
         // Luc est authentifie, mais la commande est celle de Marie. Un 403
-        // confirmerait que la reference existe ; le projet repond 404 partout ou une
+        // confirmerait que la reference existe. Le projet repond 404 partout ou une
         // ressource est nominative.
         mvc.perform(get(urlPaiement).with(user("luc@exemple.be")))
                 .andExpect(status().isNotFound());
@@ -293,7 +293,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
                 + referencePrestataire + " : statut relu = REUSSI, commande passee PAYEE, "
                 + "facture emise.");
 
-        // Le membre revient ensuite. Meme chemin, meme relecture — mais plus rien a
+        // Le membre revient ensuite. Meme chemin, meme relecture : mais plus rien a
         // ecrire, et c est ce que la ligne doit rendre visible.
         mvc.perform(get("/commande/{ref}/retour", reference))
                 .andExpect(status().is3xxRedirection());

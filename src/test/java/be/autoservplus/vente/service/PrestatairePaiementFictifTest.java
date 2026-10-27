@@ -12,9 +12,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * Le bouchon est le prestataire des tests : deterministe, programmable, sans
  * reseau. La passerelle Mollie reelle, elle, doit rester une frontiere fermee
- * tant qu elle n est pas implementee — jamais exercee par les tests.
+ * tant qu elle n est pas implementee : jamais exercee par les tests.
  */
-@DisplayName("PrestatairePaiement — bouchon et frontiere Mollie")
+@DisplayName("PrestatairePaiement : bouchon et frontiere Mollie")
 class PrestatairePaiementFictifTest {
 
     private final DemandePaiement demande = new DemandePaiement(

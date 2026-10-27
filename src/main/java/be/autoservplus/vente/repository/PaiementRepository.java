@@ -27,7 +27,7 @@ public interface PaiementRepository extends JpaRepository<Paiement, Long> {
     /**
      * Derniere tentative de paiement d une commande, pour la reconciliation au retour
      * du membre. L identifiant departage deux tentatives nees dans la meme
-     * milliseconde — cas rare en production, systematique avec une horloge figee de
+     * milliseconde : cas rare en production, systematique avec une horloge figee de
      * test, et un depart au hasard ferait relire le statut de la mauvaise.
      */
     Optional<Paiement> findFirstByCommandeOrderByDateInitiationDescIdDesc(Commande commande);

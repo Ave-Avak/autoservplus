@@ -62,7 +62,7 @@ class StockageMediaTest {
         @Test
         @DisplayName("enregistre un PNG malgre un Content-Type annonce en JPEG")
         void typeReelPrimeSurLAnnonce() {
-            // Le client annonce image/jpeg ; le contenu est un PNG. C'est le contenu
+            // Le client annonce image/jpeg. Le contenu est un PNG. C'est le contenu
             // qui doit decider, sinon l'annonce suffirait a faire passer n'importe quoi.
             String chemin = stockage().enregistrer(
                     fichier("mensonge.jpg", corps(EN_TETE_PNG, 64)), "pieces");

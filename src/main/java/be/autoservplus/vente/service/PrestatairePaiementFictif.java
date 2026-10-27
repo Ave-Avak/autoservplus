@@ -16,13 +16,13 @@ import java.util.concurrent.atomic.AtomicLong;
  * teste contre lui, sans reseau et de maniere deterministe (meme role que
  * {@code CourrielConsole} pour l email).
  *
- * <p>Un paiement cree nait INITIE ; les tests, la demonstration et la page de
- * paiement simulee font evoluer son statut via {@link #programmerStatut} — c est ce
+ * <p>Un paiement cree nait INITIE. Les tests, la demonstration et la page de
+ * paiement simulee font evoluer son statut via {@link #programmerStatut} : c est ce
  * que {@link #lireEtat} restituera, comme le ferait la relecture de l API
  * Mollie.</p>
  *
  * <p><b>Le repli s annonce.</b> Il vaut aussi en production, ou il evite de rompre
- * un parcours d achat faute de cle — mais un encaissement simule qui se tairait
+ * un parcours d achat faute de cle, mais un encaissement simule qui se tairait
  * serait pire que la rupture qu il evite. D ou l avertissement au demarrage, et la
  * banniere que porte la page de paiement simulee.</p>
  */
@@ -67,7 +67,7 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
      * Remboursement bouchonne : succes immediat, comme un prestataire qui accepte le
      * Refund sur-le-champ.
      *
-     * <p>Le paiement d origine doit exister et avoir ete encaisse — rembourser une
+     * <p>Le paiement d origine doit exister et avoir ete encaisse, rembourser une
      * reference inconnue ou un paiement jamais abouti est une erreur de programmation
      * que le bouchon signale au lieu de la masquer, sans quoi les tests de la
      * retractation passeraient sur une chaine que le vrai prestataire refuserait.</p>
@@ -75,7 +75,7 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
      * <p>La cle d idempotence est honoree : deux appels portant la meme cle rendent
      * la meme reference de remboursement, exactement comme le ferait Mollie. C est ce
      * qui permet de prouver en test qu une double validation ne rembourse qu une
-     * fois — meme si, en amont, le verrou optimiste et l index unique de l avoir
+     * fois : meme si, en amont, le verrou optimiste et l index unique de l avoir
      * doivent l avoir deja empechee.</p>
      */
     @Override

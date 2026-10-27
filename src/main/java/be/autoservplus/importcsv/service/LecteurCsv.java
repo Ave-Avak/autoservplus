@@ -7,7 +7,7 @@ import java.util.List;
  * Analyse d un CSV simple (BL-2).
  *
  * <p><b>Ecrit a la main plutot qu avec OpenCSV ou Commons CSV.</b> Le format attendu
- * est celui que produit un tableur belge — point-virgule, guillemets doubles, CRLF —
+ * est celui que produit un tableur belge (point-virgule, guillemets doubles, CRLF)
  * et il est deja ecrit en sortie par {@code RedacteurCsv} : ajouter une dependance
  * pour relire ce que nous ecrivons nous-memes ferait entrer une bibliotheque, sa
  * configuration et ses conventions pour un besoin de trente lignes. Le jour ou le

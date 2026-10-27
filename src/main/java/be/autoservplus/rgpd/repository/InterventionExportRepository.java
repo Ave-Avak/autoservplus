@@ -15,8 +15,8 @@ import java.util.List;
  * non par une jointure vers {@code Vehicule} ni par le rendez-vous. Deux raisons,
  * chacune suffisante :
  * <ul>
- *   <li>{@code rdv_id} est nullable en base — une intervention peut naitre d une
- *       entree directe au garage — donc filtrer sur le RDV laisserait echapper des
+ *   <li>{@code rdv_id} est nullable en base (une intervention peut naitre d une
+ *       entree directe au garage) donc filtrer sur le RDV laisserait echapper des
  *       dossiers du membre le jour ou ce chemin de creation existera ;</li>
  *   <li>une jointure vers {@code Vehicule} porterait son {@code @SQLRestriction} :
  *       retirer un vehicule du parc effacerait ses interventions de l export, alors

@@ -13,7 +13,7 @@ import java.util.List;
  * Lecture du journal d audit (BL-7).
  *
  * <p><b>UNION native plutot que deux requetes fusionnees en memoire.</b> Les deux
- * tables historisees n ont ni les memes colonnes ni la meme entite racine ; les lire
+ * tables historisees n ont ni les memes colonnes ni la meme entite racine. Les lire
  * separement obligerait a charger l integralite de chacune avant de trier et de
  * tronquer, ce qui rend le cout du filtre proportionnel a tout l historique. En SQL,
  * le tri et la limite s appliquent au resultat fusionne.</p>

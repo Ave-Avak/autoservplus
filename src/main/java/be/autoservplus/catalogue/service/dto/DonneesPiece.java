@@ -7,7 +7,7 @@ import java.math.BigDecimal;
  *
  * <p>{@code referenceFabricant} n est lue qu a la creation : c est l ancre d unicite
  * de la piece ({@code uq_piece_fabricant}), immuable ensuite comme le code d une
- * prestation. {@code quantiteStock} est le stock initial a la creation ; en
+ * prestation. {@code quantiteStock} est le stock initial a la creation. En
  * modification, il corrige l inventaire courant.</p>
  */
 public record DonneesPiece(

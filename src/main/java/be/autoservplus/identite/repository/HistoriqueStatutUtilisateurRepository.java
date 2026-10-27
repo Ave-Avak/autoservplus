@@ -14,7 +14,7 @@ public interface HistoriqueStatutUtilisateurRepository
      * Chronologie d un compte, du plus recent au plus ancien.
      *
      * <p>L auteur est charge en JOIN FETCH : l ecran le nomme pour chaque ligne, et
-     * le laisser paresseux produirait une requete par ligne — le defaut N+1 sur un
+     * le laisser paresseux produirait une requete par ligne, le defaut N+1 sur un
      * ecran dont l interet est precisement de lister plusieurs evenements.</p>
      */
     @Query("""

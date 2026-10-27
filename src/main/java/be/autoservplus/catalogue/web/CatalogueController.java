@@ -68,7 +68,7 @@ public class CatalogueController {
         modele.addAttribute("article", article);
         modele.addAttribute("typeArticle", "service");
         // BL-4 : la note moyenne et les avis publies font partie de la fiche.
-        // Les pieces n en ont pas — un avis porte sur un travail effectue, pas sur
+        // Les pieces n en ont pas : un avis porte sur un travail effectue, pas sur
         // un article de stock.
         modele.addAttribute("syntheseAvis", avis.synthese(reference));
         modele.addAttribute("avis", avis.publiesPour(reference));

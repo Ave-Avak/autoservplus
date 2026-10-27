@@ -15,7 +15,7 @@ import java.util.List;
  * <p>Deux requetes plutot qu un {@code JOIN FETCH} des lignes : la seconde ramene
  * en un seul appel les lignes de <b>toutes</b> les commandes du membre, que le
  * service regroupe ensuite en memoire. Le cout est de deux requetes quel que soit
- * le nombre de commandes — ni N+1, ni produit cartesien a dedupliquer.
+ * le nombre de commandes : ni N+1, ni produit cartesien a dedupliquer.
  *
  * <p>La piece du catalogue n est pas jointe : le libelle et les montants sont
  * <b>figes sur la ligne</b> a l ajout au panier (RM-30), l export n a donc rien a

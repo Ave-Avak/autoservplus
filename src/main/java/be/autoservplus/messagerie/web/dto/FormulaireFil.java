@@ -9,7 +9,7 @@ import java.util.UUID;
 /** Ouverture d un fil par le membre (BL-5). */
 public class FormulaireFil {
 
-    /** Garde-fou de saisie ; la colonne {@code corps} est un {@code text} sans limite. */
+    /** Garde-fou de saisie. La colonne {@code corps} est un {@code text} sans limite. */
     public static final int LONGUEUR_MAXIMALE_CORPS = 4000;
 
     @NotBlank

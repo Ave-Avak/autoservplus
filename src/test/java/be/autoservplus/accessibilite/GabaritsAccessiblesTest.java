@@ -23,7 +23,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>Poser ces attributs une fois ne suffit pas : le vrai risque est qu un ecran
  * ajoute plus tard reintroduise le defaut sans que rien ne le signale. Ces cas
  * balaient donc l ensemble des gabarits plutot que ceux corriges aujourd hui, et
- * echouent en NOMMANT le fichier et la balise fautive — meme parti que
+ * echouent en NOMMANT le fichier et la balise fautive, meme parti que
  * {@code SchemaIT.listeDesTracesExhaustive}, qui casse la build lorsqu une table
  * echappe au balayage RGPD.</p>
  *
@@ -49,9 +49,9 @@ class GabaritsAccessiblesTest {
      * Pages encore ecrites en francais dans le dur, <b>corps compris</b> : leur titre
      * n y fait pas exception. Leur poser un titre traduit produirait un onglet
      * neerlandais au-dessus d une page francaise, soit une incoherence de plus et non
-     * de moins ; elles relevent de la passe i18n inscrite a la dette, qui les traduira
+     * de moins. Elles relevent de la passe i18n inscrite a la dette, qui les traduira
      * d un bloc. La liste vaut donc constat date, et non dispense : elle est fermee aux
-     * ajouts — toute page NEUVE est balayee — et {@code exclusionSansEntreePerimee}
+     * ajouts (toute page NEUVE est balayee) et {@code exclusionSansEntreePerimee}
      * refuse qu une entree y survive a sa traduction.
      */
     private static final List<String> EN_FRANCAIS_FIGE = List.of(
@@ -215,7 +215,7 @@ class GabaritsAccessiblesTest {
         /**
          * Le titre est la premiere chose qu annonce un lecteur d ecran a l ouverture,
          * et le seul reperage disponible quand plusieurs onglets sont ouverts. Fige en
-         * francais, il reste francais sur une page servie en neerlandais — le defaut
+         * francais, il reste francais sur une page servie en neerlandais : le defaut
          * meme que F6 corrige dans le corps, revenu par l en-tete du document.
          *
          * <p><b>Le filtre est le CHEMIN, pas le contenu.</b> Les quatre enveloppes de
@@ -240,8 +240,8 @@ class GabaritsAccessiblesTest {
         /**
          * Le garde-fou de la liste d exclusion elle-meme. Sans ce cas, une page
          * traduite au fil de la passe i18n resterait inscrite ici indefiniment, et la
-         * liste finirait par dispenser du balayage des ecrans qui n en ont plus besoin
-         * — exactement le sort qu un test doit empecher. Meme parti que le refus des
+         * liste finirait par dispenser du balayage des ecrans qui n en ont plus besoin :
+         * exactement le sort qu un test doit empecher. Meme parti que le refus des
          * entrees fantomes dans {@code SchemaIT}.
          */
         @Test

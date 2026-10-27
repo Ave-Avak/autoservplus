@@ -46,7 +46,7 @@ public interface ServiceCourriel {
     /**
      * Le garage a chiffre des travaux qui portent l intervention a plus de 10 % du
      * devis initial : RM-15 exige l accord expres du membre avant de poursuivre.
-     * C est le canal dedie annonce par RM-16 — le statut percu reste « En cours »,
+     * C est le canal dedie annonce par RM-16 : le statut percu reste « En cours »,
      * la demande passe par ce courriel et par l ecran de validation.
      */
     void envoyerDemandeValidationDepassement(Utilisateur destinataire,
@@ -56,14 +56,14 @@ public interface ServiceCourriel {
     /**
      * L intervention est terminee (F17) : le membre est invite a venir recuperer son
      * vehicule aux heures d ouverture, et a deposer un avis. Envoye apres commit de
-     * la transition TERMINEE, jamais pendant — un courriel ne doit pas annoncer un
+     * la transition TERMINEE, jamais pendant : un courriel ne doit pas annoncer un
      * etat qui pourrait encore etre annule par un rollback.
      */
     void envoyerInterventionTerminee(DetailsInterventionTerminee details);
 
     /**
      * Le paiement de la commande est confirme (F14) : recu adresse au membre,
-     * envoye apres commit du passage a PAYEE — jamais pendant la transaction.
+     * envoye apres commit du passage a PAYEE, jamais pendant la transaction.
      */
     void envoyerConfirmationPaiement(DetailsPaiementCourriel details);
 
@@ -76,7 +76,7 @@ public interface ServiceCourriel {
      * membre laisse sans reponse ne saurait pas que son dossier a ete traite.</p>
      *
      * <p>Le message <b>lie</b> vers le telechargement de la note de credit, il n en
-     * attache pas le binaire — meme choix que pour la facture : un PDF en piece
+     * attache pas le binaire, meme choix que pour la facture : un PDF en piece
      * jointe echappe a l authentification, se retrouve dans les sauvegardes de
      * messagerie du destinataire, et alourdit un envoi que le membre relira peut-etre
      * jamais.</p>
@@ -97,7 +97,7 @@ public interface ServiceCourriel {
      * <p>C est le seul signal qu une prise de controle laisse au titulaire legitime :
      * qui detourne un compte commence par en deplacer l adresse, apres quoi la
      * reinitialisation de mot de passe ne revient plus jamais a la victime. L avis part
-     * des la DEMANDE et non a la bascule — averti apres coup, le titulaire n aurait
+     * des la DEMANDE et non a la bascule, averti apres coup, le titulaire n aurait
      * plus aucun moyen de reprendre la main.</p>
      *
      * <p>Aucun bouton d annulation n y figure : un lien d annulation dans un courriel
@@ -115,7 +115,7 @@ public interface ServiceCourriel {
      * apres anonymisation la ligne ne porte plus qu un jeton non routable. Le service
      * les capture avant l ecrasement et les fait voyager jusqu ici.</p>
      *
-     * <p>Le message rappelle ce qui a ete conserve et pourquoi — les documents
+     * <p>Le message rappelle ce qui a ete conserve et pourquoi : les documents
      * comptables, dix ans, article 60 du Code de la TVA. Une confirmation qui dirait
      * seulement « tout est efface » serait fausse, et la personne decouvrirait la
      * conservation au pire moment.</p>

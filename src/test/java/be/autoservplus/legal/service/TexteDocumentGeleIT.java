@@ -33,7 +33,7 @@ import be.autoservplus.support.SocleIntegration;
  * <p><b>C est ce test qui fait le travail de conformite</b>, pas la table. Archiver un
  * texte ne sert a rien si le texte affiche peut s en ecarter en silence : les preuves
  * d acceptation continueraient de porter un numero de version qui ne correspondrait
- * plus a ce que les membres ont sous les yeux — c est-a-dire le defaut d avant F24,
+ * plus a ce que les membres ont sous les yeux, c est-a-dire le defaut d avant F24,
  * deplace d un cran. Ici, modifier une clause sans publier de nouvelle version
  * <b>casse la build</b>, au moment ou l on peut encore choisir et non le jour ou
  * quelqu un demande a voir le texte qu il a accepte.</p>
@@ -43,7 +43,7 @@ import be.autoservplus.support.SocleIntegration;
  * c est le test qui echoue quand elle cesse d etre vraie.</p>
  *
  * <p>Test d integration et non unitaire : il confronte deux artefacts qui n existent
- * qu ensemble — les messages reellement resolus par l application, et les lignes
+ * qu ensemble, les messages reellement resolus par l application, et les lignes
  * reellement inserees par la migration. Une doublure de l un ou de l autre ne
  * comparerait que le test a lui-meme.</p>
  */
@@ -54,7 +54,7 @@ class TexteDocumentGeleIT extends SocleIntegration {
     /**
      * Seule cle a arguments des trois familles surveillees. Le delai vient de la
      * constante qui refuse effectivement une demande hors delai : changer la regle
-     * change le texte des CGV et impose donc une nouvelle version — consequence voulue,
+     * change le texte des CGV et impose donc une nouvelle version, consequence voulue,
      * pas effet de bord.
      */
     private static final Map<String, Object[]> ARGUMENTS =
@@ -64,8 +64,8 @@ class TexteDocumentGeleIT extends SocleIntegration {
      * Cles de la famille {@code cookies.} qui ne font PAS partie du texte engageant.
      *
      * <p>Ce sont des commandes et des libelles de navigation. Les geler obligerait a
-     * publier une nouvelle version — donc a redemander son consentement a chaque membre
-     * — parce qu on aurait renomme un bouton. Une redemande sans cause est du bruit, et
+     * publier une nouvelle version, donc a redemander son consentement a chaque membre :
+     * parce qu on aurait renomme un bouton. Une redemande sans cause est du bruit, et
      * le bruit finit par etre clique sans etre lu : le consentement y perdrait
      * precisement ce que la manoeuvre pretendait proteger.</p>
      */
@@ -216,7 +216,7 @@ class TexteDocumentGeleIT extends SocleIntegration {
     /**
      * Assemble le texte tel que l application le sert : les memes cles, dans le meme
      * ordre, resolues par le MEME {@code MessageSource} que les gabarits. Passer par le
-     * MessageSource plutot que par le fichier brut n est pas un detail — sans lui les
+     * MessageSource plutot que par le fichier brut n est pas un detail : sans lui les
      * apostrophes doublees des messages a arguments ne seraient pas reduites, et le test
      * comparerait un texte que personne ne voit jamais.
      */
@@ -235,7 +235,7 @@ class TexteDocumentGeleIT extends SocleIntegration {
      * <p>La distinction est devenue reelle avec CGV-2026-02 (V35) : le type CGV porte
      * desormais deux versions, dont une retiree du jeu resolvable. Confronter le texte
      * affiche a une version choisie arbitrairement parmi les lignes de la table ferait
-     * echouer ce test au premier changement de redaction — c est-a-dire precisement
+     * echouer ce test au premier changement de redaction : c est-a-dire precisement
      * quand F24 fonctionne. Ce qui doit etre vrai n a jamais ete « il n existe qu une
      * version » mais « le texte servi est celui de la version en vigueur ».</p>
      */

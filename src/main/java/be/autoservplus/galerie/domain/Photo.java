@@ -20,7 +20,7 @@ import java.util.Objects;
 /**
  * Une image de la galerie (BL-9). Table {@code photo} du socle V7, elargie par V30.
  *
- * <p><b>Exactement une origine</b> parmi prestation, piece et intervention — invariant
+ * <p><b>Exactement une origine</b> parmi prestation, piece et intervention : invariant
  * porte par le CHECK {@code ck_photo_origine_unique} et redouble ici par des fabriques
  * nommees. Sans lui, une photo sans origine serait orpheline (invisible partout,
  * jamais nettoyee) et une photo a deux origines s afficherait a deux endroits sans
@@ -28,7 +28,7 @@ import java.util.Objects;
  *
  * <p><b>Le chemin est relatif</b> a la racine de stockage, comme celui des factures :
  * un chemin absolu casserait au premier changement de machine ou de volume. La base ne
- * connait que ce chemin ; le fichier lui-meme vit hors du webroot et n est servi que
+ * connait que ce chemin. Le fichier lui-meme vit hors du webroot et n est servi que
  * par un controleur.</p>
  *
  * <p><b>Le texte alternatif est obligatoire</b>, colonne {@code NOT NULL} du socle :

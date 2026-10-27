@@ -33,8 +33,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * l exploitant.
  *
  * <p>La recette l a montre : le verrouillage existait en base sans apparaitre nulle part.
- * Le test unitaire du service prouvait le compteur, pas que l evenement atteint l ecran ;
- * c est ce trajet entier que ce cas tient.</p>
+ * Le test unitaire du service prouvait le compteur, pas que l evenement atteint l ecran.
+ * C est ce trajet entier que ce cas tient.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc

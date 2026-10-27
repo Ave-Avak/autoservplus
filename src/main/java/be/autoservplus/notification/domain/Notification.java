@@ -28,9 +28,9 @@ import java.util.Objects;
  * Seule la lecture evolue ({@link #marquerLue}), et une seule fois.</p>
  *
  * <p><b>Aucune donnee sensible.</b> Le corps ne recoit qu un <b>numero metier</b>
- * (rendez-vous, commande, intervention, avoir) — jamais un montant, une adresse, une
+ * (rendez-vous, commande, intervention, avoir) : jamais un montant, une adresse, une
  * plaque ni un motif de refus redige. Une notification est lue dans un bandeau, parfois
- * a l ecran d un tiers ; elle dit qu il s est passe quelque chose et ou le consulter,
+ * a l ecran d un tiers. Elle dit qu il s est passe quelque chose et ou le consulter,
  * pas quoi. Le detail reste derriere l authentification, sur l ecran concerne.</p>
  *
  * <p>La suppression logique de {@link BaseEntity} est filtree par
@@ -60,7 +60,7 @@ public class Notification extends BaseEntity {
     private String titre;
 
     /**
-     * Argument metier du message (numero de commande, de rendez-vous…), stocke dans la
+     * Argument metier du message (numero de commande, de rendez-vous...), stocke dans la
      * colonne {@code corps} du socle. Ce n est pas une phrase : le texte affiche est
      * resolu a la lecture depuis {@link TypeNotification}, dans la langue du lecteur.
      */
@@ -89,9 +89,9 @@ public class Notification extends BaseEntity {
      * Cree une notification applicative non lue.
      *
      * @param traceFr libelle francais conserve dans la colonne {@code titre}, tronque
-     *                a la longueur du socle ; sert de trace lisible en base, pas
+     *                a la longueur du socle. Sert de trace lisible en base, pas
      *                d affichage
-     * @param argument numero metier passe au message i18n ; jamais de donnee sensible
+     * @param argument numero metier passe au message i18n. Jamais de donnee sensible
      */
     public Notification(Utilisateur membre, TypeNotification type, String traceFr,
                         String argument, Instant maintenant) {
@@ -106,7 +106,7 @@ public class Notification extends BaseEntity {
 
     /**
      * Marque la notification lue. <b>Idempotent</b> : un second appel ne deplace pas la
-     * date de lecture. Le membre peut rouvrir sa liste ou rejouer le formulaire ; la
+     * date de lecture. Le membre peut rouvrir sa liste ou rejouer le formulaire. La
      * premiere lecture est celle qui compte, et l ecraser fausserait la seule donnee
      * temporelle de la ligne.
      */

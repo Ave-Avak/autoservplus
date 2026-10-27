@@ -24,9 +24,9 @@ import java.util.UUID;
 /**
  * Depot d un avis par le membre sur son intervention terminee (BL-4).
  *
- * <p>La protection d URL de {@code SecuriteConfig} exige l authentification ;
+ * <p>La protection d URL de {@code SecuriteConfig} exige l authentification.
  * {@link AvisService} redouble par {@code @PreAuthorize} et porte le controle de
- * propriete. L identite vient du contexte de securite, jamais de l URL — la reference
+ * propriete. L identite vient du contexte de securite, jamais de l URL, la reference
  * d intervention ne designe pas un titulaire, elle est verifiee contre lui.</p>
  *
  * <p>POST-redirect-flash : un rafraichissement apres depot ne doit pas rejouer la

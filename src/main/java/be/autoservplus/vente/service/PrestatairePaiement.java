@@ -7,10 +7,10 @@ import be.autoservplus.vente.domain.StatutPaiement;
  *
  * <p>Le code metier depend de cette interface, jamais de Mollie : c est le meme
  * decoupage que {@code ServiceCourriel}, et l application de la strategie
- * securite §11 — chaque service tiers est isole derriere une passerelle unique.
+ * securite §11, chaque service tiers est isole derriere une passerelle unique.
  * L implementation active est choisie par la PRESENCE D UN IDENTIFIANT de
  * prestataire ({@code autoservplus.paiement.mollie.cle-api}) : {@code MollieGateway}
- * des qu il y en a un, bouchon programmable sinon. Le profil Spring ne decide pas —
+ * des qu il y en a un, bouchon programmable sinon. Le profil Spring ne decide pas,
  * il l a fait, et deployer sans identifiant levait alors une exception au moment de
  * payer.</p>
  *
@@ -45,7 +45,7 @@ public interface PrestatairePaiement {
      * <p>Un remboursement est un mouvement <b>distinct</b> de l encaissement, pas son
      * annulation : le paiement d origine reste au dossier, la facture qui l atteste
      * est immuable, et c est une note de credit qui les contre-passe dans les livres.
-     * D ou une methode a part entiere plutot qu un {@code annuler(...)} — le
+     * D ou une methode a part entiere plutot qu un {@code annuler(...)}, le
      * vocabulaire de la passerelle doit dire ce qui se passe reellement.</p>
      *
      * <p>La cle d idempotence portee par la demande est <b>derivee du paiement</b>,

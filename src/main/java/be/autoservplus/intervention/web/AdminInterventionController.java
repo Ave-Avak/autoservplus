@@ -18,7 +18,7 @@ import java.util.function.Supplier;
 /**
  * Ecrans d administration des interventions sous /admin/interventions.
  *
- * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR ;
+ * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR.
  * {@link InterventionService} redouble par {@code @PreAuthorize} en defense
  * en profondeur. Pattern PRG + flash, catch des exceptions du service, comme
  * {@code AdminRdvController}.</p>

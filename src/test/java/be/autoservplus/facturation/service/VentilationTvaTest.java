@@ -21,7 +21,7 @@ import static org.assertj.core.api.Assertions.tuple;
  *
  * <p>Les lignes sont construites par un vrai panier : leurs montants sortent des
  * memes methodes que ceux de la commande, ce qui rend verifiable la propriete qui
- * compte — le total des tranches egale au centime les montants factures.</p>
+ * compte, le total des tranches egale au centime les montants factures.</p>
  */
 @DisplayName("VentilationTva")
 class VentilationTvaTest {

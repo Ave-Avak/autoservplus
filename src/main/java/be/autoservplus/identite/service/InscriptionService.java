@@ -114,7 +114,7 @@ public class InscriptionService {
      * meme message que l adresse soit inconnue, deja verifiee, ou effectivement
      * renvoyee. Une reponse qui differencierait ces trois cas transformerait ce
      * formulaire public en oracle d existence de compte, permettant d enumerer les
-     * membres de la plateforme — exactement ce que
+     * membres de la plateforme, exactement ce que
      * {@link MotDePasseService#demanderReinitialisation(String)} evite deja sur le
      * parcours voisin, dont ce point d entree reprend le patron.</p>
      *

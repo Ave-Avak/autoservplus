@@ -50,7 +50,7 @@ class VerificateurHaveIBeenPwnedTest {
 
     /**
      * <b>Le cas qui justifie le k-anonymat.</b> L URL ne doit porter que les cinq
-     * premiers caracteres de l empreinte — ni le mot de passe, ni son empreinte
+     * premiers caracteres de l empreinte : ni le mot de passe, ni son empreinte
      * complete, ni rien qui identifie le compte.
      */
     @Test

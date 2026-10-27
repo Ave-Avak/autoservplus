@@ -23,7 +23,7 @@ import java.util.UUID;
 /**
  * Gestion des galeries par le garage (BL-9), sous {@code /admin/galerie}.
  *
- * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR ;
+ * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR.
  * {@link AdminGalerieService} redouble par {@code @PreAuthorize}. CSRF actif sur les
  * POST, y compris multipart.</p>
  *

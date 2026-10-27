@@ -103,7 +103,7 @@ class AdminRdvServiceTest {
     }
 
     // Stubbing recurrent : parametres courants sont interroges par detailsPour et par
-    // les methodes de tableau de bord ; on retourne les defauts (fuseau Bruxelles).
+    // les methodes de tableau de bord. On retourne les defauts (fuseau Bruxelles).
     private void stubParametresCourants() {
         when(parametres.courants()).thenReturn(new ParametreAtelier());
     }
@@ -198,8 +198,8 @@ class AdminRdvServiceTest {
 
     /**
      * Le fichier d agenda est un confort, la confirmation est l information. Si le
-     * redacteur iCalendar jette, le courriel doit partir <b>quand meme</b> — sans
-     * piece jointe — et la transition rester acquise. Ce test verrouille cet ordre de
+     * redacteur iCalendar jette, le courriel doit partir <b>quand meme</b> (sans
+     * piece jointe) et la transition rester acquise. Ce test verrouille cet ordre de
      * priorite, qu une refactorisation placant la production du fichier hors du bloc
      * absorbant casserait en silence.
      */
@@ -302,7 +302,7 @@ class AdminRdvServiceTest {
         @Test
         @DisplayName("refuse un marquage avant l'heure de debut (RegleMetier temporelle)")
         void refuseAvantLeDebut() {
-            // RDV commencant dans 3h : debut > maintenant → refus.
+            // RDV commencant dans 3h : debut > maintenant puis refus.
             Rdv futur = new Rdv("RDV-2026-0002", marie, golf, pont,
                     MAINTENANT.plus(java.time.Duration.ofHours(3)), java.time.Duration.ofMinutes(30),
                     List.of(vidange), null);

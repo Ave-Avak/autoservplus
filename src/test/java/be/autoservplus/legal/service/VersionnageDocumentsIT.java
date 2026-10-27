@@ -113,8 +113,8 @@ class VersionnageDocumentsIT extends SocleIntegration {
         /**
          * Le point que F24 devait rendre vrai : une preuve de consentement ne designe plus
          * un numero en l air. On confronte ici l ENSEMBLE des valeurs distinctes
-         * reellement presentes en base — celles du seed comme celles ecrites par les
-         * parcours — a la table des versions.
+         * reellement presentes en base (celles du seed comme celles ecrites par les
+         * parcours) a la table des versions.
          */
         @Test
         @Transactional
@@ -147,7 +147,7 @@ class VersionnageDocumentsIT extends SocleIntegration {
         void publicationAnticipee() {
             // Publier a l avance est la pratique attendue quand un changement de conditions
             // doit etre annonce avant de s appliquer. Sans le filtre sur date_effet, la
-            // nouvelle version prendrait effet a l instant de son insertion — et des
+            // nouvelle version prendrait effet a l instant de son insertion : et des
             // membres accepteraient un texte annonce comme pas encore applicable.
             for (Langue langue : Langue.values()) {
                 jdbc.update("""
@@ -197,14 +197,14 @@ class VersionnageDocumentsIT extends SocleIntegration {
         void versionRemplacee() {
             // Le point que V35 met a l epreuve : apres publication de CGV-2026-02, la preuve
             // d un membre qui a accepte 2026-01 doit toujours pouvoir montrer CE qu il a
-            // accepte — donc l ancienne redaction, celle qui annoncait sept ans.
+            // accepte : donc l ancienne redaction, celle qui annoncait sept ans.
             TexteArchiveVue vue = versionsDocuments
                     .archive(TypeDocumentVersionne.CGV, "CGV-2026-01", Locale.FRENCH)
                     .orElseThrow();
 
             assertThat(vue.contenu()).contains("conservées sept ans");
             assertThat(vue.actif())
-                    .as("Elle est archivee, donc plus en vigueur — et le lecteur doit le savoir")
+                    .as("Elle est archivee, donc plus en vigueur, et le lecteur doit le savoir")
                     .isFalse();
 
             TexteArchiveVue courante = versionsDocuments

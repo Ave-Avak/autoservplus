@@ -27,8 +27,8 @@ public class TurnstileClientConfig {
             "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 
     /**
-     * Trois secondes. Plus court que les cinq du paiement — le visiteur attend devant
-     * un formulaire — mais plus long que les deux de la verification de compromission,
+     * Trois secondes. Plus court que les cinq du paiement (le visiteur attend devant
+     * un formulaire) mais plus long que les deux de la verification de compromission,
      * celle-ci etant un supplement quand Turnstile est une etape du parcours.
      */
     public static final Duration DELAI_MAXIMUM = Duration.ofSeconds(3);

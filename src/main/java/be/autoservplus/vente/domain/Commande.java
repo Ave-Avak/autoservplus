@@ -26,7 +26,7 @@ import java.util.UUID;
  *
  * <p>Machine a etats ({@link StatutCommande#peutPasserA}) : PAYEE par le webhook
  * confirme, ANNULEE par le timeout RM-21, REMBOURSEE par la retractation (F30).
- * Une PAYEE ne redevient jamais ANNULEE et inversement — c est la garde qui
+ * Une PAYEE ne redevient jamais ANNULEE et inversement : c est la garde qui
  * tranche la course entre le job d expiration et un webhook tardif. Pas de
  * collection de lignes cote commande : la facture la mappera le moment venu.</p>
  */
@@ -80,7 +80,7 @@ public class Commande extends BaseEntity {
     /**
      * Regle (a) du paiement : le stock est devenu insuffisant entre la conversion et
      * le paiement confirme. La commande est payee malgre tout (on n annule pas un
-     * paiement encaisse), le garage honore la rupture hors ligne — le detail des
+     * paiement encaisse), le garage honore la rupture hors ligne : le detail des
      * lignes concernees est journalise a la detection.
      */
     @Column(name = "rupture_a_honorer", nullable = false)
@@ -93,7 +93,7 @@ public class Commande extends BaseEntity {
      * <p><b>C est l ETAT sur lequel F30 decide</b>, jamais la preuve : celle-ci est
      * une ligne append-only de {@code consentement}, type
      * {@code RENONCIATION_RETRACTATION}, ecrite dans la meme transaction. La table
-     * {@code consentement} n a aucune FK vers la commande — rapprocher les deux par
+     * {@code consentement} n a aucune FK vers la commande, rapprocher les deux par
      * horodatage serait faux des qu un membre commande deux fois dans la minute.</p>
      *
      * <p><b>Pose a la creation, jamais modifie ensuite</b> ({@code updatable = false}) :
@@ -101,7 +101,7 @@ public class Commande extends BaseEntity {
      * retroactivement les droits du client sur une commande deja conclue.</p>
      *
      * <p>{@code false} pour toute commande de pieces et toute commande anterieure a
-     * F12 — le droit de retractation s applique alors pleinement, defaut le plus
+     * F12, le droit de retractation s applique alors pleinement, defaut le plus
      * protecteur et le seul qui se lise sans ambiguite.</p>
      */
     @Column(name = "renonciation_vi53", nullable = false, updatable = false)
@@ -113,8 +113,8 @@ public class Commande extends BaseEntity {
 
     /**
      * Cree la commande EN_ATTENTE_PAIEMENT (RM-19). Les trois montants arrivent
-     * deja sommes ligne a ligne par le panier ; l entite refuse un triplet
-     * incoherent plutot que d attendre le CHECK de la base — le meme invariant,
+     * deja sommes ligne a ligne par le panier. L entite refuse un triplet
+     * incoherent plutot que d attendre le CHECK de la base : le meme invariant,
      * defendu aux deux etages.
      */
     /**
@@ -152,7 +152,7 @@ public class Commande extends BaseEntity {
     /**
      * Deplace les lignes du panier vers cette commande : meme ligne, memes valeurs
      * figees, seul le rattachement change ({@code panier_id} vers {@code commande_id}).
-     * La commande doit deja etre persistee — une ligne ne peut pas pointer un id
+     * La commande doit deja etre persistee : une ligne ne peut pas pointer un id
      * inexistant.
      */
     public void reprendreLignes(List<LignePanier> lignes) {

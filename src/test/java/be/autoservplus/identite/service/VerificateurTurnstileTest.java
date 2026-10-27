@@ -17,7 +17,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
  * Verdict de Cloudflare et comportement en panne, sur serveur simule.
  *
  * <p>Ce que le test d integration ne peut pas montrer : avec les cles de test, la
- * frontiere rend le meme resultat que Cloudflare reponde ou non — elle accepte dans
+ * frontiere rend le meme resultat que Cloudflare reponde ou non, elle accepte dans
  * les deux cas. Seul un serveur simule permet de distinguer « Cloudflare a valide » de
  * « Cloudflare n a pas repondu ».</p>
  */

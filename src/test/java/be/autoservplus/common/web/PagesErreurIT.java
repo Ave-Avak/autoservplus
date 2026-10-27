@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
  *
  * <p>Le test demarre un vrai serveur. Une erreur que le controleur ne rattrape pas
  * repasse par le conteneur ({@code sendError}, puis dispatch {@code ERROR} vers
- * {@code /error}) ; MockMvc ne fait jamais ce second passage. Seul le cas 500, qu aucune
+ * {@code /error}). MockMvc ne fait jamais ce second passage. Seul le cas 500, qu aucune
  * requete ne sait provoquer proprement, est rendu en appelant {@code /error} avec le
  * statut que le conteneur y aurait pose.</p>
  */

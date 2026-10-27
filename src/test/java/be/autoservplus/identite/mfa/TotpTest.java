@@ -19,7 +19,7 @@ class TotpTest {
 
     /**
      * Vecteurs de l annexe B, colonne SHA1. Ils sont donnes sur huit chiffres : le calcul
-     * est le meme, seule la troncature finale change — six chiffres en sont le modulo.
+     * est le meme, seule la troncature finale change, six chiffres en sont le modulo.
      */
     @ParameterizedTest(name = "T = {0} s -> {1}")
     @CsvSource({

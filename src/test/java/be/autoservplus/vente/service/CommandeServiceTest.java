@@ -110,8 +110,8 @@ class CommandeServiceTest {
 
         /**
          * Montants verifies a la main (cas a taux mixtes du module vente) :
-         * ampoules 30,03 HTVA / 1,80 TVA / 31,83 TVAC ; plaquettes 39,98 / 8,40 /
-         * 48,38 ; totaux 70,01 / 10,20 / 80,21 — HTVA + TVA = TVAC par construction.
+         * ampoules 30,03 HTVA / 1,80 TVA / 31,83 TVAC. Plaquettes 39,98 / 8,40 /
+         * 48,38. Totaux 70,01 / 10,20 / 80,21, HTVA + TVA = TVAC par construction.
          */
         @Test
         @DisplayName("cree la commande EN_ATTENTE_PAIEMENT aux montants figes, taux mixtes 6 % et 21 %")
@@ -227,7 +227,7 @@ class CommandeServiceTest {
 
         /**
          * La premiere ligne (ampoules) est en stock, la seconde (plaquettes) ne
-         * l est plus : le refus doit etre TOTAL — pas de commande, pas de preuve,
+         * l est plus : le refus doit etre TOTAL, pas de commande, pas de preuve,
          * stock intact, et AUCUNE ligne reaffectee, pas meme celle qui passait.
          */
         @Test

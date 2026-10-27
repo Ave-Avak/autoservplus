@@ -19,13 +19,13 @@ import java.time.Year;
  * se rejoue pas au rollback, si bien qu une transaction annulee emporte son numero
  * et creuse un trou. Acceptable pour un numero de commande, <b>interdit</b> pour une
  * facture (AR n°1, art. 5 : numerotation ininterrompue). Le compteur vit donc en
- * table, incremente sous verrou dans la transaction d emission — increment et
+ * table, incremente sous verrou dans la transaction d emission, increment et
  * insertion de la facture partagent le meme sort.</p>
  *
  * <p>{@code Propagation.MANDATORY} verrouille cette regle dans le code : un numero
  * ne peut pas etre tire hors d une transaction existante. Un appel isole echoue
  * immediatement au lieu d ouvrir sa propre transaction, de committer l increment,
- * puis de laisser l emission echouer plus loin — exactement le trou qu on evite.</p>
+ * puis de laisser l emission echouer plus loin, exactement le trou qu on evite.</p>
  *
  * <p>Passage d annee : {@link Year#now(Clock)} lit l horloge injectee, la premiere
  * facture d une nouvelle annee cree sa ligne de compteur et repart a 0001. Aucun

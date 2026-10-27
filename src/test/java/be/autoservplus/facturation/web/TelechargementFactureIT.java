@@ -52,7 +52,7 @@ import be.autoservplus.support.SocleIntegration;
  * <p>Sans {@code @Transactional} de classe : la facture nait d un listener
  * AFTER_COMMIT, une transaction englobante rollbackee l empecherait d exister.
  * L archive pointe sur un repertoire temporaire, injecte par
- * {@code @DynamicPropertySource} — un test ne doit rien ecrire dans l arborescence
+ * {@code @DynamicPropertySource} : un test ne doit rien ecrire dans l arborescence
  * du projet.</p>
  */
 @SpringBootTest
@@ -100,7 +100,7 @@ class TelechargementFactureIT extends SocleIntegration {
         });
     }
 
-    /** Achete et paie une piece ; retourne la facture emise. */
+    /** Achete et paie une piece. Retourne la facture emise. */
     private Facture acheterEtPayer() throws Exception {
         Piece piece = transactions.execute(statut -> {
             Piece nouvelle = new Piece(categorie, "IT-DL-" + COMPTEUR.getAndIncrement(),

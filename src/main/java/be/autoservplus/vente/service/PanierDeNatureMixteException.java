@@ -9,7 +9,7 @@ import be.autoservplus.common.exception.RegleMetierException;
  * retractation partielle.</b> Une commande mixte poserait un probleme insoluble en
  * V1 : une piece reste retractable quand un service pleinement execute sous
  * renonciation VI.53 ne l est plus. Annuler une partie de la commande demanderait de
- * lever {@code uq_avoir_facture} et d emettre un avoir partiel — precisement ce que
+ * lever {@code uq_avoir_facture} et d emettre un avoir partiel, precisement ce que
  * F30 a remis a la V2.</p>
  *
  * <p>Le message dit au membre quoi faire, pas ce que le systeme ne sait pas faire :

@@ -11,14 +11,14 @@ import java.util.List;
  * Lecture des rendez-vous d un membre pour l export (F22).
  *
  * <p>{@code open-in-view} est desactive : les lignes de prestation sont chargees
- * par {@code JOIN FETCH}, faute de quoi la conversion en objet de transfert — qui
- * a lieu hors session — leverait une {@code LazyInitializationException}. Le
+ * par {@code JOIN FETCH}, faute de quoi la conversion en objet de transfert (qui
+ * a lieu hors session) leverait une {@code LazyInitializationException}. Le
  * {@code DISTINCT} neutralise la demultiplication du produit cartesien.
  *
  * <p><b>Le vehicule n est volontairement pas joint.</b> Il porte un
  * {@code @SQLRestriction} sur la suppression logique : une jointure interne aurait
  * fait disparaitre de l export tous les rendez-vous d un vehicule que le membre a
- * retire de son parc, alors que ces rendez-vous restent detenus — la suppression
+ * retire de son parc, alors que ces rendez-vous restent detenus, la suppression
  * d un vehicule est logique justement pour preserver son historique. La plaque est
  * donc rapprochee par le service depuis la liste complete des vehicules, celle qui
  * inclut les supprimes.

@@ -12,7 +12,7 @@ import java.util.Optional;
  *
  * <p><b>Aucune donnee personnelle</b> n y figure : deux booleens, rien qui designe
  * une personne. C est ce qui permet au cookie qui la transporte d etre lui-meme
- * qualifie de strictement necessaire — il n existe que pour ne pas redemander a
+ * qualifie de strictement necessaire : il n existe que pour ne pas redemander a
  * chaque page un choix deja exprime, ce qui est le service demande par
  * l utilisateur lui-meme.</p>
  */
@@ -36,7 +36,7 @@ public record PreferencesCookies(boolean analytique, boolean marketing) {
     private static final char OUI = '1';
     private static final char NON = '0';
 
-    /** Refus de toutes les finalites optionnelles — l etat par defaut, avant tout choix. */
+    /** Refus de toutes les finalites optionnelles : l etat par defaut, avant tout choix. */
     public static PreferencesCookies refusTotal() {
         return new PreferencesCookies(false, false);
     }
@@ -58,7 +58,7 @@ public record PreferencesCookies(boolean analytique, boolean marketing) {
      * Relit la valeur d un cookie de preference.
      *
      * <p>Renvoie un resultat vide des que la valeur ne correspond pas exactement au
-     * format attendu — absente, tronquee, ecrite dans un format anterieur ou
+     * format attendu : absente, tronquee, ecrite dans un format anterieur ou
      * bricolee a la main. Le vide signifie « choix inconnu », ce que l appelant
      * traduit par l affichage du bandeau : en cas de doute on redemande, on ne
      * suppose jamais un consentement.</p>

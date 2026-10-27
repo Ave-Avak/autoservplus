@@ -20,14 +20,14 @@ import java.util.UUID;
  * « Terminee », « Annulee ») et c est ce que le template affiche. Le champ
  * {@link #statut()} conserve la valeur technique brute (« SUSPENDUE »,
  * « ATTENTE_VALIDATION_MEMBRE »...) uniquement pour la logique interne du
- * template (branchement de messages sur TERMINEE vs ANNULEE) ; il ne doit
+ * template (branchement de messages sur TERMINEE vs ANNULEE). Il ne doit
  * JAMAIS etre rendu comme texte visible du membre.</p>
  */
 public record InterventionVueMembre(
         UUID reference,
         String numero,
         /** Statut technique brut (SUSPENDUE, ATTENTE_VALIDATION_MEMBRE...).
-         *  Usage interne du template UNIQUEMENT (branchement) — ne jamais afficher. */
+         *  Usage interne du template UNIQUEMENT (branchement) : ne jamais afficher. */
         String statut,
         /** Statut percu par le membre (RM-16) : « En attente », « En cours »,
          *  « Terminee », « Annulee ». C est ce qui doit s afficher a l ecran. */
@@ -82,7 +82,7 @@ public record InterventionVueMembre(
      * Projette la chronologie technique (F17) sur les statuts percus (RM-16) : une
      * entree n apparait que si son statut percu differe de la derniere entree
      * affichee. EN_COURS -&gt; SUSPENDUE -&gt; EN_COURS, tous percus « En cours »,
-     * donnerait sinon trois lignes identiques — exposant au membre le rythme de la
+     * donnerait sinon trois lignes identiques : exposant au membre le rythme de la
      * mecanique interne que RM-16 masque justement. Le journal complet reste en
      * base, seul l affichage membre est filtre.
      */
@@ -117,7 +117,7 @@ public record InterventionVueMembre(
 
     /**
      * Une etape de la chronologie vue par le membre (F17). Les statuts restent les
-     * enums techniques — le template affiche leur cle i18n percue via
+     * enums techniques : le template affiche leur cle i18n percue via
      * {@link StatutIntervention#clePercue()}, jamais leur nom brut (RM-16). La date
      * arrive pre-formatee, comme {@code debutReel} et {@code finReelle} : le DTO
      * connait le fuseau, le template non. L auteur n est volontairement pas expose

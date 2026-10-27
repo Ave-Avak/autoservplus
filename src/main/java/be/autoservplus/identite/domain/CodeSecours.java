@@ -16,7 +16,7 @@ import java.util.Objects;
  *
  * <p><b>Jamais supprime</b> : un code consomme garde sa date de consommation, un code
  * remplace par une regeneration garde sa date d invalidation. La ligne est la trace de son
- * usage — supprimer un code consomme effacerait la preuve qu il a servi, et donc la
+ * usage, supprimer un code consomme effacerait la preuve qu il a servi, et donc la
  * reponse a la question « qui s est connecte sans telephone, et quand ».</p>
  *
  * <p>Empreinte BCrypt de cout 10 et non 12 comme les mots de passe : une connexion par

@@ -16,7 +16,7 @@ import java.util.UUID;
 /**
  * Ecran de moderation des avis sous {@code /admin/avis} (BL-4).
  *
- * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR ;
+ * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR.
  * {@link AdminAvisService} redouble par {@code @PreAuthorize} en defense en
  * profondeur.</p>
  *

@@ -21,7 +21,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
  *
  * <p>Difference avec les deux precedents : ce listener <b>ecrit</b>. Sa transaction
  * {@code REQUIRES_NEW} n est donc pas en lecture seule, et son echec a des
- * consequences comptables — d ou le journal en ERROR et non en WARN. Le paiement,
+ * consequences comptables : d ou le journal en ERROR et non en WARN. Le paiement,
  * lui, reste acquis : on ne rembourse pas un client parce qu un PDF a manque. La
  * reprise (rejeu de l emission pour une commande payee sans facture) releve d un
  * traitement de reconciliation, hors perimetre de ce bloc.</p>
@@ -51,7 +51,7 @@ public class FacturationPaiementListener {
         } catch (DataIntegrityViolationException e) {
             // Course entre deux emissions simultanees : l index partiel
             // uq_facture_commande a refuse la seconde. La facture existe, ecrite par
-            // l autre transaction ; celle-ci est annulee, son numero rendu au
+            // l autre transaction. Celle-ci est annulee, son numero rendu au
             // compteur. Rien a reprendre.
             log.info("Facture de la commande {} deja emise par un traitement concurrent.",
                     evenement.referenceCommande());

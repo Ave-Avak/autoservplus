@@ -37,13 +37,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p><b>Le controle est comportemental, pas syntaxique.</b> Chaque message est
  * reellement formate, puis on verifie que l argument fourni figure dans le
  * resultat. Une regle ecrite a la main sur le texte finirait par diverger des
- * regles de {@code MessageFormat} ; ici, c est {@code MessageFormat} lui-meme qui
+ * regles de {@code MessageFormat}. Ici, c est {@code MessageFormat} lui-meme qui
  * tranche, ce qui rend le test juste par construction.</p>
  *
  * <p>Seuls les messages porteurs d au moins un argument sont concernes : Spring ne
  * passe par {@code MessageFormat} que lorsqu il en recoit
  * ({@code alwaysUseMessageFormat} est a faux par defaut), de sorte qu une apostrophe
- * dans un message sans argument est parfaitement licite — et il y en a des
+ * dans un message sans argument est parfaitement licite, et il y en a des
  * centaines.</p>
  */
 @DisplayName("Messages i18n a arguments")
@@ -129,7 +129,7 @@ class MessagesParametresTest {
         /**
          * Les deux messages de l ecran d ouverture d un dossier d atelier (F12)
          * portaient une apostrophe non doublee. Le numero du dossier ne s affichait
-         * donc pas — l administrateur lisait « Dossier datelier {0} ouvert. ». Cas
+         * donc pas : l administrateur lisait « Dossier datelier {0} ouvert. ». Cas
          * concret conserve a cote du balayage : il montre a quoi ressemblait la panne,
          * la ou le balayage se contente de l interdire.
          */

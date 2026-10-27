@@ -8,7 +8,7 @@ import java.util.Optional;
  * (fondation upload).
  *
  * <p><b>Liste blanche, jamais liste noire.</b> Enumerer ce qui est interdit laisse
- * passer tout ce qu on n a pas prevu ; enumerer ce qui est permis fait l inverse. Un
+ * passer tout ce qu on n a pas prevu. Enumerer ce qui est permis fait l inverse. Un
  * format ajoute plus tard doit l etre ici, explicitement.</p>
  *
  * <p><b>Le type est deduit du contenu, pas de ce que le client annonce.</b>

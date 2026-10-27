@@ -21,7 +21,7 @@ import java.util.UUID;
  * Telechargement de la facture PDF d une commande payee (F31).
  *
  * <p>La facture est adressee par sa reference publique et l appartenance est
- * verifiee au service : la facture d autrui remonte en 404, jamais en 403 — un 403
+ * verifiee au service : la facture d autrui remonte en 404, jamais en 403, un 403
  * confirmerait a un tiers que ce numero de facture existe, alors qu il s agit d un
  * document nominatif. Meme mecanisme que le reste du projet, ou
  * {@code RessourceIntrouvableException} porte deja {@code @ResponseStatus(NOT_FOUND)}.</p>
@@ -30,7 +30,7 @@ import java.util.UUID;
  * sans cela, n importe qui telechargerait la facture de n importe qui en changeant
  * un identifiant dans l URL.</p>
  *
- * <p>Le PDF est fabrique a la premiere demande puis relu de l archive — la politique
+ * <p>Le PDF est fabrique a la premiere demande puis relu de l archive, la politique
  * appartient au service, le controleur ne fait que servir des octets.</p>
  */
 @Controller

@@ -7,7 +7,7 @@ import be.autoservplus.config.IdentiteGarage;
  *
  * <p><b>Une collection d un seul element.</b> La V1 est mono-tenant : il n existe
  * qu un garage, decrit en configuration. L endpoint rend malgre tout une liste
- * paginee, et non un objet seul — c est le meme contrat que servira la V2
+ * paginee, et non un objet seul, c est le meme contrat que servira la V2
  * multi-tenant, et un client ecrit aujourd hui n aura pas a etre reecrit le jour ou
  * la liste en contiendra plusieurs.</p>
  *

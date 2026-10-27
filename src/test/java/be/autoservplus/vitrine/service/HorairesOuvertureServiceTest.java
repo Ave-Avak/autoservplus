@@ -19,8 +19,8 @@ import static org.mockito.Mockito.when;
 /**
  * Regroupement des plages d ouverture pour la vitrine.
  *
- * <p>Le service ne calcule rien de complexe ; ce qui merite d etre verrouille, c est
- * ce qu il fait des cas <b>absents</b> — un jour sans plage, une plage desactivee —
+ * <p>Le service ne calcule rien de complexe. Ce qui merite d etre verrouille, c est
+ * ce qu il fait des cas <b>absents</b> (un jour sans plage, une plage desactivee)
  * parce que ce sont eux qui produisent une page fausse plutot qu une page vide.</p>
  */
 @ExtendWith(MockitoExtension.class)
@@ -54,7 +54,7 @@ class HorairesOuvertureServiceTest {
 
     /**
      * Le cas du garage reel : matin et apres-midi separes par la pause de midi. Les
-     * deux plages doivent rester distinctes — les fusionner en « 08:00 - 18:00 »
+     * deux plages doivent rester distinctes, les fusionner en « 08:00 - 18:00 »
      * annoncerait une ouverture a l heure du diner.
      */
     @Test
@@ -84,7 +84,7 @@ class HorairesOuvertureServiceTest {
     }
 
     /**
-     * Une plage desactivee reste en base — elle porte l historique — mais ne doit
+     * Une plage desactivee reste en base (elle porte l historique) mais ne doit
      * pas etre annoncee au public : le client se deplacerait pour rien. Le
      * repository ne filtrant pas l activite, le tri est ici et nulle part ailleurs.
      */

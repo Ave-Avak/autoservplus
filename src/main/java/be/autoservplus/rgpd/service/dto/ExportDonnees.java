@@ -24,7 +24,7 @@ import java.util.Map;
  * serialise en JSON.
  *
  * <p>Objet de transfert pur : aucune entite JPA ne sort d ici. C est une exigence
- * de conception, pas de style — serialiser les entites exposerait les colonnes
+ * de conception, pas de style : serialiser les entites exposerait les colonnes
  * techniques (empreinte du mot de passe, jetons), declencherait des relations
  * paresseuses hors session, et rendrait le perimetre de l export dependant du
  * mapping plutot que d une decision explicite. Ici, ce qui sort est ce qui est
@@ -36,7 +36,7 @@ import java.util.Map;
  *   <li>{@code informationsTraitement} : le rappel legal exige par l article 15,
  *       qui decrit le traitement et ne vient pas du dossier du membre ;</li>
  *   <li>{@code exclusions} : ce qui n est volontairement pas communique, et
- *       pourquoi. Le silence serait ambigu — une absence peut se lire comme un
+ *       pourquoi. Le silence serait ambigu : une absence peut se lire comme un
  *       oubli. La note sur la carte bancaire, notamment, affirme une absence de
  *       collecte que le membre ne peut pas deduire du reste du fichier.</li>
  * </ul>
@@ -104,7 +104,7 @@ public record ExportDonnees(
         /**
          * Etat courant du consentement marketing : la <b>derniere</b> preuve
          * NEWSLETTER fait foi. La table est append-only, un retrait s y exprime par
-         * une nouvelle ligne {@code accorde = false} — lire la premiere ligne, ou
+         * une nouvelle ligne {@code accorde = false} : lire la premiere ligne, ou
          * n importe quelle ligne accordee, restituerait un consentement retire.
          */
         private static boolean marketingAccorde(List<Consentement> consentements) {
@@ -132,7 +132,7 @@ public record ExportDonnees(
     /**
      * Vehicule du membre, champs metier uniquement : les colonnes d audit
      * ({@code updated_by}, versions) decrivent l exploitation de la plateforme, pas
-     * la personne. {@code dateAjout} fait exception — savoir depuis quand une donnee
+     * la personne. {@code dateAjout} fait exception : savoir depuis quand une donnee
      * est detenue releve de l information du membre.
      *
      * <p><b>Deux etats distincts</b>, souvent confondus :
@@ -140,8 +140,8 @@ public record ExportDonnees(
      *   <li>{@code actif} : le vehicule ne circule plus, le membre ne le propose
      *       plus a la reservation. Drapeau metier ;</li>
      *   <li>{@code supprime} : le membre a retire le vehicule de son parc. La ligne
-     *       reste en base — l effacer reviendrait a effacer des factures deja
-     *       emises — donc la donnee est toujours <b>detenue</b> et l article 15
+     *       reste en base (l effacer reviendrait a effacer des factures deja
+     *       emises) donc la donnee est toujours <b>detenue</b> et l article 15
      *       impose de la restituer. Elle est marquee comme telle, avec sa date :
      *       la sortir sans marqueur laisserait croire au membre qu il possede
      *       encore ce vehicule.</li>
@@ -178,7 +178,7 @@ public record ExportDonnees(
 
     /**
      * Panier en cours du membre : des articles choisis, jamais commandes, mais
-     * <b>detenus</b> — l article 15 ne s arrete pas aux donnees qui ont abouti a une
+     * <b>detenus</b>, l article 15 ne s arrete pas aux donnees qui ont abouti a une
      * transaction. C est aussi la seule section de l export qui puisse encore
      * changer d une minute a l autre, d ou l horodatage du document en tete de
      * fichier.
@@ -188,7 +188,7 @@ public record ExportDonnees(
      * ambigue. Meme raisonnement que les notes d {@link Exclusions}.
      *
      * <p>Les totaux viennent de l entite ({@code RM-30} : somme des montants de
-     * ligne deja arrondis, jamais un calcul sur un total global) — les recalculer
+     * ligne deja arrondis, jamais un calcul sur un total global), les recalculer
      * ici creerait une seconde implementation d une regle delicate.
      */
     public record PanierExport(
@@ -224,7 +224,7 @@ public record ExportDonnees(
      *
      * <p>{@code dateAjout} vient d une requete distincte : la colonne
      * {@code ligne_panier.created_at} existe et est mappee, mais l entite n en
-     * expose aucun accesseur — et l ajouter modifierait le module {@code vente}.
+     * expose aucun accesseur, et l ajouter modifierait le module {@code vente}.
      * Savoir depuis quand une donnee est detenue releve pourtant de l information
      * de la personne, la valeur est donc lue par le chemin qui ne touche a rien.
      */
@@ -307,7 +307,7 @@ public record ExportDonnees(
      * <p>Section distincte des commandes, et non un doublon : une commande est un
      * acte d achat, une facture est un document <b>comptable</b> qui l atteste,
      * porte son propre numero legal et sa propre date d emission. Une commande
-     * annulee n a pas de facture ; une facture, elle, ne disparait jamais. Les
+     * annulee n a pas de facture. Une facture, elle, ne disparait jamais. Les
      * deux sont detenues, l article 15 vise les deux.
      *
      * <p>{@code numero} est le numero legal, d une suite continue par exercice
@@ -319,7 +319,7 @@ public record ExportDonnees(
      * facture atteste ce qui a ete encaisse, pas ce que l article coute aujourd hui.
      *
      * <p>{@code numeroCommande} rattache la facture a la section commandes du meme
-     * fichier — le numero fonctionnel plutot que la reference technique, pour que
+     * fichier : le numero fonctionnel plutot que la reference technique, pour que
      * la personne puisse faire le rapprochement elle-meme. {@code null} pour une
      * facture d intervention (RM-17, bloc futur).
      *
@@ -327,9 +327,9 @@ public record ExportDonnees(
      * une archive de fichiers : y embarquer des binaires encodes le rendrait
      * illisible et ferait doublon avec un telechargement deja offert au membre,
      * facture par facture. {@code pdfArchive} dit seulement si un fichier PDF est
-     * <b>actuellement conserve</b> pour cette facture — une donnee sur ce qui est
+     * <b>actuellement conserve</b> pour cette facture : une donnee sur ce qui est
      * detenu. Il vaut {@code false} tant que personne ne l a demande, le document
-     * etant fabrique a la premiere demande ; il reste telechargeable dans tous les
+     * etant fabrique a la premiere demande. Il reste telechargeable dans tous les
      * cas depuis « Mes commandes ».
      */
     public record FactureExport(
@@ -412,13 +412,13 @@ public record ExportDonnees(
      * <p><b>RM-16 etendue a l export</b> : le statut restitue est le statut
      * <i>percu</i>, celui qui est communique au membre sur son ecran de suivi, et
      * non le statut technique. SUSPENDUE et ATTENTE_VALIDATION_MEMBRE decrivent
-     * l organisation interne de l atelier ; la personne, elle, est informee que son
+     * l organisation interne de l atelier. La personne, elle, est informee que son
      * intervention est en cours. Restituer ici les sous-etats techniques
      * introduirait une seconde verite sur la meme donnee. Arbitrage a documenter au
      * rapport ecrit (article 15 contre RM-16).
      *
      * <p>Le commentaire restitue est {@code commentaireAdmin}, deja visible du
-     * membre dans son suivi ; il n existe pas de diagnostic technique separe en V1.
+     * membre dans son suivi. Il n existe pas de diagnostic technique separe en V1.
      *
      * <p>La plaque arrive en argument, pour la meme raison que dans
      * {@link RdvExport} : l historique d atelier d un vehicule retire du parc reste
@@ -456,7 +456,7 @@ public record ExportDonnees(
     /**
      * Ligne d intervention. {@code accordMembre} est restitue tel quel, y compris
      * {@code null} : c est la reponse du membre a une demande de depassement de
-     * devis (RM-15) — sa decision, donc sa donnee. {@code null} signifie qu aucune
+     * devis (RM-15), sa decision, donc sa donnee. {@code null} signifie qu aucune
      * reponse n est attendue ni donnee.
      */
     public record LigneInterventionExport(
@@ -513,11 +513,11 @@ public record ExportDonnees(
      * dit donc ce qui existe, sans laisser croire a un historique.
      *
      * <p>Sont exclus le jeton de verification et sa date d expiration : ce sont des
-     * secrets d authentification, communicables a personne — voir {@link Exclusions}.
+     * secrets d authentification, communicables a personne, voir {@link Exclusions}.
      * L adresse en attente de confirmation, elle, EST restituee : c est une donnee a
      * caractere personnel detenue sur la personne, que l article 15 couvre au meme
      * titre que l adresse en vigueur. Son jeton reste exclu, pour la meme raison que
-     * le precedent — communiquer le secret n est pas communiquer la donnee.
+     * le precedent : communiquer le secret n est pas communiquer la donnee.
      *
      * <p>Du second facteur, l export dit s il est actif et depuis quand, et restitue le
      * journal des evenements de securite du compte : ce sont des donnees sur la personne.

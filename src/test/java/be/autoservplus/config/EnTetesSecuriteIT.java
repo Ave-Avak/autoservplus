@@ -20,15 +20,15 @@ import be.autoservplus.support.SocleIntegration;
  *
  * <p>Test d <b>integration</b> et non {@code @WebMvcTest} : ce qui doit etre prouve
  * n est pas que {@code SecuriteConfig} declare une politique, mais qu un navigateur
- * la recoit. Un test a doublures instancie sa propre chaine de filtres — celle des
- * {@code SecuriteTest} qui parsement les {@code @WebMvcTest} du projet — et resterait
+ * la recoit. Un test a doublures instancie sa propre chaine de filtres (celle des
+ * {@code SecuriteTest} qui parsement les {@code @WebMvcTest} du projet) et resterait
  * vert quelle que soit la politique reelle.</p>
  *
  * <p><b>Pourquoi {@code form-action} merite un test a lui seul.</b> Le depart vers le
- * paiement est un POST dont la reponse redirige vers Mollie ; Chrome et Edge
+ * paiement est un POST dont la reponse redirige vers Mollie. Chrome et Edge
  * appliquent {@code form-action} a la cible de cette redirection, Firefox non. Le
  * defaut ne se manifeste donc ni dans {@code verify}, ni sur la passerelle
- * bouchonnee — qui redirige vers une page interne, couverte par {@code 'self'} — ni
+ * bouchonnee (qui redirige vers une page interne, couverte par {@code 'self'}) ni
  * meme sur un navigateur. Il a fallu une repetition de deploiement avec le vrai
  * prestataire, menee depuis Chrome, pour le voir. A defaut de pouvoir rejouer cela
  * dans une suite de tests, c est la politique elle-meme qui est verrouillee ici.</p>
@@ -73,12 +73,12 @@ class EnTetesSecuriteIT extends SocleIntegration {
      * Turnstile exige deux directives, et une seule et meme origine dans les deux.
      *
      * <p><b>Ce que ce test ne prouve pas</b>, et c est le point : les cles de test de
-     * Cloudflare ne contactent rien — pas d iframe, jeton factice — donc aucun test ne
+     * Cloudflare ne contactent rien (pas d iframe, jeton factice) donc aucun test ne
      * peut reveler qu il manque une directive. C est exactement ce qui s est produit
      * avec {@code form-action} : la passerelle bouchonnee redirigeait vers une page
      * interne, le defaut n existait que sur le chemin du vrai prestataire, et aucune
      * build ne l a vu. La completude de cette politique ne se verifie qu avec une
-     * vraie cle de site — voir registre §4.</p>
+     * vraie cle de site : voir registre §4.</p>
      */
     @Test
     @DisplayName("Turnstile : script-src et frame-src autorisent le seul hote de Cloudflare")

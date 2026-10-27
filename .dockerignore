@@ -1,7 +1,7 @@
 # Ce que le contexte de build ne doit pas transporter.
 #
 # target/ est le motif qui compte : sans lui, le JAR construit sur le poste est
-# expedie au demon Docker puis ECRASE par la compilation de l'etape 1 — contexte
+# expedie au demon Docker puis ECRASE par la compilation de l'etape 1 : contexte
 # alourdi de plusieurs dizaines de mega-octets pour un fichier jete.
 target/
 .git/

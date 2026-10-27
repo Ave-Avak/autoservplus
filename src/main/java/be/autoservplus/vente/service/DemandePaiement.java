@@ -24,7 +24,7 @@ import java.math.BigDecimal;
  *                         aussi apres un abandon.
  * @param urlNotification  adresse de notification serveur a serveur. La passerelle
  *                         reste libre de ne pas la transmettre lorsque le
- *                         prestataire ne pourrait pas la joindre — regle propre au
+ *                         prestataire ne pourrait pas la joindre : regle propre au
  *                         prestataire, donc tranchee chez lui.
  */
 public record DemandePaiement(String numeroCommande,

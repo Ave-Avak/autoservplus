@@ -18,17 +18,17 @@ import java.time.Duration;
  *
  * <p><b>C est ce controleur qui permet a la CSP de rester {@code img-src 'self'}.</b>
  * Les fichiers vivent hors du webroot et ne sont atteignables par aucun chemin
- * statique ; ils sont servis ici, depuis notre propre domaine. Aucune source externe
+ * statique. Ils sont servis ici, depuis notre propre domaine. Aucune source externe
  * n a donc a etre autorisee, et la politique de securite du contenu n a pas ete
  * touchee.</p>
  *
  * <p><b>L URL porte l identifiant de la ligne, jamais le chemin du fichier.</b> Un
- * chemin en parametre inviterait a le manipuler ; l identifiant, lui, ne peut designer
+ * chemin en parametre inviterait a le manipuler. L identifiant, lui, ne peut designer
  * que ce que la base connait, et le chemin reel est resolu cote serveur.</p>
  *
  * <p>Sous {@code /images/**}, deja en {@code permitAll} : ces images illustrent des
  * fiches publiques. Celles d intervention sont adressees par un identifiant non
- * devinable en pratique mais restent lisibles de qui connait l identifiant —
+ * devinable en pratique mais restent lisibles de qui connait l identifiant :
  * <b>limite assumee</b>, elles montrent une piece d usure, jamais une personne ni une
  * plaque.</p>
  */

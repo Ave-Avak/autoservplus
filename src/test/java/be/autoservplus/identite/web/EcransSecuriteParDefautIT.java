@@ -21,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Recette par defaut des ecrans GET du lot : chacun repond 200 dans sa configuration la
- * plus nue — aucun parametre, un principal du role attendu, une base seulement migree.
+ * plus nue, aucun parametre, un principal du role attendu, une base seulement migree.
  *
  * <p>Motif du registre §4 : six defauts trouves par la seule recette manuelle portaient
  * tous sur un chemin par defaut qu aucun test n ouvrait. Un test choisit ses parametres,

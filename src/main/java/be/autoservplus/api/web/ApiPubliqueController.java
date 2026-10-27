@@ -29,7 +29,7 @@ import java.util.List;
  * provisoire : l API sert a faire connaitre l offre du garage a des tiers
  * (agregateurs, comparateurs, site vitrine), pas a piloter le systeme. Ouvrir une
  * ecriture demanderait une authentification, une gestion de quotas et un modele
- * d autorisation qui n existent pas — et la table {@code clef_api} du socle reste
+ * d autorisation qui n existent pas, et la table {@code clef_api} du socle reste
  * volontairement inexploitee.</p>
  *
  * <p><b>Aucune authentification, donc aucune donnee privee.</b> Les deux ressources
@@ -39,7 +39,7 @@ import java.util.List;
  * a un ecran ne fuite pas ici par accident.</p>
  *
  * <p><b>DTO dedies, jamais d entite ni de vue Thymeleaf.</b> {@code ArticleVue} sert
- * les gabarits et peut changer avec un ecran ; le contrat d une API publique ne le
+ * les gabarits et peut changer avec un ecran. Le contrat d une API publique ne le
  * peut pas.</p>
  */
 @RestController
@@ -53,7 +53,7 @@ public class ApiPubliqueController {
 
     /**
      * Plafond de taille de page. Sans borne, un client demandant 100 000 elements
-     * ferait charger tout le catalogue en memoire — l API est publique et anonyme,
+     * ferait charger tout le catalogue en memoire : l API est publique et anonyme,
      * elle doit borner ce qu un appelant peut reclamer.
      */
     private static final int TAILLE_MAX = 100;
@@ -107,7 +107,7 @@ public class ApiPubliqueController {
      * negative devient la premiere, une taille excessive est plafonnee. Une API
      * publique qui renvoie 400 sur un parametre corrigeable complique la vie de ses
      * clients sans rien proteger. Une page au-dela du dernier element rend, elle, une
-     * liste vide — ce qui est la reponse juste, pas une erreur.</p>
+     * liste vide : ce qui est la reponse juste, pas une erreur.</p>
      */
     private <T> PagePublique<T> paginer(List<T> tous, int page, int taille) {
         int tailleReelle = Math.clamp(taille, 1, TAILLE_MAX);

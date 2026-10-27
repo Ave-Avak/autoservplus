@@ -59,7 +59,7 @@ class MollieProprietesTest {
             // Mollie a unifie ses pages de jetons et propose des « jetons d acces
             // avances » dont la documentation publique ne donne aucun prefixe. Une
             // liste de prefixes acceptes aurait pris ceux-la pour des cles API et
-            // omis profileId et testmode — c est-a-dire encaisse dans le mauvais mode
+            // omis profileId et testmode : c est-a-dire encaisse dans le mauvais mode
             // sans que rien ne le signale. La reconnaissance se fait donc par
             // exclusion de la seule forme dont le prefixe EST documente.
             assertThat(avec("adv_inconnu", "pfl_1").exigeContexteOrganisation()).isTrue();
@@ -72,7 +72,7 @@ class MollieProprietesTest {
         @DisplayName("aucun identifiant : rien a exiger, c est le cas du repli")
         void aucunIdentifiant() {
             // Sans cette garde, le repli sur la passerelle bouchonnee refuserait de
-            // demarrer faute de profil — une chaine vide n etant pas un prefixe de
+            // demarrer faute de profil : une chaine vide n etant pas un prefixe de
             // cle API.
             assertThat(avec(null, null).exigeContexteOrganisation()).isFalse();
             assertThat(avec("  ", null).exigeContexteOrganisation()).isFalse();
@@ -82,7 +82,7 @@ class MollieProprietesTest {
         @DisplayName("les espaces autour de l identifiant sont retires")
         void jetonNettoye() {
             // Une variable d environnement copiee-collee traine volontiers un espace
-            // ou un retour a la ligne ; l en-tete Authorization ne le pardonnerait pas.
+            // ou un retour a la ligne. L en-tete Authorization ne le pardonnerait pas.
             assertThat(avec("  test_abc123\n", null).jeton()).isEqualTo("test_abc123");
             // Et sans le strip, « test_... » precede d un espace cesserait d etre
             // reconnu comme une cle API : profileId partirait a tort.
