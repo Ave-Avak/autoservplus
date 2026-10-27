@@ -41,11 +41,11 @@ import java.util.List;
  *
  * <p><b>Deux gardes avant tout effet de bord</b>, et dans cet ordre : le mot de passe
  * prouve l identite, le mot recopie prouve l intention. Un echec de l une ou l autre
- * ne laisse aucune trace d ecriture, les verifications precedent la premiere
+ * ne laisse aucune trace d ecriture. Les verifications precedent la premiere
  * mutation, elles ne la rattrapent pas.</p>
  *
  * <p><b>Ordre transactionnel</b> : capture de l adresse, vehicules, compte, flush,
- * puis balayage des traces d audit. Le flush n est pas cosmetique, sans lui, l audit
+ * puis balayage des traces d audit. Le flush n est pas cosmetique. Sans lui, l audit
  * JPA reecrirait {@code updated_by} avec l adresse du membre <i>apres</i> le passage
  * du balayage, et l adresse reapparaitrait sur la ligne qu on vient de vider.</p>
  *

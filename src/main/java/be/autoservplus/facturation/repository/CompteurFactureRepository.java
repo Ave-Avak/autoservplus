@@ -27,7 +27,7 @@ public interface CompteurFactureRepository extends JpaRepository<CompteurFacture
      * Cree la ligne de l exercice si elle n existe pas encore, sans jamais echouer
      * sur une course : deux premieres factures simultanees d une meme annee
      * passeraient toutes deux par un {@code save}, et la seconde violerait la cle
-     * primaire, une violation de contrainte condamne la transaction PostgreSQL
+     * primaire. Or une violation de contrainte condamne la transaction PostgreSQL
      * entiere, donc l emission. Le {@code ON CONFLICT DO NOTHING} natif absorbe le
      * cas : le perdant attend le commit du gagnant puis ne fait rien, et trouve la
      * ligne au verrouillage qui suit.

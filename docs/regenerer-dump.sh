@@ -12,7 +12,7 @@
 #
 # Pourquoi passer par l application et non par psql : la graine db/demo et les
 # migrations Java eventuelles ne s appliquent que par Flyway, au demarrage, sous le
-# profil demo : exactement comme le documente l en-tete du dump.
+# profil demo, exactement comme le documente l en-tete du dump.
 #
 # Le secret TOTP de l admin de demonstration est retire AVANT le dump : chiffre sous la
 # cle de CE poste, il serait illisible sur toute autre base. Sous le profil demo,

@@ -113,8 +113,8 @@ public record MollieProprietes(
             throw new IllegalStateException("""
                     Configuration du prestataire de paiement incomplete : l identifiant \
                     fourni n est pas une cle API (test_/live_), c est donc un jeton \
-                    d acces : jeton d organisation access_..., ou jeton d acces avance \
-                    cree depuis le tableau de bord. Un jeton de ce type ne designe aucun \
+                    d acces (jeton d organisation access_..., ou jeton d acces avance \
+                    cree depuis le tableau de bord). Un jeton de ce type ne designe aucun \
                     profil de site et Mollie exige profileId a la creation d un paiement. \
                     Renseignez autoservplus.paiement.mollie.profil-id \
                     (variable MOLLIE_PROFILE_ID), lisible dans le tableau de bord Mollie \

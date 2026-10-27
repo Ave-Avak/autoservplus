@@ -54,7 +54,7 @@ class HorairesOuvertureServiceTest {
 
     /**
      * Le cas du garage reel : matin et apres-midi separes par la pause de midi. Les
-     * deux plages doivent rester distinctes, les fusionner en « 08:00 - 18:00 »
+     * deux plages doivent rester distinctes. Les fusionner en « 08:00 - 18:00 »
      * annoncerait une ouverture a l heure du diner.
      */
     @Test

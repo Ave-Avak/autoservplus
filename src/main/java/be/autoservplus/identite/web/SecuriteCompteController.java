@@ -22,7 +22,7 @@ import java.util.List;
  * Securite du compte depuis le profil : activer, retirer le second facteur, regenerer les
  * codes de secours.
  *
- * <p>Facultatif pour un membre, obligatoire au back-office, un administrateur y vient
+ * <p>Facultatif pour un membre, obligatoire au back-office. Un administrateur y vient
  * pour regenerer ses codes, jamais pour retirer son second facteur, que le service lui
  * refuse.</p>
  *

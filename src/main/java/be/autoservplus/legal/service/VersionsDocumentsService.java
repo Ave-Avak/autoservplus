@@ -21,7 +21,7 @@ import java.util.Optional;
  * <p>Ce service remplace trois constantes {@code *_VERSION_COURANTE} qui vivaient dans
  * l entite {@code Consentement}. La difference n est pas de style : avec une constante,
  * publier une nouvelle redaction supposait de <b>recompiler et redeployer</b>, et rien
- * n obligeait a le faire, on pouvait modifier le texte sans toucher la constante, et
+ * n obligeait a le faire. On pouvait modifier le texte sans toucher la constante, et
  * les acceptations passees continuaient a paraitre couvrir la nouvelle version. Avec
  * une table, publier c est inserer des lignes, et le texte de chaque version reste
  * consultable indefiniment.</p>
@@ -48,7 +48,7 @@ public class VersionsDocumentsService {
      * <p>Absence traitee comme une erreur et non comme un defaut silencieux : ecrire une
      * preuve sans version reviendrait a enregistrer que le membre a accepte « quelque
      * chose ». Mieux vaut refuser la commande que produire une preuve qui ne prouve
-     * rien : et l absence ne peut venir que d une base incompletement migree, jamais
+     * rien. L absence ne peut venir que d une base incompletement migree, jamais
      * d une saisie utilisateur.</p>
      */
     public String versionCourante(TypeDocumentVersionne type) {

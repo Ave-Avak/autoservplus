@@ -18,7 +18,7 @@ import java.time.Duration;
  * pas les contredire.</p>
  *
  * <p><b>Deux secondes</b>, et non les cinq de la passerelle de paiement : le visiteur
- * attend devant un formulaire, et cette verification est un supplement, elle doit
+ * attend devant un formulaire, et cette verification est un supplement. Elle doit
  * renoncer vite plutot que de faire patienter.</p>
  *
  * <p>Aucune cle d API : l interface de plage de Have I Been Pwned est ouverte. Rien a

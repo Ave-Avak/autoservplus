@@ -302,7 +302,7 @@ class AdminRdvServiceTest {
         @Test
         @DisplayName("refuse un marquage avant l'heure de debut (RegleMetier temporelle)")
         void refuseAvantLeDebut() {
-            // RDV commencant dans 3h : debut > maintenant puis refus.
+            // RDV commencant dans 3h : debut > maintenant, donc refus.
             Rdv futur = new Rdv("RDV-2026-0002", marie, golf, pont,
                     MAINTENANT.plus(java.time.Duration.ofHours(3)), java.time.Duration.ofMinutes(30),
                     List.of(vidange), null);

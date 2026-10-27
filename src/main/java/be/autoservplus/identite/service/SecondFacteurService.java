@@ -275,7 +275,7 @@ public class SecondFacteurService {
             return false;
         }
         // L UPDATE conditionnel tranche entre deux verifications simultanees du meme code.
-        // le compte en memoire est ensuite aligne, pour ne pas reecrire un pas perime.
+        // Le compte en memoire est ensuite aligne, pour ne pas reecrire un pas perime.
         if (utilisateurs.accepterPasSiNouveau(compte.getId(), pas.getAsLong()) == 0) {
             return false;
         }

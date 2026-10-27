@@ -3,8 +3,8 @@ package be.autoservplus.journal.service.dto;
 /**
  * Une ligne du journal d audit (BL-7).
  *
- * <p>Forme commune aux deux sources historisees du projet (modifications de catalogue
- * (V25) et transitions d intervention (V23)) qui ne partagent aucune colonne au-dela
+ * <p>Forme commune aux deux sources historisees du projet, les modifications de catalogue
+ * (V25) et les transitions d intervention (V23), qui ne partagent aucune colonne au-dela
  * de l horodatage et de l auteur. Les rapprocher dans un DTO unique est ce qui permet
  * un ecran unique, trie chronologiquement.</p>
  *

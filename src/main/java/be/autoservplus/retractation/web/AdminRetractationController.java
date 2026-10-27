@@ -76,7 +76,7 @@ public class AdminRetractationController {
             redirection.addFlashAttribute("erreur", e.getMessage());
         } catch (PrestataireIndisponibleException e) {
             // Le remboursement est appele DANS la transaction de validation : un refus
-            // du prestataire annule tout : avoir, numero rendu au compteur, bascule de
+            // du prestataire annule tout (avoir, numero rendu au compteur, bascule de
             // la commande. L administrateur doit donc lire que rien n a ete fait et
             // qu il peut reessayer, pas une page d erreur qui laisserait croire a un
             // etat indetermine. Le message de l exception n est pas affiche : il peut

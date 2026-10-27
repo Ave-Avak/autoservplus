@@ -9,7 +9,7 @@ package be.autoservplus.identite.service;
  * a Internet, et la panne du service ne doit pas se propager au code appelant.</p>
  *
  * <p><b>Contrat en cas d echec : rendre {@code false}.</b> Un service injoignable ne
- * bloque pas l inscription, la liste embarquee a deja tranche, et refuser un mot de
+ * bloque pas l inscription. La liste embarquee a deja tranche, et refuser un mot de
  * passe correct parce qu un tiers est en panne serait un deni de service inflige a
  * l utilisateur. L implementation journalise, l appelant n en sait rien.</p>
  */

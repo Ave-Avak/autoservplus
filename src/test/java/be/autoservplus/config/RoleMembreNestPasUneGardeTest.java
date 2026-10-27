@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Fige la decision de n avoir que <b>deux</b> niveaux dans la hierarchie des roles.
  *
  * <p>{@code ROLE_MEMBRE} n y figure pas, et le motif n est pas celui qu on croirait :
- * ce n est pas qu un administrateur serait tenu a l ecart des ecrans personnels, il
+ * ce n est pas qu un administrateur serait tenu a l ecart des ecrans personnels. Il
  * les atteint, {@code anyRequest().authenticated()} suffisant a les couvrir, et leur
  * cloisonnement venant de l <i>ownership</i> et non du role. C est que
  * <b>{@code ROLE_MEMBRE} n est garde nulle part</b> : l inscrire dans la hierarchie

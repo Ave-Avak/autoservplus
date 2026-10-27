@@ -143,7 +143,7 @@ public class Rdv extends BaseEntity {
      * les deux (RM-10). Ce Javadoc disait « apres confirmation » : il decrivait une
      * restriction que le code n a jamais eue, et
      * {@code RdvTest$AnnulationGarage.depuisEnAttente} prouve le contraire depuis le
-     * debut. Le cas est reel, le garage peut fermer un jour donne et annuler des
+     * debut. Le cas est reel : le garage peut fermer un jour donne et annuler des
      * demandes qu il n avait pas encore tranchees.</p>
      *
      * <p>A ne pas confondre avec {@link #refuser} : refuser, c est decliner une demande

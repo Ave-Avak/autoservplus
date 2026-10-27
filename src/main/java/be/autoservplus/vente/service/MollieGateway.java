@@ -110,7 +110,7 @@ public class MollieGateway implements PrestatairePaiement {
     }
 
     /**
-     * Mollie REFUSE une URL de notification qu il ne peut pas joindre : donc toute
+     * Mollie REFUSE une URL de notification qu il ne peut pas joindre, donc toute
      * adresse locale. La transmettre ferait echouer la creation du paiement en
      * developpement, la ou tout le reste fonctionne.
      *

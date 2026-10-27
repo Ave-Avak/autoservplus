@@ -21,7 +21,7 @@ import org.springframework.scheduling.annotation.EnableScheduling;
  *
  * <p>Rien n est perdu cote couverture : {@code ExpirationCommandesJobTest} est un test
  * Mockito pur qui appelle {@code annulerLesCommandesExpirees} directement, avec une
- * horloge figee, c est la methode qui est verifiee, jamais le declenchement. Aucun
+ * horloge figee. C est la methode qui est verifiee, jamais le declenchement. Aucun
  * test d integration ne cite ce job.</p>
  */
 @Configuration

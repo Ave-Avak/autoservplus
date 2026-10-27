@@ -49,7 +49,7 @@ import be.autoservplus.support.SocleIntegration;
  * {@code PaiementIT} couvrait deja la meme chaine, mais il sautait une marche :
  * apres avoir constate que l initiation redirige vers {@code /paiement-fictif/*},
  * il abandonnait cette URL et appelait {@code POST /webhooks/paiement} en direct.
- * Or aucun controleur ne servait cette adresse, le membre qui suivait la
+ * Or aucun controleur ne servait cette adresse : le membre qui suivait la
  * redirection recevait un 404, et la chaine marchande etait donc verte en
  * integration et impraticable a l ecran.</p>
  *
@@ -293,7 +293,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
                 + referencePrestataire + " : statut relu = REUSSI, commande passee PAYEE, "
                 + "facture emise.");
 
-        // Le membre revient ensuite. Meme chemin, meme relecture : mais plus rien a
+        // Le membre revient ensuite. Meme chemin, meme relecture, mais plus rien a
         // ecrire, et c est ce que la ligne doit rendre visible.
         mvc.perform(get("/commande/{ref}/retour", reference))
                 .andExpect(status().is3xxRedirection());

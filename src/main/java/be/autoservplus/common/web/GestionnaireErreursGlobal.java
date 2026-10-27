@@ -20,7 +20,7 @@ import org.springframework.web.servlet.NoHandlerFoundException;
  * <p><b>Ce n est pas ce qui rend le 404.</b>
  * {@link RessourceIntrouvableException} porte deja
  * {@code @ResponseStatus(NOT_FOUND)} : une reference inconnue produisait donc
- * <b>deja</b> un 404, jamais un 500, la dette qui annoncait l inverse etait
+ * <b>deja</b> un 404, jamais un 500. La dette qui annoncait l inverse etait
  * perimee. Ce que cet advice apporte, c est la <b>page</b> : sans lui, ce 404
  * s affiche sur la page Whitelabel de Spring Boot, qui ne parle aucune des trois
  * langues du projet et ne ramene nulle part.</p>
@@ -92,17 +92,17 @@ public class GestionnaireErreursGlobal {
         return page(modele, "erreur.409.titre", "erreur.409.message");
     }
 
-    // PAS de @ExceptionHandler(Exception.class) ici, et c est deliberе.
+    // PAS de @ExceptionHandler(Exception.class) ici, et c est delibere.
     //
     // Un attrape-tout parait etre un filet de securite. C en est un piege. Il
-    // capture aussi les exceptions de Spring MVC : parametre absent, verbe non
-    // supporte, type de contenu refuse : auxquelles le framework associe deja le
+    // capture aussi les exceptions de Spring MVC (parametre absent, verbe non
+    // supporte, type de contenu refuse) auxquelles le framework associe deja le
     // bon statut, et les degrade toutes en 500. Essaye puis retire : il faisait
     // passer PaiementWebhookControllerTest.parametreManquant de 400 a 500, soit
     // exactement le contraire du but recherche.
     //
-    // Le besoin qu il devait couvrir : ne pas divulguer de detail technique sur une
-    // erreur imprevue : est deja tenu par Spring Boot, dont server.error
+    // Le besoin qu il devait couvrir (ne pas divulguer de detail technique sur une
+    // erreur imprevue) est deja tenu par Spring Boot, dont server.error
     // .include-stacktrace et include-message valent « never » par defaut : la page
     // d erreur ne montre que le statut et le chemin. Rien a ajouter, donc rien
     // ajoute.

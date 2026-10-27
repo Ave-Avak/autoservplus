@@ -20,7 +20,7 @@ import java.util.UUID;
  * Facture emise : document comptable legal, immuable des sa creation (F31).
  *
  * <p><b>Pas de suppression logique</b>, contrairement aux entites metier du socle :
- * une facture ne se supprime pas, meme logiquement, la loi impose sa conservation
+ * une facture ne se supprime pas, meme logiquement. La loi impose sa conservation
  * dix ans et sa seule correction legale est la note de credit (table {@code avoir}).
  * Elle n herite donc pas de {@code BaseEntity}, qui porterait {@code deleted_at}.
  * Meme precedent que les journaux append-only du projet.</p>
@@ -29,14 +29,14 @@ import java.util.UUID;
  * (V6), qui refuse toute modification du numero, des montants, du taux et de la date
  * d emission. Le mapping le redouble par {@code updatable = false} : la garde de
  * l entite evite l aller-retour vers la base, celle de la base survit a n importe
- * quel appelant. Seul {@code cheminPdf} reste modifiable, le document est archive
+ * quel appelant. Seul {@code cheminPdf} reste modifiable. Le document est archive
  * apres coup, sans que son contenu comptable bouge.</p>
  *
  * <p><b>Source</b> : une commande OU une intervention, jamais les deux (CHECK
  * {@code ck_facture_origine_unique}). Ce bloc ne livre que la facture de commande.
  * {@code interventionId} est mappe en identifiant brut plutot qu en association pour
  * que la colonne existe des maintenant sans faire dependre la facturation du module
- * intervention, le bloc RM-17 futur promouvra l association s il en a besoin.</p>
+ * intervention. Le bloc RM-17 futur promouvra l association s il en a besoin.</p>
  *
  * <p><b>Montants figes</b> : recopies de la commande a l emission, jamais relus du
  * catalogue. Une modification de prix posterieure ne reecrit donc aucune facture,

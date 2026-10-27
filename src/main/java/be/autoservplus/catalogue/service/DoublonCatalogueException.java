@@ -8,7 +8,7 @@ import be.autoservplus.common.exception.RegleMetierException;
  *
  * <p>Meme patron que les exceptions dediees du module vente : une cause de refus
  * identifiable porte sa propre classe pour que la couche web la traduise en message
- * i18n cible. {@code champ} nomme le champ de formulaire fautif, le controleur
+ * i18n cible. {@code champ} nomme le champ de formulaire fautif. Le controleur
  * peut ainsi accrocher l erreur au champ plutot que d afficher un message global.</p>
  *
  * <p>Pas de code RM : l unicite est un invariant technique du dictionnaire de

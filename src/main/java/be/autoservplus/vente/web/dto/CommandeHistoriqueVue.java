@@ -16,8 +16,8 @@ import java.util.UUID;
  * <p>Les champs de facture sont nuls a la sortie du module vente, qui ne connait pas
  * la facturation : c est le controleur qui les complete depuis le module
  * {@code facturation}, via {@link #avecFacture}. Faire dependre la vente de la
- * facturation pour un simple lien de telechargement inverserait la dependance,
- * c est la facture qui nait de la commande, pas l inverse.</p>
+ * facturation pour un simple lien de telechargement inverserait la dependance.
+ * C est la facture qui nait de la commande, pas l inverse.</p>
  *
  * <p>{@code statut} est expose brut : le libelle affiche est une cle i18n construite
  * dans le gabarit, aucune chaine visible n est fabriquee ici.</p>

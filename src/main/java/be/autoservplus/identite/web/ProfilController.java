@@ -100,7 +100,7 @@ public class ProfilController {
         // Post/Redirect/Get, et non un rendu direct. Deux raisons, dont une decouverte
         // en ecrivant le test : la langue posee ci-dessus vit en SESSION, alors que la
         // locale de la requete courante est deja resolue quand le gestionnaire
-        // s execute : rendre ici servirait la page de confirmation dans l ANCIENNE
+        // s execute. Rendre ici servirait la page de confirmation dans l ANCIENNE
         // langue, et le membre croirait son choix perdu. Le detour par une redirection
         // fait resoudre la locale a neuf. Il evite par ailleurs qu un rafraichissement
         // rejoue l enregistrement.

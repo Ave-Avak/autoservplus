@@ -29,7 +29,7 @@ import java.util.Objects;
  *
  * <p>La cible est designee par le couple {@code (typeEntite, entiteId)} plutot que par
  * une association JPA : la colonne est polymorphe, et A3/A6 autorisent la suppression
- * physique d un element jamais reference (RM-29), une association obligerait a choisir
+ * physique d un element jamais reference (RM-29). Une association obligerait a choisir
  * entre bloquer la suppression et effacer la trace de ce qui a ete supprime.</p>
  *
  * <p>{@code auteur} est nullable : la trace survit a la disparition du compte

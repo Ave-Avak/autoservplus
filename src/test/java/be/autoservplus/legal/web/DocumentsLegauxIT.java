@@ -164,7 +164,7 @@ class DocumentsLegauxIT extends SocleIntegration {
         /**
          * Mollie est une societe NEERLANDAISE ({@code Mollie B.V.}). Le texte de la
          * politique annoncait la Belgique, en contradiction avec le registre des
-         * traitements rendu sur la MEME page : et avec celui que l export RGPD de
+         * traitements rendu sur la MEME page, et avec celui que l export RGPD de
          * l article 15 remet au membre, puisque les deux sont resolus par le meme
          * composant. Une politique de confidentialite qui situe mal un sous-traitant
          * informe mal sur le sort des donnees.

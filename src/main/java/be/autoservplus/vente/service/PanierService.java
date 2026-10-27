@@ -31,14 +31,14 @@ import java.util.UUID;
  * confirmer son existence, meme mecanisme que {@code interventionDuMembre}.</p>
  *
  * <p><b>RM-19</b> (au plus un panier par membre) : trouve-ou-cree porte par les
- * chemins d ecriture uniquement, une lecture ne cree pas de ligne en base, un GET
+ * chemins d ecriture uniquement. Une lecture ne cree pas de ligne en base, un GET
  * reste sans effet de bord. Le dernier arbitre est l index unique partiel
  * {@code uq_panier_membre_actif} : deux creations concurrentes ne peuvent pas
  * passer toutes les deux, la perdante est traduite en
  * {@link ConflitConcurrenceException}.</p>
  *
  * <p><b>F13 / stock</b> : le controle porte sur le stock <b>physique</b> de la
- * piece, sans decrementation a l ajout, la reservation virtuelle de 30 minutes
+ * piece, sans decrementation a l ajout. La reservation virtuelle de 30 minutes
  * (RM-21) est une evolution V2 documentee. Consequence assumee : deux membres
  * peuvent mettre la derniere piece au panier, le premier qui commandera l aura.</p>
  */
@@ -81,7 +81,7 @@ public class PanierService {
      *
      * <p><b>Aucun controle de stock</b>, contrairement aux pieces : une prestation est
      * du temps d atelier, pas un article denombrable. Ce que la V1 ne verifie donc pas
-     * ici, c est la disponibilite d un creneau, le service est vendu, sa planification
+     * ici, c est la disponibilite d un creneau. Le service est vendu, sa planification
      * reste une etape separee (decouplage assume, voir la dette F12-a).</p>
      *
      * <p>Prestation inactive refusee, miroir exact de RM-28 pour les pieces : on ne
@@ -193,8 +193,8 @@ public class PanierService {
     /**
      * Creation du panier (RM-19). Si deux requetes du meme membre creent en meme
      * temps, l index unique partiel en base rejette la seconde : on traduit en
-     * conflit de concurrence explicite plutot que de laisser fuir une erreur SQL,
-     * la transaction est perdue de toute facon, le membre rejoue son geste et
+     * conflit de concurrence explicite plutot que de laisser fuir une erreur SQL.
+     * La transaction est perdue de toute facon, le membre rejoue son geste et
      * trouve le panier cree par la premiere.
      */
     private Panier creerPour(String email) {

@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Endpoint webhook : accessible sans session ni jeton CSRF (configuration miroir
  * de SecuriteConfig), il delegue au service qui relit le statut aupres du
- * prestataire, le corps de la requete n est jamais cru.
+ * prestataire. Le corps de la requete n est jamais cru.
  */
 @WebMvcTest(controllers = PaiementWebhookController.class,
         excludeAutoConfiguration = ThymeleafAutoConfiguration.class)

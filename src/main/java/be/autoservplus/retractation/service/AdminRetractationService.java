@@ -35,7 +35,8 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Decision du garage sur une demande de retractation (F30, RM-23) : validation (* remboursement, note de credit, changements d etat) ou refus motive.
+ * Decision du garage sur une demande de retractation (F30, RM-23) : validation
+ * (remboursement, note de credit, changements d etat) ou refus motive.
  *
  * <p><b>Pourquoi ce service vit dans {@code retractation} et non dans {@code vente}
  * ou {@code facturation}.</b> Valider une retractation touche les deux : il faut

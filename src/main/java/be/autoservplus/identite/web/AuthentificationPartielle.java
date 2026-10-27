@@ -34,8 +34,8 @@ public class AuthentificationPartielle extends AbstractAuthenticationToken {
         this.complete = Objects.requireNonNull(complete, "complete");
         this.secondFacteurValide = secondFacteurValide;
         // Authentifie au sens du filtre d exception : un refus d acces mene alors au
-        // gestionnaire de refus, qui renvoie vers l etape, et non a la page de connexion
-        // : ce qui ferait recommencer le mot de passe a chaque clic.
+        // gestionnaire de refus, qui renvoie vers l etape, et non a la page de connexion,
+        // ce qui ferait recommencer le mot de passe a chaque clic.
         setAuthenticated(true);
     }
 

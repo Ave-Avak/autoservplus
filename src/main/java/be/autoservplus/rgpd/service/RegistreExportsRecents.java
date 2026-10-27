@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * ajouter une colonne « date du dernier export » a la table {@code utilisateur}
  * demanderait une migration pour stocker un compteur de service. La table
  * {@code utilisateur} porte deja le seul precedent de limitation du projet
- * ({@code tentatives_echouees}, {@code verrouille_jusqu_a}) : mais celui-la
+ * ({@code tentatives_echouees}, {@code verrouille_jusqu_a}), mais celui-la
  * protege le compte lui-meme et survit volontairement au redemarrage, ce qui n est
  * pas le cas ici.
  *

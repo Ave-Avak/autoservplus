@@ -79,7 +79,7 @@ public class Paiement {
      * de lui-meme le jour ou MollieGateway serait cable ». C etait faux : ainsi mappe,
      * Hibernate ne l ecrit jamais, et l ecran aurait continue d afficher « moyen non
      * communique » avec un prestataire reel branche. Un commentaire faux coute plus
-     * cher qu un commentaire absent, il dispense de verifier.</p>
+     * cher qu un commentaire absent, car il dispense de verifier.</p>
      *
      * <p>Un prestataire bouchonne n en rapporte aucun : la valeur reste nulle et
      * l ecran le dit, plutot que d inventer un moyen.</p>

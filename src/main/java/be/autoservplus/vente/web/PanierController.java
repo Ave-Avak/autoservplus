@@ -28,7 +28,7 @@ import java.util.UUID;
  *
  * <p>Pattern PRG + flash comme les autres controleurs. Les messages de succes et
  * d erreur sont resolus ici via le {@code MessageSource} (cles {@code panier.*}) :
- * le refus de stock, notamment, restitue la quantite encore disponible, un refus
+ * le refus de stock, notamment, restitue la quantite encore disponible, car un refus
  * sans chiffre ne serait pas actionnable. {@link RessourceIntrouvableException}
  * n est volontairement PAS catchee : une ligne d autrui ou inconnue remonte en 404,
  * meme raisonnement que sur les reponses RM-15 du suivi d intervention.</p>

@@ -70,7 +70,7 @@ import be.autoservplus.support.SocleIntegration;
  *   <li>l <b>etancheite</b> reelle, cote SQL. Deux membres ont chacun un vehicule,
  *       une commande, un rendez-vous, une intervention et un consentement. Le
  *       document produit pour l un ne doit porter aucune trace de l autre. Les
- *       bouchons d un test unitaire rendent ce qu on leur dicte, seule une vraie
+ *       bouchons d un test unitaire rendent ce qu on leur dicte. Seule une vraie
  *       requete valide les clauses {@code WHERE};</li>
  *   <li>les {@code JOIN FETCH} du module : {@code open-in-view} est desactive et
  *       les entites sont converties en objets de transfert, un chargement paresseux
@@ -144,7 +144,7 @@ class ExportDonneesIT extends SocleIntegration {
     /**
      * Cree un membre complet : vehicule, consentement horodate avec adresse IP,
      * commande convertie d un panier, rendez-vous et intervention. Chaque section
-     * de l export a ainsi de quoi se remplir : et de quoi fuir, si l etancheite
+     * de l export a ainsi de quoi se remplir, et de quoi fuir, si l etancheite
      * etait defaillante.
      */
     private Utilisateur membreComplet(String email, String motDePasse, String plaque,
@@ -278,7 +278,7 @@ class ExportDonneesIT extends SocleIntegration {
         assertThat(donnees.path("interventions").get(0).path("lignes").size()).isEqualTo(1);
 
         // Facture : la vraie, celle du module facturation, avec le numero legal
-        // attribue par le compteur : et non un decalque de la commande payee.
+        // attribue par le compteur, et non un decalque de la commande payee.
         JsonNode facture = donnees.path("factures").get(0);
         assertThat(facture.path("numero").asText())
                 .isEqualTo(numerosFactures.get("paul@exemple.be"))

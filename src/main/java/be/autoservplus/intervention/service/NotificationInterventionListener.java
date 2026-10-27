@@ -21,7 +21,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * transaction de {@code terminer} est rollbackee, l evenement meurt avec elle. C est
  * la lecon tiree de {@code AdminRdvService.notifierSansEchouer} (envoi inline, protege
  * seulement tant que l envoi ne touche pas la base) : ici le decouplage est structurel,
- * pas seulement defensif. {@code REQUIRES_NEW} ouvre la transaction de lecture, la
+ * pas seulement defensif. {@code REQUIRES_NEW} ouvre la transaction de lecture : la
  * transaction d origine est terminee, on ne peut pas s y joindre.</p>
  *
  * <p>Le listener vit dans le module {@code intervention}, pas {@code communication} :

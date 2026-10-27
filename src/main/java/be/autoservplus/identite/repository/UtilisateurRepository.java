@@ -99,7 +99,7 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
      * <p><b>Le motif est un MOTIF, jamais un terme, et jamais nul.</b> La version
      * precedente testait {@code :filtre is null} pour rendre tout le monde quand rien
      * n etait cherche : PostgreSQL ne sait pas inferer le type d un parametre nul et
-     * echouait sur {@code function lower(bytea) does not exist}, l ecran repondait
+     * echouait sur {@code function lower(bytea) does not exist}. L ecran repondait
      * 500 des son ouverture. Meme piege que celui deja consigne pour le journal
      * d audit (BL-7).
      *

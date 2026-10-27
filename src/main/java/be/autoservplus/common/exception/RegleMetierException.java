@@ -15,7 +15,7 @@ package be.autoservplus.common.exception;
  *   <li>{@link #getMessage()} rend la <b>phrase destinee a l utilisateur</b>, seule,
  *       affichable sans retouche.</li>
  *   <li>{@link #getCodeRegle()} rend le <b>code de tracabilite</b>, pour le routage
- *       applicatif et les tests, c est deja ainsi que {@code RdvController} choisit
+ *       applicatif et les tests. C est deja ainsi que {@code RdvController} choisit
  *       le champ de formulaire a annoter.</li>
  *   <li>{@link #toString()} accole le code, de sorte que journaux et traces de pile
  *       le portent encore. La tracabilite n est pas perdue, elle est deplacee la ou

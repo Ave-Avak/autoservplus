@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@link CourrielConsole} etait la seule implementation de {@link ServiceCourriel}
  * et portait {@code @Profile("!prod")} : demarrer en profil {@code prod} echouait
  * au cablage, faute de bean a injecter. Le probleme ne se voyait dans aucun test,
- * puisqu aucun ne demarre sous ce profil, il ne serait apparu qu au premier
+ * puisqu aucun ne demarre sous ce profil. Il ne serait apparu qu au premier
  * deploiement reel, c est-a-dire au pire moment.</p>
  *
  * <p>La regle est generale et se lit telle quelle : tant qu il n existe qu une

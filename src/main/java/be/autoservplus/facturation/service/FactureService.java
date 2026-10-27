@@ -122,7 +122,7 @@ public class FactureService {
     /**
      * Ventilation TVA de la facture, recalculee des lignes figees de sa commande.
      * Elle n est pas stockee : les lignes etant immuables des leur rattachement a
-     * une commande, la recalculer donne toujours le meme resultat, une table de
+     * une commande, la recalculer donne toujours le meme resultat. Une table de
      * lignes de facture serait une duplication exacte, avec le risque de divergence
      * qui va avec.
      */

@@ -29,7 +29,7 @@ import java.util.UUID;
  * {@code uq_avis_intervention}) et c est le bon niveau : le membre juge un travail
  * reellement effectue sur son vehicule, a une date donnee, pas une ligne de
  * catalogue. La note moyenne d une prestation se deduit ensuite par jointure sur les
- * lignes d intervention, un avis nourrit donc autant de moyennes qu il y avait de
+ * lignes d intervention. Un avis nourrit donc autant de moyennes qu il y avait de
  * prestations dans le travail.</p>
  *
  * <p><b>Un seul avis par intervention</b>, garanti en base et non seulement dans le
@@ -39,7 +39,7 @@ import java.util.UUID;
  * <p><b>Note immuable, commentaire effacable.</b> La note ne bouge plus une fois
  * deposee : elle entre dans une moyenne publique, et la reecrire changerait
  * retroactivement une statistique deja affichee. Le commentaire, lui, est du texte
- * libre pouvant contenir des donnees personnelles, il doit pouvoir etre neutralise
+ * libre pouvant contenir des donnees personnelles. Il doit pouvoir etre neutralise
  * sans que la note disparaisse (voir {@link #anonymiserCommentaire}, F23).</p>
  *
  * <p><b>Publication a priori, moderation a posteriori.</b> {@code publie} vaut

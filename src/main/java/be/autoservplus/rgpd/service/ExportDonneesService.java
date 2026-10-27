@@ -50,7 +50,7 @@ import java.util.stream.Collectors;
  *
  * <p><b>Deux gardes</b> avant qu un octet ne soit produit, dans cet ordre :
  * <ol>
- *   <li>le mot de passe est reconfirme, une session ouverte ne suffit pas a
+ *   <li>le mot de passe est reconfirme, car une session ouverte ne suffit pas a
  *       rassembler tout le dossier d une personne en un seul fichier.</li>
  *   <li>la limite d un export par 24 heures est verifiee.</li>
  * </ol>
@@ -62,7 +62,7 @@ import java.util.stream.Collectors;
  * adresse de courriel par le controleur ({@code @AuthenticationPrincipal}), jamais
  * d un parametre de requete. Chaque requete du module filtre sur cette adresse : il
  * n existe aucun chemin par lequel l export d un membre pourrait contenir la donnee
- * d un autre, l ownership n est pas verifie apres coup, il est la condition meme du
+ * d un autre. L ownership n est pas verifie apres coup, il est la condition meme du
  * chargement.
  *
  * <p><b>Chargement</b> : {@code open-in-view} etant desactive, chaque requete
@@ -240,7 +240,7 @@ public class ExportDonneesService {
 
         // Parc complet du membre, suppressions logiques comprises : c'est la seule
         // liste qui dise ce qui est reellement detenu, et elle sert de reference
-        // aux sections atelier : dont les jointures vers Vehicule auraient filtre
+        // aux sections atelier, dont les jointures vers Vehicule auraient filtre
         // les dossiers d'un vehicule retire du parc.
         List<Vehicule> parc = vehicules.pourMembre(membre.getId());
         Map<Long, String> plaques = parc.stream()

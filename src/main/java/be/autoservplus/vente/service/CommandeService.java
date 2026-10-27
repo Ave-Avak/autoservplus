@@ -32,10 +32,10 @@ import java.util.UUID;
  *
  * <p><b>Atomicite</b> : gardes (CGV, panier non vide, pieces actives, stock),
  * creation de la commande, reaffectation des lignes et preuve d acceptation des
- * CGV vivent dans UNE transaction, un refus n ecrit rien, ni commande partielle,
+ * CGV vivent dans UNE transaction. Un refus n ecrit rien, ni commande partielle,
  * ni panier a moitie converti, ni preuve orpheline.</p>
  *
- * <p><b>Stock</b> : reverifie ligne a ligne au moment de convertir, deux membres
+ * <p><b>Stock</b> : reverifie ligne a ligne au moment de convertir, car deux membres
  * ont pu paniériser la meme piece, aucun n a reserve (la reservation soft RM-21
  * est une evolution V2). Le stock n est PAS decremente ici : le dictionnaire le
  * decremente au paiement confirme. Fenetre de course residuelle assumee entre
@@ -44,7 +44,7 @@ import java.util.UUID;
  * <p><b>Lignes deplacees, jamais recopiees</b> : la meme ligne passe de
  * {@code panier_id} a {@code commande_id}, valeurs figees intactes (RM-30). Le
  * panier-contenant survit et se recharge vide. Attention : ne PAS retirer les
- * lignes de la collection du panier dans cette transaction, {@code orphanRemoval}
+ * lignes de la collection du panier dans cette transaction, car {@code orphanRemoval}
  * les supprimerait physiquement, commande comprise (voir
  * {@code LignePanier#rattacherA}).</p>
  */
@@ -120,7 +120,7 @@ public class CommandeService {
         }
 
         // Montants figes (RM-30) : sommes ligne a ligne des valeurs figees du panier,
-        // TVA = TVAC - HTVA par construction : le CHECK ck_commande_coherence passera.
+        // TVA = TVAC - HTVA par construction, et le CHECK ck_commande_coherence passera.
         // VI.53 (F12) : la renonciation n a de sens que pour un panier de services.
         // Sur un panier de pieces, une case cochee par un client bricolant le
         // formulaire est IGNOREE : validation serveur, jamais confiance au client.
@@ -134,7 +134,7 @@ public class CommandeService {
         commande.reprendreLignes(lignes);
 
         // Preuve contractuelle F24, dans la MEME transaction : un rollback de la
-        // conversion emporte la preuve : jamais de consentement orphelin.
+        // conversion emporte la preuve, jamais de consentement orphelin.
         // La version vient de version_document (F24) et non plus d une constante : elle
         // designe une ligne dont le texte est archive, donc une preuve qui dit QUOI a
         // ete accepte et pas seulement QUE quelque chose l a ete. Resolue DANS la
@@ -145,7 +145,7 @@ public class CommandeService {
                 versionsDocuments.versionCourante(TypeDocumentVersionne.CGV),
                 adresseIp, horloge.instant()));
 
-        // Preuve VI.53 (F12), ecrite UNIQUEMENT si la question a ete posee : donc si
+        // Preuve VI.53 (F12), ecrite UNIQUEMENT si la question a ete posee, donc si
         // le panier contient des services. Le refus s enregistre autant que l accord :
         // sans ligne, l absence serait ambigue entre « a refuse » et « jamais
         // interroge », exactement le raisonnement tenu pour les cookies en V29.

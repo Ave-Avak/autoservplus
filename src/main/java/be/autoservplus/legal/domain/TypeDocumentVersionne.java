@@ -120,8 +120,8 @@ public enum TypeDocumentVersionne {
     }
 
     /**
-     * Cles de messages composant le texte engageant, <b>dans l ordre de lecture</b>,
-     * l ordre fait partie du gele : deux textes aux memes clauses presentees dans un
+     * Cles de messages composant le texte engageant, <b>dans l ordre de lecture</b>.
+     * L ordre fait partie du gele : deux textes aux memes clauses presentees dans un
      * ordre different ne sont pas le meme document.
      */
     public List<String> cles() {

@@ -168,7 +168,7 @@ class CommandeTemplatesIT extends SocleIntegration {
         assertThat(preuves.get(0).getAdresseIp()).isEqualTo("127.0.0.1");
 
         // Les lignes ont ete DEPLACEES : preuve COTE BASE, apres vidage de la session
-        // (le clear ci-dessus) : le panier RECHARGE depuis PostgreSQL n'a plus aucune
+        // (le clear ci-dessus). Le panier RECHARGE depuis PostgreSQL n'a plus aucune
         // ligne, ce n'est pas un etat d'instance en memoire. La gestion du piege
         // orphanRemoval est donc verifiee la ou elle compte : sur les FK.
         Panier recharge = paniers.findByMembreEmail("marie@exemple.be").orElseThrow();

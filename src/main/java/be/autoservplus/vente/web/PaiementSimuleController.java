@@ -31,7 +31,7 @@ import java.util.UUID;
  * serait, elle, indefendable.</p>
  *
  * <p>Active tant qu aucun identifiant de prestataire n est fourni, comme le bouchon
- * qu elle donne a voir : y compris en production, ou un repli annonce vaut mieux
+ * qu elle donne a voir, y compris en production, ou un repli annonce vaut mieux
  * qu une rupture au paiement.</p>
  */
 @Controller

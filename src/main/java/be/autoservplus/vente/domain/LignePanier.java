@@ -17,8 +17,8 @@ import java.util.Objects;
 
 /**
  * Ligne d un panier : une piece detachee et sa quantite, aux conditions <b>figees
- * a l ajout</b> (libelle, prix unitaire HTVA, taux TVA copies depuis la piece),
- * un changement de catalogue ulterieur ne touche pas un panier existant. Invariant
+ * a l ajout</b> (libelle, prix unitaire HTVA, taux TVA copies depuis la piece).
+ * Un changement de catalogue ulterieur ne touche pas un panier existant. Invariant
  * de conception, meme recopie que {@code LigneRdv} et {@code LigneIntervention}.
  * Aucun numero de regle au CdC ne couvre le figeage lui-meme.
  *
@@ -169,7 +169,7 @@ public class LignePanier {
      * (le CHECK XOR garantit qu elle n appartient qu a un seul des deux).
      *
      * <p><b>Piege {@code orphanRemoval}</b> : la ligne ne doit PAS etre retiree de
-     * la collection {@code Panier.lignes} dans la meme session, ce retrait la
+     * la collection {@code Panier.lignes} dans la meme session, car ce retrait la
      * marquerait orpheline et Hibernate la SUPPRIMERAIT physiquement, commande
      * comprise. Seul ce changement de FK fait foi. Le panier se recharge vide.</p>
      */

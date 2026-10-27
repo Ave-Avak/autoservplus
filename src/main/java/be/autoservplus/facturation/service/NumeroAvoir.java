@@ -14,7 +14,7 @@ package be.autoservplus.facturation.service;
  *
  * <p>Contrairement a la facture, l exercice et la sequence ne sont pas stockes en
  * colonnes separees : la table {@code avoir} du socle ne les prevoit pas et n en a
- * pas besoin, l unicite est portee par {@code uq_avoir_numero} seul, la ou la
+ * pas besoin. L unicite est portee par {@code uq_avoir_numero} seul, la ou la
  * facture doit en plus garantir {@code uq_facture_sequence}. L exercice se relit du
  * numero quand l archivage en a besoin.</p>
  */

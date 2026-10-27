@@ -28,7 +28,7 @@ import java.util.Objects;
  *
  * <p>Journal append-only, sur le patron de {@code HistoriqueStatutIntervention} : une
  * ligne par transition, ecrite dans la transaction de la transition, jamais modifiee
- * ensuite. Aucun {@code deleted_at}, rien ne se supprime dans un journal.</p>
+ * ensuite. Aucun {@code deleted_at}. Rien ne se supprime dans un journal.</p>
  *
  * <p><b>Pourquoi cette table alors que {@code utilisateur} porte deja
  * {@code updated_by}.</b> Les colonnes d audit gardent le DERNIER geste, jamais la

@@ -67,7 +67,7 @@ public final class RedacteurIcal {
         // PUBLISH et non REQUEST : le garage diffuse une information, il n envoie pas
         // une invitation a laquelle le membre devrait repondre. REQUEST ferait
         // apparaitre des boutons « Accepter / Refuser » dans l agenda, alors que la
-        // decision se prend sur le site : et une reponse partie du calendrier
+        // decision se prend sur le site, et une reponse partie du calendrier
         // n arriverait nulle part.
         ligne(ics, "METHOD", "PUBLISH");
 

@@ -101,7 +101,7 @@ public class Commande extends BaseEntity {
      * retroactivement les droits du client sur une commande deja conclue.</p>
      *
      * <p>{@code false} pour toute commande de pieces et toute commande anterieure a
-     * F12, le droit de retractation s applique alors pleinement, defaut le plus
+     * F12. Le droit de retractation s applique alors pleinement, defaut le plus
      * protecteur et le seul qui se lise sans ambiguite.</p>
      */
     @Column(name = "renonciation_vi53", nullable = false, updatable = false)

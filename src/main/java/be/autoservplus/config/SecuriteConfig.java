@@ -60,7 +60,7 @@ public class SecuriteConfig {
      * figure pas parce qu il n est <b>garde nulle part</b> : aucun
      * {@code hasRole('MEMBRE')} n existe dans le projet, et les ecrans personnels
      * ({@code /mes-vehicules}, {@code /panier}, {@code /commandes}) sont couverts par
-     * {@code anyRequest().authenticated()} seul, leur cloisonnement vient de
+     * {@code anyRequest().authenticated()} seul. Leur cloisonnement vient de
      * l <i>ownership</i>, chacun projetant les donnees du principal. L inscrire dans la
      * hierarchie ne changerait donc rien du tout : ce serait du bruit dans une
      * declaration dont toute la valeur est d etre lisible d un coup d oeil.
@@ -129,7 +129,7 @@ public class SecuriteConfig {
                                 // Page de contact : l article VI.45 CDE veut que
                                 // l identite du professionnel, son adresse, son
                                 // telephone et son courriel soient accessibles AVANT
-                                // que le consommateur ne soit lie : donc avant toute
+                                // que le consommateur ne soit lie, donc avant toute
                                 // creation de compte. Derriere une authentification,
                                 // l information arriverait apres le moment ou elle
                                 // doit eclairer la decision.
@@ -149,7 +149,7 @@ public class SecuriteConfig {
                                 // Confirmation d un changement d adresse (CdC 5.2.2).
                                 // Le lien arrive dans la NOUVELLE boite, souvent
                                 // ouverte ailleurs que dans la session du membre.
-                                // exiger une authentification y renverrait vers un
+                                // Exiger une authentification y renverrait vers un
                                 // formulaire de connexion portant l ANCIENNE adresse,
                                 // et la bascule deviendrait impossible a conclure. Le
                                 // jeton porte l autorisation, comme pour l activation
@@ -173,7 +173,7 @@ public class SecuriteConfig {
                         .requestMatchers("/actuator/health").permitAll()
                         // API publique en LECTURE SEULE (BL-8) et sa documentation.
                         // Anonyme par construction : elle n expose que ce qui figure
-                        // deja sur le site public : catalogue des prestations et
+                        // deja sur le site public, a savoir le catalogue des prestations et
                         // identite commerciale du garage. Aucun verbe d ecriture n y
                         // est declare, donc aucune authentification a exiger. La table
                         // clef_api du socle reste volontairement inexploitee : y
@@ -183,7 +183,7 @@ public class SecuriteConfig {
                         // Les deux routes sont ENUMEREES, et non couvertes par un joker
                         // /api/v1/**. Le joker est fail-open : le troisieme endpoint,
                         // quel qu il soit, naitrait public sans que personne ne l ait
-                        // decide : y compris un endpoint qui exposerait des donnees de
+                        // decide, y compris un endpoint qui exposerait des donnees de
                         // membre. L enumeration est fail-closed : ajouter une route
                         // publique devient un geste explicite, verifiable en revue.
                         // ApiPubliqueIT.surfaceFermeeParDefaut verrouille l ecart entre

@@ -38,13 +38,13 @@ import java.util.UUID;
  *
  * <p><b>Machine a etats dans l entite</b>, comme partout dans le projet : seules
  * {@code EN_ATTENTE -> VALIDEE} et {@code EN_ATTENTE -> REFUSEE} passent, et la garde
- * vit ici plutot que dans le service, un second appelant (reprise, tache planifiee,
+ * vit ici plutot que dans le service. Un second appelant (reprise, tache planifiee,
  * test) ne peut pas la contourner en oubliant de la recopier.</p>
  *
  * <p><b>Validation et avoir posés d un seul geste</b> ({@link #valider}) : la base
  * exige par {@code ck_demande_annulation_avoir} qu une demande validee porte son
  * avoir. Transitionner d abord puis rattacher l avoir ensuite produirait, entre les
- * deux ecritures, un etat que le CHECK refuse, l invariant impose donc une seule
+ * deux ecritures, un etat que le CHECK refuse. L invariant impose donc une seule
  * mutation, pas deux.</p>
  *
  * <p>{@code @Version} : la validation est une ressource critique concurrente. Un
@@ -52,7 +52,7 @@ import java.util.UUID;
  * rembourseraient deux fois. Le verrou optimiste fait perdre le second, avant meme
  * que l index unique de l avoir n ait a trancher.</p>
  *
- * <p><b>Perimetre V1 : annulation totale.</b> Aucune ligne n est designee, la
+ * <p><b>Perimetre V1 : annulation totale.</b> Aucune ligne n est designee. La
  * demande porte sur la commande entiere. L annulation partielle par ligne (V2)
  * ajoutera une table de lignes et devra lever l unicite {@code uq_avoir_facture}.</p>
  */

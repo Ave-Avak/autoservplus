@@ -147,7 +147,7 @@ class VersionnageDocumentsIT extends SocleIntegration {
         void publicationAnticipee() {
             // Publier a l avance est la pratique attendue quand un changement de conditions
             // doit etre annonce avant de s appliquer. Sans le filtre sur date_effet, la
-            // nouvelle version prendrait effet a l instant de son insertion : et des
+            // nouvelle version prendrait effet a l instant de son insertion, et des
             // membres accepteraient un texte annonce comme pas encore applicable.
             for (Langue langue : Langue.values()) {
                 jdbc.update("""
@@ -197,7 +197,7 @@ class VersionnageDocumentsIT extends SocleIntegration {
         void versionRemplacee() {
             // Le point que V35 met a l epreuve : apres publication de CGV-2026-02, la preuve
             // d un membre qui a accepte 2026-01 doit toujours pouvoir montrer CE qu il a
-            // accepte : donc l ancienne redaction, celle qui annoncait sept ans.
+            // accepte, donc l ancienne redaction, celle qui annoncait sept ans.
             TexteArchiveVue vue = versionsDocuments
                     .archive(TypeDocumentVersionne.CGV, "CGV-2026-01", Locale.FRENCH)
                     .orElseThrow();

@@ -288,7 +288,7 @@ class RetractationIT extends SocleIntegration {
         DemandeAnnulation demande = demanderAnnulation(commande);
 
         // Defense en profondeur : la protection d URL /admin/** n est pas la seule
-        // garde : l appel direct au service est refuse lui aussi.
+        // garde, l appel direct au service est refuse lui aussi.
         assertThatThrownBy(() -> executerEn(MARIE, MEMBRE, () ->
                 adminRetractations.valider(demande.getReference(), "marie@exemple.be")))
                 .isInstanceOf(AccessDeniedException.class);
@@ -347,7 +347,7 @@ class RetractationIT extends SocleIntegration {
 
     /**
      * L administrateur de seed (V10) : il existe reellement en base, ce qui compte,
-     * la demande stocke son decideur en cle etrangere, un principal purement fictif
+     * car la demande stocke son decideur en cle etrangere, et un principal purement fictif
      * ne suffirait pas.
      */
     private void validerParAdmin(UUID referenceDemande) {
@@ -368,7 +368,7 @@ class RetractationIT extends SocleIntegration {
      * a la fin de chaque requete MockMvc, si bien qu un appel de service direct
      * effectue apres un {@code mvc.perform} ne trouverait plus d authentification et
      * echouerait sur le {@code @PreAuthorize} du service. Poser le contexte ici rend
-     * chaque appel independant de ce qui le precede : et permet d exercer les deux
+     * chaque appel independant de ce qui le precede, et permet d exercer les deux
      * roles dans un meme test.</p>
      */
     private <T> T executerEn(String email, String role, java.util.function.Supplier<T> action) {

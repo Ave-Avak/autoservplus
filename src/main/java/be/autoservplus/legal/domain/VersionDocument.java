@@ -23,7 +23,7 @@ import java.time.Instant;
  *
  * <p><b>Archive, pas contenu editorial.</b> Une ligne s ecrit une fois et ne se
  * modifie jamais : aucun setter, aucun soft delete. Corriger une clause ne se fait pas
- * en retouchant cette ligne mais en publiant une version de plus : sinon les preuves
+ * en retouchant cette ligne mais en publiant une version de plus, sinon les preuves
  * d acceptation deja enregistrees se mettraient a designer un texte que personne n a
  * lu, ce qui est exactement le defaut que F24 corrige.</p>
  *

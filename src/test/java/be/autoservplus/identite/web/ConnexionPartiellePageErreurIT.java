@@ -128,8 +128,8 @@ class ConnexionPartiellePageErreurIT extends SocleIntegration {
         assertThat(conteneur.body()).contains("<main id=\"contenu\">");
         sansTraceDeConnexion(conteneur);
 
-        // Contre-epreuve : la connexion aboutie, l en-tete montre bien ces liens,
-        // l assertion sait donc les voir.
+        // Contre-epreuve : la connexion aboutie, l en-tete montre bien ces liens.
+        // L assertion sait donc les voir.
         HttpResponse<String> aboutie = envoyer("/connexion/etape/second-facteur",
                 csrf(lire("/connexion/etape/second-facteur")),
                 "code", Totp.code(SECRET, Totp.pasDe(horloge.instant())));

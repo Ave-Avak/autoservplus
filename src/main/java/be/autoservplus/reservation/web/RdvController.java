@@ -125,7 +125,7 @@ public class RdvController {
             // Creneau indisponible (RM-08) et tout refus metier futur : sous le champ
             // date, comme l ancien default. Le routage par TYPE remplace le switch sur
             // getCodeRegle() : plus de NPE possible sur un code null, et le case
-            // « RM-06 -> vehicule » disparait : aucune exception ne portait ce code,
+            // « RM-06 -> vehicule » disparait. Aucune exception ne portait ce code,
             // le controle d appartenance du vehicule repond deja 404 en amont.
             erreurs.addError(new FieldError("formulaire", "debut", e.getMessage()));
             return retourFormulaire(membre, formulaire, modele);

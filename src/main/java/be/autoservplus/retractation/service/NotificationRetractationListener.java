@@ -27,7 +27,7 @@ import org.springframework.transaction.event.TransactionalEventListener;
  *
  * <p>Ce patron, et non l envoi inline d {@code AdminRdvService} : l administrateur
  * doit voir sa validation reussir meme si le fournisseur de courriel est en panne,
- * et cette transaction-ci ecrit beaucoup (avoir, commande, demande, paiement), un
+ * et cette transaction-ci ecrit beaucoup (avoir, commande, demande, paiement). Un
  * envoi inline qui echouerait dans la transaction risquerait de l emporter avec lui.
  * La divergence entre les deux patrons est documentee au projet. C est le cas
  * ecrivant qui justifie AFTER_COMMIT.</p>

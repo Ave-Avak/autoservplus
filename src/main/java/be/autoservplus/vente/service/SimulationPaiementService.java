@@ -17,7 +17,7 @@ import java.util.UUID;
  *
  * <p><b>Pourquoi cette classe existe.</b> Le bouchon rendait depuis toujours une
  * URL {@code /paiement-fictif/{reference}} vers laquelle le controleur de commande
- * redirige : mais rien ne servait cette adresse. Le membre qui cliquait
+ * redirige, mais rien ne servait cette adresse. Le membre qui cliquait
  * « Procéder au paiement » tombait sur un 404, et la chaine marchande n etait
  * achevable que par un appel HTTP direct au webhook, ce que seuls les tests
  * faisaient. Le parcours etait donc vert en integration et impraticable a

@@ -190,7 +190,7 @@ public class RetractationService {
      * revient exactement a « cette intervention est terminee ».</p>
      *
      * <p><b>Limites du critere</b>, a assumer : il repose sur la declaration du garage,
-     * qui marque lui-meme TERMINEE, le systeme ne constate pas l execution, il
+     * qui marque lui-meme TERMINEE. Le systeme ne constate pas l execution, il
      * l enregistre. Et une commande de services SANS dossier ouvert reste retractable,
      * ce qui est le comportement voulu : rien ne prouve qu on a travaille.</p>
      *

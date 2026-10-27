@@ -11,7 +11,7 @@ package be.autoservplus.common.exception;
  *
  * <p><b>Ce qu il remplace.</b> Le projet a un temps detourne le <i>code de regle</i> en
  * cle de traduction, ce qui a produit des pseudo-codes {@code RM-} qu aucune exigence
- * du cahier des charges ne definissait, le Javadoc de {@link RegleMetierException}
+ * du cahier des charges ne definissait. Le Javadoc de {@link RegleMetierException}
  * l interdit explicitement. Un code de tracabilite et une cle de traduction se
  * ressemblent, ce sont deux chaines courtes qui servent a router, et c est exactement
  * pourquoi ils se confondaient. Les separer par le <b>type</b> plutot que par la

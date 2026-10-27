@@ -22,7 +22,7 @@ import java.util.UUID;
  * Export d un rendez-vous confirme vers l agenda du membre (F38, RFC 5545).
  *
  * <p>Perimetre V1 : un <b>fichier</b> par rendez-vous. L URL d abonnement recurrent
- * evoquee au cahier des charges est renvoyee en V2, elle suppose un jeton d acces
+ * evoquee au cahier des charges est renvoyee en V2. Elle suppose un jeton d acces
  * porte par l adresse elle-meme, puisqu un client de calendrier ne s authentifie
  * pas : c est un sujet de securite entier, pas une variante du meme ecran.</p>
  *
@@ -78,7 +78,7 @@ public class ExportAgendaService {
     /**
      * Fichier joint au courriel de confirmation. La langue est celle enregistree au
      * profil du membre et non celle de l administrateur qui confirme : c est le
-     * meme choix que pour les factures PDF, et pour la meme raison, le document
+     * meme choix que pour les factures PDF, et pour la meme raison. Le document
      * part chez le membre.
      *
      * <p><b>Deliberement SANS {@code @Transactional}</b>, contrairement a la methode

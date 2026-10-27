@@ -43,7 +43,7 @@ import java.time.Instant;
  * <p>Le formulaire porte l horodatage de son affichage. Une soumission plus rapide que
  * {@link #DELAI_MINIMAL} n a pas ete saisie par un humain. Le seuil est volontairement
  * bas : il s agit d ecarter la soumission instantanee, pas de mesurer une vitesse de
- * frappe, un utilisateur rapide, ou qui colle des valeurs depuis un gestionnaire de
+ * frappe. Un utilisateur rapide, ou qui colle des valeurs depuis un gestionnaire de
  * mots de passe, ne doit jamais etre refuse.</p>
  *
  * <p>L horodatage n est ni signe ni chiffre : le falsifier est trivial. Le signer

@@ -16,7 +16,7 @@ import java.util.Map;
  * contenu admet aujourd hui {@code img-src data:}, mais l enrolement n en depend pas :
  * resserrer un jour cette directive ne casserait rien. Les attributs {@code fill} sont des
  * attributs de presentation, que {@code style-src 'self'} ne bloque pas. Aucun service
- * externe n est appele, l URI encodee porte le secret.</p>
+ * externe n est appele. L URI encodee porte le secret.</p>
  *
  * <p><b>Fond blanc explicite</b> : en mode sombre, un QR code sans fond se dessinerait
  * noir sur sombre, et les applications ne le liraient plus.</p>

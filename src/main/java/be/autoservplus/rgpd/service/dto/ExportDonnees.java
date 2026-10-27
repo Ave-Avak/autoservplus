@@ -178,7 +178,7 @@ public record ExportDonnees(
 
     /**
      * Panier en cours du membre : des articles choisis, jamais commandes, mais
-     * <b>detenus</b>, l article 15 ne s arrete pas aux donnees qui ont abouti a une
+     * <b>detenus</b>, car l article 15 ne s arrete pas aux donnees qui ont abouti a une
      * transaction. C est aussi la seule section de l export qui puisse encore
      * changer d une minute a l autre, d ou l horodatage du document en tete de
      * fichier.
@@ -188,7 +188,7 @@ public record ExportDonnees(
      * ambigue. Meme raisonnement que les notes d {@link Exclusions}.
      *
      * <p>Les totaux viennent de l entite ({@code RM-30} : somme des montants de
-     * ligne deja arrondis, jamais un calcul sur un total global), les recalculer
+     * ligne deja arrondis, jamais un calcul sur un total global). Les recalculer
      * ici creerait une seconde implementation d une regle delicate.
      */
     public record PanierExport(

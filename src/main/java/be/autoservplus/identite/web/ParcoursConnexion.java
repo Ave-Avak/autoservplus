@@ -38,7 +38,7 @@ import java.util.function.Function;
  * pendant qu une connexion est en cours change la suite de cette connexion.</p>
  *
  * <p><b>A l aboutissement</b> : nouvel identifiant de session (protection contre la
- * fixation, l identifiant connu d un tiers pendant l etape partielle ne doit pas
+ * fixation : l identifiant connu d un tiers pendant l etape partielle ne doit pas
  * devenir celui d une session complete), compteurs remis a zero, langue du profil
  * appliquee.</p>
  */

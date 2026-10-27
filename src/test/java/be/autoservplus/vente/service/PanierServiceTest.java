@@ -367,7 +367,7 @@ class PanierServiceTest {
          *                TVA = 31,83 - 30,03 = 1,80  (taux 6 %)
          * Plaquettes   : 19,99 x 2 = 39,98 HTVA. TVAC = 39,98 x 1,21 = 48,3758 -> 48,38.
          *                TVA = 48,38 - 39,98 = 8,40  (taux 21 %)
-         * Totaux       : HTVA 70,01. TVA 10,20. TVAC 80,21
+         * Totaux       : HTVA 70,01, TVA 10,20, TVAC 80,21
          * </pre>
          * Un calcul « TVA sur le total » serait faux ici : aucun taux unique ne
          * transforme 70,01 en 80,21 (cela ferait ~14,57 %). La somme ligne a ligne

@@ -15,7 +15,7 @@ import java.util.Objects;
  * Preuve horodatee de l acceptation d un document par un utilisateur.
  *
  * <p><b>Append-only</b> : une ligne s ecrit, ne se modifie jamais et ne se
- * supprime jamais, c est une preuve (pas de soft delete en base, aucun setter
+ * supprime jamais. C est une preuve (pas de soft delete en base, aucun setter
  * ici). Un refus ou un retrait s exprime par une <i>nouvelle</i> ligne
  * {@code accorde = false}, jamais en retouchant celle-ci : voir la fabrique
  * {@link #decision}, employee par le consentement aux cookies (F25) ou l on
@@ -54,7 +54,7 @@ public class Consentement {
      * <b>resolue en base</b> par {@code VersionsDocumentsService}, et elle designe une
      * ligne reelle de {@code version_document} dont le texte est archive langue par
      * langue. C est ce qui manquait : la colonne existait depuis le socle, mais rien ne
-     * reliait le numero qu elle porte au texte qu il designe, une preuve pouvait dire
+     * reliait le numero qu elle porte au texte qu il designe. Une preuve pouvait dire
      * QU ON avait accepte, jamais QUOI.</p>
      *
      * <p>Aucune FK vers {@code version_document} : la preuve doit survivre a tout,

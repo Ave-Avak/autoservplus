@@ -91,7 +91,7 @@ class TurnstileIT extends SocleIntegration {
 
     /**
      * <b>Le defaut que ce cas verrouille.</b> {@code @ConditionalOnProperty} considere
-     * une propriete presente des qu elle est declaree, meme vide : or
+     * une propriete presente des qu elle est declaree, meme vide. Or
      * {@code application.yml} la declare avec une valeur par defaut vide. Le
      * verificateur naissait donc sur TOUT deploiement, avec une cle vide, et refusait
      * chaque soumission en silence : inscription, renvoi de verification et mot de

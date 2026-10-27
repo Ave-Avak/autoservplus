@@ -27,7 +27,7 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
     /**
      * Verrou pessimiste (SELECT FOR UPDATE) : la table commande n a pas de colonne
      * version, et la course webhook / job d expiration se resout en serialisant les
-     * deux ecritures, le second lecteur voit le statut deja change et sa garde
+     * deux ecritures. Le second lecteur voit le statut deja change et sa garde
      * d entite tranche, au lieu d ecraser silencieusement l etat de l autre.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)

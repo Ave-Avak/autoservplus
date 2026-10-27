@@ -17,7 +17,7 @@ import java.util.Locale;
  * <p>Un {@code @ControllerAdvice} <b>sans restriction de type</b>, contrairement aux
  * compteurs de panier et de notifications qui sont volontairement bornes : ceux-la
  * n ont de sens que dans un parcours, alors que le choix de la langue doit etre
- * offert sur chaque page. Un ecran oublie serait un cul-de-sac linguistique, on
+ * offert sur chaque page. Un ecran oublie serait un cul-de-sac linguistique. On
  * pourrait y arriver en neerlandais et ne plus pouvoir en changer.</p>
  *
  * <p>Les adresses sont construites <b>au serveur</b> et non ecrites dans le gabarit,
@@ -60,8 +60,8 @@ public class SelecteurLangueAdvice {
     /**
      * Page courante avec le parametre de langue remplace. Le parametre est
      * <b>remplace</b> et non ajoute : sans cela, trois clics successifs produiraient
-     * {@code ?lang=fr&lang=nl&lang=en}, dont seule la premiere valeur serait lue,
-     * le selecteur cesserait de fonctionner apres le premier usage.
+     * {@code ?lang=fr&lang=nl&lang=en}, dont seule la premiere valeur serait lue.
+     * Le selecteur cesserait de fonctionner apres le premier usage.
      */
     private String pageCouranteEn(HttpServletRequest requete, String code) {
         try {

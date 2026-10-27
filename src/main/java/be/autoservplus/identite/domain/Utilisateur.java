@@ -305,7 +305,7 @@ public class Utilisateur extends BaseEntity {
      * statut, qui releve de l administration. Le type d utilisateur, qui ne change
      * jamais.</p>
      *
-     * <p>L adresse postale est <b>complete ou vide</b>, la garde est portee par le
+     * <p>L adresse postale est <b>complete ou vide</b>. La garde est portee par le
      * formulaire, qui peut dire a l utilisateur ce qui manque. L entite accepte les
      * deux etats parce que le schema les accepte : les colonnes sont nullables depuis
      * le socle et des comptes anciens n ont jamais renseigne d adresse.</p>
@@ -380,7 +380,7 @@ public class Utilisateur extends BaseEntity {
      * son vrai nom, qui ne se traduit pas. Utile partout ou le document a une langue
      * propre : une facture est emise dans celle du client, pas dans celle de la session
      * qui la telecharge, et le PDF regenere apres anonymisation doit suivre la meme
-     * regle, un client neerlandophone ne doit pas recevoir « Client supprime ».</p>
+     * regle. Un client neerlandophone ne doit pas recevoir « Client supprime ».</p>
      *
      * <p>Le {@link MessageSource} arrive en <b>parametre</b> et non en champ : l entite
      * reste un POJO, sans dependance vers le contexte Spring. C est l appelant, qui
@@ -620,7 +620,7 @@ public class Utilisateur extends BaseEntity {
 
     /**
      * Anti-rejeu : un pas inferieur ou egal au dernier accepte est refuse ici aussi, et
-     * pas seulement par le calcul qui l a trouve, l invariant appartient au compte.
+     * pas seulement par le calcul qui l a trouve. L invariant appartient au compte.
      */
     public void accepterPas(long pas) {
         if (!secondFacteurActif()) {

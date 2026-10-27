@@ -378,7 +378,7 @@ class ExportDonneesServiceTest {
             when(factures.pourMembre(EMAIL)).thenReturn(List.of(facture));
 
             // L export est un document de donnees : il dit qu un PDF est conserve,
-            // il ne le transporte pas : ni le fichier, ni son emplacement sur le
+            // il ne le transporte pas, ni le fichier, ni son emplacement sur le
             // serveur, qui ne decrit pas la personne.
             ExportDonnees.FactureExport exportee =
                     service.assembler(EMAIL).donneesPersonnelles().factures().get(0);

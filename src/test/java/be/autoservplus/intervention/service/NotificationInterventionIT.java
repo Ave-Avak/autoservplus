@@ -48,7 +48,7 @@ import be.autoservplus.support.SocleIntegration;
  *
  * <p>Volontairement <b>sans</b> {@code @Transactional} de classe, contrairement aux
  * autres IT : envelopper les tests dans une transaction rollbackee empecherait tout
- * commit, et le listener {@code AFTER_COMMIT} ne se declencherait jamais, le contrat
+ * commit, et le listener {@code AFTER_COMMIT} ne se declencherait jamais. Le contrat
  * teste est precisement le commit. Consequence : les donnees inserees restent en base
  * du conteneur (jetable, un par classe), d ou les fixtures a suffixe unique.</p>
  */

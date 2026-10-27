@@ -17,7 +17,7 @@ import java.util.Objects;
  *
  * <p>Journal append-only : une ligne est ecrite a chaque transition, dans la meme
  * transaction que la transition elle-meme, et n est jamais modifiee ensuite. Pas de
- * suppression logique, rien ne se « supprime » dans un journal (meme precedent que
+ * suppression logique. Rien ne se « supprime » dans un journal (meme precedent que
  * {@link LigneIntervention}, qui ne porte pas non plus de {@code deleted_at}).</p>
  *
  * <p>{@code statutAvant} est {@code null} pour la ligne de creation : le dossier n a

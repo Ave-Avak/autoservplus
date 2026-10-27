@@ -144,7 +144,7 @@ public class Vehicule extends BaseEntity {
      * {@code ON DELETE RESTRICT}). La plaque est une donnee a caractere personnel :
      * elle identifie indirectement une personne aupres de la DIV. Le numero de
      * chassis en est une autre, et le kilometrage renseigne sur les habitudes de
-     * deplacement, les trois partent.</p>
+     * deplacement. Les trois partent.</p>
      *
      * <p><b>Marque, modele, motorisation et annee restent</b> : ils decrivent un
      * objet technique, ne designent personne, et sont ce qui rend l historique encore

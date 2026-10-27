@@ -8,7 +8,7 @@ import java.util.List;
  *
  * @param cleJour  cle i18n du nom du jour ({@code vitrine.jour.lundi} ...). Le nom
  *                 n est pas resolu ici : la vue est construite par le service, qui
- *                 ne connait pas la langue d affichage, c est le gabarit, donc la
+ *                 ne connait pas la langue d affichage. C est le gabarit, donc la
  *                 locale de la requete, qui tranche.
  * @param plages   intervalles horaires du jour, deja formates {@code HH:mm}, dans
  *                 l ordre. Une journee peut en compter plusieurs (matin,

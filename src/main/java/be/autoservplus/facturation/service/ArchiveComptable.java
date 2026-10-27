@@ -29,12 +29,12 @@ import java.util.regex.Pattern;
  * <p><b>Dix et non sept</b> : le delai etait de sept ans jusqu a la loi du 20 novembre
  * 2022, qui l a porte a dix pour les taxes devenues exigibles a partir du 1er janvier
  * 2023. Il court a compter du 1er janvier de l annee qui suit celle de la facture, et
- * non de sa date d emission, un mois de decembre et le janvier suivant ne sortent donc
+ * non de sa date d emission. Un mois de decembre et le janvier suivant ne sortent donc
  * pas de l archive la meme annee.</p>
  *
  * <p>Racine configurable ({@code autoservplus.facturation.archive}), jamais en dur :
  * en production elle designe un volume sauvegarde, distinct du repertoire de
- * deploiement, une archive de dix ans ne peut pas disparaitre avec un
+ * deploiement. Une archive de dix ans ne peut pas disparaitre avec un
  * redeploiement.</p>
  *
  * <p>Le chemin stocke en base est <b>relatif</b> a cette racine : deplacer l archive
@@ -114,7 +114,7 @@ public class ArchiveComptable {
      * Relit un document archive.
      *
      * @return le PDF, ou {@link Optional#empty()} si le fichier a disparu de
-     *         l archive, le service regenere alors plutot que d echouer : mieux
+     *         l archive. Le service regenere alors plutot que d echouer : mieux
      *         vaut un document reconstruit qu un client sans sa facture
      */
     public Optional<byte[]> lire(String cheminRelatif) {

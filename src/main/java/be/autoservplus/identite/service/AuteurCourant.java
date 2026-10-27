@@ -14,7 +14,7 @@ import org.springframework.stereotype.Component;
  * de requete : un identifiant d auteur soumis par le client serait falsifiable, et un
  * journal falsifiable ne vaut rien. Memes gardes que
  * {@code JpaAuditingConfig#auditorProvider}, qui alimente {@code created_by} avec le
- * meme principal. La difference est le niveau de detail, l audit se contente du nom,
+ * meme principal. La difference est le niveau de detail : l audit se contente du nom,
  * un journal metier remonte a l entite pour poser la FK.</p>
  *
  * <p>Retourne {@code null} pour un traitement sans utilisateur authentifie (tache

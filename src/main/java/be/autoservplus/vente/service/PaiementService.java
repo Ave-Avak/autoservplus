@@ -41,7 +41,7 @@ import java.util.UUID;
  * redevient pas ANNULEE, une ANNULEE ne devient pas PAYEE.</p>
  *
  * <p>Pas de {@code @PreAuthorize} de classe : {@link #traiterNotification} est
- * appelee par le prestataire, sans session, seule l initiation, geste du
+ * appelee par le prestataire, sans session. Seule l initiation, geste du
  * membre, exige l authentification.</p>
  */
 @Service
@@ -110,7 +110,8 @@ public class PaiementService {
      * commande est payee a l issue de ce constat.
      *
      * <p><b>Le retour n est PAS une preuve de paiement</b>, et rien ici ne le traite
-     * comme tel. Le prestataire y renvoie le membre quelle que soit l issue (* y compris apres un abandon pur et simple) et l adresse est une URL que
+     * comme tel. Le prestataire y renvoie le membre quelle que soit l issue (y compris
+     * apres un abandon pur et simple) et l adresse est une URL que
      * n importe qui peut ouvrir. Ce qui tranche reste ce qui tranchait deja : le
      * statut RELU chez le prestataire par {@link #traiterNotification}. Le retour ne
      * fait que declencher cette relecture plus tot.</p>
@@ -120,7 +121,7 @@ public class PaiementService {
      * demandee quand le site n est pas joignable depuis l exterieur, ce qui est le cas
      * de tout poste de developpement. Sans cette reconciliation, la commande resterait
      * EN_ATTENTE_PAIEMENT apres un paiement reussi, puis serait annulee par le job
-     * RM-21 au bout de trente minutes, un encaissement reel sans commande en face.</p>
+     * RM-21 au bout de trente minutes, soit un encaissement reel sans commande en face.</p>
      *
      * <p><b>Aucun risque de double effet</b> : l appel emprunte exactement le chemin du
      * webhook, dont l idempotence vient de l etat sous verrou pessimiste. Webhook et
@@ -170,7 +171,7 @@ public class PaiementService {
      * l idempotence par l etat.
      *
      * @return ce que la relecture a constate et ce qu elle a change, pour que chacun
-     *         des deux declencheurs, retour du membre, notification serveur a serveur :
+     *         des deux declencheurs (retour du membre, notification serveur a serveur)
      *         redige SA ligne de journal. Rendre l information plutot que de l ecrire
      *         ici est ce qui permet de distinguer les deux chemins, que
      *         {@code docs/deploiement.md} demande de voir arriver tour a tour. Une
@@ -184,7 +185,7 @@ public class PaiementService {
         // Strategie securite §11 : seul l etat relu chez le prestataire fait foi.
         EtatPaiement etat = prestataire.lireEtat(referencePrestataire);
         // Le moyen arrive dans la meme reponse que le statut, et se pose des qu il est
-        // connu : y compris sur un paiement qui n a pas encore abouti. L entite refuse
+        // connu, y compris sur un paiement qui n a pas encore abouti. L entite refuse
         // de le reecrire, donc un rejeu ne peut pas l alterer.
         paiement.enregistrerMethode(etat.methode());
         StatutPaiement statutAuthentique = etat.statut();
@@ -283,8 +284,8 @@ public class PaiementService {
         List<LignePanier> lignes = commandes.lignesDe(commande);
         List<String> ruptures = new ArrayList<>();
         for (LignePanier ligne : lignes) {
-            // Ceinture et bretelles. lignesDe ne rend deja QUE les lignes de piece :
-            // son JOIN FETCH est une jointure interne : donc ce garde n est pas
+            // Ceinture et bretelles. lignesDe ne rend deja QUE les lignes de piece, car
+            // son JOIN FETCH est une jointure interne. Ce garde n est pas
             // atteint aujourd hui. Il protege d un elargissement futur de la requete,
             // qui ferait sinon lever une NPE sur getPiece() au moment du paiement.
             if (ligne.estService()) {

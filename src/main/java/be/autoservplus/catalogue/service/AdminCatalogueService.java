@@ -47,7 +47,7 @@ import java.util.UUID;
  * lignes de panier, de commande, de RDV et d intervention recopient prix, libelle
  * et taux a leur creation (valeurs figees), le catalogue du jour n a pas voix au
  * chapitre sur l historique. Le service s appuie sur cette recopie, il n a donc
- * aucune precaution supplementaire a prendre ici, l invariant est prouve par
+ * aucune precaution supplementaire a prendre ici. L invariant est prouve par
  * {@code AdminCatalogueServiceIT}.</p>
  *
  * <p>A2/A5 exigent aussi que les modifications soient <b>historisees (qui, quand,
@@ -288,8 +288,8 @@ public class AdminCatalogueService {
 
     /**
      * Supprime definitivement une prestation (A3), sous la garde <b>RM-29</b> : refuse
-     * des qu un historique (reservation, panier, commande, intervention) la reference,
-     * seule la desactivation est alors permise.
+     * des qu un historique (reservation, panier, commande, intervention) la reference.
+     * Seule la desactivation est alors permise.
      *
      * <p>Divergence assumee avec le principe « aucune suppression physique » du socle
      * ({@code BaseEntity}) : pour un element jamais reference, la suppression definitive
@@ -399,7 +399,7 @@ public class AdminCatalogueService {
     /**
      * Photo des champs <b>metier</b> d une prestation, dans l ordre du formulaire.
      * Les colonnes d audit ({@code created_*}, {@code updated_*}) en sont exclues :
-     * elles decrivent l ecriture, pas la decision de gestion, les historiser
+     * elles decrivent l ecriture, pas la decision de gestion. Les historiser
      * reviendrait a journaliser le journal. Le code n y figure pas non plus : identite
      * technique immuable, la modification ne peut pas le changer.
      *

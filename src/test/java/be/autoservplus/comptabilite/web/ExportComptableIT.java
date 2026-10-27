@@ -28,7 +28,7 @@ import be.autoservplus.support.SocleIntegration;
  *
  * <p>Verifie ce qui ne se voit pas a la compilation : les {@code JOIN FETCH}
  * s executent, la reponse porte bien les en-tetes d un telechargement, et les deux
- * gardes tiennent, le fichier contient le nom de tous les clients et le chiffre
+ * gardes tiennent, car le fichier contient le nom de tous les clients et le chiffre
  * d affaires du garage.</p>
  */
 @SpringBootTest

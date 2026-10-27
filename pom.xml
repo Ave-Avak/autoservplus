@@ -89,7 +89,7 @@
         </dependency>
         <!-- QR code d enrolement TOTP, genere cote serveur. Le module core seul : la
              matrice est rendue en SVG inline, sans AWT ni ImageIO (module javase
-             ecarte) et sans aucun service externe, le secret ne quitte pas le
+             ecarte) et sans aucun service externe. Le secret ne quitte pas le
              serveur. Apache-2.0, aucune dependance transitive. -->
         <dependency>
             <groupId>com.google.zxing</groupId>

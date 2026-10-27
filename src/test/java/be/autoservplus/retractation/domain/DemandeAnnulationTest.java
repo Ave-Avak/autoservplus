@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Machine a etats de la demande de retractation (F30, RM-23) : les gardes vivent
- * dans l entite, pas dans le service, un second appelant ne peut pas les
+ * dans l entite, pas dans le service. Un second appelant ne peut pas les
  * contourner en oubliant de les recopier.
  */
 @DisplayName("DemandeAnnulation")

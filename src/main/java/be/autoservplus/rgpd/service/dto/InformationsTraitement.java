@@ -9,7 +9,7 @@ import java.util.List;
  *
  * <p>Ce bloc ne vient <b>pas</b> de la base : il decrit le traitement, pas le
  * dossier du membre. Il est construit a partir du catalogue de cles i18n
- * ({@code rgpd.export.*}) resolu dans la langue du membre, un rappel legal que
+ * ({@code rgpd.export.*}) resolu dans la langue du membre. Un rappel legal que
  * la personne ne comprend pas ne remplit pas son office (article 12 : forme
  * concise, transparente et intelligible).
  *

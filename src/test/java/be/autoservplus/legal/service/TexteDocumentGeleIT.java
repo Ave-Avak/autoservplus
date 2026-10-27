@@ -64,7 +64,7 @@ class TexteDocumentGeleIT extends SocleIntegration {
      * Cles de la famille {@code cookies.} qui ne font PAS partie du texte engageant.
      *
      * <p>Ce sont des commandes et des libelles de navigation. Les geler obligerait a
-     * publier une nouvelle version, donc a redemander son consentement a chaque membre :
+     * publier une nouvelle version, donc a redemander son consentement a chaque membre, et cela
      * parce qu on aurait renomme un bouton. Une redemande sans cause est du bruit, et
      * le bruit finit par etre clique sans etre lu : le consentement y perdrait
      * precisement ce que la manoeuvre pretendait proteger.</p>
@@ -235,7 +235,7 @@ class TexteDocumentGeleIT extends SocleIntegration {
      * <p>La distinction est devenue reelle avec CGV-2026-02 (V35) : le type CGV porte
      * desormais deux versions, dont une retiree du jeu resolvable. Confronter le texte
      * affiche a une version choisie arbitrairement parmi les lignes de la table ferait
-     * echouer ce test au premier changement de redaction : c est-a-dire precisement
+     * echouer ce test au premier changement de redaction, c est-a-dire precisement
      * quand F24 fonctionne. Ce qui doit etre vrai n a jamais ete « il n existe qu une
      * version » mais « le texte servi est celui de la version en vigueur ».</p>
      */

@@ -33,7 +33,7 @@ public interface CompteurAvoirRepository extends JpaRepository<CompteurAvoir, Sh
     /**
      * Cree la ligne de l exercice si elle n existe pas encore, sans jamais echouer
      * sur une course : deux premiers avoirs simultanes d une meme annee passeraient
-     * tous deux par un {@code save}, et le second violerait la cle primaire, une
+     * tous deux par un {@code save}, et le second violerait la cle primaire. Or une
      * violation de contrainte condamne la transaction PostgreSQL entiere, donc
      * l emission. Le {@code ON CONFLICT DO NOTHING} natif absorbe le cas.
      */

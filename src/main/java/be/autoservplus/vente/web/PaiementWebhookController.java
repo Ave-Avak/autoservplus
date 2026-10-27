@@ -18,14 +18,14 @@ import org.springframework.web.bind.annotation.RestController;
  * C est assume par la strategie securite §11 : le payload n est JAMAIS cru,
  * l identifiant sert uniquement a retrouver le paiement et le statut authentique
  * est relu aupres du prestataire par le service. Reponse 200 vide. Reference
- * inconnue : 404. Erreur interne : 500 et le prestataire rejouera, le
+ * inconnue : 404. Erreur interne : 500 et le prestataire rejouera. Le
  * traitement est idempotent, un rejeu est sans double effet.</p>
  *
  * <p><b>Ce controleur n attrape PAS la panne du prestataire, et c est voulu.</b>
  * Partout ailleurs, une {@code PrestataireIndisponibleException} est traduite en
  * message lisible pour ne jamais rompre un parcours humain. Ici, le correspondant
  * est une machine : un 200 rendu alors que le statut n a pas pu etre relu signifie
- * « c est traite » et le prestataire ne rappellera jamais, la commande resterait
+ * « c est traite » et le prestataire ne rappellera jamais. La commande resterait
  * en attente apres un encaissement reel. Le 500 est au contraire le seul moyen de
  * demander un rejeu, et le traitement etant idempotent, ce rejeu est sans risque.
  * Un test verrouille cette asymetrie, qui se lit sinon comme un oubli.</p>

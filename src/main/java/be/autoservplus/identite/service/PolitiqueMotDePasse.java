@@ -22,7 +22,7 @@ import java.nio.charset.StandardCharsets;
  * le service de compromission.</p>
  *
  * <p><b>Le maximum se compte en octets UTF-8 : 72.</b> BCrypt n en lit pas davantage,
- * et la version de Spring Security employee refuse au-dela par une exception, un mot
+ * et la version de Spring Security employee refuse au-dela par une exception. Un mot
  * de passe de cent caracteres passait le formulaire puis echouait au hachage. Une
  * limite en caracteres ne suffit pas : une lettre accentuee occupe deux octets, certains
  * symboles trois ou quatre. Soixante-douze caracteres sans accent restent acceptes, au-

@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Immuabilite d une ligne rattachee a une commande : piece comptable, elle ne se
- * modifie plus et ne se supprime plus, la garde vit dans l ENTITE, pas dans une
+ * modifie plus et ne se supprime plus. La garde vit dans l ENTITE, pas dans une
  * convention d appel. Le scenario adverse est celui de la transaction de
  * conversion : la collection du panier n est pas purgee en session, un appelant y
  * tient donc encore la ligne deplacee. Chaque chemin doit se heurter a la garde.

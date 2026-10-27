@@ -25,7 +25,7 @@ import java.util.Locale;
  * (V25, une ligne par champ reellement change) et les transitions d intervention
  * (V23, append-only, ecrites dans la transaction de chaque transition). Ni l une ni
  * l autre n est modifiable depuis l application, et ce service n expose aucune
- * ecriture, un journal qu on peut retoucher ne prouve rien.</p>
+ * ecriture. Un journal qu on peut retoucher ne prouve rien.</p>
  *
  * <p>{@code @PreAuthorize} de classe en defense en profondeur : la protection d URL
  * {@code /admin/**} filtre deja le role, le service refuse en second. Le journal

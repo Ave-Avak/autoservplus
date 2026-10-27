@@ -303,7 +303,7 @@ public class Intervention extends BaseEntity {
      * reste la regle du commentaire admin et du retrait de ligne. Trois etats
      * editables perdent donc le droit d ajout, chacun pour une raison propre :</p>
      * <ul>
-     *   <li>PLANIFIEE : rien n a commence. C etait le trou de RM-15, un ajout ici
+     *   <li>PLANIFIEE : rien n a commence. C etait le trou de RM-15 : un ajout ici
      *       echappait au controle de seuil (voir {@link #appliquerSeuilDepassement}),
      *       et le devis pouvait grossir sans que le membre ne soit jamais consulte.</li>
      *   <li>SUSPENDUE : le travail est a l arret, le garage reprend d abord.</li>

@@ -156,7 +156,7 @@ public class LimiteurDemandesCourriel {
 
     /**
      * Fenetre reellement glissante : les horodatages sortis de la fenetre sont purges
-     * a chaque passage, et l entree disparait quand elle se vide, c est ce qui borne
+     * a chaque passage, et l entree disparait quand elle se vide. C est ce qui borne
      * la carte en regime normal, le plafond dur n etant qu un filet. Une fenetre fixe
      * remise a zero d un coup laisserait passer deux fois le plafond a cheval sur deux
      * periodes.

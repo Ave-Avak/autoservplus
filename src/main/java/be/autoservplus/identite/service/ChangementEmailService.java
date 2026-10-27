@@ -23,7 +23,8 @@ import java.util.Locale;
 /**
  * Changement d adresse de courriel avec verification prealable (CdC 5.2.2).
  *
- * <p><b>L adresse ne bascule qu une fois la nouvelle prouvee.</b> L alternative (* appliquer tout de suite, verifier ensuite) enferme hors de son compte tout membre
+ * <p><b>L adresse ne bascule qu une fois la nouvelle prouvee.</b> L alternative
+ * (appliquer tout de suite, verifier ensuite) enferme hors de son compte tout membre
  * qui se trompe d une lettre : l adresse en base ne lui appartient plus, la
  * reinitialisation de mot de passe part vers une boite qui n existe pas, et plus rien
  * ne le rattache a sa ligne. L erreur de saisie n est pas un cas rare, c est le cas
@@ -178,7 +179,7 @@ public class ChangementEmailService {
 
         // Revalidation obligatoire : l index partiel reserve l adresse contre une autre
         // DEMANDE, pas contre une INSCRIPTION intervenue depuis. Sans ce controle, la
-        // bascule echouerait sur uq_utilisateur_email au flush : c est-a-dire par une
+        // bascule echouerait sur uq_utilisateur_email au flush, c est-a-dire par une
         // erreur technique, au pire moment et sans message exploitable.
         if (repository.existsByEmailIgnoreCase(membre.getEmailEnAttente())) {
             membre.annulerChangementEmail();

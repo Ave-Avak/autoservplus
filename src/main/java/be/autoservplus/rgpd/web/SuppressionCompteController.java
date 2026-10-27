@@ -102,7 +102,7 @@ public class SuppressionCompteController {
 
     /**
      * Page publique de confirmation. Publique par necessite : a l instant ou elle
-     * s affiche, la session vient d etre invalidee et le compte n existe plus, une
+     * s affiche, la session vient d etre invalidee et le compte n existe plus. Une
      * page authentifiee renverrait vers la connexion, avec un formulaire que plus
      * aucun identifiant ne satisfait.
      */

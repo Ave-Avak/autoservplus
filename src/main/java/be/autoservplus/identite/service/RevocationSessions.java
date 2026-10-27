@@ -69,7 +69,7 @@ public class RevocationSessions {
             }
             // false : les sessions deja expirees sont incluses. Les exclure ferait
             // dependre le resultat d un menage asynchrone, donc le rendrait variable
-            // d une execution a l autre. expireNow() sur une session deja expiree est
+            // d une execution a l autre. Appeler expireNow() sur une session deja expiree est
             // sans effet.
             List<SessionInformation> sessions = registre.getAllSessions(principal, false);
             for (SessionInformation session : sessions) {

@@ -34,7 +34,7 @@ COPY src/ src/
 
 # Tests ignores volontairement : ils exigent Docker (Testcontainers), indisponible
 # dans un conteneur de build. C'est l'integration continue qui execute « verify ».
-# construire l'image ne doit pas etre une seconde execution partielle de la suite.
+# Construire l'image ne doit pas etre une seconde execution partielle de la suite.
 RUN ./mvnw -B -q package -DskipTests
 
 # ---------------------------------------------------------------------------------

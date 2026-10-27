@@ -112,8 +112,8 @@ public class IndicateursRepository {
      *
      * <p><b>Lu sur les lignes d intervention, pas sur le panier.</b> C est la seule
      * source possible : {@code ligne_panier.service_id} existe au schema mais reste
-     * volontairement non mappe tant que F12 (services au panier) n est pas livre,
-     * aucune prestation ne transite donc par la vente en ligne. Le classement porte sur
+     * volontairement non mappe tant que F12 (services au panier) n est pas livre.
+     * Aucune prestation ne transite donc par la vente en ligne. Le classement porte sur
      * ce que l atelier a reellement execute.</p>
      *
      * <p>Borne sur {@code finReelle} : une prestation compte quand elle est faite, pas

@@ -136,7 +136,7 @@ public class InterventionService {
      * <p><b>Le vehicule est choisi par le garage</b> : {@code intervention.vehicule_id}
      * est {@code NOT NULL} et une prestation achetee en ligne n est rattachee a aucun
      * vehicule au moment de l achat. Le vehicule doit appartenir au titulaire de la
-     * commande : sinon on creerait un dossier d atelier sur la voiture d un tiers.</p>
+     * commande, sinon on creerait un dossier d atelier sur la voiture d un tiers.</p>
      *
      * @throws RegleMetierException commande non payee, sans ligne de service, ou
      *                              vehicule n appartenant pas au titulaire
@@ -252,7 +252,7 @@ public class InterventionService {
         LigneIntervention ligne = it.ajouterLigneMainOeuvre(prestation, quantite,
                 prestation.getPrixHtva(), prestation.getTauxTva());
         // La bascule RM-15 est une transition comme une autre : si l entite a change
-        // d etat d elle-meme, la chronologie (F17) le consigne : sinon l historique
+        // d etat d elle-meme, la chronologie (F17) le consigne, sinon l historique
         // aurait des trous (un EN_COURS -> EN_COURS apparent) et perdrait sa coherence.
         if (it.getStatut() != avant) {
             historiser(it, avant, it.getStatut(), null);

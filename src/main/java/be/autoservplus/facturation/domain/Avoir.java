@@ -43,7 +43,7 @@ import java.util.UUID;
  * correction. L entite n herite donc pas de {@code BaseEntity}, qui porterait
  * {@code deleted_at}. Elle est immuable apres emission, defendue a deux etages :
  * {@code updatable = false} au mapping, {@code tg_avoir_immuable} (V27) en base.
- * Seul {@code cheminPdf} bouge, le document est archive apres coup, sans que son
+ * Seul {@code cheminPdf} bouge. Le document est archive apres coup, sans que son
  * contenu comptable change.</p>
  *
  * <p><b>Motif</b> : stocke sous une forme stable et non traduite (le nom du motif

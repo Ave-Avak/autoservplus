@@ -65,7 +65,7 @@ public class AvoirService {
      *
      * <p>Les montants ne sont pas passes en parametre : ils sont ceux de la facture,
      * lus d elle. Laisser l appelant les fournir ouvrirait la porte a un avoir qui
-     * n annule pas exactement la facture qu il pretend corriger : precisement
+     * n annule pas exactement la facture qu il pretend corriger, precisement
      * l erreur qu un controle de TVA cherche.</p>
      *
      * @param motif motif legal retenu, sous forme stable et non traduite
