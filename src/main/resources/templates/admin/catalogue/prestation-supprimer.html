@@ -32,7 +32,7 @@
 
     <!-- RM-29 : le systeme detecte le cas et ne propose QUE l'action permise.
          Suppression definitive apres confirmation si zero reference d'historique,
-         desactivation (RM-28) sinon — jamais les deux boutons. -->
+         desactivation (RM-28) sinon : jamais les deux boutons. -->
     <div th:if="${proposition.suppressionPossible()}">
         <p th:text="#{admin.catalogue.supprimer.question}">
             Aucun historique ne référence cet élément : le supprimer définitivement ?</p>

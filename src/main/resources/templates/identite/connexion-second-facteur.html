@@ -26,8 +26,8 @@
     <form class="formulaire" th:action="@{/connexion/etape/second-facteur}" method="post">
         <div class="champ">
             <label for="code" th:text="#{connexion.etape.second-facteur.code}">Code de vérification</label>
-            <!--/* one-time-code : le navigateur et le téléphone proposent le code reçu ;
-                 numeric : clavier à chiffres sur mobile. Sept caractères pour l'espace
+            <!--/* one-time-code : le navigateur et le téléphone proposent le code reçu.
+                 Avec numeric, le mobile affiche un clavier à chiffres. Sept caractères pour l'espace
                  que certaines applications affichent au milieu du code. */-->
             <input type="text" id="code" name="code" autocomplete="one-time-code"
                    inputmode="numeric" maxlength="7" required autofocus>

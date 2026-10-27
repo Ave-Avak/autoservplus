@@ -6,11 +6,11 @@
 <!--
   Bandeau de consentement aux cookies (F25) et lien permanent de gestion.
 
-  Un seul point d'insertion par page — <div th:replace="~{fragments/cookies :: bandeau}">
-  juste avant </body> — porte les deux, parce que le pied de page n'a pas la même
+  Un seul point d'insertion par page (<div th:replace="~{fragments/cookies :: bandeau}">
+  juste avant </body>) porte les deux, parce que le pied de page n'a pas la même
   structure d'un écran à l'autre : depuis la suppression de layout/base.html, chaque
   template recopie son propre <footer>. Greffer le lien dans quarante-cinq pieds de
-  page différents multiplierait les variantes ; le rattacher au bandeau n'en demande
+  page différents multiplierait les variantes. Le rattacher au bandeau n'en demande
   qu'une, visuellement rendue comme la continuation du pied par la classe .pied.
 
   Aucun JavaScript : le bandeau est un formulaire, « Personnaliser » un <details>
@@ -70,7 +70,7 @@
 <th:block th:fragment="categories">
 
     <!-- Strictement nécessaires : présentés, jamais négociables. La case est cochée
-         et désactivée, et le formulaire ne lit aucun paramètre pour eux — l'état
+         et désactivée, et le formulaire ne lit aucun paramètre pour eux : l'état
          affiché ne peut donc pas diverger de l'état réel. -->
     <fieldset class="cookies-categorie">
         <legend th:text="#{cookies.necessaires.nom}">Strictement nécessaires</legend>
@@ -85,7 +85,7 @@
     </fieldset>
 
     <!-- Optionnels : décochés tant qu'aucun choix n'a été exprimé. Aucune case n'est
-         pré-cochée — un consentement supposé n'est pas un consentement. -->
+         pré-cochée : un consentement supposé n'est pas un consentement. -->
     <fieldset class="cookies-categorie">
         <legend th:text="#{cookies.analytique.nom}">Mesure d'audience</legend>
         <label>

@@ -76,8 +76,8 @@ class VitrineIT extends SocleIntegration {
                     .andExpect(content().string(containsString("Lundi")))
                     // Matin et apres-midi restent distincts : le seed pose deux plages
                     // le lundi, les fusionner annoncerait une ouverture a midi.
-                    .andExpect(content().string(containsString("08:00 – 12:00")))
-                    .andExpect(content().string(containsString("13:00 – 18:00")));
+                    .andExpect(content().string(containsString("08:00 - 12:00")))
+                    .andExpect(content().string(containsString("13:00 - 18:00")));
         }
 
         /**

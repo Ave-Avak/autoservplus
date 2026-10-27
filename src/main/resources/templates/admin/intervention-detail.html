@@ -67,7 +67,7 @@
             reprendre avant sa réponse.
         </p>
         <p>
-            Devis initial : <span th:text="${intervention.devisInitialHtva()}">49,00 €</span> —
+            Devis initial : <span th:text="${intervention.devisInitialHtva()}">49,00 €</span>,
             total proposé : <span th:text="${intervention.totalProposeHtva()}">138,00 €</span> (HTVA).
         </p>
     </div>
@@ -144,7 +144,7 @@
     </div>
 
     <!-- RM-14 : l'ajout n'est ouvert qu'en cours de réalisation. Le domaine le refuse
-         ailleurs (exigerAjoutEnCours) ; on n'invite pas à une action condamnée.
+         ailleurs (exigerAjoutEnCours). On n'invite pas à une action condamnée.
          Le formulaire est donc conditionné à peutAjouterLigne, plus étroit que
          estEditable qui régit encore le commentaire et le retrait de ligne. -->
     <div th:if="${intervention.peutAjouterLigne()}">
@@ -154,7 +154,7 @@
             <div class="champ">
                 <label for="prestation">Prestation</label>
                 <select id="prestation" name="prestation" required>
-                    <option value="">— Choisir —</option>
+                    <option value="">Choisir</option>
                     <option th:each="p : ${prestations}" th:value="${p.reference}"
                             th:text="${p.libelle} + ' (' + ${p.dureeMinutes} + ' min)'">Vidange</option>
                 </select>
@@ -200,7 +200,7 @@
     <div th:unless="${intervention.estEditable()}">
         <p class="aide" th:if="${intervention.commentaireAdmin() != null}">
             <strong>Commentaire figé :</strong>
-            <span th:text="${intervention.commentaireAdmin()}">…</span>
+            <span th:text="${intervention.commentaireAdmin()}">...</span>
         </p>
     </div>
 </main>

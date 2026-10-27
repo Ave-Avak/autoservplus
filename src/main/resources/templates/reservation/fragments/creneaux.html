@@ -22,7 +22,7 @@
             <label class="creneau">
                 <input type="radio" name="debut" th:value="${c.valeur()}"
                        th:checked="${formulaire != null and formulaire.debut == c.valeur()}" required>
-                <span th:text="${c.libelle()}">10:00 – 11:00</span>
+                <span th:text="${c.libelle()}">10:00 - 11:00</span>
                 <small th:if="${c.postesLibres() > 1}"
                        th:text="${c.postesLibres()} + ' places'">2 places</small>
             </label>

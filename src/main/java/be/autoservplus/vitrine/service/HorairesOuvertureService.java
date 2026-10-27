@@ -38,7 +38,7 @@ public class HorairesOuvertureService {
     private static final DateTimeFormatter HEURE = DateTimeFormatter.ofPattern("HH:mm");
 
     /** Tiret demi-cadratin : ponctuation, pas un libelle — rien a traduire. */
-    private static final String SEPARATEUR = " – ";
+    private static final String SEPARATEUR = " - ";
 
     private final PlageOuvertureRepository plages;
 

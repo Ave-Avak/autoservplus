@@ -18,7 +18,7 @@
 
     <h1>Travaux supplémentaires à valider</h1>
     <p>
-        Intervention <span th:text="${demande.numero()}">INT-2026-0001</span> —
+        Intervention <span th:text="${demande.numero()}">INT-2026-0001</span>,
         <span th:text="${demande.vehicule()}">VW Golf (1-ABC-123)</span>
     </p>
 
@@ -30,7 +30,7 @@
 
     <div th:if="${demande.commentaireAdmin() != null}" class="message" role="note">
         <strong>Message du garage :</strong>
-        <span th:text="${demande.commentaireAdmin()}">…</span>
+        <span th:text="${demande.commentaireAdmin()}">...</span>
     </div>
 
     <h2>Travaux soumis à votre accord</h2>

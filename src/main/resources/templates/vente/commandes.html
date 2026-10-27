@@ -59,8 +59,8 @@
                                    ? #{commandes.facture.apres-paiement} : #{commandes.facture.aucune}">Aucune facture</span>
                 </td>
                 <!-- Etat de retractation : porte par une carte separee, indexee par
-                     reference de commande. Le module vente ignore la retractation ;
-                     c'est le gabarit qui fait la jointure. -->
+                     reference de commande. Le module vente ignore la retractation.
+                     C'est le gabarit qui fait la jointure. -->
                 <td th:with="retractation=${retractations[commande.reference()]}">
                     <!-- Note de credit disponible : la demande a ete validee. -->
                     <a th:if="${retractation != null and retractation.aUnAvoir()}"

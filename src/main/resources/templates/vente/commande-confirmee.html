@@ -35,7 +35,7 @@
       Le bouton de paiement ne s'affiche QUE tant que la commande en attend un. Cette
       page est desormais le point de chute du retour de paiement : proposer « Procéder
       au paiement » a un membre qui vient de payer serait au mieux deroutant, au pire
-      une seconde tentative. Le POST part vers la passerelle — page simulee si aucun
+      une seconde tentative. Le POST part vers la passerelle : page simulee si aucun
       prestataire n'est configure, Mollie sinon (frontiere MollieGateway).
     -->
     <form th:if="${commande.enAttenteDePaiement()}"

@@ -50,7 +50,7 @@
             <!-- Facultatif, et dit comme tel : le droit de retractation est
                  inconditionnel, exiger une justification serait une entrave. -->
             <p id="aide-motif" class="texte-info" th:text="#{retractation.motif.aide}">
-                Vous n'avez pas à vous justifier ; ce champ aide seulement le garage.
+                Vous n'avez pas à vous justifier. Ce champ aide seulement le garage.
             </p>
             <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motif')}" th:errors="*{motif}"></p>
         </div>

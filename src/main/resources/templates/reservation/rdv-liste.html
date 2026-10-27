@@ -30,7 +30,7 @@
             </p>
             <h2>
                 <span th:text="${#strings.capitalize(r.jourLisible())}">Mercredi 16 septembre 2026</span><br>
-                <span th:text="${r.heureDebut()} + ' – ' + ${r.heureFin()}">10:00 – 11:00</span>
+                <span th:text="${r.heureDebut()} + ' - ' + ${r.heureFin()}">10:00 - 11:00</span>
             </h2>
             <p th:text="${r.vehicule()}">VW Golf (1-ABC-123)</p>
             <p th:text="${#strings.listJoin(r.prestations(), ', ')}">Vidange, Plaquettes</p>

@@ -40,7 +40,7 @@
          th:hx-swap="${intervention.estTerminale()} ? null : 'outerHTML'">
 
         <!-- Badge : le TEXTE affiche est le statut percu (RM-16, projection sur
-             4 valeurs pour le membre) ; la classe CSS reste derivee du statut
+             4 valeurs pour le membre). La classe CSS reste derivee du statut
              technique (invisible au membre, sert uniquement au styling). -->
         <p>
             <span th:class="'badge badge-' + ${#strings.toLowerCase(intervention.statut())}"
@@ -76,7 +76,7 @@
 
         <div th:if="${intervention.commentaireAdmin() != null}" class="message" role="note">
             <strong>Message du garage :</strong>
-            <span th:text="${intervention.commentaireAdmin()}">…</span>
+            <span th:text="${intervention.commentaireAdmin()}">...</span>
         </div>
 
         <p th:if="${intervention.statut() == 'TERMINEE'}" class="message message-succes" role="status">
@@ -123,7 +123,7 @@
         </table>
     </div>
 
-    <!-- BL-4 : proposé seulement si le dépôt aboutirait — travaux terminés et
+    <!-- BL-4 : proposé seulement si le dépôt aboutirait, travaux terminés et
          aucun avis déjà déposé (l'unicité en base refuserait le second). -->
     <p class="actions-page" th:if="${peutDeposerAvis}">
         <a th:href="@{/mes-avis/{ref}/nouveau(ref=${intervention.reference()})}"

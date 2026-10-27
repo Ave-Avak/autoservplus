@@ -54,7 +54,7 @@ class HorairesOuvertureServiceTest {
 
     /**
      * Le cas du garage reel : matin et apres-midi separes par la pause de midi. Les
-     * deux plages doivent rester distinctes — les fusionner en « 08:00 – 18:00 »
+     * deux plages doivent rester distinctes — les fusionner en « 08:00 - 18:00 »
      * annoncerait une ouverture a l heure du diner.
      */
     @Test
@@ -64,7 +64,7 @@ class HorairesOuvertureServiceTest {
                 plage(DayOfWeek.MONDAY, "08:00", "12:00"),
                 plage(DayOfWeek.MONDAY, "13:00", "18:00"));
 
-        assertThat(semaine.get(0).plages()).containsExactly("08:00 – 12:00", "13:00 – 18:00");
+        assertThat(semaine.get(0).plages()).containsExactly("08:00 - 12:00", "13:00 - 18:00");
         assertThat(semaine.get(0).ferme()).isFalse();
     }
 
@@ -109,6 +109,6 @@ class HorairesOuvertureServiceTest {
     void formatFixe() {
         List<JourOuvertureVue> semaine = semaineAvec(plage(DayOfWeek.FRIDAY, "08:00", "17:00"));
 
-        assertThat(semaine.get(4).plages()).containsExactly("08:00 – 17:00");
+        assertThat(semaine.get(4).plages()).containsExactly("08:00 - 17:00");
     }
 }
