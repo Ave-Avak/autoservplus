@@ -35,8 +35,8 @@ import static org.assertj.core.api.Assertions.assertThat;
  *
  * <p>Les migrations deja committees restent hors controle : modifier une migration,
  * meme dans un commentaire, change son empreinte et Flyway refuse alors toute base ou
- * elle est appliquee. Chaque exclusion porte son motif, et une exclusion d attente qui
- * ne sert plus fait echouer le test, sur le patron de {@code EN_FRANCAIS_FIGE}.</p>
+ * elle est appliquee. Chaque exclusion porte son motif, et une exclusion qui ne designe
+ * plus aucun fichier fait echouer le test.</p>
  */
 @DisplayName("Typographie du depot")
 class TypographieTest {
@@ -56,10 +56,6 @@ class TypographieTest {
             "src/main/resources/static/js/htmx.min.js", "bibliotheque tierce, servie telle quelle",
             "src/main/resources/securite/mots-de-passe-courants.txt",
             "liste tierce (SecLists) de mots de passe, des donnees et non de la prose");
-
-    /** Fichiers ecartes en attendant leur correction. Le test echoue des qu ils sont propres. */
-    private static final Map<String, String> EN_ATTENTE = Map.of(
-            ".env.example", "relu et corrige par le developpeur seul");
 
     /** Derniere migration de schema committee avant la regle, et graines de demonstration. */
     private static final int DERNIERE_MIGRATION_FIGEE = 42;
@@ -93,11 +89,7 @@ class TypographieTest {
     @DisplayName("aucun caractere proscrit, hors fichiers exclus avec leur motif")
     void aucunCaractereProscrit() {
         List<String> ecarts = new ArrayList<>();
-        fichiers.forEach((nom, texte) -> {
-            if (!EN_ATTENTE.containsKey(nom)) {
-                ecarts.addAll(caracteresProscrits(nom, texte));
-            }
-        });
+        fichiers.forEach((nom, texte) -> ecarts.addAll(caracteresProscrits(nom, texte)));
         assertThat(ecarts).as("Caracteres proscrits par la regle de redaction de CLAUDE.md").isEmpty();
     }
 
@@ -105,22 +97,13 @@ class TypographieTest {
     @DisplayName("aucun point-virgule dans la prose")
     void aucunPointVirguleDansLaProse() {
         List<String> ecarts = new ArrayList<>();
-        fichiers.forEach((nom, texte) -> {
-            if (!EN_ATTENTE.containsKey(nom)) {
-                ecarts.addAll(pointsVirgules(nom, texte));
-            }
-        });
+        fichiers.forEach((nom, texte) -> ecarts.addAll(pointsVirgules(nom, texte)));
         assertThat(ecarts).as("Point-virgule dans la prose : le remplacer par un point").isEmpty();
     }
 
     @Test
-    @DisplayName("chaque exclusion d attente sert encore, chaque exclusion definitive designe un fichier")
+    @DisplayName("chaque exclusion designe un fichier")
     void exclusionsAJour() {
-        EN_ATTENTE.keySet().forEach(nom -> assertThat(
-                caracteresProscrits(nom, fichiers.getOrDefault(nom, "")).size()
-                        + pointsVirgules(nom, fichiers.getOrDefault(nom, "")).size())
-                .as("%s est conforme : le retirer de EN_ATTENTE", nom)
-                .isPositive());
         EXCLUS.keySet().forEach(nom -> assertThat(Path.of(nom)).as("exclusion sans fichier").exists());
     }
 
