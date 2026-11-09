@@ -201,7 +201,7 @@ class ProfilIT extends SocleIntegration {
             //    d authentification de MockMvc ne publient aucun evenement de
             //    connexion, donc LangueApresConnexionHandler ne tournerait pas et le
             //    test passerait au vert sans rien prouver : piege deja rencontre au
-            //    lot F6, et consigne au registre.
+            //    lot F6.
             MockHttpSession nouvelleSession = new MockHttpSession();
             mvc.perform(post("/connexion").with(csrf()).session(nouvelleSession)
                             .locale(Locale.FRENCH)

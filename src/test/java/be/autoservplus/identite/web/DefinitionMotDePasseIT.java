@@ -45,8 +45,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Creation d un administrateur, lien de definition, reinitialisation du second facteur.
  *
  * <p>Le lien est lu sur le port de notification, la ou il part reellement, et non
- * fabrique par le test : c est le defaut du 404 du paiement fictif, ou le test produisait
- * lui-meme l etape suivante (registre §4).</p>
+ * fabriqué par le test : c'est le défaut du 404 du paiement fictif, resté invisible à la
+ * build parce que le test produisait lui-même l'étape suivante.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc

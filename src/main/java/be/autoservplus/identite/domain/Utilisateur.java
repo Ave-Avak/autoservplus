@@ -580,7 +580,16 @@ public class Utilisateur extends BaseEntity {
 
     // --- second facteur TOTP --------------------------------------------------------
 
-    /** Obligatoire pour le back-office, facultatif pour un membre. */
+    /**
+     * Obligatoire pour le back-office, facultatif pour un membre.
+     *
+     * <p>Le second facteur était prévu en V2. Il est exigé dès la V1 au back-office parce
+     * que le compte exploitant naît d'un secret lu dans un fichier {@code .env}, et qu'un
+     * seul facteur garderait alors les gestes les plus lourds du système : suspensions,
+     * remboursements, création de comptes privilégiés. Le laisser facultatif pour un
+     * administrateur a été écarté, un compte non enrôlé restant protégé par ce seul
+     * secret.</p>
+     */
     public boolean secondFacteurObligatoire() {
         return estAdministrateur();
     }

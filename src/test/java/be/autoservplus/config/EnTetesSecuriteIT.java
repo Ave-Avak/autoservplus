@@ -78,7 +78,7 @@ class EnTetesSecuriteIT extends SocleIntegration {
      * avec {@code form-action} : la passerelle bouchonnee redirigeait vers une page
      * interne, le defaut n existait que sur le chemin du vrai prestataire, et aucune
      * build ne l a vu. La completude de cette politique ne se verifie qu avec une
-     * vraie cle de site : voir registre §4.</p>
+     * vraie clé de site, sur l'hôte localhost, en observant le widget réel.</p>
      */
     @Test
     @DisplayName("Turnstile : script-src et frame-src autorisent le seul hote de Cloudflare")

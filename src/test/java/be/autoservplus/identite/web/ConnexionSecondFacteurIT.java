@@ -42,8 +42,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>Aucun cas n emploie {@code user(...)} pour etablir la connexion : ce raccourci
  * installe une authentification complete et sauterait precisement ce qui est a prouver,
- * que le mot de passe seul n ouvre rien. C est la lecon du registre sur les tests qui
- * court-circuitent une couche.</p>
+ * que le mot de passe seul n'ouvre rien. Un test qui court-circuite une couche ne voit
+ * pas ce qu'elle fait : le décalage de fuseau et le 404 du paiement fictif sont passés au
+ * vert de cette façon.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc

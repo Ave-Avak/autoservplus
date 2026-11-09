@@ -21,6 +21,14 @@ import java.nio.charset.StandardCharsets;
  * mots de passe previsibles. Puis la liste embarquee des mots de passe frequents, puis
  * le service de compromission.</p>
  *
+ * <p>Écart assumé au cahier des charges (F1). Le CdC demandait dix caractères,
+ * quatre classes (majuscule, minuscule, chiffre, caractère spécial) et un captcha. La
+ * règle suit le NIST SP 800-63B-4 (§3.1.1.2) : les règles de composition produisent des
+ * mots de passe prévisibles, qu'on finit par noter, et une liste de refus atteint le but
+ * qu'elles manquent. Le captcha est remplacé par trois couches dont aucune ne suffit
+ * seule : champ piège et délai minimal ({@code PiegeAntiBot}), Turnstile vérifié côté
+ * serveur, plafond par IP.</p>
+ *
  * <p><b>Le maximum se compte en octets UTF-8 : 72.</b> BCrypt n en lit pas davantage,
  * et la version de Spring Security employee refuse au-dela par une exception. Un mot
  * de passe de cent caracteres passait le formulaire puis echouait au hachage. Une

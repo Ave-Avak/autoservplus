@@ -44,7 +44,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * donc pas ici. C est exactement ce qui s est produit avec {@code form-action} : la
  * passerelle bouchonnee redirigeait vers une page interne, le defaut n existait que sur
  * le chemin du vrai prestataire, et aucune build ne l a vu, seuls Chrome et Edge, en
- * production, l auraient revele. Voir registre §4.</p>
+ * production, l'auraient révélé. La politique reste à vérifier avec une vraie clé de
+ * site.</p>
  */
 @SpringBootTest(properties = {
         "autoservplus.securite.turnstile.cle-site=1x00000000000000000000AA",

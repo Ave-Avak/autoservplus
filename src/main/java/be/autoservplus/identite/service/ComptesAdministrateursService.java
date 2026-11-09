@@ -122,7 +122,9 @@ public class ComptesAdministrateursService {
      * back-office, la connexion suivante impose un nouvel enrolement.</p>
      *
      * <p>Le delai de 48 h que la Strategie (§17.4.3) prevoit avant qu une reinitialisation
-     * prenne effet n est pas implemente : voir le registre.</p>
+     * prenne effet n'est pas implémenté. Il supposerait une réinitialisation en attente, une
+     * tâche planifiée qui l'applique et un moyen pour le titulaire de l'annuler. En V1, la
+     * trace au journal, la coupure des sessions et l'avis au titulaire en tiennent lieu.</p>
      */
     @Transactional
     public void reinitialiserSecondFacteur(UUID reference) {

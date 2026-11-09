@@ -90,7 +90,7 @@ class TypographieTest {
     void aucunCaractereProscrit() {
         List<String> ecarts = new ArrayList<>();
         fichiers.forEach((nom, texte) -> ecarts.addAll(caracteresProscrits(nom, texte)));
-        assertThat(ecarts).as("Caracteres proscrits par la regle de redaction de CLAUDE.md").isEmpty();
+        assertThat(ecarts).as("Caractères proscrits par la règle de rédaction du projet").isEmpty();
     }
 
     @Test
