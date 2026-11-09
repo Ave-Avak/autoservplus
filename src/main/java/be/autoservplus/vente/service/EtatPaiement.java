@@ -9,8 +9,10 @@ import be.autoservplus.vente.domain.StatutPaiement;
  * <p><b>Un record plutot que le seul statut</b>, parce que les deux informations
  * arrivent dans la meme reponse. Les separer imposerait un second appel reseau pour
  * une donnee deja recue, et un appel de plus a l interieur de la transaction qui
- * relit le statut, c est-a-dire exactement ce que le registre de dette signale
- * comme a surveiller.</p>
+ * relit le statut. Cette transaction tient déjà une connexion à la base pendant un
+ * aller-retour vers le prestataire, borné seulement par le délai de
+ * {@code MollieGateway.DELAI_MAXIMUM}. Le correctif, sortir l'appel de la transaction,
+ * reste pour la V2, et rien ne doit l'aggraver d'ici là.</p>
  *
  * @param statut  statut projete vers le vocabulaire du domaine
  * @param methode moyen employe tel que le prestataire le nomme (bancontact, carte,

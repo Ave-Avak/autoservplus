@@ -273,7 +273,8 @@ public class MollieGateway implements PrestatairePaiement {
         // execution bancaire. Le contrat de PrestatairePaiement suppose une reponse
         // synchrone : l acceptation du Refund vaut ici engagement. Le passage a
         // l asynchrone (webhook de remboursement, statut intermediaire sur paiement)
-        // reste la dette V2 inscrite au registre, il ne se resout pas dans ce fichier.
+        // reste pour la V2, et il ne se résout pas dans ce fichier. Le contrat synchrone
+        // tient parce que Mollie accepte le Refund sur-le-champ.
         return new RemboursementCree(reponse.id());
     }
 

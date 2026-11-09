@@ -14,7 +14,8 @@ import org.testcontainers.containers.PostgreSQLContainer;
  * jusqu a la fin de la JVM : avec son ordonnanceur vivant, qui interrogeait toutes les
  * minutes une base eteinte. C est ce qui retardait l arret de la JVM de test, faisait
  * survivre des JVM a un build interrompu, et a fini par produire un
- * {@code BUILD SUCCESS} sur une fraction des tests (registre §4).</p>
+ * {@code BUILD SUCCESS} sur une fraction des tests : le 2026-09-20, 406 tests unitaires
+ * sur 904, aucun test d'intégration, et JaCoCo sauté.</p>
  *
  * <h2>Pourquoi une base par CLASSE et non par contexte</h2>
  *

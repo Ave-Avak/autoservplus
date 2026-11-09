@@ -4,9 +4,10 @@ package be.autoservplus.identite.domain;
  * Evenements consignes au journal de securite d un compte.
  *
  * <p>Miroir exact de {@code ck_evenement_securite_type} (V41, elargie en V42). La base porte
- * l enumeration, comme partout dans le schema sauf {@code notification.type}, ecart dont
- * le registre montre le prix : une valeur inconnue y passe et fait tomber l ecran a la
- * lecture.</p>
+ * l'énumération, comme partout dans le schéma sauf {@code notification.type}. Cet écart
+ * montre le prix de l'absence de contrainte : une valeur inconnue s'y insère sans erreur,
+ * puis la lecture échoue et fait tomber toute la liste des notifications du membre, pas
+ * seulement la ligne fautive.</p>
  */
 public enum TypeEvenementSecurite {
     MFA_ACTIVE,

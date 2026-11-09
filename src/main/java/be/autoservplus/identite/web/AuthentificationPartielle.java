@@ -20,9 +20,12 @@ import java.util.Objects;
  * elle qui porte les autorites que Spring Security a calculees au mot de passe, et la
  * restaurer telle quelle evite de dupliquer {@code UtilisateurDetailsService}.</p>
  *
- * <p><b>Spring Security 6.5 n a pas de MFA natif</b>. La version 7 en apporte un, sous
- * forme d autorites de facteur (voir le registre). Ce jeton est l equivalent d une
- * authentification qui porterait le facteur mot de passe sans le second.</p>
+ * <p><b>Spring Security 6.5 n'a pas de MFA natif</b>. La version 7 en apporte un : chaque
+ * facteur y devient une autorité {@code FactorGrantedAuthority}, et l'autorisation exige
+ * les facteurs voulus. Ce jeton est l'équivalent d'une authentification qui porterait le
+ * facteur mot de passe sans le second. Le passage à ce mécanisme a été écarté en V1 : il
+ * suppose Spring Boot 4, et TOTP n'y est pas un facteur fourni, il faudrait encore lui
+ * écrire sa propre autorité.</p>
  */
 public class AuthentificationPartielle extends AbstractAuthenticationToken {
 
