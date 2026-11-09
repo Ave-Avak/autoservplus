@@ -198,6 +198,11 @@ public class SecuriteConfig {
                         // statut est relu aupres du prestataire via la passerelle.
                         .requestMatchers("/webhooks/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMINISTRATEUR")
+                        // Toute adresse non déclarée publique exige la connexion, y
+                        // compris une adresse qui n'existe pas. Répondre 404 à un anonyme
+                        // dirait quelles adresses n'existent pas derrière la connexion, et
+                        // donc lesquelles existent. La 404 traduite reste servie dans les
+                        // zones publiques et aux utilisateurs connectés.
                         .anyRequest().access(authentificationAboutie())
                 )
                 .exceptionHandling(exceptions -> exceptions
