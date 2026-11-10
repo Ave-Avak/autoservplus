@@ -23,6 +23,9 @@ import java.util.UUID;
 @SQLRestriction("deleted_at IS NULL")
 public class Indisponibilite extends BaseEntity {
 
+    /** Longueur de {@code indisponibilite.motif}. */
+    public static final int LONGUEUR_MOTIF = 200;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -54,13 +57,30 @@ public class Indisponibilite extends BaseEntity {
     /** @param poste null pour une fermeture de tout l atelier */
     public Indisponibilite(PosteAtelier poste, Instant debut, Instant fin, String motif) {
         this.reference = UUID.randomUUID();
-        this.poste = poste;
-        this.debut = Objects.requireNonNull(debut, "debut");
-        this.fin = Objects.requireNonNull(fin, "fin");
+        fixer(poste, debut, fin, motif);
+    }
+
+    /** Modification depuis le back-office (A24), sous les mêmes gardes qu'à la création. */
+    public void modifier(PosteAtelier poste, Instant debut, Instant fin, String motif) {
+        fixer(poste, debut, fin, motif);
+    }
+
+    private void fixer(PosteAtelier poste, Instant debut, Instant fin, String motif) {
+        Objects.requireNonNull(debut, "debut");
+        Objects.requireNonNull(fin, "fin");
+        Objects.requireNonNull(motif, "motif");
         if (!fin.isAfter(debut)) {
-            throw new IllegalArgumentException("La fin doit suivre le debut.");
+            throw new IllegalArgumentException("La fin doit suivre le début.");
         }
-        this.motif = Objects.requireNonNull(motif, "motif").trim();
+        String motifNettoye = motif.trim();
+        if (motifNettoye.isEmpty() || motifNettoye.length() > LONGUEUR_MOTIF) {
+            throw new IllegalArgumentException(
+                    "Le motif compte de 1 à %d caractères.".formatted(LONGUEUR_MOTIF));
+        }
+        this.poste = poste;
+        this.debut = debut;
+        this.fin = fin;
+        this.motif = motifNettoye;
     }
 
     public boolean concerneToutLAtelier() {
