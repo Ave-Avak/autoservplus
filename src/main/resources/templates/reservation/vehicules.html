@@ -46,6 +46,8 @@
             </dl>
 
             <div class="carte-actions">
+                <a th:href="@{/mes-vehicules/{ref}/historique(ref=${v.reference()})}"
+                   th:aria-label="|Historique d'entretien ${v.designation()}|">Historique d'entretien</a>
                 <a th:href="@{/mes-vehicules/{ref}/modifier(ref=${v.reference()})}"
                    th:aria-label="'Modifier ' + ${v.designation()}">Modifier</a>
 
