@@ -2,8 +2,10 @@ package be.autoservplus.identite.service;
 
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.communication.service.LiensCourriel;
+import be.autoservplus.communication.service.OrigineMotDePasse;
 import be.autoservplus.communication.service.ServiceCourriel;
-import be.autoservplus.identite.domain.StatutUtilisateur;
+import be.autoservplus.identite.domain.TypeEvenementSecurite;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -12,6 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
@@ -47,6 +50,12 @@ class MotDePasseServiceTest {
     @Mock
     private ServiceCourriel courriel;
 
+    @Mock
+    private RevocationSessions sessions;
+
+    @Mock
+    private JournalSecuriteCompte journal;
+
     private PasswordEncoder encodeur;
     private MotDePasseService service;
 
@@ -55,7 +64,8 @@ class MotDePasseServiceTest {
         encodeur = new BCryptPasswordEncoder(4);
         Clock horlogeFigee = Clock.fixed(MAINTENANT, ZoneOffset.UTC);
         service = new MotDePasseService(repository, encodeur, courriel, horlogeFigee,
-                new PolitiqueMotDePasse(new MotsDePasseCourants(), motDePasse -> false));
+                new PolitiqueMotDePasse(new MotsDePasseCourants(), motDePasse -> false),
+                new LiensCourriel("http://localhost:8080/"), sessions, journal);
     }
 
     @Nested
@@ -70,11 +80,19 @@ class MotDePasseServiceTest {
 
             service.demanderReinitialisation("marie@exemple.be");
 
-            verify(courriel).envoyerReinitialisationMotDePasse(eq(membre), anyString());
+            ArgumentCaptor<String> lien = ArgumentCaptor.forClass(String.class);
+            verify(courriel).envoyerReinitialisationMotDePasse(eq(membre), lien.capture());
             verify(courriel, never()).envoyerRappelVerification(any(), anyString());
-            assertThat(membre.getJetonVerification()).hasSize(64);
-            assertThat(membre.getJetonExpiration())
+            assertThat(lien.getValue()).startsWith("http://localhost:8080/mot-de-passe/nouveau?jeton=");
+
+            // Seule l empreinte du jeton du lien est en base, dans ses propres colonnes.
+            String clair = lien.getValue().substring(lien.getValue().indexOf('=') + 1);
+            assertThat(membre.getJetonReinitialisationHache())
+                    .isEqualTo(JetonLien.empreinte(clair))
+                    .isNotEqualTo(clair);
+            assertThat(membre.getJetonReinitialisationExpiration())
                     .isEqualTo(MAINTENANT.plus(MotDePasseService.VALIDITE_JETON));
+            assertThat(membre.getJetonVerificationHache()).isNull();
         }
 
         @Test
@@ -87,6 +105,10 @@ class MotDePasseServiceTest {
 
             verify(courriel).envoyerRappelVerification(eq(membre), anyString());
             verify(courriel, never()).envoyerReinitialisationMotDePasse(any(), anyString());
+            // Un jeton de verification, de la duree ordinaire : il ne pose aucun mot de passe.
+            assertThat(membre.getJetonReinitialisationHache()).isNull();
+            assertThat(membre.getJetonExpiration())
+                    .isEqualTo(MAINTENANT.plus(InscriptionService.VALIDITE_JETON));
         }
 
         @Test
@@ -133,18 +155,33 @@ class MotDePasseServiceTest {
     class Application {
 
         @Test
-        @DisplayName("remplace l empreinte et active le compte")
-        void remplaceEtActive() {
-            Utilisateur membre = membreEnAttente();
-            membre.enregistrerJetonVerification("jeton-valide", MAINTENANT.plusSeconds(600));
-            when(repository.findByJetonVerification("jeton-valide")).thenReturn(Optional.of(membre));
+        @DisplayName("remplace l empreinte, consomme le jeton, ferme les sessions et avertit")
+        void remplaceEtAvertit() {
+            Utilisateur membre = membreActif();
+            armer(membre, "jeton-valide", MAINTENANT.plusSeconds(600));
 
             service.reinitialiser("jeton-valide", "NouveauMotDePasse2026");
 
             assertThat(encodeur.matches("NouveauMotDePasse2026", membre.getMotDePasseHache())).isTrue();
-            assertThat(membre.getStatut()).isEqualTo(StatutUtilisateur.ACTIF);
-            assertThat(membre.isEmailVerifie()).isTrue();
-            assertThat(membre.getJetonVerification()).isNull();
+            assertThat(membre.getJetonReinitialisationHache()).isNull();
+            assertThat(membre.getJetonReinitialisationExpiration()).isNull();
+            verify(journal).consigner(membre, TypeEvenementSecurite.MOT_DE_PASSE_REINITIALISE, membre);
+            verify(sessions).revoquer("marie@exemple.be");
+            verify(courriel).envoyerAvisMotDePasseModifie(membre, OrigineMotDePasse.REINITIALISATION);
+        }
+
+        @Test
+        @DisplayName("un jeton de verification n ouvre pas la reinitialisation")
+        void jetonDeVerificationRefuse() {
+            Utilisateur membre = membreEnAttente();
+            membre.enregistrerJetonVerification(JetonLien.empreinte("jeton-verif"),
+                    MAINTENANT.plusSeconds(600));
+            when(repository.findByJetonReinitialisationHache(JetonLien.empreinte("jeton-verif")))
+                    .thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.reinitialiser("jeton-verif", "NouveauMotDePasse2026"))
+                    .isInstanceOf(RessourceIntrouvableException.class);
+            verifyNoInteractions(sessions, journal);
         }
 
         @Test
@@ -153,8 +190,7 @@ class MotDePasseServiceTest {
             Utilisateur membre = membreActif();
             membre.enregistrerEchecConnexion(5, MAINTENANT.plusSeconds(900));
             membre.verrouillerJusqu(MAINTENANT.plusSeconds(900));
-            membre.enregistrerJetonVerification("jeton-valide", MAINTENANT.plusSeconds(600));
-            when(repository.findByJetonVerification("jeton-valide")).thenReturn(Optional.of(membre));
+            armer(membre, "jeton-valide", MAINTENANT.plusSeconds(600));
 
             service.reinitialiser("jeton-valide", "NouveauMotDePasse2026");
 
@@ -166,8 +202,7 @@ class MotDePasseServiceTest {
         @DisplayName("refuse un jeton expire")
         void refuseUnJetonExpire() {
             Utilisateur membre = membreActif();
-            membre.enregistrerJetonVerification("jeton-perime", MAINTENANT.minusSeconds(1));
-            when(repository.findByJetonVerification("jeton-perime")).thenReturn(Optional.of(membre));
+            armer(membre, "jeton-perime", MAINTENANT.minusSeconds(1));
 
             assertThatThrownBy(() -> service.reinitialiser("jeton-perime", "NouveauMotDePasse2026"))
                     .isInstanceOf(RegleMetierException.class)
@@ -177,7 +212,8 @@ class MotDePasseServiceTest {
         @Test
         @DisplayName("refuse un jeton inconnu")
         void refuseUnJetonInconnu() {
-            when(repository.findByJetonVerification("inexistant")).thenReturn(Optional.empty());
+            when(repository.findByJetonReinitialisationHache(JetonLien.empreinte("inexistant")))
+                    .thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.reinitialiser("inexistant", "NouveauMotDePasse2026"))
                     .isInstanceOf(RessourceIntrouvableException.class);
@@ -187,8 +223,7 @@ class MotDePasseServiceTest {
         @DisplayName("refuse, appelé directement, un mot de passe de quatorze caractères")
         void refuseUnMotDePasseTropCourt() {
             Utilisateur membre = membreActif();
-            membre.enregistrerJetonVerification("jeton-valide", MAINTENANT.plusSeconds(600));
-            when(repository.findByJetonVerification("jeton-valide")).thenReturn(Optional.of(membre));
+            armer(membre, "jeton-valide", MAINTENANT.plusSeconds(600));
 
             // Quatorze : l ancien plancher de douze l acceptait, la politique le refuse.
             assertThatThrownBy(() -> service.reinitialiser("jeton-valide", "atelier garage"))
@@ -200,8 +235,7 @@ class MotDePasseServiceTest {
         @DisplayName("refuse un mot de passe nul")
         void refuseUnMotDePasseNul() {
             Utilisateur membre = membreActif();
-            membre.enregistrerJetonVerification("jeton-valide", MAINTENANT.plusSeconds(600));
-            when(repository.findByJetonVerification("jeton-valide")).thenReturn(Optional.of(membre));
+            armer(membre, "jeton-valide", MAINTENANT.plusSeconds(600));
 
             assertThatThrownBy(() -> service.reinitialiser("jeton-valide", null))
                     .isInstanceOf(RegleMetierException.class)
@@ -217,8 +251,7 @@ class MotDePasseServiceTest {
         @DisplayName("accepte un jeton valide")
         void accepteUnJetonValide() {
             Utilisateur membre = membreActif();
-            membre.enregistrerJetonVerification("jeton-valide", MAINTENANT.plusSeconds(600));
-            when(repository.findByJetonVerification("jeton-valide")).thenReturn(Optional.of(membre));
+            armer(membre, "jeton-valide", MAINTENANT.plusSeconds(600));
 
             assertThatCode(() -> service.verifierJeton("jeton-valide")).doesNotThrowAnyException();
         }
@@ -227,8 +260,7 @@ class MotDePasseServiceTest {
         @DisplayName("rejette un jeton expire")
         void rejetteUnJetonExpire() {
             Utilisateur membre = membreActif();
-            membre.enregistrerJetonVerification("jeton-perime", MAINTENANT.minusSeconds(1));
-            when(repository.findByJetonVerification("jeton-perime")).thenReturn(Optional.of(membre));
+            armer(membre, "jeton-perime", MAINTENANT.minusSeconds(1));
 
             assertThatThrownBy(() -> service.verifierJeton("jeton-perime"))
                     .isInstanceOf(RegleMetierException.class);
@@ -237,11 +269,19 @@ class MotDePasseServiceTest {
         @Test
         @DisplayName("rejette un jeton inconnu")
         void rejetteUnJetonInconnu() {
-            when(repository.findByJetonVerification("inexistant")).thenReturn(Optional.empty());
+            when(repository.findByJetonReinitialisationHache(JetonLien.empreinte("inexistant")))
+                    .thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.verifierJeton("inexistant"))
                     .isInstanceOf(RessourceIntrouvableException.class);
         }
+    }
+
+    /** Arme un jeton de reinitialisation, retrouve par son empreinte comme en base. */
+    private void armer(Utilisateur membre, String clair, Instant expiration) {
+        membre.preparerReinitialisation(JetonLien.empreinte(clair), expiration);
+        when(repository.findByJetonReinitialisationHache(JetonLien.empreinte(clair)))
+                .thenReturn(Optional.of(membre));
     }
 
     private Utilisateur membreEnAttente() {

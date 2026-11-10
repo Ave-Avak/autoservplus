@@ -1,6 +1,7 @@
 package be.autoservplus.identite.service;
 
 import be.autoservplus.common.exception.RefusTraduit;
+import be.autoservplus.communication.service.LiensCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeEvenementSecurite;
@@ -50,7 +51,7 @@ class ComptesAdministrateursServiceTest {
     void setUp() {
         service = new ComptesAdministrateursService(utilisateurs, new BCryptPasswordEncoder(4),
                 auteurCourant, journal, secondFacteur, revocation, courriel,
-                Clock.fixed(MAINTENANT, ZoneOffset.UTC));
+                Clock.fixed(MAINTENANT, ZoneOffset.UTC), new LiensCourriel("http://localhost:8080"));
         chef = new Utilisateur("chef@exemple.be", "x", "Garage", "Chef",
                 TypeUtilisateur.SUPER_ADMINISTRATEUR);
         ReflectionTestUtils.setField(chef, "id", 1L);
@@ -66,7 +67,10 @@ class ComptesAdministrateursServiceTest {
 
         ArgumentCaptor<String> lien = ArgumentCaptor.forClass(String.class);
         verify(courriel).envoyerLienDefinitionMotDePasse(eq(cree), lien.capture());
-        String jeton = lien.getValue().substring("/compte/definition?jeton=".length());
+        // Lien absolu : un lien relatif n a pas de sens dans une boite de reception.
+        assertThat(lien.getValue()).startsWith("http://localhost:8080/compte/definition?jeton=");
+        String jeton = lien.getValue().substring(
+                "http://localhost:8080/compte/definition?jeton=".length());
 
         assertThat(cree.getEmail()).isEqualTo("nouvel@exemple.be");
         assertThat(cree.getTypeUtilisateur()).isEqualTo(TypeUtilisateur.ADMINISTRATEUR);
@@ -74,7 +78,7 @@ class ComptesAdministrateursServiceTest {
         assertThat(cree.doitChangerMotDePasse()).isTrue();
         assertThat(cree.getMotDePasseHache()).startsWith("$2a$");
         assertThat(jeton).hasSize(64);
-        assertThat(cree.getJetonDefinitionHache()).isEqualTo(JetonDefinition.empreinte(jeton))
+        assertThat(cree.getJetonDefinitionHache()).isEqualTo(JetonLien.empreinte(jeton))
                 .isNotEqualTo(jeton);
         assertThat(cree.getJetonDefinitionExpiration()).isEqualTo(MAINTENANT.plus(
                 PremierMotDePasseService.VALIDITE_LIEN));

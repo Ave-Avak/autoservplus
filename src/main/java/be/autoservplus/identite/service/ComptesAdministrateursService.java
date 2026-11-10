@@ -2,6 +2,7 @@ package be.autoservplus.identite.service;
 
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.communication.service.LiensCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.TypeEvenementSecurite;
 import be.autoservplus.identite.domain.TypeUtilisateur;
@@ -48,13 +49,15 @@ public class ComptesAdministrateursService {
     private final RevocationSessions revocation;
     private final ServiceCourriel courriel;
     private final Clock horloge;
+    private final LiensCourriel liens;
 
     public ComptesAdministrateursService(UtilisateurRepository utilisateurs, PasswordEncoder encodeur,
                                          AuteurCourant auteurCourant, JournalSecuriteCompte journal,
                                          SecondFacteurService secondFacteur,
                                          RevocationSessions revocation, ServiceCourriel courriel,
-                                         Clock horloge) {
+                                         Clock horloge, LiensCourriel liens) {
         this.utilisateurs = utilisateurs;
+        this.liens = liens;
         this.encodeur = encodeur;
         this.auteurCourant = auteurCourant;
         this.journal = journal;
@@ -85,14 +88,14 @@ public class ComptesAdministrateursService {
         Utilisateur administrateur = new Utilisateur(adresse, hachageInerte(), nom.strip(),
                 prenom.strip(), TypeUtilisateur.ADMINISTRATEUR);
         administrateur.setFonction(fonction == null || fonction.isBlank() ? null : fonction.strip());
-        JetonDefinition jeton = JetonDefinition.tirer();
+        JetonLien jeton = JetonLien.tirer();
         administrateur.preparerDefinitionMotDePasse(jeton.empreinte(),
                 horloge.instant().plus(PremierMotDePasseService.VALIDITE_LIEN));
         utilisateurs.saveAndFlush(administrateur);
 
         journal.consigner(administrateur, TypeEvenementSecurite.ADMINISTRATEUR_CREE, auteur);
         journal.consigner(administrateur, TypeEvenementSecurite.LIEN_DEFINITION_ENVOYE, auteur);
-        courriel.envoyerLienDefinitionMotDePasse(administrateur, CHEMIN_DEFINITION + jeton.clair());
+        courriel.envoyerLienDefinitionMotDePasse(administrateur, liens.vers(CHEMIN_DEFINITION + jeton.clair()));
         JOURNAL.info("Administrateur {} cree par {}", administrateur.getReference(),
                 auteur.getReference());
         return administrateur;
@@ -107,11 +110,11 @@ public class ComptesAdministrateursService {
             throw new RefusTraduit("admin.compte.lien.erreur.deja-defini",
                     "Ce compte a deja defini son mot de passe.");
         }
-        JetonDefinition jeton = JetonDefinition.tirer();
+        JetonLien jeton = JetonLien.tirer();
         cible.preparerDefinitionMotDePasse(jeton.empreinte(),
                 horloge.instant().plus(PremierMotDePasseService.VALIDITE_LIEN));
         journal.consigner(cible, TypeEvenementSecurite.LIEN_DEFINITION_ENVOYE, auteur);
-        courriel.envoyerLienDefinitionMotDePasse(cible, CHEMIN_DEFINITION + jeton.clair());
+        courriel.envoyerLienDefinitionMotDePasse(cible, liens.vers(CHEMIN_DEFINITION + jeton.clair()));
     }
 
     /**

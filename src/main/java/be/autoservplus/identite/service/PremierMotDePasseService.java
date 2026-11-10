@@ -2,6 +2,8 @@ package be.autoservplus.identite.service;
 
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.communication.service.OrigineMotDePasse;
+import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.TypeEvenementSecurite;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -37,11 +39,13 @@ public class PremierMotDePasseService {
     private final JournalSecuriteCompte journal;
     private final Clock horloge;
     private final PolitiqueMotDePasse politique;
+    private final ServiceCourriel courriel;
 
     public PremierMotDePasseService(UtilisateurRepository utilisateurs, PasswordEncoder encodeur,
                                     JournalSecuriteCompte journal, Clock horloge,
-                                    PolitiqueMotDePasse politique) {
+                                    PolitiqueMotDePasse politique, ServiceCourriel courriel) {
         this.utilisateurs = utilisateurs;
+        this.courriel = courriel;
         this.politique = politique;
         this.encodeur = encodeur;
         this.journal = journal;
@@ -86,6 +90,7 @@ public class PremierMotDePasseService {
         }
         compte.changerMotDePasse(encodeur.encode(motDePasse));
         journal.consigner(compte, TypeEvenementSecurite.MOT_DE_PASSE_CHANGE, compte);
+        courriel.envoyerAvisMotDePasseModifie(compte, OrigineMotDePasse.CHANGEMENT_IMPOSE);
         JOURNAL.info("Mot de passe impose change pour le compte {}", compte.getReference());
     }
 
@@ -93,7 +98,7 @@ public class PremierMotDePasseService {
         if (jeton == null || jeton.isBlank()) {
             throw new RessourceIntrouvableException("Lien de definition", "absent");
         }
-        Utilisateur compte = utilisateurs.findByJetonDefinitionHache(JetonDefinition.empreinte(jeton))
+        Utilisateur compte = utilisateurs.findByJetonDefinitionHache(JetonLien.empreinte(jeton))
                 // Le jeton ne figure pas dans le message : il ouvrirait le compte a qui lit
                 // les journaux d erreur.
                 .orElseThrow(() -> new RessourceIntrouvableException("Lien de definition", "inconnu"));

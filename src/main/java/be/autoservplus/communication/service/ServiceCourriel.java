@@ -144,4 +144,11 @@ public interface ServiceCourriel {
 
     /** Un super-administrateur a reinitialise le second facteur du titulaire. */
     void envoyerAvisReinitialisationSecondFacteur(Utilisateur destinataire);
+
+    /**
+     * Le mot de passe du titulaire vient de changer. L'avis ne porte ni lien ni jeton :
+     * il prévient celui qui n'est pas à l'origine du changement, pour qu'il réagisse, et
+     * n'ouvre rien à qui lirait sa boîte de réception. Rédigé dans la langue du compte.
+     */
+    void envoyerAvisMotDePasseModifie(Utilisateur destinataire, OrigineMotDePasse origine);
 }

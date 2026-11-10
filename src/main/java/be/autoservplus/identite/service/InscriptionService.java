@@ -11,13 +11,12 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import be.autoservplus.communication.service.LiensCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 
-import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HexFormat;
 
 /**
  * Inscription d un membre et verification de son adresse de courriel.
@@ -40,14 +39,16 @@ public class InscriptionService {
     private final PasswordEncoder encodeurMotDePasse;
     private final Clock horloge;
     private final ServiceCourriel courriel;
-    private final SecureRandom aleatoire = new SecureRandom();
+    private final LiensCourriel liens;
 
     public InscriptionService(UtilisateurRepository repository,
                               PasswordEncoder encodeurMotDePasse,
                               Clock horloge,
                               ServiceCourriel courriel,
-                              PolitiqueMotDePasse politique) {
+                              PolitiqueMotDePasse politique,
+                              LiensCourriel liens) {
         this.repository = repository;
+        this.liens = liens;
         this.politique = politique;
         this.encodeurMotDePasse = encodeurMotDePasse;
         this.horloge = horloge;
@@ -80,10 +81,10 @@ public class InscriptionService {
                 TypeUtilisateur.MEMBRE);
 
         membre.setLangue(langue == null ? Langue.fr : langue);
-        membre.enregistrerJetonVerification(genererJeton(), Instant.now(horloge).plus(VALIDITE_JETON));
+        JetonLien jeton = armerVerification(membre);
 
         Utilisateur enregistre = repository.save(membre);
-        courriel.envoyerVerificationAdresse(enregistre, lienVerification(enregistre));
+        courriel.envoyerVerificationAdresse(enregistre, lienVerification(jeton));
         return enregistre;
     }
 
@@ -95,8 +96,10 @@ public class InscriptionService {
      */
     @Transactional
     public Utilisateur confirmerAdresse(String jeton) {
-        Utilisateur membre = repository.findByJetonVerification(jeton)
-                .orElseThrow(() -> new RessourceIntrouvableException("Jeton de verification", jeton));
+        Utilisateur membre = repository.findByJetonVerificationHache(JetonLien.empreinte(jeton))
+                // Le jeton ne figure pas dans le message : il ouvrirait le lien a qui lit
+                // les journaux d erreur.
+                .orElseThrow(() -> new RessourceIntrouvableException("Jeton de verification", "inconnu"));
 
         if (membre.jetonEstExpire(Instant.now(horloge))) {
             throw new RegleMetierException("RM-03",
@@ -142,6 +145,9 @@ public class InscriptionService {
     /**
      * Regenere un jeton pour un compte dont le lien precedent a expire.
      *
+     * <p>Seule l empreinte est en base : le jeton precedent ne peut pas etre relu pour
+     * etre renvoye. Un jeton neuf est donc tire, et l ancien cesse de valoir.</p>
+     *
      * <p>Leve une exception qui NOMME la situation reelle : reservee a un appelant de
      * confiance. Tout point d entree public doit passer par
      * {@link #demanderRenvoiVerification(String)}.</p>
@@ -159,24 +165,25 @@ public class InscriptionService {
                     "Cette adresse est deja verifiee.");
         }
 
-        membre.enregistrerJetonVerification(genererJeton(), Instant.now(horloge).plus(VALIDITE_JETON));
-        courriel.envoyerVerificationAdresse(membre, lienVerification(membre));
+        JetonLien jeton = armerVerification(membre);
+        courriel.envoyerVerificationAdresse(membre, lienVerification(jeton));
         return membre;
     }
-    private String lienVerification(Utilisateur membre) {
-        return "/inscription/verification?jeton=" + membre.getJetonVerification();
+
+    private JetonLien armerVerification(Utilisateur membre) {
+        JetonLien jeton = JetonLien.tirer();
+        membre.enregistrerJetonVerification(jeton.empreinte(),
+                Instant.now(horloge).plus(VALIDITE_JETON));
+        return jeton;
+    }
+
+    private String lienVerification(JetonLien jeton) {
+        return liens.vers("/inscription/verification?jeton=" + jeton.clair());
     }
     private String normaliser(String email) {
         if (email == null || email.isBlank()) {
             throw new RegleMetierException("RM-01", "L adresse de courriel est obligatoire.");
         }
         return email.trim().toLowerCase();
-    }
-
-    /** Jeton aleatoire de 256 bits, represente en hexadecimal sur 64 caracteres. */
-    private String genererJeton() {
-        byte[] octets = new byte[32];
-        aleatoire.nextBytes(octets);
-        return HexFormat.of().formatHex(octets);
     }
 }

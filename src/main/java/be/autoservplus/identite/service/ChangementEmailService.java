@@ -3,6 +3,7 @@ package be.autoservplus.identite.service;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsChangementEmailCourriel;
+import be.autoservplus.communication.service.LiensCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -13,11 +14,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HexFormat;
 import java.util.Locale;
 
 /**
@@ -62,12 +61,14 @@ public class ChangementEmailService {
     private final PasswordEncoder encodeur;
     private final LimiteurDemandesCourriel limiteur;
     private final Clock horloge;
-    private final SecureRandom aleatoire = new SecureRandom();
+    private final LiensCourriel liens;
 
     public ChangementEmailService(UtilisateurRepository repository, ServiceCourriel courriel,
                                   PasswordEncoder encodeur,
-                                  LimiteurDemandesCourriel limiteur, Clock horloge) {
+                                  LimiteurDemandesCourriel limiteur, Clock horloge,
+                                  LiensCourriel liens) {
         this.repository = repository;
+        this.liens = liens;
         this.courriel = courriel;
         this.encodeur = encodeur;
         this.limiteur = limiteur;
@@ -137,11 +138,12 @@ public class ChangementEmailService {
             JOURNAL.info("Changement d adresse sans effet pour {} : adresse cible indisponible.",
                     membre.getReference());
         } else {
-            String jeton = genererJeton();
-            membre.demanderChangementEmail(cible, jeton, Instant.now(horloge).plus(VALIDITE_JETON));
+            JetonLien jeton = JetonLien.tirer();
+            membre.demanderChangementEmail(cible, jeton.empreinte(),
+                    Instant.now(horloge).plus(VALIDITE_JETON));
             courriel.envoyerConfirmationNouvelleAdresse(
                     new DetailsChangementEmailCourriel(cible, prenom, ancienne, cible),
-                    "/changement-adresse/confirmation?jeton=" + jeton);
+                    liens.vers("/changement-adresse/confirmation?jeton=" + jeton.clair()));
         }
 
         // L avis part dans les DEUX cas, et des la demande. Dans les deux cas, parce
@@ -168,8 +170,10 @@ public class ChangementEmailService {
      */
     @Transactional
     public String confirmer(String jeton) {
-        Utilisateur membre = repository.findByJetonChangementEmail(jeton)
-                .orElseThrow(() -> new RessourceIntrouvableException("Changement d adresse", jeton));
+        Utilisateur membre = repository.findByJetonChangementEmailHache(JetonLien.empreinte(jeton))
+                // Le jeton ne figure pas dans le message : il ouvrirait le lien a qui lit
+                // les journaux d erreur.
+                .orElseThrow(() -> new RessourceIntrouvableException("Changement d adresse", "inconnu"));
 
         if (membre.jetonChangementExpire(Instant.now(horloge))) {
             membre.annulerChangementEmail();
@@ -196,12 +200,6 @@ public class ChangementEmailService {
     private boolean adresseIndisponible(String adresse) {
         return repository.existsByEmailIgnoreCase(adresse)
                 || repository.existsByEmailEnAttenteIgnoreCase(adresse);
-    }
-
-    private String genererJeton() {
-        byte[] octets = new byte[32];
-        aleatoire.nextBytes(octets);
-        return HexFormat.of().formatHex(octets);
     }
 
     private static String normaliser(String email) {

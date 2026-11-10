@@ -1,5 +1,6 @@
 package be.autoservplus.identite.service;
 
+import be.autoservplus.communication.service.LiensCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -28,7 +30,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
-import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 
 /**
@@ -55,7 +56,8 @@ class InscriptionServiceTest {
         encodeur = new BCryptPasswordEncoder(4); // cout reduit : les tests doivent rester rapides
         Clock horlogeFigee = Clock.fixed(MAINTENANT, ZoneOffset.UTC);
         service = new InscriptionService(repository, encodeur, horlogeFigee, courriel,
-                new PolitiqueMotDePasse(new MotsDePasseCourants(), motDePasse -> false));
+                new PolitiqueMotDePasse(new MotsDePasseCourants(), motDePasse -> false),
+                new LiensCourriel("http://localhost:8080"));
     }
 
     @Nested
@@ -116,7 +118,7 @@ class InscriptionServiceTest {
             Utilisateur membre = service.inscrire(
                     "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr);
 
-            assertThat(membre.getJetonVerification()).hasSize(64);
+            assertThat(membre.getJetonVerificationHache()).hasSize(64);
             assertThat(membre.getJetonExpiration())
                     .isEqualTo(MAINTENANT.plus(InscriptionService.VALIDITE_JETON));
         }
@@ -195,8 +197,14 @@ class InscriptionServiceTest {
             Utilisateur membre = service.inscrire(
                     "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr);
 
-            verify(courriel).envoyerVerificationAdresse(
-                    eq(membre), contains(membre.getJetonVerification()));
+            // Le lien porte le jeton en clair, la base sa seule empreinte.
+            ArgumentCaptor<String> lien = ArgumentCaptor.forClass(String.class);
+            verify(courriel).envoyerVerificationAdresse(eq(membre), lien.capture());
+            assertThat(lien.getValue()).startsWith("http://localhost:8080/inscription/verification?jeton=");
+            String clair = lien.getValue().substring(lien.getValue().indexOf('=') + 1);
+            assertThat(membre.getJetonVerificationHache())
+                    .isEqualTo(JetonLien.empreinte(clair))
+                    .isNotEqualTo(clair);
         }
     }
 
@@ -208,14 +216,15 @@ class InscriptionServiceTest {
         @DisplayName("active le compte et efface le jeton")
         void activeLeCompte() {
             Utilisateur membre = membreEnAttente();
-            membre.enregistrerJetonVerification("jeton-valide", MAINTENANT.plusSeconds(3600));
-            when(repository.findByJetonVerification("jeton-valide")).thenReturn(Optional.of(membre));
+            membre.enregistrerJetonVerification(JetonLien.empreinte("jeton-valide"), MAINTENANT.plusSeconds(3600));
+            when(repository.findByJetonVerificationHache(JetonLien.empreinte("jeton-valide")))
+                    .thenReturn(Optional.of(membre));
 
             Utilisateur resultat = service.confirmerAdresse("jeton-valide");
 
             assertThat(resultat.isEmailVerifie()).isTrue();
             assertThat(resultat.getStatut()).isEqualTo(StatutUtilisateur.ACTIF);
-            assertThat(resultat.getJetonVerification()).isNull();
+            assertThat(resultat.getJetonVerificationHache()).isNull();
             assertThat(resultat.getJetonExpiration()).isNull();
         }
 
@@ -223,8 +232,9 @@ class InscriptionServiceTest {
         @DisplayName("refuse un jeton expire")
         void refuseUnJetonExpire() {
             Utilisateur membre = membreEnAttente();
-            membre.enregistrerJetonVerification("jeton-perime", MAINTENANT.minusSeconds(1));
-            when(repository.findByJetonVerification("jeton-perime")).thenReturn(Optional.of(membre));
+            membre.enregistrerJetonVerification(JetonLien.empreinte("jeton-perime"), MAINTENANT.minusSeconds(1));
+            when(repository.findByJetonVerificationHache(JetonLien.empreinte("jeton-perime")))
+                    .thenReturn(Optional.of(membre));
 
             assertThatThrownBy(() -> service.confirmerAdresse("jeton-perime"))
                     .isInstanceOf(RegleMetierException.class)
@@ -236,7 +246,8 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("refuse un jeton inconnu")
         void refuseUnJetonInconnu() {
-            when(repository.findByJetonVerification("inexistant")).thenReturn(Optional.empty());
+            when(repository.findByJetonVerificationHache(JetonLien.empreinte("inexistant")))
+                    .thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.confirmerAdresse("inexistant"))
                     .isInstanceOf(RessourceIntrouvableException.class);
@@ -251,12 +262,14 @@ class InscriptionServiceTest {
         @DisplayName("genere un nouveau jeton")
         void genereUnNouveauJeton() {
             Utilisateur membre = membreEnAttente();
-            membre.enregistrerJetonVerification("ancien", MAINTENANT.minusSeconds(1));
+            membre.enregistrerJetonVerification(JetonLien.empreinte("ancien"), MAINTENANT.minusSeconds(1));
             when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
 
             Utilisateur resultat = service.renvoyerVerification("marie@exemple.be");
 
-            assertThat(resultat.getJetonVerification()).isNotEqualTo("ancien").hasSize(64);
+            // Le jeton precedent ne peut pas etre relu en clair : un jeton neuf le remplace.
+            assertThat(resultat.getJetonVerificationHache())
+                    .isNotEqualTo(JetonLien.empreinte("ancien")).hasSize(64);
             assertThat(resultat.getJetonExpiration())
                     .isEqualTo(MAINTENANT.plus(InscriptionService.VALIDITE_JETON));
         }
@@ -339,7 +352,7 @@ class InscriptionServiceTest {
             ArgumentCaptor<String> lien = ArgumentCaptor.forClass(String.class);
             verify(courriel).envoyerVerificationAdresse(eq(membre), lien.capture());
             assertThat(lien.getValue())
-                    .startsWith("/inscription/verification?jeton=")
+                    .startsWith("http://localhost:8080/inscription/verification?jeton=")
                     .doesNotContain("ancien");
         }
     }

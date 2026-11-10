@@ -1,5 +1,6 @@
 package be.autoservplus.identite.web;
 
+import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -9,11 +10,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpSession;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Locale;
@@ -22,6 +25,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -44,6 +50,7 @@ class ChangementEmailIT extends SocleIntegration {
     @Autowired private MockMvc mvc;
     @Autowired private UtilisateurRepository utilisateurs;
     @Autowired private PasswordEncoder encodeur;
+    @MockitoSpyBean private ServiceCourriel courriel;
 
     private String email;
     private String cible;
@@ -80,8 +87,16 @@ class ChangementEmailIT extends SocleIntegration {
                 .param("motDePasse", motDePasse));
     }
 
+    /**
+     * Jeton du dernier lien de confirmation envoye. La base n en garde que l empreinte,
+     * le jeton en clair ne se lit que dans le courriel.
+     */
     private String jetonDe(String adresse) {
-        return relire(adresse).getJetonChangementEmail();
+        ArgumentCaptor<String> lien = ArgumentCaptor.forClass(String.class);
+        verify(courriel, atLeastOnce()).envoyerConfirmationNouvelleAdresse(any(), lien.capture());
+        String dernier = lien.getAllValues().get(lien.getAllValues().size() - 1);
+        assertThat(relire(adresse).getJetonChangementEmailHache()).isNotNull();
+        return dernier.substring(dernier.indexOf("jeton=") + "jeton=".length());
     }
 
     @Nested
@@ -199,8 +214,8 @@ class ChangementEmailIT extends SocleIntegration {
         /**
          * <b>La propriete de securite qui justifie la migration V38.</b> Le jeton de
          * changement part vers une adresse NON ENCORE PROUVEE. S il etait accepte par
-         * la reinitialisation de mot de passe (qui partage {@code jeton_verification}
-         * avec l activation de compte) son porteur fixerait le mot de passe du compte.
+         * la reinitialisation de mot de passe, son porteur fixerait le mot de passe du
+         * compte.
          * Le flux destine a verifier une adresse deviendrait un flux de prise de
          * controle.
          */

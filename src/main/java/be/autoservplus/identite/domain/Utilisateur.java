@@ -95,11 +95,23 @@ public class Utilisateur extends BaseEntity {
     @Column(name = "email_verifie", nullable = false)
     private boolean emailVerifie = false;
 
-    @Column(name = "jeton_verification", length = 64)
-    private String jetonVerification;
+    /** Empreinte SHA-256 du jeton de vérification d'adresse, jamais le jeton lui-même. */
+    @Column(name = "jeton_verification_hache", length = 64)
+    private String jetonVerificationHache;
 
     @Column(name = "jeton_expiration")
     private Instant jetonExpiration;
+
+    /**
+     * Empreinte du jeton de réinitialisation du mot de passe, <b>distinct</b> du jeton de
+     * vérification. Un jeton commun laissait un lien de vérification de 24 h poser un mot
+     * de passe, et un lien de réinitialisation confirmer une adresse.
+     */
+    @Column(name = "jeton_reinitialisation_hache", length = 64)
+    private String jetonReinitialisationHache;
+
+    @Column(name = "jeton_reinitialisation_expiration")
+    private Instant jetonReinitialisationExpiration;
 
     /**
      * Nouvelle adresse demandee et <b>pas encore prouvee</b> (CdC 5.2.2). L adresse en
@@ -111,13 +123,12 @@ public class Utilisateur extends BaseEntity {
     private String emailEnAttente;
 
     /**
-     * Jeton du lien de confirmation, <b>distinct</b> de {@link #jetonVerification}.
-     * Ce dernier ouvre aussi la reinitialisation du mot de passe : un jeton commun
-     * serait envoye a une adresse non encore prouvee et permettrait a son porteur de
-     * fixer le mot de passe du compte.
+     * Empreinte du jeton du lien de confirmation, <b>distinct</b> des jetons de
+     * vérification et de réinitialisation : un jeton commun serait envoyé à une adresse
+     * non encore prouvée et permettrait à son porteur de fixer le mot de passe du compte.
      */
-    @Column(name = "jeton_changement_email", length = 64)
-    private String jetonChangementEmail;
+    @Column(name = "jeton_changement_email_hache", length = 64)
+    private String jetonChangementEmailHache;
 
     @Column(name = "jeton_changement_expiration")
     private Instant jetonChangementExpiration;
@@ -200,13 +211,14 @@ public class Utilisateur extends BaseEntity {
     public void confirmerAdresseEmail() {
         this.emailVerifie = true;
         this.statut = StatutUtilisateur.ACTIF;
-        this.jetonVerification = null;
+        this.jetonVerificationHache = null;
         this.jetonExpiration = null;
     }
 
-    public void enregistrerJetonVerification(String jeton, Instant expiration) {
-        this.jetonVerification = jeton;
-        this.jetonExpiration = expiration;
+    /** Remplace un jeton précédent : le lien déjà parti cesse de valoir. */
+    public void enregistrerJetonVerification(String empreinte, Instant expiration) {
+        this.jetonVerificationHache = Objects.requireNonNull(empreinte, "empreinte");
+        this.jetonExpiration = Objects.requireNonNull(expiration, "expiration");
     }
 
     public boolean jetonEstExpire(Instant maintenant) {
@@ -220,9 +232,10 @@ public class Utilisateur extends BaseEntity {
      * fait foi, et le lien deja parti cesse d etre exploitable. C est voulu : laisser
      * deux liens vivants ferait dependre l adresse finale de l ordre des clics.</p>
      */
-    public void demanderChangementEmail(String nouvelleAdresse, String jeton, Instant expiration) {
+    public void demanderChangementEmail(String nouvelleAdresse, String empreinteJeton,
+                                        Instant expiration) {
         this.emailEnAttente = Objects.requireNonNull(nouvelleAdresse, "nouvelleAdresse");
-        this.jetonChangementEmail = Objects.requireNonNull(jeton, "jeton");
+        this.jetonChangementEmailHache = Objects.requireNonNull(empreinteJeton, "empreinteJeton");
         this.jetonChangementExpiration = Objects.requireNonNull(expiration, "expiration");
     }
 
@@ -254,7 +267,7 @@ public class Utilisateur extends BaseEntity {
 
     public void annulerChangementEmail() {
         this.emailEnAttente = null;
-        this.jetonChangementEmail = null;
+        this.jetonChangementEmailHache = null;
         this.jetonChangementExpiration = null;
     }
 
@@ -478,8 +491,10 @@ public class Utilisateur extends BaseEntity {
         this.pays = PAYS_ANONYME;
         this.statut = StatutUtilisateur.SUPPRIME;
         this.emailVerifie = false;
-        this.jetonVerification = null;
+        this.jetonVerificationHache = null;
         this.jetonExpiration = null;
+        this.jetonReinitialisationHache = null;
+        this.jetonReinitialisationExpiration = null;
         // Une demande de changement porte une SECONDE adresse personnelle, tout aussi
         // identifiante que celle qu on efface : la laisser subsister viderait
         // l anonymisation de son objet.
@@ -524,12 +539,23 @@ public class Utilisateur extends BaseEntity {
      */
     public void reinitialiserMotDePasse(String nouvelleEmpreinte) {
         changerMotDePasse(nouvelleEmpreinte);
-        this.jetonVerification = null;
-        this.jetonExpiration = null;
-        this.emailVerifie = true;
-        if (this.statut == StatutUtilisateur.EN_ATTENTE_VALIDATION) {
-            this.statut = StatutUtilisateur.ACTIF;
-        }
+        // Le jeton est effacé, donc à usage unique.
+        this.jetonReinitialisationHache = null;
+        this.jetonReinitialisationExpiration = null;
+    }
+
+    /**
+     * Arme le lien de réinitialisation. Remplace un jeton précédent : seul le dernier
+     * lien demandé vaut.
+     */
+    public void preparerReinitialisation(String empreinteJeton, Instant expiration) {
+        this.jetonReinitialisationHache = Objects.requireNonNull(empreinteJeton, "empreinteJeton");
+        this.jetonReinitialisationExpiration = Objects.requireNonNull(expiration, "expiration");
+    }
+
+    public boolean jetonReinitialisationExpire(Instant maintenant) {
+        return jetonReinitialisationExpiration == null
+                || maintenant.isAfter(jetonReinitialisationExpiration);
     }
 
     // --- changement impose et definition du mot de passe ----------------------------
@@ -708,9 +734,11 @@ public class Utilisateur extends BaseEntity {
     public StatutUtilisateur getStatut() { return statut; }
     public boolean isEmailVerifie() { return emailVerifie; }
     public String getEmailEnAttente() { return emailEnAttente; }
-    public String getJetonChangementEmail() { return jetonChangementEmail; }
+    public String getJetonChangementEmailHache() { return jetonChangementEmailHache; }
     public Instant getJetonChangementExpiration() { return jetonChangementExpiration; }
-    public String getJetonVerification() { return jetonVerification; }
+    public String getJetonVerificationHache() { return jetonVerificationHache; }
+    public String getJetonReinitialisationHache() { return jetonReinitialisationHache; }
+    public Instant getJetonReinitialisationExpiration() { return jetonReinitialisationExpiration; }
     public Instant getJetonExpiration() { return jetonExpiration; }
     public Instant getDerniereConnexion() { return derniereConnexion; }
     public short getTentativesEchouees() { return tentativesEchouees; }

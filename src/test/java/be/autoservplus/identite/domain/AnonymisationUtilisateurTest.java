@@ -131,7 +131,8 @@ class AnonymisationUtilisateurTest {
     @DisplayName("efface aussi les traces de connexion")
     void tracesDeConnexionEffacees() {
         marie.enregistrerEchecConnexion(3, MAINTENANT.plusSeconds(900));
-        marie.enregistrerJetonVerification("jeton", MAINTENANT.plusSeconds(60));
+        marie.enregistrerJetonVerification("empreinte-verification", MAINTENANT.plusSeconds(60));
+        marie.preparerReinitialisation("empreinte-reinitialisation", MAINTENANT.plusSeconds(60));
 
         marie.anonymiser(JETON, HACHAGE, MAINTENANT);
 
@@ -139,7 +140,8 @@ class AnonymisationUtilisateurTest {
         assertThat(marie.getDerniereConnexion()).isNull();
         assertThat(marie.getTentativesEchouees()).isZero();
         assertThat(marie.getVerrouilleJusquA()).isNull();
-        assertThat(marie.getJetonVerification()).isNull();
+        assertThat(marie.getJetonVerificationHache()).isNull();
+        assertThat(marie.getJetonReinitialisationHache()).isNull();
         assertThat(marie.isEmailVerifie()).isFalse();
     }
 
