@@ -32,7 +32,7 @@ import java.util.UUID;
  * intervention en meme temps.</p>
  *
  * <p>Le mot cle {@code commentaireAdmin} est visible du client dans son ecran
- * de suivi (F17), distinct du diagnostic technique qui reste interne.</p>
+ * de suivi (F17). {@link #noteInterne} est son pendant réservé au garage (A16).</p>
  */
 @Entity
 @Table(name = "intervention")
@@ -45,6 +45,9 @@ public class Intervention extends BaseEntity {
      * de {@code intervention.depassement_notifie}).
      */
     private static final BigDecimal SEUIL_RM15 = new BigDecimal("1.10");
+
+    /** Borne de {@code intervention.note_interne}, en caractères (V44). */
+    public static final int LONGUEUR_NOTE_INTERNE = 2000;
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -87,6 +90,18 @@ public class Intervention extends BaseEntity {
 
     @Column(name = "commentaire_admin", columnDefinition = "text")
     private String commentaireAdmin;
+
+    /**
+     * Note de l'atelier, jamais montrée au membre (A16). Aucune vue, aucun gabarit ni
+     * aucune notification destinés au membre ne la lisent. Elle reste pourtant une
+     * donnée personnelle de celui-ci : l'export F22 la restitue et la suppression de
+     * compte F23 la vide.
+     *
+     * <p>Colonne propre plutôt que {@code diagnostic}, que le socle a posée et que rien
+     * n'emploie : ce nom est gardé pour un diagnostic que le membre lira un jour.</p>
+     */
+    @Column(name = "note_interne", length = LONGUEUR_NOTE_INTERNE)
+    private String noteInterne;
 
     /**
      * Devis initial HTVA, fige a la creation depuis les lignes du RDV. Reference de
@@ -265,6 +280,23 @@ public class Intervention extends BaseEntity {
     public void modifierCommentaireAdmin(String texte) {
         exigerEditable();
         this.commentaireAdmin = (texte == null || texte.isBlank()) ? null : texte.trim();
+    }
+
+    /**
+     * Remplace la note interne. Ouverte dans tous les statuts, terminaux compris : la
+     * note ne touche ni au travail ni à ce que le membre a accepté, et le garage peut
+     * avoir à consigner un constat après la clôture. Un texte vide efface la note.
+     *
+     * @throws IllegalArgumentException au-delà de {@link #LONGUEUR_NOTE_INTERNE}
+     *         caractères, avant toute modification
+     */
+    public void modifierNoteInterne(String texte) {
+        String nettoye = (texte == null || texte.isBlank()) ? null : texte.strip();
+        if (nettoye != null && nettoye.length() > LONGUEUR_NOTE_INTERNE) {
+            throw new IllegalArgumentException(
+                    "La note interne dépasse %d caractères.".formatted(LONGUEUR_NOTE_INTERNE));
+        }
+        this.noteInterne = nettoye;
     }
 
     /**
@@ -474,6 +506,22 @@ public class Intervention extends BaseEntity {
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
+    /**
+     * Date à laquelle l'intervention se range dans l'historique d'un véhicule (F21) :
+     * le début réel du travail, à défaut le début du rendez-vous d'origine, à défaut
+     * l'ouverture du dossier. Une intervention planifiée n'a pas encore de début réel
+     * et doit pourtant prendre sa place dans la liste.
+     */
+    public Instant dateDeReference() {
+        if (debutReel != null) {
+            return debutReel;
+        }
+        if (rdv != null) {
+            return rdv.getDebut();
+        }
+        return getCreatedAt();
+    }
+
     // --- getters -----------------------------------------------------------------
 
     public Long getId() { return id; }
@@ -484,6 +532,7 @@ public class Intervention extends BaseEntity {
     public Vehicule getVehicule() { return vehicule; }
     public StatutIntervention getStatut() { return statut; }
     public String getCommentaireAdmin() { return commentaireAdmin; }
+    public String getNoteInterne() { return noteInterne; }
     public Instant getDebutReel() { return debutReel; }
     public Instant getFinReelle() { return finReelle; }
     public BigDecimal getMontantDevisInitialHtva() { return montantDevisInitialHtva; }

@@ -46,7 +46,11 @@ public record InterventionVueAdmin(
         /** RM-15 : le garage attend la reponse du membre, il ne peut pas reprendre. */
         boolean enAttenteValidationMembre,
         String devisInitialHtva,
-        String totalProposeHtva) {
+        String totalProposeHtva,
+        /** Lien vers l'historique d'entretien du véhicule (F21). */
+        UUID vehiculeReference,
+        /** Note de l'atelier (A16). Vue du garage seulement, comme ce record. */
+        String noteInterne) {
 
     public static InterventionVueAdmin de(Intervention it, ZoneId zone) {
         StatutIntervention s = it.getStatut();
@@ -83,7 +87,9 @@ public record InterventionVueAdmin(
                 s.accepteAjoutDeLigne(),
                 s == StatutIntervention.ATTENTE_VALIDATION_MEMBRE,
                 FormatageRdv.euros(it.devisReferenceHtva()),
-                FormatageRdv.euros(it.totalProposeHtva()));
+                FormatageRdv.euros(it.totalProposeHtva()),
+                vehicule.getReference(),
+                it.getNoteInterne());
     }
 
     private static String statutLisible(StatutIntervention s) {

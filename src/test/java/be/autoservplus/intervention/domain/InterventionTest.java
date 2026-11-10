@@ -799,4 +799,66 @@ class InterventionTest {
                     .hasMessageContaining("TERMINEE");
         }
     }
+
+    @Nested
+    @DisplayName("Note interne (A16)")
+    class NoteInterne {
+
+        @Test
+        @DisplayName("le texte est nettoyé de ses espaces, un texte blanc efface la note")
+        void nettoyageEtEffacement() {
+            Intervention it = interventionDepuis(vidange);
+            it.modifierNoteInterne("  Bruit de roulement à l'avant  ");
+            assertThat(it.getNoteInterne()).isEqualTo("Bruit de roulement à l'avant");
+
+            it.modifierNoteInterne("   ");
+            assertThat(it.getNoteInterne()).isNull();
+        }
+
+        @Test
+        @DisplayName("modifiable une fois l'intervention terminée, et annulée")
+        void ouverteDansLesStatutsTerminaux() {
+            Intervention terminee = interventionDepuis(vidange);
+            terminee.demarrer(DEBUT);
+            terminee.terminer(DEBUT.plus(Duration.ofHours(1)));
+            terminee.modifierNoteInterne("Constat après restitution");
+            assertThat(terminee.getNoteInterne()).isEqualTo("Constat après restitution");
+
+            Intervention annulee = interventionDepuis(vidange);
+            annulee.annuler();
+            annulee.modifierNoteInterne("Client injoignable");
+            assertThat(annulee.getNoteInterne()).isEqualTo("Client injoignable");
+        }
+
+        @Test
+        @DisplayName("au-delà de la borne, refusée sans toucher à la note en place")
+        void borneRefuseeSansEffet() {
+            Intervention it = interventionDepuis(vidange);
+            it.modifierNoteInterne("Première note");
+            String tropLong = "x".repeat(Intervention.LONGUEUR_NOTE_INTERNE + 1);
+
+            assertThatThrownBy(() -> it.modifierNoteInterne(tropLong))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThat(it.getNoteInterne()).isEqualTo("Première note");
+
+            it.modifierNoteInterne("y".repeat(Intervention.LONGUEUR_NOTE_INTERNE));
+            assertThat(it.getNoteInterne()).hasSize(Intervention.LONGUEUR_NOTE_INTERNE);
+        }
+    }
+
+    @Nested
+    @DisplayName("Date de référence de l'historique (F21)")
+    class DateDeReference {
+
+        @Test
+        @DisplayName("le début du rendez-vous tant que le travail n'a pas commencé, puis le début réel")
+        void debutDuRendezVousPuisDebutReel() {
+            Intervention it = interventionDepuis(vidange);
+            assertThat(it.dateDeReference()).isEqualTo(DEBUT);
+
+            Instant debutReel = DEBUT.plus(Duration.ofMinutes(20));
+            it.demarrer(debutReel);
+            assertThat(it.dateDeReference()).isEqualTo(debutReel);
+        }
+    }
 }
