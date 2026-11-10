@@ -117,7 +117,7 @@ public class RdvService {
 
         Rdv rdv = new Rdv(numeros.prochain(), membre, vehicule, poste, debut, p.pas(), choisies, commentaire);
         if (p.isConfirmationAutomatique()) {
-            rdv.confirmer();
+            rdv.confirmer(horloge.instant());
         }
 
         try {

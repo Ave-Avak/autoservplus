@@ -556,7 +556,7 @@ class AdminPlanningIT extends SocleIntegration {
     }
 
     private static Rdv confirme(Rdv rdv) {
-        rdv.confirmer();
+        rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1)));
         return rdv;
     }
 

@@ -96,11 +96,11 @@ class AdminRdvServiceTest {
                 Duration.ofMinutes(30), List.of(vidange), null);
         switch (etat) {
             case EN_ATTENTE -> { /* etat initial */ }
-            case CONFIRME -> rdv.confirmer();
+            case CONFIRME -> rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1)));
             case REFUSE -> rdv.refuser("motif", MAINTENANT);
             case ANNULE -> rdv.annulerParLeGarage("motif", MAINTENANT);
-            case HONORE -> { rdv.confirmer(); rdv.marquerHonore(); }
-            case ABSENT -> { rdv.confirmer(); rdv.marquerAbsent(); }
+            case HONORE -> { rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1))); rdv.marquerHonore(); }
+            case ABSENT -> { rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1))); rdv.marquerAbsent(); }
         }
         return rdv;
     }
@@ -154,6 +154,21 @@ class AdminRdvServiceTest {
             assertThatThrownBy(() -> service.confirmer(rdv.getReference()))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("RM-10");
+            verify(rdvs, never()).saveAndFlush(any());
+            verify(courriel, never()).envoyerConfirmationRdv(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("refuse une demande dont le début est passé, sans écrire ni prévenir")
+        void refuseApresLeDebut() {
+            Rdv rdv = new Rdv("RDV-2026-0009", marie, golf, pont, MAINTENANT.minus(Duration.ofHours(1)),
+                    Duration.ofMinutes(30), List.of(vidange), null);
+            stubLookup(rdv);
+
+            assertThatThrownBy(() -> service.confirmer(rdv.getReference()))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("seulement refusé");
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.EN_ATTENTE);
             verify(rdvs, never()).saveAndFlush(any());
             verify(courriel, never()).envoyerConfirmationRdv(any(), any(), any());
         }
@@ -271,6 +286,22 @@ class AdminRdvServiceTest {
             verify(rdvs).saveAndFlush(rdv);
             verify(courriel).envoyerAnnulationParLeGarage(eq(marie), any(DetailsRdvCourriel.class), eq("Panne du pont"));
         }
+
+        @Test
+        @DisplayName("refuse un rendez-vous confirmé dont le début est passé, sans écrire ni prévenir")
+        void refuseApresLeDebut() {
+            Rdv rdv = new Rdv("RDV-2026-0009", marie, golf, pont, MAINTENANT.minus(Duration.ofHours(1)),
+                    Duration.ofMinutes(30), List.of(vidange), null);
+            rdv.confirmer(MAINTENANT.minus(Duration.ofDays(1)));
+            stubLookup(rdv);
+
+            assertThatThrownBy(() -> service.annulerParLeGarage(rdv.getReference(), "Panne du pont"))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("honoré ou absent");
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.CONFIRME);
+            verify(rdvs, never()).saveAndFlush(any());
+            verify(courriel, never()).envoyerAnnulationParLeGarage(any(), any(), any());
+        }
     }
 
     @Nested
@@ -282,7 +313,7 @@ class AdminRdvServiceTest {
             Rdv rdv = new Rdv("RDV-2026-0001", marie, golf, pont,
                     MAINTENANT.minus(duree), java.time.Duration.ofMinutes(30),
                     List.of(vidange), null);
-            rdv.confirmer();
+            rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1)));
             return rdv;
         }
 
@@ -309,7 +340,7 @@ class AdminRdvServiceTest {
             Rdv futur = new Rdv("RDV-2026-0002", marie, golf, pont,
                     MAINTENANT.plus(java.time.Duration.ofHours(3)), java.time.Duration.ofMinutes(30),
                     List.of(vidange), null);
-            futur.confirmer();
+            futur.confirmer(futur.getDebut().minus(Duration.ofDays(1)));
             stubLookup(futur);
 
             assertThatThrownBy(() -> service.marquerHonore(futur.getReference()))
@@ -334,7 +365,7 @@ class AdminRdvServiceTest {
             Rdv rdv = new Rdv("RDV-2026-0001", marie, golf, pont,
                     MAINTENANT.minus(depuis).minus(duree), duree,
                     List.of(vidange), null);
-            rdv.confirmer();
+            rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1)));
             return rdv;
         }
 
@@ -361,7 +392,7 @@ class AdminRdvServiceTest {
             Rdv enCours = new Rdv("RDV-2026-0003", marie, golf, pont,
                     MAINTENANT.minus(java.time.Duration.ofMinutes(10)), java.time.Duration.ofMinutes(30),
                     List.of(vidange), null);
-            enCours.confirmer();
+            enCours.confirmer(enCours.getDebut().minus(Duration.ofDays(1)));
             stubLookup(enCours);
 
             assertThatThrownBy(() -> service.marquerAbsent(enCours.getReference()))
@@ -433,7 +464,7 @@ class AdminRdvServiceTest {
             Rdv passe = new Rdv("RDV-PASSE", marie, golf, pont,
                     MAINTENANT.minus(Duration.ofHours(2)), Duration.ofMinutes(30),
                     List.of(vidange), null);
-            passe.confirmer();
+            passe.confirmer(passe.getDebut().minus(Duration.ofDays(1)));
             when(rdvs.commencesEntre(StatutRdv.CONFIRME, MINUIT, MAINTENANT)).thenReturn(List.of(passe));
             stubParametresCourants();
 
@@ -455,7 +486,7 @@ class AdminRdvServiceTest {
             Rdv ancien = new Rdv("RDV-ANCIEN", marie, golf, pont,
                     MAINTENANT.minus(Duration.ofDays(3)), Duration.ofMinutes(30),
                     List.of(vidange), null);
-            ancien.confirmer();
+            ancien.confirmer(ancien.getDebut().minus(Duration.ofDays(1)));
             when(rdvs.commencesAvant(StatutRdv.CONFIRME, MINUIT)).thenReturn(List.of(ancien));
             stubParametresCourants();
 
@@ -471,7 +502,7 @@ class AdminRdvServiceTest {
             Rdv enCours = new Rdv("RDV-EN-COURS", marie, golf, pont,
                     MAINTENANT.minus(Duration.ofMinutes(10)), Duration.ofMinutes(30),
                     List.of(vidange), null);
-            enCours.confirmer();
+            enCours.confirmer(enCours.getDebut().minus(Duration.ofDays(1)));
             when(rdvs.commencesEntre(StatutRdv.CONFIRME, MINUIT, MAINTENANT))
                     .thenReturn(List.of(enCours));
             stubParametresCourants();

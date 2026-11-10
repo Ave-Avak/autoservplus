@@ -159,7 +159,7 @@ public class AdminRdvService {
     @Transactional
     public Rdv confirmer(UUID reference) {
         Rdv rdv = charger(reference);
-        rdv.confirmer();
+        rdv.confirmer(horloge.instant());
         // La production du fichier d agenda est DANS le lambda absorbe par
         // notifierSansEchouer : une exception du redacteur iCalendar ne doit pas plus
         // annuler la confirmation qu une panne du fournisseur de courriel. Le

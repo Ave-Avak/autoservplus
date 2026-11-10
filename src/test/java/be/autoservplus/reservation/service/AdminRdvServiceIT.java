@@ -103,7 +103,7 @@ class AdminRdvServiceIT extends SocleIntegration {
         Rdv rdv = new Rdv(numero, marie, golf, pont, debut, Duration.ofMinutes(30),
                 List.of(vidange), null);
         if (etat == StatutRdv.CONFIRME) {
-            rdv.confirmer();
+            rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1)));
         }
         return rdvs.saveAndFlush(rdv);
     }

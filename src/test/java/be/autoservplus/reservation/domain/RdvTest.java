@@ -27,6 +27,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class RdvTest {
 
     private static final Instant DEBUT = Instant.parse("2026-09-15T08:00:00Z");
+    /** Instant de confirmation des tests qui ne portent pas sur la garde du début. */
+    private static final Instant AVANT_LE_DEBUT = DEBUT.minus(Duration.ofDays(3));
     private static final Duration PAS = Duration.ofMinutes(30);
     private static final Duration DELAI_24H = Duration.ofHours(24);
 
@@ -142,7 +144,7 @@ class RdvTest {
         @DisplayName("EN_ATTENTE -> CONFIRME")
         void confirme() {
             Rdv rdv = rdvDe(vidange);
-            rdv.confirmer();
+            rdv.confirmer(AVANT_LE_DEBUT);
             assertThat(rdv.getStatut()).isEqualTo(StatutRdv.CONFIRME);
         }
 
@@ -150,7 +152,7 @@ class RdvTest {
         @DisplayName("CONFIRME -> HONORE")
         void honore() {
             Rdv rdv = rdvDe(vidange);
-            rdv.confirmer();
+            rdv.confirmer(AVANT_LE_DEBUT);
             rdv.marquerHonore();
             assertThat(rdv.getStatut()).isEqualTo(StatutRdv.HONORE);
         }
@@ -159,7 +161,7 @@ class RdvTest {
         @DisplayName("CONFIRME -> ABSENT")
         void absent() {
             Rdv rdv = rdvDe(vidange);
-            rdv.confirmer();
+            rdv.confirmer(AVANT_LE_DEBUT);
             rdv.marquerAbsent();
             assertThat(rdv.getStatut()).isEqualTo(StatutRdv.ABSENT);
         }
@@ -177,8 +179,8 @@ class RdvTest {
         @DisplayName("refuse de confirmer deux fois")
         void refuseDoubleConfirmation() {
             Rdv rdv = rdvDe(vidange);
-            rdv.confirmer();
-            assertThatThrownBy(rdv::confirmer).isInstanceOf(IllegalStateException.class);
+            rdv.confirmer(AVANT_LE_DEBUT);
+            assertThatThrownBy(() -> rdv.confirmer(AVANT_LE_DEBUT)).isInstanceOf(IllegalStateException.class);
         }
 
         @Test
@@ -187,9 +189,84 @@ class RdvTest {
             Rdv rdv = rdvDe(vidange);
             rdv.refuser("Piece indisponible", DEBUT.minus(Duration.ofDays(2)));
 
-            assertThatThrownBy(rdv::confirmer).isInstanceOf(IllegalStateException.class);
+            assertThatThrownBy(() -> rdv.confirmer(AVANT_LE_DEBUT)).isInstanceOf(IllegalStateException.class);
             assertThatThrownBy(() -> rdv.annulerParLeMembre(DEBUT.minus(Duration.ofDays(3)), DELAI_24H))
                     .isInstanceOf(IllegalStateException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("garde du début : confirmation et annulation par le garage")
+    class GardeDuDebut {
+
+        @Test
+        @DisplayName("confirmation acceptée une seconde avant le début")
+        void confirmationAvantLeDebut() {
+            Rdv rdv = rdvDe(vidange);
+            assertThat(rdv.peutEtreConfirme(DEBUT.minusSeconds(1))).isTrue();
+            rdv.confirmer(DEBUT.minusSeconds(1));
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.CONFIRME);
+        }
+
+        @Test
+        @DisplayName("confirmation refusée à l'heure du début et après, le refus reste possible")
+        void confirmationRefuseeDesLeDebut() {
+            Rdv rdv = rdvDe(vidange);
+            assertThat(rdv.peutEtreConfirme(DEBUT)).isFalse();
+            assertThatThrownBy(() -> rdv.confirmer(DEBUT))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("seulement refusé");
+            assertThatThrownBy(() -> rdv.confirmer(DEBUT.plus(Duration.ofHours(2))))
+                    .isInstanceOf(IllegalStateException.class);
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.EN_ATTENTE);
+
+            rdv.refuser("Demande arrivée trop tard", DEBUT.plus(Duration.ofHours(2)));
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.REFUSE);
+        }
+
+        @Test
+        @DisplayName("annulation d'un rendez-vous confirmé refusée dès le début, honoré et absent restent possibles")
+        void annulationConfirmeRefuseeDesLeDebut() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.confirmer(AVANT_LE_DEBUT);
+            assertThat(rdv.peutEtreAnnuleParLeGarage(DEBUT.minusSeconds(1))).isTrue();
+            assertThat(rdv.peutEtreAnnuleParLeGarage(DEBUT)).isFalse();
+
+            assertThatThrownBy(() -> rdv.annulerParLeGarage("Panne du pont", DEBUT))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("honoré ou absent");
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.CONFIRME);
+            assertThat(rdv.getMotifRefus()).isNull();
+
+            rdv.marquerHonore();
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.HONORE);
+        }
+
+        @Test
+        @DisplayName("annulation d'une demande en attente refusée après le début")
+        void annulationEnAttenteRefuseeApresLeDebut() {
+            Rdv rdv = rdvDe(vidange);
+            assertThat(rdv.peutEtreAnnuleParLeGarage(DEBUT.plusSeconds(1))).isFalse();
+            assertThatThrownBy(() -> rdv.annulerParLeGarage("Atelier fermé", DEBUT.plusSeconds(1)))
+                    .isInstanceOf(IllegalStateException.class);
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.EN_ATTENTE);
+        }
+
+        @Test
+        @DisplayName("le motif reste contrôlé en premier")
+        void motifAvantLaGarde() {
+            Rdv rdv = rdvDe(vidange);
+            assertThatThrownBy(() -> rdv.annulerParLeGarage(" ", DEBUT.plusSeconds(1)))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("un état final n'est ni confirmable ni annulable, même avant le début")
+        void etatFinal() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.refuser("motif", AVANT_LE_DEBUT);
+            assertThat(rdv.peutEtreConfirme(AVANT_LE_DEBUT)).isFalse();
+            assertThat(rdv.peutEtreAnnuleParLeGarage(AVANT_LE_DEBUT)).isFalse();
         }
     }
 
@@ -223,7 +300,7 @@ class RdvTest {
         @DisplayName("reste possible apres confirmation")
         void possibleApresConfirmation() {
             Rdv rdv = rdvDe(vidange);
-            rdv.confirmer();
+            rdv.confirmer(AVANT_LE_DEBUT);
             assertThatThrownBy(() -> rdv.refuser("x", DEBUT)).isInstanceOf(IllegalStateException.class);
         }
     }
@@ -249,7 +326,7 @@ class RdvTest {
         @DisplayName("CONFIRME devient ANNULE avec motif trim et date")
         void depuisConfirme() {
             Rdv rdv = rdvDe(vidange);
-            rdv.confirmer();
+            rdv.confirmer(AVANT_LE_DEBUT);
             Instant maintenant = DEBUT.minus(Duration.ofHours(6));
 
             rdv.annulerParLeGarage(" Panne du pont ", maintenant);
@@ -295,14 +372,14 @@ class RdvTest {
                     .hasMessageContaining("RM-10");
 
             Rdv depuisHonore = rdvDe(vidange);
-            depuisHonore.confirmer();
+            depuisHonore.confirmer(AVANT_LE_DEBUT);
             depuisHonore.marquerHonore();
             assertThatThrownBy(() -> depuisHonore.annulerParLeGarage("motif", maintenant))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("RM-10");
 
             Rdv depuisAbsent = rdvDe(vidange);
-            depuisAbsent.confirmer();
+            depuisAbsent.confirmer(AVANT_LE_DEBUT);
             depuisAbsent.marquerAbsent();
             assertThatThrownBy(() -> depuisAbsent.annulerParLeGarage("motif", maintenant))
                     .isInstanceOf(IllegalStateException.class)
@@ -361,7 +438,7 @@ class RdvTest {
         @DisplayName("possible aussi apres confirmation")
         void possibleApresConfirmation() {
             Rdv rdv = rdvDe(vidange);
-            rdv.confirmer();
+            rdv.confirmer(AVANT_LE_DEBUT);
             rdv.annulerParLeMembre(DEBUT.minus(Duration.ofDays(1)), DELAI_24H);
             assertThat(rdv.getStatut()).isEqualTo(StatutRdv.ANNULE);
         }

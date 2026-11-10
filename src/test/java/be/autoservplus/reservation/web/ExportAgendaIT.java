@@ -96,7 +96,7 @@ class ExportAgendaIT extends SocleIntegration {
 
     private Rdv rdvConfirme(Utilisateur membre, Vehicule vehicule) {
         Rdv rdv = rdvBrut(membre, vehicule);
-        rdv.confirmer();
+        rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1)));
         return rdvs.saveAndFlush(rdv);
     }
 

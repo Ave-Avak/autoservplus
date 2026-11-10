@@ -15,7 +15,8 @@ import java.util.UUID;
  *
  * <p>Contient les memes champs de presentation que {@link RdvVue}, plus le nom et
  * l email du membre (l admin voit qui a reserve) et cinq flags de transitions
- * possibles depuis l etat courant. Les flags de transition sont derives de la
+ * possibles depuis l etat courant. Confirmation et annulation suivent les gardes de
+ * l'entité, qui les refusent une fois le début passé. Les autres flags sont derives de la
  * machine a etats, avec deux gardes temporelles supplementaires :
  * {@code peutMarquerHonore} exige aussi que le RDV ait commence
  * ({@code debut <= maintenant} : on n accueille pas un client avant l heure),
@@ -74,9 +75,9 @@ public record RdvVueAdmin(
                 FormatageRdv.euros(rdv.montantTvac()),
                 rdv.getCommentaire(),
                 rdv.getMotifRefus(),
-                s.peutPasserA(StatutRdv.CONFIRME),
+                rdv.peutEtreConfirme(maintenant),
                 s.peutPasserA(StatutRdv.REFUSE),
-                s.peutPasserA(StatutRdv.ANNULE),
+                rdv.peutEtreAnnuleParLeGarage(maintenant),
                 s.peutPasserA(StatutRdv.HONORE) && debutAtteint,
                 s.peutPasserA(StatutRdv.ABSENT) && finPassee);
     }

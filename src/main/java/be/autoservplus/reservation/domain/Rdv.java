@@ -122,7 +122,23 @@ public class Rdv extends BaseEntity {
 
     // --- transitions ---------------------------------------------------------------
 
-    public void confirmer() { transitionVers(StatutRdv.CONFIRME); }
+    /**
+     * Confirmation par le garage, possible tant que le rendez-vous n'a pas commencé.
+     * Confirmer un créneau déjà entamé n'engage plus rien : une demande restée sans
+     * réponse jusque-là ne peut qu'être refusée.
+     */
+    public void confirmer(Instant maintenant) {
+        if (!debut.isAfter(maintenant)) {
+            throw new IllegalStateException(
+                    "Un rendez-vous dont le début est passé ne peut plus être confirmé, seulement refusé.");
+        }
+        transitionVers(StatutRdv.CONFIRME);
+    }
+
+    public boolean peutEtreConfirme(Instant maintenant) {
+        return statut.peutPasserA(StatutRdv.CONFIRME) && debut.isAfter(maintenant);
+    }
+
     public void marquerHonore() { transitionVers(StatutRdv.HONORE); }
     public void marquerAbsent() { transitionVers(StatutRdv.ABSENT); }
 
@@ -144,7 +160,8 @@ public class Rdv extends BaseEntity {
      * restriction que le code n a jamais eue, et
      * {@code RdvTest$AnnulationGarage.depuisEnAttente} prouve le contraire depuis le
      * debut. Le cas est reel : le garage peut fermer un jour donne et annuler des
-     * demandes qu il n avait pas encore tranchees.</p>
+     * demandes qu il n avait pas encore tranchees. Une fois le début passé,
+     * l'annulation est refusée.</p>
      *
      * <p>A ne pas confondre avec {@link #refuser} : refuser, c est decliner une demande
      * que l on n accepte pas. Annuler, c est revenir sur un creneau que l on ne peut
@@ -155,9 +172,19 @@ public class Rdv extends BaseEntity {
         if (motif == null || motif.isBlank()) {
             throw new IllegalArgumentException("Une annulation par le garage doit etre motivee.");
         }
+        if (!debut.isAfter(maintenant)) {
+            // Le client est attendu ou présent : l'issue est honoré ou absent, et un
+            // créneau entamé ne se libère plus.
+            throw new IllegalStateException(
+                    "Un rendez-vous dont le début est passé ne peut plus être annulé, seulement marqué honoré ou absent.");
+        }
         transitionVers(StatutRdv.ANNULE);
         this.motifRefus = motif.trim();
         this.dateAnnulation = maintenant;
+    }
+
+    public boolean peutEtreAnnuleParLeGarage(Instant maintenant) {
+        return statut.peutPasserA(StatutRdv.ANNULE) && debut.isAfter(maintenant);
     }
 
     /**

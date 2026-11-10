@@ -22,15 +22,22 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import be.autoservplus.support.SocleIntegration;
 
@@ -58,6 +65,8 @@ class AdminRdvTemplatesIT extends SocleIntegration {
     @Autowired private RdvRepository rdvs;
 
     private UUID reference;
+    private UUID passeEnAttente;
+    private UUID passeConfirme;
 
     @BeforeEach
     void setUp() {
@@ -72,6 +81,15 @@ class AdminRdvTemplatesIT extends SocleIntegration {
                 LocalDate.of(2026, 12, 1).atTime(10, 0).atZone(ZoneId.of("Europe/Brussels")).toInstant(),
                 Duration.ofMinutes(30), List.of(vidange), "Contrôle annuel");
         reference = rdvs.saveAndFlush(rdv).getReference();
+
+        // Début passé pour toute horloge réelle : seule la garde du début est en jeu.
+        Instant passe = LocalDate.of(2026, 1, 5).atTime(10, 0).atZone(ZoneId.of("Europe/Brussels")).toInstant();
+        passeEnAttente = rdvs.saveAndFlush(new Rdv("RDV-TPL-0002", marie, golf, pont, passe,
+                Duration.ofMinutes(30), List.of(vidange), null)).getReference();
+        Rdv confirme = new Rdv("RDV-TPL-0003", marie, golf, pont, passe.plus(Duration.ofHours(1)),
+                Duration.ofMinutes(30), List.of(vidange), null);
+        confirme.confirmer(passe.minus(Duration.ofDays(1)));
+        passeConfirme = rdvs.saveAndFlush(confirme).getReference();
     }
 
     @Test
@@ -148,7 +166,7 @@ class AdminRdvTemplatesIT extends SocleIntegration {
         mvc.perform(get("/admin/rendez-vous/agenda").param("du", "2026-12-02").param("au", "2026-12-01").locale(Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("La date de fin précède la date de début.")))
-                .andExpect(content().string(org.hamcrest.Matchers.not(containsString("RDV-TPL-0001"))));
+                .andExpect(content().string(not(containsString("RDV-TPL-0001"))));
     }
 
     @Test
@@ -170,6 +188,51 @@ class AdminRdvTemplatesIT extends SocleIntegration {
                 .andExpect(content().string(containsString("/admin/rendez-vous/" + reference + "/confirmer")))
                 .andExpect(content().string(containsString("name=\"retour\" value=\"detail\"")))
                 .andExpect(content().string(containsString("/admin/rendez-vous/" + reference + "/refuser")));
+    }
+
+    @Test
+    @DisplayName("demande dont le début est passé : refus proposé, confirmation absente")
+    void detailDemandePassee() throws Exception {
+        mvc.perform(get("/admin/rendez-vous/{ref}", passeEnAttente).locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("/admin/rendez-vous/" + passeEnAttente + "/refuser")))
+                .andExpect(content().string(not(containsString("/admin/rendez-vous/" + passeEnAttente + "/confirmer"))))
+                .andExpect(content().string(not(containsString("/admin/rendez-vous/" + passeEnAttente + "/annuler"))));
+    }
+
+    @Test
+    @DisplayName("confirmation forcée d'une demande passée : message, statut inchangé")
+    void confirmationForceeRefusee() throws Exception {
+        mvc.perform(post("/admin/rendez-vous/{ref}/confirmer", passeEnAttente)
+                        .param("retour", "detail").with(csrf()).locale(Locale.FRENCH))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/rendez-vous/" + passeEnAttente))
+                .andExpect(flash().attribute("erreur", containsString("ne peut plus être confirmé")));
+        assertThat(rdvs.findByReference(passeEnAttente).orElseThrow().getStatut()).isEqualTo(StatutRdv.EN_ATTENTE);
+    }
+
+    @Test
+    @DisplayName("rendez-vous confirmé dont le début est passé : honoré proposé, annulation absente")
+    void detailConfirmePasse() throws Exception {
+        mvc.perform(get("/admin/rendez-vous/{ref}", passeConfirme).locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("/admin/rendez-vous/" + passeConfirme + "/honorer")))
+                .andExpect(content().string(not(containsString("/admin/rendez-vous/" + passeConfirme + "/annuler"))));
+        mvc.perform(get("/admin/rendez-vous").locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString("/admin/rendez-vous/" + passeConfirme + "/annuler"))))
+                .andExpect(content().string(not(containsString("/admin/rendez-vous/" + passeEnAttente + "/confirmer"))));
+    }
+
+    @Test
+    @DisplayName("annulation forcée d'un rendez-vous passé : message, statut inchangé")
+    void annulationForceeRefusee() throws Exception {
+        mvc.perform(post("/admin/rendez-vous/{ref}/annuler", passeConfirme)
+                        .param("motif", "Panne du pont").with(csrf()).locale(Locale.FRENCH))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/admin/rendez-vous/" + passeConfirme))
+                .andExpect(flash().attribute("erreur", containsString("honoré ou absent")));
+        assertThat(rdvs.findByReference(passeConfirme).orElseThrow().getStatut()).isEqualTo(StatutRdv.CONFIRME);
     }
 
     @Test
