@@ -1,5 +1,6 @@
 package be.autoservplus.infrastructure;
 
+import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import org.junit.jupiter.api.DisplayName;
@@ -95,21 +96,30 @@ class SchemaIT extends SocleIntegration {
     }
 
     @Test
-    @DisplayName("le compte admin de seed est connectable avec le mot de passe documente")
-    void leCompteAdminDeSeedEstConnectable() {
-        // V10 insere l admin, V15 corrige son hash, V36 le remplace par une phrase de
-        // passe. Sans le test, un desaccord entre le hash et le mot de passe documente
-        // (comme c etait le cas avant V15) reste invisible jusqu au premier essai de
-        // connexion.
+    @DisplayName("le compte admin de seed est suspendu sur une base migrée sans graine")
+    void leCompteAdminDeSeedEstSuspendu() {
+        // V10 insère l'admin et V37 lui pose le mot de passe publié au README. V45 le
+        // suspend sur toute base, la graine de démonstration V902 le réactive sous demo.
         Utilisateur admin = utilisateurs.findByEmailIgnoreCase("admin@autoservplus.be")
                 .orElseThrow(() -> new AssertionError(
-                        "Le seed V10 doit inserer un compte admin@autoservplus.be"));
+                        "Le seed V10 doit insérer un compte admin@autoservplus.be"));
 
+        assertThat(admin.getStatut()).isEqualTo(StatutUtilisateur.SUSPENDU);
+        // L'empreinte reste celle du mot de passe publié : c'est elle que V902 cherche,
+        // et c'est elle que le README annonce pour la démonstration.
         assertThat(new BCryptPasswordEncoder(12)
                 .matches("atelier-demonstration-2026", admin.getMotDePasseHache()))
-                .as("Le hash BCrypt du seed doit correspondre au mot de passe documente "
-                        + "\"atelier-demonstration-2026\"")
+                .as("Le hash BCrypt du seed doit correspondre au mot de passe documenté")
                 .isTrue();
+
+        List<String> journal = jdbc.queryForList(
+                "SELECT statut_avant || '>' || statut_apres || '|' || (auteur_id IS NULL) "
+                        + "|| '|' || (motif IS NOT NULL) "
+                        + "FROM historique_statut_utilisateur WHERE utilisateur_id = ?",
+                String.class, admin.getId());
+        assertThat(journal)
+                .as("une seule ligne, sans auteur, avec un motif")
+                .containsExactly("ACTIF>SUSPENDU|true|true");
     }
 
     @Test

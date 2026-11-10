@@ -59,6 +59,11 @@ sa facture, avis, messagerie et notifications.
 | Administrateur | `admin@autoservplus.be` | `atelier-demonstration-2026` |
 | Membre | `marie.dupont@demo.test` | `marie-conduit-une-golf-bleue` |
 
+Le compte administrateur n'est utilisable que sous le profil `demo`. Son mot de passe
+étant publié ici, la migration V45 le suspend sur toute autre base, production comprise,
+et il ne se réactive pas. Un administrateur d'exploitation se crée par lien de
+définition, depuis l'écran des comptes du back-office.
+
 ### Second facteur de l'administrateur de démonstration
 
 La vérification en deux étapes est obligatoire au back-office, démonstration comprise.

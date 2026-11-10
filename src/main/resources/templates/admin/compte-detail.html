@@ -105,7 +105,7 @@
                 <td th:text="${#messages.msg('admin.compte.journal.passage',
                                              #messages.msg('admin.comptes.statut.' + e.statutAvant()),
                                              #messages.msg('admin.comptes.statut.' + e.statutApres()))}">Actif, puis Suspendu</td>
-                <!--/* Auteur nul : la trace survit à la disparition de son auteur. */-->
+                <!--/* Auteur nul : compte auteur disparu, ou décision sans compte (suspension par migration). */-->
                 <td th:text="${e.auteur()} ?: #{admin.compte.journal.auteur-inconnu}">Chef Garage</td>
                 <td th:text="${e.motif()} ?: #{admin.compte.journal.sans-motif}">Impayés répétés.</td>
             </tr>
