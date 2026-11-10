@@ -105,4 +105,41 @@ class EnTetesSecuriteIT extends SocleIntegration {
                 .andExpect(header().string("X-Frame-Options", "DENY"))
                 .andExpect(header().string("Referrer-Policy", "same-origin"));
     }
+
+    /**
+     * Les styles et les images, présents dans la politique et jusqu'ici absents des
+     * assertions. Le garde-fou {@code not("*")} ne voit pas {@code 'unsafe-inline'}, le
+     * raccourci qu'on prend sous la pression d'un style récalcitrant : il est refusé
+     * nommément, avec {@code 'unsafe-eval'}.
+     */
+    @Test
+    @DisplayName("style-src et img-src tenus, aucune exception unsafe-inline ni unsafe-eval")
+    void stylesEtImages() throws Exception {
+        mvc.perform(get("/").with(anonymous()))
+                .andExpect(header().string("Content-Security-Policy",
+                        containsString("style-src 'self';")))
+                .andExpect(header().string("Content-Security-Policy",
+                        containsString("img-src 'self' data:;")))
+                .andExpect(header().string("Content-Security-Policy",
+                        not(containsString("unsafe-inline"))))
+                .andExpect(header().string("Content-Security-Policy",
+                        not(containsString("unsafe-eval"))));
+    }
+
+    /**
+     * HSTS n'est émis que sur une requête jugée sûre, d'où {@code secure(true)} : c'est
+     * ce qui expliquait l'absence de test, et non un oubli. Le cas en clair vérifie
+     * l'autre moitié du contrat, la norme interdisant l'en-tête hors HTTPS.
+     */
+    @Test
+    @DisplayName("HSTS d'un an, sous-domaines compris, sur HTTPS seulement")
+    void hsts() throws Exception {
+        mvc.perform(get("/").with(anonymous()).secure(true))
+                .andExpect(header().string("Strict-Transport-Security",
+                        containsString("max-age=31536000")))
+                .andExpect(header().string("Strict-Transport-Security",
+                        containsString("includeSubDomains")));
+        mvc.perform(get("/").with(anonymous()))
+                .andExpect(header().doesNotExist("Strict-Transport-Security"));
+    }
 }
