@@ -37,7 +37,12 @@
 <th:block th:fragment="identite">
     <dl class="identite-garage">
         <dt th:text="#{legal.garage.raison-sociale}">Dénomination</dt>
-        <dd th:text="${garage.raisonSociale()}">AutoServ+ SRL</dd>
+        <dd th:text="${garage.raisonSociale()}">Garage de démonstration</dd>
+
+        <th:block th:if="${garage.aUneFormeJuridique()}">
+            <dt th:text="#{legal.garage.forme-juridique}">Forme juridique</dt>
+            <dd th:text="${garage.formeJuridique()}">SRL</dd>
+        </th:block>
 
         <dt th:text="#{legal.garage.adresse}">Adresse</dt>
         <dd>
@@ -48,6 +53,11 @@
         <dt th:text="#{legal.garage.bce}">Numéro d'entreprise (BCE)</dt>
         <dd th:text="${garage.numeroBce()}">0123.456.789</dd>
 
+        <th:block th:if="${garage.aUnRpm()}">
+            <dt th:text="#{legal.garage.rpm}">Registre des personnes morales</dt>
+            <dd th:text="${garage.rpm()}">RPM Bruxelles</dd>
+        </th:block>
+
         <dt th:text="#{legal.garage.tva}">Numéro de TVA</dt>
         <dd th:text="${garage.numeroTva()}">BE0123456789</dd>
 
@@ -55,7 +65,7 @@
         <dd th:text="${garage.telephone()}">+32 2 000 00 00</dd>
 
         <dt th:text="#{legal.garage.courriel}">Courriel</dt>
-        <dd th:text="${garage.courriel()}">contact@autoservplus.be</dd>
+        <dd th:text="${garage.courriel()}">garage@demo.test</dd>
     </dl>
 </th:block>
 

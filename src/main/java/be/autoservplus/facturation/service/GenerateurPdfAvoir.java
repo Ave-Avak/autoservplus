@@ -96,11 +96,12 @@ public class GenerateurPdfAvoir {
         entete.setSpacingAfter(24);
 
         Paragraph emetteur = new Paragraph();
-        emetteur.add(new Phrase(garage.raisonSociale() + "\n", police(15, Font.BOLD, BLEU_MARINE)));
+        emetteur.add(new Phrase(garage.denomination() + "\n", police(15, Font.BOLD, BLEU_MARINE)));
         emetteur.add(new Phrase(garage.adresseLisible() + "\n" + garage.pays() + "\n",
                 police(9, Font.NORMAL, GRIS_TEXTE)));
-        emetteur.add(new Phrase("%s %s\n%s %s".formatted(
+        emetteur.add(new Phrase("%s %s%s\n%s %s".formatted(
                         libelle(document, "facture.emetteur.bce"), garage.numeroBce(),
+                        garage.aUnRpm() ? "\n" + garage.rpm() : "",
                         libelle(document, "facture.emetteur.tva"), garage.numeroTva()),
                 police(9, Font.NORMAL, GRIS_TEXTE)));
         entete.addCell(celluleInvisible(emetteur, Element.ALIGN_LEFT));
@@ -221,9 +222,10 @@ public class GenerateurPdfAvoir {
                 police(8, Font.NORMAL, GRIS_TEXTE)));
         mentions.add(new Phrase(libelle(document, "facture.mention.conservation") + "\n\n",
                 police(8, Font.NORMAL, GRIS_TEXTE)));
-        mentions.add(new Phrase("%s, %s %s, %s %s, %s %s".formatted(
-                        garage.raisonSociale(),
+        mentions.add(new Phrase("%s, %s %s%s, %s %s, %s %s".formatted(
+                        garage.denomination(),
                         libelle(document, "facture.emetteur.bce"), garage.numeroBce(),
+                        garage.aUnRpm() ? ", " + garage.rpm() : "",
                         libelle(document, "facture.emetteur.tva"), garage.numeroTva(),
                         libelle(document, "facture.emetteur.iban"), garage.iban()),
                 police(8, Font.NORMAL, GRIS_TEXTE)));

@@ -89,6 +89,17 @@ class DocumentsLegauxIT extends SocleIntegration {
                             org.hamcrest.Matchers.containsString("0123.456.789")));
         }
 
+        @Test
+        @DisplayName("les mentions légales portent la forme juridique et la mention RPM d'une société")
+        void formeJuridiqueEtRpm() throws Exception {
+            mvc.perform(get("/mentions-legales").with(anonymous()).header("Accept-Language", "nl"))
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString("Rechtsvorm")))
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString("SRL")))
+                    .andExpect(content().string(
+                            org.hamcrest.Matchers.containsString("Rechtspersonenregister")))
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString("RPM Bruxelles")));
+        }
+
         /**
          * La politique publiee et le registre joint a l export de l article 15 sont
          * resolus par le meme composant. Verifier ici une base legale du registre,

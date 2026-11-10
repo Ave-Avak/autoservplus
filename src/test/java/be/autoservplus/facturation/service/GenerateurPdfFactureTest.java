@@ -29,9 +29,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 class GenerateurPdfFactureTest {
 
     private static final IdentiteGarage GARAGE = new IdentiteGarage(
-            "AutoServ+", "AutoServ+ SRL", "Rue de l'Atelier", "12", "1000", "Bruxelles", "Belgique",
-            "0123.456.789", "BE0123456789", "BE68 5390 0754 7034",
-            "+32 2 000 00 00", "facturation@autoservplus.be");
+            "Garage Démo", "Garage de démonstration", "SRL",
+            "Rue de l'Atelier", "12", "1000", "Bruxelles", "Belgique",
+            "0123.456.789", "RPM Bruxelles", "BE0123456789", "BE68 5390 0754 7034",
+            "+32 2 000 00 00", "garage@demo.test");
+
+    /** Un garage tenu par une personne physique : ni forme juridique, ni registre. */
+    private static final IdentiteGarage PERSONNE_PHYSIQUE = new IdentiteGarage(
+            "Garage Démo", "Jean Dupont", "",
+            "Rue de l'Atelier", "12", "1000", "Bruxelles", "Belgique",
+            "0123.456.789", "", "BE0123456789", "BE68 5390 0754 7034",
+            "+32 2 000 00 00", "garage@demo.test");
 
     private final GenerateurPdfFacture generateur =
             new GenerateurPdfFacture(messageSourceReel(), GARAGE);
@@ -102,11 +110,28 @@ class GenerateurPdfFactureTest {
         String texte = texteDu(generateur.engendrer(factureMultiTaux(Locale.FRENCH)));
 
         assertThat(texte)
-                .contains("AutoServ+ SRL")
+                .contains("Garage de démonstration SRL")
+                .contains("RPM Bruxelles")
                 .contains("Rue de l'Atelier 12, 1000 Bruxelles")
                 .contains("0123.456.789")
                 .contains("BE0123456789")
                 .contains("BE68 5390 0754 7034");
+    }
+
+    @Test
+    @DisplayName("personne physique : ni forme juridique ni mention RPM, et rien à leur place")
+    void personnePhysique() throws Exception {
+        GenerateurPdfFacture sansSociete = new GenerateurPdfFacture(messageSourceReel(), PERSONNE_PHYSIQUE);
+
+        // L'extraction rend chaque fin de ligne par une espace : l'en-tête se lit donc
+        // « Jean Dupont Rue de l'Atelier », et la ligne BCE enchaîne sur la TVA.
+        String texte = texteDu(sansSociete.engendrer(factureMultiTaux(Locale.FRENCH)));
+
+        assertThat(texte)
+                .contains("Jean Dupont, BCE : 0123.456.789, TVA : BE0123456789")
+                .contains("Jean Dupont Rue de l'Atelier")
+                .contains("BCE : 0123.456.789 TVA : BE0123456789")
+                .doesNotContain("RPM");
     }
 
     @Test

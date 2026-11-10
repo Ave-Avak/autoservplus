@@ -135,24 +135,28 @@ autoservplus:
   # deux variantes du meme UID se remplaceraient l'une l'autre dans l'agenda.
   url-publique: ${URL_PUBLIQUE:http://localhost:8080}
 
-  # Identification legale de l'emetteur des factures (mentions obligatoires :
-  # Code TVA art. 53, AR n°1 art. 5). Mono-tenant V1 : un seul garage, donc en
-  # configuration plutot qu'en base. Les valeurs livrees sont des valeurs de
-  # DEMONSTRATION : chacune doit etre surchargee en production par sa variable
-  # d'environnement, car une facture portant un faux numero de TVA n'est pas une facture.
+  # Identification légale de l'émetteur des factures (mentions obligatoires :
+  # Code TVA art. 53, AR n°1 art. 5, CSA art. 2:20). Mono-tenant V1 : un seul garage,
+  # donc en configuration plutôt qu'en base. Aucun repli ici : une variable absente donne
+  # une chaîne vide, que le contrôle de démarrage du profil prod nomme dans son message
+  # (IdentiteGarage.verifierPourProduction). Un repli de démonstration aurait imprimé un
+  # faux numéro de TVA sur des factures réelles sans que rien ne le signale. Les valeurs
+  # de démonstration vivent dans le document des profils dev et demo, plus bas.
   garage:
-    nom-commercial: ${GARAGE_NOM_COMMERCIAL:AutoServ+}
-    raison-sociale: ${GARAGE_RAISON_SOCIALE:AutoServ+ SRL}
-    rue: ${GARAGE_RUE:Rue de l'Atelier}
-    numero-rue: ${GARAGE_NUMERO_RUE:12}
-    code-postal: ${GARAGE_CODE_POSTAL:1000}
-    localite: ${GARAGE_LOCALITE:Bruxelles}
-    pays: ${GARAGE_PAYS:Belgique}
-    numero-bce: ${GARAGE_BCE:0123.456.789}
-    numero-tva: ${GARAGE_TVA:BE0123456789}
-    iban: ${GARAGE_IBAN:BE68 5390 0754 7034}
-    telephone: ${GARAGE_TELEPHONE:+32 2 000 00 00}
-    courriel: ${GARAGE_COURRIEL:facturation@autoservplus.be}
+    nom-commercial: ${GARAGE_NOM_COMMERCIAL:}
+    raison-sociale: ${GARAGE_RAISON_SOCIALE:}
+    forme-juridique: ${GARAGE_FORME_JURIDIQUE:}
+    rue: ${GARAGE_RUE:}
+    numero-rue: ${GARAGE_NUMERO_RUE:}
+    code-postal: ${GARAGE_CODE_POSTAL:}
+    localite: ${GARAGE_LOCALITE:}
+    pays: ${GARAGE_PAYS:}
+    numero-bce: ${GARAGE_BCE:}
+    rpm: ${GARAGE_RPM:}
+    numero-tva: ${GARAGE_TVA:}
+    iban: ${GARAGE_IBAN:}
+    telephone: ${GARAGE_TELEPHONE:}
+    courriel: ${GARAGE_COURRIEL:}
 
   stockage:
     # Racine des fichiers deposes par le back-office (fondation upload).
@@ -260,6 +264,36 @@ logging:
 # A NE PAS ACTIVER EN PRODUCTION : le jeu cree des comptes dont les mots de passe sont
 # publies dans le depot.
 # =====================================================================================
+---
+# Identité du garage de démonstration, pour le poste de développement, les tests, qui
+# tournent sous dev, et les déploiements de démonstration. C'est sa seule source : un test
+# qui en a besoin la lit d'ici. Une variable GARAGE_* définie l'emporte toujours.
+#
+# Le numéro d'entreprise est faux exprès : sa clé modulo 97 vaut 89 là où 49 est
+# attendu, et le numéro de TVA qui en dérive l'est donc aussi. Un numéro fictif qui
+# passerait le contrôle pourrait être celui d'une entreprise réelle, et l'imprimer sur
+# une facture de démonstration ferait parler cette entreprise. L'IBAN est l'exemple
+# publié pour la Belgique : ses deux clés sont justes, et il n'est celui d'aucun garage.
+spring:
+  config:
+    activate:
+      on-profile: "dev | demo"
+autoservplus:
+  garage:
+    nom-commercial: ${GARAGE_NOM_COMMERCIAL:Garage Démo}
+    raison-sociale: ${GARAGE_RAISON_SOCIALE:Garage de démonstration}
+    forme-juridique: ${GARAGE_FORME_JURIDIQUE:SRL}
+    rue: ${GARAGE_RUE:Rue de l'Atelier}
+    numero-rue: ${GARAGE_NUMERO_RUE:12}
+    code-postal: ${GARAGE_CODE_POSTAL:1000}
+    localite: ${GARAGE_LOCALITE:Bruxelles}
+    pays: ${GARAGE_PAYS:Belgique}
+    numero-bce: ${GARAGE_BCE:0123.456.789}
+    rpm: ${GARAGE_RPM:RPM Bruxelles}
+    numero-tva: ${GARAGE_TVA:BE0123456789}
+    iban: ${GARAGE_IBAN:BE68 5390 0754 7034}
+    telephone: ${GARAGE_TELEPHONE:+32 2 000 00 00}
+    courriel: ${GARAGE_COURRIEL:garage@demo.test}
 ---
 spring:
   config:
