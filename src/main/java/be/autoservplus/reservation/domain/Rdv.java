@@ -139,8 +139,38 @@ public class Rdv extends BaseEntity {
         return statut.peutPasserA(StatutRdv.CONFIRME) && debut.isAfter(maintenant);
     }
 
-    public void marquerHonore() { transitionVers(StatutRdv.HONORE); }
-    public void marquerAbsent() { transitionVers(StatutRdv.ABSENT); }
+    /**
+     * Le client s'est présenté. Possible dès l'heure de début, pas après la fin : le
+     * garage le marque présent quand il arrive, l'horodatage réel du travail étant porté
+     * par l'intervention.
+     */
+    public void marquerHonore(Instant maintenant) {
+        if (debut.isAfter(maintenant)) {
+            throw new IllegalStateException(
+                    "Un rendez-vous ne peut être marqué honoré avant l'heure de début.");
+        }
+        transitionVers(StatutRdv.HONORE);
+    }
+
+    public boolean peutEtreMarqueHonore(Instant maintenant) {
+        return statut.peutPasserA(StatutRdv.HONORE) && !debut.isAfter(maintenant);
+    }
+
+    /**
+     * Le client ne s'est pas présenté. Seulement après la fin du créneau : tant qu'il
+     * dure, le client peut encore arriver en retard.
+     */
+    public void marquerAbsent(Instant maintenant) {
+        if (!fin.isBefore(maintenant)) {
+            throw new IllegalStateException(
+                    "Un rendez-vous ne peut être marqué absent avant la fin de son créneau.");
+        }
+        transitionVers(StatutRdv.ABSENT);
+    }
+
+    public boolean peutEtreMarqueAbsent(Instant maintenant) {
+        return statut.peutPasserA(StatutRdv.ABSENT) && fin.isBefore(maintenant);
+    }
 
     /** Refus par le garage, motif obligatoire. */
     public void refuser(String motif, Instant maintenant) {

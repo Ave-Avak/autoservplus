@@ -15,14 +15,9 @@ import java.util.UUID;
  *
  * <p>Contient les memes champs de presentation que {@link RdvVue}, plus le nom et
  * l email du membre (l admin voit qui a reserve) et cinq flags de transitions
- * possibles depuis l etat courant. Confirmation et annulation suivent les gardes de
- * l'entité, qui les refusent une fois le début passé. Les autres flags sont derives de la
- * machine a etats, avec deux gardes temporelles supplementaires :
- * {@code peutMarquerHonore} exige aussi que le RDV ait commence
- * ({@code debut <= maintenant} : on n accueille pas un client avant l heure),
- * et {@code peutMarquerAbsent} exige que le creneau soit ecoule
- * ({@code fin < maintenant} : on ne declare absent qu apres la fin, sinon le
- * client peut encore arriver en retard).</p>
+ * possibles depuis l etat courant. Chaque flag reprend la garde de l'entité qui
+ * porte la transition, machine à états et conditions de temps comprises : un bouton
+ * affiché est un POST accepté.</p>
  *
  * <p>{@code debut} et {@code fin} sont les heures locales de l'atelier, pour les
  * écrans traduits qui les formatent selon la langue de l'interface. Les champs
@@ -54,8 +49,6 @@ public record RdvVueAdmin(
 
     public static RdvVueAdmin de(Rdv rdv, ZoneId zone, Instant maintenant) {
         StatutRdv s = rdv.getStatut();
-        boolean debutAtteint = !rdv.getDebut().isAfter(maintenant);
-        boolean finPassee = rdv.getFin().isBefore(maintenant);
         return new RdvVueAdmin(
                 rdv.getReference(),
                 rdv.getNumero(),
@@ -78,7 +71,7 @@ public record RdvVueAdmin(
                 rdv.peutEtreConfirme(maintenant),
                 s.peutPasserA(StatutRdv.REFUSE),
                 rdv.peutEtreAnnuleParLeGarage(maintenant),
-                s.peutPasserA(StatutRdv.HONORE) && debutAtteint,
-                s.peutPasserA(StatutRdv.ABSENT) && finPassee);
+                rdv.peutEtreMarqueHonore(maintenant),
+                rdv.peutEtreMarqueAbsent(maintenant));
     }
 }

@@ -29,6 +29,8 @@ class RdvTest {
     private static final Instant DEBUT = Instant.parse("2026-09-15T08:00:00Z");
     /** Instant de confirmation des tests qui ne portent pas sur la garde du début. */
     private static final Instant AVANT_LE_DEBUT = DEBUT.minus(Duration.ofDays(3));
+    /** Instant de clôture des tests qui ne portent pas sur les gardes de temps. */
+    private static final Instant APRES_LA_FIN = DEBUT.plus(Duration.ofDays(1));
     private static final Duration PAS = Duration.ofMinutes(30);
     private static final Duration DELAI_24H = Duration.ofHours(24);
 
@@ -153,7 +155,7 @@ class RdvTest {
         void honore() {
             Rdv rdv = rdvDe(vidange);
             rdv.confirmer(AVANT_LE_DEBUT);
-            rdv.marquerHonore();
+            rdv.marquerHonore(APRES_LA_FIN);
             assertThat(rdv.getStatut()).isEqualTo(StatutRdv.HONORE);
         }
 
@@ -162,7 +164,7 @@ class RdvTest {
         void absent() {
             Rdv rdv = rdvDe(vidange);
             rdv.confirmer(AVANT_LE_DEBUT);
-            rdv.marquerAbsent();
+            rdv.marquerAbsent(APRES_LA_FIN);
             assertThat(rdv.getStatut()).isEqualTo(StatutRdv.ABSENT);
         }
 
@@ -170,7 +172,7 @@ class RdvTest {
         @DisplayName("refuse d honorer un rendez-vous non confirme")
         void refuseHonorerSansConfirmation() {
             Rdv rdv = rdvDe(vidange);
-            assertThatThrownBy(rdv::marquerHonore)
+            assertThatThrownBy(() -> rdv.marquerHonore(APRES_LA_FIN))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("RM-10");
         }
@@ -238,7 +240,7 @@ class RdvTest {
             assertThat(rdv.getStatut()).isEqualTo(StatutRdv.CONFIRME);
             assertThat(rdv.getMotifRefus()).isNull();
 
-            rdv.marquerHonore();
+            rdv.marquerHonore(APRES_LA_FIN);
             assertThat(rdv.getStatut()).isEqualTo(StatutRdv.HONORE);
         }
 
@@ -267,6 +269,55 @@ class RdvTest {
             rdv.refuser("motif", AVANT_LE_DEBUT);
             assertThat(rdv.peutEtreConfirme(AVANT_LE_DEBUT)).isFalse();
             assertThat(rdv.peutEtreAnnuleParLeGarage(AVANT_LE_DEBUT)).isFalse();
+        }
+    }
+
+    @Nested
+    @DisplayName("gardes de temps : honoré et absent")
+    class GardesDeCloture {
+
+        private Rdv confirme() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.confirmer(AVANT_LE_DEBUT);
+            return rdv;
+        }
+
+        @Test
+        @DisplayName("honoré refusé une seconde avant le début, accepté à l'heure du début")
+        void honoreDesLeDebut() {
+            Rdv rdv = confirme();
+            assertThat(rdv.peutEtreMarqueHonore(DEBUT.minusSeconds(1))).isFalse();
+            assertThatThrownBy(() -> rdv.marquerHonore(DEBUT.minusSeconds(1)))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("avant l'heure de début");
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.CONFIRME);
+
+            assertThat(rdv.peutEtreMarqueHonore(DEBUT)).isTrue();
+            rdv.marquerHonore(DEBUT);
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.HONORE);
+        }
+
+        @Test
+        @DisplayName("absent refusé jusqu'à la fin du créneau, accepté juste après")
+        void absentApresLaFin() {
+            Rdv rdv = confirme();
+            assertThat(rdv.peutEtreMarqueAbsent(rdv.getFin())).isFalse();
+            assertThatThrownBy(() -> rdv.marquerAbsent(rdv.getFin()))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("avant la fin");
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.CONFIRME);
+
+            assertThat(rdv.peutEtreMarqueAbsent(rdv.getFin().plusSeconds(1))).isTrue();
+            rdv.marquerAbsent(rdv.getFin().plusSeconds(1));
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.ABSENT);
+        }
+
+        @Test
+        @DisplayName("une demande en attente n'est ni honorée ni absente, même après la fin")
+        void enAttente() {
+            Rdv rdv = rdvDe(vidange);
+            assertThat(rdv.peutEtreMarqueHonore(APRES_LA_FIN)).isFalse();
+            assertThat(rdv.peutEtreMarqueAbsent(APRES_LA_FIN)).isFalse();
         }
     }
 
@@ -373,14 +424,14 @@ class RdvTest {
 
             Rdv depuisHonore = rdvDe(vidange);
             depuisHonore.confirmer(AVANT_LE_DEBUT);
-            depuisHonore.marquerHonore();
+            depuisHonore.marquerHonore(APRES_LA_FIN);
             assertThatThrownBy(() -> depuisHonore.annulerParLeGarage("motif", maintenant))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("RM-10");
 
             Rdv depuisAbsent = rdvDe(vidange);
             depuisAbsent.confirmer(AVANT_LE_DEBUT);
-            depuisAbsent.marquerAbsent();
+            depuisAbsent.marquerAbsent(APRES_LA_FIN);
             assertThatThrownBy(() -> depuisAbsent.annulerParLeGarage("motif", maintenant))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("RM-10");
