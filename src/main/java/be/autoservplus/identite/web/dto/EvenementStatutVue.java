@@ -11,8 +11,9 @@ import java.time.Instant;
  * <p>L auteur est rendu par son <b>nom complet</b> et non par son adresse : le journal
  * est lu par des collegues, a qui un nom parle, et l adresse d un administrateur n a
  * pas a etre recopiee sur un ecran de plus. {@code auteur} vaut {@code null} lorsque le
- * compte auteur a disparu : la cle etrangere est en {@code ON DELETE SET NULL}, la
- * trace survivant a son auteur.</p>
+ * compte auteur a disparu (la clé étrangère est en {@code ON DELETE SET NULL}, la trace
+ * survivant à son auteur) ou lorsqu'aucun compte n'a décidé, comme la suspension des
+ * comptes au mot de passe publié posée par V45.</p>
  */
 public record EvenementStatutVue(Instant horodatage, StatutUtilisateur statutAvant,
                                  StatutUtilisateur statutApres, String auteur, String motif) {
