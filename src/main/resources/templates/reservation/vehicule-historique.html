@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{historique.titre} + ' | AutoServ+'">Historique d'entretien | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/entete :: entete}"></header>
+
+<main id="contenu">
+    <p><a th:href="@{/mes-vehicules}" th:text="#{historique.retour}">Retour à mes véhicules</a></p>
+
+    <h1 th:text="#{historique.titre}">Historique d'entretien</h1>
+    <p><strong th:text="${historique.vehicule()}">VW Golf (1-ABC-123)</strong></p>
+
+    <p th:if="${historique.interventions().isEmpty()}" class="message"
+       th:text="#{historique.vide}">Aucune intervention n'a encore été réalisée sur ce véhicule.</p>
+
+    <div class="defilement" th:unless="${historique.interventions().isEmpty()}">
+        <table class="tableau">
+            <caption th:text="#{historique.legende}">Interventions sur ce véhicule, de la plus récente à la plus ancienne</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{historique.colonne.date}">Date</th>
+                <th scope="col" th:text="#{historique.colonne.reference}">Référence</th>
+                <th scope="col" th:text="#{historique.colonne.travaux}">Prestations et pièces</th>
+                <th scope="col" th:text="#{historique.colonne.statut}">Statut</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="i : ${historique.interventions()}">
+                <td th:text="${#temporals.format(i.date(), 'dd/MM/yyyy')}">14/09/2026</td>
+                <td><a th:href="@{/mes-interventions/{ref}(ref=${i.reference()})}"
+                       th:text="${i.numero()}">INT-2026-0001</a></td>
+                <td>
+                    <ul th:unless="${i.lignes().isEmpty()}">
+                        <li th:each="l : ${i.lignes()}"
+                            th:text="#{${'historique.type.' + l.type()}} + ' : ' + ${l.libelle()} + ' x' + ${l.quantite()}">Prestation : Vidange x1</li>
+                    </ul>
+                </td>
+                <td th:text="#{${i.clePercue()}}">Terminée</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

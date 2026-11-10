@@ -5,6 +5,8 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.service.InterventionService;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -30,9 +32,11 @@ public class AdminInterventionController {
     private static final String LISTE = "redirect:/admin/interventions";
 
     private final InterventionService service;
+    private final MessageSource messages;
 
-    public AdminInterventionController(InterventionService service) {
+    public AdminInterventionController(InterventionService service, MessageSource messages) {
         this.service = service;
+        this.messages = messages;
     }
 
     @GetMapping
@@ -116,6 +120,23 @@ public class AdminInterventionController {
         return "redirect:/admin/interventions/" + reference;
     }
 
+    /** Note interne de l'atelier (A16), modifiable dans tous les statuts. */
+    @PostMapping("/{reference}/note-interne")
+    public String modifierNoteInterne(@PathVariable UUID reference,
+                                      @RequestParam(required = false) String noteInterne,
+                                      RedirectAttributes redirection) {
+        try {
+            service.modifierNoteInterne(reference, noteInterne);
+            redirection.addFlashAttribute("message", message("admin.intervention.note.enregistree"));
+        } catch (IllegalArgumentException e) {
+            redirection.addFlashAttribute("erreur", message("admin.intervention.note.trop-longue",
+                    Intervention.LONGUEUR_NOTE_INTERNE));
+        } catch (RessourceIntrouvableException | ConflitConcurrenceException e) {
+            redirection.addFlashAttribute("erreur", e.getMessage());
+        }
+        return "redirect:/admin/interventions/" + reference;
+    }
+
     @PostMapping("/{reference}/lignes")
     public String ajouterLigne(@AuthenticationPrincipal UserDetails admin,
                                @PathVariable UUID reference,
@@ -163,5 +184,9 @@ public class AdminInterventionController {
             redirection.addFlashAttribute("erreur", e.getMessage());
         }
         return "redirect:/admin/interventions/" + reference;
+    }
+
+    private String message(String cle, Object... arguments) {
+        return messages.getMessage(cle, arguments, LocaleContextHolder.getLocale());
     }
 }

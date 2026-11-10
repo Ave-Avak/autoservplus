@@ -139,6 +139,7 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/mes-vehicules", Acces.CONNECTE),
             ecran("/mes-vehicules/nouveau", Acces.CONNECTE),
             variable("/mes-vehicules/{reference}/modifier", Acces.CONNECTE),
+            variable("/mes-vehicules/{reference}/historique", Acces.CONNECTE),
             ecran("/mes-rendez-vous", Acces.CONNECTE),
             ecran("/mes-rendez-vous/nouveau", Acces.CONNECTE),
             new Route("/mes-rendez-vous/nouveau/creneaux", "/mes-rendez-vous/nouveau/creneaux?date=2026-01-05",
@@ -182,6 +183,7 @@ class NavigationEcransIT extends SocleIntegration {
             // Reference inconnue : retour a la liste, avec message.
             new Route("/admin/interventions/{reference}", "/admin/interventions/" + REF,
                     Acces.BACK_OFFICE, true, 302),
+            variable("/admin/vehicules/{reference}/historique", Acces.BACK_OFFICE),
             ecran("/admin/commandes-a-planifier", Acces.BACK_OFFICE),
             variable("/admin/commandes-a-planifier/{reference}", Acces.BACK_OFFICE),
             ecran("/admin/catalogue/prestations", Acces.BACK_OFFICE),

@@ -1,6 +1,7 @@
 package be.autoservplus.reservation.web;
 
 import be.autoservplus.common.exception.RegleMetierException;
+import be.autoservplus.intervention.service.HistoriqueEntretienService;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.service.VehiculeService;
 import be.autoservplus.reservation.web.dto.VehiculeForm;
@@ -29,9 +30,11 @@ import java.util.UUID;
 public class VehiculeController {
 
     private final VehiculeService service;
+    private final HistoriqueEntretienService historiques;
 
-    public VehiculeController(VehiculeService service) {
+    public VehiculeController(VehiculeService service, HistoriqueEntretienService historiques) {
         this.service = service;
+        this.historiques = historiques;
     }
 
     @GetMapping
@@ -39,6 +42,15 @@ public class VehiculeController {
         modele.addAttribute("titre", "Mes véhicules");
         modele.addAttribute("vehicules", service.vuesDuMembre(membre.getUsername()));
         return "reservation/vehicules";
+    }
+
+    /** Historique d'entretien du véhicule (F21). Véhicule d'autrui : 404, jamais 403. */
+    @GetMapping("/{reference}/historique")
+    public String historique(@AuthenticationPrincipal UserDetails membre,
+                             @PathVariable UUID reference,
+                             Model modele) {
+        modele.addAttribute("historique", historiques.pourMembre(reference, membre.getUsername()));
+        return "reservation/vehicule-historique";
     }
 
     @GetMapping("/nouveau")

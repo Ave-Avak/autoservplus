@@ -40,7 +40,12 @@
         </div>
         <div>
             <dt>Véhicule</dt>
-            <dd th:text="${intervention.vehicule()}">VW Golf (1-ABC-123)</dd>
+            <dd>
+                <span th:text="${intervention.vehicule()}">VW Golf (1-ABC-123)</span>
+                <a th:if="${intervention.vehiculeReference() != null}"
+                   th:href="@{/admin/vehicules/{ref}/historique(ref=${intervention.vehiculeReference()})}"
+                   th:text="#{admin.intervention.historique.lien}">Historique du véhicule</a>
+            </dd>
         </div>
         <div th:if="${intervention.rdvNumero() != null}">
             <dt>Rendez-vous d'origine</dt>
@@ -202,6 +207,23 @@
             <strong>Commentaire figé :</strong>
             <span th:text="${intervention.commentaireAdmin()}">...</span>
         </p>
+    </div>
+    <!--/* A16 : note réservée au garage, ouverte dans tous les statuts. Aucune vue
+         membre ne la lit. L'aide rappelle qu'elle reste communicable au client. */-->
+    <div>
+        <h3 th:text="#{admin.intervention.note.titre}">Note interne</h3>
+        <form th:action="@{/admin/interventions/{ref}/note-interne(ref=${intervention.reference()})}"
+              method="post" class="formulaire">
+            <div class="champ">
+                <label for="noteInterne" th:text="#{admin.intervention.note.libelle}">Note de l'atelier, invisible du client</label>
+                <textarea id="noteInterne" name="noteInterne" rows="4" maxlength="2000"
+                          aria-describedby="aide-note-interne"
+                          th:text="${intervention.noteInterne()}"></textarea>
+                <p id="aide-note-interne" class="texte-info"
+                   th:text="#{admin.intervention.note.aide}">Le client ne voit pas cette note.</p>
+            </div>
+            <button type="submit" class="btn-cta" th:text="#{admin.intervention.note.enregistrer}">Enregistrer la note</button>
+        </form>
     </div>
 </main>
 

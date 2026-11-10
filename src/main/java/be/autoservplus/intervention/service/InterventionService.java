@@ -238,6 +238,17 @@ public class InterventionService {
     }
 
     /**
+     * Note interne de l'atelier (A16). Réservée au garage par la classe : aucune
+     * surcharge {@code isAuthenticated()} ici, contrairement aux méthodes du membre.
+     */
+    @Transactional
+    public Intervention modifierNoteInterne(UUID reference, String texte) {
+        Intervention it = charger(reference);
+        it.modifierNoteInterne(texte);
+        return ecrire(it);
+    }
+
+    /**
      * Ajoute une prestation au dossier. Si l ajout porte le total au-dela du devis
      * majore de 10 %, l entite bascule d elle-meme en ATTENTE_VALIDATION_MEMBRE
      * (RM-15). Le service se contente de constater la bascule et de prevenir le

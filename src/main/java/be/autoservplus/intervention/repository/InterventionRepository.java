@@ -43,4 +43,21 @@ public interface InterventionRepository extends JpaRepository<Intervention, Long
             ORDER BY i.createdAt DESC
             """)
     List<Intervention> findByStatutIn(@Param("statuts") Collection<StatutIntervention> statuts);
+
+    /**
+     * Interventions d'un véhicule, pour son historique d'entretien (F21).
+     *
+     * <p>Filtre sur {@code i.vehicule.id}, que Hibernate lit dans la clé étrangère sans
+     * joindre {@code Vehicule} : la restriction de suppression logique du véhicule
+     * reste hors du chemin, et un véhicule retiré du parc garde son historique, comme
+     * dans l'export F22. Le tri se fait sur {@link Intervention#dateDeReference()},
+     * calculée, donc par l'appelant.</p>
+     */
+    @Query("""
+            SELECT DISTINCT i FROM Intervention i
+            LEFT JOIN FETCH i.rdv
+            LEFT JOIN FETCH i.lignes
+            WHERE i.vehicule.id = :vehiculeId
+            """)
+    List<Intervention> historiqueDuVehicule(@Param("vehiculeId") Long vehiculeId);
 }

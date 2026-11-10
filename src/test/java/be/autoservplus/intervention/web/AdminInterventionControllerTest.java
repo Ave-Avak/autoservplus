@@ -95,7 +95,7 @@ class AdminInterventionControllerTest {
                 // peutDemarrer, peutSuspendre, peutReprendre, peutTerminer, peutAnnuler,
                 // estEditable, peutAjouterLigne (faux : PLANIFIEE, RM-14), enAttenteValidationMembre
                 true, false, false, false, false, true, false,
-                false, "49,00 €", "49,00 €");
+                false, "49,00 €", "49,00 €", null, null);
         interventionMock = mock(Intervention.class);
         when(interventionMock.getNumero()).thenReturn("INT-2026-0001");
     }

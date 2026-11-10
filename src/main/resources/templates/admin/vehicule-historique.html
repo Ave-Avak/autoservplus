@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.historique.titre} + ' | AutoServ+'">Historique du véhicule | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <p><a th:href="@{/admin/interventions}" th:text="#{admin.historique.retour}">Retour aux interventions</a></p>
+
+    <h1 th:text="#{admin.historique.titre}">Historique du véhicule</h1>
+    <p>
+        <strong th:text="${historique.vehicule()}">VW Golf (1-ABC-123)</strong>,
+        <span th:text="${historique.proprietaire()}">Marie Dupont</span>
+    </p>
+    <p class="texte-info" th:if="${historique.vehiculeRetire()}"
+       th:text="#{admin.historique.retire}">Ce véhicule a été retiré du parc du membre.</p>
+
+    <p th:if="${historique.interventions().isEmpty()}" class="message"
+       th:text="#{admin.historique.vide}">Aucune intervention sur ce véhicule.</p>
+
+    <section th:each="i : ${historique.interventions()}" class="carte">
+        <h2>
+            <a th:href="@{/admin/interventions/{ref}(ref=${i.reference()})}" th:text="${i.numero()}">INT-2026-0001</a>
+        </h2>
+        <dl class="vehicule-details">
+            <div>
+                <dt th:text="#{admin.historique.date}">Date</dt>
+                <dd th:text="${#temporals.format(i.date(), 'dd/MM/yyyy')}">14/09/2026</dd>
+            </div>
+            <div>
+                <dt th:text="#{admin.historique.statut}">Statut</dt>
+                <dd th:text="#{${'admin.historique.statut.' + i.statut().name()}}">Terminée</dd>
+            </div>
+            <div th:if="${i.rdvNumero() != null}">
+                <dt th:text="#{admin.historique.rdv}">Rendez-vous d'origine</dt>
+                <dd th:text="${i.rdvNumero()}">RDV-2026-0001</dd>
+            </div>
+            <div th:if="${i.totalFacturableTvac() != null}">
+                <dt th:text="#{admin.historique.total}">Total facturable TVAC</dt>
+                <dd th:text="${i.totalFacturableTvac()}">59,29 €</dd>
+            </div>
+        </dl>
+
+        <div class="defilement" th:unless="${i.lignes().isEmpty()}">
+            <table class="tableau">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{admin.historique.colonne.type}">Type</th>
+                    <th scope="col" th:text="#{admin.historique.colonne.libelle}">Libellé</th>
+                    <th scope="col" th:text="#{admin.historique.colonne.quantite}">Quantité</th>
+                    <th scope="col" th:text="#{admin.historique.colonne.total}">Total HTVA</th>
+                    <th scope="col" th:text="#{admin.historique.colonne.etat}">État</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="l : ${i.lignes()}" th:classappend="${l.facturable()} ? null : 'ligne-hors-total'">
+                    <td th:text="#{${'historique.type.' + l.type()}}">Prestation</td>
+                    <td th:text="${l.libelle()}">Vidange</td>
+                    <td th:text="${l.quantite()}">1</td>
+                    <td th:text="${l.totalHtva()}">49,00 €</td>
+                    <td th:text="#{${'admin.historique.etat.' + l.etat()}}">Devis initial</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <p th:if="${i.noteInterne() != null}">
+            <strong th:text="#{admin.historique.note}">Note interne</strong>
+            <span th:text="${i.noteInterne()}">Bruit de roulement à surveiller.</span>
+        </p>
+    </section>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

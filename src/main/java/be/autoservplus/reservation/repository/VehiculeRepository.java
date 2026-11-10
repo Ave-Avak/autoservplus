@@ -32,4 +32,12 @@ public interface VehiculeRepository extends JpaRepository<Vehicule, Long> {
     boolean existsByPlaque(String plaque);
 
     long countByMembreEmailAndActifTrue(String email);
+
+    /**
+     * Véhicule par sa référence, retiré du parc compris, pour le back-office : le garage
+     * consulte l'historique d'un véhicule que le membre a retiré de sa liste. Requête
+     * native, la restriction de suppression logique de l'entité ne se levant pas en JPQL.
+     */
+    @Query(value = "SELECT * FROM vehicule WHERE reference = :reference", nativeQuery = true)
+    Optional<Vehicule> parReferenceRetiresCompris(@Param("reference") UUID reference);
 }
