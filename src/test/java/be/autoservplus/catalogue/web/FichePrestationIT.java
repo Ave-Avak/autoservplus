@@ -18,8 +18,11 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasProperty;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -59,7 +62,12 @@ class FichePrestationIT extends SocleIntegration {
         Matcher bouton = BOUTON_RENDEZ_VOUS.matcher(fiche);
         assertThat(bouton.find()).as("bouton « Prendre rendez-vous » rendu").isTrue();
 
+        assertThat(bouton.group(1)).as("le lien porte la prestation de la fiche")
+                .isEqualTo("/mes-rendez-vous/nouveau?prestation=" + prestation);
+
         mvc.perform(get(bouton.group(1)).with(user(membre.getEmail()).roles("MEMBRE")))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("formulaire",
+                        hasProperty("prestations", contains(prestation))));
     }
 }

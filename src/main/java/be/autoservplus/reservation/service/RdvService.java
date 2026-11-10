@@ -29,6 +29,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -158,6 +159,28 @@ public class RdvService {
             parCategorie.computeIfAbsent(p.getCategorie(), c -> new ArrayList<>()).add(p);
         }
         return parCategorie;
+    }
+
+    /**
+     * Prestation à cocher d'avance quand le membre arrive depuis la fiche d'une
+     * prestation. Une référence absente, malformée, inconnue ou inactive ne coche rien
+     * et ne lève rien : le lien vient d'une page publique, un catalogue modifié entre
+     * l'affichage de la fiche et le clic ne doit pas transformer la prise de rendez-vous
+     * en page d'erreur.
+     */
+    public Optional<UUID> prestationPreselectionnee(String reference) {
+        if (reference == null || reference.isBlank()) {
+            return Optional.empty();
+        }
+        UUID uuid;
+        try {
+            uuid = UUID.fromString(reference.trim());
+        } catch (IllegalArgumentException e) {
+            return Optional.empty();
+        }
+        return prestations.findByReference(uuid)
+                .filter(Prestation::isActif)
+                .map(Prestation::getReference);
     }
 
     /** Heures de depart un jour donne pour les prestations choisies. */
