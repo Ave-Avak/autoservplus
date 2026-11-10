@@ -19,7 +19,7 @@
     <div th:unless="${succes}">
         <h1>Vérification impossible</h1>
         <div class="message message-erreur" role="alert">
-            <p th:text="${motif}">Le lien est invalide ou a expiré.</p>
+            <p th:text="#{${motif}}">Le lien est invalide ou a expiré.</p>
         </div>
         <!-- Cas de loin le plus frequent : le jeton a expire (24 h). L'ecran doit
              donc offrir le renvoi, pas seulement un retour a l'accueil. -->

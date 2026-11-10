@@ -49,13 +49,16 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     Optional<Utilisateur> findByReference(UUID reference);
 
-    Optional<Utilisateur> findByJetonVerification(String jeton);
-
     boolean existsByEmailIgnoreCase(String email);
 
-    Optional<Utilisateur> findByJetonChangementEmail(String jeton);
+    // Recherches par EMPREINTE (JetonLien.empreinte) : aucun jeton n'est stocké en clair.
 
-    /** Recherche par EMPREINTE : le jeton de definition n est jamais stocke en clair. */
+    Optional<Utilisateur> findByJetonVerificationHache(String empreinte);
+
+    Optional<Utilisateur> findByJetonReinitialisationHache(String empreinte);
+
+    Optional<Utilisateur> findByJetonChangementEmailHache(String empreinte);
+
     Optional<Utilisateur> findByJetonDefinitionHache(String empreinte);
 
     /**

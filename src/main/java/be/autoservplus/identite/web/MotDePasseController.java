@@ -106,7 +106,7 @@ public class MotDePasseController {
         try {
             service.verifierJeton(jeton);
         } catch (RessourceIntrouvableException | RegleMetierException e) {
-            modele.addAttribute("motif", e.getMessage());
+            modele.addAttribute("motif", motifRefus(e));
             return "identite/mot-de-passe-lien-invalide";
         }
         NouveauMotDePasseForm formulaire = new NouveauMotDePasseForm();
@@ -132,11 +132,21 @@ public class MotDePasseController {
         try {
             service.reinitialiser(formulaire.getJeton(), formulaire.getMotDePasse());
         } catch (RessourceIntrouvableException | RegleMetierException e) {
-            modele.addAttribute("motif", e.getMessage());
+            modele.addAttribute("motif", motifRefus(e));
             return "identite/mot-de-passe-lien-invalide";
         }
 
         modele.addAttribute("titre", "Mot de passe modifié");
         return "identite/mot-de-passe-modifie";
+    }
+
+    /**
+     * Clé i18n du refus. Le message de l'exception reste au journal : c'est un texte
+     * technique, en français, qui nommait jusqu'au jeton refusé.
+     */
+    private static String motifRefus(RuntimeException refus) {
+        return refus instanceof RegleMetierException regle && "RM-05".equals(regle.getCodeRegle())
+                ? "lien-courriel.reinitialisation-expire"
+                : "lien-courriel.inconnu";
     }
 }

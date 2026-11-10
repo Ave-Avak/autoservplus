@@ -408,7 +408,7 @@ class LimitationDebitIT extends SocleIntegration {
     }
 
     private String jetonDe(String email) {
-        return utilisateurs.findByEmailIgnoreCase(email).orElseThrow().getJetonVerification();
+        return utilisateurs.findByEmailIgnoreCase(email).orElseThrow().getJetonVerificationHache();
     }
 
     private String creerMembreNonVerifie() {

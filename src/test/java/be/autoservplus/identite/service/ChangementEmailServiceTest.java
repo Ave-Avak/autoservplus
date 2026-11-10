@@ -1,6 +1,7 @@
 package be.autoservplus.identite.service;
 
 import be.autoservplus.communication.service.DetailsChangementEmailCourriel;
+import be.autoservplus.communication.service.LiensCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -59,7 +60,7 @@ class ChangementEmailServiceTest {
     @BeforeEach
     void setUp() {
         service = new ChangementEmailService(repository, courriel, encodeur, limiteur,
-                Clock.fixed(MAINTENANT, ZoneOffset.UTC));
+                Clock.fixed(MAINTENANT, ZoneOffset.UTC), new LiensCourriel("http://localhost:8080"));
         membre = new Utilisateur(ACTUELLE, "$2a$12$empreinte", "Dupont", "Marie",
                 TypeUtilisateur.MEMBRE);
         membre.confirmerAdresseEmail();
@@ -92,7 +93,7 @@ class ChangementEmailServiceTest {
             // joignable a l adresse d origine.
             assertThat(membre.getEmail()).isEqualTo(ACTUELLE);
             assertThat(membre.getEmailEnAttente()).isEqualTo(CIBLE);
-            assertThat(membre.getJetonChangementEmail()).isNotBlank();
+            assertThat(membre.getJetonChangementEmailHache()).hasSize(64);
             assertThat(membre.getJetonChangementExpiration())
                     .isEqualTo(MAINTENANT.plus(ChangementEmailService.VALIDITE_JETON));
         }
@@ -221,17 +222,24 @@ class ChangementEmailServiceTest {
     @DisplayName("confirmation")
     class Confirmation {
 
+        /** Le jeton en clair ne se lit que dans le lien envoye, la base n en a que l empreinte. */
         private String armer() {
             cibleLibre();
             demander();
-            return membre.getJetonChangementEmail();
+            ArgumentCaptor<String> lien = ArgumentCaptor.forClass(String.class);
+            verify(courriel).envoyerConfirmationNouvelleAdresse(any(), lien.capture());
+            assertThat(lien.getValue())
+                    .startsWith("http://localhost:8080/changement-adresse/confirmation?jeton=");
+            String clair = lien.getValue().substring(lien.getValue().indexOf('=') + 1);
+            assertThat(membre.getJetonChangementEmailHache()).isEqualTo(JetonLien.empreinte(clair));
+            return clair;
         }
 
         @Test
         @DisplayName("bascule l'adresse, la marque vérifiée et rend l'ancienne")
         void bascule() {
             String jeton = armer();
-            when(repository.findByJetonChangementEmail(jeton)).thenReturn(Optional.of(membre));
+            when(repository.findByJetonChangementEmailHache(JetonLien.empreinte(jeton))).thenReturn(Optional.of(membre));
             when(repository.existsByEmailIgnoreCase(CIBLE)).thenReturn(false);
 
             String ancienne = service.confirmer(jeton);
@@ -251,7 +259,7 @@ class ChangementEmailServiceTest {
         @DisplayName("adresse prise entre la demande et la confirmation : refus propre")
         void priseEntreTemps() {
             String jeton = armer();
-            when(repository.findByJetonChangementEmail(jeton)).thenReturn(Optional.of(membre));
+            when(repository.findByJetonChangementEmailHache(JetonLien.empreinte(jeton))).thenReturn(Optional.of(membre));
             when(repository.existsByEmailIgnoreCase(CIBLE)).thenReturn(true);
 
             assertThatThrownBy(() -> service.confirmer(jeton))
@@ -272,8 +280,8 @@ class ChangementEmailServiceTest {
             ChangementEmailService tardif = new ChangementEmailService(repository, courriel,
                     encodeur, limiteur,
                     Clock.fixed(MAINTENANT.plus(ChangementEmailService.VALIDITE_JETON)
-                            .plusSeconds(1), ZoneOffset.UTC));
-            when(repository.findByJetonChangementEmail(jeton)).thenReturn(Optional.of(membre));
+                            .plusSeconds(1), ZoneOffset.UTC), new LiensCourriel("http://localhost:8080"));
+            when(repository.findByJetonChangementEmailHache(JetonLien.empreinte(jeton))).thenReturn(Optional.of(membre));
 
             assertThatThrownBy(() -> tardif.confirmer(jeton))
                     .isInstanceOf(ChangementEmailRefuseException.class)

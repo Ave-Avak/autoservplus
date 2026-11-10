@@ -196,8 +196,18 @@ public class InscriptionController {
             modele.addAttribute("succes", true);
         } catch (RessourceIntrouvableException | RegleMetierException e) {
             modele.addAttribute("succes", false);
-            modele.addAttribute("motif", e.getMessage());
+            modele.addAttribute("motif", motifRefus(e));
         }
         return "identite/verification";
+    }
+
+    /**
+     * Clé i18n du refus. Le message de l'exception reste au journal : c'est un texte
+     * technique, en français, qui nommait jusqu'au jeton refusé.
+     */
+    private static String motifRefus(RuntimeException refus) {
+        return refus instanceof RegleMetierException regle && "RM-03".equals(regle.getCodeRegle())
+                ? "lien-courriel.verification-expire"
+                : "lien-courriel.inconnu";
     }
 }

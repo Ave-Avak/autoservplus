@@ -164,12 +164,12 @@ class RenvoiVerificationIT extends SocleIntegration {
         void jetonRegenere() throws Exception {
             String email = creerMembre(false);
             String jetonInitial = utilisateurs.findByEmailIgnoreCase(email).orElseThrow()
-                    .getJetonVerification();
+                    .getJetonVerificationHache();
 
             corpsApresDemande(email);
 
             Utilisateur apres = utilisateurs.findByEmailIgnoreCase(email).orElseThrow();
-            assertThat(apres.getJetonVerification()).isNotNull().isNotEqualTo(jetonInitial);
+            assertThat(apres.getJetonVerificationHache()).isNotNull().isNotEqualTo(jetonInitial);
             assertThat(apres.isEmailVerifie()).isFalse();
         }
 

@@ -2,11 +2,13 @@ package be.autoservplus.communication.service;
 
 import be.autoservplus.identite.domain.Utilisateur;
 import jakarta.annotation.PostConstruct;
+import org.springframework.context.MessageSource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.util.Locale;
 
 /**
  * SEULE implementation de {@link ServiceCourriel} : le contenu du courriel est
@@ -38,6 +40,12 @@ import java.time.Instant;
 public class CourrielConsole implements ServiceCourriel {
 
     private static final Logger JOURNAL = LoggerFactory.getLogger(CourrielConsole.class);
+
+    private final MessageSource messages;
+
+    public CourrielConsole(MessageSource messages) {
+        this.messages = messages;
+    }
 
     /**
      * Avertissement au demarrage. En {@code WARN} comme pour le paiement simule : un
@@ -318,5 +326,30 @@ public class CourrielConsole implements ServiceCourriel {
                 Si vous n en etes pas a l origine, contactez le garage.
                 ----------------------------------------------------------------
                 """, destinataire.nomComplet(), destinataire.getEmail());
+    }
+
+    /**
+     * Premier courriel rédigé dans la langue du titulaire : sujet et corps viennent de
+     * l'i18n, selon la langue enregistrée sur le compte, et non de la requête en cours.
+     * La réinitialisation est anonyme, et le titulaire lit son courriel ailleurs.
+     */
+    @Override
+    public void envoyerAvisMotDePasseModifie(Utilisateur destinataire, OrigineMotDePasse origine) {
+        Locale langue = Locale.of(destinataire.getLangue() == null
+                ? "fr" : destinataire.getLangue().name());
+        String prefixe = "courriel.mot-de-passe-modifie.";
+        JOURNAL.info("""
+
+                ---------- COURRIEL NON EXPEDIE (demonstration) : {} ----------
+                Destinataire : {} <{}>
+                {}
+                {}
+                ----------------------------------------------------------------
+                """,
+                messages.getMessage(prefixe + "sujet", null, langue),
+                destinataire.nomComplet(), destinataire.getEmail(),
+                messages.getMessage(prefixe + origine.name().toLowerCase(Locale.ROOT)
+                        .replace('_', '-'), null, langue),
+                messages.getMessage(prefixe + "conseil", null, langue));
     }
 }

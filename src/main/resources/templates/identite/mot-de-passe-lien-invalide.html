@@ -11,7 +11,7 @@
 <main id="contenu">
     <h1>Ce lien n'est plus valable</h1>
     <div class="message message-erreur" role="alert">
-        <p th:text="${motif}">Le lien est invalide ou a expiré.</p>
+        <p th:text="#{${motif}}">Le lien est invalide ou a expiré.</p>
     </div>
     <a class="btn-cta" th:href="@{/mot-de-passe/oublie}">Demander un nouveau lien</a>
 </main>

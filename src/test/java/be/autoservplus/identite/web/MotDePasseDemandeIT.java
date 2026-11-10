@@ -90,12 +90,12 @@ class MotDePasseDemandeIT extends SocleIntegration {
     void laNeutraliteNEstPasDeLInaction() throws Exception {
         String email = creerMembreActif();
         assertThat(utilisateurs.findByEmailIgnoreCase(email).orElseThrow()
-                .getJetonVerification()).isNull();
+                .getJetonReinitialisationHache()).isNull();
 
         corpsApresDemande(email);
 
         assertThat(utilisateurs.findByEmailIgnoreCase(email).orElseThrow()
-                .getJetonVerification()).isNotNull();
+                .getJetonReinitialisationHache()).isNotNull();
     }
 
     /**

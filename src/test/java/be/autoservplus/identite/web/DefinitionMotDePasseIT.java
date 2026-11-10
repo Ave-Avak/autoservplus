@@ -92,7 +92,9 @@ class DefinitionMotDePasseIT extends SocleIntegration {
         ArgumentCaptor<String> lien = ArgumentCaptor.forClass(String.class);
         verify(courriel, atLeastOnce()).envoyerLienDefinitionMotDePasse(
                 argThat(u -> u.getEmail().equals(email)), lien.capture());
-        return lien.getValue().substring(PREFIXE_LIEN.length());
+        // Lien absolu, sur l adresse publique du deploiement.
+        assertThat(lien.getValue()).startsWith("http").contains(PREFIXE_LIEN);
+        return lien.getValue().substring(lien.getValue().indexOf(PREFIXE_LIEN) + PREFIXE_LIEN.length());
     }
 
     private Utilisateur parEmail(String email) {

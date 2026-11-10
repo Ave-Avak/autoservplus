@@ -3,6 +3,8 @@ package be.autoservplus.identite.service;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.StatutUtilisateur;
+import be.autoservplus.communication.service.OrigineMotDePasse;
+import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.TypeEvenementSecurite;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -36,6 +38,7 @@ class PremierMotDePasseServiceTest {
 
     @Mock private UtilisateurRepository utilisateurs;
     @Mock private JournalSecuriteCompte journal;
+    @Mock private ServiceCourriel courriel;
 
     private final PasswordEncoder encodeur = new BCryptPasswordEncoder(4);
     private PremierMotDePasseService service;
@@ -44,7 +47,7 @@ class PremierMotDePasseServiceTest {
     @BeforeEach
     void setUp() {
         service = new PremierMotDePasseService(utilisateurs, encodeur, journal,
-                Clock.fixed(MAINTENANT, ZoneOffset.UTC), new PolitiqueMotDePasse(new MotsDePasseCourants(), motDePasse -> false));
+                Clock.fixed(MAINTENANT, ZoneOffset.UTC), new PolitiqueMotDePasse(new MotsDePasseCourants(), motDePasse -> false), courriel);
         admin = new Utilisateur("admin@exemple.be", encodeur.encode("inerte"), "Nom", "Prenom",
                 TypeUtilisateur.ADMINISTRATEUR);
     }
@@ -52,7 +55,7 @@ class PremierMotDePasseServiceTest {
     @Test
     @DisplayName("le jeton est cherché par son empreinte, jamais en clair, et ne sert qu'une fois")
     void definition() {
-        JetonDefinition jeton = JetonDefinition.tirer();
+        JetonLien jeton = JetonLien.tirer();
         admin.preparerDefinitionMotDePasse(jeton.empreinte(), MAINTENANT.plus(Duration.ofHours(24)));
         when(utilisateurs.findByJetonDefinitionHache(jeton.empreinte())).thenReturn(Optional.of(admin));
 
@@ -68,7 +71,7 @@ class PremierMotDePasseServiceTest {
     @Test
     @DisplayName("un jeton expiré est refusé, sans rien changer")
     void expire() {
-        JetonDefinition jeton = JetonDefinition.tirer();
+        JetonLien jeton = JetonLien.tirer();
         admin.preparerDefinitionMotDePasse(jeton.empreinte(), MAINTENANT.minusSeconds(1));
         when(utilisateurs.findByJetonDefinitionHache(jeton.empreinte())).thenReturn(Optional.of(admin));
 
@@ -92,7 +95,7 @@ class PremierMotDePasseServiceTest {
     @Test
     @DisplayName("refuse, appelé directement, un mot de passe de quatorze caractères")
     void refuseUnMotDePasseTropCourt() {
-        JetonDefinition jeton = JetonDefinition.tirer();
+        JetonLien jeton = JetonLien.tirer();
         admin.preparerDefinitionMotDePasse(jeton.empreinte(), MAINTENANT.plus(Duration.ofHours(24)));
         when(utilisateurs.findByJetonDefinitionHache(jeton.empreinte())).thenReturn(Optional.of(admin));
         Utilisateur exploitant = new Utilisateur("chef@exemple.be", encodeur.encode("secret du fichier env"),
@@ -126,5 +129,6 @@ class PremierMotDePasseServiceTest {
 
         assertThat(exploitant.doitChangerMotDePasse()).isFalse();
         verify(journal).consigner(exploitant, TypeEvenementSecurite.MOT_DE_PASSE_CHANGE, exploitant);
+        verify(courriel).envoyerAvisMotDePasseModifie(exploitant, OrigineMotDePasse.CHANGEMENT_IMPOSE);
     }
 }
