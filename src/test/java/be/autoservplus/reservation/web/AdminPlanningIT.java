@@ -243,7 +243,7 @@ class AdminPlanningIT extends SocleIntegration {
                     .andExpect(content().string(containsString("Marie Dupont")))
                     .andExpect(content().string(containsString("Vidange")))
                     .andExpect(content().string(containsString(
-                            "/admin/rendez-vous/" + aDecouvrir.getReference() + "/annuler")));
+                            "href=\"/admin/rendez-vous/" + aDecouvrir.getReference() + "\"")));
         }
 
         @Test

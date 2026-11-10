@@ -5,6 +5,7 @@ import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
@@ -21,6 +22,10 @@ import java.util.UUID;
  * et {@code peutMarquerAbsent} exige que le creneau soit ecoule
  * ({@code fin < maintenant} : on ne declare absent qu apres la fin, sinon le
  * client peut encore arriver en retard).</p>
+ *
+ * <p>{@code debut} et {@code fin} sont les heures locales de l'atelier, pour les
+ * écrans traduits qui les formatent selon la langue de l'interface. Les champs
+ * {@code jourLisible} et {@code heureDebut} restent pour les écrans en français.</p>
  */
 public record RdvVueAdmin(
         UUID reference,
@@ -30,6 +35,9 @@ public record RdvVueAdmin(
         String jourLisible,
         String heureDebut,
         String heureFin,
+        LocalDateTime debut,
+        LocalDateTime fin,
+        String poste,
         String membreNom,
         String membreEmail,
         String vehicule,
@@ -55,6 +63,9 @@ public record RdvVueAdmin(
                 FormatageRdv.jourLisible(rdv.getDebut(), zone),
                 FormatageRdv.heureLisible(rdv.getDebut(), zone),
                 FormatageRdv.heureLisible(rdv.getFin(), zone),
+                LocalDateTime.ofInstant(rdv.getDebut(), zone),
+                LocalDateTime.ofInstant(rdv.getFin(), zone),
+                rdv.getPoste().getLibelle(),
                 rdv.getMembre().nomComplet(),
                 rdv.getMembre().getEmail(),
                 rdv.getVehicule().getMarque() + " " + rdv.getVehicule().getModele()

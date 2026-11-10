@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Fragments des rendez-vous du back-office</title></head>
+<body>
+
+<!--/* Contenu d'une carte de rendez-vous, commun aux trois sections de l'écran de traitement. */-->
+<th:block th:fragment="carte(r)">
+    <p class="carte-categorie">
+        <span th:class="'badge badge-' + ${#strings.toLowerCase(r.statut())}"
+              th:text="#{'rdv.statut.' + ${r.statut()}}">En attente</span>
+    </p>
+    <h3><a th:href="@{/admin/rendez-vous/{ref}(ref=${r.reference()})}" th:text="${r.numero()}"
+           th:aria-label="#{admin.rdv.action.detail.aria(${r.numero()})}">RDV-2026-0001</a></h3>
+    <p>
+        <strong th:text="${r.membreNom()}">Marie Dupont</strong><br>
+        <a th:href="'mailto:' + ${r.membreEmail()}" th:text="${r.membreEmail()}">marie@exemple.be</a>
+    </p>
+    <p>
+        <span th:text="${#strings.capitalize(#temporals.format(r.debut(), 'EEEE d MMMM yyyy'))}">Dimanche 13 septembre 2026</span><br>
+        <span th:text="${#temporals.format(r.debut(), 'HH:mm')} + ' - ' + ${#temporals.format(r.fin(), 'HH:mm')}">10:00 - 11:00</span>
+    </p>
+    <p th:text="${r.vehicule()}">VW Golf (1-ABC-123)</p>
+    <p th:text="${#strings.listJoin(r.prestations(), ', ')}">Vidange, Plaquettes</p>
+    <p th:text="${r.montantTvac()}">49,00 €</p>
+    <p th:if="${r.commentaire()}" class="texte-info">
+        <em th:text="${r.commentaire()}">Bruit au freinage</em>
+    </p>
+</th:block>
+
+<!--/*
+  Clôture d'un rendez-vous confirmé : honoré, absent, ou annulation par le garage.
+  Depuis le détail, le champ « retour » y ramène après l'action au lieu de la liste.
+*/-->
+<div th:fragment="cloture(r, depuisDetail)" class="carte-actions">
+    <form th:if="${r.peutMarquerHonore()}"
+          th:action="@{/admin/rendez-vous/{ref}/honorer(ref=${r.reference()})}"
+          method="post">
+        <input th:if="${depuisDetail}" type="hidden" name="retour" value="detail">
+        <button type="submit" class="btn-cta" th:text="#{admin.rdv.action.honorer}">Marquer honoré</button>
+    </form>
+    <form th:if="${r.peutMarquerAbsent()}"
+          th:action="@{/admin/rendez-vous/{ref}/absent(ref=${r.reference()})}"
+          method="post" class="formulaire-suppression"
+          th:data-message="#{admin.rdv.action.absent.confirmation(${r.numero()})}">
+        <input th:if="${depuisDetail}" type="hidden" name="retour" value="detail">
+        <button type="submit" class="lien-bouton texte-erreur" th:text="#{admin.rdv.action.absent}">Marquer absent</button>
+    </form>
+    <a th:if="${r.peutAnnuler()}"
+       th:href="@{/admin/rendez-vous/{ref}/annuler(ref=${r.reference()})}"
+       class="lien-bouton" th:text="#{admin.rdv.action.annuler}">Annuler</a>
+</div>
+
+</body>
+</html>

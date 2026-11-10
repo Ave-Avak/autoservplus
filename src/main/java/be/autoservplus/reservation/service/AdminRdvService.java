@@ -11,6 +11,7 @@ import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
+import be.autoservplus.reservation.service.dto.AgendaAdmin;
 import be.autoservplus.reservation.service.dto.FichierAgenda;
 import be.autoservplus.reservation.web.dto.RdvVueAdmin;
 import org.slf4j.Logger;
@@ -22,6 +23,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
@@ -29,7 +32,8 @@ import java.util.function.Consumer;
 
 /**
  * Actions administratives sur les rendez-vous : confirmation, refus, annulation par
- * le garage, cloture (honore/absent), plus les deux vues du tableau de bord.
+ * le garage, clôture (honoré, absent), plus les vues de l'écran de traitement, de
+ * l'agenda et du détail.
  *
  * <p>Chaque transition delegue au domaine ({@link Rdv} et sa machine a etats) : les
  * gardes RM-10 vivent dans l entite et remontent telles quelles. Le service se
@@ -54,6 +58,9 @@ import java.util.function.Consumer;
 public class AdminRdvService {
 
     private static final Logger log = LoggerFactory.getLogger(AdminRdvService.class);
+
+    /** Étendue par défaut de l'agenda, au-delà du jour courant. */
+    static final int HORIZON_AGENDA_JOURS = 14;
 
     private final RdvRepository rdvs;
     private final ParametreAtelierRepository parametres;
@@ -89,22 +96,56 @@ public class AdminRdvService {
     }
 
     /**
-     * Rendez-vous confirmes deja commences (debut &lt;= maintenant), a traiter
-     * par le garage : marquer honore des l accueil du client, ou absent une fois
-     * le creneau ecoule (le flag correspondant sur {@link RdvVueAdmin} exige
-     * respectivement debut atteint et fin passee).
+     * Rendez-vous confirmés commencés aujourd'hui, de minuit (fuseau de l'atelier) à
+     * maintenant : le client est attendu ou présent, le garage le marque honoré, ou
+     * absent une fois le créneau écoulé (flags de {@link RdvVueAdmin}).
      */
-    public List<RdvVueAdmin> rendezVousATraiter() {
+    public List<RdvVueAdmin> rendezVousDuJour() {
         ZoneId zone = parametres.courants().zone();
-        var maintenant = horloge.instant();
-        return rdvs.findATraiter(StatutRdv.CONFIRME, maintenant).stream()
+        Instant maintenant = horloge.instant();
+        return rdvs.commencesEntre(StatutRdv.CONFIRME, minuit(maintenant, zone), maintenant).stream()
                 .map(r -> RdvVueAdmin.de(r, zone, maintenant))
                 .toList();
     }
 
     /**
-     * Vue detaillee d un rendez-vous, pour le contexte des ecrans de refus et
-     * d annulation par le garage. {@link RessourceIntrouvableException} si absent.
+     * Rendez-vous confirmés d'un jour antérieur que personne n'a marqués honorés ni
+     * absents. Séparés de ceux du jour pour qu'un oubli ancien ne se lise pas comme un
+     * client attendu aujourd'hui.
+     */
+    public List<RdvVueAdmin> rendezVousPassesSansIssue() {
+        ZoneId zone = parametres.courants().zone();
+        Instant maintenant = horloge.instant();
+        return rdvs.commencesAvant(StatutRdv.CONFIRME, minuit(maintenant, zone)).stream()
+                .map(r -> RdvVueAdmin.de(r, zone, maintenant))
+                .toList();
+    }
+
+    /**
+     * Agenda du back-office : tous les statuts, du jour {@code du} au jour {@code au}
+     * compris, dans le fuseau de l'atelier. Sans borne, la période va d'aujourd'hui à
+     * {@value #HORIZON_AGENDA_JOURS} jours plus tard. Une fin antérieure au début ne
+     * lève rien : la page le signale et n'affiche aucun rendez-vous.
+     */
+    public AgendaAdmin agenda(LocalDate du, LocalDate au) {
+        ZoneId zone = parametres.courants().zone();
+        Instant maintenant = horloge.instant();
+        LocalDate debut = du != null ? du : LocalDate.ofInstant(maintenant, zone);
+        LocalDate fin = au != null ? au : debut.plusDays(HORIZON_AGENDA_JOURS);
+        if (fin.isBefore(debut)) {
+            return new AgendaAdmin(debut, fin, true, List.of());
+        }
+        List<RdvVueAdmin> vues = rdvs.agenda(
+                        debut.atStartOfDay(zone).toInstant(),
+                        fin.plusDays(1).atStartOfDay(zone).toInstant()).stream()
+                .map(r -> RdvVueAdmin.de(r, zone, maintenant))
+                .toList();
+        return new AgendaAdmin(debut, fin, false, vues);
+    }
+
+    /**
+     * Vue détaillée d'un rendez-vous, pour l'écran de détail et le contexte des écrans
+     * de refus et d'annulation par le garage. {@link RessourceIntrouvableException} si absent.
      * On charge le RDV avant de consulter les parametres : sur reference inconnue,
      * l exception remonte immediatement sans requete inutile en base.
      */
@@ -148,9 +189,9 @@ public class AdminRdvService {
     public Rdv marquerHonore(UUID reference) {
         Rdv rdv = charger(reference);
         // Garde temporelle avant transition : on n'accueille pas un client avant
-        // l'heure de debut du RDV. Symetrique du filtre d'affichage
-        // (findATraiter WHERE debut <= maintenant) : les deux seuils se
-        // correspondent, un POST direct hors-delai est rejete au meme point.
+        // l'heure de début du RDV. Symétrique du flag d'affichage peutMarquerHonore
+        // (debut <= maintenant) : les deux seuils se correspondent, un POST direct
+        // hors délai est rejeté au même point.
         if (rdv.getDebut().isAfter(horloge.instant())) {
             throw new RegleMetierException(
                     "Un rendez-vous ne peut être marqué honoré avant l'heure de début.");
@@ -179,6 +220,10 @@ public class AdminRdvService {
     }
 
     // --- helpers privees --------------------------------------------------------------
+
+    private static Instant minuit(Instant maintenant, ZoneId zone) {
+        return LocalDate.ofInstant(maintenant, zone).atStartOfDay(zone).toInstant();
+    }
 
     private Rdv charger(UUID reference) {
         return rdvs.findByReference(reference)

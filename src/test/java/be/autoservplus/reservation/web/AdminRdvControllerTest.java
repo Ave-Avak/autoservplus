@@ -3,6 +3,7 @@ package be.autoservplus.reservation.web;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.service.AdminRdvService;
+import be.autoservplus.reservation.service.dto.AgendaAdmin;
 import be.autoservplus.reservation.web.dto.RdvVueAdmin;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,6 +23,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.servlet.ViewResolver;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -103,6 +105,9 @@ class AdminRdvControllerTest {
         vueEnAttente = new RdvVueAdmin(REF, "RDV-2026-0001",
                 "EN_ATTENTE", "En attente de confirmation",
                 "dimanche 13 septembre 2026", "10:00", "10:30",
+                java.time.LocalDateTime.of(2026, 9, 13, 10, 0),
+                java.time.LocalDateTime.of(2026, 9, 13, 10, 30),
+                "Pont 1",
                 "Marie Dupont", "marie@exemple.be",
                 "VW Golf (1-ABC-123)",
                 List.of("Vidange"),
@@ -117,17 +122,19 @@ class AdminRdvControllerTest {
     class Liste {
 
         @Test
-        @DisplayName("expose demandesEnAttente et rendezVousATraiter dans le modele")
+        @DisplayName("expose les trois sections dans le modèle")
         @WithMockUser(roles = "ADMINISTRATEUR")
-        void afficheLesDeuxSections() throws Exception {
+        void afficheLesTroisSections() throws Exception {
             when(adminRdvs.demandesEnAttente()).thenReturn(List.of(vueEnAttente));
-            when(adminRdvs.rendezVousATraiter()).thenReturn(List.of());
+            when(adminRdvs.rendezVousDuJour()).thenReturn(List.of());
+            when(adminRdvs.rendezVousPassesSansIssue()).thenReturn(List.of());
 
             mvc.perform(get("/admin/rendez-vous"))
                     .andExpect(status().isOk())
                     .andExpect(view().name("admin/rendez-vous"))
                     .andExpect(model().attribute("demandesEnAttente", List.of(vueEnAttente)))
-                    .andExpect(model().attribute("rendezVousATraiter", List.of()));
+                    .andExpect(model().attribute("rendezVousDuJour", List.of()))
+                    .andExpect(model().attribute("rendezVousPassesSansIssue", List.of()));
         }
 
         @Test
@@ -136,6 +143,59 @@ class AdminRdvControllerTest {
         void interditAuxMembres() throws Exception {
             mvc.perform(get("/admin/rendez-vous"))
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("agenda et détail")
+    class AgendaEtDetail {
+
+        @Test
+        @DisplayName("agenda sans paramètre : bornes nulles transmises au service")
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        void agendaParDefaut() throws Exception {
+            AgendaAdmin agenda = new AgendaAdmin(LocalDate.of(2026, 9, 13), LocalDate.of(2026, 9, 27),
+                    false, List.of(vueEnAttente));
+            when(adminRdvs.agenda(null, null)).thenReturn(agenda);
+
+            mvc.perform(get("/admin/rendez-vous/agenda"))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name("admin/rendez-vous-agenda"))
+                    .andExpect(model().attribute("agenda", agenda));
+        }
+
+        @Test
+        @DisplayName("agenda : dates ISO lues dans la requête")
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        void agendaBornes() throws Exception {
+            LocalDate du = LocalDate.of(2026, 10, 1);
+            LocalDate au = LocalDate.of(2026, 10, 3);
+            when(adminRdvs.agenda(du, au)).thenReturn(new AgendaAdmin(du, au, false, List.of()));
+
+            mvc.perform(get("/admin/rendez-vous/agenda").param("du", "2026-10-01").param("au", "2026-10-03"))
+                    .andExpect(status().isOk());
+
+            verify(adminRdvs).agenda(du, au);
+        }
+
+        @Test
+        @DisplayName("détail : la vue du rendez-vous est au modèle")
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        void detail() throws Exception {
+            when(adminRdvs.vue(REF)).thenReturn(vueEnAttente);
+
+            mvc.perform(get("/admin/rendez-vous/{ref}", REF))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name("admin/rendez-vous-detail"))
+                    .andExpect(model().attribute("rdv", vueEnAttente));
+        }
+
+        @Test
+        @DisplayName("un membre n'ouvre ni l'agenda ni le détail")
+        @WithMockUser(roles = "MEMBRE")
+        void interditAuxMembres() throws Exception {
+            mvc.perform(get("/admin/rendez-vous/agenda")).andExpect(status().isForbidden());
+            mvc.perform(get("/admin/rendez-vous/{ref}", REF)).andExpect(status().isForbidden());
         }
     }
 
@@ -157,6 +217,27 @@ class AdminRdvControllerTest {
                     .andExpect(flash().attributeExists("message"));
 
             verify(adminRdvs).confirmer(REF);
+        }
+
+        @Test
+        @DisplayName("depuis le détail : retour au détail")
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        void retourAuDetail() throws Exception {
+            doReturn(rdvMock).when(adminRdvs).confirmer(REF);
+
+            mvc.perform(post("/admin/rendez-vous/{ref}/confirmer", REF).param("retour", "detail").with(csrf()))
+                    .andExpect(redirectedUrl("/admin/rendez-vous/" + REF));
+        }
+
+        @Test
+        @DisplayName("retour inconnu : la liste, jamais une adresse fournie par la requête")
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        void retourInconnu() throws Exception {
+            doReturn(rdvMock).when(adminRdvs).confirmer(REF);
+
+            mvc.perform(post("/admin/rendez-vous/{ref}/confirmer", REF)
+                            .param("retour", "https://exemple.invalid/").with(csrf()))
+                    .andExpect(redirectedUrl("/admin/rendez-vous"));
         }
 
         @Test
@@ -220,7 +301,7 @@ class AdminRdvControllerTest {
         }
 
         @Test
-        @DisplayName("POST motif valide : redirect + flash succes, service appele avec le motif")
+        @DisplayName("POST motif valide : redirection vers le détail, service appelé avec le motif")
         @WithMockUser(roles = "ADMINISTRATEUR")
         void motifValideRefuse() throws Exception {
             when(adminRdvs.refuser(REF, "Piece indisponible")).thenReturn(rdvMock);
@@ -229,7 +310,7 @@ class AdminRdvControllerTest {
                             .param("motif", "Piece indisponible")
                             .with(csrf()))
                     .andExpect(status().is3xxRedirection())
-                    .andExpect(redirectedUrl("/admin/rendez-vous"))
+                    .andExpect(redirectedUrl("/admin/rendez-vous/" + REF))
                     .andExpect(flash().attributeExists("message"));
 
             verify(adminRdvs).refuser(REF, "Piece indisponible");

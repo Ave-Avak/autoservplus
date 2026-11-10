@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.rdv.detail.titre(${rdv.numero()})} + ' | AutoServ+'">Rendez-vous | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <p>
+        <a th:href="@{/admin/rendez-vous/agenda}" th:text="#{admin.rdv.detail.retour-agenda}">Retour à l'agenda</a>
+        <a th:href="@{/admin/rendez-vous}" th:text="#{admin.rdv.detail.retour-liste}">Rendez-vous à traiter</a>
+    </p>
+
+    <h1 th:text="#{admin.rdv.detail.titre(${rdv.numero()})}">Rendez-vous RDV-2026-0001</h1>
+
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+
+    <p>
+        <span th:class="'badge badge-' + ${#strings.toLowerCase(rdv.statut())}"
+              th:text="#{'rdv.statut.' + ${rdv.statut()}}">En attente</span>
+    </p>
+
+    <dl class="vehicule-details">
+        <div>
+            <dt th:text="#{admin.rdv.colonne.date}">Date</dt>
+            <dd th:text="${#strings.capitalize(#temporals.format(rdv.debut(), 'EEEE d MMMM yyyy'))}">Dimanche 13 septembre 2026</dd>
+        </div>
+        <div>
+            <dt th:text="#{admin.rdv.colonne.heure}">Heure</dt>
+            <dd th:text="${#temporals.format(rdv.debut(), 'HH:mm')} + ' - ' + ${#temporals.format(rdv.fin(), 'HH:mm')}">10:00 - 11:00</dd>
+        </div>
+        <div>
+            <dt th:text="#{admin.rdv.colonne.poste}">Poste</dt>
+            <dd th:text="${rdv.poste()}">Pont 1</dd>
+        </div>
+        <div>
+            <dt th:text="#{admin.rdv.colonne.membre}">Membre</dt>
+            <dd>
+                <span th:text="${rdv.membreNom()}">Marie Dupont</span>
+                (<a th:href="'mailto:' + ${rdv.membreEmail()}" th:text="${rdv.membreEmail()}">marie@exemple.be</a>)
+            </dd>
+        </div>
+        <div>
+            <dt th:text="#{admin.rdv.colonne.vehicule}">Véhicule</dt>
+            <dd th:text="${rdv.vehicule()}">VW Golf (1-ABC-123)</dd>
+        </div>
+        <div>
+            <dt th:text="#{admin.rdv.colonne.prestations}">Prestations</dt>
+            <dd th:text="${#strings.listJoin(rdv.prestations(), ', ')}">Vidange</dd>
+        </div>
+        <div>
+            <dt th:text="#{admin.rdv.detail.montant}">Montant TVAC</dt>
+            <dd th:text="${rdv.montantTvac()}">49,00 €</dd>
+        </div>
+        <div th:if="${rdv.commentaire()}">
+            <dt th:text="#{admin.rdv.detail.commentaire}">Commentaire du membre</dt>
+            <dd th:text="${rdv.commentaire()}">Bruit au freinage</dd>
+        </div>
+        <div th:if="${rdv.motifRefus()}">
+            <dt th:text="#{admin.rdv.detail.motif}">Motif communiqué au membre</dt>
+            <dd th:text="${rdv.motifRefus()}">Atelier fermé</dd>
+        </div>
+    </dl>
+
+    <section aria-labelledby="titre-actions">
+        <h2 id="titre-actions" th:text="#{admin.rdv.detail.actions}">Actions</h2>
+        <p th:unless="${rdv.peutConfirmer() or rdv.peutRefuser() or rdv.peutAnnuler()
+                        or rdv.peutMarquerHonore() or rdv.peutMarquerAbsent()}"
+           class="message" th:text="#{admin.rdv.detail.aucune-action}">Aucune action possible.</p>
+        <div class="carte-actions" th:if="${rdv.peutConfirmer() or rdv.peutRefuser()}">
+            <form th:if="${rdv.peutConfirmer()}"
+                  th:action="@{/admin/rendez-vous/{ref}/confirmer(ref=${rdv.reference()})}"
+                  method="post">
+                <input type="hidden" name="retour" value="detail">
+                <button type="submit" class="btn-cta" th:text="#{admin.rdv.action.confirmer}">Confirmer</button>
+            </form>
+            <a th:if="${rdv.peutRefuser()}"
+               th:href="@{/admin/rendez-vous/{ref}/refuser(ref=${rdv.reference()})}"
+               class="lien-bouton" th:text="#{admin.rdv.action.refuser}">Refuser</a>
+        </div>
+        <div th:replace="~{fragments/rendez-vous-admin :: cloture(${rdv}, true)}"></div>
+    </section>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+
+<script th:src="@{/js/confirmation.js}" defer></script>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

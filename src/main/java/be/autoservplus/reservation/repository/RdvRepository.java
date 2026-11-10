@@ -71,23 +71,44 @@ public interface RdvRepository extends JpaRepository<Rdv, Long> {
     List<Rdv> findByStatutOrderByDebut(@Param("statut") StatutRdv statut);
 
     /**
-     * Rendez-vous d un statut donne dont le debut est atteint ou passe (debut <=
-     * maintenant). Sert au tableau de bord admin pour identifier les rendez-vous
-     * CONFIRME en cours ou passes qui restent a marquer (honore ou absent).
+     * Rendez-vous d'un statut donné dont le début tombe dans [depuis, jusqua], bornes
+     * comprises. Sert à la section « du jour » de l'écran de traitement : depuis minuit,
+     * dans le fuseau de l'atelier, jusqu'à maintenant.
      *
-     * <p>Le predicat est {@code debut <= maintenant} et non {@code fin <
-     * maintenant} : le garage marque le client honore des qu il se presente au
-     * debut du creneau, pas apres la fin. Le temps reel du travail est capture
-     * separement par {@code date_debut_reelle} / {@code date_fin_reelle} de
-     * l Intervention creee au marquage.</p>
+     * <p>Le prédicat porte sur le début et non sur la fin : le garage marque le client
+     * honoré dès qu'il se présente, pas après la fin du créneau. Le temps réel du
+     * travail est capturé à part par l'intervention créée au marquage.</p>
      */
     @Query("""
             SELECT r FROM Rdv r
             JOIN FETCH r.membre JOIN FETCH r.vehicule JOIN FETCH r.poste
-            WHERE r.statut = :statut AND r.debut <= :maintenant
+            WHERE r.statut = :statut AND r.debut >= :depuis AND r.debut <= :jusqua
             ORDER BY r.debut
             """)
-    List<Rdv> findATraiter(
-            @Param("statut") StatutRdv statut,
-            @Param("maintenant") Instant maintenant);
+    List<Rdv> commencesEntre(@Param("statut") StatutRdv statut,
+                             @Param("depuis") Instant depuis,
+                             @Param("jusqua") Instant jusqua);
+
+    /** Rendez-vous d'un statut donné commencés avant un instant, du plus ancien au plus récent. */
+    @Query("""
+            SELECT r FROM Rdv r
+            JOIN FETCH r.membre JOIN FETCH r.vehicule JOIN FETCH r.poste
+            WHERE r.statut = :statut AND r.debut < :avant
+            ORDER BY r.debut
+            """)
+    List<Rdv> commencesAvant(@Param("statut") StatutRdv statut, @Param("avant") Instant avant);
+
+    /**
+     * Agenda du back-office : tous les rendez-vous, quel que soit leur statut, dont le
+     * début tombe dans [depuis, avant). Les prestations sont chargées avec, la page
+     * les affiche toutes.
+     */
+    @Query("""
+            SELECT DISTINCT r FROM Rdv r
+            JOIN FETCH r.membre JOIN FETCH r.vehicule JOIN FETCH r.poste
+            LEFT JOIN FETCH r.lignes l LEFT JOIN FETCH l.prestation
+            WHERE r.debut >= :depuis AND r.debut < :avant
+            ORDER BY r.debut
+            """)
+    List<Rdv> agenda(@Param("depuis") Instant depuis, @Param("avant") Instant avant);
 }

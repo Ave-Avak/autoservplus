@@ -58,9 +58,9 @@ import be.autoservplus.support.SocleIntegration;
 class AdminRdvServiceIT extends SocleIntegration {
 
     private static final ZoneId BRUXELLES = ZoneId.of("Europe/Brussels");
-    // Dimanche 13 septembre 2026 a 12:00 Bruxelles. Les RDV termines a 09:30 sont
-    // dans le passe, ceux commencant a 14:00 sont dans le futur : la frontiere
-    // temporelle de rendezVousATraiter est nette et deterministe.
+    // Dimanche 13 septembre 2026 à 12:00 Bruxelles. Les RDV terminés à 09:30 sont
+    // dans le passé, ceux qui commencent à 14:00 dans le futur : la frontière
+    // temporelle de rendezVousDuJour est nette et déterministe.
     private static final Instant INSTANT_FIGE =
             LocalDate.of(2026, 9, 13).atTime(12, 0).atZone(BRUXELLES).toInstant();
 
@@ -132,45 +132,78 @@ class AdminRdvServiceIT extends SocleIntegration {
     }
 
     @Test
-    @DisplayName("rendezVousATraiter ne renvoie que les CONFIRME dont debut <= maintenant")
-    void rendezVousATraiterFiltreParStatutEtDebutAtteint() {
-        // CONFIRME 09:00-09:30 : debut passe, fin passee -> apparait, honore ET absent OK.
+    @DisplayName("rendez-vous du jour : confirmés commencés depuis minuit, ni ceux d'hier ni ceux à venir")
+    void rendezVousDuJourFiltreParStatutEtJour() {
+        // CONFIRME 09:00-09:30 : début et fin passés, honoré et absent possibles.
         Rdv passe = insererRdv(LocalDate.of(2026, 9, 13).atTime(9, 0).atZone(BRUXELLES).toInstant(),
                 StatutRdv.CONFIRME);
-        // CONFIRME 11:30-12:00 : debut passe (INSTANT_FIGE 12:00), fin pile a 12:00 -> apparait,
-        // honore OK mais absent PAS ENCORE (fin n est pas < maintenant, elle est ==).
+        // CONFIRME 11:30-12:00 : début passé, fin pile à 12:00, honoré possible, absent pas encore.
         Rdv enCours = insererRdv(LocalDate.of(2026, 9, 13).atTime(11, 30).atZone(BRUXELLES).toInstant(),
                 StatutRdv.CONFIRME);
-        // CONFIRME 14:00-14:30 : debut > INSTANT_FIGE -> ne doit PAS apparaitre.
+        // CONFIRME à 14:00 : pas encore commencé.
         insererRdv(LocalDate.of(2026, 9, 13).atTime(14, 0).atZone(BRUXELLES).toInstant(),
                 StatutRdv.CONFIRME);
-        // EN_ATTENTE 07:00-07:30 : debut passe mais mauvais statut -> ne doit PAS apparaitre.
+        // EN_ATTENTE à 07:00 : mauvais statut.
         insererRdv(LocalDate.of(2026, 9, 13).atTime(7, 0).atZone(BRUXELLES).toInstant(),
                 StatutRdv.EN_ATTENTE);
+        // CONFIRME la veille à 23:30, minuit de Bruxelles le sépare du jour courant.
+        Rdv hier = insererRdv(LocalDate.of(2026, 9, 12).atTime(23, 30).atZone(BRUXELLES).toInstant(),
+                StatutRdv.CONFIRME);
 
-        List<RdvVueAdmin> vues = service.rendezVousATraiter();
+        List<RdvVueAdmin> vues = service.rendezVousDuJour();
 
-        // Le filtre remonte les deux CONFIRME au debut atteint, dans l ordre chronologique.
         assertThat(vues).extracting(RdvVueAdmin::reference)
                 .containsExactly(passe.getReference(), enCours.getReference());
-
-        RdvVueAdmin vuePasse = vues.get(0);
-        assertThat(vuePasse.peutMarquerHonore()).isTrue();
-        assertThat(vuePasse.peutMarquerAbsent())
-                .as("Fin passee : le RDV peut aussi etre marque absent")
-                .isTrue();
-
-        RdvVueAdmin vueEnCours = vues.get(1);
-        assertThat(vueEnCours.peutMarquerHonore())
-                .as("Debut atteint : marquage present possible")
-                .isTrue();
-        assertThat(vueEnCours.peutMarquerAbsent())
-                .as("Fin non depassee (==) : on ne declare pas absent tant que le creneau n est pas ecoule")
+        assertThat(vues.get(0).peutMarquerHonore()).isTrue();
+        assertThat(vues.get(0).peutMarquerAbsent()).isTrue();
+        assertThat(vues.get(1).peutMarquerHonore()).isTrue();
+        assertThat(vues.get(1).peutMarquerAbsent())
+                .as("fin égale à maintenant : on ne déclare pas absent tant que le créneau n'est pas écoulé")
                 .isFalse();
+        assertThat(vues.get(0).membreEmail()).isEqualTo("marie@exemple.be");
+        assertThat(vues.get(0).vehicule()).contains("Golf");
 
-        // Relations chargees par JOIN FETCH accessibles ici :
-        assertThat(vuePasse.membreEmail()).isEqualTo("marie@exemple.be");
-        assertThat(vuePasse.vehicule()).contains("Golf");
+        assertThat(service.rendezVousPassesSansIssue()).extracting(RdvVueAdmin::reference)
+                .as("le rendez-vous d'hier sort de la section du jour pour celle des passés")
+                .containsExactly(hier.getReference());
+    }
+
+    @Test
+    @DisplayName("agenda : tous les statuts de la période, bornes comprises, dans l'ordre")
+    void agendaTousStatutsDeLaPeriode() {
+        Rdv lundi = insererRdv(LocalDate.of(2026, 9, 14).atTime(9, 0).atZone(BRUXELLES).toInstant(),
+                StatutRdv.EN_ATTENTE);
+        Rdv mardiSoir = insererRdv(LocalDate.of(2026, 9, 15).atTime(17, 0).atZone(BRUXELLES).toInstant(),
+                StatutRdv.CONFIRME);
+        Rdv refuse = insererRdv(LocalDate.of(2026, 9, 15).atTime(8, 0).atZone(BRUXELLES).toInstant(),
+                StatutRdv.EN_ATTENTE);
+        refuse.refuser("Atelier complet", INSTANT_FIGE);
+        rdvs.saveAndFlush(refuse);
+        // Hors période : le dimanche précédent et le mercredi suivant.
+        insererRdv(LocalDate.of(2026, 9, 13).atTime(16, 0).atZone(BRUXELLES).toInstant(), StatutRdv.CONFIRME);
+        insererRdv(LocalDate.of(2026, 9, 16).atTime(0, 0).atZone(BRUXELLES).toInstant(), StatutRdv.CONFIRME);
+
+        var agenda = service.agenda(LocalDate.of(2026, 9, 14), LocalDate.of(2026, 9, 15));
+
+        assertThat(agenda.rendezVous()).extracting(RdvVueAdmin::reference)
+                .containsExactly(lundi.getReference(), refuse.getReference(), mardiSoir.getReference());
+        assertThat(agenda.rendezVous().get(1).statut()).isEqualTo("REFUSE");
+        assertThat(agenda.rendezVous().get(0).prestations()).containsExactly("Vidange");
+    }
+
+    @Test
+    @DisplayName("agenda sans borne : du jour courant à J+14")
+    void agendaParDefaut() {
+        Rdv dernierJour = insererRdv(LocalDate.of(2026, 9, 27).atTime(18, 0).atZone(BRUXELLES).toInstant(),
+                StatutRdv.EN_ATTENTE);
+        insererRdv(LocalDate.of(2026, 9, 28).atTime(8, 0).atZone(BRUXELLES).toInstant(), StatutRdv.EN_ATTENTE);
+
+        var agenda = service.agenda(null, null);
+
+        assertThat(agenda.du()).isEqualTo(LocalDate.of(2026, 9, 13));
+        assertThat(agenda.au()).isEqualTo(LocalDate.of(2026, 9, 27));
+        assertThat(agenda.rendezVous()).extracting(RdvVueAdmin::reference)
+                .containsExactly(dernierJour.getReference());
     }
 
     @Test
