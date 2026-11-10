@@ -63,7 +63,7 @@ class VitrineIT extends SocleIntegration {
         @DisplayName("porte l identite legale lue de la configuration")
         void identiteLegale() throws Exception {
             mvc.perform(get("/contact").with(anonymous()).header("Accept-Language", "fr"))
-                    .andExpect(content().string(containsString("AutoServ+ SRL")))
+                    .andExpect(content().string(containsString("Garage de démonstration")))
                     .andExpect(content().string(containsString("BE0123456789")))
                     .andExpect(content().string(containsString("0123.456.789")))
                     .andExpect(content().string(containsString("1000 Bruxelles")));

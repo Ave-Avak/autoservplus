@@ -25,7 +25,7 @@
 
     <section>
         <h2 th:text="#{legal.mentions.responsable.titre}">Responsable de la publication</h2>
-        <p th:text="#{legal.mentions.responsable.completer(${garage.nomCommercial()}, ${garage.raisonSociale()}, ${garage.adresseLisible() + ', ' + garage.pays()}, ${garage.numeroBce()}, ${garage.numeroTva()}, ${garage.telephone()}, ${garage.courriel()})}">Le responsable de la publication est le représentant légal du garage.</p>
+        <p th:text="#{legal.mentions.responsable.completer(${garage.enseigne()}, ${garage.raisonSociale()}, ${garage.adresseLisible() + ', ' + garage.pays()}, ${garage.numeroBce()}, ${garage.numeroTva()}, ${garage.telephone()}, ${garage.courriel()})}">Le responsable de la publication est le représentant légal du garage.</p>
     </section>
 
     <section>

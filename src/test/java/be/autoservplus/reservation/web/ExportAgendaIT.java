@@ -153,10 +153,10 @@ class ExportAgendaIT extends SocleIntegration {
             String ics = deplier(telecharger(rdv));
 
             assertThat(ics)
-                    .contains("SUMMARY:Rendez-vous au AutoServ+ SRL")
+                    .contains("SUMMARY:Rendez-vous au Garage de démonstration")
                     // L adresse vient de autoservplus.garage.*. Ses virgules sont
                     // echappees, sans quoi LOCATION serait scinde en trois valeurs.
-                    .contains("LOCATION:AutoServ+ SRL\\, Rue de l'Atelier 12\\, 1000 Bruxelles\\, Belgique")
+                    .contains("LOCATION:Garage de démonstration\\, Rue de l'Atelier 12\\, 1000 Bruxelles\\, Belgique")
                     .contains("DTSTART:20260916T080000Z")
                     .contains("DTEND:20260916T090000Z")
                     .contains("TRIGGER:-PT24H");
@@ -220,7 +220,7 @@ class ExportAgendaIT extends SocleIntegration {
             Rdv rdv = rdvConfirme(marie, golf);
 
             mvc.perform(get("/mes-rendez-vous/{ref}/agenda.ics?lang=nl", rdv.getReference()))
-                    .andExpect(content().string(containsString("SUMMARY:Afspraak bij AutoServ+ SRL")))
+                    .andExpect(content().string(containsString("SUMMARY:Afspraak bij Garage de démonstration")))
                     .andExpect(header().string("Content-Disposition", containsString("afspraak-")));
         }
 
@@ -240,7 +240,7 @@ class ExportAgendaIT extends SocleIntegration {
 
             FichierAgenda fichier = exportAgenda.pourLeCourriel(rdvConfirme(neerlandophone, polo));
 
-            assertThat(deplier(fichier.contenu())).contains("SUMMARY:Afspraak bij AutoServ+ SRL");
+            assertThat(deplier(fichier.contenu())).contains("SUMMARY:Afspraak bij Garage de démonstration");
             assertThat(fichier.nomFichier()).startsWith("afspraak-");
         }
     }

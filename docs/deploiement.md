@@ -54,26 +54,47 @@ DOMAINE=:80
 COOKIE_SECURE=true
 DB_PASSWORD=<un mot de passe quelconque, sans caractère dollar>
 MFA_CLE_MAITRE=<sortie de : openssl rand -base64 32>
+SPRING_PROFILES_ACTIVE=prod
+EXPLOITANT_EMAIL=<adresse du compte d'exploitation>
+EXPLOITANT_MOT_DE_PASSE=<mot de passe initial, à changer au premier accès>
+GARAGE_NOM_COMMERCIAL=<enseigne, ou rien pour reprendre la raison sociale>
+GARAGE_RAISON_SOCIALE=<dénomination>
+GARAGE_FORME_JURIDIQUE=<SRL, SA... ou rien pour une personne physique>
+GARAGE_RUE=<rue du siège>
+GARAGE_NUMERO_RUE=<numéro>
+GARAGE_CODE_POSTAL=<code postal>
+GARAGE_LOCALITE=<localité>
+GARAGE_PAYS=Belgique
+GARAGE_BCE=<0000.000.000>
+GARAGE_RPM=<RPM et siège du tribunal, si une forme juridique est donnée>
+GARAGE_TVA=<BE suivi des dix chiffres du BCE>
+GARAGE_IBAN=<IBAN du garage>
+GARAGE_TELEPHONE=<téléphone>
+GARAGE_COURRIEL=<courriel>
 ```
 
 Sans `MFA_CLE_MAITRE`, l'application refuse de démarrer, sous tout profil : elle
 chiffre les secrets du second facteur, obligatoire pour tout compte du back-office.
+
+La répétition tourne sous `prod`, comme une mise en service réelle, donc avec
+l'identité réelle du garage. Sous ce profil, l'application refuse de démarrer si l'une
+des onze variables obligatoires manque ou est vide, si `GARAGE_RPM` manque alors que
+`GARAGE_FORME_JURIDIQUE` est donnée, ou si le numéro d'entreprise, le numéro de TVA ou
+l'IBAN échoue à sa clé de contrôle. Le message nomme toutes les variables fautives en
+une fois. Restent facultatives `GARAGE_NOM_COMMERCIAL`, que remplace alors la raison
+sociale, ainsi que `GARAGE_FORME_JURIDIQUE` et `GARAGE_RPM`, pour un garage tenu par une
+personne physique.
 
 `COOKIE_SECURE=true` alors que Caddy sert en clair n'est pas une erreur : ce que voit
 le navigateur, c'est le tunnel, et le tunnel est en HTTPS.
 
 `URL_PUBLIQUE` reste vide pour l'instant : l'adresse n'existe pas encore.
 
-> Une variable présente mais vide n'est pas une variable absente. `application.yml`
-> écrit ses valeurs par défaut sous la forme `${GARAGE_RUE:Rue de l'Atelier}` : Spring
-> ne prend le repli que si la variable est introuvable. Or `cp .env.example .env`
-> recopie douze lignes `GARAGE_*=` vides, et Docker Compose les transmet comme des
-> variables définies à la chaîne vide. Les laisser telles quelles n'applique pas les
-> valeurs de démonstration : cela vide l'identité du garage sur la facture, les mentions
-> légales et la page de contact, sans lever la moindre erreur.
->
-> Pour chaque variable : la renseigner, ou supprimer la ligne. Ne jamais laisser une
-> ligne vide en comptant sur le défaut.
+> Une variable présente mais vide n'est pas une variable absente. Docker Compose
+> transmet une ligne `GARAGE_RUE=` comme une variable définie à la chaîne vide. Sous
+> `prod`, le contrôle de démarrage la refuse. Sous `demo`, elle masque la valeur de
+> démonstration et vide l'identité sur la facture et les mentions légales, sans erreur.
+> Pour chaque variable : la renseigner, ou ne pas l'écrire du tout.
 >
 > `MOLLIE_PROFILE_ID` mérite la même vigilance, avec une conséquence plus brutale : avec
 > un jeton d'accès, un profil vide fait refuser le démarrage, ce qui vaut mieux que
@@ -84,43 +105,27 @@ Le commentaire de `.env.example` fait référence pour choisir l'identifiant Mol
 API `test_`/`live_`, jeton d'organisation `access_` ou jeton d'accès avancé) et pour
 savoir lequel des trois oblige à renseigner `MOLLIE_PROFILE_ID`.
 
-### 2. Démarrage et chargement des données
+### 2. Démarrage sur une base vierge
 
 ```bash
-docker compose -f docker-compose.prod.yml up -d postgres
-docker compose -f docker-compose.prod.yml exec -T postgres \
-    psql -U autoservplus -d autoservplus < docs/dump_autoservplus.sql
 docker compose -f docker-compose.prod.yml up -d --build
 ```
 
-L'ordre compte : le dump porte le schéma et l'historique Flyway. Le charger avant
-le premier démarrage évite que Flyway applique les migrations sur une base vide pour
-les retrouver ensuite en double.
+La répétition part d'une base vierge, sans dump ni graine de démonstration, parce que
+c'est ce qu'est une mise en service réelle : Flyway crée le schéma et ses données de
+référence à partir des seules migrations de `db/migration`. Un volume `postgres` resté
+d'une répétition précédente se vide d'abord par `down -v` (étape 6).
 
 La première construction dure plusieurs minutes : elle télécharge les dépendances
 Maven. Les suivantes réemploient la couche mise en cache tant que `pom.xml` ne change
 pas.
 
-> Un avertissement Flyway au démarrage est normal et attendu :
->
-> ```
-> Schema "public" has a version (900) that is newer than the latest available migration (35) !
-> ```
->
-> Le dump a été pris sur une base où le profil `demo` était actif, donc avec la
-> migration V900 du jeu de démonstration appliquée. Hors de ce profil, elle n'est
-> pas sur le chemin de Flyway, qui la classe parmi les migrations « futures », l'ignore
-> et démarre : comportement vérifié, pas supposé.
->
-> C'est pour cela que la graine porte le numéro 900 et non le suivant de la série.
-> Flyway ne tolère une migration appliquée mais non résolue que si son numéro dépasse
-> toutes les migrations connues. En dessous, elle devient « missing » et fait échouer
-> le démarrage. Numérotée 34, la graine a cessé d'être tolérée dès l'arrivée de V35 :
-> le dump restauré ne démarrait plus. À 900, elle reste hors d'atteinte quel que soit
-> le nombre de migrations ajoutées ensuite.
->
-> L'avertissement ne doit donc désigner que V900. S'il en nomme une autre, c'est
-> qu'une migration de schéma manque réellement au dépôt.
+> Le dump ne sert qu'aux serveurs de démonstration, sous `demo` (section C). Il a été
+> pris sur une base où ce profil était actif, V900 comprise, et précède les migrations
+> de schéma ajoutées depuis. Sous `demo`, Flyway les applique après coup
+> (`out-of-order`). Sous `prod`, il les refuserait : de numéro inférieur à V900, elles
+> seraient classées « ignorées » et la validation échouerait. Le dump publié est à
+> régénérer au gel du code, par `docs/regenerer-dump.sh`.
 
 Vérification :
 
@@ -173,18 +178,18 @@ ici : le membre paie et sa commande reste en attente.
 
 Depuis l'adresse `trycloudflare.com`, dans un navigateur :
 
-1. Page d'accueil et page de contact : l'identité et les horaires proviennent
-   respectivement des variables `GARAGE_*` et de la table `plage_ouverture`.
-2. Connexion avec un compte du jeu de démonstration :
-
-   | Rôle | Adresse | Mot de passe |
-   |---|---|---|
-   | Administrateur | `admin@autoservplus.be` | `atelier-demonstration-2026` |
-   | Membre | `marie.dupont@demo.test` | `marie-conduit-une-golf-bleue` |
-
-3. Commande et paiement : ajouter une pièce au panier, valider, payer.
-4. Retour sur le site après paiement, puis téléchargement de la facture.
-5. Retour du membre et réception du webhook :
+1. Page d'accueil, page de contact et mentions légales : l'identité et les horaires
+   proviennent respectivement des variables `GARAGE_*` et de la table
+   `plage_ouverture`.
+2. Connexion avec le compte d'exploitation (`EXPLOITANT_EMAIL`). Le premier accès
+   impose un nouveau mot de passe et l'enrôlement du second facteur. Depuis le
+   back-office, créer une pièce au catalogue : une base vierge n'en porte aucune.
+3. Inscription d'un membre. Aucun courriel ne part encore, le lien de vérification se
+   lit dans le journal de l'application (`docker compose -f docker-compose.prod.yml
+   logs app`).
+4. Commande et paiement : ajouter la pièce au panier, valider, payer.
+5. Retour sur le site après paiement, puis téléchargement de la facture.
+6. Retour du membre et réception du webhook :
 
    ```bash
    docker compose -f docker-compose.prod.yml logs -f app
@@ -329,6 +334,7 @@ URL_PUBLIQUE=https://203-0-113-7.sslip.io
 COOKIE_SECURE=true
 DB_PASSWORD=<mot de passe long, propre à cette machine>
 MFA_CLE_MAITRE=<sortie de : openssl rand -base64 32, propre à cette machine>
+SPRING_PROFILES_ACTIVE=demo
 ```
 
 Sauvegarder `MFA_CLE_MAITRE` hors de la machine, et à part des sauvegardes de la
@@ -341,13 +347,21 @@ permet de servir en HTTPS avant d'avoir acheté un domaine. Le jour où un vrai 
 existera, il suffira de faire pointer son enregistrement `A` vers la machine et de
 changer ces deux lignes.
 
-Renseigner également les variables `GARAGE_*` : elles impriment l'identité légale de
-l'émetteur sur les factures. Les valeurs livrées sont des valeurs de démonstration :
-une facture portant un faux numéro de TVA n'est pas une facture.
+Ce serveur est un déploiement de démonstration : il tourne sous `demo`, comme Railway.
+Ce profil fournit l'identité d'un garage de démonstration, dont le numéro d'entreprise
+est faux exprès, et aucune ligne `GARAGE_*` ne doit figurer dans `.env` : une ligne vide
+masquerait la valeur de démonstration. `demo` publie aussi des mots de passe et un
+secret de second facteur, il ne sert donc jamais à une mise en service réelle.
+
+Pour une mise en service réelle, `SPRING_PROFILES_ACTIVE=prod` et les variables
+`GARAGE_*` de la répétition locale (section B.1), renseignées avec l'identité réelle du
+garage. Sans elles, le démarrage est refusé.
 
 ### 5. Démarrage
 
-Même séquence qu'en local :
+Le serveur de démonstration charge le dump avant le premier démarrage, ce que la
+répétition locale ne fait plus. Le dump publié précède les dernières migrations de
+schéma : sous `demo`, Flyway les applique après lui. Il est à régénérer au gel du code.
 
 ```bash
 docker compose -f docker-compose.prod.yml up -d postgres
@@ -390,7 +404,11 @@ Liste de contrôle avant de considérer le déploiement fait :
 - [ ] En-tête `Strict-Transport-Security` présent dans la réponse.
 - [ ] Le paiement aboutit et la commande passe à « payée », donc le webhook a été reçu.
 - [ ] `.env` n'est pas versionné : `git status` ne le mentionne pas.
-- [ ] Le profil `demo` n'est pas actif si la mise en service est réelle.
+- [ ] Démonstration : `SPRING_PROFILES_ACTIVE=demo`, aucune ligne `GARAGE_*` dans `.env`.
+- [ ] Mise en service réelle : `SPRING_PROFILES_ACTIVE=prod`, jamais `demo`, et les
+      variables `GARAGE_*` renseignées avec l'identité réelle du garage.
+- [ ] Les mentions légales et une facture portent la dénomination, la forme juridique
+      et la mention RPM attendues.
 
 ---
 
