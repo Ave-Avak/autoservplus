@@ -11,9 +11,6 @@
   page, repliée sous 40em par le même bouton, et toute la largeur laissée aux
   tableaux du back-office.
 
-  Section « Planning » réservée : elle n'apparaît pas tant que A24 n'a pas d'écran,
-  plutôt que d'afficher un lien mort (lot/planning).
-
   Une entrée n'est affichée que si le rôle peut ouvrir l'écran : « Comptes du
   back-office » est masqué à l'administrateur, et reste gardé par le service.
 
@@ -65,6 +62,17 @@
                                    th:attr="aria-current=${#strings.startsWith(c, '/admin/interventions') or #strings.startsWith(c, '/admin/galerie/interventions')} ? 'page' : null">Interventions</a></li>
                             <li><a th:href="@{/admin/commandes-a-planifier}" th:text="#{admin.nav.commandes-a-planifier}"
                                    th:attr="aria-current=${#strings.startsWith(c, '/admin/commandes-a-planifier')} ? 'page' : null">Commandes à planifier</a></li>
+                        </ul>
+                    </li>
+                    <li class="section">
+                        <span class="section-titre" id="section-planning" th:text="#{admin.nav.planning}">Planning</span>
+                        <ul aria-labelledby="section-planning">
+                            <li><a th:href="@{/admin/planning/plages}" th:text="#{admin.nav.plages}"
+                                   th:attr="aria-current=${#strings.startsWith(c, '/admin/planning/plages')} ? 'page' : null">Plages d'ouverture</a></li>
+                            <li><a th:href="@{/admin/planning/postes}" th:text="#{admin.nav.postes}"
+                                   th:attr="aria-current=${#strings.startsWith(c, '/admin/planning/postes')} ? 'page' : null">Postes d'atelier</a></li>
+                            <li><a th:href="@{/admin/planning/indisponibilites}" th:text="#{admin.nav.indisponibilites}"
+                                   th:attr="aria-current=${#strings.startsWith(c, '/admin/planning/indisponibilites')} ? 'page' : null">Indisponibilités</a></li>
                         </ul>
                     </li>
                     <li class="section">

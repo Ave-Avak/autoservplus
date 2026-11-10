@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.planning.postes.titre} + ' | AutoServ+'">Postes d'atelier | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.planning.postes.titre}">Postes d'atelier</h1>
+    <p class="texte-info" th:text="#{admin.planning.postes.intro}">La capacité de l'atelier est le nombre de postes actifs.</p>
+
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+    <section th:replace="~{fragments/planning-conflits :: liste}"></section>
+
+    <p class="actions-page">
+        <a class="btn-cta" th:href="@{/admin/planning/postes/nouveau}"
+           th:text="#{admin.planning.postes.nouveau}">Nouveau poste</a>
+    </p>
+
+    <p th:if="${postes.isEmpty()}" class="message" th:text="#{admin.planning.postes.vide}">Aucun poste.</p>
+
+    <div class="defilement" th:unless="${postes.isEmpty()}">
+        <table class="tableau">
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.planning.colonne.ordre}">Ordre</th>
+                <th scope="col" th:text="#{admin.planning.colonne.libelle}">Libellé</th>
+                <th scope="col" th:text="#{admin.planning.colonne.description}">Description</th>
+                <th scope="col" th:text="#{admin.planning.colonne.statut}">Statut</th>
+                <th scope="col"><span class="visuellement-cache" th:text="#{admin.planning.colonne.actions}">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="p : ${postes}">
+                <td th:text="${p.ordre()}">1</td>
+                <td th:text="${p.libelle()}">Pont 1</td>
+                <td th:text="${p.description()}">Pont élévateur</td>
+                <td>
+                    <span th:if="${p.actif()}" class="badge badge-confirme" th:text="#{admin.planning.statut.actif}">Actif</span>
+                    <span th:unless="${p.actif()}" class="badge badge-annule" th:text="#{admin.planning.statut.inactif}">Inactif</span>
+                </td>
+                <td>
+                    <a th:href="@{/admin/planning/postes/{ref}/modifier(ref=${p.reference()})}"
+                       th:aria-label="#{admin.planning.action.modifier.aria(${p.libelle()})}"
+                       th:text="#{admin.planning.action.modifier}">Modifier</a>
+                    <a th:href="@{/admin/planning/postes/{ref}/supprimer(ref=${p.reference()})}"
+                       th:aria-label="#{admin.planning.action.retirer.aria(${p.libelle()})}"
+                       th:text="#{admin.planning.action.retirer}">Retirer</a>
+                    <form th:if="${p.actif()}" method="post"
+                          th:action="@{/admin/planning/postes/{ref}/desactiver(ref=${p.reference()})}">
+                        <button type="submit" class="lien-bouton"
+                                th:aria-label="#{admin.planning.action.desactiver.aria(${p.libelle()})}"
+                                th:text="#{admin.planning.action.desactiver}">Désactiver</button>
+                    </form>
+                    <form th:unless="${p.actif()}" method="post"
+                          th:action="@{/admin/planning/postes/{ref}/activer(ref=${p.reference()})}">
+                        <button type="submit" class="lien-bouton"
+                                th:aria-label="#{admin.planning.action.activer.aria(${p.libelle()})}"
+                                th:text="#{admin.planning.action.activer}">Réactiver</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

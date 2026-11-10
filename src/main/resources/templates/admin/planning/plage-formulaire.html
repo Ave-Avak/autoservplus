@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="(${edition} ? #{admin.planning.plage.modifier.titre} : #{admin.planning.plage.creer.titre}) + ' | AutoServ+'">Nouvelle plage | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <p><a th:href="@{/admin/planning/plages}" th:text="#{admin.planning.plages.retour}">Retour aux plages</a></p>
+
+    <h1 th:text="${edition} ? #{admin.planning.plage.modifier.titre} : #{admin.planning.plage.creer.titre}">Nouvelle plage</h1>
+    <p class="texte-info" th:if="${edition}" th:text="#{admin.planning.plage.aide-conflits}">Les rendez-vous déjà pris restent.</p>
+
+    <!--/* Heures rendues au format de l'input time, jamais par th:field, qui suivrait la langue. */-->
+    <form class="formulaire" method="post" th:object="${formulaire}" novalidate
+          th:action="${edition} ? @{/admin/planning/plages/{id}/modifier(id=${id})} : @{/admin/planning/plages}">
+
+        <div class="champ">
+            <label for="jour" th:text="#{admin.planning.champ.jour}">Jour</label>
+            <select id="jour" name="jour" required>
+                <option value="" th:text="#{admin.planning.champ.jour-choisir}">Choisir un jour</option>
+                <option th:each="j : ${jours}" th:value="${j.numero()}" th:text="#{${j.cle()}}"
+                        th:selected="${formulaire.jour == j.numero()}">Lundi</option>
+            </select>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('jour')}" th:errors="*{jour}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="heureDebut" th:text="#{admin.planning.champ.heure-debut}">Heure de début</label>
+            <input type="time" id="heureDebut" name="heureDebut" required
+                   th:value="${formulaire.heureDebut != null} ? ${#temporals.format(formulaire.heureDebut, 'HH:mm')} : ''">
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('heureDebut')}" th:errors="*{heureDebut}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="heureFin" th:text="#{admin.planning.champ.heure-fin}">Heure de fin</label>
+            <input type="time" id="heureFin" name="heureFin" required
+                   th:value="${formulaire.heureFin != null} ? ${#temporals.format(formulaire.heureFin, 'HH:mm')} : ''">
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('heureFin')}" th:errors="*{heureFin}"></p>
+        </div>
+
+        <div class="champ">
+            <label>
+                <input type="checkbox" th:field="*{actif}">
+                <span th:text="#{admin.planning.champ.actif}">Plage active</span>
+            </label>
+        </div>
+
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{admin.planning.enregistrer}">Enregistrer</button>
+            <a th:href="@{/admin/planning/plages}" th:text="#{admin.planning.annuler}">Annuler</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

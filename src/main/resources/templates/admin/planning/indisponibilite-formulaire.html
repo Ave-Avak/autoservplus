@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="(${edition} ? #{admin.planning.indisponibilite.modifier.titre} : #{admin.planning.indisponibilite.creer.titre}) + ' | AutoServ+'">Nouvelle indisponibilité | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <p><a th:href="@{/admin/planning/indisponibilites}" th:text="#{admin.planning.indisponibilites.retour}">Retour aux indisponibilités</a></p>
+
+    <h1 th:text="${edition} ? #{admin.planning.indisponibilite.modifier.titre} : #{admin.planning.indisponibilite.creer.titre}">Nouvelle indisponibilité</h1>
+    <p class="texte-info" th:text="#{admin.planning.indisponibilite.aide-conflits}">Les rendez-vous déjà pris restent.</p>
+
+    <!--/* Dates rendues au format ISO de l'input datetime-local, jamais par th:field, qui suivrait la langue. */-->
+    <form class="formulaire" method="post" th:object="${formulaire}" novalidate
+          th:action="${edition} ? @{/admin/planning/indisponibilites/{ref}/modifier(ref=${reference})} : @{/admin/planning/indisponibilites}">
+
+        <div class="champ">
+            <label for="posteReference" th:text="#{admin.planning.champ.poste}">Poste</label>
+            <select id="posteReference" name="posteReference">
+                <option value="" th:text="#{admin.planning.atelier-entier}">Tout l'atelier</option>
+                <option th:each="p : ${postes}" th:value="${p.reference()}" th:text="${p.libelle()}"
+                        th:selected="${formulaire.posteReference == p.reference()}">Pont 1</option>
+            </select>
+        </div>
+
+        <div class="champ">
+            <label for="debut" th:text="#{admin.planning.champ.debut}">Début</label>
+            <input type="datetime-local" id="debut" name="debut" required
+                   th:value="${formulaire.debut != null} ? ${#temporals.format(formulaire.debut, 'yyyy-MM-dd')} + 'T' + ${#temporals.format(formulaire.debut, 'HH:mm')} : ''">
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('debut')}" th:errors="*{debut}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="fin" th:text="#{admin.planning.champ.fin}">Fin</label>
+            <input type="datetime-local" id="fin" name="fin" required
+                   th:value="${formulaire.fin != null} ? ${#temporals.format(formulaire.fin, 'yyyy-MM-dd')} + 'T' + ${#temporals.format(formulaire.fin, 'HH:mm')} : ''">
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('fin')}" th:errors="*{fin}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="motif" th:text="#{admin.planning.champ.motif}">Motif</label>
+            <input type="text" id="motif" th:field="*{motif}" maxlength="200" required>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motif')}" th:errors="*{motif}"></p>
+        </div>
+
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{admin.planning.enregistrer}">Enregistrer</button>
+            <a th:href="@{/admin/planning/indisponibilites}" th:text="#{admin.planning.annuler}">Annuler</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

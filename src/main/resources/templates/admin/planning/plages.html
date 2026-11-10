@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.planning.plages.titre} + ' | AutoServ+'">Plages d'ouverture | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.planning.plages.titre}">Plages d'ouverture</h1>
+    <p class="texte-info" th:text="#{admin.planning.plages.intro}">Heures locales du garage.</p>
+
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <section th:replace="~{fragments/planning-conflits :: liste}"></section>
+
+    <p class="actions-page">
+        <a class="btn-cta" th:href="@{/admin/planning/plages/nouvelle}"
+           th:text="#{admin.planning.plages.nouvelle}">Nouvelle plage</a>
+    </p>
+
+    <p th:if="${plages.isEmpty()}" class="message" th:text="#{admin.planning.plages.vide}">Aucune plage.</p>
+
+    <div class="defilement" th:unless="${plages.isEmpty()}">
+        <table class="tableau">
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.planning.colonne.jour}">Jour</th>
+                <th scope="col" th:text="#{admin.planning.colonne.debut}">Début</th>
+                <th scope="col" th:text="#{admin.planning.colonne.fin}">Fin</th>
+                <th scope="col" th:text="#{admin.planning.colonne.statut}">Statut</th>
+                <th scope="col"><span class="visuellement-cache" th:text="#{admin.planning.colonne.actions}">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="p : ${plages}">
+                <td th:text="#{${p.cleJour()}}">Lundi</td>
+                <td th:text="${#temporals.format(p.heureDebut(), 'HH:mm')}">08:00</td>
+                <td th:text="${#temporals.format(p.heureFin(), 'HH:mm')}">12:00</td>
+                <td>
+                    <span th:if="${p.actif()}" class="badge badge-confirme" th:text="#{admin.planning.statut.actif}">Active</span>
+                    <span th:unless="${p.actif()}" class="badge badge-annule" th:text="#{admin.planning.statut.inactif}">Inactive</span>
+                </td>
+                <td th:with="nom=#{${p.cleJour()}} + ' ' + ${#temporals.format(p.heureDebut(), 'HH:mm')} + '-' + ${#temporals.format(p.heureFin(), 'HH:mm')}">
+                    <a th:href="@{/admin/planning/plages/{id}/modifier(id=${p.id()})}"
+                       th:aria-label="#{admin.planning.action.modifier.aria(${nom})}"
+                       th:text="#{admin.planning.action.modifier}">Modifier</a>
+                    <form method="post" th:action="@{/admin/planning/plages/{id}/retirer(id=${p.id()})}">
+                        <button type="submit" class="lien-bouton"
+                                th:aria-label="#{admin.planning.action.retirer.aria(${nom})}"
+                                th:text="#{admin.planning.action.retirer}">Retirer</button>
+                    </form>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>
