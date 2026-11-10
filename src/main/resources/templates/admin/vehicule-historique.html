@@ -44,7 +44,7 @@
                 <dt th:text="#{admin.historique.rdv}">Rendez-vous d'origine</dt>
                 <dd th:text="${i.rdvNumero()}">RDV-2026-0001</dd>
             </div>
-            <div>
+            <div th:if="${i.totalFacturableTvac() != null}">
                 <dt th:text="#{admin.historique.total}">Total facturable TVAC</dt>
                 <dd th:text="${i.totalFacturableTvac()}">59,29 €</dd>
             </div>

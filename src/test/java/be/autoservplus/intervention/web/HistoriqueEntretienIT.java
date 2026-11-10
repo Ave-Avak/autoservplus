@@ -201,6 +201,23 @@ class HistoriqueEntretienIT extends SocleIntegration {
         }
 
         @Test
+        @DisplayName("une intervention annulée n'affiche aucun total, ni au garage ni au membre")
+        void annuleeSansTotal() throws Exception {
+            Intervention it = interventions.findByReference(intervention).orElseThrow();
+            it.annuler();
+            interventions.saveAndFlush(it);
+
+            mvc.perform(get("/admin/vehicules/{ref}/historique", golf).with(admin()).locale(Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString(numero)))
+                    .andExpect(content().string(not(containsString("Total facturable"))));
+            mvc.perform(get("/mes-vehicules/{ref}/historique", golf).with(marie()).locale(Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Annulée")))
+                    .andExpect(content().string(not(containsString("€"))));
+        }
+
+        @Test
         @DisplayName("un véhicule retiré du parc garde son historique au back-office")
         void vehiculeRetire() throws Exception {
             jdbc.update("UPDATE vehicule SET deleted_at = now() WHERE reference = ?", golf);

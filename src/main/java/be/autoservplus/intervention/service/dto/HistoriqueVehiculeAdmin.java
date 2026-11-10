@@ -28,6 +28,10 @@ public record HistoriqueVehiculeAdmin(
                 vehiculeRetire, interventions.stream().map(it -> Entree.de(it, zone)).toList());
     }
 
+    /**
+     * {@code totalFacturableTvac} est nul pour une intervention annulée : rien n'a été
+     * ni ne sera facturé, et un montant affiché se lirait comme dû.
+     */
     public record Entree(
             UUID reference,
             String numero,
@@ -46,7 +50,8 @@ public record HistoriqueVehiculeAdmin(
                     it.getStatut(),
                     it.getRdv() == null ? null : it.getRdv().getNumero(),
                     it.getLignes().stream().map(Ligne::de).toList(),
-                    FormatageRdv.euros(it.totalFacturableTvac()),
+                    it.getStatut() == StatutIntervention.ANNULEE
+                            ? null : FormatageRdv.euros(it.totalFacturableTvac()),
                     it.getNoteInterne());
         }
     }
