@@ -67,6 +67,7 @@ public class NotificationRetractationListener {
             courriel.envoyerDecisionRetractation(new DetailsRetractationCourriel(
                     membre.getEmail(),
                     membre.getPrenom(),
+                    membre.getLangue(),
                     demande.getCommande().getNumero(),
                     acceptee ? FormatageRdv.euros(demande.getCommande().getMontantTvac()) : null,
                     acceptee,

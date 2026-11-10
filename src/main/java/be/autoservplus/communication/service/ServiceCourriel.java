@@ -8,9 +8,10 @@ import java.time.Instant;
  * Envoi des courriels transactionnels.
  *
  * <p>Le code metier depend de cette interface, jamais d un fournisseur particulier.
- * L implementation active est choisie par le profil Spring : journalisation en console
- * en developpement, envoi reel en production. Ce decouplage permet de tester les
- * services sans emettre le moindre message.</p>
+ * {@link CourrielSortant} redige le message dans la langue du destinataire et le fait
+ * partir apres la validation de la transaction. Le transport est un reglage : un relais
+ * SMTP, obligatoire sous {@code prod}, ou le journal sur les autres profils quand aucun
+ * relais n est configure.</p>
  */
 public interface ServiceCourriel {
 

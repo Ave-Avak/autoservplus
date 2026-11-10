@@ -12,7 +12,6 @@ import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
 import be.autoservplus.reservation.service.dto.FichierAgenda;
-import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.reservation.web.dto.RdvVueAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -235,17 +234,14 @@ public class AdminRdvService {
 
     private DetailsRdvCourriel detailsPour(Rdv rdv) {
         ZoneId zone = parametres.courants().zone();
-        return new DetailsRdvCourriel(
-                rdv.getNumero(),
-                FormatageRdv.jourLisible(rdv.getDebut(), zone),
-                FormatageRdv.heureLisible(rdv.getDebut(), zone));
+        return new DetailsRdvCourriel(rdv.getNumero(), rdv.getDebut().atZone(zone));
     }
 
     /**
-     * Envoie le courriel dans la transaction courante mais absorbe toute exception
-     * du fournisseur : la transition RDV, deja persistee et flushee, doit rester en
-     * base meme si Brevo est indisponible. La divergence vs {@code InscriptionService}
-     * (qui rollback si le mail jette) est assumee : ici le mail est informationnel.
+     * Le courriel part apres la validation de la transaction ({@code EnvoiApresCommit}),
+     * et un echec de remise y est journalise sans remonter. Reste ici la redaction, qui
+     * se fait dans la transaction : une erreur a cette etape ne doit pas annuler une
+     * transition deja decidee, le courriel etant informationnel.
      */
     private void notifierSansEchouer(Runnable envoi) {
         try {

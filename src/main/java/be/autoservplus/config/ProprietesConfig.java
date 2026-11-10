@@ -14,6 +14,7 @@ import org.springframework.context.annotation.Configuration;
  * un nom qui ment sur son contenu coute plus cher qu un renommage.</p>
  */
 @Configuration
-@EnableConfigurationProperties({IdentiteGarage.class, MollieProprietes.class})
+@EnableConfigurationProperties({IdentiteGarage.class, MollieProprietes.class,
+        ProprietesCourriel.class})
 public class ProprietesConfig {
 }

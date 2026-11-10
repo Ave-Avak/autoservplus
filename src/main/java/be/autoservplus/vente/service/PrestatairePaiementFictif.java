@@ -14,7 +14,7 @@ import java.util.concurrent.atomic.AtomicLong;
  * Prestataire de paiement bouchonne, actif tant qu aucun identifiant de
  * prestataire n est fourni : toute la logique metier du module se developpe et se
  * teste contre lui, sans reseau et de maniere deterministe (meme role que
- * {@code CourrielConsole} pour l email).
+ * {@code TransportConsole} pour le courriel).
  *
  * <p>Un paiement cree nait INITIE. Les tests, la demonstration et la page de
  * paiement simulee font evoluer son statut via {@link #programmerStatut} : c est ce

@@ -123,17 +123,34 @@ autoservplus:
     cle-version: ${MFA_CLE_VERSION:1}
     cles-precedentes: ${MFA_CLES_PRECEDENTES:}
 
-  # Adresse publique du site, employee LA OU une URL absolue est indispensable et ou
-  # aucune requete HTTP n'est disponible pour la deduire : aujourd'hui le fichier
-  # iCalendar d'un rendez-vous (F38), qui est lu dans l'agenda du membre, hors du
-  # site, ou un chemin relatif n'y designerait rien.
-  #
-  # Ailleurs le projet emet des liens RELATIFS dans ses courriels et continue de le
-  # faire : cette propriete n'est pas une invitation a les absolutiser. Elle vaut
-  # aussi pour le telechargement direct plutot que l'URL de la requete, afin que le
-  # fichier servi et le fichier joint au courriel soient identiques a l'octet pres :
-  # deux variantes du meme UID se remplaceraient l'une l'autre dans l'agenda.
+  # Adresse publique du site, employée là où une URL absolue est indispensable et où
+  # aucune requête HTTP n'est disponible pour la déduire : les liens des courriels
+  # (LiensCourriel), lus dans une boîte de réception hors du site, le retour de paiement,
+  # et le fichier iCalendar d'un rendez-vous (F38), lu dans l'agenda du membre. Elle vaut
+  # aussi pour le téléchargement direct plutôt que l'URL de la requête, afin que le
+  # fichier servi et le fichier joint au courriel soient identiques à l'octet près :
+  # deux variantes du même UID se remplaceraient l'une l'autre dans l'agenda.
   url-publique: ${URL_PUBLIQUE:http://localhost:8080}
+
+  # Courriels transactionnels, en texte brut, remis à un relais SMTP. Le fournisseur
+  # est un réglage : Brevo en production, Mailpit sur le poste (docker-compose.yml),
+  # Mailtrap pour un serveur de démonstration en ligne. Sans SMTP_HOTE, les profils dev,
+  # test et demo écrivent les courriels au journal. Sous prod, le démarrage est refusé
+  # sans relais ni expéditeur (ProprietesCourriel.verifierPourProduction) : aucun lien à
+  # jeton ne doit finir dans un journal de production.
+  #
+  # Délais courts : un courriel part après la validation de la transaction, mais dans la
+  # requête, qui attend la remise. Un relais injoignable ne doit pas la bloquer.
+  courriel:
+    expediteur: ${COURRIEL_EXPEDITEUR:}
+    smtp:
+      hote: ${SMTP_HOTE:}
+      port: ${SMTP_PORT:587}
+      identifiant: ${SMTP_IDENTIFIANT:}
+      secret: ${SMTP_SECRET:}
+      starttls: ${SMTP_STARTTLS:true}
+      delai-connexion: ${SMTP_DELAI_CONNEXION:5s}
+      delai-lecture: ${SMTP_DELAI_LECTURE:10s}
 
   # Identification légale de l'émetteur des factures (mentions obligatoires :
   # Code TVA art. 53, AR n°1 art. 5, CSA art. 2:20). Mono-tenant V1 : un seul garage,
@@ -294,6 +311,10 @@ autoservplus:
     iban: ${GARAGE_IBAN:BE68 5390 0754 7034}
     telephone: ${GARAGE_TELEPHONE:+32 2 000 00 00}
     courriel: ${GARAGE_COURRIEL:garage@demo.test}
+  # Expéditeur des courriels de démonstration, sur un domaine réservé (RFC 2606). Mailpit
+  # et Mailtrap l'acceptent, aucun vrai relais ne le délivrerait.
+  courriel:
+    expediteur: ${COURRIEL_EXPEDITEUR:ne-pas-repondre@autoservplus.test}
 ---
 spring:
   config:

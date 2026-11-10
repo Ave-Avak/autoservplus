@@ -1,4 +1,4 @@
-# Base de donnees locale de developpement.
+# Base de donnees locale de developpement, et serveur de courriel de test.
 # Demarrage : docker compose up -d
 # Arret     : docker compose down
 services:
@@ -19,6 +19,18 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+
+  # Serveur SMTP de test : il recoit tout et ne delivre rien. Boite web sur
+  # http://localhost:8025. L'application s'y branche avec SMTP_HOTE=localhost,
+  # SMTP_PORT=1025 et SMTP_STARTTLS=false.
+  # Les deux ports sont lies a localhost seulement : la boite contient les liens a
+  # jeton des comptes de developpement, et rien ne doit l'ouvrir depuis le reseau.
+  mailpit:
+    image: axllent/mailpit:v1.21.8
+    container_name: autoservplus-mailpit
+    ports:
+      - "127.0.0.1:1025:1025"
+      - "127.0.0.1:8025:8025"
 
 volumes:
   pgdata:

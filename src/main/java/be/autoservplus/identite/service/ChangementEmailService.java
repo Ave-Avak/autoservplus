@@ -142,7 +142,7 @@ public class ChangementEmailService {
             membre.demanderChangementEmail(cible, jeton.empreinte(),
                     Instant.now(horloge).plus(VALIDITE_JETON));
             courriel.envoyerConfirmationNouvelleAdresse(
-                    new DetailsChangementEmailCourriel(cible, prenom, ancienne, cible),
+                    new DetailsChangementEmailCourriel(cible, prenom, membre.getLangue(), ancienne, cible),
                     liens.vers("/changement-adresse/confirmation?jeton=" + jeton.clair()));
         }
 
@@ -151,7 +151,8 @@ public class ChangementEmailService {
         // parce qu averti seulement a la bascule le titulaire legitime n aurait plus
         // aucun moyen de reprendre la main.
         courriel.envoyerAvisChangementAdresse(
-                new DetailsChangementEmailCourriel(ancienne, prenom, ancienne, cible));
+                new DetailsChangementEmailCourriel(ancienne, prenom, membre.getLangue(), ancienne,
+                        cible));
     }
 
     /**

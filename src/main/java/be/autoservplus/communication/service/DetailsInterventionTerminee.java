@@ -1,5 +1,7 @@
 package be.autoservplus.communication.service;
 
+import be.autoservplus.identite.domain.Langue;
+
 /**
  * Elements necessaires au courriel de cloture d une intervention (F17) : le membre
  * est invite a venir recuperer son vehicule.
@@ -12,16 +14,17 @@ package be.autoservplus.communication.service;
  *
  * @param adresseEmail       adresse du membre proprietaire
  * @param prenom             prenom du membre, pour la salutation
+ * @param langue             langue du compte, celle du courriel
  * @param numeroIntervention numero lisible de l intervention (INT-...)
  * @param libelleVehicule    marque et modele, tels qu affiches dans le suivi
  * @param immatriculation    plaque du vehicule a recuperer
- * @param cheminDepotAvis    chemin relatif du formulaire de depot d avis (BL-4).
- *                           Une chaine deja prete, comme le reste : le module
- *                           communication ne construit pas d URL et ne connait pas
- *                           les routes du module intervention
+ * @param cheminDepotAvis    chemin relatif du formulaire de depot d avis (BL-4),
+ *                           rendu absolu a la redaction. Le module communication
+ *                           ne connait pas les routes du module intervention
  */
 public record DetailsInterventionTerminee(String adresseEmail,
                                           String prenom,
+                                          Langue langue,
                                           String numeroIntervention,
                                           String libelleVehicule,
                                           String immatriculation,

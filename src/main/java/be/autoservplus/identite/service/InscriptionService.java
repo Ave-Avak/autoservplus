@@ -58,6 +58,12 @@ public class InscriptionService {
     /**
      * Inscrit un nouveau membre et genere son jeton de verification.
      *
+     * <p>Le courriel de verification part apres la validation de la transaction. Un
+     * echec de remise n'annule donc plus l'inscription, comme il le faisait quand le
+     * courriel partait dedans : le compte existe, et le renvoi de verification comme la
+     * demande d'un nouveau mot de passe permettent d'obtenir un autre lien. Annuler le
+     * compte pour un relais injoignable obligerait au contraire a tout ressaisir.</p>
+     *
      * @throws RegleMetierException si l adresse est deja utilisee ou si le mot de passe
      *                              ne respecte pas {@link PolitiqueMotDePasse}
      */

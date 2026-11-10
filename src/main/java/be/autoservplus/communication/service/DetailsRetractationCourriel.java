@@ -1,5 +1,7 @@
 package be.autoservplus.communication.service;
 
+import be.autoservplus.identite.domain.Langue;
+
 /**
  * Elements du courriel annoncant la decision du garage sur une demande de
  * retractation (F30). Chaines plates, deja formatees : meme principe que
@@ -12,6 +14,7 @@ package be.autoservplus.communication.service;
  *
  * @param adresseEmail   adresse du membre
  * @param prenom         prenom du membre, pour la salutation
+ * @param langue         langue du compte, celle du courriel
  * @param numeroCommande numero lisible de la commande concernee (CMD-...)
  * @param montantTvac    montant rembourse, formate en euros TVAC. {@code null} au refus
  * @param acceptee       {@code true} si la retractation est acceptee
@@ -20,6 +23,7 @@ package be.autoservplus.communication.service;
  */
 public record DetailsRetractationCourriel(String adresseEmail,
                                           String prenom,
+                                          Langue langue,
                                           String numeroCommande,
                                           String montantTvac,
                                           boolean acceptee,

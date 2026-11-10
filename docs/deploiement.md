@@ -71,7 +71,19 @@ GARAGE_TVA=<BE suivi des dix chiffres du BCE>
 GARAGE_IBAN=<IBAN du garage>
 GARAGE_TELEPHONE=<téléphone>
 GARAGE_COURRIEL=<courriel>
+SMTP_HOTE=host.docker.internal
+SMTP_PORT=1025
+SMTP_STARTTLS=false
+COURRIEL_EXPEDITEUR=ne-pas-repondre@autoservplus.test
 ```
+
+Les courriels de la répétition partent vers Mailpit, le serveur de test du
+`docker-compose.yml` de développement, démarré depuis la racine du dépôt par
+`docker compose up -d mailpit`. Il reçoit tout et ne délivre rien, et sa boîte web est
+sur <http://localhost:8025>. Depuis le conteneur de l'application, `host.docker.internal`
+désigne le poste sous Docker Desktop. Sous `prod`, le démarrage est refusé sans
+`SMTP_HOTE` ni `COURRIEL_EXPEDITEUR` : sans relais, les courriels partiraient au journal,
+liens à jeton compris.
 
 Sans `MFA_CLE_MAITRE`, l'application refuse de démarrer, sous tout profil : elle
 chiffre les secrets du second facteur, obligatoire pour tout compte du back-office.
@@ -184,9 +196,9 @@ Depuis l'adresse `trycloudflare.com`, dans un navigateur :
 2. Connexion avec le compte d'exploitation (`EXPLOITANT_EMAIL`). Le premier accès
    impose un nouveau mot de passe et l'enrôlement du second facteur. Depuis le
    back-office, créer une pièce au catalogue : une base vierge n'en porte aucune.
-3. Inscription d'un membre. Aucun courriel ne part encore, le lien de vérification se
-   lit dans le journal de l'application (`docker compose -f docker-compose.prod.yml
-   logs app`).
+3. Inscription d'un membre. Le courriel de vérification arrive dans la boîte de
+   Mailpit, <http://localhost:8025>, avec un lien absolu vers l'adresse
+   `trycloudflare.com`.
 4. Commande et paiement : ajouter la pièce au panier, valider, payer.
 5. Retour sur le site après paiement, puis téléchargement de la facture.
 6. Retour du membre et réception du webhook :
@@ -523,6 +535,53 @@ sudo systemctl restart docker
 La limite ne vaut que pour les conteneurs créés ensuite : recréer la pile après ce
 changement.
 
+### Courriels
+
+L'application remet ses courriels, en texte brut, à un relais SMTP. Le fournisseur est
+un réglage, aucun appel ne lui est propre :
+
+| Variable | Rôle |
+|---|---|
+| `SMTP_HOTE` | hôte du relais. Vide : courriels écrits au journal, refusé sous `prod` |
+| `SMTP_PORT` | 587 par défaut |
+| `SMTP_IDENTIFIANT`, `SMTP_SECRET` | authentification, quand le relais en demande une |
+| `SMTP_STARTTLS` | `true` par défaut, chiffrement exigé avant l'authentification |
+| `COURRIEL_EXPEDITEUR` | adresse d'expédition, obligatoire sous `prod` |
+| `SMTP_DELAI_CONNEXION`, `SMTP_DELAI_LECTURE` | 5 s et 10 s par défaut |
+
+Un courriel part après la validation de la transaction qui l'a demandé, dans la même
+requête : les délais bornent ce qu'un relais lent fait attendre au visiteur. Un échec de
+remise est journalisé avec le type du courriel et la cause, jamais avec son corps, qui
+peut porter un lien à jeton.
+
+**Production : Brevo.** Relais `smtp-relay.brevo.com`, port 587, STARTTLS.
+L'identifiant et le secret sont ceux de l'onglet SMTP du compte, distincts de la clé
+API. Avant le premier envoi :
+
+1. Accepter l'accord de sous-traitance de Brevo (RGPD art. 28) : les adresses et les
+   prénoms des membres lui sont transmis.
+2. Authentifier le domaine d'expédition par les enregistrements que Brevo fournit : SPF,
+   DKIM, et une politique DMARC. Sans eux, Gmail et Yahoo refusent ou classent en
+   indésirables. Un expéditeur sur une adresse gratuite n'est pas une solution, DMARC le
+   rejette.
+3. Désactiver le suivi des ouvertures et des clics dans les paramètres du compte. Le
+   suivi des ouvertures insère un pixel, un traceur que la page cookies ne couvre pas,
+   et le suivi des clics réécrit les liens, ce qui ferait passer les liens à jeton par
+   un domaine de Brevo.
+
+Brevo documente aussi des en-têtes SMTP propres à son relais, qui règlent certains
+comportements message par message. L'application n'en émet aucun : le réglage du compte
+fait foi, et changer de fournisseur reste une affaire de variables.
+
+**Serveur de démonstration en ligne : Mailtrap Email Testing**, en option. La boîte de
+test capte les courriels sans les délivrer, et chaque message s'y lit avec ses liens :
+`SMTP_HOTE=sandbox.smtp.mailtrap.io`, port 587 ou 2525, identifiants de la boîte. Sans
+relais, le profil `demo` écrit les courriels au journal.
+
+**Poste de développement : Mailpit**, service `mailpit` du `docker-compose.yml`, ports
+liés à `localhost` seulement. `SMTP_HOTE=localhost`, `SMTP_PORT=1025`,
+`SMTP_STARTTLS=false`, boîte sur <http://localhost:8025>.
+
 ### Clé maître du second facteur
 
 `MFA_CLE_MAITRE` chiffre (AES-256-GCM) les secrets TOTP en base. Sans elle,
@@ -645,11 +704,11 @@ mémoire, et la base ne les atteint pas.
 Elles sont énumérées ici pour être opposables, non pour être découvertes en
 démonstration.
 
-- Aucun courriel ne part. `CourrielConsole` est la seule implémentation du service
-  d'envoi : elle journalise le message et annonce qu'il n'est pas expédié. Vérification
-  d'adresse, réinitialisation de mot de passe et confirmations de rendez-vous restent
-  donc dans les journaux du conteneur. Le branchement de Brevo est la seule intégration
-  externe encore à faire.
+- Aucun courriel n'est délivré à un vrai destinataire tant que Brevo n'est pas activé.
+  L'application remet ses courriels à tout relais SMTP, mais l'activation de Brevo
+  attend un domaine authentifié (section « Courriels »). D'ici là, la production n'a
+  pas de relais, et un serveur de démonstration écrit ses courriels au journal ou les
+  remet à Mailtrap.
 
 - Mollie fonctionne en mode test. `MOLLIE_MODE_TEST=true` : aucun mouvement d'argent
   réel. Clé absente, une passerelle bouchonnée prend le relais et la chaîne marchande

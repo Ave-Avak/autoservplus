@@ -1,5 +1,6 @@
 package be.autoservplus.rgpd.service;
 
+import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.communication.service.DetailsSuppressionCompteCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import org.junit.jupiter.api.DisplayName;
@@ -33,7 +34,7 @@ class NotificationSuppressionListenerTest {
     @DisplayName("envoie a l'adresse portee par l'evenement, sans rien recharger")
     void envoiALAdresseCapturee() {
         new NotificationSuppressionListener(courriel).surCompteSupprime(
-                new CompteSupprimeEvent("marie@exemple.be", "Marie", reference));
+                new CompteSupprimeEvent("marie@exemple.be", "Marie", reference, Langue.nl));
 
         ArgumentCaptor<DetailsSuppressionCompteCourriel> capture =
                 ArgumentCaptor.forClass(DetailsSuppressionCompteCourriel.class);
@@ -42,6 +43,7 @@ class NotificationSuppressionListenerTest {
         // porte l adresse precisement parce qu elle n existe plus en base.
         assertThat(capture.getValue().adresseEmail()).isEqualTo("marie@exemple.be");
         assertThat(capture.getValue().prenom()).isEqualTo("Marie");
+        assertThat(capture.getValue().langue()).isEqualTo(Langue.nl);
     }
 
     @Test
@@ -54,7 +56,7 @@ class NotificationSuppressionListenerTest {
         // Laisser remonter l exception ne changerait rien en base et polluerait les
         // journaux d une erreur qui n a aucune consequence pour la personne.
         assertThatCode(() -> new NotificationSuppressionListener(courriel).surCompteSupprime(
-                new CompteSupprimeEvent("marie@exemple.be", "Marie", reference)))
+                new CompteSupprimeEvent("marie@exemple.be", "Marie", reference, Langue.nl)))
                 .doesNotThrowAnyException();
     }
 }

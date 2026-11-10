@@ -15,17 +15,17 @@ import static org.assertj.core.api.Assertions.assertThat;
  * verifie a la structure plutot qu au demarrage.
  *
  * <p><b>Le defaut qu il verrouille a reellement existe.</b>
- * {@link CourrielConsole} etait la seule implementation de {@link ServiceCourriel}
- * et portait {@code @Profile("!prod")} : demarrer en profil {@code prod} echouait
+ * L'implementation console, alors seule implementation de {@link ServiceCourriel},
+ * portait {@code @Profile("!prod")} : demarrer en profil {@code prod} echouait
  * au cablage, faute de bean a injecter. Le probleme ne se voyait dans aucun test,
  * puisqu aucun ne demarre sous ce profil. Il ne serait apparu qu au premier
  * deploiement reel, c est-a-dire au pire moment.</p>
  *
  * <p>La regle est generale et se lit telle quelle : tant qu il n existe qu une
- * implementation, elle ne peut etre conditionnee par rien. Le jour ou une seconde
- * apparaitra (Brevo), ce test echouera et devra etre reecrit pour verifier que les
- * conditions des deux <b>partitionnent</b> les environnements : ce qui est
- * exactement la question a se reposer a ce moment-la.</p>
+ * implementation, elle ne peut etre conditionnee par rien. Le relais SMTP n'en a pas
+ * ajoute une seconde : {@link CourrielSortant} reste l'unique implementation, et le
+ * choix entre relais et journal se fait en dessous, par {@link TransportCourriel}, dans
+ * une seule methode de configuration.</p>
  */
 @DisplayName("Disponibilite du service de courriel")
 class ServiceCourrielDisponibleTest {

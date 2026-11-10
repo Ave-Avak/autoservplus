@@ -18,7 +18,7 @@ import jakarta.annotation.PostConstruct;
  *
  * <p>Elle <b>annonce</b> son entree en service au demarrage. Un repli muet laisserait
  * croire que la seconde couche protege alors qu elle est absente : c est la meme
- * erreur que {@code CourrielConsole} avait faite avant qu on la lui retire.</p>
+ * erreur que le repli console des courriels avait faite avant qu on la lui retire.</p>
  */
 @Service
 @ConditionalOnProperty(name = "autoservplus.securite.compromission.activee",
