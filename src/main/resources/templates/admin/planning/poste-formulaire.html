@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="(${edition} ? #{admin.planning.poste.modifier.titre} : #{admin.planning.poste.creer.titre}) + ' | AutoServ+'">Nouveau poste | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <p><a th:href="@{/admin/planning/postes}" th:text="#{admin.planning.postes.retour}">Retour aux postes</a></p>
+
+    <h1 th:text="${edition} ? #{admin.planning.poste.modifier.titre} : #{admin.planning.poste.creer.titre}">Nouveau poste</h1>
+
+    <form class="formulaire" method="post" th:object="${formulaire}" novalidate
+          th:action="${edition} ? @{/admin/planning/postes/{ref}/modifier(ref=${reference})} : @{/admin/planning/postes}">
+
+        <div class="champ">
+            <label for="libelle" th:text="#{admin.planning.champ.libelle}">Libellé</label>
+            <input type="text" id="libelle" th:field="*{libelle}" maxlength="80" required>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('libelle')}" th:errors="*{libelle}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="description">
+                <span th:text="#{admin.planning.champ.description}">Description</span>
+                <span class="champ-facultatif" th:text="#{admin.planning.champ.facultatif}">(facultatif)</span>
+            </label>
+            <textarea id="description" th:field="*{description}" rows="3" maxlength="1000"></textarea>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('description')}" th:errors="*{description}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="ordre" th:text="#{admin.planning.champ.ordre}">Ordre d'affichage</label>
+            <input type="number" id="ordre" th:field="*{ordre}" min="0" max="999" step="1" required
+                   aria-describedby="aide-ordre">
+            <p id="aide-ordre" class="texte-info" th:text="#{admin.planning.champ.ordre-aide}">Le premier poste libre est attribué.</p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('ordre')}" th:errors="*{ordre}"></p>
+        </div>
+
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{admin.planning.enregistrer}">Enregistrer</button>
+            <a th:href="@{/admin/planning/postes}" th:text="#{admin.planning.annuler}">Annuler</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

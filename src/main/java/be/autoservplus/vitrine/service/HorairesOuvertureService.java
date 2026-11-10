@@ -2,6 +2,7 @@ package be.autoservplus.vitrine.service;
 
 import be.autoservplus.reservation.domain.PlageOuverture;
 import be.autoservplus.reservation.repository.PlageOuvertureRepository;
+import be.autoservplus.reservation.service.dto.PlageVue;
 import be.autoservplus.vitrine.web.dto.JourOuvertureVue;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,26 +70,8 @@ public class HorairesOuvertureService {
         List<JourOuvertureVue> semaine = new ArrayList<>(DayOfWeek.values().length);
         for (DayOfWeek jour : DayOfWeek.values()) {
             List<String> horaires = parJour.getOrDefault(jour, List.of());
-            semaine.add(new JourOuvertureVue(cleI18n(jour), List.copyOf(horaires), horaires.isEmpty()));
+            semaine.add(new JourOuvertureVue(PlageVue.cleJour(jour), List.copyOf(horaires), horaires.isEmpty()));
         }
         return semaine;
-    }
-
-    /**
-     * Cle de message du jour. Ecrite en toutes lettres plutot que derivee de
-     * {@code DayOfWeek.name()} : la derivation produirait des cles anglaises
-     * ({@code vitrine.jour.monday}) au milieu d un fichier de messages entierement
-     * francais, et le jour ou une cle manquerait, l erreur serait illisible.
-     */
-    private static String cleI18n(DayOfWeek jour) {
-        return switch (jour) {
-            case MONDAY -> "vitrine.jour.lundi";
-            case TUESDAY -> "vitrine.jour.mardi";
-            case WEDNESDAY -> "vitrine.jour.mercredi";
-            case THURSDAY -> "vitrine.jour.jeudi";
-            case FRIDAY -> "vitrine.jour.vendredi";
-            case SATURDAY -> "vitrine.jour.samedi";
-            case SUNDAY -> "vitrine.jour.dimanche";
-        };
     }
 }

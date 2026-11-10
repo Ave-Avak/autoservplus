@@ -47,6 +47,21 @@ public interface RdvRepository extends JpaRepository<Rdv, Long> {
 
     long countByMembreEmailAndStatut(String email, StatutRdv statut);
 
+    /**
+     * Rendez-vous d'un des statuts donnés qui ne sont pas encore terminés, avec membre,
+     * poste et prestations. Sert à la liste des conflits du planning (A24), qui les
+     * filtre ensuite en mémoire selon la plage, le poste ou l'indisponibilité touchés.
+     */
+    @Query("""
+            SELECT DISTINCT r FROM Rdv r
+            JOIN FETCH r.membre JOIN FETCH r.poste
+            LEFT JOIN FETCH r.lignes l LEFT JOIN FETCH l.prestation
+            WHERE r.statut IN :statuts AND r.fin > :apres
+            ORDER BY r.debut
+            """)
+    List<Rdv> nonTerminesAvecDetails(@Param("apres") Instant apres,
+                                     @Param("statuts") Collection<StatutRdv> statuts);
+
     @Query("""
             SELECT r FROM Rdv r
             JOIN FETCH r.membre JOIN FETCH r.vehicule JOIN FETCH r.poste

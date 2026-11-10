@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.planning.plage.retirer.titre} + ' | AutoServ+'">Retirer une plage d'ouverture | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <p><a th:href="@{/admin/planning/plages}" th:text="#{admin.planning.plages.retour}">Retour aux plages</a></p>
+
+    <h1 th:text="#{admin.planning.plage.retirer.titre}">Retirer une plage d'ouverture</h1>
+    <p><strong th:text="#{${plage.cleJour()}} + ' ' + ${#temporals.format(plage.heureDebut(), 'HH:mm')} + '-' + ${#temporals.format(plage.heureFin(), 'HH:mm')}">Lundi 08:00-12:00</strong></p>
+    <p th:text="#{admin.planning.plage.retirer.question}">Les rendez-vous déjà pris restent.</p>
+
+    <form method="post" th:action="@{/admin/planning/plages/{id}/retirer(id=${plage.id()})}">
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{admin.planning.plage.retirer.confirmer}">Retirer la plage</button>
+            <a th:href="@{/admin/planning/plages}" th:text="#{admin.planning.annuler}">Annuler</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

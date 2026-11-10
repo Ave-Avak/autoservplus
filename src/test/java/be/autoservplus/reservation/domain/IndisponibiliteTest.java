@@ -58,4 +58,39 @@ class IndisponibiliteTest {
 
         assertThat(indispo.chevauche(d, f)).isEqualTo(attendu);
     }
+
+    @Test
+    @DisplayName("refuse un motif vide ou trop long")
+    void refuseMotifInvalide() {
+        assertThatThrownBy(() -> new Indisponibilite(null, H10, H12, "   "))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> new Indisponibilite(null, H10, H12, "x".repeat(Indisponibilite.LONGUEUR_MOTIF + 1)))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("la modification change poste, bornes et motif sous les mêmes gardes")
+    void modification() {
+        PosteAtelier pont = new PosteAtelier("Pont 1");
+        Indisponibilite indispo = new Indisponibilite(null, H10, H12, "Formation");
+
+        indispo.modifier(pont, H10, H12.plusSeconds(3600), "  Pont en panne ");
+
+        assertThat(indispo.getPoste()).isSameAs(pont);
+        assertThat(indispo.getFin()).isEqualTo(H12.plusSeconds(3600));
+        assertThat(indispo.getMotif()).isEqualTo("Pont en panne");
+    }
+
+    @Test
+    @DisplayName("une modification refusée laisse l'indisponibilité intacte")
+    void modificationRefuseeSansEffet() {
+        Indisponibilite indispo = new Indisponibilite(null, H10, H12, "Formation");
+
+        assertThatThrownBy(() -> indispo.modifier(new PosteAtelier("Pont 1"), H12, H10, "Autre"))
+                .isInstanceOf(IllegalArgumentException.class);
+
+        assertThat(indispo.concerneToutLAtelier()).isTrue();
+        assertThat(indispo.getDebut()).isEqualTo(H10);
+        assertThat(indispo.getMotif()).isEqualTo("Formation");
+    }
 }

@@ -192,6 +192,21 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/admin/catalogue/pieces/nouvelle", Acces.BACK_OFFICE),
             variable("/admin/catalogue/pieces/{reference}/modifier", Acces.BACK_OFFICE),
             variable("/admin/catalogue/pieces/{reference}/supprimer", Acces.BACK_OFFICE),
+            ecran("/admin/planning/plages", Acces.BACK_OFFICE),
+            ecran("/admin/planning/plages/nouvelle", Acces.BACK_OFFICE),
+            // Les plages n'ont pas de référence publique : identifiant numérique inconnu.
+            new Route("/admin/planning/plages/{id}/modifier", "/admin/planning/plages/999999999/modifier",
+                    Acces.BACK_OFFICE, true, 404),
+            new Route("/admin/planning/plages/{id}/retirer", "/admin/planning/plages/999999999/retirer",
+                    Acces.BACK_OFFICE, true, 404),
+            ecran("/admin/planning/postes", Acces.BACK_OFFICE),
+            ecran("/admin/planning/postes/nouveau", Acces.BACK_OFFICE),
+            variable("/admin/planning/postes/{reference}/modifier", Acces.BACK_OFFICE),
+            variable("/admin/planning/postes/{reference}/supprimer", Acces.BACK_OFFICE),
+            ecran("/admin/planning/indisponibilites", Acces.BACK_OFFICE),
+            ecran("/admin/planning/indisponibilites/nouvelle", Acces.BACK_OFFICE),
+            variable("/admin/planning/indisponibilites/{reference}/modifier", Acces.BACK_OFFICE),
+            variable("/admin/planning/indisponibilites/{reference}/retirer", Acces.BACK_OFFICE),
             // Reference inconnue : galerie vide, rendue en 200. L ecran ne verifie pas que
             // la fiche existe. Ecart releve, non traite ici.
             new Route("/admin/galerie/{type}/{reference}", "/admin/galerie/interventions/" + REF,
@@ -250,6 +265,12 @@ class NavigationEcransIT extends SocleIntegration {
                 new Atteinte("/admin/catalogue/prestations", Role.ADMINISTRATEUR));
         ATTEINTS_DEPUIS.put("/admin/catalogue/pieces/nouvelle",
                 new Atteinte("/admin/catalogue/pieces", Role.ADMINISTRATEUR));
+        ATTEINTS_DEPUIS.put("/admin/planning/plages/nouvelle",
+                new Atteinte("/admin/planning/plages", Role.ADMINISTRATEUR));
+        ATTEINTS_DEPUIS.put("/admin/planning/postes/nouveau",
+                new Atteinte("/admin/planning/postes", Role.ADMINISTRATEUR));
+        ATTEINTS_DEPUIS.put("/admin/planning/indisponibilites/nouvelle",
+                new Atteinte("/admin/planning/indisponibilites", Role.ADMINISTRATEUR));
         ATTEINTS_DEPUIS.put("/admin/comptes/administrateurs/nouveau",
                 new Atteinte("/admin/comptes/administrateurs", Role.SUPER_ADMINISTRATEUR));
     }

@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Fragment conflits du planning</title></head>
+<body>
+
+<!--/*
+  Rendez-vous laissés en conflit par la dernière écriture du planning (A24). Ils
+  restent intacts : le lien mène à l'écran d'annulation par le garage, qui affiche le
+  rendez-vous et n'annule qu'après saisie d'un motif. Aucun avis au client en V1.
+*/-->
+<section th:fragment="liste" th:if="${conflits != null and !conflits.isEmpty()}"
+         class="message message-erreur" role="alert" aria-labelledby="titre-conflits">
+    <h2 id="titre-conflits" th:text="#{admin.planning.conflits.titre(${conflits.size()})}">Rendez-vous en conflit</h2>
+    <p th:text="#{admin.planning.conflits.explication}">Ces rendez-vous sont maintenus.</p>
+    <div class="defilement">
+        <table class="tableau">
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.planning.conflits.colonne.date}">Date</th>
+                <th scope="col" th:text="#{admin.planning.conflits.colonne.membre}">Membre</th>
+                <th scope="col" th:text="#{admin.planning.conflits.colonne.prestations}">Prestations</th>
+                <th scope="col" th:text="#{admin.planning.conflits.colonne.poste}">Poste</th>
+                <th scope="col" th:text="#{admin.planning.conflits.colonne.statut}">Statut</th>
+                <th scope="col" th:text="#{admin.planning.conflits.colonne.rendez-vous}">Rendez-vous</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${conflits}">
+                <td th:text="${#temporals.format(c.debut(), 'dd/MM/yyyy HH:mm')} + ' - ' + ${#temporals.format(c.fin(), 'HH:mm')}">12/11/2026 10:00 - 11:00</td>
+                <td th:text="${c.membre()}">Marie Dupont</td>
+                <td th:text="${c.prestations()}">Vidange</td>
+                <td th:text="${c.poste()}">Pont 1</td>
+                <td th:text="#{'rdv.statut.' + ${c.statut()}}">Confirmé</td>
+                <td><a th:href="@{/admin/rendez-vous/{ref}/annuler(ref=${c.reference()})}"
+                       th:text="${c.numero()}"
+                       th:aria-label="#{admin.planning.conflits.lien.aria(${c.numero()})}">RDV-2026-0001</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+</body>
+</html>

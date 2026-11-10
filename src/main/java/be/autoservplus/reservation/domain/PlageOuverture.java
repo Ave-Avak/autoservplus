@@ -44,13 +44,36 @@ public class PlageOuverture extends BaseEntity {
     }
 
     public PlageOuverture(DayOfWeek jour, LocalTime heureDebut, LocalTime heureFin) {
+        fixerHoraire(jour, heureDebut, heureFin);
+    }
+
+    /**
+     * Change le jour et les heures de la plage (A24). Même garde qu'à la création : la
+     * fin suit le début, sans quoi la plage serait vide ou traverserait minuit, ce que
+     * {@code ck_plage_heures} refuserait aussi. Le chevauchement avec une autre plage
+     * du même jour n'est pas contrôlé ici : il dépend des autres lignes, et c'est
+     * {@code ex_plage_ouverture_chevauchement} qui en juge, y compris entre deux
+     * écritures simultanées.
+     */
+    public void modifier(DayOfWeek jour, LocalTime heureDebut, LocalTime heureFin) {
+        fixerHoraire(jour, heureDebut, heureFin);
+    }
+
+    private void fixerHoraire(DayOfWeek jour, LocalTime heureDebut, LocalTime heureFin) {
         Objects.requireNonNull(jour, "jour");
-        this.heureDebut = Objects.requireNonNull(heureDebut, "heureDebut");
-        this.heureFin = Objects.requireNonNull(heureFin, "heureFin");
+        Objects.requireNonNull(heureDebut, "heureDebut");
+        Objects.requireNonNull(heureFin, "heureFin");
         if (!heureFin.isAfter(heureDebut)) {
-            throw new IllegalArgumentException("L heure de fin doit suivre l heure de debut.");
+            throw new IllegalArgumentException("L'heure de fin doit suivre l'heure de début.");
         }
         this.jourSemaine = (short) jour.getValue();
+        this.heureDebut = heureDebut;
+        this.heureFin = heureFin;
+    }
+
+    /** Copie de l'horaire, à comparer après une modification. */
+    public HorairePlage horaire() {
+        return new HorairePlage(jour(), heureDebut, heureFin, actif);
     }
 
     public DayOfWeek jour() {

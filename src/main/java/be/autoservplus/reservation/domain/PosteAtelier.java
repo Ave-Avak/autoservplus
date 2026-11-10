@@ -21,6 +21,9 @@ import java.util.UUID;
 @SQLRestriction("deleted_at IS NULL")
 public class PosteAtelier extends BaseEntity {
 
+    /** Longueur de {@code poste_atelier.libelle}. */
+    public static final int LONGUEUR_LIBELLE = 80;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -48,10 +51,33 @@ public class PosteAtelier extends BaseEntity {
 
     public PosteAtelier(String libelle) {
         this.reference = UUID.randomUUID();
-        this.libelle = Objects.requireNonNull(libelle, "libelle").trim();
+        this.libelle = libelleValide(libelle);
     }
 
-    public void renommer(String libelle) { this.libelle = Objects.requireNonNull(libelle, "libelle").trim(); }
+    public void renommer(String libelle) { this.libelle = libelleValide(libelle); }
+
+    /**
+     * Modification depuis le back-office (A24). L'unicité du libellé parmi les postes
+     * non supprimés dépend des autres lignes : {@code uq_poste_libelle_actif} en juge.
+     */
+    public void modifier(String libelle, String description, int ordre) {
+        if (ordre < 0 || ordre > Short.MAX_VALUE) {
+            throw new IllegalArgumentException("L'ordre d'affichage doit être positif.");
+        }
+        this.libelle = libelleValide(libelle);
+        this.description = description == null || description.isBlank() ? null : description.trim();
+        this.ordre = (short) ordre;
+    }
+
+    private static String libelleValide(String libelle) {
+        Objects.requireNonNull(libelle, "libelle");
+        String nettoye = libelle.trim();
+        if (nettoye.isEmpty() || nettoye.length() > LONGUEUR_LIBELLE) {
+            throw new IllegalArgumentException(
+                    "Le libellé d'un poste compte de 1 à %d caractères.".formatted(LONGUEUR_LIBELLE));
+        }
+        return nettoye;
+    }
     public void activer() { this.actif = true; }
     public void desactiver() { this.actif = false; }
 

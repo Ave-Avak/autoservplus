@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.planning.indisponibilites.titre} + ' | AutoServ+'">Indisponibilités | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.planning.indisponibilites.titre}">Indisponibilités</h1>
+    <p class="texte-info" th:text="#{admin.planning.indisponibilites.intro}">Fermetures en cours et à venir.</p>
+
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <section th:replace="~{fragments/planning-conflits :: liste}"></section>
+
+    <p class="actions-page">
+        <a class="btn-cta" th:href="@{/admin/planning/indisponibilites/nouvelle}"
+           th:text="#{admin.planning.indisponibilites.nouvelle}">Nouvelle indisponibilité</a>
+    </p>
+
+    <p th:if="${indisponibilites.isEmpty()}" class="message" th:text="#{admin.planning.indisponibilites.vide}">Aucune indisponibilité.</p>
+
+    <div class="defilement" th:unless="${indisponibilites.isEmpty()}">
+        <table class="tableau">
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.planning.colonne.debut}">Début</th>
+                <th scope="col" th:text="#{admin.planning.colonne.fin}">Fin</th>
+                <th scope="col" th:text="#{admin.planning.colonne.poste}">Poste</th>
+                <th scope="col" th:text="#{admin.planning.colonne.motif}">Motif</th>
+                <th scope="col"><span class="visuellement-cache" th:text="#{admin.planning.colonne.actions}">Actions</span></th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="i : ${indisponibilites}">
+                <td th:text="${#temporals.format(i.debut(), 'dd/MM/yyyy HH:mm')}">11/11/2026 00:00</td>
+                <td th:text="${#temporals.format(i.fin(), 'dd/MM/yyyy HH:mm')}">12/11/2026 00:00</td>
+                <td th:text="${i.concerneToutLAtelier()} ? #{admin.planning.atelier-entier} : ${i.posteLibelle()}">Tout l'atelier</td>
+                <td th:text="${i.motif()}">Jour férié</td>
+                <td>
+                    <a th:href="@{/admin/planning/indisponibilites/{ref}/modifier(ref=${i.reference()})}"
+                       th:aria-label="#{admin.planning.action.modifier.aria(${i.motif()})}"
+                       th:text="#{admin.planning.action.modifier}">Modifier</a>
+                    <a th:href="@{/admin/planning/indisponibilites/{ref}/retirer(ref=${i.reference()})}"
+                       th:aria-label="#{admin.planning.action.retirer.aria(${i.motif()})}"
+                       th:text="#{admin.planning.action.retirer}">Retirer</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

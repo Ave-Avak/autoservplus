@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.planning.poste.supprimer.titre} + ' | AutoServ+'">Retirer un poste | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <p><a th:href="@{/admin/planning/postes}" th:text="#{admin.planning.postes.retour}">Retour aux postes</a></p>
+
+    <h1 th:text="#{admin.planning.poste.supprimer.titre}">Retirer un poste</h1>
+    <p><strong th:text="${proposition.libelle()}">Pont 1</strong></p>
+
+    <!--/* RM-29 : une seule action proposée, suppression si aucun rendez-vous, désactivation sinon. */-->
+    <div th:if="${proposition.suppressionPossible()}">
+        <p th:text="#{admin.planning.poste.supprimer.question}">Aucun rendez-vous ne référence ce poste.</p>
+        <form method="post" th:action="@{/admin/planning/postes/{ref}/supprimer(ref=${proposition.reference()})}">
+            <p class="actions-page">
+                <button type="submit" class="btn-cta" th:text="#{admin.planning.poste.supprimer.confirmer}">Supprimer définitivement</button>
+                <a th:href="@{/admin/planning/postes}" th:text="#{admin.planning.annuler}">Annuler</a>
+            </p>
+        </form>
+    </div>
+
+    <div th:unless="${proposition.suppressionPossible()}">
+        <p class="texte-info"
+           th:text="#{admin.planning.poste.supprimer.reference(${proposition.nombreRendezVous()})}">Ce poste est référencé.</p>
+        <form th:if="${proposition.actif()}" method="post"
+              th:action="@{/admin/planning/postes/{ref}/desactiver(ref=${proposition.reference()})}">
+            <p class="actions-page">
+                <button type="submit" class="btn-cta" th:text="#{admin.planning.action.desactiver}">Désactiver</button>
+                <a th:href="@{/admin/planning/postes}" th:text="#{admin.planning.annuler}">Annuler</a>
+            </p>
+        </form>
+        <p th:unless="${proposition.actif()}" th:text="#{admin.planning.poste.supprimer.deja-inactif}">Ce poste est déjà désactivé.</p>
+    </div>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>
