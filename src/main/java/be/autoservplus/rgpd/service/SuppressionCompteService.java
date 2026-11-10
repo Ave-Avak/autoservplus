@@ -200,9 +200,15 @@ public class SuppressionCompteService {
      * anonymisation sinon. L esprit du CdC (plus aucune donnee identifiante) est
      * tenu dans les deux cas.</p>
      *
+     * <p>Les interventions conservées perdent leur note interne (A16), seul champ libre
+     * de l'atelier qui porte sur la personne.</p>
+     *
      * @return le nombre de vehicules reellement supprimes physiquement
      */
     private int anonymiserLeParc(Utilisateur membre) {
+        // Avant le parc : un véhicule sans historique disparaît physiquement, et la
+        // requête rattache les notes par le véhicule.
+        vehicules.effacerNotesInternes(membre.getId());
         List<Vehicule> parc = vehicules.tousLesVehicules(membre.getId());
         int supprimes = 0;
         for (Vehicule vehicule : parc) {

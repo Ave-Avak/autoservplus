@@ -418,7 +418,8 @@ public record ExportDonnees(
      * rapport ecrit (article 15 contre RM-16).
      *
      * <p>Le commentaire restitue est {@code commentaireAdmin}, deja visible du
-     * membre dans son suivi. Il n existe pas de diagnostic technique separe en V1.
+     * membre dans son suivi. La note interne de l'atelier (A16), qu'il ne voit pas à
+     * l'écran, est restituée aussi : elle porte sur lui, l'article 15 la couvre.
      *
      * <p>La plaque arrive en argument, pour la meme raison que dans
      * {@link RdvExport} : l historique d atelier d un vehicule retire du parc reste
@@ -432,6 +433,7 @@ public record ExportDonnees(
             Instant debutReel,
             Instant finReelle,
             String commentaireGarage,
+            String noteInterneAtelier,
             BigDecimal montantDevisInitialHtva,
             BigDecimal totalFacturableHtva,
             BigDecimal totalFacturableTvac,
@@ -446,6 +448,7 @@ public record ExportDonnees(
                     intervention.getDebutReel(),
                     intervention.getFinReelle(),
                     intervention.getCommentaireAdmin(),
+                    intervention.getNoteInterne(),
                     intervention.getMontantDevisInitialHtva(),
                     intervention.totalFacturableHtva(),
                     intervention.totalFacturableTvac(),

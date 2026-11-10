@@ -69,4 +69,23 @@ public interface VehiculeAnonymisationRepository extends JpaRepository<Vehicule,
     @Modifying
     @Query(value = "DELETE FROM vehicule WHERE id = :id", nativeQuery = true)
     void supprimerPhysiquement(@Param("id") Long id);
+
+    /**
+     * Vide la note interne de l'atelier (A16) sur toutes les interventions des
+     * véhicules du membre, véhicules et interventions supprimés logiquement compris.
+     *
+     * <p>L'intervention reste, avec ses lignes et ses montants, que la comptabilité
+     * conserve. La note, texte libre, a pu nommer la personne ou décrire ses habitudes :
+     * elle part avec le compte. Le rattachement par le véhicule est celui de l'export,
+     * qui la restitue.</p>
+     *
+     * @return le nombre d'interventions dont la note a été effacée
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE intervention SET note_interne = NULL
+            WHERE note_interne IS NOT NULL
+              AND vehicule_id IN (SELECT id FROM vehicule WHERE membre_id = :membreId)
+            """, nativeQuery = true)
+    int effacerNotesInternes(@Param("membreId") Long membreId);
 }
