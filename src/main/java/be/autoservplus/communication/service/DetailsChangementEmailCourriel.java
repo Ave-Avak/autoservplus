@@ -1,5 +1,7 @@
 package be.autoservplus.communication.service;
 
+import be.autoservplus.identite.domain.Langue;
+
 /**
  * Elements des deux courriels du changement d adresse (CdC 5.2.2). Chaines plates,
  * comme {@link DetailsSuppressionCompteCourriel} : le module communication ne depend
@@ -13,9 +15,10 @@ package be.autoservplus.communication.service;
  *
  * @param destinataire   adresse a laquelle ce message precis doit partir
  * @param prenom         prenom du membre, pour la salutation
+ * @param langue         langue du compte, celle du courriel
  * @param ancienneAdresse adresse en vigueur au moment de la demande
  * @param nouvelleAdresse adresse demandee
  */
 public record DetailsChangementEmailCourriel(String destinataire, String prenom,
-                                             String ancienneAdresse, String nouvelleAdresse) {
+                                             Langue langue, String ancienneAdresse, String nouvelleAdresse) {
 }

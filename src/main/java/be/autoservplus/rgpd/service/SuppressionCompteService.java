@@ -134,7 +134,8 @@ public class SuppressionCompteService {
         // destinataire.
         String adresseReelle = membre.getEmail();
         CompteSupprimeEvent evenement =
-                new CompteSupprimeEvent(adresseReelle, membre.getPrenom(), membre.getReference());
+                new CompteSupprimeEvent(adresseReelle, membre.getPrenom(), membre.getReference(),
+                        membre.getLangue());
 
         int supprimes = anonymiserLeParc(membre);
         int avisNeutralises = anonymiserLesAvis(membre);

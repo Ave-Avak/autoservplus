@@ -43,7 +43,7 @@ public class NotificationSuppressionListener {
     public void surCompteSupprime(CompteSupprimeEvent evenement) {
         try {
             courriel.envoyerConfirmationSuppressionCompte(new DetailsSuppressionCompteCourriel(
-                    evenement.adresseEmail(), evenement.prenom()));
+                    evenement.adresseEmail(), evenement.prenom(), evenement.langue()));
         } catch (RuntimeException e) {
             // La reference, jamais l adresse : le journal ne doit pas recreer la
             // donnee que la suppression vient d effacer.

@@ -441,9 +441,7 @@ public class InterventionService {
         try {
             courriel.envoyerDemandeValidationDepassement(
                     rdv.getMembre(),
-                    new DetailsRdvCourriel(rdv.getNumero(),
-                            FormatageRdv.jourLisible(rdv.getDebut(), zone),
-                            FormatageRdv.heureLisible(rdv.getDebut(), zone)),
+                    new DetailsRdvCourriel(rdv.getNumero(), rdv.getDebut().atZone(zone)),
                     new DetailsDepassementCourriel(
                             it.getNumero(),
                             FormatageRdv.euros(it.devisReferenceHtva()),

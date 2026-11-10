@@ -14,13 +14,14 @@ import java.util.List;
  * @param montantInitial     devis accepte a la reservation, formate en euros HTVA
  * @param montantPropose     total HTVA si le membre accepte les lignes en attente
  * @param lignesEnAttente    designation et prix de chaque ligne soumise a l accord
- * @param lienValidation     URL de l ecran ou le membre accepte ou refuse
+ * @param cheminValidation   chemin relatif de l ecran ou le membre accepte ou refuse,
+ *                           rendu absolu a la redaction
  */
 public record DetailsDepassementCourriel(String numeroIntervention,
                                          String montantInitial,
                                          String montantPropose,
                                          List<String> lignesEnAttente,
-                                         String lienValidation) {
+                                         String cheminValidation) {
 
     public DetailsDepassementCourriel {
         lignesEnAttente = List.copyOf(lignesEnAttente);

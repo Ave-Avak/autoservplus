@@ -72,6 +72,7 @@ public class NotificationInterventionListener {
             courriel.envoyerInterventionTerminee(new DetailsInterventionTerminee(
                     membre.getEmail(),
                     membre.getPrenom(),
+                    membre.getLangue(),
                     it.getNumero(),
                     vehicule.getMarque() + " " + vehicule.getModele(),
                     vehicule.getPlaque(),

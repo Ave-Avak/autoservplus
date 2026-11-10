@@ -51,7 +51,8 @@ public class NotificationPaiementListener {
             Utilisateur membre = commande.getMembre();
             String montant = FormatageRdv.euros(commande.getMontantTvac());
             courriel.envoyerConfirmationPaiement(new DetailsPaiementCourriel(
-                    membre.getEmail(), membre.getPrenom(), commande.getNumero(), montant));
+                    membre.getEmail(), membre.getPrenom(), membre.getLangue(), commande.getNumero(),
+                    montant));
             log.info("Commande {} payee ({}) : a preparer par le garage{}.",
                     commande.getNumero(), montant,
                     commande.isRuptureAHonorer() ? ", RUPTURE A HONORER" : "");

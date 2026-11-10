@@ -1,5 +1,7 @@
 package be.autoservplus.rgpd.service;
 
+import be.autoservplus.identite.domain.Langue;
+
 import java.util.UUID;
 
 /**
@@ -26,6 +28,8 @@ import java.util.UUID;
  * @param adresseEmail adresse reelle, capturee avant anonymisation
  * @param prenom       prenom reel, capture avant anonymisation, pour la salutation
  * @param reference    identifiant public du compte anonymise
+ * @param langue       langue du compte, celle du courriel de confirmation
  */
-public record CompteSupprimeEvent(String adresseEmail, String prenom, UUID reference) {
+public record CompteSupprimeEvent(String adresseEmail, String prenom, UUID reference,
+                                  Langue langue) {
 }

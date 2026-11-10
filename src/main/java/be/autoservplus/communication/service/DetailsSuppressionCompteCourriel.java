@@ -1,5 +1,7 @@
 package be.autoservplus.communication.service;
 
+import be.autoservplus.identite.domain.Langue;
+
 /**
  * Elements du courriel confirmant la suppression d un compte (F23). Chaines plates,
  * comme {@link DetailsPaiementCourriel} : le module communication ne depend ni de
@@ -11,6 +13,8 @@ package be.autoservplus.communication.service;
  *
  * @param adresseEmail adresse reelle du membre, capturee avant effacement
  * @param prenom       prenom reel, capture avant effacement, pour la salutation
+ * @param langue       langue du compte, celle du courriel
  */
-public record DetailsSuppressionCompteCourriel(String adresseEmail, String prenom) {
+public record DetailsSuppressionCompteCourriel(String adresseEmail, String prenom,
+                                               Langue langue) {
 }
