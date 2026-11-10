@@ -25,11 +25,12 @@
 
         <div class="champ">
             <label for="posteReference" th:text="#{admin.planning.champ.poste}">Poste</label>
-            <select id="posteReference" name="posteReference">
+            <select id="posteReference" name="posteReference" aria-describedby="aide-poste">
                 <option value="" th:text="#{admin.planning.atelier-entier}">Tout l'atelier</option>
                 <option th:each="p : ${postes}" th:value="${p.reference()}" th:text="${p.libelle()}"
                         th:selected="${formulaire.posteReference == p.reference()}">Pont 1</option>
             </select>
+            <p id="aide-poste" class="texte-info" th:text="#{admin.planning.champ.poste-aide}">Laissez « Tout l'atelier » pour fermer l'atelier entier.</p>
         </div>
 
         <div class="champ">
@@ -44,6 +45,7 @@
             <input type="datetime-local" id="fin" name="fin" required
                    th:value="${formulaire.fin != null} ? ${#temporals.format(formulaire.fin, 'yyyy-MM-dd')} + 'T' + ${#temporals.format(formulaire.fin, 'HH:mm')} : ''">
             <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('fin')}" th:errors="*{fin}"></p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('finApresDebut')}" th:errors="*{finApresDebut}"></p>
         </div>
 
         <div class="champ">

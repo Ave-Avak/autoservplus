@@ -48,10 +48,10 @@
         </div>
 
         <div class="champ">
-            <label>
-                <input type="checkbox" th:field="*{actif}">
-                <span th:text="#{admin.planning.champ.actif}">Plage active</span>
-            </label>
+            <!--/* Identifiant posé à la main : th:field numérote celui d'une case (actif1). */-->
+            <input type="checkbox" id="actif" name="actif" value="true" th:checked="${formulaire.actif}">
+            <input type="hidden" name="_actif" value="on">
+            <label for="actif" th:text="#{admin.planning.champ.actif}">Plage active</label>
         </div>
 
         <p class="actions-page">

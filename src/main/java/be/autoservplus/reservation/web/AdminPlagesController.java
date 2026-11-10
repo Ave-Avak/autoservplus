@@ -110,6 +110,13 @@ public class AdminPlagesController {
         return preparerFormulaire(formulaire, id, modele);
     }
 
+    /** Confirmation avant retrait, comme pour un poste : le geste peut créer des conflits. */
+    @GetMapping("/{id}/retirer")
+    public String confirmerRetrait(@PathVariable Long id, Model modele) {
+        modele.addAttribute("plage", service.plage(id));
+        return "admin/planning/plage-retirer";
+    }
+
     @PostMapping("/{id}/retirer")
     public String retirer(@PathVariable Long id,
                           @AuthenticationPrincipal UserDetails admin,

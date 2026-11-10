@@ -51,11 +51,9 @@
                     <a th:href="@{/admin/planning/plages/{id}/modifier(id=${p.id()})}"
                        th:aria-label="#{admin.planning.action.modifier.aria(${nom})}"
                        th:text="#{admin.planning.action.modifier}">Modifier</a>
-                    <form method="post" th:action="@{/admin/planning/plages/{id}/retirer(id=${p.id()})}">
-                        <button type="submit" class="lien-bouton"
-                                th:aria-label="#{admin.planning.action.retirer.aria(${nom})}"
-                                th:text="#{admin.planning.action.retirer}">Retirer</button>
-                    </form>
+                    <a th:href="@{/admin/planning/plages/{id}/retirer(id=${p.id()})}"
+                       th:aria-label="#{admin.planning.action.retirer.aria(${nom})}"
+                       th:text="#{admin.planning.action.retirer}">Retirer</a>
                 </td>
             </tr>
             </tbody>

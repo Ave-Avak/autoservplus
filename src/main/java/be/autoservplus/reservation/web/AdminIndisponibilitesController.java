@@ -101,6 +101,13 @@ public class AdminIndisponibilitesController {
         return preparerFormulaire(formulaire, reference, modele);
     }
 
+    /** Confirmation avant retrait, comme pour un poste. */
+    @GetMapping("/{reference}/retirer")
+    public String confirmerRetrait(@PathVariable UUID reference, Model modele) {
+        modele.addAttribute("indisponibilite", service.indisponibilite(reference));
+        return "admin/planning/indisponibilite-retirer";
+    }
+
     @PostMapping("/{reference}/retirer")
     public String retirer(@PathVariable UUID reference,
                           @AuthenticationPrincipal UserDetails admin,

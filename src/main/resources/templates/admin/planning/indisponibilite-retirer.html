@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.planning.indisponibilite.retirer.titre} + ' | AutoServ+'">Retirer une indisponibilité | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <p><a th:href="@{/admin/planning/indisponibilites}" th:text="#{admin.planning.indisponibilites.retour}">Retour aux indisponibilités</a></p>
+
+    <h1 th:text="#{admin.planning.indisponibilite.retirer.titre}">Retirer une indisponibilité</h1>
+    <dl class="vehicule-details">
+        <div>
+            <dt th:text="#{admin.planning.champ.motif}">Motif</dt>
+            <dd th:text="${indisponibilite.motif()}">Jour férié</dd>
+        </div>
+        <div>
+            <dt th:text="#{admin.planning.champ.poste}">Poste</dt>
+            <dd th:text="${indisponibilite.concerneToutLAtelier()} ? #{admin.planning.atelier-entier} : ${indisponibilite.posteLibelle()}">Tout l'atelier</dd>
+        </div>
+        <div>
+            <dt th:text="#{admin.planning.champ.debut}">Début</dt>
+            <dd th:text="${#temporals.format(indisponibilite.debut(), 'dd/MM/yyyy HH:mm')}">11/11/2026 00:00</dd>
+        </div>
+        <div>
+            <dt th:text="#{admin.planning.champ.fin}">Fin</dt>
+            <dd th:text="${#temporals.format(indisponibilite.fin(), 'dd/MM/yyyy HH:mm')}">12/11/2026 00:00</dd>
+        </div>
+    </dl>
+    <p th:text="#{admin.planning.indisponibilite.retirer.question}">Les créneaux de cette période redeviendront réservables.</p>
+
+    <form method="post" th:action="@{/admin/planning/indisponibilites/{ref}/retirer(ref=${indisponibilite.reference()})}">
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{admin.planning.indisponibilite.retirer.confirmer}">Retirer l'indisponibilité</button>
+            <a th:href="@{/admin/planning/indisponibilites}" th:text="#{admin.planning.annuler}">Annuler</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

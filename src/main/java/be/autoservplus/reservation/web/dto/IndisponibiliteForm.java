@@ -1,5 +1,6 @@
 package be.autoservplus.reservation.web.dto;
 
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
@@ -28,9 +29,19 @@ public class IndisponibiliteForm {
     @DateTimeFormat(pattern = FORMAT_SAISIE)
     private LocalDateTime fin;
 
-    @NotBlank(message = "{admin.planning.validation.motif}")
+    @NotBlank(message = "{admin.planning.validation.motif-obligatoire}")
     @Size(max = 200, message = "{admin.planning.validation.motif}")
     private String motif;
+
+    /**
+     * Ordre des dates jugé avec les autres champs, pour que toutes les erreurs du même
+     * envoi s'affichent ensemble. L'entité garde sa propre garde, ce contrôle ne la
+     * remplace pas. Deux dates absentes sont signalées par leur propre message.
+     */
+    @AssertTrue(message = "{admin.planning.validation.ordre-dates}")
+    public boolean isFinApresDebut() {
+        return debut == null || fin == null || fin.isAfter(debut);
+    }
 
     public UUID getPosteReference() { return posteReference; }
     public void setPosteReference(UUID posteReference) { this.posteReference = posteReference; }

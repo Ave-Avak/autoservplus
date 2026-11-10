@@ -51,9 +51,11 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -422,6 +424,87 @@ class AdminPlanningIT extends SocleIntegration {
                     .andExpect(status().isOk())
                     .andExpect(content().string(containsString("La fin doit suivre le début.")));
             assertThat(indisponibilites.aVenir(MAINTENANT)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("motif vide et dates inversées sont signalés au même envoi, motif obligatoire distinct de la longueur")
+        void erreursDuMemeEnvoi() throws Exception {
+            mvc.perform(admin(post("/admin/planning/indisponibilites"))
+                            .param("debut", "2026-11-19T12:00").param("fin", "2026-11-19T08:00")
+                            .param("motif", ""))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Indiquez un motif.")))
+                    .andExpect(content().string(containsString("La fin doit suivre le début.")))
+                    .andExpect(content().string(not(containsString("200 caractères"))));
+            assertThat(indisponibilites.aVenir(MAINTENANT)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("« Retirer » passe par une page de confirmation")
+        void confirmationAvantRetrait() throws Exception {
+            mvc.perform(admin(post("/admin/planning/indisponibilites"))
+                            .param("posteReference", "")
+                            .param("debut", "2026-11-19T00:00").param("fin", "2026-11-20T00:00")
+                            .param("motif", "Inventaire"))
+                    .andExpect(status().is3xxRedirection());
+            UUID reference = indisponibilites.aVenir(MAINTENANT).get(0).getReference();
+
+            mvc.perform(admin(get("/admin/planning/indisponibilites")))
+                    .andExpect(content().string(containsString(
+                            "href=\"/admin/planning/indisponibilites/" + reference + "/retirer\"")));
+            mvc.perform(admin(get("/admin/planning/indisponibilites/" + reference + "/retirer")))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Inventaire")))
+                    .andExpect(content().string(containsString(
+                            "action=\"/admin/planning/indisponibilites/" + reference + "/retirer\"")));
+            assertThat(indisponibilites.aVenir(MAINTENANT)).hasSize(1);
+        }
+    }
+
+    // --- présentation -------------------------------------------------------------------
+
+    @Nested
+    @DisplayName("présentation")
+    class Presentation {
+
+        @Test
+        @DisplayName("« Retirer » une plage passe par une page de confirmation")
+        void confirmationRetraitPlage() throws Exception {
+            Long jeudi = plages.findByJourSemaineAndActifTrueOrderByHeureDebut((short) 4).get(0).getId();
+            mvc.perform(admin(get("/admin/planning/plages")))
+                    .andExpect(content().string(containsString(
+                            "href=\"/admin/planning/plages/" + jeudi + "/retirer\"")));
+            mvc.perform(admin(get("/admin/planning/plages/" + jeudi + "/retirer")))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Jeudi 08:00-18:00")))
+                    .andExpect(content().string(containsString(
+                            "action=\"/admin/planning/plages/" + jeudi + "/retirer\"")));
+            assertThat(plages.parIdentifiant(jeudi)).isPresent();
+        }
+
+        @Test
+        @DisplayName("la case « Plage active » et le choix du poste sont reliés à leur libellé")
+        void libellesRelies() throws Exception {
+            mvc.perform(admin(get("/admin/planning/plages/nouvelle")))
+                    .andExpect(content().string(containsString("for=\"actif\"")))
+                    .andExpect(content().string(containsString("id=\"actif\"")));
+            mvc.perform(admin(get("/admin/planning/indisponibilites/nouvelle")))
+                    .andExpect(content().string(containsString("for=\"posteReference\"")))
+                    .andExpect(content().string(containsString("id=\"posteReference\"")));
+        }
+
+        @Test
+        @DisplayName("aucun code de règle n'apparaît dans les écrans du planning")
+        void aucunCodeDeRegle() throws Exception {
+            rdvs.saveAndFlush(confirme(rdv("RDV-PLA-RM", pont1, JEUDI, 9)));
+            for (String page : List.of("/admin/planning/plages", "/admin/planning/plages/nouvelle",
+                    "/admin/planning/postes", "/admin/planning/postes/nouveau",
+                    "/admin/planning/postes/" + pont1.getReference() + "/supprimer",
+                    "/admin/planning/indisponibilites", "/admin/planning/indisponibilites/nouvelle")) {
+                mvc.perform(admin(get(page)))
+                        .andExpect(status().isOk())
+                        .andExpect(content().string(not(containsString("RM-"))));
+            }
         }
     }
 

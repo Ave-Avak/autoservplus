@@ -48,11 +48,9 @@
                     <a th:href="@{/admin/planning/indisponibilites/{ref}/modifier(ref=${i.reference()})}"
                        th:aria-label="#{admin.planning.action.modifier.aria(${i.motif()})}"
                        th:text="#{admin.planning.action.modifier}">Modifier</a>
-                    <form method="post" th:action="@{/admin/planning/indisponibilites/{ref}/retirer(ref=${i.reference()})}">
-                        <button type="submit" class="lien-bouton"
-                                th:aria-label="#{admin.planning.action.retirer.aria(${i.motif()})}"
-                                th:text="#{admin.planning.action.retirer}">Retirer</button>
-                    </form>
+                    <a th:href="@{/admin/planning/indisponibilites/{ref}/retirer(ref=${i.reference()})}"
+                       th:aria-label="#{admin.planning.action.retirer.aria(${i.motif()})}"
+                       th:text="#{admin.planning.action.retirer}">Retirer</a>
                 </td>
             </tr>
             </tbody>
