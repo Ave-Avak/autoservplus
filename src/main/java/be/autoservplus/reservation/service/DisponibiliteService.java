@@ -16,6 +16,7 @@ import java.util.Optional;
  * Calcule les heures de depart reservables pour une duree donnee.
  *
  * <p>La disponibilite n est pas stockee : elle se deduit des plages d ouverture, des
+ * jours fériés légaux, des
  * indisponibilites, des rendez-vous actifs et des parametres de l atelier. Un
  * candidat est retenu si l atelier est ouvert sur tout l intervalle, si le depart
  * respecte le delai minimal et l horizon, et si au moins un poste actif n a ni
@@ -64,7 +65,7 @@ public class DisponibiliteService {
 
         Instant debutJour = jour.atStartOfDay(zone).toInstant();
         Instant finJour = jour.plusDays(1).atStartOfDay(zone).toInstant();
-        if (!finJour.isAfter(plusTot) || !debutJour.isBefore(plusTard)) {
+        if (JoursFeries.estFerie(jour) || !finJour.isAfter(plusTot) || !debutJour.isBefore(plusTard)) {
             return List.of();
         }
 
@@ -133,6 +134,9 @@ public class DisponibiliteService {
         LocalTime heureFin = fin.atZone(p.zone()).toLocalTime();
         if (!fin.atZone(p.zone()).toLocalDate().equals(local.toLocalDate())) {
             return false; // un rendez-vous ne chevauche pas minuit
+        }
+        if (JoursFeries.estFerie(local.toLocalDate())) {
+            return false;
         }
         return plages.findByJourSemaineAndActifTrueOrderByHeureDebut((short) local.getDayOfWeek().getValue())
                 .stream()

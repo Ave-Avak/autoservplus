@@ -77,6 +77,35 @@ class DisponibiliteServiceTest {
     }
 
     @Nested
+    @DisplayName("jours fériés")
+    class JoursFeriesLegaux {
+
+        private final LocalDate armistice = LocalDate.of(2026, 11, 11);
+
+        @Test
+        @DisplayName("un mercredi férié n'offre aucun créneau, le mercredi précédent si")
+        void mercrediFerie() {
+            when(plages.findByJourSemaineAndActifTrueOrderByHeureDebut((short) 3))
+                    .thenReturn(List.of(new PlageOuverture(DayOfWeek.WEDNESDAY, LocalTime.of(8, 0), LocalTime.of(12, 0))));
+            lenient().when(postes.findByActifTrueOrderByOrdreAscLibelleAsc()).thenReturn(List.of(pont1));
+
+            assertThat(service.creneauxDuJour(armistice, 60)).isEmpty();
+            assertThat(service.creneauxDuJour(armistice.minusWeeks(1), 60)).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("un intervalle d'un jour férié n'est pas réservable")
+        void nonReservable() {
+            when(plages.findByJourSemaineAndActifTrueOrderByHeureDebut((short) 3))
+                    .thenReturn(List.of(new PlageOuverture(DayOfWeek.WEDNESDAY, LocalTime.of(8, 0), LocalTime.of(12, 0))));
+
+            assertThat(service.estReservable(local(armistice, 9, 0), local(armistice, 10, 0))).isFalse();
+            assertThat(service.estReservable(local(armistice.minusWeeks(1), 9, 0),
+                    local(armistice.minusWeeks(1), 10, 0))).isTrue();
+        }
+    }
+
+    @Nested
     @DisplayName("cas vides")
     class CasVides {
 
