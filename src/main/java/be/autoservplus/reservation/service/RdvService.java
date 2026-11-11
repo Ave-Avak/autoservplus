@@ -222,9 +222,23 @@ public class RdvService {
                 .toList();
     }
 
+    /**
+     * Premier jour proposé au sélecteur. En mode manuel, il suit la règle des créneaux :
+     * un jour dont l'échéance de réponse ne laisse pas deux heures au garage n'a aucun
+     * créneau, et l'annoncer comme premier jour possible conduisait à une liste vide.
+     */
     public LocalDate premierJourReservable() {
         ParametreAtelier p = parametres.courants();
-        return horloge.instant().plus(p.delaiMinimal()).atZone(p.zone()).toLocalDate();
+        Instant maintenant = horloge.instant();
+        LocalDate jour = maintenant.plus(p.delaiMinimal()).atZone(p.zone()).toLocalDate();
+        if (p.isConfirmationAutomatique()) {
+            return jour;
+        }
+        LocalDate dernier = dernierJourReservable();
+        while (jour.isBefore(dernier) && !echeances.laisseLeTempsDeRepondre(jour, maintenant, p)) {
+            jour = jour.plusDays(1);
+        }
+        return jour;
     }
 
     public LocalDate dernierJourReservable() {

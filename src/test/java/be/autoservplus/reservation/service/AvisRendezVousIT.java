@@ -336,6 +336,27 @@ class AvisRendezVousIT extends SocleIntegration {
         verify(courriel, times(1)).envoyerRappelRdv(any(), argThat(d -> d.numero().equals(lointain.getNumero())));
     }
 
+    @Test
+    @DisplayName("mode manuel : le premier jour proposé est le premier dont l'échéance laisse 2 h au garage")
+    void premierJourSuitLaRegleDesCreneaux() {
+        // Samedi 09:00, délai minimal d'une heure : le samedi lui-même serait le premier
+        // jour, mais l'échéance d'un rendez-vous ce jour-là est déjà passée.
+        ParametreAtelier p = parametres.courants();
+        short delaiMinimal = p.getDelaiMinimalHeures();
+        modifierDelaiMinimal(1);
+        try {
+            assertThat(reservations.premierJourReservable()).isEqualTo(LocalDate.of(2026, 9, 13));
+            assertThat(reservations.creneauxPour(LocalDate.of(2026, 9, 12), List.of(vidange.getReference()))).isEmpty();
+            assertThat(reservations.creneauxPour(LocalDate.of(2026, 9, 13), List.of(vidange.getReference()))).isNotEmpty();
+
+            modifierParametres(true, 24);
+            assertThat(reservations.premierJourReservable())
+                    .as("en confirmation automatique, aucune échéance").isEqualTo(LocalDate.of(2026, 9, 12));
+        } finally {
+            modifierDelaiMinimal(delaiMinimal);
+        }
+    }
+
     // --- outillage ---------------------------------------------------------------------
 
     private Rdv reserver(LocalDateTime debutLocal) {
@@ -353,6 +374,14 @@ class AvisRendezVousIT extends SocleIntegration {
         Rdv rdv = new Rdv(numero, paul, clio, pont, debut, Duration.ofMinutes(30), List.of(vidange), null);
         rdv.fixerEcheanceReponse(echeance);
         return rdvs.saveAndFlush(rdv);
+    }
+
+    private void modifierDelaiMinimal(int heures) {
+        ParametreAtelier p = parametres.courants();
+        p.modifier(p.getFuseauHoraire(), p.getPasMinutes(), p.getTamponMinutes(), (short) heures,
+                p.getHorizonJours(), p.getDelaiAnnulationHeures(), p.isConfirmationAutomatique(),
+                p.getMaxRdvEnAttenteParMembre());
+        parametres.saveAndFlush(p);
     }
 
     private void modifierParametres(boolean confirmationAutomatique, int delaiRappelHeures) {
