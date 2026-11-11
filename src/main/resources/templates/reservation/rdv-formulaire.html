@@ -19,6 +19,18 @@
 <main id="contenu">
     <h1>Prendre rendez-vous</h1>
 
+    <!--/* Page en français figé, comme le reste de ce formulaire : ces phrases se traduiront avec elle. */-->
+    <p th:unless="${conditions.confirmationAutomatique()}" class="texte-info">
+        Le garage vous répond sous <span th:text="${conditions.delaiReponseHeures()}">24</span> heures.
+        Attendez sa confirmation avant de vous organiser.
+    </p>
+    <p th:if="${conditions.telephoneGarage() != null and !#strings.isEmpty(conditions.telephoneGarage())}"
+       class="texte-info">
+        Pour un rendez-vous plus rapproché, appelez le garage au
+        <a th:href="'tel:' + ${#strings.replace(conditions.telephoneGarage(), ' ', '')}"
+           th:text="${conditions.telephoneGarage()}">+32 2 000 00 00</a>.
+    </p>
+
     <p th:if="${vehicules.isEmpty()}" class="message">
         Vous devez d'abord enregistrer un véhicule.
         <a th:href="@{/mes-vehicules/nouveau}">Ajouter un véhicule</a>

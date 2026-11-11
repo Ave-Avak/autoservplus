@@ -3,6 +3,7 @@ package be.autoservplus.communication.service;
 import be.autoservplus.identite.domain.Utilisateur;
 
 import java.time.Instant;
+import java.time.ZonedDateTime;
 
 /**
  * Envoi des courriels transactionnels.
@@ -45,10 +46,22 @@ public interface ServiceCourriel {
     void envoyerAnnulationParLeGarage(Utilisateur destinataire, DetailsRdvCourriel rdv, String motif);
 
     /**
-     * Accusé de réception d'une demande de rendez-vous. Dit si la demande attend la
-     * réponse du garage ou si elle est déjà confirmée.
+     * Accusé de réception d'une demande de rendez-vous. Dit si la demande est déjà
+     * confirmée ou si elle attend la réponse du garage, qui répond sous
+     * {@code delaiReponseHeures} heures.
      */
-    void envoyerAccuseDemandeRdv(Utilisateur destinataire, DetailsRdvCourriel rdv, boolean confirme);
+    void envoyerAccuseDemandeRdv(Utilisateur destinataire, DetailsRdvCourriel rdv, boolean confirme,
+                                 int delaiReponseHeures);
+
+    /** La demande est restée sans réponse jusqu'à son échéance : le créneau est libéré. */
+    void envoyerExpirationRdv(Utilisateur destinataire, DetailsRdvCourriel rdv);
+
+    /**
+     * Relance au garage d'une demande toujours en attente à mi-délai, à l'adresse de
+     * l'atelier et dans la langue par défaut de l'application.
+     */
+    void envoyerRelanceAuGarage(DetailsRdvCourriel rdv, String membre, ZonedDateTime echeance,
+                                String cheminDetail);
 
     /**
      * Avis au garage d'une nouvelle demande, à l'adresse de l'atelier et dans la langue

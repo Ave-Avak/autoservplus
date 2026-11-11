@@ -19,8 +19,8 @@ import java.util.List;
 
 /**
  * Avis émis par les gestes du membre et par la tâche planifiée : accusé de réception et
- * avis au garage d'une nouvelle demande, rappel avant le rendez-vous, annulation par le
- * membre. Les transitions décidées par le garage restent dans {@link AdminRdvService}.
+ * avis au garage d'une nouvelle demande, relance au garage à mi-délai, expiration d'une
+ * demande, rappel avant le rendez-vous, annulation par le membre. Les transitions décidées par le garage restent dans {@link AdminRdvService}.
  *
  * <p>Appelé dans la transaction du geste. Les courriels partent après sa validation
  * ({@code EnvoiApresCommit}), les notifications s'écrivent avec elle. Une erreur de
@@ -53,16 +53,34 @@ public class AvisRendezVous {
     public void nouvelleDemande(Rdv rdv) {
         boolean confirme = rdv.getStatut() == StatutRdv.CONFIRME;
         DetailsRdvCourriel details = detailsPour(rdv);
-        sansEchouer(rdv, () -> courriel.envoyerAccuseDemandeRdv(rdv.getMembre(), details, confirme));
+        int delaiReponse = parametres.courants().getDelaiReponseHeures();
+        sansEchouer(rdv, () -> courriel.envoyerAccuseDemandeRdv(rdv.getMembre(), details, confirme, delaiReponse));
         sansEchouer(rdv, () -> courriel.envoyerAvisNouvelleDemandeAuGarage(details,
                 rdv.getMembre().nomComplet(), confirme, "/admin/rendez-vous/" + rdv.getReference()));
+        notifierLesAdministrateurs(rdv, TypeNotification.RDV_DEMANDE);
+    }
+
+    /** La demande a expiré sans réponse : le membre est invité à réserver un autre créneau. */
+    public void expiration(Rdv rdv) {
+        sansEchouer(rdv, () -> courriel.envoyerExpirationRdv(rdv.getMembre(), detailsPour(rdv)));
+    }
+
+    /** Relance au garage d'une demande toujours en attente à mi-délai. */
+    public void relance(Rdv rdv) {
+        sansEchouer(rdv, () -> courriel.envoyerRelanceAuGarage(detailsPour(rdv), rdv.getMembre().nomComplet(),
+                rdv.getEcheanceReponse().atZone(parametres.courants().zone()),
+                "/admin/rendez-vous/" + rdv.getReference()));
+        notifierLesAdministrateurs(rdv, TypeNotification.RDV_RELANCE);
+    }
+
+    private void notifierLesAdministrateurs(Rdv rdv, TypeNotification type) {
         List<Utilisateur> administrateurs = utilisateurs.findByTypeUtilisateurAndStatut(
                 TypeUtilisateur.ADMINISTRATEUR, StatutUtilisateur.ACTIF);
         if (administrateurs.isEmpty()) {
-            log.warn("Demande {} : aucun administrateur actif à notifier.", rdv.getNumero());
+            log.warn("Rendez-vous {} : aucun administrateur actif à notifier.", rdv.getNumero());
         }
         administrateurs.forEach(administrateur -> sansEchouer(rdv,
-                () -> notifications.deposer(administrateur, TypeNotification.RDV_DEMANDE, rdv.getNumero())));
+                () -> notifications.deposer(administrateur, type, rdv.getNumero())));
     }
 
     public void rappel(Rdv rdv) {

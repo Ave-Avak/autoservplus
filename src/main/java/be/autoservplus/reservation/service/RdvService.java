@@ -4,6 +4,7 @@ import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.reservation.domain.*;
@@ -15,6 +16,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.reservation.service.dto.ConditionsReservation;
 import be.autoservplus.reservation.service.dto.CreneauDisponible;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.reservation.web.dto.CreneauVue;
@@ -56,12 +58,15 @@ public class RdvService {
     private final DisponibiliteService disponibilites;
     private final GenerateurNumeroRdv numeros;
     private final AvisRendezVous avis;
+    private final EcheanceReponse echeances;
+    private final IdentiteGarage garage;
     private final Clock horloge;
 
     public RdvService(RdvRepository rdvs, UtilisateurRepository membres,
                       PrestationRepository prestations, ParametreAtelierRepository parametres,
                       VehiculeService vehicules, DisponibiliteService disponibilites,
-                      GenerateurNumeroRdv numeros, AvisRendezVous avis, Clock horloge) {
+                      GenerateurNumeroRdv numeros, AvisRendezVous avis, EcheanceReponse echeances,
+                      IdentiteGarage garage, Clock horloge) {
         this.rdvs = rdvs;
         this.membres = membres;
         this.prestations = prestations;
@@ -70,6 +75,8 @@ public class RdvService {
         this.disponibilites = disponibilites;
         this.numeros = numeros;
         this.avis = avis;
+        this.echeances = echeances;
+        this.garage = garage;
         this.horloge = horloge;
     }
 
@@ -120,6 +127,10 @@ public class RdvService {
         Rdv rdv = new Rdv(numeros.prochain(), membre, vehicule, poste, debut, p.pas(), choisies, commentaire);
         if (p.isConfirmationAutomatique()) {
             rdv.confirmer(horloge.instant());
+        } else {
+            // Figée ici : un changement ultérieur des plages ou des paramètres ne la déplace pas.
+            rdv.fixerEcheanceReponse(echeances.pour(horloge.instant(),
+                    debut.atZone(p.zone()).toLocalDate(), p));
         }
 
         try {
@@ -235,6 +246,16 @@ public class RdvService {
                 rdv.getCommentaire(),
                 rdv.getMotifRefus(),
                 peutEtreAnnule(rdv));
+    }
+
+    /**
+     * Ce que le formulaire de réservation annonce : le mode de confirmation, le délai de
+     * réponse du garage en mode manuel, et le téléphone pour un rendez-vous plus proche.
+     */
+    public ConditionsReservation conditions() {
+        ParametreAtelier p = parametres.courants();
+        return new ConditionsReservation(p.isConfirmationAutomatique(), p.getDelaiReponseHeures(),
+                garage.telephone());
     }
 
     // --- annulation par le membre ----------------------------------------------------

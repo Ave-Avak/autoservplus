@@ -15,6 +15,7 @@ import be.autoservplus.reservation.domain.ParametreAtelier;
 import be.autoservplus.reservation.domain.PlageOuverture;
 import be.autoservplus.reservation.domain.PosteAtelier;
 import be.autoservplus.reservation.domain.Rdv;
+import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.reservation.repository.PlageOuvertureRepository;
@@ -54,6 +55,7 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -105,7 +107,9 @@ class AvisRendezVousIT extends SocleIntegration {
 
     private Utilisateur marie;
     private Utilisateur admin;
+    private Utilisateur paul;
     private Vehicule golf;
+    private Vehicule clio;
     private PosteAtelier pont;
     private Prestation vidange;
 
@@ -124,8 +128,15 @@ class AvisRendezVousIT extends SocleIntegration {
         administrateur.setStatut(StatutUtilisateur.ACTIF);
         admin = utilisateurs.save(administrateur);
         golf = vehicules.save(new Vehicule(marie, "1-AVI-001", "VW", "Golf", Motorisation.DIESEL));
+        // Les demandes insérées directement sont à Paul : Marie garde sa marge sous le
+        // plafond de demandes en attente pour les réservations par le service.
+        paul = utilisateurs.save(new Utilisateur("paul.avis@exemple.be", "$2a$12$h",
+                "Martin", "Paul", TypeUtilisateur.MEMBRE));
+        clio = vehicules.save(new Vehicule(paul, "1-AVI-002", "Renault", "Clio", Motorisation.ESSENCE));
         Categorie entretien = categories.save(new Categorie("IT-AVI", "Entretien", TypeCategorie.SERVICE));
         vidange = prestations.save(new Prestation(entretien, "IT-AVI-VID", "Vidange", new BigDecimal("49.00"), 60));
+        // Mode manuel : les demandes restent en attente et portent une échéance.
+        modifierParametres(false, 24);
     }
 
     @AfterEach
@@ -139,7 +150,7 @@ class AvisRendezVousIT extends SocleIntegration {
         Rdv rdv = reserver(LocalDate.of(2026, 9, 13).atTime(10, 0));
 
         verify(courriel).envoyerAccuseDemandeRdv(argThat(m -> m.getEmail().equals(marie.getEmail())),
-                argThat(d -> d.numero().equals(rdv.getNumero())), eq(false));
+                argThat(d -> d.numero().equals(rdv.getNumero())), eq(false), eq(24));
         verify(courriel).envoyerAvisNouvelleDemandeAuGarage(argThat(d -> d.numero().equals(rdv.getNumero())),
                 eq("Marie Dupont"), eq(false), eq("/admin/rendez-vous/" + rdv.getReference()));
         assertThat(jdbc.queryForObject(
@@ -154,7 +165,7 @@ class AvisRendezVousIT extends SocleIntegration {
 
         Rdv rdv = reserver(LocalDate.of(2026, 9, 14).atTime(10, 0));
 
-        verify(courriel).envoyerAccuseDemandeRdv(any(), argThat(d -> d.numero().equals(rdv.getNumero())), eq(true));
+        verify(courriel).envoyerAccuseDemandeRdv(any(), argThat(d -> d.numero().equals(rdv.getNumero())), eq(true), anyInt());
         verify(courriel).envoyerAvisNouvelleDemandeAuGarage(any(), any(), eq(true), any());
     }
 
@@ -215,6 +226,59 @@ class AvisRendezVousIT extends SocleIntegration {
         rdvs.delete(rdvs.findByReference(rdv.getReference()).orElseThrow());
     }
 
+    @Test
+    @DisplayName("une demande en mode manuel porte son échéance : midi du samedi pour un dimanche")
+    void echeanceFigeeALaCreation() {
+        Rdv rdv = reserver(LocalDate.of(2026, 9, 13).atTime(13, 0));
+
+        assertThat(rdv.getEcheanceReponse())
+                .isEqualTo(LocalDate.of(2026, 9, 12).atTime(12, 0).atZone(BRUXELLES).toInstant());
+    }
+
+    @Test
+    @DisplayName("une demande échue expire une fois, le membre est prévenu, une demande à venir reste")
+    void expiration() {
+        Rdv echue = enAttente("RDV-AVI-0101", MAINTENANT.plus(Duration.ofDays(3)), MAINTENANT.minusSeconds(60));
+        Rdv aVenir = enAttente("RDV-AVI-0102", MAINTENANT.plus(Duration.ofDays(4)), MAINTENANT.plus(Duration.ofHours(3)));
+
+        assertThat(taches.expirerLesDemandes()).isGreaterThanOrEqualTo(1);
+        assertThat(taches.expirerLesDemandes()).as("second passage").isZero();
+
+        assertThat(rdvs.findByReference(echue.getReference()).orElseThrow().getStatut()).isEqualTo(StatutRdv.EXPIRE);
+        assertThat(rdvs.findByReference(aVenir.getReference()).orElseThrow().getStatut()).isEqualTo(StatutRdv.EN_ATTENTE);
+        verify(courriel, times(1)).envoyerExpirationRdv(any(), argThat(d -> d.numero().equals(echue.getNumero())));
+        verify(courriel, never()).envoyerExpirationRdv(any(), argThat(d -> d.numero().equals(aVenir.getNumero())));
+    }
+
+    @Test
+    @DisplayName("relance au garage à mi-délai, une seule fois, courriel et notification")
+    void relanceAMiDelai() {
+        Rdv rdv = enAttente("RDV-AVI-0201", MAINTENANT.plus(Duration.ofDays(5)), MAINTENANT.plus(Duration.ofHours(2)));
+        jdbc.update("UPDATE rdv SET created_at = ? WHERE id = ?",
+                java.sql.Timestamp.from(MAINTENANT.minus(Duration.ofHours(4))), rdv.getId());
+
+        assertThat(taches.relancerLeGarage()).isEqualTo(1);
+        assertThat(taches.relancerLeGarage()).as("second passage").isZero();
+
+        verify(courriel, times(1)).envoyerRelanceAuGarage(argThat(d -> d.numero().equals(rdv.getNumero())),
+                eq("Paul Martin"), any(), eq("/admin/rendez-vous/" + rdv.getReference()));
+        assertThat(jdbc.queryForObject(
+                "SELECT count(*) FROM notification WHERE type = 'RDV_RELANCE' AND membre_id = ? AND corps = ?",
+                Long.class, admin.getId(), rdv.getNumero())).isEqualTo(1L);
+        assertThat(rdvs.findByReference(rdv.getReference()).orElseThrow().getRelanceEnvoyeeLe()).isEqualTo(MAINTENANT);
+    }
+
+    @Test
+    @DisplayName("avant mi-délai, aucune relance")
+    void pasDeRelanceAvantMiDelai() {
+        Rdv rdv = enAttente("RDV-AVI-0202", MAINTENANT.plus(Duration.ofDays(6)), MAINTENANT.plus(Duration.ofHours(10)));
+
+        taches.relancerLeGarage();
+
+        verify(courriel, never()).envoyerRelanceAuGarage(argThat(d -> d.numero().equals(rdv.getNumero())),
+                any(), any(), any());
+    }
+
     // --- outillage ---------------------------------------------------------------------
 
     private Rdv reserver(LocalDateTime debutLocal) {
@@ -225,6 +289,12 @@ class AvisRendezVousIT extends SocleIntegration {
     private Rdv confirme(String numero, Instant debut) {
         Rdv rdv = new Rdv(numero, marie, golf, pont, debut, Duration.ofMinutes(30), List.of(vidange), null);
         rdv.confirmer(MAINTENANT.minus(Duration.ofDays(1)));
+        return rdvs.saveAndFlush(rdv);
+    }
+
+    private Rdv enAttente(String numero, Instant debut, Instant echeance) {
+        Rdv rdv = new Rdv(numero, paul, clio, pont, debut, Duration.ofMinutes(30), List.of(vidange), null);
+        rdv.fixerEcheanceReponse(echeance);
         return rdvs.saveAndFlush(rdv);
     }
 

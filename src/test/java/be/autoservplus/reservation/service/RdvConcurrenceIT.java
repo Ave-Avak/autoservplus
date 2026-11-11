@@ -10,11 +10,13 @@ import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.reservation.domain.Motorisation;
+import be.autoservplus.reservation.domain.ParametreAtelier;
 import be.autoservplus.reservation.domain.PlageOuverture;
 import be.autoservplus.reservation.domain.PosteAtelier;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.domain.Vehicule;
+import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.reservation.repository.PlageOuvertureRepository;
 import be.autoservplus.reservation.repository.PosteAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
@@ -99,6 +101,7 @@ class RdvConcurrenceIT extends SocleIntegration {
     @Autowired private PrestationRepository prestations;
     @Autowired private PosteAtelierRepository postes;
     @Autowired private PlageOuvertureRepository plages;
+    @Autowired private ParametreAtelierRepository parametres;
     @Autowired private TransactionTemplate transaction;
 
     private Utilisateur marie;
@@ -129,6 +132,11 @@ class RdvConcurrenceIT extends SocleIntegration {
         clio = vehicules.save(new Vehicule(paul, "1-CON-002", "Renault", "Clio", Motorisation.ESSENCE));
         Categorie entretien = categories.save(new Categorie("IT-CON", "Entretien", TypeCategorie.SERVICE));
         vidange = prestations.save(new Prestation(entretien, "IT-CON-VID", "Vidange", new BigDecimal("49.00"), 60));
+        // Mode manuel : les transitions testées partent d'une demande EN_ATTENTE.
+        ParametreAtelier p = parametres.courants();
+        p.modifier(p.getFuseauHoraire(), p.getPasMinutes(), p.getTamponMinutes(), p.getDelaiMinimalHeures(),
+                p.getHorizonJours(), p.getDelaiAnnulationHeures(), false, p.getMaxRdvEnAttenteParMembre());
+        parametres.saveAndFlush(p);
     }
 
     @AfterEach

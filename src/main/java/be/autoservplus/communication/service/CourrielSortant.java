@@ -159,27 +159,35 @@ public class CourrielSortant implements ServiceCourriel {
 
     @Override
     public void envoyerAccuseDemandeRdv(Utilisateur destinataire, DetailsRdvCourriel rdv,
-                                        boolean confirme) {
+                                        boolean confirme, int delaiReponseHeures) {
         Locale langue = langue(destinataire.getLangue());
         auCompte(confirme ? "rdv-recu-confirme" : "rdv-recu", destinataire, null, rdv.numero(),
+                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()), delaiReponseHeures);
+    }
+
+    @Override
+    public void envoyerExpirationRdv(Utilisateur destinataire, DetailsRdvCourriel rdv) {
+        Locale langue = langue(destinataire.getLangue());
+        auCompte("rdv-expire", destinataire, null, rdv.numero(),
                 jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()));
+    }
+
+    @Override
+    public void envoyerRelanceAuGarage(DetailsRdvCourriel rdv, String membre, ZonedDateTime echeance,
+                                       String cheminDetail) {
+        Locale langue = Locale.FRENCH;
+        auGarage("rdv-relance-garage", rdv.numero(), langue, rdv.numero(),
+                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()), membre,
+                jour(echeance, langue, "EEEE d MMMM"), heure(echeance), liens.vers(cheminDetail));
     }
 
     @Override
     public void envoyerAvisNouvelleDemandeAuGarage(DetailsRdvCourriel rdv, String membre,
                                                    boolean confirme, String cheminDetail) {
-        String adresse = garage.courriel();
-        if (adresse == null || adresse.isBlank()) {
-            // Sans adresse d'atelier, seules les notifications du back-office préviennent
-            // le garage. Le contrôle d'identité l'exige sous prod, pas sous les autres profils.
-            log.warn("Avis de nouvelle demande {} non envoyé : aucune adresse d'atelier.", rdv.numero());
-            return;
-        }
         Locale langue = Locale.FRENCH;
-        String type = confirme ? "rdv-avis-garage-confirme" : "rdv-avis-garage";
-        partir(type, adresse, garage.enseigne(), garage.enseigne(), langue,
-                corps(type, langue, rdv.numero(), jour(rdv.debut(), langue, "EEEE d MMMM yyyy"),
-                        heure(rdv.debut()), membre, liens.vers(cheminDetail)), null);
+        auGarage(confirme ? "rdv-avis-garage-confirme" : "rdv-avis-garage", rdv.numero(), langue,
+                rdv.numero(), jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()),
+                membre, liens.vers(cheminDetail));
     }
 
     @Override
@@ -247,6 +255,21 @@ public class CourrielSortant implements ServiceCourriel {
         Locale langue = langue(destinataire.getLangue());
         partir(type, destinataire.getEmail(), destinataire.nomComplet(),
                 destinataire.getPrenom(), langue, corps(type, langue, arguments), piece);
+    }
+
+    /**
+     * Courriel adressé à l'atelier, dans la langue par défaut de l'application. Sans
+     * adresse d'atelier, seules les notifications du back-office préviennent le garage :
+     * le contrôle d'identité l'exige sous prod, pas sous les autres profils.
+     */
+    private void auGarage(String type, String numero, Locale langue, Object... arguments) {
+        String adresse = garage.courriel();
+        if (adresse == null || adresse.isBlank()) {
+            log.warn("Courriel {} du rendez-vous {} non envoyé : aucune adresse d'atelier.", type, numero);
+            return;
+        }
+        partir(type, adresse, garage.enseigne(), garage.enseigne(), langue,
+                corps(type, langue, arguments), null);
     }
 
     private void partir(String type, String adresse, String nom, String prenom, Locale langue,

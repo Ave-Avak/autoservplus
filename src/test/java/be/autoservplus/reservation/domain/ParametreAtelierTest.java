@@ -28,8 +28,27 @@ class ParametreAtelierTest {
         assertThat(p.delaiMinimal()).isEqualTo(Duration.ofHours(24));
         assertThat(p.horizon()).isEqualTo(Duration.ofDays(60));
         assertThat(p.delaiAnnulation()).isEqualTo(Duration.ofHours(24));
-        assertThat(p.isConfirmationAutomatique()).isFalse();
+        assertThat(p.isConfirmationAutomatique()).isTrue();
         assertThat(p.getMaxRdvEnAttenteParMembre()).isEqualTo((short) 3);
+        assertThat(p.delaiReponse()).isEqualTo(Duration.ofHours(24));
+        assertThat(p.delaiRappel()).isEqualTo(Duration.ofHours(24));
+        assertThat(p.rappelActif()).isTrue();
+    }
+
+    @Test
+    @DisplayName("délai de réponse de 2 à 168 heures, délai de rappel de 0 à 168, 0 désactivant le rappel")
+    void delaisDeReponseEtDeRappel() {
+        ParametreAtelier p = parametres();
+        p.modifierDelaiReponse(2);
+        p.modifierRappel(0);
+        assertThat(p.delaiReponse()).isEqualTo(Duration.ofHours(2));
+        assertThat(p.rappelActif()).isFalse();
+
+        assertThatThrownBy(() -> p.modifierDelaiReponse(1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> p.modifierDelaiReponse(169)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> p.modifierRappel(-1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> p.modifierRappel(169)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(p.delaiReponse()).isEqualTo(Duration.ofHours(2));
     }
 
     @Test
@@ -81,11 +100,11 @@ class ParametreAtelierTest {
     @DisplayName("une modification refusee ne change rien")
     void modificationAtomique() {
         ParametreAtelier p = parametres();
-        assertThatThrownBy(() -> p.modifier("Europe/Paris", 15, 10, 24, 60, 24, true, 0))
+        assertThatThrownBy(() -> p.modifier("Europe/Paris", 15, 10, 24, 60, 24, false, 0))
                 .isInstanceOf(IllegalArgumentException.class);
 
         assertThat(p.zone()).isEqualTo(ZoneId.of("Europe/Brussels"));
         assertThat(p.pas()).isEqualTo(Duration.ofMinutes(30));
-        assertThat(p.isConfirmationAutomatique()).isFalse();
+        assertThat(p.isConfirmationAutomatique()).isTrue();
     }
 }

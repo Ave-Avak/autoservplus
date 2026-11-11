@@ -8,6 +8,8 @@ import be.autoservplus.reservation.service.ExportAgendaService;
 import be.autoservplus.reservation.service.RdvService;
 import be.autoservplus.reservation.service.VehiculeService;
 import be.autoservplus.reservation.web.dto.VehiculeVue;
+import be.autoservplus.reservation.service.dto.ConditionsReservation;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,6 +52,11 @@ class RdvControllerFormulaireTest {
     @MockitoBean private RdvService rdvs;
     @MockitoBean private VehiculeService vehicules;
     @MockitoBean private ExportAgendaService agendas;
+
+    @BeforeEach
+    void confirmationAutomatique() {
+        when(rdvs.conditions()).thenReturn(new ConditionsReservation(true, 24, "+32 2 000 00 00"));
+    }
 
     @Test
     @DisplayName("expose min et max au format ISO yyyy-MM-dd sur l input date")
@@ -179,5 +186,31 @@ class RdvControllerFormulaireTest {
                 .andExpect(model().attributeHasFieldErrors("formulaire", "debut"))
                 .andExpect(content().string(containsString("Ce creneau vient d etre pris. Choisissez-en un autre.")))
                 .andExpect(content().string(not(containsString("[RM-"))));
+    }
+
+    @Test
+    @DisplayName("mode manuel : délai de réponse et téléphone du garage annoncés")
+    @WithMockUser(username = "membre@exemple.be")
+    void conditionsModeManuel() throws Exception {
+        stubsFormulaire();
+        when(rdvs.conditions()).thenReturn(new ConditionsReservation(false, 36, "+32 2 123 45 67"));
+
+        mvc.perform(get("/mes-rendez-vous/nouveau"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Le garage vous répond sous <span>36</span> heures.")))
+                .andExpect(content().string(containsString("Attendez sa confirmation avant de vous organiser.")))
+                .andExpect(content().string(containsString("href=\"tel:+3221234567\"")));
+    }
+
+    @Test
+    @DisplayName("confirmation automatique : téléphone annoncé, aucun délai de réponse")
+    @WithMockUser(username = "membre@exemple.be")
+    void conditionsConfirmationAutomatique() throws Exception {
+        stubsFormulaire();
+
+        mvc.perform(get("/mes-rendez-vous/nouveau"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Pour un rendez-vous plus rapproché, appelez le garage au")))
+                .andExpect(content().string(not(containsString("Le garage vous répond sous"))));
     }
 }

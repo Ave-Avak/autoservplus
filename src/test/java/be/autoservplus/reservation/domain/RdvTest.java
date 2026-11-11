@@ -322,6 +322,76 @@ class RdvTest {
     }
 
     @Nested
+    @DisplayName("échéance de réponse et expiration")
+    class Expiration {
+
+        private final Instant echeance = DEBUT.minus(Duration.ofHours(20));
+
+        @Test
+        @DisplayName("une demande expire à son échéance, pas avant, et libère le créneau")
+        void expireALEcheance() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.fixerEcheanceReponse(echeance);
+
+            assertThat(rdv.peutExpirer(echeance.minusSeconds(1))).isFalse();
+            assertThatThrownBy(() -> rdv.expirer(echeance.minusSeconds(1))).isInstanceOf(IllegalStateException.class);
+
+            rdv.expirer(echeance);
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.EXPIRE);
+            assertThat(rdv.getStatut().libereLeCreneau()).isTrue();
+            assertThat(rdv.getStatut().estEnCours()).isFalse();
+            assertThat(rdv.getDateAnnulation()).isEqualTo(echeance);
+        }
+
+        @Test
+        @DisplayName("sans échéance, une demande n'expire jamais")
+        void sansEcheance() {
+            Rdv rdv = rdvDe(vidange);
+            assertThat(rdv.peutExpirer(APRES_LA_FIN)).isFalse();
+            assertThatThrownBy(() -> rdv.expirer(APRES_LA_FIN)).isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("un rendez-vous confirmé n'expire jamais, même passé")
+        void confirmeNExpireJamais() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.fixerEcheanceReponse(echeance);
+            rdv.confirmer(AVANT_LE_DEBUT);
+
+            assertThat(rdv.peutExpirer(APRES_LA_FIN)).isFalse();
+            assertThatThrownBy(() -> rdv.expirer(APRES_LA_FIN)).isInstanceOf(IllegalStateException.class);
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.CONFIRME);
+        }
+
+        @Test
+        @DisplayName("l'échéance se fixe une seule fois, et seulement sur une demande en attente")
+        void echeanceFigee() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.fixerEcheanceReponse(echeance);
+            assertThatThrownBy(() -> rdv.fixerEcheanceReponse(echeance.plusSeconds(60)))
+                    .isInstanceOf(IllegalStateException.class);
+            assertThat(rdv.getEcheanceReponse()).isEqualTo(echeance);
+
+            Rdv confirme = rdvDe(vidange);
+            confirme.confirmer(AVANT_LE_DEBUT);
+            assertThatThrownBy(() -> confirme.fixerEcheanceReponse(echeance))
+                    .isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("une demande expirée ne se confirme plus, ne se refuse plus, ne s'annule plus")
+        void etatFinal() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.fixerEcheanceReponse(echeance);
+            rdv.expirer(echeance);
+
+            assertThat(rdv.peutEtreConfirme(echeance)).isFalse();
+            assertThatThrownBy(() -> rdv.refuser("trop tard", echeance)).isInstanceOf(IllegalStateException.class);
+            assertThat(rdv.peutEtreAnnuleParLeGarage(echeance)).isFalse();
+        }
+    }
+
+    @Nested
     @DisplayName("refus par le garage")
     class Refus {
 

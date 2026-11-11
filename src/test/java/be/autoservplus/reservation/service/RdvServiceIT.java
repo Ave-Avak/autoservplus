@@ -81,6 +81,7 @@ class RdvServiceIT extends SocleIntegration {
     @Autowired private PrestationRepository prestations;
     @Autowired private PosteAtelierRepository postes;
     @Autowired private PlageOuvertureRepository plages;
+    @Autowired private ParametreAtelierRepository parametres;
     @Autowired private Clock horloge;
 
     private Utilisateur marie;
@@ -113,6 +114,15 @@ class RdvServiceIT extends SocleIntegration {
         dimanche10h = DIMANCHE_RESERVATION.atTime(10, 0).atZone(BRUXELLES).toInstant();
         plages.save(new PlageOuverture(DIMANCHE_RESERVATION.getDayOfWeek(),
                 LocalTime.of(8, 0), LocalTime.of(18, 0)));
+        // Mode manuel, que ces tests supposent : la demande reste EN_ATTENTE et compte
+        // dans le plafond. Le samedi ouvert donne au garage le temps de répondre avant
+        // dimanche (échéance samedi 12:00).
+        plages.save(new PlageOuverture(DIMANCHE_RESERVATION.minusDays(1).getDayOfWeek(),
+                LocalTime.of(8, 0), LocalTime.of(18, 0)));
+        ParametreAtelier p = parametres.courants();
+        p.modifier(p.getFuseauHoraire(), p.getPasMinutes(), p.getTamponMinutes(), p.getDelaiMinimalHeures(),
+                p.getHorizonJours(), p.getDelaiAnnulationHeures(), false, p.getMaxRdvEnAttenteParMembre());
+        parametres.saveAndFlush(p);
     }
 
     @Test

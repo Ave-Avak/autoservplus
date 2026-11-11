@@ -88,6 +88,14 @@ public class Rdv extends BaseEntity {
     @Column(name = "rappel_envoye_le", insertable = false, updatable = false)
     private Instant rappelEnvoyeLe;
 
+    /** Calculée une fois à la création d'une demande en mode manuel, jamais recalculée. */
+    @Column(name = "echeance_reponse")
+    private Instant echeanceReponse;
+
+    /** Même règle que {@link #rappelEnvoyeLe}, écrite par {@code RdvRepository.reserverRelance}. */
+    @Column(name = "relance_envoyee_le", insertable = false, updatable = false)
+    private Instant relanceEnvoyeeLe;
+
     @OneToMany(mappedBy = "rdv", cascade = CascadeType.ALL, orphanRemoval = true,
             fetch = FetchType.LAZY)
     private List<LigneRdv> lignes = new ArrayList<>();
@@ -178,6 +186,37 @@ public class Rdv extends BaseEntity {
 
     public boolean peutEtreMarqueAbsent(Instant maintenant) {
         return statut.peutPasserA(StatutRdv.ABSENT) && fin.isBefore(maintenant);
+    }
+
+    /**
+     * Fixe l'échéance de réponse d'une demande en attente. Une seule fois : un
+     * changement ultérieur des plages, des paramètres ou du mode ne la déplace pas.
+     */
+    public void fixerEcheanceReponse(Instant echeance) {
+        if (statut != StatutRdv.EN_ATTENTE || echeanceReponse != null) {
+            throw new IllegalStateException(
+                    "L'échéance de réponse se fixe une seule fois, sur une demande en attente.");
+        }
+        this.echeanceReponse = echeance;
+    }
+
+    /**
+     * La demande est restée sans réponse jusqu'à son échéance : le créneau est libéré.
+     * Une demande sans échéance (confirmée d'office, ou antérieure à l'échéance) et un
+     * rendez-vous confirmé n'expirent jamais.
+     */
+    public void expirer(Instant maintenant) {
+        if (!peutExpirer(maintenant)) {
+            throw new IllegalStateException(
+                    "Seule une demande en attente dont l'échéance est atteinte peut expirer.");
+        }
+        transitionVers(StatutRdv.EXPIRE);
+        this.dateAnnulation = maintenant;
+    }
+
+    public boolean peutExpirer(Instant maintenant) {
+        return statut == StatutRdv.EN_ATTENTE && echeanceReponse != null
+                && !maintenant.isBefore(echeanceReponse);
     }
 
     /** Refus par le garage, motif obligatoire. */
@@ -290,6 +329,8 @@ public class Rdv extends BaseEntity {
     public String getMotifRefus() { return motifRefus; }
     public Instant getDateAnnulation() { return dateAnnulation; }
     public Instant getRappelEnvoyeLe() { return rappelEnvoyeLe; }
+    public Instant getEcheanceReponse() { return echeanceReponse; }
+    public Instant getRelanceEnvoyeeLe() { return relanceEnvoyeeLe; }
     public List<LigneRdv> getLignes() { return Collections.unmodifiableList(lignes); }
     public long getVersion() { return version; }
 

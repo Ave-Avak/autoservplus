@@ -58,7 +58,7 @@ class CourrielSortantTest {
                 TypeUtilisateur.MEMBRE);
     }
 
-    /** Les vingt-cinq envois du contrat, pour un destinataire de la langue donnée. */
+    /** Les vingt-sept envois du contrat, pour un destinataire de la langue donnée. */
     private Map<String, Consumer<Langue>> tousLesEnvois() {
         DetailsRdvCourriel rdv = new DetailsRdvCourriel("RDV-2026-0001", DIMANCHE);
         PieceJointeCourriel agenda = new PieceJointeCourriel("rdv.ics", "text/calendar",
@@ -71,14 +71,17 @@ class CourrielSortantTest {
                 Map.entry("rdv-confirme", l -> courriel.envoyerConfirmationRdv(marie, rdv, agenda)),
                 Map.entry("rdv-refuse", l -> courriel.envoyerRefusRdv(marie, rdv, "Pièce indisponible")),
                 Map.entry("rdv-annule", l -> courriel.envoyerAnnulationParLeGarage(marie, rdv, "Panne")),
-                Map.entry("rdv-recu", l -> courriel.envoyerAccuseDemandeRdv(marie, rdv, false)),
-                Map.entry("rdv-recu-confirme", l -> courriel.envoyerAccuseDemandeRdv(marie, rdv, true)),
+                Map.entry("rdv-recu", l -> courriel.envoyerAccuseDemandeRdv(marie, rdv, false, 24)),
+                Map.entry("rdv-recu-confirme", l -> courriel.envoyerAccuseDemandeRdv(marie, rdv, true, 24)),
                 Map.entry("rdv-avis-garage", l -> courriel.envoyerAvisNouvelleDemandeAuGarage(
                         rdv, "Marie Dupont", false, "/admin/rendez-vous/r")),
                 Map.entry("rdv-avis-garage-confirme", l -> courriel.envoyerAvisNouvelleDemandeAuGarage(
                         rdv, "Marie Dupont", true, "/admin/rendez-vous/r")),
                 Map.entry("rdv-rappel", l -> courriel.envoyerRappelRdv(marie, rdv)),
                 Map.entry("rdv-annule-membre", l -> courriel.envoyerAnnulationParLeMembre(marie, rdv)),
+                Map.entry("rdv-expire", l -> courriel.envoyerExpirationRdv(marie, rdv)),
+                Map.entry("rdv-relance-garage", l -> courriel.envoyerRelanceAuGarage(
+                        rdv, "Marie Dupont", DIMANCHE.minusDays(1).withHour(12), "/admin/rendez-vous/r")),
                 Map.entry("depassement", l -> courriel.envoyerDemandeValidationDepassement(marie, rdv,
                         new DetailsDepassementCourriel("INT-2026-0001", "100,00 €", "150,00 €",
                                 List.of("- Filtre x1 : 50,00 €"), "/mes-interventions/r/validation"))),
@@ -116,7 +119,7 @@ class CourrielSortantTest {
     void tousLesTypes(Langue langue) {
         marie.setLangue(langue);
         Map<String, Consumer<Langue>> envois = tousLesEnvois();
-        assertThat(envois).hasSize(25);
+        assertThat(envois).hasSize(27);
 
         envois.forEach((type, envoi) -> {
             partis.clear();

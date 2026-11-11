@@ -186,6 +186,7 @@ public class RdvController {
         modele.addAttribute("prestationsParCategorie", rdvs.prestationsProposees());
         modele.addAttribute("dateMin", rdvs.premierJourReservable());
         modele.addAttribute("dateMax", rdvs.dernierJourReservable());
+        modele.addAttribute("conditions", rdvs.conditions());
         boolean aucune = formulaire.getPrestations() == null || formulaire.getPrestations().isEmpty();
         modele.addAttribute("aucunePrestation", aucune);
         modele.addAttribute("creneaux", aucune ? List.of() : rdvs.creneauxPour(formulaire.getDate(), formulaire.getPrestations()));

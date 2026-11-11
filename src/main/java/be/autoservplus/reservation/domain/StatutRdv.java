@@ -7,7 +7,8 @@ package be.autoservplus.reservation.domain;
  * CONFIRME : accepte par le garage. REFUSE : decline avec motif.
  * ANNULE : retire par le membre, ou par le garage qui ne peut plus tenir le creneau
  * (depuis EN_ATTENTE comme depuis CONFIRME). HONORE : le membre s est presente.
- * ABSENT : le membre ne s est pas presente.</p>
+ * ABSENT : le membre ne s est pas presente. EXPIRE : demande restée sans réponse du
+ * garage à son échéance, en mode de confirmation manuelle.</p>
  */
 public enum StatutRdv {
     EN_ATTENTE,
@@ -15,7 +16,8 @@ public enum StatutRdv {
     REFUSE,
     ANNULE,
     HONORE,
-    ABSENT;
+    ABSENT,
+    EXPIRE;
 
     /** Un rendez-vous encore modifiable par le membre. */
     public boolean estEnCours() {
@@ -24,15 +26,15 @@ public enum StatutRdv {
 
     /** Un rendez-vous dont le creneau doit etre libere. */
     public boolean libereLeCreneau() {
-        return this == REFUSE || this == ANNULE;
+        return this == REFUSE || this == ANNULE || this == EXPIRE;
     }
 
-    /** Transitions autorisees (RM-10, version implementee a six etats). */
+    /** Transitions autorisees (RM-10, version implementee a sept etats). */
     public boolean peutPasserA(StatutRdv cible) {
         return switch (this) {
-            case EN_ATTENTE -> cible == CONFIRME || cible == REFUSE || cible == ANNULE;
+            case EN_ATTENTE -> cible == CONFIRME || cible == REFUSE || cible == ANNULE || cible == EXPIRE;
             case CONFIRME   -> cible == HONORE || cible == ABSENT || cible == ANNULE;
-            case REFUSE, ANNULE, HONORE, ABSENT -> false;
+            case REFUSE, ANNULE, HONORE, ABSENT, EXPIRE -> false;
         };
     }
 }

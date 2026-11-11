@@ -54,6 +54,7 @@ public final class FormatageRdv {
             case ANNULE -> "Annulé";
             case HONORE -> "Effectué";
             case ABSENT -> "Non présenté";
+            case EXPIRE -> "Expiré sans réponse du garage";
         };
     }
 }

@@ -136,4 +136,35 @@ public interface RdvRepository extends JpaRepository<Rdv, Long> {
             WHERE id = :id AND rappel_envoye_le IS NULL AND statut = 'CONFIRME' AND deleted_at IS NULL
             """, nativeQuery = true)
     int reserverRappel(@Param("id") Long id, @Param("maintenant") Instant maintenant);
+
+    /** Demandes en attente dont l'échéance de réponse est atteinte. */
+    @Query("""
+            SELECT r FROM Rdv r JOIN FETCH r.membre
+            WHERE r.statut = be.autoservplus.reservation.domain.StatutRdv.EN_ATTENTE
+              AND r.echeanceReponse IS NOT NULL AND r.echeanceReponse <= :maintenant
+            ORDER BY r.echeanceReponse
+            """)
+    List<Rdv> demandesEchues(@Param("maintenant") Instant maintenant);
+
+    /**
+     * Demandes en attente arrivées à mi-chemin entre leur création et leur échéance,
+     * échéance non atteinte et relance pas encore réservée.
+     */
+    @Query(value = """
+            SELECT * FROM rdv
+            WHERE deleted_at IS NULL AND statut = 'EN_ATTENTE'
+              AND echeance_reponse IS NOT NULL AND relance_envoyee_le IS NULL
+              AND echeance_reponse > :maintenant
+              AND created_at + (echeance_reponse - created_at) / 2 <= :maintenant
+            ORDER BY echeance_reponse
+            """, nativeQuery = true)
+    List<Rdv> relancesDues(@Param("maintenant") Instant maintenant);
+
+    /** Réserve la relance au garage, sur le patron de {@link #reserverRappel}. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = """
+            UPDATE rdv SET relance_envoyee_le = :maintenant
+            WHERE id = :id AND relance_envoyee_le IS NULL AND statut = 'EN_ATTENTE' AND deleted_at IS NULL
+            """, nativeQuery = true)
+    int reserverRelance(@Param("id") Long id, @Param("maintenant") Instant maintenant);
 }
