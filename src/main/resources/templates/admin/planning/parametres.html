@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.parametres.titre} + ' | AutoServ+'">Paramètres de réservation | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.parametres.titre}">Paramètres de réservation</h1>
+    <p class="texte-info" th:text="#{admin.parametres.intro}">Ces réglages valent pour les demandes à venir.</p>
+
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+
+    <form class="formulaire" method="post" th:action="@{/admin/planning/parametres}" th:object="${formulaire}" novalidate>
+
+        <p role="alert" class="texte-erreur" th:if="${#fields.hasGlobalErrors()}"
+           th:each="erreur : ${#fields.globalErrors()}" th:text="${erreur}">Erreur</p>
+
+        <fieldset>
+            <legend th:text="#{admin.parametres.confirmation.legende}">Confirmation des demandes</legend>
+            <div class="champ">
+                <!--/* Identifiant posé à la main : th:field numérote celui d'une case. */-->
+                <input type="checkbox" id="confirmationAutomatique" name="confirmationAutomatique" value="true"
+                       th:checked="${formulaire.confirmationAutomatique}" aria-describedby="aide-confirmation">
+                <input type="hidden" name="_confirmationAutomatique" value="on">
+                <label for="confirmationAutomatique" th:text="#{admin.parametres.confirmation.automatique}">Confirmer automatiquement les demandes</label>
+                <p id="aide-confirmation" class="texte-info" th:text="#{admin.parametres.confirmation.aide}">
+                    Sinon, chaque demande attend votre réponse.</p>
+            </div>
+        </fieldset>
+
+        <div class="champ">
+            <label for="delaiReponseHeures" th:text="#{admin.parametres.delai-reponse}">Délai de réponse du garage (heures)</label>
+            <input type="number" id="delaiReponseHeures" th:field="*{delaiReponseHeures}" min="2" max="168" step="1"
+                   required aria-describedby="aide-reponse">
+            <p id="aide-reponse" class="texte-info" th:text="#{admin.parametres.delai-reponse.aide}">Aide</p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('delaiReponseHeures')}" th:errors="*{delaiReponseHeures}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="delaiMinimalHeures" th:text="#{admin.parametres.delai-minimal}">Délai minimal de réservation (heures)</label>
+            <input type="number" id="delaiMinimalHeures" th:field="*{delaiMinimalHeures}" min="0" max="168" step="1"
+                   required aria-describedby="aide-minimal">
+            <p id="aide-minimal" class="texte-info" th:text="#{admin.parametres.delai-minimal.aide}">Aide</p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('delaiMinimalHeures')}" th:errors="*{delaiMinimalHeures}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="delaiAnnulationHeures" th:text="#{admin.parametres.delai-annulation}">Délai d'annulation par le membre (heures)</label>
+            <input type="number" id="delaiAnnulationHeures" th:field="*{delaiAnnulationHeures}" min="0" max="168" step="1"
+                   required aria-describedby="aide-annulation">
+            <p id="aide-annulation" class="texte-info" th:text="#{admin.parametres.delai-annulation.aide}">Aide</p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('delaiAnnulationHeures')}" th:errors="*{delaiAnnulationHeures}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="delaiRappelHeures" th:text="#{admin.parametres.delai-rappel}">Délai du rappel avant le rendez-vous (heures)</label>
+            <input type="number" id="delaiRappelHeures" th:field="*{delaiRappelHeures}" min="0" max="168" step="1"
+                   required aria-describedby="aide-rappel">
+            <p id="aide-rappel" class="texte-info" th:text="#{admin.parametres.delai-rappel.aide}">Aide</p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('delaiRappelHeures')}" th:errors="*{delaiRappelHeures}"></p>
+        </div>
+
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{admin.planning.enregistrer}">Enregistrer</button>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

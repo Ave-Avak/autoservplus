@@ -107,4 +107,24 @@ class ParametreAtelierTest {
         assertThat(p.pas()).isEqualTo(Duration.ofMinutes(30));
         assertThat(p.isConfirmationAutomatique()).isTrue();
     }
+
+    @Test
+    @DisplayName("réglages de l'écran : valeurs dans les bornes appliquées ensemble, une valeur hors bornes ne change rien")
+    void modifierReservation() {
+        ParametreAtelier p = parametres();
+        p.modifierReservation(false, 48, 12, 6, 0);
+
+        assertThat(p.isConfirmationAutomatique()).isFalse();
+        assertThat(p.delaiReponse()).isEqualTo(Duration.ofHours(48));
+        assertThat(p.delaiMinimal()).isEqualTo(Duration.ofHours(12));
+        assertThat(p.delaiAnnulation()).isEqualTo(Duration.ofHours(6));
+        assertThat(p.rappelActif()).isFalse();
+
+        assertThatThrownBy(() -> p.modifierReservation(true, 1, 24, 24, 24)).hasMessageContaining("réponse");
+        assertThatThrownBy(() -> p.modifierReservation(true, 24, 169, 24, 24)).hasMessageContaining("minimal");
+        assertThatThrownBy(() -> p.modifierReservation(true, 24, 24, -1, 24)).hasMessageContaining("annulation");
+        assertThatThrownBy(() -> p.modifierReservation(true, 24, 24, 24, 169)).hasMessageContaining("rappel");
+        assertThat(p.isConfirmationAutomatique()).isFalse();
+        assertThat(p.delaiReponse()).isEqualTo(Duration.ofHours(48));
+    }
 }

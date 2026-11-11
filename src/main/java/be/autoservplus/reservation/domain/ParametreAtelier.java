@@ -93,6 +93,29 @@ public class ParametreAtelier {
         this.maxRdvEnAttenteParMembre = (short) maxRdvEnAttenteParMembre;
     }
 
+    /**
+     * Réglages de l'écran « Paramètres de réservation ». Tout est contrôlé avant la
+     * première écriture : une valeur hors bornes laisse l'ensemble inchangé.
+     */
+    public void modifierReservation(boolean confirmationAutomatique, int delaiReponseHeures,
+                                    int delaiMinimalHeures, int delaiAnnulationHeures,
+                                    int delaiRappelHeures) {
+        exiger(delaiReponseHeures >= 2 && delaiReponseHeures <= 168,
+                "Le délai de réponse doit être compris entre 2 et 168 heures.");
+        exiger(delaiMinimalHeures >= 0 && delaiMinimalHeures <= 168,
+                "Le délai minimal doit être compris entre 0 et 168 heures.");
+        exiger(delaiAnnulationHeures >= 0 && delaiAnnulationHeures <= 168,
+                "Le délai d'annulation doit être compris entre 0 et 168 heures.");
+        exiger(delaiRappelHeures >= 0 && delaiRappelHeures <= 168,
+                "Le délai de rappel doit être compris entre 0 et 168 heures.");
+
+        this.confirmationAutomatique = confirmationAutomatique;
+        this.delaiReponseHeures = (short) delaiReponseHeures;
+        this.delaiMinimalHeures = (short) delaiMinimalHeures;
+        this.delaiAnnulationHeures = (short) delaiAnnulationHeures;
+        this.delaiRappelHeures = (short) delaiRappelHeures;
+    }
+
     /** Délai du rappel avant le début, de 0 à 168 heures. La valeur 0 désactive le rappel. */
     public void modifierRappel(int delaiRappelHeures) {
         exiger(delaiRappelHeures >= 0 && delaiRappelHeures <= 168,
