@@ -340,7 +340,8 @@ class RdvTest {
             assertThat(rdv.getStatut()).isEqualTo(StatutRdv.EXPIRE);
             assertThat(rdv.getStatut().libereLeCreneau()).isTrue();
             assertThat(rdv.getStatut().estEnCours()).isFalse();
-            assertThat(rdv.getDateAnnulation()).isEqualTo(echeance);
+            assertThat(rdv.getDateAnnulation()).as("personne n'a annulé").isNull();
+            assertThat(rdv.getEcheanceReponse()).isEqualTo(echeance);
         }
 
         @Test

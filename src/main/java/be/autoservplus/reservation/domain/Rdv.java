@@ -204,6 +204,9 @@ public class Rdv extends BaseEntity {
      * La demande est restée sans réponse jusqu'à son échéance : le créneau est libéré.
      * Une demande sans échéance (confirmée d'office, ou antérieure à l'échéance) et un
      * rendez-vous confirmé n'expirent jamais.
+     *
+     * <p>{@code dateAnnulation} reste vide : personne n'a annulé. Le statut et
+     * l'échéance enregistrée disent ce qui s'est passé et quand.</p>
      */
     public void expirer(Instant maintenant) {
         if (!peutExpirer(maintenant)) {
@@ -211,7 +214,6 @@ public class Rdv extends BaseEntity {
                     "Seule une demande en attente dont l'échéance est atteinte peut expirer.");
         }
         transitionVers(StatutRdv.EXPIRE);
-        this.dateAnnulation = maintenant;
     }
 
     public boolean peutExpirer(Instant maintenant) {

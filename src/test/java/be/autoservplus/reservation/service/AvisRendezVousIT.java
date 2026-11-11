@@ -10,6 +10,7 @@ import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.pilotage.repository.IndicateursRepository;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.ParametreAtelier;
 import be.autoservplus.reservation.domain.PlageOuverture;
@@ -103,6 +104,7 @@ class AvisRendezVousIT extends SocleIntegration {
     @Autowired private PosteAtelierRepository postes;
     @Autowired private PlageOuvertureRepository plages;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private IndicateursRepository indicateurs;
 
     private Utilisateur marie;
     private Utilisateur admin;
@@ -244,6 +246,9 @@ class AvisRendezVousIT extends SocleIntegration {
     void expiration() {
         Rdv echue = enAttente("RDV-AVI-0101", MAINTENANT.plus(Duration.ofDays(3)), MAINTENANT.minusSeconds(60));
         Rdv aVenir = enAttente("RDV-AVI-0102", MAINTENANT.plus(Duration.ofDays(4)), MAINTENANT.plus(Duration.ofHours(3)));
+        Instant debutEchue = echue.getDebut();
+        assertThat(indicateurs.minutesReservees(debutEchue, debutEchue.plusSeconds(1)))
+                .isEqualTo(Duration.between(debutEchue, echue.getFin()).toMinutes());
 
         assertThat(taches.expirerLesDemandes()).isGreaterThanOrEqualTo(1);
         assertThat(taches.expirerLesDemandes()).as("second passage").isZero();
@@ -252,6 +257,10 @@ class AvisRendezVousIT extends SocleIntegration {
         assertThat(rdvs.findByReference(aVenir.getReference()).orElseThrow().getStatut()).isEqualTo(StatutRdv.EN_ATTENTE);
         verify(courriel, times(1)).envoyerExpirationRdv(any(), argThat(d -> d.numero().equals(echue.getNumero())));
         verify(courriel, never()).envoyerExpirationRdv(any(), argThat(d -> d.numero().equals(aVenir.getNumero())));
+        assertThat(jdbc.queryForObject("SELECT date_annulation IS NULL FROM rdv WHERE id = ?",
+                Boolean.class, echue.getId())).as("personne n'a annulé").isTrue();
+        assertThat(indicateurs.minutesReservees(debutEchue, debutEchue.plusSeconds(1)))
+                .as("une demande expirée n'occupe plus le poste").isZero();
     }
 
     @Test

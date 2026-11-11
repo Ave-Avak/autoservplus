@@ -82,7 +82,7 @@ public class IndicateursRepository {
     /**
      * Minutes de rendez-vous non annules sur la periode, tous postes confondus.
      *
-     * <p>Les statuts REFUSE et ANNULE sont exclus : un creneau libere n a occupe
+     * <p>Les statuts REFUSE, ANNULE et EXPIRE sont exclus : un créneau libéré n'a occupé
      * personne. ABSENT est <b>conserve</b> : le poste est bien reste bloque, le client
      * ne s est simplement pas presente, et masquer ce temps ferait croire a une
      * capacite disponible qui ne l etait pas.</p>
@@ -98,7 +98,7 @@ public class IndicateursRepository {
                         SELECT COALESCE(SUM(EXTRACT(EPOCH FROM (fin - debut)) / 60), 0)
                         FROM rdv
                         WHERE debut >= :debut AND debut < :fin
-                          AND statut NOT IN ('ANNULE', 'REFUSE')
+                          AND statut NOT IN ('ANNULE', 'REFUSE', 'EXPIRE')
                           AND deleted_at IS NULL
                         """)
                 .setParameter("debut", debut)
