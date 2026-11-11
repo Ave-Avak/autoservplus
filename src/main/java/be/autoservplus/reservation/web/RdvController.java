@@ -1,6 +1,7 @@
 package be.autoservplus.reservation.web;
 
 import be.autoservplus.common.exception.RegleMetierException;
+import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.service.AucunePrestationChoisieException;
 import be.autoservplus.reservation.service.ExportAgendaService;
 import be.autoservplus.reservation.service.LimiteDemandesEnAttenteException;
@@ -10,6 +11,8 @@ import be.autoservplus.reservation.service.VehiculeService;
 import be.autoservplus.reservation.service.dto.FichierAgenda;
 import be.autoservplus.reservation.web.dto.RdvForm;
 import jakarta.validation.Valid;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
@@ -45,11 +48,14 @@ public class RdvController {
     private final RdvService rdvs;
     private final VehiculeService vehicules;
     private final ExportAgendaService agendas;
+    private final MessageSource messages;
 
-    public RdvController(RdvService rdvs, VehiculeService vehicules, ExportAgendaService agendas) {
+    public RdvController(RdvService rdvs, VehiculeService vehicules, ExportAgendaService agendas,
+                         MessageSource messages) {
         this.rdvs = rdvs;
         this.vehicules = vehicules;
         this.agendas = agendas;
+        this.messages = messages;
     }
 
     @GetMapping
@@ -109,8 +115,12 @@ public class RdvController {
         try {
             var rdv = rdvs.reserver(membre.getUsername(), formulaire.getVehicule(),
                     formulaire.getPrestations(), debut, formulaire.getCommentaire());
-            redirection.addFlashAttribute("message",
-                    "Votre demande " + rdv.getNumero() + " a bien été enregistrée. Le garage vous confirmera le rendez-vous.");
+            // Le statut, et non le réglage lu à part : une demande confirmée d'office
+            // n'attend plus le garage, une demande en attente l'attend.
+            String cle = rdv.getStatut() == StatutRdv.CONFIRME
+                    ? "rdv.reservation.confirmee" : "rdv.reservation.en-attente";
+            redirection.addFlashAttribute("message", messages.getMessage(cle,
+                    new Object[]{rdv.getNumero()}, LocaleContextHolder.getLocale()));
             return "redirect:/mes-rendez-vous";
         } catch (LimiteDemandesEnAttenteException e) {
             // Erreur GLOBALE, et non sous « prestations » ou elle etait ancree par

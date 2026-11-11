@@ -1,5 +1,7 @@
 package be.autoservplus.reservation.web;
 
+import be.autoservplus.reservation.domain.Rdv;
+import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.service.CreneauIndisponibleException;
 import org.springframework.validation.BindingResult;
 import be.autoservplus.reservation.service.LimiteDemandesEnAttenteException;
@@ -20,6 +22,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -28,11 +31,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -170,6 +175,40 @@ class RdvControllerFormulaireTest {
                 // ... et le message doit rester visible : le gabarit ne rendait
                 // aucune erreur globale avant cette correction.
                 .andExpect(content().string(containsString("3 demandes en attente")));
+    }
+
+    @Test
+    @WithMockUser(username = "membre@exemple.be")
+    @DisplayName("confirmé d'office : le message dit que le rendez-vous est confirmé")
+    void messageRendezVousConfirme() throws Exception {
+        Rdv cree = rdv(StatutRdv.CONFIRME);
+        when(rdvs.reserver(any(), any(), any(), any(), any())).thenReturn(cree);
+
+        mvc.perform(postReservation().locale(Locale.FRENCH))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attribute("message", "Votre rendez-vous RDV-2026-0042 est confirmé."));
+        mvc.perform(postReservation().locale(new Locale("nl")))
+                .andExpect(flash().attribute("message", "Uw afspraak RDV-2026-0042 is bevestigd."));
+    }
+
+    @Test
+    @WithMockUser(username = "membre@exemple.be")
+    @DisplayName("en attente : le message annonce la confirmation du garage")
+    void messageDemandeEnAttente() throws Exception {
+        Rdv cree = rdv(StatutRdv.EN_ATTENTE);
+        when(rdvs.reserver(any(), any(), any(), any(), any())).thenReturn(cree);
+
+        mvc.perform(postReservation().locale(Locale.FRENCH))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attribute("message",
+                        "Votre demande RDV-2026-0042 a bien été enregistrée. Le garage vous confirmera le rendez-vous."));
+    }
+
+    private static Rdv rdv(StatutRdv statut) {
+        Rdv rdv = mock(Rdv.class);
+        when(rdv.getNumero()).thenReturn("RDV-2026-0042");
+        when(rdv.getStatut()).thenReturn(statut);
+        return rdv;
     }
 
     @Test
