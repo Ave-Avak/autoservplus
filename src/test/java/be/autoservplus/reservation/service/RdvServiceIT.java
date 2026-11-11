@@ -230,4 +230,20 @@ class RdvServiceIT extends SocleIntegration {
                 List.of(vidange.getReference()), dimanche10h, null))
                 .isInstanceOf(be.autoservplus.common.exception.RessourceIntrouvableException.class);
     }
+
+    @Test
+    @DisplayName("présélection : seule une prestation active et connue est retenue")
+    void prestationPreselectionnee() {
+        Prestation retiree = prestations.save(new Prestation(vidange.getCategorie(), "IT-RET", "Retirée",
+                new BigDecimal("10.00"), 30));
+        retiree.desactiver();
+        prestations.saveAndFlush(retiree);
+
+        assertThat(service.prestationPreselectionnee(vidange.getReference().toString()))
+                .contains(vidange.getReference());
+        assertThat(service.prestationPreselectionnee(retiree.getReference().toString())).isEmpty();
+        assertThat(service.prestationPreselectionnee(java.util.UUID.randomUUID().toString())).isEmpty();
+        assertThat(service.prestationPreselectionnee("pas-une-reference")).isEmpty();
+        assertThat(service.prestationPreselectionnee(null)).isEmpty();
+    }
 }

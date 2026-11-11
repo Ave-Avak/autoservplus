@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.rdv.agenda.titre} + ' | AutoServ+'">Agenda des rendez-vous | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.rdv.agenda.titre}">Agenda des rendez-vous</h1>
+    <p class="texte-info" th:text="#{admin.rdv.agenda.intro}">Tous les rendez-vous de la période.</p>
+
+    <!--/* Dates rendues et relues en ISO, indépendamment de la langue de l'interface. */-->
+    <form class="formulaire" th:action="@{/admin/rendez-vous/agenda}" method="get">
+        <fieldset>
+            <legend th:text="#{admin.rdv.agenda.filtre}">Période</legend>
+            <div class="champ">
+                <label for="du" th:text="#{admin.rdv.agenda.du}">Du</label>
+                <input type="date" id="du" name="du" required
+                       th:value="${#temporals.format(agenda.du(), 'yyyy-MM-dd')}">
+            </div>
+            <div class="champ">
+                <label for="au" th:text="#{admin.rdv.agenda.au}">Au</label>
+                <input type="date" id="au" name="au" required
+                       th:value="${#temporals.format(agenda.au(), 'yyyy-MM-dd')}">
+            </div>
+            <button type="submit" class="btn-cta" th:text="#{admin.rdv.agenda.afficher}">Afficher</button>
+        </fieldset>
+    </form>
+
+    <p th:if="${agenda.periodeInversee()}" class="message message-erreur" role="alert"
+       th:text="#{admin.rdv.agenda.periode-inversee}">La date de fin précède la date de début.</p>
+
+    <p th:if="${!agenda.periodeInversee() and agenda.rendezVous().isEmpty()}" class="message"
+       th:text="#{admin.rdv.agenda.vide}">Aucun rendez-vous sur cette période.</p>
+
+    <div class="defilement" th:unless="${agenda.rendezVous().isEmpty()}">
+        <table class="tableau">
+            <caption th:text="#{admin.rdv.agenda.legende(${#temporals.format(agenda.du(), 'dd/MM/yyyy')}, ${#temporals.format(agenda.au(), 'dd/MM/yyyy')})}">
+                Rendez-vous du 10/11/2026 au 24/11/2026</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.rdv.colonne.date}">Date</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.heure}">Heure</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.numero}">Numéro</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.membre}">Membre</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.vehicule}">Véhicule</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.prestations}">Prestations</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.poste}">Poste</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.statut}">Statut</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${agenda.rendezVous()}">
+                <td th:text="${#temporals.format(r.debut(), 'dd/MM/yyyy')}">12/11/2026</td>
+                <td th:text="${#temporals.format(r.debut(), 'HH:mm')} + ' - ' + ${#temporals.format(r.fin(), 'HH:mm')}">10:00 - 11:00</td>
+                <td><a th:href="@{/admin/rendez-vous/{ref}(ref=${r.reference()})}" th:text="${r.numero()}"
+                       th:aria-label="#{admin.rdv.action.detail.aria(${r.numero()})}">RDV-2026-0001</a></td>
+                <td th:text="${r.membreNom()}">Marie Dupont</td>
+                <td th:text="${r.vehicule()}">VW Golf (1-ABC-123)</td>
+                <td th:text="${#strings.listJoin(r.prestations(), ', ')}">Vidange</td>
+                <td th:text="${r.poste()}">Pont 1</td>
+                <td th:text="#{'rdv.statut.' + ${r.statut()}}">Confirmé</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

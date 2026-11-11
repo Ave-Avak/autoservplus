@@ -19,6 +19,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -69,6 +70,33 @@ class RdvControllerFormulaireTest {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("min=\"2026-09-15\"")))
                 .andExpect(content().string(containsString("max=\"2026-11-14\"")));
+    }
+
+    @Test
+    @DisplayName("une prestation reçue de sa fiche est cochée d'avance")
+    @WithMockUser(username = "membre@exemple.be")
+    void prestationPreselectionnee() throws Exception {
+        UUID vidange = UUID.randomUUID();
+        stubsFormulaire();
+        when(rdvs.prestationPreselectionnee(vidange.toString())).thenReturn(Optional.of(vidange));
+
+        mvc.perform(get("/mes-rendez-vous/nouveau").param("prestation", vidange.toString()))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("formulaire",
+                        org.hamcrest.Matchers.hasProperty("prestations", org.hamcrest.Matchers.contains(vidange))));
+    }
+
+    @Test
+    @DisplayName("une prestation inconnue ou malformée n'empêche pas d'ouvrir le formulaire")
+    @WithMockUser(username = "membre@exemple.be")
+    void prestationIgnoree() throws Exception {
+        stubsFormulaire();
+        when(rdvs.prestationPreselectionnee("pas-une-reference")).thenReturn(Optional.empty());
+
+        mvc.perform(get("/mes-rendez-vous/nouveau").param("prestation", "pas-une-reference"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("formulaire",
+                        org.hamcrest.Matchers.hasProperty("prestations", org.hamcrest.Matchers.empty())));
     }
 
     // --- routage des refus metier vers les champs du formulaire -----------------------

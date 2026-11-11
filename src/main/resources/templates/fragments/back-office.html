@@ -57,7 +57,9 @@
                         <span class="section-titre" id="section-atelier" th:text="#{admin.nav.atelier}">Atelier</span>
                         <ul aria-labelledby="section-atelier">
                             <li><a th:href="@{/admin/rendez-vous}" th:text="#{admin.nav.rendez-vous}"
-                                   th:attr="aria-current=${#strings.startsWith(c, '/admin/rendez-vous')} ? 'page' : null">Rendez-vous</a></li>
+                                   th:attr="aria-current=${#strings.startsWith(c, '/admin/rendez-vous') and !#strings.startsWith(c, '/admin/rendez-vous/agenda')} ? 'page' : null">Rendez-vous</a></li>
+                            <li><a th:href="@{/admin/rendez-vous/agenda}" th:text="#{admin.nav.agenda}"
+                                   th:attr="aria-current=${#strings.startsWith(c, '/admin/rendez-vous/agenda')} ? 'page' : null">Agenda</a></li>
                             <li><a th:href="@{/admin/interventions}" th:text="#{admin.nav.interventions}"
                                    th:attr="aria-current=${#strings.startsWith(c, '/admin/interventions') or #strings.startsWith(c, '/admin/galerie/interventions')} ? 'page' : null">Interventions</a></li>
                             <li><a th:href="@{/admin/commandes-a-planifier}" th:text="#{admin.nav.commandes-a-planifier}"

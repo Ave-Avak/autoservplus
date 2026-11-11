@@ -243,7 +243,7 @@ class AdminPlanningIT extends SocleIntegration {
                     .andExpect(content().string(containsString("Marie Dupont")))
                     .andExpect(content().string(containsString("Vidange")))
                     .andExpect(content().string(containsString(
-                            "/admin/rendez-vous/" + aDecouvrir.getReference() + "/annuler")));
+                            "href=\"/admin/rendez-vous/" + aDecouvrir.getReference() + "\"")));
         }
 
         @Test
@@ -556,7 +556,7 @@ class AdminPlanningIT extends SocleIntegration {
     }
 
     private static Rdv confirme(Rdv rdv) {
-        rdv.confirmer();
+        rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1)));
         return rdv;
     }
 

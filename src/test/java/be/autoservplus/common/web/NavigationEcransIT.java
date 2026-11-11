@@ -177,6 +177,8 @@ class NavigationEcransIT extends SocleIntegration {
             // --- back-office
             ecran("/admin", Acces.BACK_OFFICE),
             ecran("/admin/rendez-vous", Acces.BACK_OFFICE),
+            ecran("/admin/rendez-vous/agenda", Acces.BACK_OFFICE),
+            variable("/admin/rendez-vous/{reference}", Acces.BACK_OFFICE),
             variable("/admin/rendez-vous/{reference}/refuser", Acces.BACK_OFFICE),
             variable("/admin/rendez-vous/{reference}/annuler", Acces.BACK_OFFICE),
             ecran("/admin/interventions", Acces.BACK_OFFICE),

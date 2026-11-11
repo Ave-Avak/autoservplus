@@ -6,6 +6,7 @@ import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.service.AdminRdvService;
 import be.autoservplus.reservation.web.dto.MotifForm;
 import jakarta.validation.Valid;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -16,8 +17,10 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -28,16 +31,20 @@ import java.util.UUID;
  * defense en profondeur. Le controleur ne duplique pas l annotation : le pattern
  * projet n en met pas sur les controleurs (verifie sur RdvController, VehiculeController).</p>
  *
- * <p>Les cinq transitions suivent le pattern PRG : POST -> flash message/erreur ->
- * redirect vers la liste. Le refus et l annulation par le garage exigent un motif :
- * ils s appuient sur une page dediee avec un formulaire, plutot que sur un textarea
- * inline dans la liste, pour rester lisibles et testables independamment.</p>
+ * <p>Les cinq transitions suivent le patron PRG : POST, message flash, puis
+ * redirection. Confirmer, honorer et marquer absent reviennent à l'écran d'où part le
+ * formulaire : la liste par défaut, le détail quand le champ {@code retour} vaut
+ * {@code detail}. Toute autre valeur ramène à la liste, jamais à une adresse fournie
+ * par la requête. Le refus et l'annulation par le garage exigent un motif : ils
+ * s'appuient sur une page dédiée avec un formulaire, et aboutissent au détail, qui
+ * montre le nouveau statut et le motif.</p>
  */
 @Controller
 @RequestMapping("/admin/rendez-vous")
 public class AdminRdvController {
 
     private static final String LISTE = "redirect:/admin/rendez-vous";
+    private static final String RETOUR_DETAIL = "detail";
 
     private final AdminRdvService adminRdvs;
 
@@ -51,8 +58,27 @@ public class AdminRdvController {
     public String liste(Model modele) {
         modele.addAttribute("titre", "Rendez-vous à traiter");
         modele.addAttribute("demandesEnAttente", adminRdvs.demandesEnAttente());
-        modele.addAttribute("rendezVousATraiter", adminRdvs.rendezVousATraiter());
+        modele.addAttribute("rendezVousDuJour", adminRdvs.rendezVousDuJour());
+        modele.addAttribute("rendezVousPassesSansIssue", adminRdvs.rendezVousPassesSansIssue());
         return "admin/rendez-vous";
+    }
+
+    // --- agenda et detail -------------------------------------------------------------
+
+    /** Dates au format ISO, celui que rend et relit un champ {@code type="date"}. */
+    @GetMapping("/agenda")
+    public String agenda(@RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+                         @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+                         Model modele) {
+        modele.addAttribute("agenda", adminRdvs.agenda(du, au));
+        return "admin/rendez-vous-agenda";
+    }
+
+    /** Référence inconnue : 404 par GestionnaireErreursGlobal, comme partout. */
+    @GetMapping("/{reference}")
+    public String detail(@PathVariable UUID reference, Model modele) {
+        modele.addAttribute("rdv", adminRdvs.vue(reference));
+        return "admin/rendez-vous-detail";
     }
 
     // --- transitions sans motif -------------------------------------------------------
@@ -60,8 +86,9 @@ public class AdminRdvController {
     @PostMapping("/{reference}/confirmer")
     public String confirmer(@AuthenticationPrincipal UserDetails admin,
                             @PathVariable UUID reference,
+                            @RequestParam(required = false) String retour,
                             RedirectAttributes redirection) {
-        return appliquerTransition(reference, redirection,
+        return appliquerTransition(reference, retour, redirection,
                 () -> adminRdvs.confirmer(reference),
                 numero -> "Le rendez-vous " + numero + " a été confirmé.");
     }
@@ -69,8 +96,9 @@ public class AdminRdvController {
     @PostMapping("/{reference}/honorer")
     public String honorer(@AuthenticationPrincipal UserDetails admin,
                           @PathVariable UUID reference,
+                          @RequestParam(required = false) String retour,
                           RedirectAttributes redirection) {
-        return appliquerTransition(reference, redirection,
+        return appliquerTransition(reference, retour, redirection,
                 () -> adminRdvs.marquerHonore(reference),
                 numero -> "Le rendez-vous " + numero + " a été marqué comme honoré.");
     }
@@ -78,8 +106,9 @@ public class AdminRdvController {
     @PostMapping("/{reference}/absent")
     public String absent(@AuthenticationPrincipal UserDetails admin,
                          @PathVariable UUID reference,
+                         @RequestParam(required = false) String retour,
                          RedirectAttributes redirection) {
-        return appliquerTransition(reference, redirection,
+        return appliquerTransition(reference, retour, redirection,
                 () -> adminRdvs.marquerAbsent(reference),
                 numero -> "Le rendez-vous " + numero + " a été marqué comme non présenté.");
     }
@@ -147,7 +176,7 @@ public class AdminRdvController {
         return vue;
     }
 
-    private String appliquerTransition(UUID reference, RedirectAttributes redirection,
+    private String appliquerTransition(UUID reference, String retour, RedirectAttributes redirection,
                                        java.util.function.Supplier<Rdv> action,
                                        java.util.function.Function<String, String> messageSuccesPourNumero) {
         try {
@@ -160,7 +189,7 @@ public class AdminRdvController {
             // machine a etats du domaine : transition interdite (RM-10)
             redirection.addFlashAttribute("erreur", e.getMessage());
         }
-        return LISTE;
+        return RETOUR_DETAIL.equals(retour) ? versDetail(reference) : LISTE;
     }
 
     private String appliquerTransitionAvecMotif(UUID reference, RedirectAttributes redirection,
@@ -175,6 +204,10 @@ public class AdminRdvController {
         } catch (IllegalStateException e) {
             redirection.addFlashAttribute("erreur", e.getMessage());
         }
-        return LISTE;
+        return versDetail(reference);
+    }
+
+    private static String versDetail(UUID reference) {
+        return "redirect:/admin/rendez-vous/" + reference;
     }
 }

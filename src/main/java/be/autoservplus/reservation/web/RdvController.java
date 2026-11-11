@@ -26,6 +26,7 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -61,9 +62,12 @@ public class RdvController {
     @GetMapping("/nouveau")
     public String afficherFormulaire(@AuthenticationPrincipal UserDetails membre,
                                      @RequestParam(required = false) UUID vehicule,
+                                     @RequestParam(required = false) String prestation,
                                      Model modele) {
         RdvForm formulaire = new RdvForm();
         formulaire.setVehicule(vehicule);
+        rdvs.prestationPreselectionnee(prestation)
+                .ifPresent(reference -> formulaire.setPrestations(new ArrayList<>(List.of(reference))));
         formulaire.setDate(rdvs.premierJourReservable());
         return retourFormulaire(membre, formulaire, modele);
     }

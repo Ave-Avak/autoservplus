@@ -1,6 +1,5 @@
 <!DOCTYPE html>
-<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,109 +9,78 @@
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <header th:replace="~{fragments/back-office :: entete}"></header>
 
 <main id="contenu">
-    <h1>Administration des rendez-vous</h1>
+    <h1 th:text="#{admin.rdv.titre}">Administration des rendez-vous</h1>
+    <p class="texte-info" th:text="#{admin.rdv.intro}">Demandes à trancher et rendez-vous à clôturer.</p>
+
+    <p class="actions-page">
+        <a class="lien-bouton" th:href="@{/admin/rendez-vous/agenda}" th:text="#{admin.rdv.lien-agenda}">Voir l'agenda</a>
+    </p>
 
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
 
     <section aria-labelledby="titre-en-attente">
-        <h2 id="titre-en-attente">Demandes en attente</h2>
+        <h2 id="titre-en-attente" th:text="#{admin.rdv.en-attente.titre}">Demandes en attente</h2>
 
-        <p th:if="${demandesEnAttente.isEmpty()}" class="message">
+        <p th:if="${demandesEnAttente.isEmpty()}" class="message" th:text="#{admin.rdv.en-attente.vide}">
             Aucune demande en attente.
         </p>
 
         <ul class="grille-articles" th:unless="${demandesEnAttente.isEmpty()}">
             <li class="carte" th:each="r : ${demandesEnAttente}">
-                <p class="carte-categorie">
-                    <span th:class="'badge badge-' + ${#strings.toLowerCase(r.statut())}"
-                          th:text="${r.statutLisible()}">En attente</span>
-                </p>
-                <h3 th:text="${r.numero()}">RDV-2026-0001</h3>
-                <p>
-                    <strong th:text="${r.membreNom()}">Marie Dupont</strong><br>
-                    <a th:href="'mailto:' + ${r.membreEmail()}" th:text="${r.membreEmail()}">marie@exemple.be</a>
-                </p>
-                <p>
-                    <span th:text="${#strings.capitalize(r.jourLisible())}">Dimanche 13 septembre 2026</span><br>
-                    <span th:text="${r.heureDebut()} + ' - ' + ${r.heureFin()}">10:00 - 11:00</span>
-                </p>
-                <p th:text="${r.vehicule()}">VW Golf (1-ABC-123)</p>
-                <p th:text="${#strings.listJoin(r.prestations(), ', ')}">Vidange, Plaquettes</p>
-                <p th:text="${r.montantTvac()}">49,00 €</p>
-                <p th:if="${r.commentaire()}" class="texte-info">
-                    <em th:text="${r.commentaire()}">Bruit au freinage</em>
-                </p>
-
+                <th:block th:replace="~{fragments/rendez-vous-admin :: carte(${r})}"></th:block>
                 <div class="carte-actions">
                     <form th:if="${r.peutConfirmer()}"
                           th:action="@{/admin/rendez-vous/{ref}/confirmer(ref=${r.reference()})}"
                           method="post">
-                        <button type="submit" class="btn-cta">Confirmer</button>
+                        <button type="submit" class="btn-cta" th:text="#{admin.rdv.action.confirmer}">Confirmer</button>
                     </form>
                     <a th:if="${r.peutRefuser()}"
                        th:href="@{/admin/rendez-vous/{ref}/refuser(ref=${r.reference()})}"
-                       class="lien-bouton">Refuser</a>
+                       class="lien-bouton" th:text="#{admin.rdv.action.refuser}">Refuser</a>
                 </div>
             </li>
         </ul>
     </section>
 
-    <section aria-labelledby="titre-a-traiter">
-        <h2 id="titre-a-traiter">Rendez-vous du jour à traiter</h2>
+    <section aria-labelledby="titre-du-jour">
+        <h2 id="titre-du-jour" th:text="#{admin.rdv.du-jour.titre}">Rendez-vous du jour à traiter</h2>
 
-        <p th:if="${rendezVousATraiter.isEmpty()}" class="message">
-            Aucun rendez-vous en cours ou passé à traiter.
+        <p th:if="${rendezVousDuJour.isEmpty()}" class="message" th:text="#{admin.rdv.du-jour.vide}">
+            Aucun rendez-vous du jour à traiter.
         </p>
 
-        <ul class="grille-articles" th:unless="${rendezVousATraiter.isEmpty()}">
-            <li class="carte" th:each="r : ${rendezVousATraiter}">
-                <p class="carte-categorie">
-                    <span th:class="'badge badge-' + ${#strings.toLowerCase(r.statut())}"
-                          th:text="${r.statutLisible()}">Confirmé</span>
-                </p>
-                <h3 th:text="${r.numero()}">RDV-2026-0001</h3>
-                <p>
-                    <strong th:text="${r.membreNom()}">Marie Dupont</strong><br>
-                    <a th:href="'mailto:' + ${r.membreEmail()}" th:text="${r.membreEmail()}">marie@exemple.be</a>
-                </p>
-                <p>
-                    <span th:text="${#strings.capitalize(r.jourLisible())}">Dimanche 13 septembre 2026</span><br>
-                    <span th:text="${r.heureDebut()} + ' - ' + ${r.heureFin()}">10:00 - 11:00</span>
-                </p>
-                <p th:text="${r.vehicule()}">VW Golf (1-ABC-123)</p>
-                <p th:text="${#strings.listJoin(r.prestations(), ', ')}">Vidange, Plaquettes</p>
-                <p th:text="${r.montantTvac()}">49,00 €</p>
-
-                <div class="carte-actions">
-                    <form th:if="${r.peutMarquerHonore()}"
-                          th:action="@{/admin/rendez-vous/{ref}/honorer(ref=${r.reference()})}"
-                          method="post">
-                        <button type="submit" class="btn-cta">Marquer honoré</button>
-                    </form>
-                    <form th:if="${r.peutMarquerAbsent()}"
-                          th:action="@{/admin/rendez-vous/{ref}/absent(ref=${r.reference()})}"
-                          method="post" class="formulaire-suppression"
-                          th:data-message="'Marquer le rendez-vous ' + ${r.numero()} + ' comme non présenté ?'">
-                        <button type="submit" class="lien-bouton texte-erreur">Marquer absent</button>
-                    </form>
-                    <a th:if="${r.peutAnnuler()}"
-                       th:href="@{/admin/rendez-vous/{ref}/annuler(ref=${r.reference()})}"
-                       class="lien-bouton">Annuler</a>
-                </div>
+        <ul class="grille-articles" th:unless="${rendezVousDuJour.isEmpty()}">
+            <li class="carte" th:each="r : ${rendezVousDuJour}">
+                <th:block th:replace="~{fragments/rendez-vous-admin :: carte(${r})}"></th:block>
+                <div th:replace="~{fragments/rendez-vous-admin :: cloture(${r}, false)}"></div>
             </li>
         </ul>
     </section>
 
-    <p><a th:href="@{/mon-compte}">Retour à mon compte</a></p>
+    <section aria-labelledby="titre-passes">
+        <h2 id="titre-passes" th:text="#{admin.rdv.passes.titre}">Rendez-vous passés sans issue</h2>
+        <p class="texte-info" th:text="#{admin.rdv.passes.intro}">Rendez-vous confirmés d'un jour précédent.</p>
+
+        <p th:if="${rendezVousPassesSansIssue.isEmpty()}" class="message" th:text="#{admin.rdv.passes.vide}">
+            Aucun rendez-vous passé sans issue.
+        </p>
+
+        <ul class="grille-articles" th:unless="${rendezVousPassesSansIssue.isEmpty()}">
+            <li class="carte" th:each="r : ${rendezVousPassesSansIssue}">
+                <th:block th:replace="~{fragments/rendez-vous-admin :: carte(${r})}"></th:block>
+                <div th:replace="~{fragments/rendez-vous-admin :: cloture(${r}, false)}"></div>
+            </li>
+        </ul>
+    </section>
 </main>
 
-<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 
 <script th:src="@{/js/confirmation.js}" defer></script>
 <div th:replace="~{fragments/cookies :: bandeau}"></div>
