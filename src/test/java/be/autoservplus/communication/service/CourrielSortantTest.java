@@ -71,7 +71,7 @@ class CourrielSortantTest {
                 Map.entry("rdv-confirme", l -> courriel.envoyerConfirmationRdv(marie, rdv, agenda)),
                 Map.entry("rdv-refuse", l -> courriel.envoyerRefusRdv(marie, rdv, "Pièce indisponible")),
                 Map.entry("rdv-annule", l -> courriel.envoyerAnnulationParLeGarage(marie, rdv, "Panne")),
-                Map.entry("rdv-recu", l -> courriel.envoyerAccuseDemandeRdv(marie, rdv, 24)),
+                Map.entry("rdv-recu", l -> courriel.envoyerAccuseDemandeRdv(marie, rdv, DIMANCHE.minusDays(1).withHour(12))),
                 Map.entry("rdv-recu-confirme", l -> courriel.envoyerAccuseRdvConfirme(marie, rdv, agenda)),
                 Map.entry("rdv-avis-garage", l -> courriel.envoyerAvisNouvelleDemandeAuGarage(
                         rdv, "Marie Dupont", false, "/admin/rendez-vous/r")),
@@ -135,6 +135,16 @@ class CourrielSortantTest {
                     .doesNotContainPattern("\\{\\d}")
                     .doesNotContain("''");
         });
+    }
+
+    @Test
+    @DisplayName("l'accusé d'une demande en attente annonce l'échéance, dans la langue du membre")
+    void accuseAnnonceLEcheance() {
+        marie.setLangue(Langue.nl);
+        courriel.envoyerAccuseDemandeRdv(marie, new DetailsRdvCourriel("RDV-1", DIMANCHE),
+                DIMANCHE.minusDays(1).withHour(12));
+
+        assertThat(partis.get(0).corps()).contains("uiterlijk op zaterdag 12 september 2026 om 12:00");
     }
 
     @Test

@@ -159,10 +159,11 @@ public class CourrielSortant implements ServiceCourriel {
 
     @Override
     public void envoyerAccuseDemandeRdv(Utilisateur destinataire, DetailsRdvCourriel rdv,
-                                        int delaiReponseHeures) {
+                                        ZonedDateTime echeance) {
         Locale langue = langue(destinataire.getLangue());
         auCompte("rdv-recu", destinataire, null, rdv.numero(),
-                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()), delaiReponseHeures);
+                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()),
+                jour(echeance, langue, "EEEE d MMMM yyyy"), heure(echeance));
     }
 
     @Override

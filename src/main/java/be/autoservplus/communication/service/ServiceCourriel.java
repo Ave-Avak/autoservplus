@@ -46,10 +46,10 @@ public interface ServiceCourriel {
     void envoyerAnnulationParLeGarage(Utilisateur destinataire, DetailsRdvCourriel rdv, String motif);
 
     /**
-     * Accusé de réception d'une demande qui attend la réponse du garage, sous
-     * {@code delaiReponseHeures} heures.
+     * Accusé de réception d'une demande qui attend la réponse du garage, avec son
+     * échéance de réponse enregistrée, dans le fuseau de l'atelier.
      */
-    void envoyerAccuseDemandeRdv(Utilisateur destinataire, DetailsRdvCourriel rdv, int delaiReponseHeures);
+    void envoyerAccuseDemandeRdv(Utilisateur destinataire, DetailsRdvCourriel rdv, ZonedDateTime echeance);
 
     /**
      * Accusé d'un rendez-vous confirmé d'office. Porte le fichier d'agenda comme toute

@@ -61,8 +61,10 @@ public class AvisRendezVous {
         if (confirme) {
             sansEchouer(rdv, () -> courriel.envoyerAccuseRdvConfirme(rdv.getMembre(), details, agendaPour(rdv)));
         } else {
-            int delaiReponse = parametres.courants().getDelaiReponseHeures();
-            sansEchouer(rdv, () -> courriel.envoyerAccuseDemandeRdv(rdv.getMembre(), details, delaiReponse));
+            // L'échéance enregistrée, et non le délai de réponse : elle tombe plus tôt
+            // quand midi du dernier jour d'ouverture précède la fin du délai.
+            sansEchouer(rdv, () -> courriel.envoyerAccuseDemandeRdv(rdv.getMembre(), details,
+                    rdv.getEcheanceReponse().atZone(parametres.courants().zone())));
         }
         sansEchouer(rdv, () -> courriel.envoyerAvisNouvelleDemandeAuGarage(details,
                 rdv.getMembre().nomComplet(), confirme, "/admin/rendez-vous/" + rdv.getReference()));

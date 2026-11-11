@@ -55,7 +55,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -150,7 +149,8 @@ class AvisRendezVousIT extends SocleIntegration {
         Rdv rdv = reserver(LocalDate.of(2026, 9, 13).atTime(10, 0));
 
         verify(courriel).envoyerAccuseDemandeRdv(argThat(m -> m.getEmail().equals(marie.getEmail())),
-                argThat(d -> d.numero().equals(rdv.getNumero())), eq(24));
+                argThat(d -> d.numero().equals(rdv.getNumero())),
+                eq(LocalDate.of(2026, 9, 12).atTime(12, 0).atZone(BRUXELLES)));
         verify(courriel).envoyerAvisNouvelleDemandeAuGarage(argThat(d -> d.numero().equals(rdv.getNumero())),
                 eq("Marie Dupont"), eq(false), eq("/admin/rendez-vous/" + rdv.getReference()));
         assertThat(jdbc.queryForObject(
@@ -169,7 +169,7 @@ class AvisRendezVousIT extends SocleIntegration {
                 argThat(piece -> piece != null && piece.nomFichier().endsWith(".ics")
                         && piece.typeMime().equals("text/calendar")
                         && new String(piece.contenu(), java.nio.charset.StandardCharsets.UTF_8).contains("BEGIN:VEVENT")));
-        verify(courriel, never()).envoyerAccuseDemandeRdv(any(), any(), anyInt());
+        verify(courriel, never()).envoyerAccuseDemandeRdv(any(), any(), any());
         verify(courriel).envoyerAvisNouvelleDemandeAuGarage(any(), any(), eq(true), any());
     }
 
