@@ -71,8 +71,8 @@ class CourrielSortantTest {
                 Map.entry("rdv-confirme", l -> courriel.envoyerConfirmationRdv(marie, rdv, agenda)),
                 Map.entry("rdv-refuse", l -> courriel.envoyerRefusRdv(marie, rdv, "Pièce indisponible")),
                 Map.entry("rdv-annule", l -> courriel.envoyerAnnulationParLeGarage(marie, rdv, "Panne")),
-                Map.entry("rdv-recu", l -> courriel.envoyerAccuseDemandeRdv(marie, rdv, false, 24)),
-                Map.entry("rdv-recu-confirme", l -> courriel.envoyerAccuseDemandeRdv(marie, rdv, true, 24)),
+                Map.entry("rdv-recu", l -> courriel.envoyerAccuseDemandeRdv(marie, rdv, 24)),
+                Map.entry("rdv-recu-confirme", l -> courriel.envoyerAccuseRdvConfirme(marie, rdv, agenda)),
                 Map.entry("rdv-avis-garage", l -> courriel.envoyerAvisNouvelleDemandeAuGarage(
                         rdv, "Marie Dupont", false, "/admin/rendez-vous/r")),
                 Map.entry("rdv-avis-garage-confirme", l -> courriel.envoyerAvisNouvelleDemandeAuGarage(
@@ -135,6 +135,18 @@ class CourrielSortantTest {
                     .doesNotContainPattern("\\{\\d}")
                     .doesNotContain("''");
         });
+    }
+
+    @Test
+    @DisplayName("l'accusé d'un rendez-vous confirmé d'office porte le fichier d'agenda")
+    void accuseConfirmeAvecAgenda() {
+        PieceJointeCourriel agenda = new PieceJointeCourriel("rdv.ics", "text/calendar",
+                "BEGIN:VCALENDAR".getBytes());
+        courriel.envoyerAccuseRdvConfirme(marie, new DetailsRdvCourriel("RDV-1", DIMANCHE), agenda);
+
+        Courriel parti = partis.get(0);
+        assertThat(parti.pieceJointe()).isSameAs(agenda);
+        assertThat(parti.corps()).contains("Le fichier joint l'ajoute à votre agenda.");
     }
 
     @Test

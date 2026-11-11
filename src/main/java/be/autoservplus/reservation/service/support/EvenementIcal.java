@@ -7,7 +7,7 @@ import java.time.Instant;
  * Un evenement de calendrier, avant sa mise en forme iCalendar.
  *
  * <p>Volontairement sans aucun vocabulaire de rendez-vous : ce type decrit ce
- * qu attend la RFC 5545, pas ce que sait le garage. C est {@code ExportAgendaService}
+ * qu attend la RFC 5545, pas ce que sait le garage. C est {@code RedactionAgenda}
  * qui traduit un {@code Rdv} en evenement : la separation permet de tester le
  * redacteur sur des valeurs limites (guillemets, virgules, resume tres long) sans
  * fabriquer un rendez-vous complet.</p>

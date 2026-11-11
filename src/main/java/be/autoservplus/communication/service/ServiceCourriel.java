@@ -46,12 +46,17 @@ public interface ServiceCourriel {
     void envoyerAnnulationParLeGarage(Utilisateur destinataire, DetailsRdvCourriel rdv, String motif);
 
     /**
-     * Accusé de réception d'une demande de rendez-vous. Dit si la demande est déjà
-     * confirmée ou si elle attend la réponse du garage, qui répond sous
+     * Accusé de réception d'une demande qui attend la réponse du garage, sous
      * {@code delaiReponseHeures} heures.
      */
-    void envoyerAccuseDemandeRdv(Utilisateur destinataire, DetailsRdvCourriel rdv, boolean confirme,
-                                 int delaiReponseHeures);
+    void envoyerAccuseDemandeRdv(Utilisateur destinataire, DetailsRdvCourriel rdv, int delaiReponseHeures);
+
+    /**
+     * Accusé d'un rendez-vous confirmé d'office. Porte le fichier d'agenda comme toute
+     * confirmation, sauf si sa rédaction a échoué ({@code agenda} nul).
+     */
+    void envoyerAccuseRdvConfirme(Utilisateur destinataire, DetailsRdvCourriel rdv,
+                                  PieceJointeCourriel agenda);
 
     /** La demande est restée sans réponse jusqu'à son échéance : le créneau est libéré. */
     void envoyerExpirationRdv(Utilisateur destinataire, DetailsRdvCourriel rdv);

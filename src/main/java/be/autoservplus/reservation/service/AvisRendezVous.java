@@ -1,6 +1,7 @@
 package be.autoservplus.reservation.service;
 
 import be.autoservplus.communication.service.DetailsRdvCourriel;
+import be.autoservplus.communication.service.PieceJointeCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
@@ -11,6 +12,7 @@ import be.autoservplus.notification.service.NotificationService;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
+import be.autoservplus.reservation.service.dto.FichierAgenda;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -37,13 +39,16 @@ public class AvisRendezVous {
     private final NotificationService notifications;
     private final UtilisateurRepository utilisateurs;
     private final ParametreAtelierRepository parametres;
+    private final RedactionAgenda agenda;
 
     public AvisRendezVous(ServiceCourriel courriel, NotificationService notifications,
-                          UtilisateurRepository utilisateurs, ParametreAtelierRepository parametres) {
+                          UtilisateurRepository utilisateurs, ParametreAtelierRepository parametres,
+                          RedactionAgenda agenda) {
         this.courriel = courriel;
         this.notifications = notifications;
         this.utilisateurs = utilisateurs;
         this.parametres = parametres;
+        this.agenda = agenda;
     }
 
     /**
@@ -53,8 +58,12 @@ public class AvisRendezVous {
     public void nouvelleDemande(Rdv rdv) {
         boolean confirme = rdv.getStatut() == StatutRdv.CONFIRME;
         DetailsRdvCourriel details = detailsPour(rdv);
-        int delaiReponse = parametres.courants().getDelaiReponseHeures();
-        sansEchouer(rdv, () -> courriel.envoyerAccuseDemandeRdv(rdv.getMembre(), details, confirme, delaiReponse));
+        if (confirme) {
+            sansEchouer(rdv, () -> courriel.envoyerAccuseRdvConfirme(rdv.getMembre(), details, agendaPour(rdv)));
+        } else {
+            int delaiReponse = parametres.courants().getDelaiReponseHeures();
+            sansEchouer(rdv, () -> courriel.envoyerAccuseDemandeRdv(rdv.getMembre(), details, delaiReponse));
+        }
         sansEchouer(rdv, () -> courriel.envoyerAvisNouvelleDemandeAuGarage(details,
                 rdv.getMembre().nomComplet(), confirme, "/admin/rendez-vous/" + rdv.getReference()));
         notifierLesAdministrateurs(rdv, TypeNotification.RDV_DEMANDE);
@@ -89,6 +98,22 @@ public class AvisRendezVous {
 
     public void annulationParLeMembre(Rdv rdv) {
         sansEchouer(rdv, () -> courriel.envoyerAnnulationParLeMembre(rdv.getMembre(), detailsPour(rdv)));
+    }
+
+    /**
+     * Fichier d'agenda de l'accusé confirmé, ou {@code null} si sa rédaction échoue : la
+     * confirmation est l'information attendue, le fichier en est le confort. Même
+     * hiérarchie que {@code AdminRdvService.agendaPour}.
+     */
+    private PieceJointeCourriel agendaPour(Rdv rdv) {
+        try {
+            FichierAgenda fichier = agenda.pourLeCourriel(rdv);
+            return new PieceJointeCourriel(fichier.nomFichier(), FichierAgenda.TYPE_MIME, fichier.octets());
+        } catch (RuntimeException e) {
+            log.warn("Fichier d'agenda non produit pour {}, l'accusé part sans pièce jointe",
+                    rdv.getNumero(), e);
+            return null;
+        }
     }
 
     private DetailsRdvCourriel detailsPour(Rdv rdv) {

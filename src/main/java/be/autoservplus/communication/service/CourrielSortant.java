@@ -159,10 +159,23 @@ public class CourrielSortant implements ServiceCourriel {
 
     @Override
     public void envoyerAccuseDemandeRdv(Utilisateur destinataire, DetailsRdvCourriel rdv,
-                                        boolean confirme, int delaiReponseHeures) {
+                                        int delaiReponseHeures) {
         Locale langue = langue(destinataire.getLangue());
-        auCompte(confirme ? "rdv-recu-confirme" : "rdv-recu", destinataire, null, rdv.numero(),
+        auCompte("rdv-recu", destinataire, null, rdv.numero(),
                 jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()), delaiReponseHeures);
+    }
+
+    @Override
+    public void envoyerAccuseRdvConfirme(Utilisateur destinataire, DetailsRdvCourriel rdv,
+                                         PieceJointeCourriel agenda) {
+        Locale langue = langue(destinataire.getLangue());
+        String corps = corps("rdv-recu-confirme", langue, rdv.numero(),
+                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()));
+        if (agenda != null) {
+            corps = corps + "\n" + texte("courriel.rdv-confirme.agenda", langue);
+        }
+        partir("rdv-recu-confirme", destinataire.getEmail(), destinataire.nomComplet(),
+                destinataire.getPrenom(), langue, corps, agenda);
     }
 
     @Override
