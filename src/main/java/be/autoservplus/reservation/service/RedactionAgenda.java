@@ -13,6 +13,8 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.List;
 import java.util.Locale;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Rédaction du fichier d'agenda d'un rendez-vous (F38, RFC 5545), à partir d'un
@@ -100,9 +102,27 @@ public class RedactionAgenda {
         return vehicule.getMarque() + " " + vehicule.getModele() + " (" + vehicule.getPlaque() + ")";
     }
 
-    /** Adresse complete du garage sur une ligne, pays compris : le fichier est lu hors du site. */
     private String lieu() {
-        return garage.raisonSociale() + ", " + garage.adresseLisible() + ", " + garage.pays();
+        return lieu(garage);
+    }
+
+    /**
+     * Adresse complète du garage sur une ligne, pays compris : le fichier est lu hors du
+     * site. Une partie absente disparaît avec son séparateur, au lieu de laisser une
+     * virgule suivie d'un champ vide.
+     */
+    static String lieu(IdentiteGarage garage) {
+        return joindre(", ", garage.raisonSociale(),
+                joindre(" ", garage.rue(), garage.numeroRue()),
+                joindre(" ", garage.codePostal(), garage.localite()),
+                garage.pays());
+    }
+
+    private static String joindre(String separateur, String... parties) {
+        return Stream.of(parties)
+                .filter(partie -> partie != null && !partie.isBlank())
+                .map(String::strip)
+                .collect(Collectors.joining(separateur));
     }
 
     /**
