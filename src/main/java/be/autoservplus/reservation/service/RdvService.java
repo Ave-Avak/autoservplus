@@ -146,6 +146,12 @@ public class RdvService {
             avis.nouvelleDemande(enregistre);
             return enregistre;
         } catch (DataIntegrityViolationException e) {
+            // Seule ex_rdv_poste_intervalle dit qu'un autre membre a pris le créneau.
+            // Une autre violation (numéro en double, clé étrangère) est un défaut : la
+            // présenter comme une collision l'a déjà masquée sur la démonstration.
+            if (!EtatSql.estUneExclusion(e)) {
+                throw e;
+            }
             log.info("Collision de reservation sur {} a {} : {}", poste.getLibelle(), debut, e.getMostSpecificCause().getMessage());
             throw new CreneauIndisponibleException(
                     "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.");

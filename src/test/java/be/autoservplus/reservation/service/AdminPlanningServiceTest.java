@@ -144,8 +144,10 @@ class AdminPlanningServiceTest {
     void etatSql() {
         Exception enveloppe = new RuntimeException(new IllegalStateException(new SQLException("m", "23P01")));
 
-        assertThat(AdminPlanningService.etatSql(enveloppe)).isEqualTo("23P01");
-        assertThat(AdminPlanningService.etatSql(new RuntimeException("sans cause"))).isNull();
+        assertThat(EtatSql.de(enveloppe)).isEqualTo("23P01");
+        assertThat(EtatSql.estUneExclusion(enveloppe)).isTrue();
+        assertThat(EtatSql.de(new RuntimeException("sans cause"))).isNull();
+        assertThat(EtatSql.estUneExclusion(new SQLException("unicité", "23505"))).isFalse();
     }
 
     private AdminPlanningService service(PlageOuvertureRepository plages) {

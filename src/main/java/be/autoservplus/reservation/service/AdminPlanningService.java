@@ -24,7 +24,6 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.sql.SQLException;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
@@ -61,9 +60,6 @@ import java.util.stream.Collectors;
 @Transactional(readOnly = true)
 @PreAuthorize("hasRole('ADMINISTRATEUR')")
 public class AdminPlanningService {
-
-    /** Violation d'une contrainte d'exclusion, {@code ex_plage_ouverture_chevauchement} ici. */
-    static final String ETAT_SQL_EXCLUSION = "23P01";
 
     private static final EnumSet<StatutRdv> STATUTS_ACTIFS = EnumSet.of(StatutRdv.EN_ATTENTE, StatutRdv.CONFIRME);
 
@@ -338,7 +334,7 @@ public class AdminPlanningService {
         try {
             ecriture.run();
         } catch (DataIntegrityViolationException e) {
-            if (ETAT_SQL_EXCLUSION.equals(etatSql(e))) {
+            if (EtatSql.estUneExclusion(e)) {
                 throw new RefusPlanning("heureDebut", "admin.planning.plage.erreur.chevauchement",
                         "Cette plage chevauche une autre plage du même jour.");
             }
@@ -353,15 +349,6 @@ public class AdminPlanningService {
         } catch (DataIntegrityViolationException e) {
             throw libelleDejaPris(libelle);
         }
-    }
-
-    static String etatSql(Throwable erreur) {
-        for (Throwable cause = erreur; cause != null; cause = cause.getCause()) {
-            if (cause instanceof SQLException sql && sql.getSQLState() != null) {
-                return sql.getSQLState();
-            }
-        }
-        return null;
     }
 
     private static RefusPlanning libelleDejaPris(String libelle) {
