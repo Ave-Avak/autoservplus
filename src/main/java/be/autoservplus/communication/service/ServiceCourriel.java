@@ -3,6 +3,7 @@ package be.autoservplus.communication.service;
 import be.autoservplus.identite.domain.Utilisateur;
 
 import java.time.Instant;
+import java.time.ZonedDateTime;
 
 /**
  * Envoi des courriels transactionnels.
@@ -43,6 +44,42 @@ public interface ServiceCourriel {
 
     /** Le garage annule un rendez-vous deja confirme (panne, imprevu), motif obligatoire. */
     void envoyerAnnulationParLeGarage(Utilisateur destinataire, DetailsRdvCourriel rdv, String motif);
+
+    /**
+     * Accusé de réception d'une demande qui attend la réponse du garage, avec son
+     * échéance de réponse enregistrée, dans le fuseau de l'atelier.
+     */
+    void envoyerAccuseDemandeRdv(Utilisateur destinataire, DetailsRdvCourriel rdv, ZonedDateTime echeance);
+
+    /**
+     * Accusé d'un rendez-vous confirmé d'office. Porte le fichier d'agenda comme toute
+     * confirmation, sauf si sa rédaction a échoué ({@code agenda} nul).
+     */
+    void envoyerAccuseRdvConfirme(Utilisateur destinataire, DetailsRdvCourriel rdv,
+                                  PieceJointeCourriel agenda);
+
+    /** La demande est restée sans réponse jusqu'à son échéance : le créneau est libéré. */
+    void envoyerExpirationRdv(Utilisateur destinataire, DetailsRdvCourriel rdv);
+
+    /**
+     * Relance au garage d'une demande toujours en attente à mi-délai, à l'adresse de
+     * l'atelier et dans la langue par défaut de l'application.
+     */
+    void envoyerRelanceAuGarage(DetailsRdvCourriel rdv, String membre, ZonedDateTime echeance,
+                                String cheminDetail);
+
+    /**
+     * Avis au garage d'une nouvelle demande, à l'adresse de l'atelier et dans la langue
+     * par défaut de l'application. {@code cheminDetail} mène au détail du back-office.
+     */
+    void envoyerAvisNouvelleDemandeAuGarage(DetailsRdvCourriel rdv, String membre, boolean confirme,
+                                            String cheminDetail);
+
+    /** Rappel au membre avant un rendez-vous confirmé. */
+    void envoyerRappelRdv(Utilisateur destinataire, DetailsRdvCourriel rdv);
+
+    /** Confirmation au membre de l'annulation qu'il vient de faire. */
+    void envoyerAnnulationParLeMembre(Utilisateur destinataire, DetailsRdvCourriel rdv);
 
     /**
      * Le garage a chiffre des travaux qui portent l intervention a plus de 10 % du

@@ -208,6 +208,7 @@ class NavigationEcransIT extends SocleIntegration {
             variable("/admin/planning/postes/{reference}/modifier", Acces.BACK_OFFICE),
             variable("/admin/planning/postes/{reference}/supprimer", Acces.BACK_OFFICE),
             ecran("/admin/planning/indisponibilites", Acces.BACK_OFFICE),
+            ecran("/admin/planning/parametres", Acces.BACK_OFFICE),
             ecran("/admin/planning/indisponibilites/nouvelle", Acces.BACK_OFFICE),
             variable("/admin/planning/indisponibilites/{reference}/modifier", Acces.BACK_OFFICE),
             variable("/admin/planning/indisponibilites/{reference}/retirer", Acces.BACK_OFFICE),

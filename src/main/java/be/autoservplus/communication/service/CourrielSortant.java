@@ -4,6 +4,8 @@ import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +31,8 @@ import java.util.Locale;
  */
 @Service
 public class CourrielSortant implements ServiceCourriel {
+
+    private static final Logger log = LoggerFactory.getLogger(CourrielSortant.class);
 
     private final MessageSource messages;
     private final EnvoiApresCommit envoi;
@@ -154,6 +158,67 @@ public class CourrielSortant implements ServiceCourriel {
     }
 
     @Override
+    public void envoyerAccuseDemandeRdv(Utilisateur destinataire, DetailsRdvCourriel rdv,
+                                        ZonedDateTime echeance) {
+        Locale langue = langue(destinataire.getLangue());
+        auCompte("rdv-recu", destinataire, null, rdv.numero(),
+                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()),
+                jour(echeance, langue, "EEEE d MMMM yyyy"), heure(echeance));
+    }
+
+    @Override
+    public void envoyerAccuseRdvConfirme(Utilisateur destinataire, DetailsRdvCourriel rdv,
+                                         PieceJointeCourriel agenda) {
+        Locale langue = langue(destinataire.getLangue());
+        String corps = corps("rdv-recu-confirme", langue, rdv.numero(),
+                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()));
+        if (agenda != null) {
+            corps = corps + "\n" + texte("courriel.rdv-confirme.agenda", langue);
+        }
+        partir("rdv-recu-confirme", destinataire.getEmail(), destinataire.nomComplet(),
+                destinataire.getPrenom(), langue, corps, agenda);
+    }
+
+    @Override
+    public void envoyerExpirationRdv(Utilisateur destinataire, DetailsRdvCourriel rdv) {
+        Locale langue = langue(destinataire.getLangue());
+        auCompte("rdv-expire", destinataire, null, rdv.numero(),
+                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()));
+    }
+
+    @Override
+    public void envoyerRelanceAuGarage(DetailsRdvCourriel rdv, String membre, ZonedDateTime echeance,
+                                       String cheminDetail) {
+        Locale langue = Locale.FRENCH;
+        auGarage("rdv-relance-garage", rdv.numero(), langue, rdv.numero(),
+                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()), membre,
+                jour(echeance, langue, "EEEE d MMMM"), heure(echeance), liens.vers(cheminDetail));
+    }
+
+    @Override
+    public void envoyerAvisNouvelleDemandeAuGarage(DetailsRdvCourriel rdv, String membre,
+                                                   boolean confirme, String cheminDetail) {
+        Locale langue = Locale.FRENCH;
+        auGarage(confirme ? "rdv-avis-garage-confirme" : "rdv-avis-garage", rdv.numero(), langue,
+                rdv.numero(), jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()),
+                membre, liens.vers(cheminDetail));
+    }
+
+    @Override
+    public void envoyerRappelRdv(Utilisateur destinataire, DetailsRdvCourriel rdv) {
+        Locale langue = langue(destinataire.getLangue());
+        auCompte("rdv-rappel", destinataire, null, rdv.numero(),
+                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()));
+    }
+
+    @Override
+    public void envoyerAnnulationParLeMembre(Utilisateur destinataire, DetailsRdvCourriel rdv) {
+        Locale langue = langue(destinataire.getLangue());
+        auCompte("rdv-annule-membre", destinataire, null, rdv.numero(),
+                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()));
+    }
+
+    @Override
     public void envoyerDemandeValidationDepassement(Utilisateur destinataire,
                                                     DetailsRdvCourriel rdv,
                                                     DetailsDepassementCourriel depassement) {
@@ -204,6 +269,21 @@ public class CourrielSortant implements ServiceCourriel {
         Locale langue = langue(destinataire.getLangue());
         partir(type, destinataire.getEmail(), destinataire.nomComplet(),
                 destinataire.getPrenom(), langue, corps(type, langue, arguments), piece);
+    }
+
+    /**
+     * Courriel adressé à l'atelier, dans la langue par défaut de l'application. Sans
+     * adresse d'atelier, seules les notifications du back-office préviennent le garage :
+     * le contrôle d'identité l'exige sous prod, pas sous les autres profils.
+     */
+    private void auGarage(String type, String numero, Locale langue, Object... arguments) {
+        String adresse = garage.courriel();
+        if (adresse == null || adresse.isBlank()) {
+            log.warn("Courriel {} du rendez-vous {} non envoyé : aucune adresse d'atelier.", type, numero);
+            return;
+        }
+        partir(type, adresse, garage.enseigne(), garage.enseigne(), langue,
+                corps(type, langue, arguments), null);
     }
 
     private void partir(String type, String adresse, String nom, String prenom, Locale langue,

@@ -1,7 +1,6 @@
 package be.autoservplus.reservation.service;
 
 import be.autoservplus.common.exception.ConflitConcurrenceException;
-import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsRdvCourriel;
 import be.autoservplus.communication.service.PieceJointeCourriel;
@@ -159,14 +158,19 @@ public class AdminRdvService {
     @Transactional
     public Rdv confirmer(UUID reference) {
         Rdv rdv = charger(reference);
-        rdv.confirmer(horloge.instant());
+        Instant maintenant = horloge.instant();
+        rdv.confirmer(maintenant);
         // La production du fichier d agenda est DANS le lambda absorbe par
         // notifierSansEchouer : une exception du redacteur iCalendar ne doit pas plus
         // annuler la confirmation qu une panne du fournisseur de courriel. Le
         // rendez-vous est deja confirme en base a ce point.
-        return ecrire(rdv, enregistre -> notifierSansEchouer(
-                () -> courriel.envoyerConfirmationRdv(enregistre.getMembre(),
-                        detailsPour(enregistre), agendaPour(enregistre))));
+        return ecrire(rdv, enregistre -> {
+            notifierSansEchouer(() -> courriel.envoyerConfirmationRdv(enregistre.getMembre(),
+                    detailsPour(enregistre), agendaPour(enregistre)));
+            if (enregistre.confirmationTientLieuDeRappel(maintenant, parametres.courants().delaiRappel())) {
+                rdvs.reserverRappel(enregistre.getId(), maintenant);
+            }
+        });
     }
 
     @Transactional
@@ -188,15 +192,7 @@ public class AdminRdvService {
     @Transactional
     public Rdv marquerHonore(UUID reference) {
         Rdv rdv = charger(reference);
-        // Garde temporelle avant transition : on n'accueille pas un client avant
-        // l'heure de début du RDV. Symétrique du flag d'affichage peutMarquerHonore
-        // (debut <= maintenant) : les deux seuils se correspondent, un POST direct
-        // hors délai est rejeté au même point.
-        if (rdv.getDebut().isAfter(horloge.instant())) {
-            throw new RegleMetierException(
-                    "Un rendez-vous ne peut être marqué honoré avant l'heure de début.");
-        }
-        rdv.marquerHonore();
+        rdv.marquerHonore(horloge.instant());
         // Cree l intervention correspondante DANS la meme transaction : le passage
         // HONORE et l existence de l intervention sont atomiques. La methode
         // creerDepuisRdv est idempotente : si une intervention existe deja, elle
@@ -207,15 +203,7 @@ public class AdminRdvService {
     @Transactional
     public Rdv marquerAbsent(UUID reference) {
         Rdv rdv = charger(reference);
-        // Garde temporelle : on ne declare pas absent tant que le creneau n'est
-        // pas ecoule, le client peut encore arriver en retard. Refus si
-        // fin >= maintenant. Symetrique du flag d'affichage peutMarquerAbsent
-        // (fin < maintenant).
-        if (!rdv.getFin().isBefore(horloge.instant())) {
-            throw new RegleMetierException(
-                    "Un rendez-vous ne peut être marqué absent avant la fin de son créneau.");
-        }
-        rdv.marquerAbsent();
+        rdv.marquerAbsent(horloge.instant());
         return ecrire(rdv, ignore -> { /* cloture interne, pas de notification */ });
     }
 

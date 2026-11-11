@@ -297,6 +297,24 @@ class ExportDonneesServiceTest {
         }
 
         @Test
+        @DisplayName("une demande expirée sort avec son statut, sans date d'annulation")
+        void rendezVousExpire() {
+            compteSansDonnees();
+            avecLaGolfAuParc();
+            Rdv expire = rdvDeMarie();
+            Instant echeance = Instant.parse("2026-06-09T10:00:00Z");
+            expire.fixerEcheanceReponse(echeance);
+            expire.expirer(echeance);
+            when(rendezVous.pourMembre(EMAIL)).thenReturn(List.of(expire));
+
+            assertThat(service.assembler(EMAIL).donneesPersonnelles().rendezVous())
+                    .singleElement().satisfies(rdv -> {
+                        assertThat(rdv.statut()).isEqualTo("EXPIRE");
+                        assertThat(rdv.dateAnnulation()).isNull();
+                    });
+        }
+
+        @Test
         @DisplayName("restitue les commandes avec leurs lignes et le detail HTVA / TVA / TVAC")
         void commandes() {
             compteSansDonnees();

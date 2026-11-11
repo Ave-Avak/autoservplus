@@ -16,10 +16,13 @@ import java.util.Optional;
  * Calcule les heures de depart reservables pour une duree donnee.
  *
  * <p>La disponibilite n est pas stockee : elle se deduit des plages d ouverture, des
+ * jours fériés légaux, des
  * indisponibilites, des rendez-vous actifs et des parametres de l atelier. Un
  * candidat est retenu si l atelier est ouvert sur tout l intervalle, si le depart
  * respecte le delai minimal et l horizon, et si au moins un poste actif n a ni
- * indisponibilite ni rendez-vous sur l intervalle elargi du tampon.</p>
+ * indisponibilite ni rendez-vous sur l intervalle elargi du tampon. En mode de
+ * confirmation manuelle, un jour n'est proposé que si l'échéance de réponse d'une
+ * demande faite maintenant laisse au garage le temps de répondre ({@link EcheanceReponse}).</p>
  *
  * <p>Les plages sont exprimees en heure locale du garage. Tout le reste est en
  * instants UTC. La projection passe par le fuseau parametre, ce qui rend les
@@ -37,6 +40,7 @@ public class DisponibiliteService {
     private final PosteAtelierRepository postes;
     private final IndisponibiliteRepository indisponibilites;
     private final RdvRepository rdvs;
+    private final EcheanceReponse echeances;
     private final Clock horloge;
 
     public DisponibiliteService(ParametreAtelierRepository parametres,
@@ -44,12 +48,14 @@ public class DisponibiliteService {
                                 PosteAtelierRepository postes,
                                 IndisponibiliteRepository indisponibilites,
                                 RdvRepository rdvs,
+                                EcheanceReponse echeances,
                                 Clock horloge) {
         this.parametres = parametres;
         this.plages = plages;
         this.postes = postes;
         this.indisponibilites = indisponibilites;
         this.rdvs = rdvs;
+        this.echeances = echeances;
         this.horloge = horloge;
     }
 
@@ -64,7 +70,10 @@ public class DisponibiliteService {
 
         Instant debutJour = jour.atStartOfDay(zone).toInstant();
         Instant finJour = jour.plusDays(1).atStartOfDay(zone).toInstant();
-        if (!finJour.isAfter(plusTot) || !debutJour.isBefore(plusTard)) {
+        if (JoursFeries.estFerie(jour) || !finJour.isAfter(plusTot) || !debutJour.isBefore(plusTard)) {
+            return List.of();
+        }
+        if (!p.isConfirmationAutomatique() && !echeances.laisseLeTempsDeRepondre(jour, maintenant, p)) {
             return List.of();
         }
 
@@ -133,6 +142,13 @@ public class DisponibiliteService {
         LocalTime heureFin = fin.atZone(p.zone()).toLocalTime();
         if (!fin.atZone(p.zone()).toLocalDate().equals(local.toLocalDate())) {
             return false; // un rendez-vous ne chevauche pas minuit
+        }
+        if (JoursFeries.estFerie(local.toLocalDate())) {
+            return false;
+        }
+        if (!p.isConfirmationAutomatique()
+                && !echeances.laisseLeTempsDeRepondre(local.toLocalDate(), maintenant, p)) {
+            return false;
         }
         return plages.findByJourSemaineAndActifTrueOrderByHeureDebut((short) local.getDayOfWeek().getValue())
                 .stream()

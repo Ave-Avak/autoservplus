@@ -38,6 +38,18 @@ class SchemaIT extends SocleIntegration {
     private UtilisateurRepository utilisateurs;
 
     @Test
+    @DisplayName("les séquences remplacées sont déclarées inutilisées, avec ce qui les remplace")
+    void sequencesInutiliseesCommentees() {
+        String sql = "SELECT obj_description(?::regclass, 'pg_class')";
+        assertThat(jdbc.queryForObject(sql, String.class, "seq_numero_rdv"))
+                .startsWith("Inutilisée").contains("rdv_numero_seq");
+        assertThat(jdbc.queryForObject(sql, String.class, "seq_numero_facture"))
+                .startsWith("Inutilisée").contains("compteur_facture");
+        assertThat(jdbc.queryForObject(sql, String.class, "seq_numero_avoir"))
+                .startsWith("Inutilisée").contains("compteur_avoir");
+    }
+
+    @Test
     @DisplayName("installe l extension btree_gist requise par la contrainte d exclusion")
     void installeBtreeGist() {
         Integer nombre = jdbc.queryForObject(
@@ -317,7 +329,7 @@ class SchemaIT extends SocleIntegration {
         assertThat(table).isEqualTo(1);
         assertThat(jdbc.queryForObject(
                 "SELECT obj_description('seq_numero_avoir'::regclass, 'pg_class')", String.class))
-                .contains("INUTILISEE");
+                .startsWith("Inutilisée").contains("compteur_avoir");
     }
 
     @Test

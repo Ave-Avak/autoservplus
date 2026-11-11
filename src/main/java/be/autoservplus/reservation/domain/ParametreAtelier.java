@@ -49,10 +49,16 @@ public class ParametreAtelier {
     private short delaiAnnulationHeures = 24;
 
     @Column(name = "confirmation_automatique", nullable = false)
-    private boolean confirmationAutomatique;
+    private boolean confirmationAutomatique = true;
 
     @Column(name = "max_rdv_en_attente_par_membre", nullable = false)
     private short maxRdvEnAttenteParMembre = 3;
+
+    @Column(name = "delai_rappel_heures", nullable = false)
+    private short delaiRappelHeures = 24;
+
+    @Column(name = "delai_reponse_heures", nullable = false)
+    private short delaiReponseHeures = 24;
 
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
@@ -87,6 +93,46 @@ public class ParametreAtelier {
         this.maxRdvEnAttenteParMembre = (short) maxRdvEnAttenteParMembre;
     }
 
+    /**
+     * Réglages de l'écran « Paramètres de réservation ». Tout est contrôlé avant la
+     * première écriture : une valeur hors bornes laisse l'ensemble inchangé.
+     */
+    public void modifierReservation(boolean confirmationAutomatique, int delaiReponseHeures,
+                                    int delaiMinimalHeures, int delaiAnnulationHeures,
+                                    int delaiRappelHeures) {
+        exiger(delaiReponseHeures >= 2 && delaiReponseHeures <= 168,
+                "Le délai de réponse doit être compris entre 2 et 168 heures.");
+        exiger(delaiMinimalHeures >= 0 && delaiMinimalHeures <= 168,
+                "Le délai minimal doit être compris entre 0 et 168 heures.");
+        exiger(delaiAnnulationHeures >= 0 && delaiAnnulationHeures <= 168,
+                "Le délai d'annulation doit être compris entre 0 et 168 heures.");
+        exiger(delaiRappelHeures >= 0 && delaiRappelHeures <= 168,
+                "Le délai de rappel doit être compris entre 0 et 168 heures.");
+
+        this.confirmationAutomatique = confirmationAutomatique;
+        this.delaiReponseHeures = (short) delaiReponseHeures;
+        this.delaiMinimalHeures = (short) delaiMinimalHeures;
+        this.delaiAnnulationHeures = (short) delaiAnnulationHeures;
+        this.delaiRappelHeures = (short) delaiRappelHeures;
+    }
+
+    /** Délai du rappel avant le début, de 0 à 168 heures. La valeur 0 désactive le rappel. */
+    public void modifierRappel(int delaiRappelHeures) {
+        exiger(delaiRappelHeures >= 0 && delaiRappelHeures <= 168,
+                "Le délai de rappel doit être compris entre 0 et 168 heures.");
+        this.delaiRappelHeures = (short) delaiRappelHeures;
+    }
+
+    /**
+     * Délai de réponse du garage en mode manuel, de 2 à 168 heures. Deux heures au moins :
+     * c'est la marge que la proposition des créneaux laisse au garage pour répondre.
+     */
+    public void modifierDelaiReponse(int delaiReponseHeures) {
+        exiger(delaiReponseHeures >= 2 && delaiReponseHeures <= 168,
+                "Le délai de réponse doit être compris entre 2 et 168 heures.");
+        this.delaiReponseHeures = (short) delaiReponseHeures;
+    }
+
     private static void exiger(boolean condition, String message) {
         if (!condition) throw new IllegalArgumentException(message);
     }
@@ -99,6 +145,9 @@ public class ParametreAtelier {
     public Duration delaiMinimal() { return Duration.ofHours(delaiMinimalHeures); }
     public Duration horizon() { return Duration.ofDays(horizonJours); }
     public Duration delaiAnnulation() { return Duration.ofHours(delaiAnnulationHeures); }
+    public Duration delaiRappel() { return Duration.ofHours(delaiRappelHeures); }
+    public Duration delaiReponse() { return Duration.ofHours(delaiReponseHeures); }
+    public boolean rappelActif() { return delaiRappelHeures > 0; }
 
     public String getFuseauHoraire() { return fuseauHoraire; }
     public short getPasMinutes() { return pasMinutes; }
@@ -108,5 +157,7 @@ public class ParametreAtelier {
     public short getDelaiAnnulationHeures() { return delaiAnnulationHeures; }
     public boolean isConfirmationAutomatique() { return confirmationAutomatique; }
     public short getMaxRdvEnAttenteParMembre() { return maxRdvEnAttenteParMembre; }
+    public short getDelaiRappelHeures() { return delaiRappelHeures; }
+    public short getDelaiReponseHeures() { return delaiReponseHeures; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

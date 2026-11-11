@@ -4,6 +4,7 @@ import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.PrestationRepository;
+import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -59,6 +60,9 @@ class RdvServiceTest {
     @Mock private VehiculeService vehicules;
     @Mock private DisponibiliteService disponibilites;
     @Mock private GenerateurNumeroRdv numeros;
+    @Mock private AvisRendezVous avis;
+    @Mock private EcheanceReponse echeances;
+    @Mock private IdentiteGarage garage;
 
     private RdvService service;
     private UUID golfReference;
@@ -67,7 +71,7 @@ class RdvServiceTest {
     @BeforeEach
     void setUp() {
         service = new RdvService(rdvs, membres, prestations, parametres, vehicules, disponibilites,
-                numeros, Clock.fixed(MAINTENANT, BRUXELLES));
+                numeros, avis, echeances, garage, Clock.fixed(MAINTENANT, BRUXELLES));
 
         Utilisateur marie = new Utilisateur(EMAIL, "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         Vehicule golf = new Vehicule(marie, "1-ABC-123", "Volkswagen", "Golf", Motorisation.DIESEL);

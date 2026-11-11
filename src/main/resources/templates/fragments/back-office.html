@@ -75,6 +75,8 @@
                                    th:attr="aria-current=${#strings.startsWith(c, '/admin/planning/postes')} ? 'page' : null">Postes d'atelier</a></li>
                             <li><a th:href="@{/admin/planning/indisponibilites}" th:text="#{admin.nav.indisponibilites}"
                                    th:attr="aria-current=${#strings.startsWith(c, '/admin/planning/indisponibilites')} ? 'page' : null">Indisponibilités</a></li>
+                            <li><a th:href="@{/admin/planning/parametres}" th:text="#{admin.nav.parametres}"
+                                   th:attr="aria-current=${#strings.startsWith(c, '/admin/planning/parametres')} ? 'page' : null">Paramètres de réservation</a></li>
                         </ul>
                     </li>
                     <li class="section">

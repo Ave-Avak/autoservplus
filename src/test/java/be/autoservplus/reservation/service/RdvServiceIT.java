@@ -20,6 +20,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -81,7 +82,9 @@ class RdvServiceIT extends SocleIntegration {
     @Autowired private PrestationRepository prestations;
     @Autowired private PosteAtelierRepository postes;
     @Autowired private PlageOuvertureRepository plages;
+    @Autowired private ParametreAtelierRepository parametres;
     @Autowired private Clock horloge;
+    @Autowired private JdbcTemplate jdbc;
 
     private Utilisateur marie;
     private Utilisateur paul;
@@ -113,6 +116,15 @@ class RdvServiceIT extends SocleIntegration {
         dimanche10h = DIMANCHE_RESERVATION.atTime(10, 0).atZone(BRUXELLES).toInstant();
         plages.save(new PlageOuverture(DIMANCHE_RESERVATION.getDayOfWeek(),
                 LocalTime.of(8, 0), LocalTime.of(18, 0)));
+        // Mode manuel, que ces tests supposent : la demande reste EN_ATTENTE et compte
+        // dans le plafond. Le samedi ouvert donne au garage le temps de répondre avant
+        // dimanche (échéance samedi 12:00).
+        plages.save(new PlageOuverture(DIMANCHE_RESERVATION.minusDays(1).getDayOfWeek(),
+                LocalTime.of(8, 0), LocalTime.of(18, 0)));
+        ParametreAtelier p = parametres.courants();
+        p.modifier(p.getFuseauHoraire(), p.getPasMinutes(), p.getTamponMinutes(), p.getDelaiMinimalHeures(),
+                p.getHorizonJours(), p.getDelaiAnnulationHeures(), false, p.getMaxRdvEnAttenteParMembre());
+        parametres.saveAndFlush(p);
     }
 
     @Test
@@ -194,6 +206,23 @@ class RdvServiceIT extends SocleIntegration {
         assertThatThrownBy(() -> rdvs.saveAndFlush(chevauchant))
                 .isInstanceOf(DataIntegrityViolationException.class)
                 .hasMessageContaining("ex_rdv_poste_intervalle");
+    }
+
+    @Test
+    @DisplayName("un numéro en double remonte comme erreur, sans être présenté comme un créneau pris")
+    void numeroEnDoubleNEstPasUneCollision() {
+        Rdv premier = service.reserver("marie@exemple.be", golf.getReference(),
+                List.of(vidange.getReference()), dimanche10h, null);
+        long suffixe = Long.parseLong(premier.getNumero().substring(premier.getNumero().lastIndexOf('-') + 1));
+        // Le prochain numéro tiré sera celui du premier rendez-vous : uq_rdv_numero, et non
+        // la contrainte d'exclusion, rejette le second, posé sur un créneau libre.
+        jdbc.queryForObject("SELECT setval('rdv_numero_seq', ?, false)", Long.class, suffixe);
+
+        assertThatThrownBy(() -> service.reserver("paul@exemple.be", clio.getReference(),
+                List.of(vidange.getReference()), dimanche10h.plus(Duration.ofMinutes(90)), null))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .isNotInstanceOf(CreneauIndisponibleException.class)
+                .hasMessageContaining("uq_rdv_numero");
     }
 
     @Test

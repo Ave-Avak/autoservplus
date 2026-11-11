@@ -501,9 +501,13 @@ class AdminPlanningIT extends SocleIntegration {
                     "/admin/planning/postes", "/admin/planning/postes/nouveau",
                     "/admin/planning/postes/" + pont1.getReference() + "/supprimer",
                     "/admin/planning/indisponibilites", "/admin/planning/indisponibilites/nouvelle")) {
-                mvc.perform(admin(get(page)))
+                String html = mvc.perform(admin(get(page)))
                         .andExpect(status().isOk())
-                        .andExpect(content().string(not(containsString("RM-"))));
+                        .andReturn().getResponse().getContentAsString();
+                // Le jeton CSRF est tiré au hasard et peut contenir « RM- » : il est
+                // retiré avant la recherche, qui ne vise que le texte de la page.
+                assertThat(html.replaceAll("name=\"_csrf\" value=\"[^\"]*\"", ""))
+                        .as(page).doesNotContain("RM-");
             }
         }
     }

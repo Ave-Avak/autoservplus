@@ -56,7 +56,7 @@ class DisponibiliteServiceTest {
     @BeforeEach
     void setUp() {
         service = new DisponibiliteService(parametres, plages, postes, indisponibilites, rdvs,
-                Clock.fixed(MAINTENANT, ZoneOffset.UTC));
+                new EcheanceReponse(plages, indisponibilites), Clock.fixed(MAINTENANT, ZoneOffset.UTC));
         lenient().when(parametres.courants()).thenReturn(reglages);
         lenient().when(indisponibilites.chevauchant(any(), any())).thenReturn(List.of());
         lenient().when(rdvs.actifsChevauchant(any(), any(), any())).thenReturn(List.of());
@@ -74,6 +74,76 @@ class DisponibiliteServiceTest {
 
     private static List<Instant> debuts(List<CreneauDisponible> creneaux) {
         return creneaux.stream().map(CreneauDisponible::debut).toList();
+    }
+
+    @Nested
+    @DisplayName("confirmation manuelle : marge de réponse du garage")
+    class ConfirmationManuelle {
+
+        @BeforeEach
+        void modeManuel() {
+            reglages.modifier(reglages.getFuseauHoraire(), reglages.getPasMinutes(), reglages.getTamponMinutes(),
+                    0, reglages.getHorizonJours(), reglages.getDelaiAnnulationHeures(), false,
+                    reglages.getMaxRdvEnAttenteParMembre());
+        }
+
+        @Test
+        @DisplayName("le mardi est ouvert : le mercredi est proposé à une demande du lundi, pas à une demande du mardi après-midi")
+        void mercrediSelonLHeureDeLaDemande() {
+            ouvertLeMercrediDe8a12();
+            lenient().when(plages.findByJourSemaineAndActifTrueOrderByHeureDebut((short) 2))
+                    .thenReturn(List.of(new PlageOuverture(DayOfWeek.TUESDAY, LocalTime.of(8, 0), LocalTime.of(18, 0))));
+            lenient().when(postes.findByActifTrueOrderByOrdreAscLibelleAsc()).thenReturn(List.of(pont1));
+
+            assertThat(service.creneauxDuJour(MERCREDI, 60)).isNotEmpty();
+            assertThat(service.estReservable(local(MERCREDI, 9, 0), local(MERCREDI, 10, 0))).isTrue();
+
+            DisponibiliteService mardiApresMidi = new DisponibiliteService(parametres, plages, postes,
+                    indisponibilites, rdvs, new EcheanceReponse(plages, indisponibilites),
+                    Clock.fixed(local(MERCREDI.minusDays(1), 15, 0), ZoneOffset.UTC));
+            assertThat(mardiApresMidi.creneauxDuJour(MERCREDI, 60)).isEmpty();
+            assertThat(mardiApresMidi.estReservable(local(MERCREDI, 9, 0), local(MERCREDI, 10, 0))).isFalse();
+        }
+
+        @Test
+        @DisplayName("aucun jour ouvert avant le mercredi : rien n'est proposé en mode manuel")
+        void aucunJourOuvertAvant() {
+            // Le mercredi n'est jamais lu : le refus tombe avant, faute de jour ouvert.
+            lenient().when(plages.findByJourSemaineAndActifTrueOrderByHeureDebut((short) 3))
+                    .thenReturn(List.of(new PlageOuverture(DayOfWeek.WEDNESDAY, LocalTime.of(8, 0), LocalTime.of(12, 0))));
+            lenient().when(postes.findByActifTrueOrderByOrdreAscLibelleAsc()).thenReturn(List.of(pont1));
+
+            assertThat(service.creneauxDuJour(MERCREDI, 60)).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("jours fériés")
+    class JoursFeriesLegaux {
+
+        private final LocalDate armistice = LocalDate.of(2026, 11, 11);
+
+        @Test
+        @DisplayName("un mercredi férié n'offre aucun créneau, le mercredi précédent si")
+        void mercrediFerie() {
+            when(plages.findByJourSemaineAndActifTrueOrderByHeureDebut((short) 3))
+                    .thenReturn(List.of(new PlageOuverture(DayOfWeek.WEDNESDAY, LocalTime.of(8, 0), LocalTime.of(12, 0))));
+            lenient().when(postes.findByActifTrueOrderByOrdreAscLibelleAsc()).thenReturn(List.of(pont1));
+
+            assertThat(service.creneauxDuJour(armistice, 60)).isEmpty();
+            assertThat(service.creneauxDuJour(armistice.minusWeeks(1), 60)).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("un intervalle d'un jour férié n'est pas réservable")
+        void nonReservable() {
+            when(plages.findByJourSemaineAndActifTrueOrderByHeureDebut((short) 3))
+                    .thenReturn(List.of(new PlageOuverture(DayOfWeek.WEDNESDAY, LocalTime.of(8, 0), LocalTime.of(12, 0))));
+
+            assertThat(service.estReservable(local(armistice, 9, 0), local(armistice, 10, 0))).isFalse();
+            assertThat(service.estReservable(local(armistice.minusWeeks(1), 9, 0),
+                    local(armistice.minusWeeks(1), 10, 0))).isTrue();
+        }
     }
 
     @Nested
@@ -244,7 +314,7 @@ class DisponibiliteServiceTest {
         @Test
         @DisplayName("sans tampon, un depart colle a la fin du precedent")
         void sansTampon() {
-            reglages.modifier("Europe/Brussels", 30, 0, 24, 60, 24, false, 3);
+            reglages.modifier("Europe/Brussels", 30, 0, 24, 60, 24, true, 3);
             ouvertLeMercrediDe8a12();
             when(postes.findByActifTrueOrderByOrdreAscLibelleAsc()).thenReturn(List.of(pont1));
             when(rdvs.actifsChevauchant(any(), any(), any()))

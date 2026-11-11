@@ -3,6 +3,7 @@ package be.autoservplus.reservation.repository;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -111,4 +112,62 @@ public interface RdvRepository extends JpaRepository<Rdv, Long> {
             ORDER BY r.debut
             """)
     List<Rdv> agenda(@Param("depuis") Instant depuis, @Param("avant") Instant avant);
+
+    /**
+     * Rendez-vous confirmés dont le rappel est dû : début dans l'avenir, au plus tard à
+     * {@code limite}, rappel pas encore réservé.
+     */
+    @Query("""
+            SELECT r FROM Rdv r JOIN FETCH r.membre
+            WHERE r.statut = be.autoservplus.reservation.domain.StatutRdv.CONFIRME
+              AND r.rappelEnvoyeLe IS NULL
+              AND r.debut > :maintenant AND r.debut <= :limite
+            ORDER BY r.debut
+            """)
+    List<Rdv> rappelsDus(@Param("maintenant") Instant maintenant, @Param("limite") Instant limite);
+
+    /**
+     * Réserve le rappel avant de l'envoyer, ou à la confirmation qui en tient lieu. Rend 1
+     * au seul passage qui l'obtient : un second passage, concurrent ou repris, lit la
+     * colonne déjà remplie et rend 0. Le contexte n'est pas vidé : la colonne n'est
+     * jamais écrite par l'entité, et une confirmation appelle cette méthode avec un
+     * rendez-vous encore attaché.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE rdv SET rappel_envoye_le = :maintenant
+            WHERE id = :id AND rappel_envoye_le IS NULL AND statut = 'CONFIRME' AND deleted_at IS NULL
+            """, nativeQuery = true)
+    int reserverRappel(@Param("id") Long id, @Param("maintenant") Instant maintenant);
+
+    /** Demandes en attente dont l'échéance de réponse est atteinte. */
+    @Query("""
+            SELECT r FROM Rdv r JOIN FETCH r.membre
+            WHERE r.statut = be.autoservplus.reservation.domain.StatutRdv.EN_ATTENTE
+              AND r.echeanceReponse IS NOT NULL AND r.echeanceReponse <= :maintenant
+            ORDER BY r.echeanceReponse
+            """)
+    List<Rdv> demandesEchues(@Param("maintenant") Instant maintenant);
+
+    /**
+     * Demandes en attente arrivées à mi-chemin entre leur création et leur échéance,
+     * échéance non atteinte et relance pas encore réservée.
+     */
+    @Query(value = """
+            SELECT * FROM rdv
+            WHERE deleted_at IS NULL AND statut = 'EN_ATTENTE'
+              AND echeance_reponse IS NOT NULL AND relance_envoyee_le IS NULL
+              AND echeance_reponse > :maintenant
+              AND created_at + (echeance_reponse - created_at) / 2 <= :maintenant
+            ORDER BY echeance_reponse
+            """, nativeQuery = true)
+    List<Rdv> relancesDues(@Param("maintenant") Instant maintenant);
+
+    /** Réserve la relance au garage, sur le patron de {@link #reserverRappel}. */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = """
+            UPDATE rdv SET relance_envoyee_le = :maintenant
+            WHERE id = :id AND relance_envoyee_le IS NULL AND statut = 'EN_ATTENTE' AND deleted_at IS NULL
+            """, nativeQuery = true)
+    int reserverRelance(@Param("id") Long id, @Param("maintenant") Instant maintenant);
 }

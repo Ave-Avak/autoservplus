@@ -99,8 +99,8 @@ class AdminRdvServiceTest {
             case CONFIRME -> rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1)));
             case REFUSE -> rdv.refuser("motif", MAINTENANT);
             case ANNULE -> rdv.annulerParLeGarage("motif", MAINTENANT);
-            case HONORE -> { rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1))); rdv.marquerHonore(); }
-            case ABSENT -> { rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1))); rdv.marquerAbsent(); }
+            case HONORE -> { rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1))); rdv.marquerHonore(rdv.getFin().plus(Duration.ofHours(1))); }
+            case ABSENT -> { rdv.confirmer(rdv.getDebut().minus(Duration.ofDays(1))); rdv.marquerAbsent(rdv.getFin().plus(Duration.ofHours(1))); }
         }
         return rdv;
     }
@@ -334,7 +334,7 @@ class AdminRdvServiceTest {
         }
 
         @Test
-        @DisplayName("refuse un marquage avant l'heure de debut (RegleMetier temporelle)")
+        @DisplayName("refuse un marquage avant l'heure de debut (garde de l'entité)")
         void refuseAvantLeDebut() {
             // RDV commencant dans 3h : debut > maintenant, donc refus.
             Rdv futur = new Rdv("RDV-2026-0002", marie, golf, pont,
@@ -344,7 +344,7 @@ class AdminRdvServiceTest {
             stubLookup(futur);
 
             assertThatThrownBy(() -> service.marquerHonore(futur.getReference()))
-                    .isInstanceOf(be.autoservplus.common.exception.RegleMetierException.class)
+                    .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("avant l'heure de début");
 
             assertThat(futur.getStatut())
@@ -386,7 +386,7 @@ class AdminRdvServiceTest {
         }
 
         @Test
-        @DisplayName("refuse un marquage avant la fin du creneau (RegleMetier temporelle)")
+        @DisplayName("refuse un marquage avant la fin du creneau (garde de l'entité)")
         void refuseAvantLaFin() {
             // RDV commence il y a 10 min, fin 20 min dans le futur : creneau en cours.
             Rdv enCours = new Rdv("RDV-2026-0003", marie, golf, pont,
@@ -396,7 +396,7 @@ class AdminRdvServiceTest {
             stubLookup(enCours);
 
             assertThatThrownBy(() -> service.marquerAbsent(enCours.getReference()))
-                    .isInstanceOf(be.autoservplus.common.exception.RegleMetierException.class)
+                    .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("avant la fin");
 
             assertThat(enCours.getStatut())

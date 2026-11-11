@@ -153,6 +153,7 @@ public class NotificationEvenementListener {
             case ANNULE -> TypeNotification.RDV_ANNULE;
             case HONORE -> TypeNotification.RDV_HONORE;
             case ABSENT -> TypeNotification.RDV_ABSENT;
+            case EXPIRE -> TypeNotification.RDV_EXPIRE;
             case EN_ATTENTE -> null;
         };
     }

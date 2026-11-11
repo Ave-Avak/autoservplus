@@ -4,6 +4,7 @@ import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.reservation.domain.*;
@@ -16,11 +17,11 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.reservation.service.dto.ConditionsReservation;
 import be.autoservplus.reservation.service.dto.CreneauDisponible;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.reservation.web.dto.CreneauVue;
 import be.autoservplus.reservation.web.dto.RdvVue;
-import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.LinkedHashMap;
@@ -50,9 +51,6 @@ public class RdvService {
 
     private static final Logger log = LoggerFactory.getLogger(RdvService.class);
 
-    /** SQLSTATE de PostgreSQL pour un interblocage (deadlock_detected). */
-    private static final String INTERBLOCAGE = "40P01";
-
     private final RdvRepository rdvs;
     private final UtilisateurRepository membres;
     private final PrestationRepository prestations;
@@ -60,12 +58,16 @@ public class RdvService {
     private final VehiculeService vehicules;
     private final DisponibiliteService disponibilites;
     private final GenerateurNumeroRdv numeros;
+    private final AvisRendezVous avis;
+    private final EcheanceReponse echeances;
+    private final IdentiteGarage garage;
     private final Clock horloge;
 
     public RdvService(RdvRepository rdvs, UtilisateurRepository membres,
                       PrestationRepository prestations, ParametreAtelierRepository parametres,
                       VehiculeService vehicules, DisponibiliteService disponibilites,
-                      GenerateurNumeroRdv numeros, Clock horloge) {
+                      GenerateurNumeroRdv numeros, AvisRendezVous avis, EcheanceReponse echeances,
+                      IdentiteGarage garage, Clock horloge) {
         this.rdvs = rdvs;
         this.membres = membres;
         this.prestations = prestations;
@@ -73,6 +75,9 @@ public class RdvService {
         this.vehicules = vehicules;
         this.disponibilites = disponibilites;
         this.numeros = numeros;
+        this.avis = avis;
+        this.echeances = echeances;
+        this.garage = garage;
         this.horloge = horloge;
     }
 
@@ -123,16 +128,39 @@ public class RdvService {
         Rdv rdv = new Rdv(numeros.prochain(), membre, vehicule, poste, debut, p.pas(), choisies, commentaire);
         if (p.isConfirmationAutomatique()) {
             rdv.confirmer(horloge.instant());
+        } else {
+            // Figée ici : un changement ultérieur des plages ou des paramètres ne la déplace pas.
+            rdv.fixerEcheanceReponse(echeances.pour(horloge.instant(),
+                    debut.atZone(p.zone()).toLocalDate(), p));
         }
 
+        Rdv enregistre = inserer(rdv, poste, debut);
+        log.info("Rendez-vous {} demande par {} sur {} de {} a {}",
+                enregistre.getNumero(), email, poste.getLibelle(), debut, fin);
+        Instant maintenant = horloge.instant();
+        if (enregistre.confirmationTientLieuDeRappel(maintenant, p.delaiRappel())) {
+            rdvs.reserverRappel(enregistre.getId(), maintenant);
+        }
+        avis.nouvelleDemande(enregistre);
+        return enregistre;
+    }
+
+    /**
+     * Insère le rendez-vous et traduit en créneau pris les deux issues par lesquelles
+     * PostgreSQL écarte le perdant d'une course sur le même intervalle.
+     */
+    private Rdv inserer(Rdv rdv, PosteAtelier poste, Instant debut) {
         try {
             // saveAndFlush pour que la contrainte d exclusion soit evaluee ici, dans le
             // service, et non a la fin de la transaction ou on ne pourrait plus la traduire.
-            Rdv enregistre = rdvs.saveAndFlush(rdv);
-            log.info("Rendez-vous {} demande par {} sur {} de {} a {}",
-                    enregistre.getNumero(), email, poste.getLibelle(), debut, fin);
-            return enregistre;
+            return rdvs.saveAndFlush(rdv);
         } catch (DataIntegrityViolationException e) {
+            // Seule ex_rdv_poste_intervalle dit qu'un autre membre a pris le créneau.
+            // Une autre violation (numéro en double, clé étrangère) est un défaut : la
+            // présenter comme une collision l'a déjà masquée sur la démonstration.
+            if (!EtatSql.estUneExclusion(e)) {
+                throw e;
+            }
             log.info("Collision de reservation sur {} a {} : {}", poste.getLibelle(), debut, e.getMostSpecificCause().getMessage());
             throw new CreneauIndisponibleException(
                     "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.", e);
@@ -144,22 +172,13 @@ public class RdvService {
             // interblocage (40P01), et non par une violation d'exclusion. Constaté sur la
             // machine plus lente de la CI. L'issue pour le membre est la même, le créneau
             // est pris. Toute autre erreur d'accès aux données remonte telle quelle.
-            if (!estUnInterblocage(e)) {
+            if (!EtatSql.estUnInterblocage(e)) {
                 throw e;
             }
             log.info("Interblocage entre deux reservations sur {} a {} : {}", poste.getLibelle(), debut, e.getMostSpecificCause().getMessage());
             throw new CreneauIndisponibleException(
                     "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.", e);
         }
-    }
-
-    static boolean estUnInterblocage(Throwable erreur) {
-        for (Throwable cause = erreur; cause != null; cause = cause.getCause()) {
-            if (cause instanceof SQLException sql && INTERBLOCAGE.equals(sql.getSQLState())) {
-                return true;
-            }
-        }
-        return false;
     }
 
     private List<Prestation> prestationsActives(List<UUID> references) {
@@ -226,9 +245,23 @@ public class RdvService {
                 .toList();
     }
 
+    /**
+     * Premier jour proposé au sélecteur. En mode manuel, il suit la règle des créneaux :
+     * un jour dont l'échéance de réponse ne laisse pas deux heures au garage n'a aucun
+     * créneau, et l'annoncer comme premier jour possible conduisait à une liste vide.
+     */
     public LocalDate premierJourReservable() {
         ParametreAtelier p = parametres.courants();
-        return horloge.instant().plus(p.delaiMinimal()).atZone(p.zone()).toLocalDate();
+        Instant maintenant = horloge.instant();
+        LocalDate jour = maintenant.plus(p.delaiMinimal()).atZone(p.zone()).toLocalDate();
+        if (p.isConfirmationAutomatique()) {
+            return jour;
+        }
+        LocalDate dernier = dernierJourReservable();
+        while (jour.isBefore(dernier) && !echeances.laisseLeTempsDeRepondre(jour, maintenant, p)) {
+            jour = jour.plusDays(1);
+        }
+        return jour;
     }
 
     public LocalDate dernierJourReservable() {
@@ -262,6 +295,16 @@ public class RdvService {
                 peutEtreAnnule(rdv));
     }
 
+    /**
+     * Ce que le formulaire de réservation annonce : le mode de confirmation, le délai de
+     * réponse du garage en mode manuel, et le téléphone pour un rendez-vous plus proche.
+     */
+    public ConditionsReservation conditions() {
+        ParametreAtelier p = parametres.courants();
+        return new ConditionsReservation(p.isConfirmationAutomatique(), p.getDelaiReponseHeures(),
+                garage.telephone());
+    }
+
     // --- annulation par le membre ----------------------------------------------------
 
     @Transactional
@@ -274,6 +317,7 @@ public class RdvService {
             throw new RegleMetierException("RM-11", e.getMessage());
         }
         log.info("Rendez-vous {} annule par le membre", rdv.getNumero());
+        avis.annulationParLeMembre(rdv);
         return rdv;
     }
 

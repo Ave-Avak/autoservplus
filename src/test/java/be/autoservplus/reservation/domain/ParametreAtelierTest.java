@@ -28,8 +28,27 @@ class ParametreAtelierTest {
         assertThat(p.delaiMinimal()).isEqualTo(Duration.ofHours(24));
         assertThat(p.horizon()).isEqualTo(Duration.ofDays(60));
         assertThat(p.delaiAnnulation()).isEqualTo(Duration.ofHours(24));
-        assertThat(p.isConfirmationAutomatique()).isFalse();
+        assertThat(p.isConfirmationAutomatique()).isTrue();
         assertThat(p.getMaxRdvEnAttenteParMembre()).isEqualTo((short) 3);
+        assertThat(p.delaiReponse()).isEqualTo(Duration.ofHours(24));
+        assertThat(p.delaiRappel()).isEqualTo(Duration.ofHours(24));
+        assertThat(p.rappelActif()).isTrue();
+    }
+
+    @Test
+    @DisplayName("délai de réponse de 2 à 168 heures, délai de rappel de 0 à 168, 0 désactivant le rappel")
+    void delaisDeReponseEtDeRappel() {
+        ParametreAtelier p = parametres();
+        p.modifierDelaiReponse(2);
+        p.modifierRappel(0);
+        assertThat(p.delaiReponse()).isEqualTo(Duration.ofHours(2));
+        assertThat(p.rappelActif()).isFalse();
+
+        assertThatThrownBy(() -> p.modifierDelaiReponse(1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> p.modifierDelaiReponse(169)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> p.modifierRappel(-1)).isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> p.modifierRappel(169)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(p.delaiReponse()).isEqualTo(Duration.ofHours(2));
     }
 
     @Test
@@ -81,11 +100,31 @@ class ParametreAtelierTest {
     @DisplayName("une modification refusee ne change rien")
     void modificationAtomique() {
         ParametreAtelier p = parametres();
-        assertThatThrownBy(() -> p.modifier("Europe/Paris", 15, 10, 24, 60, 24, true, 0))
+        assertThatThrownBy(() -> p.modifier("Europe/Paris", 15, 10, 24, 60, 24, false, 0))
                 .isInstanceOf(IllegalArgumentException.class);
 
         assertThat(p.zone()).isEqualTo(ZoneId.of("Europe/Brussels"));
         assertThat(p.pas()).isEqualTo(Duration.ofMinutes(30));
+        assertThat(p.isConfirmationAutomatique()).isTrue();
+    }
+
+    @Test
+    @DisplayName("réglages de l'écran : valeurs dans les bornes appliquées ensemble, une valeur hors bornes ne change rien")
+    void modifierReservation() {
+        ParametreAtelier p = parametres();
+        p.modifierReservation(false, 48, 12, 6, 0);
+
         assertThat(p.isConfirmationAutomatique()).isFalse();
+        assertThat(p.delaiReponse()).isEqualTo(Duration.ofHours(48));
+        assertThat(p.delaiMinimal()).isEqualTo(Duration.ofHours(12));
+        assertThat(p.delaiAnnulation()).isEqualTo(Duration.ofHours(6));
+        assertThat(p.rappelActif()).isFalse();
+
+        assertThatThrownBy(() -> p.modifierReservation(true, 1, 24, 24, 24)).hasMessageContaining("réponse");
+        assertThatThrownBy(() -> p.modifierReservation(true, 24, 169, 24, 24)).hasMessageContaining("minimal");
+        assertThatThrownBy(() -> p.modifierReservation(true, 24, 24, -1, 24)).hasMessageContaining("annulation");
+        assertThatThrownBy(() -> p.modifierReservation(true, 24, 24, 24, 169)).hasMessageContaining("rappel");
+        assertThat(p.isConfirmationAutomatique()).isFalse();
+        assertThat(p.delaiReponse()).isEqualTo(Duration.ofHours(48));
     }
 }

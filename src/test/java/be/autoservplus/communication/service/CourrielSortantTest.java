@@ -49,6 +49,7 @@ class CourrielSortantTest {
         messages.setFallbackToSystemLocale(false);
         IdentiteGarage garage = mock(IdentiteGarage.class);
         when(garage.enseigne()).thenReturn("Garage Test");
+        when(garage.courriel()).thenReturn("atelier@exemple.be");
         ParametreAtelierRepository parametres = mock(ParametreAtelierRepository.class);
         when(parametres.courants()).thenReturn(new ParametreAtelier());
         courriel = new CourrielSortant(messages, new EnvoiApresCommit(partis::add), garage,
@@ -57,7 +58,7 @@ class CourrielSortantTest {
                 TypeUtilisateur.MEMBRE);
     }
 
-    /** Les dix-neuf envois du contrat, pour un destinataire de la langue donnée. */
+    /** Les vingt-sept envois du contrat, pour un destinataire de la langue donnée. */
     private Map<String, Consumer<Langue>> tousLesEnvois() {
         DetailsRdvCourriel rdv = new DetailsRdvCourriel("RDV-2026-0001", DIMANCHE);
         PieceJointeCourriel agenda = new PieceJointeCourriel("rdv.ics", "text/calendar",
@@ -70,6 +71,17 @@ class CourrielSortantTest {
                 Map.entry("rdv-confirme", l -> courriel.envoyerConfirmationRdv(marie, rdv, agenda)),
                 Map.entry("rdv-refuse", l -> courriel.envoyerRefusRdv(marie, rdv, "Pièce indisponible")),
                 Map.entry("rdv-annule", l -> courriel.envoyerAnnulationParLeGarage(marie, rdv, "Panne")),
+                Map.entry("rdv-recu", l -> courriel.envoyerAccuseDemandeRdv(marie, rdv, DIMANCHE.minusDays(1).withHour(12))),
+                Map.entry("rdv-recu-confirme", l -> courriel.envoyerAccuseRdvConfirme(marie, rdv, agenda)),
+                Map.entry("rdv-avis-garage", l -> courriel.envoyerAvisNouvelleDemandeAuGarage(
+                        rdv, "Marie Dupont", false, "/admin/rendez-vous/r")),
+                Map.entry("rdv-avis-garage-confirme", l -> courriel.envoyerAvisNouvelleDemandeAuGarage(
+                        rdv, "Marie Dupont", true, "/admin/rendez-vous/r")),
+                Map.entry("rdv-rappel", l -> courriel.envoyerRappelRdv(marie, rdv)),
+                Map.entry("rdv-annule-membre", l -> courriel.envoyerAnnulationParLeMembre(marie, rdv)),
+                Map.entry("rdv-expire", l -> courriel.envoyerExpirationRdv(marie, rdv)),
+                Map.entry("rdv-relance-garage", l -> courriel.envoyerRelanceAuGarage(
+                        rdv, "Marie Dupont", DIMANCHE.minusDays(1).withHour(12), "/admin/rendez-vous/r")),
                 Map.entry("depassement", l -> courriel.envoyerDemandeValidationDepassement(marie, rdv,
                         new DetailsDepassementCourriel("INT-2026-0001", "100,00 €", "150,00 €",
                                 List.of("- Filtre x1 : 50,00 €"), "/mes-interventions/r/validation"))),
@@ -107,7 +119,7 @@ class CourrielSortantTest {
     void tousLesTypes(Langue langue) {
         marie.setLangue(langue);
         Map<String, Consumer<Langue>> envois = tousLesEnvois();
-        assertThat(envois).hasSize(19);
+        assertThat(envois).hasSize(27);
 
         envois.forEach((type, envoi) -> {
             partis.clear();
@@ -123,6 +135,42 @@ class CourrielSortantTest {
                     .doesNotContainPattern("\\{\\d}")
                     .doesNotContain("''");
         });
+    }
+
+    @Test
+    @DisplayName("l'accusé d'une demande en attente annonce l'échéance, dans la langue du membre")
+    void accuseAnnonceLEcheance() {
+        marie.setLangue(Langue.nl);
+        courriel.envoyerAccuseDemandeRdv(marie, new DetailsRdvCourriel("RDV-1", DIMANCHE),
+                DIMANCHE.minusDays(1).withHour(12));
+
+        assertThat(partis.get(0).corps()).contains("uiterlijk op zaterdag 12 september 2026 om 12:00");
+    }
+
+    @Test
+    @DisplayName("l'accusé d'un rendez-vous confirmé d'office porte le fichier d'agenda")
+    void accuseConfirmeAvecAgenda() {
+        PieceJointeCourriel agenda = new PieceJointeCourriel("rdv.ics", "text/calendar",
+                "BEGIN:VCALENDAR".getBytes());
+        courriel.envoyerAccuseRdvConfirme(marie, new DetailsRdvCourriel("RDV-1", DIMANCHE), agenda);
+
+        Courriel parti = partis.get(0);
+        assertThat(parti.pieceJointe()).isSameAs(agenda);
+        assertThat(parti.corps()).contains("Le fichier joint l'ajoute à votre agenda.");
+    }
+
+    @Test
+    @DisplayName("l'avis au garage part à l'adresse de l'atelier, en français, avec le lien du détail")
+    void avisAuGarage() {
+        marie.setLangue(Langue.nl);
+        courriel.envoyerAvisNouvelleDemandeAuGarage(new DetailsRdvCourriel("RDV-1", DIMANCHE),
+                "Marie Dupont", false, "/admin/rendez-vous/abc");
+
+        Courriel parti = partis.get(0);
+        assertThat(parti.adresse()).isEqualTo("atelier@exemple.be");
+        assertThat(parti.sujet()).isEqualTo("Nouvelle demande de rendez-vous à traiter");
+        assertThat(parti.corps()).contains("dimanche 13 septembre 2026")
+                .contains("Marie Dupont").contains("http://localhost:8080/admin/rendez-vous/abc");
     }
 
     @Test
