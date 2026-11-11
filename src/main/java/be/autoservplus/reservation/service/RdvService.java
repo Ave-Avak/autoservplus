@@ -11,6 +11,7 @@ import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -19,6 +20,7 @@ import be.autoservplus.reservation.service.dto.CreneauDisponible;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.reservation.web.dto.CreneauVue;
 import be.autoservplus.reservation.web.dto.RdvVue;
+import java.sql.SQLException;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.LinkedHashMap;
@@ -47,6 +49,9 @@ import java.util.UUID;
 public class RdvService {
 
     private static final Logger log = LoggerFactory.getLogger(RdvService.class);
+
+    /** SQLSTATE de PostgreSQL pour un interblocage (deadlock_detected). */
+    private static final String INTERBLOCAGE = "40P01";
 
     private final RdvRepository rdvs;
     private final UtilisateurRepository membres;
@@ -130,8 +135,31 @@ public class RdvService {
         } catch (DataIntegrityViolationException e) {
             log.info("Collision de reservation sur {} a {} : {}", poste.getLibelle(), debut, e.getMostSpecificCause().getMessage());
             throw new CreneauIndisponibleException(
-                    "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.");
+                    "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.", e);
+        } catch (DataAccessException e) {
+            // Deux insertions simultanées sur le même intervalle placent chacune sa ligne
+            // dans l'index de la contrainte d'exclusion, puis vérifient l'autre. Chacune y
+            // trouve une ligne non encore validée et attend la transaction qui l'a écrite :
+            // PostgreSQL tranche cette attente croisée en abandonnant l'une des deux par un
+            // interblocage (40P01), et non par une violation d'exclusion. Constaté sur la
+            // machine plus lente de la CI. L'issue pour le membre est la même, le créneau
+            // est pris. Toute autre erreur d'accès aux données remonte telle quelle.
+            if (!estUnInterblocage(e)) {
+                throw e;
+            }
+            log.info("Interblocage entre deux reservations sur {} a {} : {}", poste.getLibelle(), debut, e.getMostSpecificCause().getMessage());
+            throw new CreneauIndisponibleException(
+                    "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.", e);
         }
+    }
+
+    static boolean estUnInterblocage(Throwable erreur) {
+        for (Throwable cause = erreur; cause != null; cause = cause.getCause()) {
+            if (cause instanceof SQLException sql && INTERBLOCAGE.equals(sql.getSQLState())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private List<Prestation> prestationsActives(List<UUID> references) {

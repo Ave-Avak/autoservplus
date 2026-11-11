@@ -37,6 +37,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.sql.SQLException;
 import java.time.Clock;
 import java.time.DayOfWeek;
 import java.time.Instant;
@@ -148,8 +149,13 @@ class RdvConcurrenceIT extends SocleIntegration {
                 () -> reservations.reserver(paul.getEmail(), clio.getReference(), prestationsChoisies,
                         dimanche10h, null));
 
+        // PostgreSQL écarte le perdant par une violation d'exclusion (23P01) ou, si les deux
+        // insertions se sont vues avant validation, par un interblocage (40P01) : constaté
+        // en CI. Les deux issues sont traduites en créneau pris.
         assertThat(issues).filteredOn(Rdv.class::isInstance).hasSize(1);
-        assertThat(issues).filteredOn(CreneauIndisponibleException.class::isInstance).hasSize(1);
+        assertThat(issues).filteredOn(CreneauIndisponibleException.class::isInstance).singleElement()
+                .extracting(perdant -> etatSql((Throwable) perdant))
+                .isIn("23P01", "40P01");
         assertThat(rdvs.actifsChevauchant(dimanche10h, dimanche10h.plusSeconds(3600),
                 List.of(StatutRdv.EN_ATTENTE, StatutRdv.CONFIRME)))
                 .as("un seul rendez-vous occupe le poste à cette heure")
@@ -218,6 +224,15 @@ class RdvConcurrenceIT extends SocleIntegration {
         Instant debut = debutLocal.atZone(BRUXELLES).toInstant();
         return reservations.reserver(marie.getEmail(), golf.getReference(),
                 List.of(vidange.getReference()), debut, null).getReference();
+    }
+
+    private static String etatSql(Throwable erreur) {
+        for (Throwable cause = erreur; cause != null; cause = cause.getCause()) {
+            if (cause instanceof SQLException sql) {
+                return sql.getSQLState();
+            }
+        }
+        return null;
     }
 
     /** Les deux actions partent au même signal. */
