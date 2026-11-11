@@ -80,6 +80,14 @@ public class Rdv extends BaseEntity {
     @Column(name = "date_annulation")
     private Instant dateAnnulation;
 
+    /**
+     * Écrite seulement par la réservation conditionnelle de {@code RdvRepository.reserverRappel},
+     * jamais par l'entité : une instance chargée avant l'envoi effacerait sinon la
+     * réservation en se sauvegardant, et le rappel repartirait.
+     */
+    @Column(name = "rappel_envoye_le", insertable = false, updatable = false)
+    private Instant rappelEnvoyeLe;
+
     @OneToMany(mappedBy = "rdv", cascade = CascadeType.ALL, orphanRemoval = true,
             fetch = FetchType.LAZY)
     private List<LigneRdv> lignes = new ArrayList<>();
@@ -281,6 +289,7 @@ public class Rdv extends BaseEntity {
     public String getCommentaire() { return commentaire; }
     public String getMotifRefus() { return motifRefus; }
     public Instant getDateAnnulation() { return dateAnnulation; }
+    public Instant getRappelEnvoyeLe() { return rappelEnvoyeLe; }
     public List<LigneRdv> getLignes() { return Collections.unmodifiableList(lignes); }
     public long getVersion() { return version; }
 

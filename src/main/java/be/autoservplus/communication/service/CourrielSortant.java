@@ -4,6 +4,8 @@ import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +31,8 @@ import java.util.Locale;
  */
 @Service
 public class CourrielSortant implements ServiceCourriel {
+
+    private static final Logger log = LoggerFactory.getLogger(CourrielSortant.class);
 
     private final MessageSource messages;
     private final EnvoiApresCommit envoi;
@@ -151,6 +155,45 @@ public class CourrielSortant implements ServiceCourriel {
         Locale langue = langue(destinataire.getLangue());
         auCompte("rdv-annule", destinataire, null, rdv.numero(),
                 jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()), motif);
+    }
+
+    @Override
+    public void envoyerAccuseDemandeRdv(Utilisateur destinataire, DetailsRdvCourriel rdv,
+                                        boolean confirme) {
+        Locale langue = langue(destinataire.getLangue());
+        auCompte(confirme ? "rdv-recu-confirme" : "rdv-recu", destinataire, null, rdv.numero(),
+                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()));
+    }
+
+    @Override
+    public void envoyerAvisNouvelleDemandeAuGarage(DetailsRdvCourriel rdv, String membre,
+                                                   boolean confirme, String cheminDetail) {
+        String adresse = garage.courriel();
+        if (adresse == null || adresse.isBlank()) {
+            // Sans adresse d'atelier, seules les notifications du back-office préviennent
+            // le garage. Le contrôle d'identité l'exige sous prod, pas sous les autres profils.
+            log.warn("Avis de nouvelle demande {} non envoyé : aucune adresse d'atelier.", rdv.numero());
+            return;
+        }
+        Locale langue = Locale.FRENCH;
+        String type = confirme ? "rdv-avis-garage-confirme" : "rdv-avis-garage";
+        partir(type, adresse, garage.enseigne(), garage.enseigne(), langue,
+                corps(type, langue, rdv.numero(), jour(rdv.debut(), langue, "EEEE d MMMM yyyy"),
+                        heure(rdv.debut()), membre, liens.vers(cheminDetail)), null);
+    }
+
+    @Override
+    public void envoyerRappelRdv(Utilisateur destinataire, DetailsRdvCourriel rdv) {
+        Locale langue = langue(destinataire.getLangue());
+        auCompte("rdv-rappel", destinataire, null, rdv.numero(),
+                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()));
+    }
+
+    @Override
+    public void envoyerAnnulationParLeMembre(Utilisateur destinataire, DetailsRdvCourriel rdv) {
+        Locale langue = langue(destinataire.getLangue());
+        auCompte("rdv-annule-membre", destinataire, null, rdv.numero(),
+                jour(rdv.debut(), langue, "EEEE d MMMM yyyy"), heure(rdv.debut()));
     }
 
     @Override

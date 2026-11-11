@@ -54,6 +54,9 @@ public class ParametreAtelier {
     @Column(name = "max_rdv_en_attente_par_membre", nullable = false)
     private short maxRdvEnAttenteParMembre = 3;
 
+    @Column(name = "delai_rappel_heures", nullable = false)
+    private short delaiRappelHeures = 24;
+
     @LastModifiedDate
     @Column(name = "updated_at", nullable = false)
     private Instant updatedAt;
@@ -87,6 +90,13 @@ public class ParametreAtelier {
         this.maxRdvEnAttenteParMembre = (short) maxRdvEnAttenteParMembre;
     }
 
+    /** Délai du rappel avant le début, de 0 à 168 heures. La valeur 0 désactive le rappel. */
+    public void modifierRappel(int delaiRappelHeures) {
+        exiger(delaiRappelHeures >= 0 && delaiRappelHeures <= 168,
+                "Le délai de rappel doit être compris entre 0 et 168 heures.");
+        this.delaiRappelHeures = (short) delaiRappelHeures;
+    }
+
     private static void exiger(boolean condition, String message) {
         if (!condition) throw new IllegalArgumentException(message);
     }
@@ -99,6 +109,8 @@ public class ParametreAtelier {
     public Duration delaiMinimal() { return Duration.ofHours(delaiMinimalHeures); }
     public Duration horizon() { return Duration.ofDays(horizonJours); }
     public Duration delaiAnnulation() { return Duration.ofHours(delaiAnnulationHeures); }
+    public Duration delaiRappel() { return Duration.ofHours(delaiRappelHeures); }
+    public boolean rappelActif() { return delaiRappelHeures > 0; }
 
     public String getFuseauHoraire() { return fuseauHoraire; }
     public short getPasMinutes() { return pasMinutes; }
@@ -108,5 +120,6 @@ public class ParametreAtelier {
     public short getDelaiAnnulationHeures() { return delaiAnnulationHeures; }
     public boolean isConfirmationAutomatique() { return confirmationAutomatique; }
     public short getMaxRdvEnAttenteParMembre() { return maxRdvEnAttenteParMembre; }
+    public short getDelaiRappelHeures() { return delaiRappelHeures; }
     public Instant getUpdatedAt() { return updatedAt; }
 }

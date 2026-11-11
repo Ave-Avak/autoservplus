@@ -45,6 +45,25 @@ public interface ServiceCourriel {
     void envoyerAnnulationParLeGarage(Utilisateur destinataire, DetailsRdvCourriel rdv, String motif);
 
     /**
+     * Accusé de réception d'une demande de rendez-vous. Dit si la demande attend la
+     * réponse du garage ou si elle est déjà confirmée.
+     */
+    void envoyerAccuseDemandeRdv(Utilisateur destinataire, DetailsRdvCourriel rdv, boolean confirme);
+
+    /**
+     * Avis au garage d'une nouvelle demande, à l'adresse de l'atelier et dans la langue
+     * par défaut de l'application. {@code cheminDetail} mène au détail du back-office.
+     */
+    void envoyerAvisNouvelleDemandeAuGarage(DetailsRdvCourriel rdv, String membre, boolean confirme,
+                                            String cheminDetail);
+
+    /** Rappel au membre avant un rendez-vous confirmé. */
+    void envoyerRappelRdv(Utilisateur destinataire, DetailsRdvCourriel rdv);
+
+    /** Confirmation au membre de l'annulation qu'il vient de faire. */
+    void envoyerAnnulationParLeMembre(Utilisateur destinataire, DetailsRdvCourriel rdv);
+
+    /**
      * Le garage a chiffre des travaux qui portent l intervention a plus de 10 % du
      * devis initial : RM-15 exige l accord expres du membre avant de poursuivre.
      * C est le canal dedie annonce par RM-16 : le statut percu reste « En cours »,

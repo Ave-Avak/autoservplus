@@ -30,8 +30,10 @@ public enum TypeNotification {
     RETRACTATION_REFUSEE,
     /** Nouveau message dans un fil de discussion (BL-5) : vise le membre ou le garage. */
     MESSAGE_RECU,
-    /** Adressee aux administrateurs, seule valeur qui ne vise pas un membre (BL-4). */
-    AVIS_DEPOSE;
+    /** Adressee aux administrateurs, avec RDV_DEMANDE les seules qui ne visent pas un membre (BL-4). */
+    AVIS_DEPOSE,
+    /** Nouvelle demande de rendez-vous, adressée à chaque administrateur actif (F16). */
+    RDV_DEMANDE;
 
     /** Cle i18n du titre affiche. */
     public String cleTitre() {

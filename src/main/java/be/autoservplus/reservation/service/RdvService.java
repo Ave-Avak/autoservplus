@@ -55,12 +55,13 @@ public class RdvService {
     private final VehiculeService vehicules;
     private final DisponibiliteService disponibilites;
     private final GenerateurNumeroRdv numeros;
+    private final AvisRendezVous avis;
     private final Clock horloge;
 
     public RdvService(RdvRepository rdvs, UtilisateurRepository membres,
                       PrestationRepository prestations, ParametreAtelierRepository parametres,
                       VehiculeService vehicules, DisponibiliteService disponibilites,
-                      GenerateurNumeroRdv numeros, Clock horloge) {
+                      GenerateurNumeroRdv numeros, AvisRendezVous avis, Clock horloge) {
         this.rdvs = rdvs;
         this.membres = membres;
         this.prestations = prestations;
@@ -68,6 +69,7 @@ public class RdvService {
         this.vehicules = vehicules;
         this.disponibilites = disponibilites;
         this.numeros = numeros;
+        this.avis = avis;
         this.horloge = horloge;
     }
 
@@ -126,6 +128,7 @@ public class RdvService {
             Rdv enregistre = rdvs.saveAndFlush(rdv);
             log.info("Rendez-vous {} demande par {} sur {} de {} a {}",
                     enregistre.getNumero(), email, poste.getLibelle(), debut, fin);
+            avis.nouvelleDemande(enregistre);
             return enregistre;
         } catch (DataIntegrityViolationException e) {
             log.info("Collision de reservation sur {} a {} : {}", poste.getLibelle(), debut, e.getMostSpecificCause().getMessage());
@@ -246,6 +249,7 @@ public class RdvService {
             throw new RegleMetierException("RM-11", e.getMessage());
         }
         log.info("Rendez-vous {} annule par le membre", rdv.getNumero());
+        avis.annulationParLeMembre(rdv);
         return rdv;
     }
 

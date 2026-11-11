@@ -3,6 +3,7 @@ package be.autoservplus.reservation.repository;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -111,4 +112,28 @@ public interface RdvRepository extends JpaRepository<Rdv, Long> {
             ORDER BY r.debut
             """)
     List<Rdv> agenda(@Param("depuis") Instant depuis, @Param("avant") Instant avant);
+
+    /**
+     * Rendez-vous confirmés dont le rappel est dû : début dans l'avenir, au plus tard à
+     * {@code limite}, rappel pas encore réservé.
+     */
+    @Query("""
+            SELECT r FROM Rdv r JOIN FETCH r.membre
+            WHERE r.statut = be.autoservplus.reservation.domain.StatutRdv.CONFIRME
+              AND r.rappelEnvoyeLe IS NULL
+              AND r.debut > :maintenant AND r.debut <= :limite
+            ORDER BY r.debut
+            """)
+    List<Rdv> rappelsDus(@Param("maintenant") Instant maintenant, @Param("limite") Instant limite);
+
+    /**
+     * Réserve le rappel avant de l'envoyer. Rend 1 au seul passage qui l'obtient : un
+     * second passage, concurrent ou repris, lit la colonne déjà remplie et rend 0.
+     */
+    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Query(value = """
+            UPDATE rdv SET rappel_envoye_le = :maintenant
+            WHERE id = :id AND rappel_envoye_le IS NULL AND statut = 'CONFIRME' AND deleted_at IS NULL
+            """, nativeQuery = true)
+    int reserverRappel(@Param("id") Long id, @Param("maintenant") Instant maintenant);
 }
