@@ -156,8 +156,13 @@ class RdvConcurrenceIT extends SocleIntegration {
                 () -> reservations.reserver(paul.getEmail(), clio.getReference(), prestationsChoisies,
                         dimanche10h, null));
 
+        // PostgreSQL écarte le perdant par une violation d'exclusion (23P01) ou, si les deux
+        // insertions se sont vues avant validation, par un interblocage (40P01) : constaté
+        // en CI. Les deux issues sont traduites en créneau pris.
         assertThat(issues).filteredOn(Rdv.class::isInstance).hasSize(1);
-        assertThat(issues).filteredOn(CreneauIndisponibleException.class::isInstance).hasSize(1);
+        assertThat(issues).filteredOn(CreneauIndisponibleException.class::isInstance).singleElement()
+                .extracting(perdant -> EtatSql.de((Throwable) perdant))
+                .isIn("23P01", "40P01");
         assertThat(rdvs.actifsChevauchant(dimanche10h, dimanche10h.plusSeconds(3600),
                 List.of(StatutRdv.EN_ATTENTE, StatutRdv.CONFIRME)))
                 .as("un seul rendez-vous occupe le poste à cette heure")

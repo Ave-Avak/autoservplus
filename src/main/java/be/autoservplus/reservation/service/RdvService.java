@@ -12,6 +12,7 @@ import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -133,18 +134,26 @@ public class RdvService {
                     debut.atZone(p.zone()).toLocalDate(), p));
         }
 
+        Rdv enregistre = inserer(rdv, poste, debut);
+        log.info("Rendez-vous {} demande par {} sur {} de {} a {}",
+                enregistre.getNumero(), email, poste.getLibelle(), debut, fin);
+        Instant maintenant = horloge.instant();
+        if (enregistre.confirmationTientLieuDeRappel(maintenant, p.delaiRappel())) {
+            rdvs.reserverRappel(enregistre.getId(), maintenant);
+        }
+        avis.nouvelleDemande(enregistre);
+        return enregistre;
+    }
+
+    /**
+     * Insère le rendez-vous et traduit en créneau pris les deux issues par lesquelles
+     * PostgreSQL écarte le perdant d'une course sur le même intervalle.
+     */
+    private Rdv inserer(Rdv rdv, PosteAtelier poste, Instant debut) {
         try {
             // saveAndFlush pour que la contrainte d exclusion soit evaluee ici, dans le
             // service, et non a la fin de la transaction ou on ne pourrait plus la traduire.
-            Rdv enregistre = rdvs.saveAndFlush(rdv);
-            log.info("Rendez-vous {} demande par {} sur {} de {} a {}",
-                    enregistre.getNumero(), email, poste.getLibelle(), debut, fin);
-            Instant maintenant = horloge.instant();
-            if (enregistre.confirmationTientLieuDeRappel(maintenant, p.delaiRappel())) {
-                rdvs.reserverRappel(enregistre.getId(), maintenant);
-            }
-            avis.nouvelleDemande(enregistre);
-            return enregistre;
+            return rdvs.saveAndFlush(rdv);
         } catch (DataIntegrityViolationException e) {
             // Seule ex_rdv_poste_intervalle dit qu'un autre membre a pris le créneau.
             // Une autre violation (numéro en double, clé étrangère) est un défaut : la
@@ -154,7 +163,21 @@ public class RdvService {
             }
             log.info("Collision de reservation sur {} a {} : {}", poste.getLibelle(), debut, e.getMostSpecificCause().getMessage());
             throw new CreneauIndisponibleException(
-                    "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.");
+                    "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.", e);
+        } catch (DataAccessException e) {
+            // Deux insertions simultanées sur le même intervalle placent chacune sa ligne
+            // dans l'index de la contrainte d'exclusion, puis vérifient l'autre. Chacune y
+            // trouve une ligne non encore validée et attend la transaction qui l'a écrite :
+            // PostgreSQL tranche cette attente croisée en abandonnant l'une des deux par un
+            // interblocage (40P01), et non par une violation d'exclusion. Constaté sur la
+            // machine plus lente de la CI. L'issue pour le membre est la même, le créneau
+            // est pris. Toute autre erreur d'accès aux données remonte telle quelle.
+            if (!EtatSql.estUnInterblocage(e)) {
+                throw e;
+            }
+            log.info("Interblocage entre deux reservations sur {} a {} : {}", poste.getLibelle(), debut, e.getMostSpecificCause().getMessage());
+            throw new CreneauIndisponibleException(
+                    "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.", e);
         }
     }
 
