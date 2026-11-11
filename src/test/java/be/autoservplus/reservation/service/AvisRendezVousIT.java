@@ -36,6 +36,9 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
 import java.math.BigDecimal;
@@ -94,6 +97,7 @@ class AvisRendezVousIT extends SocleIntegration {
     @MockitoBean private ServiceCourriel courriel;
 
     @Autowired private RdvService reservations;
+    @Autowired private AdminRdvService adminRdvs;
     @Autowired private TachesRendezVous taches;
     @Autowired private RdvRepository rdvs;
     @Autowired private ParametreAtelierRepository parametres;
@@ -290,6 +294,46 @@ class AvisRendezVousIT extends SocleIntegration {
 
         verify(courriel, never()).envoyerRelanceAuGarage(argThat(d -> d.numero().equals(rdv.getNumero())),
                 any(), any(), any());
+    }
+
+    @Test
+    @DisplayName("confirmation automatique dans la fenêtre du rappel : le rappel est réservé, la tâche ne l'envoie pas")
+    void confirmationAutomatiqueTientLieuDeRappel() {
+        modifierParametres(true, 48);
+
+        Rdv rdv = reserver(LocalDate.of(2026, 9, 13).atTime(16, 30));
+
+        assertThat(rdvs.findByReference(rdv.getReference()).orElseThrow().getRappelEnvoyeLe()).isEqualTo(MAINTENANT);
+        taches.envoyerLesRappels();
+        verify(courriel, never()).envoyerRappelRdv(any(), argThat(d -> d.numero().equals(rdv.getNumero())));
+    }
+
+    @Test
+    @DisplayName("confirmation par le garage : dans la fenêtre, aucun rappel ensuite, hors fenêtre, rappel au moment prévu")
+    void confirmationManuelleTientLieuDeRappel() {
+        Rdv proche = enAttente("RDV-AVI-0301", MAINTENANT.plus(Duration.ofHours(8)), MAINTENANT.plus(Duration.ofHours(1)));
+        Rdv lointain = enAttente("RDV-AVI-0302", MAINTENANT.plus(Duration.ofHours(52)), MAINTENANT.plus(Duration.ofHours(1)));
+
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
+                "admin.avis@exemple.be", null, List.of(new SimpleGrantedAuthority("ROLE_ADMINISTRATEUR"))));
+        try {
+            adminRdvs.confirmer(proche.getReference());
+            adminRdvs.confirmer(lointain.getReference());
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
+
+        assertThat(rdvs.findByReference(proche.getReference()).orElseThrow().getRappelEnvoyeLe()).isEqualTo(MAINTENANT);
+        assertThat(rdvs.findByReference(lointain.getReference()).orElseThrow().getRappelEnvoyeLe()).isNull();
+        taches.envoyerLesRappels();
+        verify(courriel, never()).envoyerRappelRdv(any(), argThat(d -> d.numero().equals(proche.getNumero())));
+        verify(courriel, never()).envoyerRappelRdv(any(), argThat(d -> d.numero().equals(lointain.getNumero())));
+
+        // L'horloge est figée : rapprocher le rendez-vous revient à laisser passer 46 h.
+        jdbc.update("UPDATE rdv SET debut = debut - INTERVAL '46 hours', fin = fin - INTERVAL '46 hours' WHERE id = ?",
+                lointain.getId());
+        taches.envoyerLesRappels();
+        verify(courriel, times(1)).envoyerRappelRdv(any(), argThat(d -> d.numero().equals(lointain.getNumero())));
     }
 
     // --- outillage ---------------------------------------------------------------------

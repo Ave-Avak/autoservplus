@@ -127,10 +127,13 @@ public interface RdvRepository extends JpaRepository<Rdv, Long> {
     List<Rdv> rappelsDus(@Param("maintenant") Instant maintenant, @Param("limite") Instant limite);
 
     /**
-     * Réserve le rappel avant de l'envoyer. Rend 1 au seul passage qui l'obtient : un
-     * second passage, concurrent ou repris, lit la colonne déjà remplie et rend 0.
+     * Réserve le rappel avant de l'envoyer, ou à la confirmation qui en tient lieu. Rend 1
+     * au seul passage qui l'obtient : un second passage, concurrent ou repris, lit la
+     * colonne déjà remplie et rend 0. Le contexte n'est pas vidé : la colonne n'est
+     * jamais écrite par l'entité, et une confirmation appelle cette méthode avec un
+     * rendez-vous encore attaché.
      */
-    @Modifying(flushAutomatically = true, clearAutomatically = true)
+    @Modifying(flushAutomatically = true)
     @Query(value = """
             UPDATE rdv SET rappel_envoye_le = :maintenant
             WHERE id = :id AND rappel_envoye_le IS NULL AND statut = 'CONFIRME' AND deleted_at IS NULL

@@ -322,6 +322,36 @@ class RdvTest {
     }
 
     @Nested
+    @DisplayName("confirmation dans la fenêtre du rappel")
+    class ConfirmationEtRappel {
+
+        private final Duration rappel = Duration.ofHours(24);
+
+        @Test
+        @DisplayName("confirmé moins de 24 h avant le début : la confirmation tient lieu de rappel")
+        void dansLaFenetre() {
+            Rdv rdv = rdvDe(vidange);
+            Instant maintenant = DEBUT.minus(Duration.ofHours(10));
+            rdv.confirmer(maintenant);
+
+            assertThat(rdv.confirmationTientLieuDeRappel(maintenant, rappel)).isTrue();
+            assertThat(rdv.confirmationTientLieuDeRappel(DEBUT.minus(rappel), rappel)).as("à la limite").isTrue();
+        }
+
+        @Test
+        @DisplayName("confirmé plus tôt, ou délai de rappel nul, ou demande en attente : rien")
+        void horsFenetre() {
+            Rdv rdv = rdvDe(vidange);
+            assertThat(rdv.confirmationTientLieuDeRappel(DEBUT.minus(Duration.ofHours(10)), rappel))
+                    .as("en attente").isFalse();
+
+            rdv.confirmer(AVANT_LE_DEBUT);
+            assertThat(rdv.confirmationTientLieuDeRappel(DEBUT.minus(rappel).minusSeconds(1), rappel)).isFalse();
+            assertThat(rdv.confirmationTientLieuDeRappel(DEBUT.minus(Duration.ofHours(10)), Duration.ZERO)).isFalse();
+        }
+    }
+
+    @Nested
     @DisplayName("échéance de réponse et expiration")
     class Expiration {
 

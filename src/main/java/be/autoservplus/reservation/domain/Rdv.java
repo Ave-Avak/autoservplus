@@ -189,6 +189,16 @@ public class Rdv extends BaseEntity {
     }
 
     /**
+     * Vrai si le rendez-vous, confirmé à {@code maintenant}, est déjà dans la fenêtre de
+     * son rappel : le courriel de confirmation vient d'arriver et en tient lieu, un
+     * rappel quelques minutes après le doublerait. Un délai de rappel nul ne réserve rien.
+     */
+    public boolean confirmationTientLieuDeRappel(Instant maintenant, Duration delaiRappel) {
+        return statut == StatutRdv.CONFIRME && !delaiRappel.isZero()
+                && !maintenant.isBefore(debut.minus(delaiRappel));
+    }
+
+    /**
      * Fixe l'échéance de réponse d'une demande en attente. Une seule fois : un
      * changement ultérieur des plages, des paramètres ou du mode ne la déplace pas.
      */

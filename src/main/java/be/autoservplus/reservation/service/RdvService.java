@@ -139,6 +139,10 @@ public class RdvService {
             Rdv enregistre = rdvs.saveAndFlush(rdv);
             log.info("Rendez-vous {} demande par {} sur {} de {} a {}",
                     enregistre.getNumero(), email, poste.getLibelle(), debut, fin);
+            Instant maintenant = horloge.instant();
+            if (enregistre.confirmationTientLieuDeRappel(maintenant, p.delaiRappel())) {
+                rdvs.reserverRappel(enregistre.getId(), maintenant);
+            }
             avis.nouvelleDemande(enregistre);
             return enregistre;
         } catch (DataIntegrityViolationException e) {

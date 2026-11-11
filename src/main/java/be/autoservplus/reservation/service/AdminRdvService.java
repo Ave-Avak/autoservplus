@@ -158,14 +158,19 @@ public class AdminRdvService {
     @Transactional
     public Rdv confirmer(UUID reference) {
         Rdv rdv = charger(reference);
-        rdv.confirmer(horloge.instant());
+        Instant maintenant = horloge.instant();
+        rdv.confirmer(maintenant);
         // La production du fichier d agenda est DANS le lambda absorbe par
         // notifierSansEchouer : une exception du redacteur iCalendar ne doit pas plus
         // annuler la confirmation qu une panne du fournisseur de courriel. Le
         // rendez-vous est deja confirme en base a ce point.
-        return ecrire(rdv, enregistre -> notifierSansEchouer(
-                () -> courriel.envoyerConfirmationRdv(enregistre.getMembre(),
-                        detailsPour(enregistre), agendaPour(enregistre))));
+        return ecrire(rdv, enregistre -> {
+            notifierSansEchouer(() -> courriel.envoyerConfirmationRdv(enregistre.getMembre(),
+                    detailsPour(enregistre), agendaPour(enregistre)));
+            if (enregistre.confirmationTientLieuDeRappel(maintenant, parametres.courants().delaiRappel())) {
+                rdvs.reserverRappel(enregistre.getId(), maintenant);
+            }
+        });
     }
 
     @Transactional
