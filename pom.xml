@@ -155,12 +155,20 @@
                     <includes>
                         <include>**/*Test.java</include>
                     </includes>
-                    <argLine>@{argLine} -javaagent:${mockito.agent}</argLine>
+                    <!-- Sans -Xmx, la JVM de test prend le quart de la mémoire du poste
+                         et grossit jusqu'à couper la machine. 1536 Mo laissent de la
+                         marge aux IT, dont le tas utilisé plafonne vers 1250 Mo avec
+                         quatre contextes en cache. Même valeur pour Failsafe. -->
+                    <argLine>@{argLine} -Xmx1536m -javaagent:${mockito.agent}</argLine>
                 </configuration>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-failsafe-plugin</artifactId>
+                <configuration>
+                    <!-- @{argLine} garde l'agent JaCoCo, posé par prepare-agent. -->
+                    <argLine>@{argLine} -Xmx1536m</argLine>
+                </configuration>
                 <executions>
                     <execution>
                         <goals>
