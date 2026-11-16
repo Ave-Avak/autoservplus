@@ -54,13 +54,14 @@ public abstract class SocleIntegration {
     /**
      * Conteneur unique, demarre au premier chargement de cette classe.
      *
-     * <p>{@code max_connections} est releve a 300. Le defaut de PostgreSQL est 100, et
-     * il suffisait tant que chaque contexte avait SON serveur. Ils visent desormais le
-     * meme : le cache de contexte de Spring en garde jusqu a 32, chacun avec son pool
-     * plafonne a quatre connexions (voir {@link BaseDedieeParClasse}), soit 128 au
-     * pire, plus les connexions d administration transitoires et les trois places que
-     * PostgreSQL reserve au superutilisateur. 300 laisse donc une marge de plus du
-     * double, sans consommer de memoire tant que les connexions ne sont pas ouvertes.</p>
+     * <p>{@code max_connections} est relevé à 300. Le défaut de PostgreSQL est 100, et
+     * il suffisait tant que chaque contexte avait son serveur. Ils visent désormais le
+     * même. Le cache de contexte de Spring en garde au plus quatre
+     * ({@code spring.properties} des tests), chacun avec un pool plafonné à quatre
+     * connexions (voir {@link BaseDedieeParClasse}), soit seize. Les 300 datent du
+     * défaut de 32 contextes (128 connexions au pire) et restent : un plafond plus haut
+     * ne consomme rien tant que les connexions ne sont pas ouvertes, et il couvre un
+     * retour au défaut sans toucher au conteneur.</p>
      */
     static final PostgreSQLContainer<?> POSTGRES =
             new PostgreSQLContainer<>("postgres:16-alpine")
