@@ -95,9 +95,10 @@ public class BaseDedieeParClasse implements ContextCustomizerFactory {
                             "spring.datasource.password=" + SocleIntegration.POSTGRES.getPassword(),
                             // Quatre et non dix (defaut Hikari) : les tests s executent
                             // en sequence, un contexte n a jamais besoin de dix
-                            // connexions simultanees. Mais jusqu a 32 contextes restent
-                            // en cache avec leur pool, tous sur le MEME serveur
-                            // desormais : dix chacun demanderaient 320 connexions.
+                            // connexions simultanées. Les contextes en cache gardent
+                            // leur pool, tous sur le même serveur : quatre au plus
+                            // (spring.properties des tests), 32 si ce plafond saute,
+                            // et dix connexions chacun en demanderaient alors 320.
                             "spring.datasource.hikari.maximum-pool-size=4",
                             // Hikari aligne minimum-idle sur maximum-pool-size par
                             // defaut : chaque contexte en cache retiendrait donc quatre

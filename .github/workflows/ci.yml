@@ -26,10 +26,22 @@ jobs:
         run: chmod +x ./mvnw
 
       - name: Compilation
-        run: ./mvnw -B compile
+        run: ./mvnw -B --no-transfer-progress compile
 
       - name: Tests unitaires, integration et couverture
-        run: ./mvnw -B verify
+        run: ./mvnw -B --no-transfer-progress verify
+
+      # La sortie des tests n'est plus dans la console (redirectTestOutputToFile) :
+      # sans ces rapports, un échec en CI ne laisserait rien à lire.
+      - name: Rapports de tests en cas d'échec
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: rapports-de-tests
+          path: |
+            target/surefire-reports/
+            target/failsafe-reports/
+          retention-days: 7
 
   docker-build:
     name: Construction de l'image Docker
