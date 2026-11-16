@@ -160,6 +160,9 @@
                          marge aux IT, dont le tas utilisé plafonne vers 1250 Mo avec
                          quatre contextes en cache. Même valeur pour Failsafe. -->
                     <argLine>@{argLine} -Xmx1536m -javaagent:${mockito.agent}</argLine>
+                    <!-- Sortie de chaque classe dans <Classe>-output.txt, à côté de son
+                         rapport : la console ne garde que le déroulé de Maven. -->
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
                 </configuration>
             </plugin>
             <plugin>
@@ -168,6 +171,7 @@
                 <configuration>
                     <!-- @{argLine} garde l'agent JaCoCo, posé par prepare-agent. -->
                     <argLine>@{argLine} -Xmx1536m</argLine>
+                    <redirectTestOutputToFile>true</redirectTestOutputToFile>
                 </configuration>
                 <executions>
                     <execution>
