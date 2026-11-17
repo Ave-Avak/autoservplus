@@ -1,10 +1,12 @@
 package be.autoservplus.reservation.web.dto;
 
+import be.autoservplus.reservation.domain.JoursFeries;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
@@ -46,7 +48,8 @@ public record RdvVueAdmin(
         boolean peutAnnuler,
         boolean peutMarquerHonore,
         boolean peutMarquerAbsent,
-        boolean peutDeplacer) {
+        boolean peutDeplacer,
+        boolean jourFerie) {
 
     public static RdvVueAdmin de(Rdv rdv, ZoneId zone, Instant maintenant) {
         StatutRdv s = rdv.getStatut();
@@ -74,6 +77,7 @@ public record RdvVueAdmin(
                 rdv.peutEtreAnnuleParLeGarage(maintenant),
                 rdv.peutEtreMarqueHonore(maintenant),
                 rdv.peutEtreMarqueAbsent(maintenant),
-                rdv.peutEtreModifieParLeGarage(maintenant));
+                rdv.peutEtreModifieParLeGarage(maintenant),
+                JoursFeries.estFerie(LocalDate.ofInstant(rdv.getDebut(), zone)));
     }
 }

@@ -112,7 +112,7 @@ class AdminRdvControllerTest {
                 "VW Golf (1-ABC-123)",
                 List.of("Vidange"),
                 "49,00 €", null, null,
-                true, true, true, false, false, true);
+                true, true, true, false, false, true, false);
         rdvMock = mock(Rdv.class);
         when(rdvMock.getNumero()).thenReturn("RDV-2026-0001");
     }

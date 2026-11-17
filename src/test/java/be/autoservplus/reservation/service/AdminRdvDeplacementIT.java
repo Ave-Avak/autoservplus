@@ -71,8 +71,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Déplacement d'un rendez-vous par le garage, en base réelle : sans le délai minimal ni
- * l'horizon du membre, motif obligatoire, rendez-vous confirmé à la sortie.
+ * Le calendrier vu du garage, en base réelle : déplacement d'un rendez-vous (sans le
+ * délai minimal ni l'horizon du membre, motif obligatoire, rendez-vous confirmé à la
+ * sortie) et rendez-vous tombant un jour férié, listés en tête des rendez-vous à traiter.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -266,7 +267,45 @@ class AdminRdvDeplacementIT extends SocleIntegration {
                 .isEqualTo(le(2026, 9, 19, 16, 0));
     }
 
+    @Test
+    @DisplayName("jours fériés : les rendez-vous non terminés à venir sont listés sans borne, ni annulés ni passés")
+    void rendezVousJoursFeries() throws Exception {
+        Rdv toussaint = poser("RDV-IT-FER-01", le(2026, 11, 1, 10, 0));
+        Rdv nouvelAn = poser("RDV-IT-FER-02", le(2027, 1, 1, 10, 0));
+        nouvelAn.confirmer(MAINTENANT);
+        rdvs.saveAndFlush(nouvelAn);
+        Rdv annule = poser("RDV-IT-FER-03", le(2026, 11, 11, 10, 0));
+        annule.annulerParLeMembre(MAINTENANT, Duration.ofHours(24));
+        rdvs.saveAndFlush(annule);
+        Rdv passe = new Rdv("RDV-IT-FER-04", marie, golf, pont, le(2026, 8, 15, 10, 0),
+                Duration.ofMinutes(30), List.of(vidange), null);
+        passe.confirmer(le(2026, 8, 1, 10, 0));
+        rdvs.saveAndFlush(passe);
+        poser("RDV-IT-FER-05", le(2026, 11, 2, 10, 0));
+
+        assertThat(adminRdvs.rendezVousJoursFeries())
+                .extracting(vue -> vue.numero())
+                .as("au-delà de soixante jours compris, sans l'annulé, le passé ni le jour ouvrable")
+                .containsExactly(toussaint.getNumero(), nouvelAn.getNumero());
+
+        mvc.perform(get("/admin/rendez-vous").param("lang", "fr")
+                        .with(user("admin@garage.be").roles("ADMINISTRATEUR")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Rendez-vous un jour férié")))
+                .andExpect(content().string(org.hamcrest.Matchers.containsString(toussaint.getNumero())));
+        mvc.perform(get("/admin/rendez-vous/agenda").param("du", "2026-11-01").param("au", "2026-11-02")
+                        .param("lang", "fr").with(user("admin@garage.be").roles("ADMINISTRATEUR")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Jour férié")));
+    }
+
     // --- outillage ---------------------------------------------------------------------
+
+    /** Rendez-vous écrit hors réservation : un jour férié n'est pas réservable. */
+    private Rdv poser(String numero, Instant debut) {
+        return rdvs.saveAndFlush(new Rdv(numero, marie, golf, pont, debut, Duration.ofMinutes(30),
+                List.of(vidange), null));
+    }
 
     private static Instant le(int annee, int mois, int jour, int heure, int minute) {
         return LocalDateTime.of(annee, mois, jour, heure, minute).atZone(BRUXELLES).toInstant();

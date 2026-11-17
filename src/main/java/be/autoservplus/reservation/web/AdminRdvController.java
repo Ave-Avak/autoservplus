@@ -66,6 +66,7 @@ public class AdminRdvController {
     @GetMapping
     public String liste(Model modele) {
         modele.addAttribute("titre", "Rendez-vous à traiter");
+        modele.addAttribute("rendezVousJoursFeries", adminRdvs.rendezVousJoursFeries());
         modele.addAttribute("demandesEnAttente", adminRdvs.demandesEnAttente());
         modele.addAttribute("rendezVousDuJour", adminRdvs.rendezVousDuJour());
         modele.addAttribute("rendezVousPassesSansIssue", adminRdvs.rendezVousPassesSansIssue());

@@ -59,7 +59,10 @@
             </thead>
             <tbody>
             <tr th:each="r : ${agenda.rendezVous()}">
-                <td th:text="${#temporals.format(r.debut(), 'dd/MM/yyyy')}">12/11/2026</td>
+                <td>
+                    <span th:text="${#temporals.format(r.debut(), 'dd/MM/yyyy')}">12/11/2026</span>
+                    <span th:if="${r.jourFerie()}" class="badge badge-annule" th:text="#{admin.rdv.agenda.ferie}">Jour férié</span>
+                </td>
                 <td th:text="${#temporals.format(r.debut(), 'HH:mm')} + ' - ' + ${#temporals.format(r.fin(), 'HH:mm')}">10:00 - 11:00</td>
                 <td><a th:href="@{/admin/rendez-vous/{ref}(ref=${r.reference()})}" th:text="${r.numero()}"
                        th:aria-label="#{admin.rdv.action.detail.aria(${r.numero()})}">RDV-2026-0001</a></td>

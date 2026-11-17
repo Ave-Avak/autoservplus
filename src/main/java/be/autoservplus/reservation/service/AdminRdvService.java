@@ -7,6 +7,7 @@ import be.autoservplus.communication.service.PieceJointeCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.intervention.service.InterventionService;
+import be.autoservplus.reservation.domain.JoursFeries;
 import be.autoservplus.reservation.domain.PosteAtelier;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
@@ -127,6 +128,22 @@ public class AdminRdvService {
         ZoneId zone = parametres.courants().zone();
         Instant maintenant = horloge.instant();
         return rdvs.commencesAvant(StatutRdv.CONFIRME, minuit(maintenant, zone)).stream()
+                .map(r -> RdvVueAdmin.de(r, zone, maintenant))
+                .toList();
+    }
+
+    /**
+     * Rendez-vous non terminés, d'aujourd'hui à n'importe quelle date, qui tombent un
+     * jour férié légal dans le fuseau de l'atelier. Un jour férié n'est pas un geste du
+     * garage : aucune action ne produit ce conflit, d'où une liste permanente plutôt
+     * qu'un avertissement au moment d'une modification. Le garage déplace ou annule
+     * depuis le détail. Filtrés en mémoire : les jours fériés sont calculés, pas stockés.
+     */
+    public List<RdvVueAdmin> rendezVousJoursFeries() {
+        ZoneId zone = parametres.courants().zone();
+        Instant maintenant = horloge.instant();
+        return rdvs.nonTerminesDepuis(minuit(maintenant, zone)).stream()
+                .filter(r -> JoursFeries.estFerie(LocalDate.ofInstant(r.getDebut(), zone)))
                 .map(r -> RdvVueAdmin.de(r, zone, maintenant))
                 .toList();
     }

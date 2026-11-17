@@ -174,6 +174,20 @@ public interface RdvRepository extends JpaRepository<Rdv, Long> {
     int reserverRelance(@Param("id") Long id, @Param("maintenant") Instant maintenant);
 
     /**
+     * Rendez-vous non terminés (en attente ou confirmés) à partir d'un instant, sans
+     * borne de fin, dans l'ordre chronologique. Sert à repérer ceux qu'un jour férié
+     * empêche de tenir, quelle que soit leur date.
+     */
+    @Query("""
+            SELECT r FROM Rdv r JOIN FETCH r.membre JOIN FETCH r.vehicule JOIN FETCH r.poste
+            WHERE r.statut IN (be.autoservplus.reservation.domain.StatutRdv.EN_ATTENTE,
+                               be.autoservplus.reservation.domain.StatutRdv.CONFIRME)
+              AND r.debut >= :depuis
+            ORDER BY r.debut
+            """)
+    List<Rdv> nonTerminesDepuis(@Param("depuis") Instant depuis);
+
+    /**
      * Rend le rappel et la relance de nouveau dus après un changement de créneau : ils
      * portaient sur l'ancien. Écriture explicite, les deux colonnes n'étant jamais écrites
      * par l'entité. Le contexte n'est pas vidé, sur le patron de {@link #reserverRappel}.
