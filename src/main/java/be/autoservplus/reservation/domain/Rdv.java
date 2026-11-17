@@ -88,7 +88,11 @@ public class Rdv extends BaseEntity {
     @Column(name = "rappel_envoye_le", insertable = false, updatable = false)
     private Instant rappelEnvoyeLe;
 
-    /** Calculée une fois à la création d'une demande en mode manuel, jamais recalculée. */
+    /**
+     * Calculée à la création d'une demande en mode manuel, et à nouveau seulement quand
+     * le membre en déplace le créneau ({@link #modifierParLeMembre}). Un changement des
+     * plages ou des paramètres ne la déplace pas.
+     */
     @Column(name = "echeance_reponse")
     private Instant echeanceReponse;
 
@@ -294,6 +298,94 @@ public class Rdv extends BaseEntity {
 
     public boolean peutEtreAnnuleParLeMembre(Instant maintenant, Duration delaiAnnulation) {
         return statut.estEnCours() && !maintenant.plus(delaiAnnulation).isAfter(debut);
+    }
+
+    // --- modification du créneau ------------------------------------------------------
+
+    /**
+     * Le membre déplace son rendez-vous, avec les mêmes prestations et la même durée.
+     * Mêmes conditions que l'annulation (RM-11), comptées sur l'ancien début : déplacer
+     * revient à libérer le créneau, qui doit l'être assez tôt pour être repris.
+     *
+     * <p>Le rendez-vous prend le statut qu'aurait une réservation neuve dans le mode
+     * courant de l'atelier. En confirmation automatique, il est confirmé, même s'il
+     * attendait encore une réponse. En mode manuel, il repasse en attente avec une
+     * échéance calculée pour le nouveau créneau, même s'il était confirmé : le garage
+     * n'a pas accepté ce créneau-là. C'est le seul chemin de CONFIRME vers EN_ATTENTE,
+     * d'où son absence de {@link StatutRdv#peutPasserA}, qui l'ouvrirait à toute
+     * transition.</p>
+     *
+     * @param echeance échéance de réponse du nouveau créneau, exigée en mode manuel et
+     *                 refusée en confirmation automatique
+     */
+    public void modifierParLeMembre(Instant nouveauDebut, PosteAtelier nouveauPoste, Instant maintenant,
+                                    Duration delaiAnnulation, boolean confirmationAutomatique,
+                                    Instant echeance) {
+        if (!peutEtreModifieParLeMembre(maintenant, delaiAnnulation)) {
+            throw new IllegalStateException(
+                    "La modification n'est plus possible à moins de %d heures du rendez-vous."
+                            .formatted(delaiAnnulation.toHours()));
+        }
+        if (confirmationAutomatique == (echeance != null)) {
+            throw new IllegalArgumentException(
+                    "Une échéance de réponse accompagne le mode manuel, et lui seul.");
+        }
+        deplacer(nouveauDebut, nouveauPoste, maintenant);
+        if (confirmationAutomatique) {
+            if (statut == StatutRdv.EN_ATTENTE) {
+                transitionVers(StatutRdv.CONFIRME);
+            }
+            this.echeanceReponse = null;
+        } else {
+            this.statut = StatutRdv.EN_ATTENTE;
+            this.echeanceReponse = echeance;
+        }
+    }
+
+    public boolean peutEtreModifieParLeMembre(Instant maintenant, Duration delaiAnnulation) {
+        return peutEtreAnnuleParLeMembre(maintenant, delaiAnnulation);
+    }
+
+    /**
+     * Le garage déplace un rendez-vous, motif obligatoire, sans le délai que subit le
+     * membre : c'est lui qui sait ce qu'il peut tenir. Le rendez-vous en sort confirmé,
+     * le garage ayant choisi le créneau. Plus possible une fois le début passé, comme
+     * l'annulation : l'issue est alors honoré ou absent.
+     *
+     * <p>Le motif n'est pas conservé sur le rendez-vous. {@code motifRefus} le
+     * présenterait comme la raison d'un refus ou d'une annulation. Il part dans le
+     * courriel au membre et au journal.</p>
+     */
+    public void modifierParLeGarage(Instant nouveauDebut, PosteAtelier nouveauPoste, String motif,
+                                    Instant maintenant) {
+        if (motif == null || motif.isBlank()) {
+            throw new IllegalArgumentException("Une modification par le garage doit être motivée.");
+        }
+        if (!peutEtreModifieParLeGarage(maintenant)) {
+            throw new IllegalStateException(
+                    "Un rendez-vous terminé ou déjà commencé ne peut plus être déplacé.");
+        }
+        deplacer(nouveauDebut, nouveauPoste, maintenant);
+        if (statut == StatutRdv.EN_ATTENTE) {
+            transitionVers(StatutRdv.CONFIRME);
+        }
+    }
+
+    public boolean peutEtreModifieParLeGarage(Instant maintenant) {
+        return statut.estEnCours() && debut.isAfter(maintenant);
+    }
+
+    /** Même durée sur le nouveau créneau : les prestations ne changent pas. */
+    private void deplacer(Instant nouveauDebut, PosteAtelier nouveauPoste, Instant maintenant) {
+        Objects.requireNonNull(nouveauDebut, "nouveauDebut");
+        Objects.requireNonNull(nouveauPoste, "nouveauPoste");
+        if (!nouveauDebut.isAfter(maintenant)) {
+            throw new IllegalArgumentException("Le nouveau créneau doit commencer après maintenant.");
+        }
+        Duration duree = duree();
+        this.debut = nouveauDebut;
+        this.fin = nouveauDebut.plus(duree);
+        this.poste = nouveauPoste;
     }
 
     private void transitionVers(StatutRdv cible) {
