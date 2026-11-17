@@ -94,7 +94,12 @@ class CommandeServiceTest {
 
     private void conversionPossible() {
         when(numeros.prochain()).thenReturn("CMD-2026-0001");
-        when(commandes.saveAndFlush(any(Commande.class))).thenAnswer(inv -> inv.getArgument(0));
+        // L'identifiant est celui que la base attribuerait : la preuve s'y rattache.
+        when(commandes.saveAndFlush(any(Commande.class))).thenAnswer(inv -> {
+            Commande enregistree = inv.getArgument(0);
+            org.springframework.test.util.ReflectionTestUtils.setField(enregistree, "id", 42L);
+            return enregistree;
+        });
         // Depuis F24 la version figee sur la preuve est resolue en base et non lue sur une
         // constante. lenient : les paniers de pieces ne posent pas la question VI.53, donc
         // la seconde resolution n est pas toujours atteinte.
@@ -187,6 +192,8 @@ class CommandeServiceTest {
             assertThat(preuve.isAccorde()).isTrue();
             assertThat(preuve.getAdresseIp()).isEqualTo(IP);
             assertThat(preuve.getDateConsentement()).isEqualTo(MAINTENANT);
+            // La preuve désigne la commande pour laquelle elle est donnée (V52).
+            assertThat(preuve.getCommandeId()).isEqualTo(42L);
         }
     }
 

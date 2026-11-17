@@ -110,6 +110,11 @@ class RenonciationVi53IT extends SocleIntegration {
             assertThat(nombreDePreuves(true))
                     .as("et la PREUVE horodatee vit dans consentement, comme les CGV")
                     .isEqualTo(1);
+            // Les deux preuves, CGV et renonciation, désignent cette commande (V52).
+            assertThat(jdbc.queryForList(
+                    "SELECT type_document FROM consentement WHERE commande_id = ? ORDER BY type_document",
+                    String.class, commande.getId()))
+                    .containsExactly("CGV", "RENONCIATION_RETRACTATION");
         }
 
         @Test

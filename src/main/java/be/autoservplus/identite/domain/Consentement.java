@@ -75,6 +75,14 @@ public class Consentement {
     @Column(name = "adresse_ip", length = 45, updatable = false)
     private String adresseIp;
 
+    /**
+     * Commande pour laquelle les CGV ont été acceptées ou la renonciation décidée (V52),
+     * nulle pour les cookies. Un identifiant et non une relation : le consentement relève
+     * de l'identité, qui n'a pas à dépendre du module de vente.
+     */
+    @Column(name = "commande_id", updatable = false)
+    private Long commandeId;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -139,7 +147,21 @@ public class Consentement {
                 adresseIp, dateConsentement);
     }
 
+    /**
+     * Rattache le consentement à la commande pour laquelle il est donné, avant son
+     * enregistrement. Le lien est une preuve : il ne se pose qu'une fois et ne change
+     * plus, comme le reste de la ligne.
+     */
+    public Consentement pourLaCommande(Long idCommande) {
+        if (this.commandeId != null) {
+            throw new IllegalStateException("Le consentement est déjà rattaché à une commande.");
+        }
+        this.commandeId = Objects.requireNonNull(idCommande, "idCommande");
+        return this;
+    }
+
     public Long getId() { return id; }
+    public Long getCommandeId() { return commandeId; }
     public Utilisateur getUtilisateur() { return utilisateur; }
     public TypeDocumentConsentement getTypeDocument() { return typeDocument; }
     public String getVersionAcceptee() { return versionAcceptee; }
