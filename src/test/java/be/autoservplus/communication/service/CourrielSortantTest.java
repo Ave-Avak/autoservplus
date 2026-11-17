@@ -151,6 +151,18 @@ class CourrielSortantTest {
     }
 
     @Test
+    @DisplayName("le reçu de paiement n'annonce aucun avis « commande prête », qui n'existe pas")
+    void recuSansPromesseNonTenue() {
+        courriel.envoyerConfirmationPaiement(new DetailsPaiementCourriel("marie@exemple.be",
+                "Marie", Langue.fr, "CMD-2026-0007", "80,21 €"));
+
+        assertThat(partis.get(0).corps())
+                .contains("Votre paiement de 80,21 € pour la commande CMD-2026-0007 est bien reçu. "
+                        + "Le garage prépare votre commande.")
+                .doesNotContain("prévenu");
+    }
+
+    @Test
     @DisplayName("l'avis au garage d'une commande payée dit ce qu'elle porte, et la rupture à honorer")
     void avisCommandeAuGarage() {
         courriel.envoyerAvisCommandeAuGarage(
