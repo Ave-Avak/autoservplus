@@ -95,6 +95,15 @@ public interface ServiceCourriel {
     void envoyerModificationRdvEnAttente(Utilisateur destinataire, DetailsRdvCourriel ancien,
                                          DetailsRdvCourriel nouveau, ZonedDateTime echeance);
 
+    /**
+     * Le garage a déplacé le rendez-vous, désormais confirmé, avec son motif et son
+     * téléphone : à moins de 24 heures, le membre ne peut plus l'annuler en ligne.
+     * Porte le fichier d'agenda, sauf si sa rédaction a échoué ({@code agenda} nul).
+     */
+    void envoyerModificationParLeGarage(Utilisateur destinataire, DetailsRdvCourriel ancien,
+                                        DetailsRdvCourriel nouveau, String motif, String telephone,
+                                        PieceJointeCourriel agenda);
+
     /** Avis au garage d'un rendez-vous déplacé par le membre, comme l'avis d'une nouvelle demande. */
     void envoyerAvisModificationAuGarage(DetailsRdvCourriel ancien, DetailsRdvCourriel nouveau,
                                          String membre, boolean confirme, String cheminDetail);

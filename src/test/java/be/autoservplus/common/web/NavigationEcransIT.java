@@ -184,6 +184,9 @@ class NavigationEcransIT extends SocleIntegration {
             variable("/admin/rendez-vous/{reference}", Acces.BACK_OFFICE),
             variable("/admin/rendez-vous/{reference}/refuser", Acces.BACK_OFFICE),
             variable("/admin/rendez-vous/{reference}/annuler", Acces.BACK_OFFICE),
+            variable("/admin/rendez-vous/{reference}/modifier", Acces.BACK_OFFICE),
+            new Route("/admin/rendez-vous/{reference}/modifier/creneaux",
+                    "/admin/rendez-vous/" + REF + "/modifier/creneaux?date=2026-01-05", Acces.BACK_OFFICE, false, 404),
             ecran("/admin/interventions", Acces.BACK_OFFICE),
             // Reference inconnue : retour a la liste, avec message.
             new Route("/admin/interventions/{reference}", "/admin/interventions/" + REF,

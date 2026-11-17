@@ -243,6 +243,22 @@ public class CourrielSortant implements ServiceCourriel {
     }
 
     @Override
+    public void envoyerModificationParLeGarage(Utilisateur destinataire, DetailsRdvCourriel ancien,
+                                               DetailsRdvCourriel nouveau, String motif, String telephone,
+                                               PieceJointeCourriel agenda) {
+        Locale langue = langue(destinataire.getLangue());
+        String corps = corps("rdv-deplace-garage", langue, nouveau.numero(),
+                jour(ancien.debut(), langue, "EEEE d MMMM yyyy"), heure(ancien.debut()),
+                jour(nouveau.debut(), langue, "EEEE d MMMM yyyy"), heure(nouveau.debut()),
+                motif, telephone == null ? "" : telephone);
+        if (agenda != null) {
+            corps = corps + "\n" + texte("courriel.rdv-confirme.agenda", langue);
+        }
+        partir("rdv-deplace-garage", destinataire.getEmail(), destinataire.nomComplet(),
+                destinataire.getPrenom(), langue, corps, agenda);
+    }
+
+    @Override
     public void envoyerAvisModificationAuGarage(DetailsRdvCourriel ancien, DetailsRdvCourriel nouveau,
                                                 String membre, boolean confirme, String cheminDetail) {
         Locale langue = Locale.FRENCH;

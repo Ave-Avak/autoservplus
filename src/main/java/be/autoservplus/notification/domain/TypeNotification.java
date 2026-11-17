@@ -39,7 +39,9 @@ public enum TypeNotification {
     /** Demande restée sans réponse à son échéance, adressée au membre. */
     RDV_EXPIRE,
     /** Rendez-vous déplacé par le membre, adressé à chaque administrateur actif. */
-    RDV_MODIFIE;
+    RDV_MODIFIE,
+    /** Rendez-vous déplacé par le garage, adressé au membre. */
+    RDV_DEPLACE;
 
     /** Cle i18n du titre affiche. */
     public String cleTitre() {

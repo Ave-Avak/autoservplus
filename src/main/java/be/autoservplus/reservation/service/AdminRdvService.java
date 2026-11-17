@@ -5,17 +5,23 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsRdvCourriel;
 import be.autoservplus.communication.service.PieceJointeCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.intervention.service.InterventionService;
+import be.autoservplus.reservation.domain.PosteAtelier;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
 import be.autoservplus.reservation.service.dto.AgendaAdmin;
+import be.autoservplus.reservation.service.support.FormatageRdv;
+import be.autoservplus.reservation.web.dto.CreneauVue;
 import be.autoservplus.reservation.service.dto.FichierAgenda;
 import be.autoservplus.reservation.web.dto.RdvVueAdmin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.dao.DataAccessException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -67,12 +73,15 @@ public class AdminRdvService {
     private final InterventionService interventions;
     private final ExportAgendaService exportAgenda;
     private final ApplicationEventPublisher evenements;
+    private final DisponibiliteService disponibilites;
+    private final IdentiteGarage garage;
     private final Clock horloge;
 
     public AdminRdvService(RdvRepository rdvs, ParametreAtelierRepository parametres,
                            ServiceCourriel courriel, InterventionService interventions,
                            ExportAgendaService exportAgenda,
                            ApplicationEventPublisher evenements,
+                           DisponibiliteService disponibilites, IdentiteGarage garage,
                            Clock horloge) {
         this.rdvs = rdvs;
         this.parametres = parametres;
@@ -80,6 +89,8 @@ public class AdminRdvService {
         this.interventions = interventions;
         this.exportAgenda = exportAgenda;
         this.evenements = evenements;
+        this.disponibilites = disponibilites;
+        this.garage = garage;
         this.horloge = horloge;
     }
 
@@ -207,6 +218,96 @@ public class AdminRdvService {
         return ecrire(rdv, ignore -> { /* cloture interne, pas de notification */ });
     }
 
+    // --- déplacement par le garage -------------------------------------------------
+
+    /**
+     * Le garage déplace un rendez-vous, motif obligatoire. Le nouveau créneau suit les
+     * plages, les jours fériés, les indisponibilités et la contrainte d'exclusion, sans le
+     * délai minimal, l'horizon ni le temps de réponse qui protègent l'atelier contre une
+     * demande du membre. Le rendez-vous en sort confirmé, modifié en place.
+     *
+     * <p>{@code versionLue} est la version affichée à l'administrateur : un écart dit
+     * qu'un autre geste a modifié le rendez-vous depuis l'ouverture de la page.</p>
+     */
+    @Transactional
+    public Rdv deplacer(UUID reference, Instant nouveauDebut, String motif, long versionLue) {
+        Rdv rdv = charger(reference);
+        if (rdv.getVersion() != versionLue) {
+            throw new ConflitConcurrenceException(
+                    "Ce rendez-vous a été mis à jour entre-temps, rechargez la page.");
+        }
+        Instant maintenant = horloge.instant();
+        Instant fin = nouveauDebut.plus(rdv.duree());
+        if (!disponibilites.estReservable(nouveauDebut, fin, ReglesDeCreneau.GARAGE)) {
+            throw new CreneauIndisponibleException("Ce créneau n'est pas ouvert.");
+        }
+        PosteAtelier poste = disponibilites.premierPosteLibre(nouveauDebut, fin, rdv)
+                .orElseThrow(() -> new CreneauIndisponibleException("Aucun poste libre sur ce créneau."));
+
+        Instant ancienDebut = rdv.getDebut();
+        rdv.modifierParLeGarage(nouveauDebut, poste, motif, maintenant);
+        Rdv enregistre = ecrireDeplacement(rdv, enregistreRdv -> {
+            // Le rappel et la relance portaient sur l'ancien créneau.
+            rdvs.remettreRappelEtRelanceAZero(enregistreRdv.getId());
+            if (enregistreRdv.confirmationTientLieuDeRappel(maintenant, parametres.courants().delaiRappel())) {
+                rdvs.reserverRappel(enregistreRdv.getId(), maintenant);
+            }
+            ZoneId zone = parametres.courants().zone();
+            DetailsRdvCourriel ancien = new DetailsRdvCourriel(enregistreRdv.getNumero(), ancienDebut.atZone(zone));
+            notifierSansEchouer(() -> courriel.envoyerModificationParLeGarage(enregistreRdv.getMembre(),
+                    ancien, detailsPour(enregistreRdv), motif.trim(), garage.telephone(),
+                    agendaPour(enregistreRdv)));
+        });
+        log.info("Rendez-vous {} deplace par le garage de {} a {}, poste {}, motif : {}",
+                enregistre.getNumero(), ancienDebut, nouveauDebut, poste.getLibelle(), motif.trim());
+        return enregistre;
+    }
+
+    /**
+     * Écrit le déplacement par le chemin commun des transitions, et traduit en créneau
+     * pris les deux issues par lesquelles PostgreSQL écarte un recoupement concurrent.
+     */
+    private Rdv ecrireDeplacement(Rdv rdv, Consumer<Rdv> apresEcriture) {
+        try {
+            return ecrire(rdv, apresEcriture, new RdvDeplaceEvent(rdv.getReference()));
+        } catch (DataIntegrityViolationException e) {
+            if (!EtatSql.estUneExclusion(e)) {
+                throw e;
+            }
+            throw new CreneauIndisponibleException("Ce créneau vient d'être pris. Choisissez-en un autre.", e);
+        } catch (DataAccessException e) {
+            if (!EtatSql.estUnInterblocage(e)) {
+                throw e;
+            }
+            throw new CreneauIndisponibleException("Ce créneau vient d'être pris. Choisissez-en un autre.", e);
+        }
+    }
+
+    /** Heures où le garage peut déplacer le rendez-vous un jour donné, sur sa durée exacte. */
+    public List<CreneauVue> creneauxPourDeplacer(UUID reference, LocalDate jour) {
+        Rdv rdv = charger(reference);
+        if (jour == null) {
+            return List.of();
+        }
+        ZoneId zone = parametres.courants().zone();
+        return disponibilites.creneauxPourDeplacer(rdv, jour, ReglesDeCreneau.GARAGE).stream()
+                .map(c -> new CreneauVue(
+                        c.debut().toString(),
+                        FormatageRdv.heureLisible(c.debut(), zone) + " - " + FormatageRdv.heureLisible(c.fin(), zone),
+                        c.postesLibres()))
+                .toList();
+    }
+
+    /** Version du rendez-vous, renvoyée par le formulaire de déplacement. */
+    public long version(UUID reference) {
+        return charger(reference).getVersion();
+    }
+
+    /** Jour proposé à l'ouverture de l'écran : celui du rendez-vous, s'il est à venir. */
+    public LocalDate aujourdhui() {
+        return LocalDate.ofInstant(horloge.instant(), parametres.courants().zone());
+    }
+
     // --- helpers privees --------------------------------------------------------------
 
     private static Instant minuit(Instant maintenant, ZoneId zone) {
@@ -229,12 +330,20 @@ public class AdminRdvService {
      * penser : l oubli n est pas possible. L evenement part meme si le courriel a
      * echoue : les deux canaux sont independants, et {@code notifierSansEchouer} a deja
      * absorbe l echec avant ce point.</p>
+     *
+     * <p>Seul le déplacement publie un autre événement, {@link RdvDeplaceEvent} : il
+     * laisse le rendez-vous confirmé, et l'événement de statut annoncerait au membre
+     * une confirmation au lieu d'un déplacement.</p>
      */
     private Rdv ecrire(Rdv rdv, Consumer<Rdv> apresEcriture) {
+        return ecrire(rdv, apresEcriture, new RdvStatutModifieEvent(rdv.getReference()));
+    }
+
+    private Rdv ecrire(Rdv rdv, Consumer<Rdv> apresEcriture, Object evenement) {
         try {
             Rdv enregistre = rdvs.saveAndFlush(rdv);
             apresEcriture.accept(enregistre);
-            evenements.publishEvent(new RdvStatutModifieEvent(enregistre.getReference()));
+            evenements.publishEvent(evenement);
             return enregistre;
         } catch (OptimisticLockingFailureException e) {
             throw new ConflitConcurrenceException(

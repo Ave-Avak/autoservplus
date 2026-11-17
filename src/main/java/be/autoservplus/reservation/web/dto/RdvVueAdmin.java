@@ -45,7 +45,8 @@ public record RdvVueAdmin(
         boolean peutRefuser,
         boolean peutAnnuler,
         boolean peutMarquerHonore,
-        boolean peutMarquerAbsent) {
+        boolean peutMarquerAbsent,
+        boolean peutDeplacer) {
 
     public static RdvVueAdmin de(Rdv rdv, ZoneId zone, Instant maintenant) {
         StatutRdv s = rdv.getStatut();
@@ -72,6 +73,7 @@ public record RdvVueAdmin(
                 s.peutPasserA(StatutRdv.REFUSE),
                 rdv.peutEtreAnnuleParLeGarage(maintenant),
                 rdv.peutEtreMarqueHonore(maintenant),
-                rdv.peutEtreMarqueAbsent(maintenant));
+                rdv.peutEtreMarqueAbsent(maintenant),
+                rdv.peutEtreModifieParLeGarage(maintenant));
     }
 }
