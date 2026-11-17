@@ -133,15 +133,21 @@ body {
 .menu-back-office a[aria-current="page"],
 .menu a[aria-current="page"] { font-weight: 700; text-decoration: underline; }
 
+/* Bouton presente comme un lien. Dans le contenu, couleur des liens du contenu :
+   --bleu-secondaire, 4.84:1 sur blanc, 4.63:1 sur --gris-50. Le blanc ne vaut que dans
+   l'en-tete, sur le marine (11.62:1) : applique partout, il rendait le bouton invisible
+   sur une page blanche. .texte-erreur, de meme specificite et declaree plus bas,
+   l'emporte sur la couleur du contenu. */
 .lien-bouton {
     background: none;
     border: none;
-    color: var(--blanc);
+    color: var(--bleu-secondaire);
     font: inherit;
     cursor: pointer;
     padding: 0;
     text-decoration: underline;
 }
+.entete .lien-bouton { color: var(--blanc); }
 
 main {
     max-width: 1100px;
