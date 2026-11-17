@@ -26,30 +26,41 @@
 
     <p th:text="#{commande.confirmation.total(${commande.totalTvac()})}">Montant à régler : 80,21 €</p>
 
-    <!-- Sans objet une fois la commande payee : ce texte annonce l'attente. -->
-    <p th:if="${commande.enAttenteDePaiement()}" th:text="#{commande.confirmation.paiement}">
+    <!--/* Sans objet une fois la commande payee : ce texte annonce l'attente. */-->
+    <p th:if="${commande.aPayer()}" th:text="#{commande.confirmation.paiement}">
         Votre commande sera préparée dès réception du paiement.
     </p>
+    <!--/* Paiement en cours de traitement chez le prestataire : aucun bouton, le
+           paiement sera constaté sans action du membre. */-->
+    <p th:if="${commande.paiementEnCours()}" role="status" th:text="#{commande.paiement.en-cours}">
+        Un paiement de cette commande est en cours de traitement chez le prestataire.
+    </p>
+    <p th:if="${commande.paiementEchoue()}" role="status" th:text="#{commande.paiement.echec}">
+        Votre paiement a échoué. Vous pouvez réessayer.
+    </p>
 
-    <!--
-      Le bouton de paiement ne s'affiche QUE tant que la commande en attend un. Cette
-      page est desormais le point de chute du retour de paiement : proposer « Procéder
-      au paiement » a un membre qui vient de payer serait au mieux deroutant, au pire
-      une seconde tentative. Le POST part vers la passerelle : page simulee si aucun
-      prestataire n'est configure, Mollie sinon (frontiere MollieGateway).
-    -->
-    <form th:if="${commande.enAttenteDePaiement()}"
+    <!--/*
+      Le bouton de paiement ne s'affiche QUE tant que la commande en attend un et
+      qu'aucune tentative n'est en cours de traitement. Cette page est le point de chute
+      du retour de paiement : proposer « Procéder au paiement » a un membre qui vient de
+      payer serait une seconde tentative. Le POST part vers la passerelle : page simulee
+      si aucun prestataire n'est configure, Mollie sinon (frontiere MollieGateway).
+    */-->
+    <form th:if="${commande.peutEtrePayee()}"
           th:action="@{/commande/{ref}/payer(ref=${commande.reference()})}" method="post">
         <p class="actions-page">
-            <button type="submit" class="btn-cta" th:text="#{commande.payer}">Procéder au paiement</button>
-            <!-- Une fois payee, la facture se telecharge depuis l'historique : elle
-                 doit rester atteignable des annees apres l'achat, pas seulement ici. -->
+            <button type="submit" class="btn-cta" th:if="${commande.aPayer()}"
+                    th:text="#{commande.payer}">Procéder au paiement</button>
+            <button type="submit" class="btn-cta" th:if="${commande.paiementEchoue()}"
+                    th:text="#{commande.payer.reessayer}">Réessayer le paiement</button>
+            <!--/* Une fois payee, la facture se telecharge depuis l'historique : elle
+                   doit rester atteignable des annees apres l'achat, pas seulement ici. */-->
             <a th:href="@{/commandes}" th:text="#{commandes.nav}">Mes commandes</a>
             <a th:href="@{/pieces}" th:text="#{panier.continuer}">Continuer mes achats</a>
         </p>
     </form>
 
-    <p class="actions-page" th:unless="${commande.enAttenteDePaiement()}">
+    <p class="actions-page" th:unless="${commande.peutEtrePayee()}">
         <a class="btn-cta" th:href="@{/commandes}" th:text="#{commandes.nav}">Mes commandes</a>
         <a th:href="@{/pieces}" th:text="#{panier.continuer}">Continuer mes achats</a>
     </p>

@@ -1,6 +1,7 @@
 package be.autoservplus.vente.web;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.vente.domain.SituationPaiement;
 import be.autoservplus.vente.service.CgvNonAccepteesException;
 import be.autoservplus.vente.service.CommandeService;
 import be.autoservplus.vente.service.DepartPaiement;
@@ -125,7 +126,7 @@ class CommandeControllerTest {
     @WithMockUser(username = "marie@exemple.be")
     @DisplayName("POST avec CGV cochees : delegation (identite, case, IP) puis PRG vers la confirmation")
     void validationNominale() throws Exception {
-        doReturn(new ConfirmationCommandeVue(REF, "CMD-2026-0001", "80,21 €", true))
+        doReturn(new ConfirmationCommandeVue(REF, "CMD-2026-0001", "80,21 €", SituationPaiement.A_PAYER))
                 .when(service).passerCommande("marie@exemple.be", true, false, "127.0.0.1");
 
         mvc.perform(post("/commande").with(csrf()).param("cgv", "true"))
@@ -214,7 +215,7 @@ class CommandeControllerTest {
     @WithMockUser(username = "marie@exemple.be")
     @DisplayName("GET retour : commande payee, message de succes")
     void retourPaye() throws Exception {
-        doReturn(true).when(paiements).constaterRetour(REF, "marie@exemple.be");
+        doReturn(SituationPaiement.PAYEE).when(paiements).constaterRetour(REF, "marie@exemple.be");
 
         mvc.perform(get("/commande/{ref}/retour", REF))
                 .andExpect(status().is3xxRedirection())
@@ -228,7 +229,7 @@ class CommandeControllerTest {
     void retourNonAbouti() throws Exception {
         // Le retour survient aussi apres un abandon, et un paiement peut encore
         // aboutir plus tard (virement). Annoncer un echec pousserait a payer deux fois.
-        doReturn(false).when(paiements).constaterRetour(REF, "marie@exemple.be");
+        doReturn(SituationPaiement.A_PAYER).when(paiements).constaterRetour(REF, "marie@exemple.be");
 
         mvc.perform(get("/commande/{ref}/retour", REF))
                 .andExpect(status().is3xxRedirection())
@@ -236,11 +237,24 @@ class CommandeControllerTest {
                 .andExpect(flash().attributeCount(1));
     }
 
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({"EN_COURS", "ECHOUE"})
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("GET retour : paiement en cours ou échoué, aucun message d'invitation, la page le dit")
+    void retourEnCoursOuEchoue(SituationPaiement situation) throws Exception {
+        doReturn(situation).when(paiements).constaterRetour(REF, "marie@exemple.be");
+
+        mvc.perform(get("/commande/{ref}/retour", REF))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/commande/" + REF + "/confirmation"))
+                .andExpect(flash().attributeCount(0));
+    }
+
     @Test
     @WithMockUser(username = "marie@exemple.be")
     @DisplayName("GET confirmation rend la vue du proprietaire")
     void confirmation() throws Exception {
-        doReturn(new ConfirmationCommandeVue(REF, "CMD-2026-0001", "80,21 €", true))
+        doReturn(new ConfirmationCommandeVue(REF, "CMD-2026-0001", "80,21 €", SituationPaiement.A_PAYER))
                 .when(service).confirmation(REF, "marie@exemple.be");
 
         mvc.perform(get("/commande/{ref}/confirmation", REF))

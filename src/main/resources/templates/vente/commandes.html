@@ -100,11 +100,19 @@
                              aria-label, la liste des boutons d'une page annoncerait
                              autant de « Procéder au paiement » indistinguables. Le
                              libellé visible est complété, jamais remplacé (WCAG 2.5.3). -->
-                        <button type="submit" class="btn-cta"
+                        <span th:if="${commande.paiementEchoue()}" class="carte-meta"
+                              th:text="#{commandes.paiement.echoue}">Paiement échoué</span>
+                        <button type="submit" class="btn-cta" th:unless="${commande.paiementEchoue()}"
                                 th:aria-label="#{commande.payer.aria(${commande.numero()})}"
                                 th:text="#{commande.payer}">Procéder au paiement</button>
+                        <button type="submit" class="btn-cta" th:if="${commande.paiementEchoue()}"
+                                th:aria-label="#{commande.payer.reessayer.aria(${commande.numero()})}"
+                                th:text="#{commande.payer.reessayer}">Réessayer le paiement</button>
                     </form>
-                    <span th:unless="${commande.peutEtrePayee()}" class="carte-meta"
+                    <span th:if="${commande.paiementEnCours()}" class="carte-meta"
+                          th:text="#{commandes.paiement.en-cours}">Paiement en cours de traitement</span>
+                    <span th:unless="${commande.peutEtrePayee() or commande.paiementEnCours()}"
+                          class="carte-meta"
                           th:text="#{commandes.paiement.aucun}">Aucun paiement attendu</span>
                 </td>
             </tr>

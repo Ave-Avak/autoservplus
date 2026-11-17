@@ -4,6 +4,7 @@ import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.facturation.service.dto.FactureVue;
 import be.autoservplus.retractation.service.RetractationService;
 import be.autoservplus.retractation.service.dto.RetractationVue;
+import be.autoservplus.vente.domain.SituationPaiement;
 import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.vente.service.CommandeService;
 import be.autoservplus.vente.service.PanierService;
@@ -61,7 +62,7 @@ class HistoriqueCommandeControllerTest {
 
     private static CommandeHistoriqueVue ligne(UUID reference, String numero, StatutCommande statut) {
         return new CommandeHistoriqueVue(reference, numero, "22 août 2026", "48,38 €",
-                statut, null, null);
+                statut, SituationPaiement.de(statut, null), null, null);
     }
 
     @Test

@@ -6,6 +6,7 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Paiement;
+import be.autoservplus.vente.domain.SituationPaiement;
 import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.repository.CommandeRepository;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -240,8 +242,9 @@ public class PaiementService {
     // --- retour du membre depuis la page du prestataire --------------------------------
 
     /**
-     * Constate l issue du paiement au retour du membre, et rend {@code true} si la
-     * commande est payee a l issue de ce constat.
+     * Constate l issue du paiement au retour du membre, et rend la situation du
+     * paiement a l issue de ce constat : payee, en cours de traitement, echouee, ou
+     * encore a payer apres un abandon.
      *
      * <p><b>Le retour n est PAS une preuve de paiement</b>, et rien ici ne le traite
      * comme tel. Le prestataire y renvoie le membre quelle que soit l issue (y compris
@@ -270,10 +273,10 @@ public class PaiementService {
      */
     @Transactional
     @PreAuthorize("isAuthenticated()")
-    public boolean constaterRetour(UUID referenceCommande, String email) {
+    public SituationPaiement constaterRetour(UUID referenceCommande, String email) {
         Commande commande = commandeDuMembre(referenceCommande, email);
-        paiements.findFirstByCommandeOrderByDateInitiationDescIdDesc(commande)
-                .map(Paiement::getReferenceMollie)
+        Optional<Paiement> derniere = paiements.findFirstByCommandeOrderByDateInitiationDescIdDesc(commande);
+        derniere.map(Paiement::getReferenceMollie)
                 // Une tentative sans reference prestataire n a jamais quitte le site :
                 // il n y a rien a relire chez lui.
                 .filter(reference -> reference != null && !reference.isBlank())
@@ -283,7 +286,10 @@ public class PaiementService {
                                         + "le prestataire = aucun, aucune tentative n a quitte "
                                         + "le site.",
                                 commande.getNumero()));
-        return commande.getStatut() == StatutCommande.PAYEE;
+        // La commande et la tentative sont les entités gérées que la relecture vient de
+        // faire évoluer : leurs statuts sont ceux qu'elle a constatés.
+        return SituationPaiement.de(commande.getStatut(),
+                derniere.map(Paiement::getStatut).orElse(null));
     }
 
     /**

@@ -211,6 +211,68 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
                 .isEqualTo(StatutCommande.EN_ATTENTE_PAIEMENT);
     }
 
+    @org.junit.jupiter.params.ParameterizedTest(name = "{0}")
+    @org.junit.jupiter.params.provider.CsvSource(delimiter = '|', value = {
+            "fr | Un paiement de cette commande est en cours de traitement chez le prestataire | Paiement en cours de traitement",
+            "nl | Een betaling van deze bestelling wordt bij de betaaldienst verwerkt | Betaling in verwerking",
+            "en | A payment for this order is being processed by the payment provider | Payment being processed"
+    })
+    @DisplayName("paiement en cours : confirmation, liste et détail le disent, sans bouton ni invitation à reprendre")
+    void ecransPaiementEnCours(String langue, String phrase, String mention) throws Exception {
+        UUID reference = commander();
+        String urlPaiement = urlDePaiement(reference);
+        mvc.perform(post(urlPaiement).with(csrf()).param("issue", "ATTENTE"))
+                .andExpect(status().is3xxRedirection());
+        mvc.perform(get("/commande/{ref}/retour", reference))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .flash().attributeCount(0));
+
+        mvc.perform(get("/commande/{ref}/confirmation", reference).param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(phrase)))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        containsString("/commande/" + reference + "/payer"))));
+        mvc.perform(get("/commandes").param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(mention)))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        containsString("/commande/" + reference + "/payer"))));
+        mvc.perform(get("/commandes/{ref}", reference).param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(phrase)))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        containsString("/commande/" + reference + "/payer"))));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest(name = "{0}")
+    @org.junit.jupiter.params.provider.CsvSource(delimiter = '|', value = {
+            "fr | Votre paiement a échoué. Vous pouvez réessayer. | Paiement échoué | Réessayer le paiement",
+            "nl | Uw betaling is mislukt. U kunt het opnieuw proberen. | Betaling mislukt | Betaling opnieuw proberen",
+            "en | Your payment failed. You can try again. | Payment failed | Retry payment"
+    })
+    @DisplayName("paiement échoué : confirmation, liste et détail le disent et proposent de réessayer")
+    void ecransPaiementEchoue(String langue, String phrase, String mention, String bouton) throws Exception {
+        UUID reference = commander();
+        String urlPaiement = urlDePaiement(reference);
+        mvc.perform(post(urlPaiement).with(csrf()).param("issue", "ECHEC"))
+                .andExpect(status().is3xxRedirection());
+
+        mvc.perform(get("/commande/{ref}/confirmation", reference).param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(phrase)))
+                .andExpect(content().string(containsString(bouton)))
+                .andExpect(content().string(containsString("/commande/" + reference + "/payer")));
+        mvc.perform(get("/commandes").param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(mention)))
+                .andExpect(content().string(containsString(bouton)));
+        mvc.perform(get("/commandes/{ref}", reference).param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(phrase)))
+                .andExpect(content().string(containsString(bouton)))
+                .andExpect(content().string(containsString("/commande/" + reference + "/payer")));
+    }
+
     @Test
     @DisplayName("reprise apres un echec : une nouvelle tentative, une autre page")
     void repriseApresEchec() throws Exception {

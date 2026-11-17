@@ -4,6 +4,7 @@ import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Paiement;
+import be.autoservplus.vente.domain.SituationPaiement;
 import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.vente.domain.StatutPaiement;
 
@@ -43,6 +44,7 @@ public record CommandeDetailVue(
         String methodePaiement,
         String datePaiement,
         StatutPaiement statutPaiement,
+        SituationPaiement situation,
         UUID referenceFacture,
         String numeroFacture) {
 
@@ -78,9 +80,13 @@ public record CommandeDetailVue(
      * @param paiement paiement abouti de la commande, ou {@code null} si elle n a
      *                 jamais ete payee : l ecran affiche alors son statut, pas un
      *                 moyen de paiement fabrique
+     * @param situation situation du paiement, qui decide de la demarche de paiement
+     *                  proposee : payer, reessayer apres un echec, ou rien tant
+     *                  qu une tentative est en cours de traitement
      */
     public static CommandeDetailVue de(Commande commande, List<LignePanier> lignes,
-                                       Paiement paiement, ZoneId zone) {
+                                       Paiement paiement, SituationPaiement situation,
+                                       ZoneId zone) {
         return new CommandeDetailVue(
                 commande.getReference(),
                 commande.getNumero(),
@@ -94,22 +100,23 @@ public record CommandeDetailVue(
                 paiement == null || paiement.getDateFinalisation() == null
                         ? null
                         : FormatageRdv.jourLisible(paiement.getDateFinalisation(), zone),
-                paiement == null ? null : paiement.getStatut());
+                paiement == null ? null : paiement.getStatut(),
+                situation);
     }
 
     private CommandeDetailVue(UUID reference, String numero, String date, StatutCommande statut,
                               List<LigneVue> lignes, String totalHtva, String totalTva,
                               String totalTvac, String methodePaiement, String datePaiement,
-                              StatutPaiement statutPaiement) {
+                              StatutPaiement statutPaiement, SituationPaiement situation) {
         this(reference, numero, date, statut, lignes, totalHtva, totalTva, totalTvac,
-                methodePaiement, datePaiement, statutPaiement, null, null);
+                methodePaiement, datePaiement, statutPaiement, situation, null, null);
     }
 
     /** Le meme detail, augmente du lien vers sa facture. */
     public CommandeDetailVue avecFacture(UUID referenceFacture, String numeroFacture) {
         return new CommandeDetailVue(reference, numero, date, statut, lignes,
                 totalHtva, totalTva, totalTvac, methodePaiement, datePaiement,
-                statutPaiement, referenceFacture, numeroFacture);
+                statutPaiement, situation, referenceFacture, numeroFacture);
     }
 
     /** Le lien de telechargement n apparait que si la facture existe : condition de la liste. */
@@ -118,12 +125,21 @@ public record CommandeDetailVue(
     }
 
     /**
-     * La commande attend encore son paiement : l'écran peut proposer de le reprendre.
+     * La commande attend encore son paiement et aucune tentative n'est en cours de
+     * traitement : l'écran peut proposer de payer, ou de réessayer après un échec.
      * Condition de la liste, sur la même règle : voir
      * {@link CommandeHistoriqueVue#peutEtrePayee()}.
      */
     public boolean peutEtrePayee() {
-        return statut == StatutCommande.EN_ATTENTE_PAIEMENT;
+        return situation.peutEtrePayee();
+    }
+
+    public boolean paiementEnCours() {
+        return situation == SituationPaiement.EN_COURS;
+    }
+
+    public boolean paiementEchoue() {
+        return situation == SituationPaiement.ECHOUE;
     }
 
     /** Un paiement abouti existe : de quoi afficher une section « paiement ». */

@@ -11,6 +11,8 @@ import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Paiement;
 import be.autoservplus.vente.domain.Panier;
+import be.autoservplus.vente.domain.SituationPaiement;
+import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.repository.CommandeRepository;
 import be.autoservplus.vente.repository.PaiementRepository;
@@ -160,7 +162,7 @@ public class CommandeService {
                     renonciationRetenue, adresseIp, horloge.instant()));
         }
 
-        return ConfirmationCommandeVue.de(commande);
+        return ConfirmationCommandeVue.de(commande, SituationPaiement.A_PAYER);
     }
 
     /**
@@ -168,7 +170,21 @@ public class CommandeService {
      * meme code qu une reference inconnue) : meme mecanisme que le reste.
      */
     public ConfirmationCommandeVue confirmation(UUID reference, String email) {
-        return ConfirmationCommandeVue.de(commandeDuMembre(reference, email));
+        Commande commande = commandeDuMembre(reference, email);
+        return ConfirmationCommandeVue.de(commande, situation(commande));
+    }
+
+    /**
+     * Situation du paiement telle que les écrans la disent : la commande, et pour une
+     * commande en attente sa dernière tentative. La tentative n'est lue que pour une
+     * commande qui attend encore son paiement, seule à en dépendre.
+     */
+    public SituationPaiement situation(Commande commande) {
+        StatutPaiement derniere = commande.getStatut() == StatutCommande.EN_ATTENTE_PAIEMENT
+                ? paiements.findFirstByCommandeOrderByDateInitiationDescIdDesc(commande)
+                        .map(Paiement::getStatut).orElse(null)
+                : null;
+        return SituationPaiement.de(commande.getStatut(), derniere);
     }
 
     /**
@@ -182,7 +198,7 @@ public class CommandeService {
     public CommandeDetailVue detail(UUID reference, String email) {
         Commande commande = commandeDuMembre(reference, email);
         return CommandeDetailVue.de(commande, commandes.lignesDe(commande),
-                paiementAbouti(commande), ZoneId.of(horloge.getZone().getId()));
+                paiementAbouti(commande), situation(commande), ZoneId.of(horloge.getZone().getId()));
     }
 
     /**
@@ -224,7 +240,7 @@ public class CommandeService {
     public List<CommandeHistoriqueVue> historiqueDuMembre(String email) {
         ZoneId zone = ZoneId.of(horloge.getZone().getId());
         return commandes.historiqueDuMembre(email).stream()
-                .map(commande -> CommandeHistoriqueVue.de(commande, zone))
+                .map(commande -> CommandeHistoriqueVue.de(commande, situation(commande), zone))
                 .toList();
     }
 }
