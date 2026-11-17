@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{retractation.confirmer.titre} + ' | AutoServ+'">Confirmer la rétractation | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/entete :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{retractation.confirmer.titre}">Confirmer la rétractation</h1>
+    <p th:text="#{retractation.etape.confirmation}">Étape 2 sur 2 : vérifiez votre déclaration, puis confirmez-la.</p>
+
+    <dl class="vehicule-details">
+        <div>
+            <dt th:text="#{retractation.declaration.nom}">Nom</dt>
+            <dd th:text="${declaration.nomMembre()}">Marie Dupont</dd>
+        </div>
+        <div>
+            <dt th:text="#{commandes.colonne.numero}">Numéro</dt>
+            <dd th:text="${declaration.numeroCommande()}">CMD-2026-0001</dd>
+        </div>
+        <div>
+            <dt th:text="#{commandes.colonne.montant}">Montant TVAC</dt>
+            <dd th:text="${declaration.totalTvac()}">48,38 €</dd>
+        </div>
+        <div>
+            <dt th:text="#{retractation.declaration.adresse}">Accusé de réception envoyé à</dt>
+            <dd th:text="${declaration.adresseConfirmation()}">marie@exemple.be</dd>
+        </div>
+        <div>
+            <dt th:text="#{retractation.motif.libelle}">Motif (facultatif)</dt>
+            <dd th:text="${#strings.isEmpty(formulaire.motif)} ? #{retractation.motif.aucun} : ${formulaire.motif}">Aucun</dd>
+        </div>
+    </dl>
+
+    <p class="texte-info" th:text="#{retractation.confirmer.effet}">
+        Votre rétractation est enregistrée dès que vous la confirmez.
+    </p>
+
+    <!--/* Fonction de confirmation (CDE, art. VI.61/2, §3) : son seul libellé est
+           « Confirmer la rétractation ». Le motif voyage dans un champ caché, la
+           déclaration est relue côté serveur. */-->
+    <form th:action="@{/commandes/{ref}/annulation(ref=${declaration.reference()})}" method="post">
+        <input type="hidden" name="motif" th:value="${formulaire.motif}">
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{retractation.confirmer}">Confirmer la rétractation</button>
+            <a th:href="@{/commandes/{ref}/annulation(ref=${declaration.reference()})}"
+               th:text="#{retractation.modifier}">Modifier ma déclaration</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

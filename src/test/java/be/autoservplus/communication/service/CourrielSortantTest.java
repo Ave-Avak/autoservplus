@@ -110,6 +110,9 @@ class CourrielSortantTest {
                 Map.entry("retractation-refusee", l -> courriel.envoyerDecisionRetractation(
                         new DetailsRetractationCourriel("marie@exemple.be", "Marie", l,
                                 "CMD-2026-0001", null, false, null, "Pièce montée"))),
+                Map.entry("retractation-recue", l -> courriel.envoyerAccuseRetractation(
+                        new DetailsAccuseRetractationCourriel("marie@exemple.be", "Marie", l,
+                                "Marie Dupont", "CMD-2026-0001", null, fin))),
                 Map.entry("nouvelle-adresse", l -> courriel.envoyerConfirmationNouvelleAdresse(
                         new DetailsChangementEmailCourriel("neuve@exemple.be", "Marie", l,
                                 "marie@exemple.be", "neuve@exemple.be"), "http://x/c")),
@@ -132,7 +135,7 @@ class CourrielSortantTest {
     void tousLesTypes(Langue langue) {
         marie.setLangue(langue);
         Map<String, Consumer<Langue>> envois = tousLesEnvois();
-        assertThat(envois).hasSize(33);
+        assertThat(envois).hasSize(34);
 
         envois.forEach((type, envoi) -> {
             partis.clear();
@@ -148,6 +151,21 @@ class CourrielSortantTest {
                     .doesNotContainPattern("\\{\\d}")
                     .doesNotContain("''");
         });
+    }
+
+    @Test
+    @DisplayName("l'accusé de rétractation porte le contenu de la déclaration, sa date et son heure")
+    void accuseDeRetractation() {
+        courriel.envoyerAccuseRetractation(new DetailsAccuseRetractationCourriel("marie@exemple.be",
+                "Marie", Langue.fr, "Marie Dupont", "CMD-2026-0007", null, DIMANCHE.toInstant()));
+
+        assertThat(partis.get(0).corps())
+                .contains("Nous avons reçu votre rétractation du contrat de la commande CMD-2026-0007, "
+                        + "soumise le " + DIMANCHE.getDayOfMonth() + " septembre 2026 à "
+                        + String.format("%02d:%02d", DIMANCHE.getHour(), DIMANCHE.getMinute()) + ".")
+                .contains("Nom : Marie Dupont")
+                .contains("Adresse de confirmation : marie@exemple.be")
+                .contains("Motif : non précisé");
     }
 
     @Test

@@ -132,7 +132,25 @@ class HistoriqueCommandeTemplatesIT extends SocleIntegration {
                 .andExpect(content().string(containsString("Annulation")))
                 .andExpect(content().string(containsString(
                         "/commandes/" + commande.getReference() + "/annulation")))
-                .andExpect(content().string(containsString("Demander l")));
+                .andExpect(content().string(containsString("Renoncer au contrat ici")));
+    }
+
+    @Test
+    @DisplayName("une commande de pièces conclue il y a trente jours propose toujours « Renoncer au contrat ici »")
+    void piecesAncienneToujoursRetractable() throws Exception {
+        // Le délai d'un bien court de la prise de possession, inconnue en base : le lien
+        // ne disparaît pas au quinzième jour après la commande (VI.61/2 §1).
+        Instant conclusion = horloge.instant().minus(Duration.ofDays(30));
+        Commande commande = new Commande("CMD-IT-HIST-0030", marie, new BigDecimal("39.98"),
+                new BigDecimal("8.40"), new BigDecimal("48.38"), conclusion);
+        commande.confirmerPaiement(conclusion.plus(Duration.ofMinutes(5)));
+        commande = commandes.saveAndFlush(commande);
+
+        mvc.perform(get("/commandes").locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(
+                        "/commandes/" + commande.getReference() + "/annulation")))
+                .andExpect(content().string(containsString("Renoncer au contrat ici")));
     }
 
     @Test

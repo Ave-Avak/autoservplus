@@ -125,17 +125,47 @@ class RetractationTemplatesIT extends SocleIntegration {
     }
 
     @Test
-    @DisplayName("sans la case de confirmation, le formulaire revient avec son erreur traduite")
-    void confirmationObligatoire() throws Exception {
+    @DisplayName("un motif trop long ramène à la déclaration avec son erreur traduite, rien n'est écrit")
+    void motifTropLong() throws Exception {
         Commande commande = commandePayee("CMD-IT-RETT-0003");
 
-        mvc.perform(post("/commandes/{ref}/annulation", commande.getReference())
-                        .with(csrf()).locale(Locale.FRENCH).param("motif", "trop cher"))
+        mvc.perform(post("/commandes/{ref}/annulation/verification", commande.getReference())
+                        .with(csrf()).locale(Locale.FRENCH).param("motif", "x".repeat(1001)))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Cochez la case")));
+                .andExpect(content().string(containsString("1000 caractères")))
+                .andExpect(content().string(containsString("/annulation/verification")));
 
-        // Un POST forge sans la case n ecrit rien : la garde est cote serveur.
         org.assertj.core.api.Assertions.assertThat(demandes.historiqueDe(commande)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("fonction de rétractation en ligne : déclaration, puis confirmation, rien n'est écrit avant")
+    void parcoursEnDeuxEtapes() throws Exception {
+        Commande commande = commandePayee("CMD-IT-RETT-0006");
+
+        // Étape 1 : la déclaration, avec le nom, la commande et l'adresse de l'accusé.
+        mvc.perform(get("/commandes/{ref}/annulation", commande.getReference()).locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Renoncer au contrat")))
+                .andExpect(content().string(containsString("Marie Dupont")))
+                .andExpect(content().string(containsString("CMD-IT-RETT-0006")))
+                .andExpect(content().string(containsString("marie@exemple.be")))
+                .andExpect(content().string(containsString("/annulation/verification")));
+
+        // Étape 2 : le récapitulatif et le seul bouton « Confirmer la rétractation ».
+        mvc.perform(post("/commandes/{ref}/annulation/verification", commande.getReference())
+                        .with(csrf()).locale(Locale.FRENCH).param("motif", "piece non compatible"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Confirmer la rétractation")))
+                .andExpect(content().string(containsString("piece non compatible")));
+        org.assertj.core.api.Assertions.assertThat(demandes.historiqueDe(commande)).isEmpty();
+
+        mvc.perform(post("/commandes/{ref}/annulation/verification", commande.getReference())
+                        .with(csrf()).locale(new Locale("nl")))
+                .andExpect(content().string(containsString("Herroeping bevestigen")));
+        mvc.perform(post("/commandes/{ref}/annulation/verification", commande.getReference())
+                        .with(csrf()).locale(Locale.ENGLISH))
+                .andExpect(content().string(containsString("Confirm withdrawal")));
     }
 
     @Test
@@ -156,10 +186,11 @@ class RetractationTemplatesIT extends SocleIntegration {
 
         mvc.perform(post("/commandes/{ref}/annulation", commande.getReference())
                         .with(csrf()).locale(Locale.FRENCH)
-                        .param("motif", "piece non compatible")
-                        .param("confirmation", "true"))
+                        .param("motif", "piece non compatible"))
                 .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/commandes"));
+                .andExpect(redirectedUrl("/commandes"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .flash().attribute("message", containsString("marie@exemple.be")));
 
         org.assertj.core.api.Assertions.assertThat(demandes.historiqueDe(commande)).hasSize(1);
     }

@@ -155,6 +155,13 @@ public interface ServiceCourriel {
     void envoyerDecisionRetractation(DetailsRetractationCourriel details);
 
     /**
+     * Accusé de réception d'une rétractation en ligne (CDE, art. VI.61/2, §4) : envoyé
+     * dès la soumission, avant toute réponse du garage, avec le contenu de la
+     * déclaration ainsi que la date et l'heure de sa soumission.
+     */
+    void envoyerAccuseRetractation(DetailsAccuseRetractationCourriel details);
+
+    /**
      * Lien de confirmation envoye a la NOUVELLE adresse (CdC 5.2.2). Tant qu il n est
      * pas suivi, le compte reste joignable a l ancienne : une saisie erronee coute un
      * courriel perdu, jamais l acces au compte.

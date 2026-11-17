@@ -313,6 +313,19 @@ public class CourrielSortant implements ServiceCourriel {
     }
 
     @Override
+    public void envoyerAccuseRetractation(DetailsAccuseRetractationCourriel details) {
+        Locale langue = langue(details.langue());
+        ZonedDateTime soumission = details.soumiseLe().atZone(parametres.courants().zone());
+        String motif = details.motif() == null || details.motif().isBlank()
+                ? texte("courriel.retractation-recue.sans-motif", langue)
+                : details.motif();
+        partir("retractation-recue", details.adresseEmail(), details.prenom(), details.prenom(),
+                langue, corps("retractation-recue", langue, details.numeroCommande(),
+                        jour(soumission, langue, "d MMMM yyyy"), heure(soumission),
+                        details.nomMembre(), details.adresseEmail(), motif), null);
+    }
+
+    @Override
     public void envoyerDecisionRetractation(DetailsRetractationCourriel details) {
         Locale langue = langue(details.langue());
         String corps = details.acceptee()

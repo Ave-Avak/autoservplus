@@ -32,6 +32,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -53,6 +54,7 @@ class RetractationServiceTest {
     @Mock private CommandeRepository commandes;
     @Mock private DemandeAnnulationRepository demandes;
     @Mock private be.autoservplus.intervention.repository.InterventionRepository interventionsRepo;
+    @Mock private be.autoservplus.communication.service.ServiceCourriel courriel;
 
     private RetractationService service;
 
@@ -61,8 +63,74 @@ class RetractationServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new RetractationService(commandes, demandes, interventionsRepo,
+        service = new RetractationService(commandes, demandes, interventionsRepo, courriel,
                 Clock.fixed(MAINTENANT, BRUXELLES));
+    }
+
+    @Nested
+    @DisplayName("fonction de rétractation en ligne (VI.61/2)")
+    class FonctionEnLigne {
+
+        @Test
+        @DisplayName("la déclaration montre le nom, la commande et l'adresse de l'accusé")
+        void declaration() {
+            Commande commande = commandePayeeIlYA(3);
+            commandeExiste(commande);
+            when(demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE))
+                    .thenReturn(false);
+
+            var declaration = service.declaration("marie@exemple.be", commande.getReference());
+
+            assertThat(declaration.nomMembre()).isEqualTo("Marie Dupont");
+            assertThat(declaration.numeroCommande()).isEqualTo("CMD-2026-0001");
+            assertThat(declaration.adresseConfirmation()).isEqualTo("marie@exemple.be");
+            assertThat(declaration.totalTvac()).contains("48,38");
+        }
+
+        @Test
+        @DisplayName("la déclaration est refusée d'emblée par les mêmes gardes que la demande")
+        void declarationRefusee() {
+            Commande commande = commandePayeeIlYA(15);
+            commandeExiste(commande);
+            commandeDePrestations(commande);
+
+            assertThatThrownBy(() -> service.declaration("marie@exemple.be", commande.getReference()))
+                    .isInstanceOf(RetractationImpossibleException.class);
+        }
+
+        @Test
+        @DisplayName("la confirmation fait partir l'accusé avec le contenu et l'instant de la soumission")
+        void accuseALaSoumission() {
+            Commande commande = commandePayeeIlYA(3);
+            commandeExiste(commande);
+            when(demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE))
+                    .thenReturn(false);
+            when(demandes.save(any(DemandeAnnulation.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            service.demander("marie@exemple.be", commande.getReference(), "trop cher");
+
+            var accuse = org.mockito.ArgumentCaptor.forClass(
+                    be.autoservplus.communication.service.DetailsAccuseRetractationCourriel.class);
+            verify(courriel).envoyerAccuseRetractation(accuse.capture());
+            assertThat(accuse.getValue().adresseEmail()).isEqualTo("marie@exemple.be");
+            assertThat(accuse.getValue().nomMembre()).isEqualTo("Marie Dupont");
+            assertThat(accuse.getValue().numeroCommande()).isEqualTo("CMD-2026-0001");
+            assertThat(accuse.getValue().motif()).isEqualTo("trop cher");
+            assertThat(accuse.getValue().soumiseLe()).isEqualTo(MAINTENANT);
+        }
+
+        @Test
+        @DisplayName("une demande refusée par les gardes n'envoie aucun accusé")
+        void aucunAccuseSurRefus() {
+            Commande commande = commandePayeeIlYA(15);
+            commandeExiste(commande);
+            commandeDePrestations(commande);
+
+            assertThatThrownBy(() -> service.demander("marie@exemple.be", commande.getReference(), null))
+                    .isInstanceOf(RetractationImpossibleException.class);
+            verifyNoInteractions(courriel);
+        }
     }
 
     /** Commande payee, passee il y a {@code joursEcoules} jours. */
