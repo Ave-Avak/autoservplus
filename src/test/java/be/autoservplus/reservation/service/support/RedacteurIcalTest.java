@@ -27,7 +27,7 @@ class RedacteurIcalTest {
     private static final Instant PRODUCTION = Instant.parse("2026-08-24T10:15:00Z");
 
     private static EvenementIcal evenement(String resume, String lieu, String description) {
-        return new EvenementIcal("abc@autoservplus", PRODUCTION, DEBUT, FIN,
+        return new EvenementIcal("abc@autoservplus", 3, PRODUCTION, DEBUT, FIN,
                 resume, lieu, description, "https://exemple.be/mes-rendez-vous/abc",
                 Duration.ofHours(24));
     }
@@ -51,6 +51,12 @@ class RedacteurIcalTest {
                     .contains("BEGIN:VEVENT")
                     .contains("END:VEVENT")
                     .endsWith("END:VCALENDAR\r\n");
+        }
+
+        @Test
+        @DisplayName("porte la révision de l'événement")
+        void sequence() {
+            assertThat(RedacteurIcal.calendrier(nominal())).contains("\r\nSEQUENCE:3\r\n");
         }
 
         /**
@@ -94,7 +100,7 @@ class RedacteurIcalTest {
         @Test
         @DisplayName("omet le VALARM quand aucun rappel n est demande")
         void sansRappel() {
-            EvenementIcal sansAlarme = new EvenementIcal("abc@autoservplus", PRODUCTION, DEBUT, FIN,
+            EvenementIcal sansAlarme = new EvenementIcal("abc@autoservplus", 3, PRODUCTION, DEBUT, FIN,
                     "Rendez-vous", "Rue 12", "Prestations", "https://exemple.be/x", null);
 
             assertThat(RedacteurIcal.calendrier(sansAlarme)).doesNotContain("VALARM");
@@ -147,7 +153,7 @@ class RedacteurIcalTest {
         @Test
         @DisplayName("n echappe pas l URL, qui n est pas une valeur de texte")
         void urlNonEchappee() {
-            EvenementIcal avecParametres = new EvenementIcal("abc@autoservplus", PRODUCTION, DEBUT, FIN,
+            EvenementIcal avecParametres = new EvenementIcal("abc@autoservplus", 3, PRODUCTION, DEBUT, FIN,
                     "r", "l", "d", "https://exemple.be/x?a=1&b=2", null);
 
             assertThat(RedacteurIcal.calendrier(avecParametres))

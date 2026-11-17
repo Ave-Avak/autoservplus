@@ -17,6 +17,10 @@ import java.time.Instant;
  *                     second fichier decrit le meme rendez-vous et le met a jour au
  *                     lieu de le dupliquer. Un identifiant tire au hasard a chaque
  *                     telechargement remplirait l agenda du membre de doublons.
+ * @param sequence     numéro de révision ({@code SEQUENCE}), croissant. À UID égal, un
+ *                     client de calendrier ne remplace l'entrée que si la révision est
+ *                     plus haute : sans lui, un rendez-vous déplacé pourrait garder
+ *                     son ancien horaire dans l'agenda du membre.
  * @param horodatage   instant de production du fichier ({@code DTSTAMP}).
  * @param debut        debut de l evenement.
  * @param fin          fin de l evenement.
@@ -32,6 +36,7 @@ import java.time.Instant;
  */
 public record EvenementIcal(
         String uid,
+        long sequence,
         Instant horodatage,
         Instant debut,
         Instant fin,
