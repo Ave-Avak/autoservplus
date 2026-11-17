@@ -69,12 +69,13 @@
     </dl>
 </th:block>
 
-<!-- Renvois croisés : chaque document mène aux deux autres, sans passer par l'accueil. -->
+<!-- Renvois croisés : chaque document mène aux autres, sans passer par l'accueil. -->
 <th:block th:fragment="liens">
     <ul class="liens-legaux">
         <li><a th:href="@{/cgv}" th:text="#{legal.lien.cgv}">Conditions générales de vente</a></li>
         <li><a th:href="@{/mentions-legales}" th:text="#{legal.lien.mentions}">Mentions légales</a></li>
         <li><a th:href="@{/confidentialite}" th:text="#{legal.lien.confidentialite}">Politique de confidentialité</a></li>
+        <li><a th:href="@{/retractation/formulaire}" th:text="#{retractation.formulaire.lien}">Formulaire de rétractation</a></li>
     </ul>
 </th:block>
 

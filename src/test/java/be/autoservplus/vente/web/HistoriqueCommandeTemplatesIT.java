@@ -116,6 +116,8 @@ class HistoriqueCommandeTemplatesIT extends SocleIntegration {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Mijn bestellingen")))
                 .andExpect(content().string(containsString("Bedrag incl. btw")))
+                // Lien permanent vers le modèle de formulaire, dans la langue de l'écran.
+                .andExpect(content().string(containsString("Modelformulier voor herroeping")))
                 .andExpect(content().string(not(containsString("Mes commandes"))));
     }
 

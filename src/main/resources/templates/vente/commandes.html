@@ -72,9 +72,10 @@
                     <span th:if="${retractation != null and retractation.estEnAttente()}"
                           class="badge badge-en_attente"
                           th:text="#{commandes.annulation.en-attente}">Demande en cours</span>
-                    <!-- Bouton propose seulement si le controle d'eligibilite passe :
-                         commande payee, delai de 14 jours en cours, aucune demande
-                         pendante. Il ouvre une page de confirmation, il n'agit pas. -->
+                    <!--/* Fonction de rétractation en ligne (VI.61/2), proposée tant que
+                           le contrôle d'éligibilité passe : commande payée, aucune
+                           demande pendante, délai en cours pour une prestation. Elle
+                           ouvre la déclaration, elle n'agit pas. */-->
                     <a th:if="${retractation != null and retractation.demandable()}"
                        th:href="@{/commandes/{ref}/annulation(ref=${commande.reference()})}"
                        th:text="#{commandes.annulation.demander}">Demander l'annulation</a>
@@ -122,6 +123,9 @@
 
     <p class="actions-page">
         <a th:href="@{/pieces}" th:text="#{panier.continuer}">Continuer mes achats</a>
+        <!--/* Lien permanent vers le modèle de formulaire, que l'art. 7 des CGV
+               annonce dans l'espace membre. */-->
+        <a th:href="@{/retractation/formulaire}" th:text="#{retractation.formulaire.lien}">Formulaire de rétractation</a>
     </p>
 </main>
 

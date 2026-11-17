@@ -106,6 +106,7 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/cgv", Acces.PUBLIC),
             ecran("/mentions-legales", Acces.PUBLIC),
             ecran("/confidentialite", Acces.PUBLIC),
+            ecran("/retractation/formulaire", Acces.PUBLIC),
             ecran("/connexion", Acces.PUBLIC),
             ecran("/inscription", Acces.PUBLIC),
             ecran("/inscription/renvoyer-verification", Acces.PUBLIC),
@@ -123,6 +124,7 @@ class NavigationEcransIT extends SocleIntegration {
             variable("/services/{reference}", Acces.PUBLIC),
             variable("/pieces/{reference}", Acces.PUBLIC),
             new Route("/documents/{type}/{version}", "/documents/CGV/inconnue", Acces.PUBLIC, true, 404),
+            new Route("/retractation/formulaire/pdf", "/retractation/formulaire/pdf", Acces.PUBLIC, false, 200),
             new Route("/images/galerie/{id}", "/images/galerie/999999999", Acces.PUBLIC, false, 404),
             // --- etapes de connexion : une connexion aboutie est renvoyee a sa page d arrivee
             ecran("/connexion/etape", Acces.ETAPE),
@@ -267,6 +269,7 @@ class NavigationEcransIT extends SocleIntegration {
         ATTEINTS_DEPUIS.put("/cgv", new Atteinte("/", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/mentions-legales", new Atteinte("/", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/confidentialite", new Atteinte("/", Role.ANONYME));
+        ATTEINTS_DEPUIS.put("/retractation/formulaire", new Atteinte("/", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/mon-profil/adresse", new Atteinte("/mon-profil", Role.MEMBRE));
         ATTEINTS_DEPUIS.put("/mon-profil/securite", new Atteinte("/mon-profil", Role.MEMBRE));
         ATTEINTS_DEPUIS.put("/mon-profil/securite/enrolement", new Atteinte("/mon-profil/securite", Role.MEMBRE));
