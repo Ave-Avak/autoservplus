@@ -3,6 +3,7 @@ package be.autoservplus.vente.web;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.vente.service.CgvNonAccepteesException;
 import be.autoservplus.vente.service.CommandeService;
+import be.autoservplus.vente.service.DepartPaiement;
 import be.autoservplus.vente.service.PaiementImpossibleException;
 import be.autoservplus.vente.service.PaiementService;
 import be.autoservplus.vente.service.PrestataireIndisponibleException;
@@ -14,6 +15,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -261,12 +264,34 @@ class CommandeControllerTest {
     @WithMockUser(username = "marie@exemple.be")
     @DisplayName("POST /payer redirige vers l'URL du prestataire rendue par le service")
     void payerRedirigeVersLePrestataire() throws Exception {
-        doReturn("/paiement-fictif/tr_fictif_0001")
+        doReturn(DepartPaiement.vers("/paiement-fictif/tr_fictif_0001"))
                 .when(paiements).initierPaiement(REF, "marie@exemple.be");
 
         mvc.perform(post("/commande/{ref}/payer", REF).with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/paiement-fictif/tr_fictif_0001"));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({
+            "DEJA_PAYEE, succes, commande.retour.paye",
+            "EN_COURS, erreur, commande.paiement.en-cours",
+            "TENTATIVE_CONCURRENTE, erreur, commande.paiement.tentative-concurrente"
+    })
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("POST /payer sans page de paiement : retour a la commande avec le message de l'issue")
+    void payerSansPageDePaiement(DepartPaiement.Issue issue, String attribut, String cle)
+            throws Exception {
+        doReturn(DepartPaiement.sans(issue))
+                .when(paiements).initierPaiement(REF, "marie@exemple.be");
+
+        mvc.perform(post("/commande/{ref}/payer", REF).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/commande/" + REF + "/confirmation"))
+                // Le message est resolu, jamais la cle brute a l'ecran.
+                .andExpect(flash().attribute(attribut, org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.notNullValue(),
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(cle)))));
     }
 
     @Test

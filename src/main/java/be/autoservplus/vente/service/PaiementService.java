@@ -16,11 +16,16 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.time.Clock;
 import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -50,11 +55,16 @@ public class PaiementService {
 
     private static final Logger log = LoggerFactory.getLogger(PaiementService.class);
 
+    /** Tentatives que le prestataire peut encore faire aboutir. */
+    private static final Set<StatutPaiement> OUVERTS =
+            EnumSet.of(StatutPaiement.INITIE, StatutPaiement.EN_COURS);
+
     private final PaiementRepository paiements;
     private final CommandeRepository commandes;
     private final PieceRepository pieces;
     private final PrestatairePaiement prestataire;
     private final ApplicationEventPublisher evenements;
+    private final TransactionOperations transaction;
     private final Clock horloge;
     private final String urlPublique;
 
@@ -63,6 +73,7 @@ public class PaiementService {
                            PieceRepository pieces,
                            PrestatairePaiement prestataire,
                            ApplicationEventPublisher evenements,
+                           TransactionOperations transaction,
                            Clock horloge,
                            @Value("${autoservplus.url-publique}") String urlPublique) {
         this.paiements = paiements;
@@ -70,6 +81,7 @@ public class PaiementService {
         this.pieces = pieces;
         this.prestataire = prestataire;
         this.evenements = evenements;
+        this.transaction = transaction;
         this.horloge = horloge;
         // Barre finale retiree une fois pour toutes : la concatenation qui suit
         // produirait sinon un double separateur, et une URL de retour invalide ne se
@@ -82,17 +94,100 @@ public class PaiementService {
     // --- initiation -------------------------------------------------------------------
 
     /**
-     * Cree un paiement INITIE pour la commande et retourne l URL de redirection
-     * du prestataire. Un re-essai apres echec cree un NOUVEAU paiement : la
-     * commande reste EN_ATTENTE_PAIEMENT pendant son delai RM-21.
+     * Envoie le membre vers une page de paiement de sa commande, en reprenant la
+     * tentative ouverte plutôt qu'en créant une seconde (F14).
+     *
+     * <p>Chaque tentative créée est un paiement chez le prestataire. Entre un paiement
+     * effectif et sa notification, la commande attend toujours, le bouton « payer »
+     * reste affiché, et une seconde tentative encaisserait deux fois. Les tentatives
+     * encore ouvertes en base sont donc relues chez le prestataire d'abord, et l'état
+     * relu s'applique par le même chemin que la notification :</p>
+     * <ul>
+     *   <li>encaissée : la commande passe PAYEE, facture comprise, et rien n'est créé.</li>
+     *   <li>en cours de traitement, sans page de paiement : refus, le membre attend
+     *       la notification.</li>
+     *   <li>ouverte : le membre retrouve la page de cette tentative.</li>
+     *   <li>échouée, annulée ou expirée : une nouvelle tentative est créée.</li>
+     * </ul>
+     *
+     * <p>Trois transactions, et non une. La relecture se fait hors transaction,
+     * pour ne pas tenir une connexion à la base pendant l'aller-retour, ce que la
+     * notification fait encore (dette V2, voir {@link EtatPaiement}). La dernière
+     * transaction verrouille la commande, comme le webhook et le job RM-21, puis
+     * revérifie l'absence de tentative ouverte avant d'en créer une : deux gestes
+     * simultanés du membre n'en ouvrent qu'une. La création chez le prestataire reste
+     * dans cette transaction, comme avant ce changement.</p>
+     *
+     * <p>{@code SUPPORTS} plutôt que la lecture seule de la classe : appelée par le
+     * contrôleur, la méthode ne tourne dans aucune transaction et chaque bloc ouvre la
+     * sienne. Une transaction appelante, celle d'un test par exemple, est rejointe et
+     * non suspendue, sans quoi les données qu'elle n'a pas validées seraient
+     * invisibles.</p>
      */
-    @Transactional
+    @Transactional(propagation = Propagation.SUPPORTS)
     @PreAuthorize("isAuthenticated()")
-    public String initierPaiement(UUID referenceCommande, String email) {
-        Commande commande = commandeDuMembre(referenceCommande, email);
-        if (commande.getStatut() != StatutCommande.EN_ATTENTE_PAIEMENT) {
-            throw new PaiementImpossibleException();
+    public DepartPaiement initierPaiement(UUID referenceCommande, String email) {
+        List<String> ouvertes = transaction.execute(statut -> {
+            Commande commande = commandeDuMembre(referenceCommande, email);
+            exigerAttenteDePaiement(commande);
+            return paiements.findByCommandeAndStatutIn(commande, OUVERTS).stream()
+                    .sorted(Comparator.comparing(Paiement::getDateInitiation)
+                            .thenComparing(Paiement::getId).reversed())
+                    .map(Paiement::getReferenceMollie)
+                    .filter(reference -> reference != null && !reference.isBlank())
+                    .toList();
+        });
+
+        boolean enCours = false;
+        String pageOuverte = null;
+        for (String reference : ouvertes) {
+            EtatPaiement etat = prestataire.lireEtat(reference);
+            transaction.execute(statut -> appliquer(paiementPrestataire(reference), etat));
+            switch (etat.statut()) {
+                case EN_COURS -> enCours = true;
+                case INITIE -> {
+                    if (etat.urlPaiement() == null) {
+                        // Ouverte mais sans page : rien à reprendre, et rien ne dit
+                        // qu'elle ne va pas aboutir. Elle bloque comme une tentative
+                        // en cours plutôt que d'en laisser ouvrir une seconde.
+                        enCours = true;
+                    } else if (pageOuverte == null) {
+                        pageOuverte = etat.urlPaiement();
+                    }
+                }
+                case REUSSI, ECHOUE, EXPIRE, REMBOURSE -> {
+                    // Close : la dernière transaction constate la commande payée, ou
+                    // crée une nouvelle tentative.
+                }
+            }
         }
+
+        boolean bloquee = enCours;
+        String reprise = pageOuverte;
+        return transaction.execute(statut -> {
+            Commande commande = commandes.verrouillerParId(
+                            commandeDuMembre(referenceCommande, email).getId())
+                    .orElseThrow(() -> new RessourceIntrouvableException(
+                            "Commande", referenceCommande));
+            if (commande.getStatut() == StatutCommande.PAYEE) {
+                return DepartPaiement.sans(DepartPaiement.Issue.DEJA_PAYEE);
+            }
+            exigerAttenteDePaiement(commande);
+            if (bloquee) {
+                return DepartPaiement.sans(DepartPaiement.Issue.EN_COURS);
+            }
+            if (reprise != null) {
+                return DepartPaiement.vers(reprise);
+            }
+            if (!paiements.findByCommandeAndStatutIn(commande, OUVERTS).isEmpty()) {
+                // Ouverte entre la relecture et le verrou, par un autre geste du membre.
+                return DepartPaiement.sans(DepartPaiement.Issue.TENTATIVE_CONCURRENTE);
+            }
+            return DepartPaiement.vers(creerTentative(commande));
+        });
+    }
+
+    private String creerTentative(Commande commande) {
         Paiement paiement = new Paiement(commande, commande.getMontantTvac(), horloge.instant());
         PaiementCree cree = prestataire.creerPaiement(new DemandePaiement(
                 commande.getNumero(), commande.getMontantTvac(),
@@ -101,6 +196,12 @@ public class PaiementService {
         paiement.enregistrerReferencePrestataire(cree.referencePrestataire());
         paiements.saveAndFlush(paiement);
         return cree.urlRedirection();
+    }
+
+    private static void exigerAttenteDePaiement(Commande commande) {
+        if (commande.getStatut() != StatutCommande.EN_ATTENTE_PAIEMENT) {
+            throw new PaiementImpossibleException();
+        }
     }
 
     // --- retour du membre depuis la page du prestataire --------------------------------
@@ -128,6 +229,11 @@ public class PaiementService {
      * retour peuvent donc arriver dans n importe quel ordre, ou tous les deux : la
      * facture n est emise qu une fois, sur la transition reelle, et la numerotation
      * continue sans trou n est pas plus exposee qu avant.</p>
+     *
+     * <p>Cette absence de double effet porte sur le traitement d'une notification, pas
+     * sur l'initiation : relire un paiement ne dit rien des autres tentatives de la
+     * commande. C'est {@link #initierPaiement} qui refuse d'en ouvrir une seconde tant
+     * qu'une tentative peut encore aboutir.</p>
      */
     @Transactional
     @PreAuthorize("isAuthenticated()")
@@ -179,11 +285,24 @@ public class PaiementService {
      */
     @Transactional
     public IssueRelecture traiterNotification(String referencePrestataire) {
-        Paiement paiement = paiements.findByReferenceMollie(referencePrestataire)
+        Paiement paiement = paiementPrestataire(referencePrestataire);
+        // Strategie securite §11 : seul l etat relu chez le prestataire fait foi.
+        return appliquer(paiement, prestataire.lireEtat(referencePrestataire));
+    }
+
+    private Paiement paiementPrestataire(String referencePrestataire) {
+        return paiements.findByReferenceMollie(referencePrestataire)
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Paiement", referencePrestataire));
-        // Strategie securite §11 : seul l etat relu chez le prestataire fait foi.
-        EtatPaiement etat = prestataire.lireEtat(referencePrestataire);
+    }
+
+    /**
+     * Applique un état relu chez le prestataire, dans la transaction de l'appelant :
+     * celle de la notification, ou celle qu'ouvre la reprise d'une tentative après une
+     * relecture faite hors transaction.
+     */
+    private IssueRelecture appliquer(Paiement paiement, EtatPaiement etat) {
+        String referencePrestataire = paiement.getReferenceMollie();
         // Le moyen arrive dans la meme reponse que le statut, et se pose des qu il est
         // connu, y compris sur un paiement qui n a pas encore abouti. L entite refuse
         // de le reecrire, donc un rejeu ne peut pas l alterer.

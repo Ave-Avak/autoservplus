@@ -36,21 +36,43 @@ class PrestatairePaiementFictifTest {
     }
 
     @Test
-    @DisplayName("le statut relu est celui programme, comme le ferait la relecture Mollie")
+    @DisplayName("un paiement ouvert rend sa page, celle que la creation avait donnee")
+    void pageDuPaiementOuvert() {
+        PrestatairePaiementFictif fictif = new PrestatairePaiementFictif();
+        PaiementCree cree = fictif.creerPaiement(demande);
+
+        assertThat(fictif.lireEtat(cree.referencePrestataire()).urlPaiement())
+                .isEqualTo(cree.urlRedirection());
+    }
+
+    @Test
+    @DisplayName("le statut relu est celui programme, sans page une fois le paiement sorti d'INITIE")
     void statutProgrammable() {
         PrestatairePaiementFictif fictif = new PrestatairePaiementFictif();
         PaiementCree cree = fictif.creerPaiement(demande);
 
-        fictif.programmerStatut(cree.referencePrestataire(), StatutPaiement.REUSSI);
+        fictif.programmerStatut(cree.referencePrestataire(), StatutPaiement.EN_COURS);
 
-        assertThat(fictif.lireEtat(cree.referencePrestataire()).statut())
-                .isEqualTo(StatutPaiement.REUSSI);
+        EtatPaiement etat = fictif.lireEtat(cree.referencePrestataire());
+        assertThat(etat.statut()).isEqualTo(StatutPaiement.EN_COURS);
+        assertThat(etat.urlPaiement()).isNull();
     }
 
     @Test
-    @DisplayName("une reference inconnue du bouchon est une erreur, pas un statut invente")
+    @DisplayName("une reference inconnue du bouchon, apres un redemarrage, se relit EXPIRE")
     void referenceInconnue() {
-        assertThatThrownBy(() -> new PrestatairePaiementFictif().lireEtat("tr_inconnu"))
+        EtatPaiement etat = new PrestatairePaiementFictif().lireEtat("tr_inconnu");
+
+        assertThat(etat.statut()).isEqualTo(StatutPaiement.EXPIRE);
+        assertThat(etat.urlPaiement()).isNull();
+    }
+
+    @Test
+    @DisplayName("le remboursement refuse toujours une reference inconnue")
+    void remboursementReferenceInconnue() {
+        assertThatThrownBy(() -> new PrestatairePaiementFictif().rembourser(
+                new DemandeRemboursement("tr_inconnu", new java.math.BigDecimal("80.21"), "EUR",
+                        "remboursement-x")))
                 .isInstanceOf(IllegalStateException.class);
     }
 

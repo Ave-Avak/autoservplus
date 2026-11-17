@@ -52,18 +52,20 @@
 
     <p th:text="#{paiement.simule.choix}">Choisissez l'issue à simuler :</p>
 
-    <!--
-      Les deux issues sont offertes, et pas seulement le succès : l'échec
-      d'encaissement fait partie du parcours à démontrer, et rien d'autre dans
-      l'application ne permet de le provoquer depuis l'interface.
-    -->
+    <!--/*
+      Trois issues, et pas seulement le succès : l'échec d'encaissement et le paiement
+      en attente de confirmation font partie du parcours à démontrer, et rien d'autre
+      dans l'application ne permet de les provoquer depuis l'interface.
+    */-->
     <form th:action="@{/paiement-fictif/{ref}(ref=${paiement.referencePrestataire()})}"
           method="post">
         <p class="actions-page">
-            <button type="submit" name="reussite" value="true" class="btn-cta"
+            <button type="submit" name="issue" value="REUSSITE" class="btn-cta"
                     th:text="#{paiement.simule.reussir}">Simuler un paiement réussi</button>
-            <button type="submit" name="reussite" value="false" class="lien-bouton"
+            <button type="submit" name="issue" value="ECHEC" class="lien-bouton"
                     th:text="#{paiement.simule.echouer}">Simuler un échec de paiement</button>
+            <button type="submit" name="issue" value="ATTENTE" class="lien-bouton"
+                    th:text="#{paiement.simule.attente}">Simuler un paiement en attente de confirmation</button>
         </p>
     </form>
 </main>

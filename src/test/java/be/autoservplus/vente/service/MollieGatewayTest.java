@@ -255,6 +255,35 @@ class MollieGatewayTest {
         }
 
         @Test
+        @DisplayName("un paiement ouvert rend sa page de paiement, pour que la reprise y renvoie")
+        void pageDuPaiementOuvert() {
+            serveur.expect(requestTo(API + "/payments/tr_reel1?testmode=true"))
+                    .andRespond(withSuccess("""
+                            {"id":"tr_reel1","status":"open",
+                             "amount":{"currency":"EUR","value":"80.21"},
+                             "_links":{"checkout":{"href":"https://www.mollie.com/checkout/tr_reel1"}}}
+                            """, MediaType.APPLICATION_JSON));
+
+            EtatPaiement etat = passerelleAvecJetonOrganisation().lireEtat("tr_reel1");
+            assertThat(etat.statut()).isEqualTo(StatutPaiement.INITIE);
+            assertThat(etat.urlPaiement()).isEqualTo("https://www.mollie.com/checkout/tr_reel1");
+        }
+
+        @Test
+        @DisplayName("un paiement en traitement ne rend aucune page : rien a reprendre")
+        void aucunePageEnTraitement() {
+            serveur.expect(requestTo(API + "/payments/tr_reel1?testmode=true"))
+                    .andRespond(withSuccess("""
+                            {"id":"tr_reel1","status":"pending","method":"banktransfer",
+                             "amount":{"currency":"EUR","value":"80.21"}}
+                            """, MediaType.APPLICATION_JSON));
+
+            EtatPaiement etat = passerelleAvecJetonOrganisation().lireEtat("tr_reel1");
+            assertThat(etat.statut()).isEqualTo(StatutPaiement.EN_COURS);
+            assertThat(etat.urlPaiement()).isNull();
+        }
+
+        @Test
         @DisplayName("un moyen encore inconnu remonte a null, sans faire echouer la relecture")
         void moyenPasEncoreConnu() {
             // Le client choisit son moyen sur la page du prestataire : il est absent

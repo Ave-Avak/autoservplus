@@ -201,7 +201,10 @@ public class MollieGateway implements PrestatairePaiement {
             throw new PrestataireIndisponibleException(
                     "Reponse de relecture sans statut pour " + referencePrestataire + ".");
         }
-        return new EtatPaiement(projeter(reponse.status()), reponse.method());
+        // Mollie ne rend la page de paiement que pour un paiement « open » : c'est elle
+        // que la reprise d'une tentative ouverte renvoie au membre.
+        return new EtatPaiement(projeter(reponse.status()), reponse.method(),
+                reponse.urlDePaiement());
     }
 
     private java.util.Optional<Boolean> modeTestEventuel() {

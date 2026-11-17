@@ -2,6 +2,7 @@ package be.autoservplus.vente.web;
 
 import be.autoservplus.vente.service.SiAucunPrestataireConfigure;
 import be.autoservplus.vente.service.SimulationPaiementService;
+import be.autoservplus.vente.service.SimulationPaiementService.IssueSimulee;
 import be.autoservplus.vente.web.dto.SimulationPaiementVue;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -24,10 +25,10 @@ import java.util.UUID;
  * n est fournie.
  *
  * <p><b>Elle s annonce pour ce qu elle est.</b> Banniere permanente « paiement
- * simule », mention explicite qu aucun debit n a lieu, et deux issues offertes
- * plutot qu un seul bouton : l echec d encaissement fait partie du parcours a
- * demontrer autant que le succes, et rien d autre dans l application ne permet de
- * le provoquer. Une page qui se ferait passer pour une vraie page de paiement
+ * simule », mention explicite qu aucun debit n a lieu, et trois issues offertes
+ * plutot qu un seul bouton : l echec d encaissement et le paiement en attente de
+ * confirmation font partie du parcours a demontrer autant que le succes, et rien
+ * d autre dans l application ne permet de les provoquer. Une page qui se ferait passer pour une vraie page de paiement
  * serait, elle, indefendable.</p>
  *
  * <p>Active tant qu aucun identifiant de prestataire n est fourni, comme le bouchon
@@ -69,9 +70,9 @@ public class PaiementSimuleController {
     @PostMapping("/{referencePrestataire}")
     public String simuler(@AuthenticationPrincipal UserDetails membre,
                           @PathVariable String referencePrestataire,
-                          @RequestParam(defaultValue = "false") boolean reussite) {
+                          @RequestParam(defaultValue = "ECHEC") IssueSimulee issue) {
         UUID commande =
-                simulation.simuler(referencePrestataire, reussite, membre.getUsername());
+                simulation.simuler(referencePrestataire, issue, membre.getUsername());
         return "redirect:/commande/" + commande + "/retour";
     }
 

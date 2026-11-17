@@ -52,15 +52,23 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
      * Aucun moyen de paiement n est rapporte, et c est volontaire : en inventer un
      * ferait afficher « Bancontact » sur une commande que personne n a payee. L ecran
      * de detail sait dire que le moyen n a pas ete communique.
+     *
+     * <p>Une référence inconnue rend EXPIRE. Les statuts vivent en mémoire : après un
+     * redémarrage, une tentative restée ouverte en base n'existe plus ici, comme un
+     * paiement ouvert que le prestataire réel aurait laissé expirer. La reprise en
+     * crée alors une nouvelle au lieu d'échouer. Le remboursement refuse toujours une
+     * référence inconnue.</p>
      */
     @Override
     public EtatPaiement lireEtat(String referencePrestataire) {
         StatutPaiement statut = statuts.get(referencePrestataire);
         if (statut == null) {
-            throw new IllegalStateException(
-                    "Reference inconnue du prestataire fictif : " + referencePrestataire);
+            return EtatPaiement.de(StatutPaiement.EXPIRE);
         }
-        return EtatPaiement.de(statut);
+        String page = statut == StatutPaiement.INITIE
+                ? "/paiement-fictif/" + referencePrestataire
+                : null;
+        return new EtatPaiement(statut, null, page);
     }
 
     /**

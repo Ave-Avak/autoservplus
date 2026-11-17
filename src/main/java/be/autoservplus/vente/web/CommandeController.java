@@ -2,6 +2,7 @@ package be.autoservplus.vente.web;
 
 import be.autoservplus.vente.service.CgvNonAccepteesException;
 import be.autoservplus.vente.service.CommandeService;
+import be.autoservplus.vente.service.DepartPaiement;
 import be.autoservplus.vente.service.PaiementImpossibleException;
 import be.autoservplus.vente.service.PaiementService;
 import be.autoservplus.vente.service.PanierService;
@@ -104,14 +105,26 @@ public class CommandeController {
 
     /**
      * Depart vers la page de paiement du prestataire (F14). L URL de redirection
-     * vient de la passerelle : factice hors production, Mollie en production.
+     * vient de la passerelle : factice hors production, Mollie en production. Sans
+     * page de paiement, le membre revient a sa commande avec ce que la relecture de
+     * la tentative ouverte a constate.
      */
     @PostMapping("/{reference}/payer")
     public String payer(@AuthenticationPrincipal UserDetails membre,
                         @PathVariable UUID reference,
                         RedirectAttributes redirection) {
         try {
-            return "redirect:" + paiements.initierPaiement(reference, membre.getUsername());
+            DepartPaiement depart = paiements.initierPaiement(reference, membre.getUsername());
+            switch (depart.issue()) {
+                case REDIRECTION -> {
+                    return "redirect:" + depart.urlRedirection();
+                }
+                case DEJA_PAYEE -> redirection.addFlashAttribute("succes", msg("commande.retour.paye"));
+                case EN_COURS -> redirection.addFlashAttribute("erreur", msg("commande.paiement.en-cours"));
+                case TENTATIVE_CONCURRENTE -> redirection.addFlashAttribute("erreur",
+                        msg("commande.paiement.tentative-concurrente"));
+            }
+            return "redirect:/commande/" + reference + "/confirmation";
         } catch (PaiementImpossibleException e) {
             redirection.addFlashAttribute("erreur", msg("commande.erreur.paiement-impossible"));
             return "redirect:/commande/" + reference + "/confirmation";
