@@ -57,6 +57,16 @@ class TypographieTest {
             "src/main/resources/securite/mots-de-passe-courants.txt",
             "liste tierce (SecLists) de mots de passe, des donnees et non de la prose");
 
+    /**
+     * Libelles i18n qui citent un texte officiel mot pour mot, avec son point-virgule :
+     * le paragraphe des effets de la retractation, repris de l annexe 1 du livre VI CDE
+     * (FR, NL) et de l annexe I, A, de la directive 2011/83/UE (EN). Le reecrire pour la
+     * regle de redaction ferait de l information standardisee un texte qui ne l est plus.
+     * Seul le point-virgule est admis, les caracteres proscrits restent controles.
+     */
+    private static final Map<String, String> CITATIONS_OFFICIELLES = Map.of(
+            "legal.cgv.art7.effets", "annexe 1 du livre VI CDE, annexe I, A, de la directive 2011/83/UE");
+
     /** Derniere migration de schema committee avant la regle, et graines de demonstration. */
     private static final int DERNIERE_MIGRATION_FIGEE = 42;
     private static final Set<String> GRAINES_FIGEES = Set.of("V900", "V901");
@@ -105,6 +115,19 @@ class TypographieTest {
     @DisplayName("chaque exclusion designe un fichier")
     void exclusionsAJour() {
         EXCLUS.keySet().forEach(nom -> assertThat(Path.of(nom)).as("exclusion sans fichier").exists());
+    }
+
+    @Test
+    @DisplayName("chaque citation officielle designe une cle presente et porte bien un point-virgule")
+    void citationsAJour() {
+        String francais = fichiers.get("src/main/resources/i18n/messages.properties");
+        CITATIONS_OFFICIELLES.keySet().forEach(cle -> assertThat(francais.lines()
+                        .filter(l -> l.startsWith(cle + "="))
+                        .anyMatch(l -> l.contains(";")))
+                .as("citation %s sans cle ou sans point-virgule : retirer l exclusion", cle)
+                .isTrue());
+        assertThat(pointsVirgules("i18n/messages.properties", "legal.cgv.art7.effets=un ; deux")).isEmpty();
+        assertThat(pointsVirgules("i18n/messages.properties", "legal.cgv.art7.suite=un ; deux")).hasSize(1);
     }
 
     @Test
@@ -165,6 +188,9 @@ class TypographieTest {
                 String ligne = lignes[k];
                 boolean commentaire = ligne.stripLeading().startsWith("#");
                 String prose = commentaire ? ligne : ligne.substring(ligne.indexOf('=') + 1);
+                if (!commentaire && CITATIONS_OFFICIELLES.containsKey(ligne.substring(0, Math.max(0, ligne.indexOf('='))))) {
+                    continue;
+                }
                 if (commentaire ? prose.contains(" ;") : ENTITE.matcher(prose).replaceAll("").contains(";")) {
                     ecarts.add(nom + ":" + (k + 1) + ": " + ligne.strip());
                 }

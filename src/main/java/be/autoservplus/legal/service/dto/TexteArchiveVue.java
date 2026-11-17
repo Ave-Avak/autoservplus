@@ -1,6 +1,7 @@
 package be.autoservplus.legal.service.dto;
 
 import java.time.Instant;
+import java.util.Arrays;
 import java.util.List;
 
 /**
@@ -20,4 +21,16 @@ public record TexteArchiveVue(String version,
                               String contenu,
                               boolean actif,
                               List<String> languesDisponibles) {
+
+    /** Les {@code lignes} premières lignes du texte, sans le saut qui les suit. */
+    public String debut(int lignes) {
+        String[] parties = contenu.split("\n", -1);
+        return String.join("\n", Arrays.copyOfRange(parties, 0, Math.min(lignes, parties.length)));
+    }
+
+    /** Le texte qui suit les {@code lignes} premières lignes. */
+    public String suite(int lignes) {
+        String[] parties = contenu.split("\n", -1);
+        return String.join("\n", Arrays.copyOfRange(parties, Math.min(lignes, parties.length), parties.length));
+    }
 }

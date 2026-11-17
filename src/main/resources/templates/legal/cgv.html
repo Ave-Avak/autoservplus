@@ -62,18 +62,32 @@
     <section>
         <h2 th:text="#{legal.cgv.art6.titre}">Article 6. Retrait et exécution</h2>
         <p th:text="#{legal.cgv.art6.corps}">Les pièces sont retirées au garage.</p>
-        <p th:text="#{legal.cgv.art6.completer}">Les biens sont retirés sur place. Aucune expédition n'est proposée.</p>
+        <p th:text="#{legal.cgv.art6.completer}">La prestation est exécutée à la date convenue.</p>
+        <p th:text="#{legal.cgv.art6.confirmation}">Le courriel de confirmation reprend ces informations.</p>
     </section>
 
     <section>
-        <!-- Le nombre de jours vient de RetractationService.DELAI_LEGAL, la constante
-             qui refuse effectivement une demande hors délai. Écrire « quatorze » en
-             dur dans le message laisserait le texte survivre à un changement de règle. -->
+        <!--/* Informations standardisées de l'annexe 1 du livre VI CDE, reprises mot pour
+               mot et complétées aux seuls endroits que l'annexe laisse à l'entreprise.
+               Le délai de quatorze jours est celui du texte officiel. */-->
         <h2 th:text="#{legal.cgv.art7.titre}">Article 7. Droit de rétractation</h2>
-        <p th:text="#{legal.cgv.art7.corps(${delaiRetractationJours})}">
-            Le consommateur dispose d'un délai de quatorze jours.
-        </p>
-        <p th:text="#{legal.cgv.art7.completer}">La rétractation se notifie par une déclaration dénuée d'ambiguïté.</p>
+        <p th:text="#{legal.cgv.art7.entree}">Dans le présent article, « nous » désigne le garage.</p>
+        <p th:text="#{legal.cgv.art7.droit}">Vous avez le droit de vous rétracter.</p>
+        <p th:text="#{legal.cgv.art7.delai}">Le délai de rétractation expire 14 jours après.</p>
+        <p th:text="#{legal.cgv.art7.notification}">Pour exercer le droit de rétractation.</p>
+        <p th:text="#{legal.cgv.art7.en-ligne}">Vous pouvez également exercer votre droit en ligne.</p>
+        <p th:text="#{legal.cgv.art7.respect}">Pour que le délai de rétractation soit respecté.</p>
+        <h3 th:text="#{legal.cgv.art7.effets.titre}">Effets de la rétractation</h3>
+        <p th:text="#{legal.cgv.art7.effets}">Nous vous rembourserons.</p>
+        <p th:text="#{legal.cgv.art7.suite}">Nous vous informons par courriel.</p>
+        <h3 th:text="#{legal.cgv.art7.pieces.titre}">Si vous avez acheté des pièces</h3>
+        <p th:text="#{legal.cgv.art7.pieces.differer}">Nous pouvons différer le remboursement.</p>
+        <p th:text="#{legal.cgv.art7.pieces.renvoi}">Vous devrez renvoyer ou rendre le bien.</p>
+        <p th:text="#{legal.cgv.art7.pieces.frais}">Nous prendrons en charge les frais de renvoi du bien.</p>
+        <p th:text="#{legal.cgv.art7.pieces.responsabilite}">Votre responsabilité n'est engagée.</p>
+        <h3 th:text="#{legal.cgv.art7.prestation.titre}">Si vous avez commandé une prestation</h3>
+        <p th:text="#{legal.cgv.art7.prestation.montant}">Vous devrez nous payer un montant proportionnel.</p>
+        <p><a th:href="@{/retractation/formulaire}" th:text="#{retractation.formulaire.lien}">Formulaire de rétractation</a></p>
     </section>
 
     <section>

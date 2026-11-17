@@ -42,7 +42,16 @@ public enum TypeDocumentVersionne {
             "legal.cgv.art4.titre", "legal.cgv.art4.corps",
             "legal.cgv.art5.titre", "legal.cgv.art5.corps",
             "legal.cgv.art6.titre", "legal.cgv.art6.corps", "legal.cgv.art6.completer",
-            "legal.cgv.art7.titre", "legal.cgv.art7.corps", "legal.cgv.art7.completer",
+            "legal.cgv.art6.confirmation",
+            // Article 7 de CGV-2026-04 : les informations standardisées de l'annexe 1 du
+            // livre VI CDE, complétées aux endroits que l'annexe laisse à l'entreprise.
+            "legal.cgv.art7.titre", "legal.cgv.art7.entree", "legal.cgv.art7.droit",
+            "legal.cgv.art7.delai", "legal.cgv.art7.notification", "legal.cgv.art7.en-ligne",
+            "legal.cgv.art7.respect", "legal.cgv.art7.effets.titre", "legal.cgv.art7.effets",
+            "legal.cgv.art7.suite", "legal.cgv.art7.pieces.titre", "legal.cgv.art7.pieces.differer",
+            "legal.cgv.art7.pieces.renvoi", "legal.cgv.art7.pieces.frais",
+            "legal.cgv.art7.pieces.responsabilite", "legal.cgv.art7.prestation.titre",
+            "legal.cgv.art7.prestation.montant",
             "legal.cgv.art8.titre", "legal.cgv.art8.corps",
             "legal.cgv.art9.titre", "legal.cgv.art9.corps",
             "legal.cgv.art10.titre", "legal.cgv.art10.completer",

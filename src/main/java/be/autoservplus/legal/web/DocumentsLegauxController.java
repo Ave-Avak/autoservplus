@@ -4,7 +4,6 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.legal.domain.TypeDocumentVersionne;
 import be.autoservplus.legal.service.VersionsDocumentsService;
-import be.autoservplus.retractation.service.RetractationService;
 import be.autoservplus.rgpd.service.CatalogueTraitements;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Controller;
@@ -50,6 +49,8 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Controller
 public class DocumentsLegauxController {
 
+    private static final int LIGNES_AVANT_IDENTITE = 4;
+
     private final IdentiteGarage garage;
     private final CatalogueTraitements traitements;
     private final VersionsDocumentsService versionsDocuments;
@@ -64,9 +65,6 @@ public class DocumentsLegauxController {
     @GetMapping("/cgv")
     public String conditionsGenerales(Model modele) {
         modele.addAttribute("garage", garage);
-        // Le delai est lu sur la constante qui l applique reellement (F30) : si la
-        // regle change, le texte affiche change avec elle plutot que de mentir.
-        modele.addAttribute("delaiRetractationJours", RetractationService.DELAI_LEGAL.toDays());
         // F24 : le lecteur doit pouvoir nommer le texte qu il lit. Sans cette mention,
         // le numero de version figé sur sa preuve d acceptation ne lui apprend rien :
         // il designerait un document qu il ne peut pas identifier.
@@ -106,6 +104,12 @@ public class DocumentsLegauxController {
                         .orElseThrow(() -> new RessourceIntrouvableException(
                                 "Version de " + document.slug(), version)));
         modele.addAttribute("libelleDocument", document.cleLibelle());
+        if (document == TypeDocumentVersionne.CGV) {
+            // Titre, introduction, titre et corps de l'article 1 : même ordre dans toutes
+            // les versions publiées des CGV (V33, V35, V43, V53).
+            modele.addAttribute("lignesAvantIdentite", LIGNES_AVANT_IDENTITE);
+            modele.addAttribute("garage", garage);
+        }
         return "legal/archive";
     }
 
