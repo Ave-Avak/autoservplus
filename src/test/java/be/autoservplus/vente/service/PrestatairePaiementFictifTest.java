@@ -123,6 +123,27 @@ class PrestatairePaiementFictifTest {
                 .isInstanceOf(IllegalStateException.class);
     }
 
+    @Test
+    @DisplayName("deux instances successives, comme deux démarrages, ne rendent jamais la même référence")
+    void referencesUniquesAuRedemarrage() {
+        // L'ancien compteur repartait de 1 à chaque instance : la première référence du
+        // second démarrage était celle du premier, déjà en base.
+        java.util.Set<String> paiements = new java.util.HashSet<>();
+        java.util.Set<String> remboursementsAccordes = new java.util.HashSet<>();
+        for (int demarrage = 0; demarrage < 2; demarrage++) {
+            PrestatairePaiementFictif fictif = new PrestatairePaiementFictif();
+            for (int i = 0; i < 500; i++) {
+                PaiementCree cree = fictif.creerPaiement(demande);
+                assertThat(cree.referencePrestataire()).matches("tr_fictif_[0-9a-f]{16}");
+                assertThat(paiements.add(cree.referencePrestataire())).isTrue();
+                fictif.programmerStatut(cree.referencePrestataire(), StatutPaiement.REUSSI);
+                String rembourse = fictif.rembourser(remboursement(cree, "cle-" + demarrage + "-" + i))
+                        .referenceRemboursement();
+                assertThat(rembourse).matches("re_fictif_[0-9a-f]{16}");
+                assertThat(remboursementsAccordes.add(rembourse)).isTrue();
+            }
+        }
+    }
 
     private static DemandeRemboursement remboursement(PaiementCree cree, String cle) {
         return new DemandeRemboursement(cree.referencePrestataire(),
