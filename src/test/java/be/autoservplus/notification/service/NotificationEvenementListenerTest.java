@@ -150,6 +150,9 @@ class NotificationEvenementListenerTest {
             listener.surCommandePayee(new CommandePayeeEvent(REFERENCE));
 
             verify(notifications).deposer(marie, TypeNotification.COMMANDE_PAYEE, "CMD-2026-0003");
+            // Et le garage : chaque administrateur actif, par un type distinct.
+            verify(notifications).deposerAuxAdministrateurs(TypeNotification.COMMANDE_A_PREPARER,
+                    "CMD-2026-0003");
         }
 
         @Test

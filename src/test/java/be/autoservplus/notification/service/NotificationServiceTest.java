@@ -1,6 +1,7 @@
 package be.autoservplus.notification.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -33,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -102,6 +104,24 @@ class NotificationServiceTest {
             assertThat(enregistree.getCorps()).isEqualTo("RDV-2026-0007");
             assertThat(enregistree.estNonLue()).isTrue();
             assertThat(enregistree.getDateEnvoi()).isEqualTo(MAINTENANT);
+        }
+
+        @Test
+        @DisplayName("aux administrateurs : une notification par administrateur actif, leur nombre rendu")
+        void depotAuxAdministrateurs() {
+            Utilisateur luc = new Utilisateur("luc@garage.be", "$2a$12$h", "Martin", "Luc",
+                    TypeUtilisateur.ADMINISTRATEUR);
+            Utilisateur eva = new Utilisateur("eva@garage.be", "$2a$12$h", "Leroy", "Eva",
+                    TypeUtilisateur.ADMINISTRATEUR);
+            when(membres.findByTypeUtilisateurAndStatut(TypeUtilisateur.ADMINISTRATEUR,
+                    StatutUtilisateur.ACTIF)).thenReturn(List.of(luc, eva));
+
+            int prevenus = service.deposerAuxAdministrateurs(TypeNotification.RDV_CONFIRME, "CMD-2026-0003");
+
+            assertThat(prevenus).isEqualTo(2);
+            ArgumentCaptor<Notification> capture = ArgumentCaptor.forClass(Notification.class);
+            verify(notifications, times(2)).save(capture.capture());
+            assertThat(capture.getAllValues()).extracting(Notification::getMembre).containsExactly(luc, eva);
         }
     }
 

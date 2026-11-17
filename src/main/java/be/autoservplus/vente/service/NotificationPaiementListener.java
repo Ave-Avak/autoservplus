@@ -1,5 +1,6 @@
 package be.autoservplus.vente.service;
 
+import be.autoservplus.communication.service.DetailsCommandeGarage;
 import be.autoservplus.communication.service.DetailsPaiementCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -20,9 +21,10 @@ import org.springframework.transaction.event.TransactionalEventListener;
  * un rollback emporte l evenement, un courriel n annonce jamais un encaissement
  * non acquis, et exceptions du fournisseur avalees apres journal.
  *
- * <p>Cote garage : pas d infrastructure d adresse admin ni d ecran commandes a ce
- * stade, la notification est un journal structure, que le tableau de bord admin
- * a venir relaiera (le drapeau {@code rupture_a_honorer} y est deja persiste).</p>
+ * <p>Côté garage, un courriel à l'adresse de l'atelier dit ce que la commande porte et
+ * si une rupture est à honorer. La notification aux administrateurs part de
+ * {@code NotificationEvenementListener}. Les deux envois sont indépendants : un échec
+ * de l'un n'empêche pas l'autre.</p>
  */
 @Component
 public class NotificationPaiementListener {
@@ -40,25 +42,32 @@ public class NotificationPaiementListener {
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
     public void surCommandePayee(CommandePayeeEvent evenement) {
+        Commande commande = commandes.findByReference(evenement.referenceCommande()).orElse(null);
+        if (commande == null) {
+            log.warn("Commande {} introuvable apres commit : confirmation non envoyee.",
+                    evenement.referenceCommande());
+            return;
+        }
+        Utilisateur membre = commande.getMembre();
+        String montant = FormatageRdv.euros(commande.getMontantTvac());
         try {
-            Commande commande = commandes.findByReference(evenement.referenceCommande())
-                    .orElse(null);
-            if (commande == null) {
-                log.warn("Commande {} introuvable apres commit : confirmation non envoyee.",
-                        evenement.referenceCommande());
-                return;
-            }
-            Utilisateur membre = commande.getMembre();
-            String montant = FormatageRdv.euros(commande.getMontantTvac());
             courriel.envoyerConfirmationPaiement(new DetailsPaiementCourriel(
                     membre.getEmail(), membre.getPrenom(), membre.getLangue(), commande.getNumero(),
                     montant));
-            log.info("Commande {} payee ({}) : a preparer par le garage{}.",
-                    commande.getNumero(), montant,
-                    commande.isRuptureAHonorer() ? ", RUPTURE A HONORER" : "");
         } catch (RuntimeException e) {
-            log.warn("Notification de paiement impossible pour la commande {} : {}",
-                    evenement.referenceCommande(), e.getMessage());
+            log.warn("Confirmation de paiement impossible pour la commande {} : {}",
+                    commande.getNumero(), e.getMessage());
         }
+        try {
+            courriel.envoyerAvisCommandeAuGarage(new DetailsCommandeGarage(
+                    commande.getNumero(), montant, membre.nomComplet(),
+                    !commandes.lignesServiceDe(commande).isEmpty(), commande.isRuptureAHonorer()));
+        } catch (RuntimeException e) {
+            log.warn("Avis au garage impossible pour la commande {} : {}",
+                    commande.getNumero(), e.getMessage());
+        }
+        log.info("Commande {} payee ({}) : a preparer par le garage{}.",
+                commande.getNumero(), montant,
+                commande.isRuptureAHonorer() ? ", RUPTURE A HONORER" : "");
     }
 }

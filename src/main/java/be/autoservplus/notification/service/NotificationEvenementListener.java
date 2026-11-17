@@ -112,6 +112,18 @@ public class NotificationEvenementListener {
                     commande.getNumero());
             return true;
         });
+        deposer("commande a preparer", evenement.referenceCommande(), () -> {
+            var commande = commandes.findByReference(evenement.referenceCommande()).orElse(null);
+            if (commande == null) {
+                return false;
+            }
+            if (notifications.deposerAuxAdministrateurs(TypeNotification.COMMANDE_A_PREPARER,
+                    commande.getNumero()) == 0) {
+                log.warn("Commande {} payée : aucun administrateur actif à notifier.",
+                        commande.getNumero());
+            }
+            return true;
+        });
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)

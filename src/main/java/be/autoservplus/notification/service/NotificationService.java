@@ -1,6 +1,8 @@
 package be.autoservplus.notification.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.identite.domain.StatutUtilisateur;
+import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.notification.domain.Notification;
@@ -81,6 +83,19 @@ public class NotificationService {
     public void deposer(Utilisateur membre, TypeNotification type, String argument) {
         String traceFr = messages.getMessage(type.cleTitre(), null, Locale.FRENCH);
         notifications.save(new Notification(membre, type, traceFr, argument, horloge.instant()));
+    }
+
+    /**
+     * Dépose la notification chez chaque administrateur actif, et rend leur nombre.
+     * Aucun administrateur actif n'est pas une erreur : une base de démonstration peut
+     * n'en porter aucun, et l'événement qui notifie ne doit pas échouer faute de lecteur.
+     */
+    @Transactional
+    public int deposerAuxAdministrateurs(TypeNotification type, String argument) {
+        List<Utilisateur> administrateurs = membres.findByTypeUtilisateurAndStatut(
+                TypeUtilisateur.ADMINISTRATEUR, StatutUtilisateur.ACTIF);
+        administrateurs.forEach(administrateur -> deposer(administrateur, type, argument));
+        return administrateurs.size();
     }
 
     // --- lecture et marquage par le titulaire -----------------------------------------
