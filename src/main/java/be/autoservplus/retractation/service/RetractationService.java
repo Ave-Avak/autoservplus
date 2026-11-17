@@ -36,19 +36,19 @@ import java.util.UUID;
  * validation administrateur ({@code AdminRetractationService}). Ce partage est la
  * raison d etre du flux en deux temps voulu par le CdC (P372-373).</p>
  *
- * <p><b>Point de depart du delai de quatorze jours.</b> La loi le fait courir a
- * compter de la <b>reception</b> du bien (CDE, art. VI.47 §2). La V1 ne suit pas la
- * livraison : aucune date de reception n existe en base. Le delai est donc compte
- * depuis la <b>conclusion de la commande</b>, qui est necessairement anterieure a la
- * reception. Le membre dispose ainsi d une fenetre plus courte que la fenetre legale,
- * jamais plus longue : l ecart joue contre le garage, pas contre le consommateur, ce
- * qui est le seul sens dans lequel une approximation est defendable. Le jour ou la
- * livraison sera suivie, il suffira de changer la date de depart.</p>
+ * <p>Point de départ du délai de quatorze jours, selon la nature de la commande
+ * (CDE, art. VI.47 §2). Pour une prestation, la conclusion du contrat : le délai se
+ * calcule et une demande tardive est refusée ici. Pour des pièces, la prise de
+ * possession du bien : aucune date de remise n'existe en base, le délai ne se calcule
+ * donc pas, et la demande est toujours enregistrée. Le garage la refuse au besoin
+ * pour délai expiré, motif à l'appui, depuis la date de remise qu'il connaît. Compter
+ * depuis la conclusion pour des pièces refuserait une rétractation que la loi admet
+ * encore : la fenêtre serait plus courte que la fenêtre légale, au détriment du
+ * consommateur.</p>
  *
  * <p>Arithmetique en {@link Duration} de 14 x 24 h, et non en jours calendaires
- * arretes a minuit : legerement plus stricte que le calcul legal, dans le meme sens
- * que ci-dessus. L horloge est injectee ({@link Clock}), jamais {@code Instant.now()} :
- * c est ce qui rend la fenetre testable a date gelee.</p>
+ * arretes a minuit. L horloge est injectee ({@link Clock}), jamais
+ * {@code Instant.now()} : c est ce qui rend la fenetre testable a date gelee.</p>
  */
 @Service
 @Transactional(readOnly = true)
@@ -207,6 +207,18 @@ public class RetractationService {
                 .isPresent();
     }
 
+    /**
+     * Le délai ne se calcule que pour une commande de prestations sans aucune pièce,
+     * depuis sa conclusion. Le panier refuse de mêler les deux natures (F12-b), mais la
+     * base ne l'interdit pas : une commande mixte suit la règle des pièces, dont le délai
+     * court de la prise de possession, plutôt que d'être refusée tout entière.
+     */
+    private boolean delaiCalculableEtExpire(Commande commande, Instant maintenant) {
+        return !maintenant.isBefore(commande.getDateCommande().plus(DELAI_LEGAL))
+                && !commandes.lignesServiceDe(commande).isEmpty()
+                && commandes.lignesDe(commande).isEmpty();
+    }
+
     private MotifRefusRetractation refusEventuel(Commande commande, Instant maintenant) {
         if (commande.getStatut() == StatutCommande.REMBOURSEE
                 || commande.getStatut() == StatutCommande.ANNULEE) {
@@ -215,7 +227,7 @@ public class RetractationService {
         if (commande.getStatut() != StatutCommande.PAYEE) {
             return MotifRefusRetractation.COMMANDE_NON_PAYEE;
         }
-        if (!maintenant.isBefore(commande.getDateCommande().plus(DELAI_LEGAL))) {
+        if (delaiCalculableEtExpire(commande, maintenant)) {
             return MotifRefusRetractation.DELAI_EXPIRE;
         }
         if (demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE)) {

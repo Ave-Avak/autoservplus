@@ -78,6 +78,12 @@ class RetractationServiceTest {
         when(commandes.findByReference(commande.getReference())).thenReturn(Optional.of(commande));
     }
 
+    /** La commande porte une prestation : son délai se calcule depuis la conclusion. */
+    private void commandeDePrestations(Commande commande) {
+        when(commandes.lignesServiceDe(commande)).thenReturn(List.of(
+                org.mockito.Mockito.mock(be.autoservplus.vente.domain.LignePanier.class)));
+    }
+
     @Nested
     @DisplayName("fenetre legale de 14 jours")
     class FenetreLegale {
@@ -101,10 +107,11 @@ class RetractationServiceTest {
         }
 
         @Test
-        @DisplayName("J-15 : le delai est expire, rien n'est ecrit")
+        @DisplayName("prestations à J-15 : le délai court depuis la conclusion, il est expiré, rien n'est écrit")
         void quinzeJours() {
             Commande commande = commandePayeeIlYA(15);
             commandeExiste(commande);
+            commandeDePrestations(commande);
 
             assertThatThrownBy(() -> service.demander(
                     "marie@exemple.be", commande.getReference(), null))
@@ -115,13 +122,12 @@ class RetractationServiceTest {
         }
 
         @Test
-        @DisplayName("J-14 pile : la fenetre est fermee, la borne est exclusive")
+        @DisplayName("prestations à J-14 pile : la fenêtre est fermée, la borne est exclusive")
         void quatorzeJoursPile() {
-            // 14 x 24 h exactement : le delai est ecoule. Legerement plus strict que
-            // le calcul calendaire legal, et l ecart joue contre le garage, jamais
-            // contre le consommateur : seul sens dans lequel l approximation tient.
+            // 14 x 24 h exactement : le délai est écoulé.
             Commande commande = commandePayeeIlYA(14);
             commandeExiste(commande);
+            commandeDePrestations(commande);
 
             assertThatThrownBy(() -> service.demander(
                     "marie@exemple.be", commande.getReference(), null))
@@ -129,12 +135,47 @@ class RetractationServiceTest {
         }
 
         @Test
+        @DisplayName("pièces à J-30 : aucune date de remise, la demande est enregistrée, le garage tranche")
+        void piecesSansRefusAutomatique() {
+            // Pour un bien, le délai court de la prise de possession (VI.47 §2, 2°),
+            // que la base ne connaît pas : refuser depuis la conclusion priverait le
+            // consommateur d'une partie de son délai.
+            Commande commande = commandePayeeIlYA(30);
+            commandeExiste(commande);
+            when(commandes.lignesServiceDe(commande)).thenReturn(List.of());
+            when(demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE))
+                    .thenReturn(false);
+            when(demandes.save(any(DemandeAnnulation.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            assertThat(service.demander("marie@exemple.be", commande.getReference(), null).getStatut())
+                    .isEqualTo(StatutDemandeAnnulation.EN_ATTENTE);
+        }
+
+        @Test
+        @DisplayName("commande mixte à J-30 : la règle des pièces s'applique, la demande est enregistrée")
+        void commandeMixteSuitLaRegleDesPieces() {
+            // Le panier refuse ce mélange, la base non : la partie pièces garde son délai
+            // depuis la prise de possession, le refus automatique ne la touche pas.
+            Commande commande = commandePayeeIlYA(30);
+            commandeExiste(commande);
+            commandeDePrestations(commande);
+            when(commandes.lignesDe(commande)).thenReturn(List.of(
+                    org.mockito.Mockito.mock(be.autoservplus.vente.domain.LignePanier.class)));
+            when(demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE))
+                    .thenReturn(false);
+            when(demandes.save(any(DemandeAnnulation.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            assertThat(service.demander("marie@exemple.be", commande.getReference(), null).getStatut())
+                    .isEqualTo(StatutDemandeAnnulation.EN_ATTENTE);
+        }
+
+        @Test
         @DisplayName("le delai court depuis la conclusion de la commande, pas depuis le paiement")
         void departDuDelai() {
-            // La V1 ne suit pas la livraison : le depart est la conclusion, donc la
-            // fenetre du membre est plus courte que la fenetre legale, jamais plus
-            // longue. Ici la commande date de J-13 mais n a ete payee qu hier : c est
-            // bien J-13 qui compte.
+            // Ici la commande date de J-13 mais n a ete payee qu hier : c est bien J-13
+            // qui compte pour une prestation.
             Commande commande = new Commande("CMD-2026-0001", marie,
                     new BigDecimal("39.98"), new BigDecimal("8.40"), new BigDecimal("48.38"),
                     MAINTENANT.minus(Duration.ofDays(13)));
@@ -316,6 +357,33 @@ class RetractationServiceTest {
 
             assertThat(depuisLeDetail).isEqualTo(depuisLaListe);
             assertThat(depuisLeDetail.demandable()).isTrue();
+        }
+
+        @Test
+        @DisplayName("pièces à J-30 : le lien « Renoncer au contrat ici » reste proposé")
+        void piecesToujoursDemandables() {
+            // VI.61/2 §1 : la fonction reste disponible pendant tout le délai, qui court
+            // de la prise de possession, inconnue en base.
+            Commande commande = commandePayeeIlYA(30);
+            commandeExiste(commande);
+            when(demandes.historiqueDe(commande)).thenReturn(List.of());
+            when(demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE))
+                    .thenReturn(false);
+
+            assertThat(service.etatDeLaCommande("marie@exemple.be", commande.getReference())
+                    .demandable()).isTrue();
+        }
+
+        @Test
+        @DisplayName("prestations à J-15 : le délai depuis la conclusion est écoulé, plus de lien")
+        void prestationsPlusDemandables() {
+            Commande commande = commandePayeeIlYA(15);
+            commandeExiste(commande);
+            commandeDePrestations(commande);
+            when(demandes.historiqueDe(commande)).thenReturn(List.of());
+
+            assertThat(service.etatDeLaCommande("marie@exemple.be", commande.getReference())
+                    .demandable()).isFalse();
         }
 
         @Test
