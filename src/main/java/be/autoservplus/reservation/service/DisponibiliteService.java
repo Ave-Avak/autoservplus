@@ -61,19 +61,31 @@ public class DisponibiliteService {
 
     /** Heures de depart reservables un jour donne, pour une prestation de la duree indiquee. */
     public List<CreneauDisponible> creneauxDuJour(LocalDate jour, int dureeMinutes) {
+        Duration duree = Rdv.dureeArrondie(dureeMinutes, parametres.courants().pas());
+        return creneaux(jour, duree, ReglesDeCreneau.MEMBRE, null);
+    }
+
+    /**
+     * Heures de départ où déplacer un rendez-vous, sur sa durée exacte. Le rendez-vous
+     * ne compte pas parmi les occupants : son ancien créneau est libéré par le
+     * déplacement, un nouveau créneau peut donc le recouper.
+     */
+    public List<CreneauDisponible> creneauxPourDeplacer(Rdv deplace, LocalDate jour, ReglesDeCreneau regles) {
+        return creneaux(jour, deplace.duree(), regles, deplace);
+    }
+
+    private List<CreneauDisponible> creneaux(LocalDate jour, Duration duree, ReglesDeCreneau regles, Rdv deplace) {
         ParametreAtelier p = parametres.courants();
         ZoneId zone = p.zone();
         Instant maintenant = horloge.instant();
-        Instant plusTot = maintenant.plus(p.delaiMinimal());
-        Instant plusTard = maintenant.plus(p.horizon());
-        Duration duree = Rdv.dureeArrondie(dureeMinutes, p.pas());
 
         Instant debutJour = jour.atStartOfDay(zone).toInstant();
         Instant finJour = jour.plusDays(1).atStartOfDay(zone).toInstant();
-        if (JoursFeries.estFerie(jour) || !finJour.isAfter(plusTot) || !debutJour.isBefore(plusTard)) {
+        if (JoursFeries.estFerie(jour) || !jourDansLaFenetre(regles, p, maintenant, debutJour, finJour)) {
             return List.of();
         }
-        if (!p.isConfirmationAutomatique() && !echeances.laisseLeTempsDeRepondre(jour, maintenant, p)) {
+        if (regles == ReglesDeCreneau.MEMBRE && !p.isConfirmationAutomatique()
+                && !echeances.laisseLeTempsDeRepondre(jour, maintenant, p)) {
             return List.of();
         }
 
@@ -85,8 +97,8 @@ public class DisponibiliteService {
         // Une requete par source pour toute la journee. Le filtrage par candidat se
         // fait en memoire, sur quelques dizaines de lignes au plus.
         List<Indisponibilite> fermetures = indisponibilites.chevauchant(debutJour, finJour);
-        List<Rdv> occupes = rdvs.actifsChevauchant(
-                debutJour.minus(p.tampon()), finJour.plus(p.tampon()), STATUTS_OCCUPANTS);
+        List<Rdv> occupes = sauf(deplace, rdvs.actifsChevauchant(
+                debutJour.minus(p.tampon()), finJour.plus(p.tampon()), STATUTS_OCCUPANTS));
 
         List<CreneauDisponible> resultat = new ArrayList<>();
         for (PlageOuverture plage : plages.findByJourSemaineAndActifTrueOrderByHeureDebut(
@@ -97,7 +109,7 @@ public class DisponibiliteService {
 
             for (Instant debut = ouverture; !debut.plus(duree).isAfter(fermeture); debut = debut.plus(p.pas())) {
                 Instant fin = debut.plus(duree);
-                if (debut.isBefore(plusTot) || fin.isAfter(plusTard)) {
+                if (!dansLaFenetre(regles, p, maintenant, debut, fin)) {
                     continue;
                 }
                 if (atelierFerme(fermetures, debut, fin)) {
@@ -119,22 +131,35 @@ public class DisponibiliteService {
      * demandes concurrentes passent ce filtre en meme temps.
      */
     public Optional<PosteAtelier> premierPosteLibre(Instant debut, Instant fin) {
+        return premierPosteLibre(debut, fin, null);
+    }
+
+    /** Même attribution, le rendez-vous déplacé ne comptant pas parmi les occupants. */
+    public Optional<PosteAtelier> premierPosteLibre(Instant debut, Instant fin, Rdv deplace) {
         ParametreAtelier p = parametres.courants();
         List<Indisponibilite> fermetures = indisponibilites.chevauchant(debut, fin);
         if (atelierFerme(fermetures, debut, fin)) {
             return Optional.empty();
         }
-        List<Rdv> occupes = rdvs.actifsChevauchant(
-                debut.minus(p.tampon()), fin.plus(p.tampon()), STATUTS_OCCUPANTS);
+        List<Rdv> occupes = sauf(deplace, rdvs.actifsChevauchant(
+                debut.minus(p.tampon()), fin.plus(p.tampon()), STATUTS_OCCUPANTS));
         return postesLibres(postes.findByActifTrueOrderByOrdreAscLibelleAsc(),
                 fermetures, occupes, debut, fin, p.tampon()).stream().findFirst();
     }
 
     /** Vrai si l intervalle tombe dans les plages d ouverture et respecte delai et horizon. */
     public boolean estReservable(Instant debut, Instant fin) {
+        return estReservable(debut, fin, ReglesDeCreneau.MEMBRE);
+    }
+
+    /**
+     * Même contrôle selon qui choisit le créneau. Pour le garage, ni délai minimal, ni
+     * horizon, ni temps de réponse : le créneau doit seulement être à venir.
+     */
+    public boolean estReservable(Instant debut, Instant fin, ReglesDeCreneau regles) {
         ParametreAtelier p = parametres.courants();
         Instant maintenant = horloge.instant();
-        if (debut.isBefore(maintenant.plus(p.delaiMinimal())) || fin.isAfter(maintenant.plus(p.horizon()))) {
+        if (!dansLaFenetre(regles, p, maintenant, debut, fin)) {
             return false;
         }
         ZonedDateTime local = debut.atZone(p.zone());
@@ -146,7 +171,7 @@ public class DisponibiliteService {
         if (JoursFeries.estFerie(local.toLocalDate())) {
             return false;
         }
-        if (!p.isConfirmationAutomatique()
+        if (regles == ReglesDeCreneau.MEMBRE && !p.isConfirmationAutomatique()
                 && !echeances.laisseLeTempsDeRepondre(local.toLocalDate(), maintenant, p)) {
             return false;
         }
@@ -156,6 +181,32 @@ public class DisponibiliteService {
     }
 
     // --- regles pures, sans acces aux donnees ---------------------------------------
+
+    static boolean dansLaFenetre(ReglesDeCreneau regles, ParametreAtelier p, Instant maintenant,
+                                 Instant debut, Instant fin) {
+        return switch (regles) {
+            case MEMBRE -> !debut.isBefore(maintenant.plus(p.delaiMinimal()))
+                    && !fin.isAfter(maintenant.plus(p.horizon()));
+            case GARAGE -> debut.isAfter(maintenant);
+        };
+    }
+
+    /** Un jour peut-il porter au moins un créneau dans la fenêtre ? */
+    private static boolean jourDansLaFenetre(ReglesDeCreneau regles, ParametreAtelier p, Instant maintenant,
+                                             Instant debutJour, Instant finJour) {
+        return switch (regles) {
+            case MEMBRE -> finJour.isAfter(maintenant.plus(p.delaiMinimal()))
+                    && debutJour.isBefore(maintenant.plus(p.horizon()));
+            case GARAGE -> finJour.isAfter(maintenant);
+        };
+    }
+
+    static List<Rdv> sauf(Rdv deplace, List<Rdv> occupes) {
+        if (deplace == null) {
+            return occupes;
+        }
+        return occupes.stream().filter(r -> !deplace.equals(r)).toList();
+    }
 
     static boolean atelierFerme(List<Indisponibilite> fermetures, Instant debut, Instant fin) {
         return fermetures.stream()
