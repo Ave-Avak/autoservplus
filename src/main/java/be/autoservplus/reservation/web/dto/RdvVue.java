@@ -16,7 +16,8 @@ public record RdvVue(
         String montantTvac,
         String commentaire,
         String motifRefus,
-        boolean annulable) {
+        boolean annulable,
+        boolean modifiable) {
 
     public boolean estActif() {
         return "EN_ATTENTE".equals(statut) || "CONFIRME".equals(statut);

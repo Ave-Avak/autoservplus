@@ -271,8 +271,10 @@ class AvisRendezVousIT extends SocleIntegration {
     @DisplayName("relance au garage à mi-délai, une seule fois, courriel et notification")
     void relanceAMiDelai() {
         Rdv rdv = enAttente("RDV-AVI-0201", MAINTENANT.plus(Duration.ofDays(5)), MAINTENANT.plus(Duration.ofHours(2)));
-        jdbc.update("UPDATE rdv SET created_at = ? WHERE id = ?",
-                java.sql.Timestamp.from(MAINTENANT.minus(Duration.ofHours(4))), rdv.getId());
+        // Demande faite il y a quatre heures : l'attente commence avec elle.
+        java.sql.Timestamp ilYAQuatreHeures = java.sql.Timestamp.from(MAINTENANT.minus(Duration.ofHours(4)));
+        jdbc.update("UPDATE rdv SET created_at = ?, en_attente_depuis = ? WHERE id = ?",
+                ilYAQuatreHeures, ilYAQuatreHeures, rdv.getId());
 
         assertThat(taches.relancerLeGarage()).isEqualTo(1);
         assertThat(taches.relancerLeGarage()).as("second passage").isZero();

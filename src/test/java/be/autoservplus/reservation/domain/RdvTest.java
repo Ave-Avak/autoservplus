@@ -652,6 +652,7 @@ class RdvTest {
 
             assertThat(rdv.getStatut()).isEqualTo(StatutRdv.EN_ATTENTE);
             assertThat(rdv.getEcheanceReponse()).isEqualTo(echeance);
+            assertThat(rdv.getEnAttenteDepuis()).as("l'attente recommence au déplacement").isEqualTo(maintenant);
             assertThat(StatutRdv.CONFIRME.peutPasserA(StatutRdv.EN_ATTENTE))
                     .as("la table des transitions reste fermée à ce retour")
                     .isFalse();

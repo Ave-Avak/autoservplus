@@ -37,7 +37,9 @@ public enum TypeNotification {
     /** Demande toujours en attente à mi-délai, adressée à chaque administrateur actif. */
     RDV_RELANCE,
     /** Demande restée sans réponse à son échéance, adressée au membre. */
-    RDV_EXPIRE;
+    RDV_EXPIRE,
+    /** Rendez-vous déplacé par le membre, adressé à chaque administrateur actif. */
+    RDV_MODIFIE;
 
     /** Cle i18n du titre affiche. */
     public String cleTitre() {

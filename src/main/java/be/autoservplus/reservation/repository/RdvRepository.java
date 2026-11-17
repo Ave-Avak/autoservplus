@@ -150,15 +150,17 @@ public interface RdvRepository extends JpaRepository<Rdv, Long> {
     List<Rdv> demandesEchues(@Param("maintenant") Instant maintenant);
 
     /**
-     * Demandes en attente arrivées à mi-chemin entre leur création et leur échéance,
-     * échéance non atteinte et relance pas encore réservée.
+     * Demandes en attente arrivées à mi-chemin entre le début de leur attente et leur
+     * échéance, échéance non atteinte et relance pas encore réservée. Le début de
+     * l'attente est la création, ou le dernier déplacement qui a remis la demande en
+     * attente avec une échéance neuve.
      */
     @Query(value = """
             SELECT * FROM rdv
             WHERE deleted_at IS NULL AND statut = 'EN_ATTENTE'
               AND echeance_reponse IS NOT NULL AND relance_envoyee_le IS NULL
               AND echeance_reponse > :maintenant
-              AND created_at + (echeance_reponse - created_at) / 2 <= :maintenant
+              AND en_attente_depuis + (echeance_reponse - en_attente_depuis) / 2 <= :maintenant
             ORDER BY echeance_reponse
             """, nativeQuery = true)
     List<Rdv> relancesDues(@Param("maintenant") Instant maintenant);
@@ -170,4 +172,16 @@ public interface RdvRepository extends JpaRepository<Rdv, Long> {
             WHERE id = :id AND relance_envoyee_le IS NULL AND statut = 'EN_ATTENTE' AND deleted_at IS NULL
             """, nativeQuery = true)
     int reserverRelance(@Param("id") Long id, @Param("maintenant") Instant maintenant);
+
+    /**
+     * Rend le rappel et la relance de nouveau dus après un changement de créneau : ils
+     * portaient sur l'ancien. Écriture explicite, les deux colonnes n'étant jamais écrites
+     * par l'entité. Le contexte n'est pas vidé, sur le patron de {@link #reserverRappel}.
+     */
+    @Modifying(flushAutomatically = true)
+    @Query(value = """
+            UPDATE rdv SET rappel_envoye_le = NULL, relance_envoyee_le = NULL
+            WHERE id = :id AND deleted_at IS NULL
+            """, nativeQuery = true)
+    int remettreRappelEtRelanceAZero(@Param("id") Long id);
 }

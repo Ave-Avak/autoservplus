@@ -96,6 +96,14 @@ public class Rdv extends BaseEntity {
     @Column(name = "echeance_reponse")
     private Instant echeanceReponse;
 
+    /**
+     * Début de l'attente d'une réponse du garage, d'où se mesure la relance à mi-délai.
+     * Posé à la création et quand un déplacement par le membre remet le rendez-vous en
+     * attente, jamais par une autre écriture.
+     */
+    @Column(name = "en_attente_depuis", nullable = false)
+    private Instant enAttenteDepuis;
+
     /** Même règle que {@link #rappelEnvoyeLe}, écrite par {@code RdvRepository.reserverRelance}. */
     @Column(name = "relance_envoyee_le", insertable = false, updatable = false)
     private Instant relanceEnvoyeeLe;
@@ -339,6 +347,7 @@ public class Rdv extends BaseEntity {
         } else {
             this.statut = StatutRdv.EN_ATTENTE;
             this.echeanceReponse = echeance;
+            this.enAttenteDepuis = maintenant;
         }
     }
 
@@ -396,6 +405,18 @@ public class Rdv extends BaseEntity {
         this.statut = cible;
     }
 
+    /**
+     * À la création, l'attente commence avec le rendez-vous. L'instant vient de
+     * {@code created_at}, posé juste avant par l'audit avec l'horloge injectée : le
+     * constructeur n'en connaît aucune.
+     */
+    @PrePersist
+    void debutDeLAttente() {
+        if (enAttenteDepuis == null) {
+            enAttenteDepuis = getCreatedAt();
+        }
+    }
+
     // --- calculs -------------------------------------------------------------------
 
     /** Somme des durees des lignes, avant arrondi (RM-09). */
@@ -435,6 +456,7 @@ public class Rdv extends BaseEntity {
     public Instant getRappelEnvoyeLe() { return rappelEnvoyeLe; }
     public Instant getEcheanceReponse() { return echeanceReponse; }
     public Instant getRelanceEnvoyeeLe() { return relanceEnvoyeeLe; }
+    public Instant getEnAttenteDepuis() { return enAttenteDepuis; }
     public List<LigneRdv> getLignes() { return Collections.unmodifiableList(lignes); }
     public long getVersion() { return version; }
 

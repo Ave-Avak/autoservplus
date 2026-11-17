@@ -1,14 +1,17 @@
 package be.autoservplus.reservation.web;
 
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.service.AucunePrestationChoisieException;
+import be.autoservplus.reservation.service.CreneauIndisponibleException;
 import be.autoservplus.reservation.service.ExportAgendaService;
 import be.autoservplus.reservation.service.LimiteDemandesEnAttenteException;
 import be.autoservplus.reservation.service.PrestationIndisponibleException;
 import be.autoservplus.reservation.service.RdvService;
 import be.autoservplus.reservation.service.VehiculeService;
 import be.autoservplus.reservation.service.dto.FichierAgenda;
+import be.autoservplus.reservation.web.dto.ModificationRdvForm;
 import be.autoservplus.reservation.web.dto.RdvForm;
 import jakarta.validation.Valid;
 import org.springframework.context.MessageSource;
@@ -187,6 +190,98 @@ public class RdvController {
             redirection.addFlashAttribute("erreur", e.getMessage());
         }
         return "redirect:/mes-rendez-vous/" + reference;
+    }
+
+    // --- déplacement -----------------------------------------------------------------
+
+    /**
+     * Écran de déplacement. Un rendez-vous qui ne se déplace plus en ligne (délai
+     * dépassé, rendez-vous terminé) renvoie au détail avec le motif, sans page d'erreur.
+     */
+    @GetMapping("/{reference}/modifier")
+    public String afficherModification(@AuthenticationPrincipal UserDetails membre,
+                                       @PathVariable UUID reference,
+                                       @ModelAttribute("formulaire") ModificationRdvForm formulaire,
+                                       Model modele, Locale langue,
+                                       RedirectAttributes redirection) {
+        return retourModificationOuDetail(membre, reference, formulaire, modele, langue, redirection);
+    }
+
+    /** Fragment HTMX : les heures où déplacer le rendez-vous, un jour donné. */
+    @GetMapping("/{reference}/modifier/creneaux")
+    public String creneauxModification(@AuthenticationPrincipal UserDetails membre,
+                                       @PathVariable UUID reference,
+                                       @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+                                       Model modele) {
+        modele.addAttribute("creneaux", rdvs.creneauxPourModifier(reference, membre.getUsername(), date));
+        modele.addAttribute("aucunePrestation", false);
+        return "reservation/fragments/creneaux :: liste";
+    }
+
+    @PostMapping("/{reference}/modifier")
+    public String modifier(@AuthenticationPrincipal UserDetails membre,
+                           @PathVariable UUID reference,
+                           @ModelAttribute("formulaire") ModificationRdvForm formulaire,
+                           Model modele, Locale langue,
+                           RedirectAttributes redirection) {
+        Instant debut;
+        try {
+            debut = Instant.parse(formulaire.getDebut() == null ? "" : formulaire.getDebut());
+        } catch (DateTimeParseException e) {
+            modele.addAttribute("erreurHeure", messages.getMessage("rdv.modification.heure-requise", null, langue));
+            return retourModificationOuDetail(membre, reference, formulaire, modele, langue, redirection);
+        }
+        try {
+            long version = formulaire.getVersion() == null ? -1 : formulaire.getVersion();
+            var rdv = rdvs.modifier(reference, membre.getUsername(), debut, version);
+            String cle = rdv.getStatut() == StatutRdv.CONFIRME
+                    ? "rdv.modification.confirmee" : "rdv.modification.en-attente";
+            redirection.addFlashAttribute("message", messages.getMessage(cle, new Object[]{rdv.getNumero()}, langue));
+            return "redirect:/mes-rendez-vous/" + reference;
+        } catch (RefusTraduit refus) {
+            // Page périmée ou délai dépassé : le détail montre l'état réel du rendez-vous.
+            redirection.addFlashAttribute("erreur", traduire(refus, langue));
+            return "redirect:/mes-rendez-vous/" + reference;
+        } catch (CreneauIndisponibleException e) {
+            modele.addAttribute("erreurHeure",
+                    messages.getMessage("rdv.modification.creneau-indisponible", null, langue));
+            return retourModificationOuDetail(membre, reference, formulaire, modele, langue, redirection);
+        }
+    }
+
+    /**
+     * Rend l'écran de déplacement, ou renvoie au détail avec le motif quand le
+     * rendez-vous ne se déplace plus en ligne (délai dépassé, rendez-vous terminé).
+     */
+    private String retourModificationOuDetail(UserDetails membre, UUID reference, ModificationRdvForm formulaire,
+                                              Model modele, Locale langue, RedirectAttributes redirection) {
+        try {
+            var vue = rdvs.vueModification(reference, membre.getUsername());
+            if (formulaire.getDate() == null) {
+                formulaire.setDate(rdvs.premierJourReservable());
+            }
+            modele.addAttribute("vue", vue);
+            modele.addAttribute("formulaire", formulaire);
+            modele.addAttribute("dateMin", rdvs.premierJourReservable());
+            modele.addAttribute("dateMax", rdvs.dernierJourReservable());
+            modele.addAttribute("creneaux",
+                    rdvs.creneauxPourModifier(reference, membre.getUsername(), formulaire.getDate()));
+            modele.addAttribute("aucunePrestation", false);
+            return "reservation/rdv-modifier";
+        } catch (RefusTraduit refus) {
+            redirection.addFlashAttribute("erreur", traduire(refus, langue));
+            return "redirect:/mes-rendez-vous/" + reference;
+        }
+    }
+
+    /**
+     * Seul le refus de délai attend un argument. Les autres messages n'en reçoivent pas :
+     * avec un argument, MessageFormat avalerait leurs apostrophes simples.
+     */
+    private String traduire(RefusTraduit refus, Locale langue) {
+        Object[] arguments = "rdv.modification.delai".equals(refus.getCleMessage())
+                ? new Object[]{rdvs.delaiAnnulationHeures()} : null;
+        return messages.getMessage(refus.getCleMessage(), arguments, langue);
     }
 
     private String retourFormulaire(UserDetails membre, RdvForm formulaire, Model modele) {

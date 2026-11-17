@@ -219,6 +219,40 @@ public class CourrielSortant implements ServiceCourriel {
     }
 
     @Override
+    public void envoyerModificationRdvConfirmee(Utilisateur destinataire, DetailsRdvCourriel ancien,
+                                                DetailsRdvCourriel nouveau, PieceJointeCourriel agenda) {
+        Locale langue = langue(destinataire.getLangue());
+        String corps = corps("rdv-modifie", langue, nouveau.numero(),
+                jour(ancien.debut(), langue, "EEEE d MMMM yyyy"), heure(ancien.debut()),
+                jour(nouveau.debut(), langue, "EEEE d MMMM yyyy"), heure(nouveau.debut()));
+        if (agenda != null) {
+            corps = corps + "\n" + texte("courriel.rdv-confirme.agenda", langue);
+        }
+        partir("rdv-modifie", destinataire.getEmail(), destinataire.nomComplet(),
+                destinataire.getPrenom(), langue, corps, agenda);
+    }
+
+    @Override
+    public void envoyerModificationRdvEnAttente(Utilisateur destinataire, DetailsRdvCourriel ancien,
+                                                DetailsRdvCourriel nouveau, ZonedDateTime echeance) {
+        Locale langue = langue(destinataire.getLangue());
+        auCompte("rdv-modifie-en-attente", destinataire, null, nouveau.numero(),
+                jour(ancien.debut(), langue, "EEEE d MMMM yyyy"), heure(ancien.debut()),
+                jour(nouveau.debut(), langue, "EEEE d MMMM yyyy"), heure(nouveau.debut()),
+                jour(echeance, langue, "EEEE d MMMM yyyy"), heure(echeance));
+    }
+
+    @Override
+    public void envoyerAvisModificationAuGarage(DetailsRdvCourriel ancien, DetailsRdvCourriel nouveau,
+                                                String membre, boolean confirme, String cheminDetail) {
+        Locale langue = Locale.FRENCH;
+        auGarage(confirme ? "rdv-modifie-garage-confirme" : "rdv-modifie-garage", nouveau.numero(), langue,
+                nouveau.numero(), jour(ancien.debut(), langue, "EEEE d MMMM yyyy"), heure(ancien.debut()),
+                jour(nouveau.debut(), langue, "EEEE d MMMM yyyy"), heure(nouveau.debut()),
+                membre, liens.vers(cheminDetail));
+    }
+
+    @Override
     public void envoyerDemandeValidationDepassement(Utilisateur destinataire,
                                                     DetailsRdvCourriel rdv,
                                                     DetailsDepassementCourriel depassement) {
