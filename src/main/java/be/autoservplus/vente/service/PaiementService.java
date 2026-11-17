@@ -10,8 +10,10 @@ import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.repository.CommandeRepository;
 import be.autoservplus.vente.repository.PaiementRepository;
+import org.hibernate.exception.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -58,6 +60,9 @@ public class PaiementService {
     /** Tentatives que le prestataire peut encore faire aboutir. */
     private static final Set<StatutPaiement> OUVERTS =
             EnumSet.of(StatutPaiement.INITIE, StatutPaiement.EN_COURS);
+
+    /** Index de V51 : au plus une tentative ouverte par commande. */
+    static final String INDEX_TENTATIVE_OUVERTE = "uq_paiement_tentative_ouverte";
 
     private final PaiementRepository paiements;
     private final CommandeRepository commandes;
@@ -164,6 +169,23 @@ public class PaiementService {
 
         boolean bloquee = enCours;
         String reprise = pageOuverte;
+        try {
+            return decider(referenceCommande, email, bloquee, reprise);
+        } catch (DataIntegrityViolationException violation) {
+            if (!violeLaTentativeOuverteUnique(violation)) {
+                throw violation;
+            }
+            // Filet de l'index uq_paiement_tentative_ouverte : une tentative a été
+            // insérée sans passer par le verrou de la commande. Le paiement créé chez le
+            // prestataire reste ouvert sans que personne y soit envoyé, et expire seul.
+            log.warn("Tentative de paiement refusée par l'index pour la commande {} : une "
+                    + "autre tentative est ouverte.", referenceCommande);
+            return DepartPaiement.sans(DepartPaiement.Issue.TENTATIVE_CONCURRENTE);
+        }
+    }
+
+    private DepartPaiement decider(UUID referenceCommande, String email, boolean bloquee,
+                                   String reprise) {
         return transaction.execute(statut -> {
             Commande commande = commandes.verrouillerParId(
                             commandeDuMembre(referenceCommande, email).getId())
@@ -196,6 +218,17 @@ public class PaiementService {
         paiement.enregistrerReferencePrestataire(cree.referencePrestataire());
         paiements.saveAndFlush(paiement);
         return cree.urlRedirection();
+    }
+
+    /** La violation vient-elle de l'index d'unicité de la tentative ouverte (V51) ? */
+    static boolean violeLaTentativeOuverteUnique(Throwable erreur) {
+        for (Throwable cause = erreur; cause != null; cause = cause.getCause()) {
+            if (cause instanceof ConstraintViolationException contrainte
+                    && INDEX_TENTATIVE_OUVERTE.equalsIgnoreCase(contrainte.getConstraintName())) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static void exigerAttenteDePaiement(Commande commande) {
