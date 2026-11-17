@@ -82,6 +82,33 @@ public interface ServiceCourriel {
     void envoyerAnnulationParLeMembre(Utilisateur destinataire, DetailsRdvCourriel rdv);
 
     /**
+     * Le membre a déplacé son rendez-vous, confirmé d'office sur le nouveau créneau.
+     * Porte le fichier d'agenda, sauf si sa rédaction a échoué ({@code agenda} nul).
+     */
+    void envoyerModificationRdvConfirmee(Utilisateur destinataire, DetailsRdvCourriel ancien,
+                                         DetailsRdvCourriel nouveau, PieceJointeCourriel agenda);
+
+    /**
+     * Le membre a déplacé son rendez-vous, qui attend la réponse du garage jusqu'à
+     * l'échéance enregistrée. Sans fichier d'agenda, comme toute demande en attente.
+     */
+    void envoyerModificationRdvEnAttente(Utilisateur destinataire, DetailsRdvCourriel ancien,
+                                         DetailsRdvCourriel nouveau, ZonedDateTime echeance);
+
+    /**
+     * Le garage a déplacé le rendez-vous, désormais confirmé, avec son motif et son
+     * téléphone : à moins de 24 heures, le membre ne peut plus l'annuler en ligne.
+     * Porte le fichier d'agenda, sauf si sa rédaction a échoué ({@code agenda} nul).
+     */
+    void envoyerModificationParLeGarage(Utilisateur destinataire, DetailsRdvCourriel ancien,
+                                        DetailsRdvCourriel nouveau, String motif, String telephone,
+                                        PieceJointeCourriel agenda);
+
+    /** Avis au garage d'un rendez-vous déplacé par le membre, comme l'avis d'une nouvelle demande. */
+    void envoyerAvisModificationAuGarage(DetailsRdvCourriel ancien, DetailsRdvCourriel nouveau,
+                                         String membre, boolean confirme, String cheminDetail);
+
+    /**
      * Le garage a chiffre des travaux qui portent l intervention a plus de 10 % du
      * devis initial : RM-15 exige l accord expres du membre avant de poursuivre.
      * C est le canal dedie annonce par RM-16 : le statut percu reste « En cours »,

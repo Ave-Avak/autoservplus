@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.rdv.modification.titre(${rdv.numero()})} + ' | AutoServ+'">Déplacer le rendez-vous | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <p><a th:href="@{/admin/rendez-vous/{ref}(ref=${rdv.reference()})}"
+          th:text="#{admin.rdv.modification.retour}">Retour au rendez-vous</a></p>
+
+    <h1 th:text="#{admin.rdv.modification.titre(${rdv.numero()})}">Déplacer le rendez-vous RDV-2026-0001</h1>
+
+    <p th:text="#{admin.rdv.modification.actuel(${#temporals.format(rdv.debut(), 'EEEE d MMMM yyyy')}, ${rdv.heureDebut()}, ${rdv.heureFin()}, ${rdv.membreNom()})}">
+        Créneau actuel : mercredi 16 septembre 2026, de 10:00 à 11:00, Marie Dupont.
+    </p>
+    <p class="aide" th:text="#{admin.rdv.modification.regles}">Plages, jours fériés et indisponibilités s'appliquent.</p>
+    <p class="aide" th:text="#{admin.rdv.modification.confirme}">Le rendez-vous en sort confirmé.</p>
+
+    <form th:action="@{/admin/rendez-vous/{ref}/modifier(ref=${rdv.reference()})}" th:object="${formulaire}"
+          method="post" class="formulaire">
+        <input type="hidden" name="version" th:value="${formulaire.version}">
+
+        <div class="champ">
+            <label for="date" th:text="#{admin.rdv.modification.date}">Nouvelle date</label>
+            <input type="date" id="date" name="date"
+                   th:value="${#temporals.format(formulaire.date, 'yyyy-MM-dd')}"
+                   th:min="${#temporals.format(dateMin, 'yyyy-MM-dd')}" required>
+        </div>
+
+        <fieldset>
+            <legend th:text="#{admin.rdv.modification.heure}">Nouvelle heure</legend>
+            <p role="alert" class="erreur" th:if="${erreurHeure}" th:text="${erreurHeure}">Erreur</p>
+            <div id="creneaux"
+                 th:hx-get="@{/admin/rendez-vous/{ref}/modifier/creneaux(ref=${rdv.reference()})}"
+                 hx-trigger="change from:#date"
+                 hx-include="#date"
+                 hx-target="this"
+                 hx-swap="innerHTML"
+                 aria-live="polite"
+                 th:insert="~{reservation/fragments/creneaux :: liste}">
+            </div>
+            <noscript>
+                <button type="submit" formmethod="get"
+                        th:formaction="@{/admin/rendez-vous/{ref}/modifier(ref=${rdv.reference()})}"
+                        class="lien-bouton" th:text="#{admin.rdv.modification.date}">Nouvelle date</button>
+            </noscript>
+        </fieldset>
+
+        <div class="champ">
+            <label for="motif" th:text="#{admin.rdv.modification.motif}">Motif communiqué au membre</label>
+            <textarea id="motif" name="motif" rows="3" maxlength="2000" required
+                      th:text="${formulaire.motif}"></textarea>
+            <p role="alert" class="erreur" th:if="${erreurMotif}" th:text="${erreurMotif}">Erreur</p>
+        </div>
+
+        <button type="submit" class="btn-cta" th:text="#{admin.rdv.modification.valider}">Déplacer le rendez-vous</button>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+
+<script th:src="@{/js/htmx.min.js}"></script>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

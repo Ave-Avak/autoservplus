@@ -24,6 +24,33 @@
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
 
+    <section aria-labelledby="titre-feries" th:unless="${rendezVousJoursFeries.isEmpty()}">
+        <h2 id="titre-feries" th:text="#{admin.rdv.feries.titre}">Rendez-vous un jour férié</h2>
+        <p class="aide" th:text="#{admin.rdv.feries.aide}">L'atelier est fermé ces jours-là.</p>
+        <table class="tableau">
+            <caption th:text="#{admin.rdv.feries.legende}">Rendez-vous non terminés tombant un jour férié</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.rdv.colonne.date}">Date</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.heure}">Heure</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.numero}">Numéro</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.membre}">Membre</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.statut}">Statut</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${rendezVousJoursFeries}">
+                <td th:text="${#temporals.format(r.debut(), 'dd/MM/yyyy')}">01/11/2026</td>
+                <td th:text="${#temporals.format(r.debut(), 'HH:mm')} + ' - ' + ${#temporals.format(r.fin(), 'HH:mm')}">10:00 - 11:00</td>
+                <td><a th:href="@{/admin/rendez-vous/{ref}(ref=${r.reference()})}" th:text="${r.numero()}"
+                       th:aria-label="#{admin.rdv.action.detail.aria(${r.numero()})}">RDV-2026-0001</a></td>
+                <td th:text="${r.membreNom()}">Marie Dupont</td>
+                <td th:text="#{'rdv.statut.' + ${r.statut()}}">Confirmé</td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
     <section aria-labelledby="titre-en-attente">
         <h2 id="titre-en-attente" th:text="#{admin.rdv.en-attente.titre}">Demandes en attente</h2>
 

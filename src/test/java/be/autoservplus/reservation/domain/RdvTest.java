@@ -597,6 +597,204 @@ class RdvTest {
     }
 
     @Nested
+    @DisplayName("modification par le membre")
+    class ModificationMembre {
+
+        private final PosteAtelier pont2 = new PosteAtelier("Pont 2");
+        private final Instant nouveauDebut = DEBUT.plus(Duration.ofDays(2));
+        private final Instant maintenant = DEBUT.minus(Duration.ofDays(2));
+        private final Instant echeance = nouveauDebut.minus(Duration.ofHours(20));
+
+        @Test
+        @DisplayName("même durée sur le nouveau créneau, poste repris")
+        void memeDuree() {
+            Rdv rdv = rdvDe(freins);
+            Duration duree = rdv.duree();
+
+            rdv.modifierParLeMembre(nouveauDebut, pont2, maintenant, DELAI_24H, true, null);
+
+            assertThat(rdv.getDebut()).isEqualTo(nouveauDebut);
+            assertThat(rdv.getFin()).isEqualTo(nouveauDebut.plus(duree));
+            assertThat(rdv.getPoste()).isSameAs(pont2);
+        }
+
+        @Test
+        @DisplayName("confirmation automatique : un rendez-vous confirmé le reste")
+        void automatiqueConfirmeResteConfirme() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.confirmer(AVANT_LE_DEBUT);
+
+            rdv.modifierParLeMembre(nouveauDebut, pont, maintenant, DELAI_24H, true, null);
+
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.CONFIRME);
+            assertThat(rdv.getEcheanceReponse()).isNull();
+        }
+
+        @Test
+        @DisplayName("confirmation automatique : une demande en attente devient confirmée, comme une réservation neuve")
+        void automatiqueEnAttenteDevientConfirme() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.fixerEcheanceReponse(DEBUT.minus(Duration.ofHours(20)));
+
+            rdv.modifierParLeMembre(nouveauDebut, pont, maintenant, DELAI_24H, true, null);
+
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.CONFIRME);
+            assertThat(rdv.getEcheanceReponse()).as("l'ancienne échéance ne vaut plus").isNull();
+        }
+
+        @Test
+        @DisplayName("mode manuel : un rendez-vous confirmé repasse en attente avec l'échéance du nouveau créneau")
+        void manuelConfirmeRepasseEnAttente() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.confirmer(AVANT_LE_DEBUT);
+
+            rdv.modifierParLeMembre(nouveauDebut, pont, maintenant, DELAI_24H, false, echeance);
+
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.EN_ATTENTE);
+            assertThat(rdv.getEcheanceReponse()).isEqualTo(echeance);
+            assertThat(rdv.getEnAttenteDepuis()).as("l'attente recommence au déplacement").isEqualTo(maintenant);
+            assertThat(StatutRdv.CONFIRME.peutPasserA(StatutRdv.EN_ATTENTE))
+                    .as("la table des transitions reste fermée à ce retour")
+                    .isFalse();
+        }
+
+        @Test
+        @DisplayName("mode manuel : une demande en attente reçoit une nouvelle échéance")
+        void manuelNouvelleEcheance() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.fixerEcheanceReponse(DEBUT.minus(Duration.ofHours(20)));
+
+            rdv.modifierParLeMembre(nouveauDebut, pont, maintenant, DELAI_24H, false, echeance);
+
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.EN_ATTENTE);
+            assertThat(rdv.getEcheanceReponse()).isEqualTo(echeance);
+        }
+
+        @Test
+        @DisplayName("l'échéance accompagne le mode manuel, et lui seul")
+        void echeanceSelonLeMode() {
+            Rdv rdv = rdvDe(vidange);
+            assertThatThrownBy(() -> rdv.modifierParLeMembre(nouveauDebut, pont, maintenant, DELAI_24H, false, null))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> rdv.modifierParLeMembre(nouveauDebut, pont, maintenant, DELAI_24H, true, echeance))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThat(rdv.getDebut()).isEqualTo(DEBUT);
+        }
+
+        @Test
+        @DisplayName("délai d'annulation compté sur l'ancien début, même vers un créneau lointain")
+        void delaiSurLAncienDebut() {
+            Rdv rdv = rdvDe(vidange);
+            Instant vingtTroisHeuresAvant = DEBUT.minus(Duration.ofHours(23));
+
+            assertThat(rdv.peutEtreModifieParLeMembre(vingtTroisHeuresAvant, DELAI_24H)).isFalse();
+            assertThatThrownBy(() -> rdv.modifierParLeMembre(DEBUT.plus(Duration.ofDays(10)), pont,
+                    vingtTroisHeuresAvant, DELAI_24H, true, null))
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("n'est plus possible");
+            assertThat(rdv.getDebut()).isEqualTo(DEBUT);
+
+            rdv.modifierParLeMembre(nouveauDebut, pont, DEBUT.minus(DELAI_24H), DELAI_24H, true, null);
+            assertThat(rdv.getDebut()).isEqualTo(nouveauDebut);
+        }
+
+        @Test
+        @DisplayName("refusée sur un rendez-vous terminé")
+        void refuseeSurEtatFinal() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.annulerParLeMembre(maintenant, DELAI_24H);
+
+            assertThat(rdv.peutEtreModifieParLeMembre(maintenant, DELAI_24H)).isFalse();
+            assertThatThrownBy(() -> rdv.modifierParLeMembre(nouveauDebut, pont, maintenant, DELAI_24H, true, null))
+                    .isInstanceOf(IllegalStateException.class);
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.ANNULE);
+        }
+
+        @Test
+        @DisplayName("refusée vers un créneau déjà commencé")
+        void nouveauCreneauPasse() {
+            Rdv rdv = rdvDe(vidange);
+            assertThatThrownBy(() -> rdv.modifierParLeMembre(maintenant, pont, maintenant, DELAI_24H, true, null))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThat(rdv.getDebut()).isEqualTo(DEBUT);
+        }
+    }
+
+    @Nested
+    @DisplayName("modification par le garage")
+    class ModificationGarage {
+
+        private final Instant nouveauDebut = DEBUT.plus(Duration.ofDays(1));
+
+        @Test
+        @DisplayName("une demande en attente en sort confirmée")
+        void enAttenteDevientConfirme() {
+            Rdv rdv = rdvDe(vidange);
+
+            rdv.modifierParLeGarage(nouveauDebut, pont, "Pont indisponible", AVANT_LE_DEBUT);
+
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.CONFIRME);
+            assertThat(rdv.getDebut()).isEqualTo(nouveauDebut);
+            assertThat(rdv.getMotifRefus()).as("le motif part au courriel, pas au rendez-vous").isNull();
+        }
+
+        @Test
+        @DisplayName("un rendez-vous confirmé le reste, sans délai pour le garage")
+        void confirmeSansDelai() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.confirmer(AVANT_LE_DEBUT);
+            Instant uneHeureAvant = DEBUT.minus(Duration.ofHours(1));
+
+            rdv.modifierParLeGarage(uneHeureAvant.plus(Duration.ofHours(3)), pont, "Retard de pièce", uneHeureAvant);
+
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.CONFIRME);
+        }
+
+        @Test
+        @DisplayName("exige un motif")
+        void exigeUnMotif() {
+            Rdv rdv = rdvDe(vidange);
+            assertThatThrownBy(() -> rdv.modifierParLeGarage(nouveauDebut, pont, " ", AVANT_LE_DEBUT))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> rdv.modifierParLeGarage(nouveauDebut, pont, null, AVANT_LE_DEBUT))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThat(rdv.getDebut()).isEqualTo(DEBUT);
+        }
+
+        @Test
+        @DisplayName("refusée une fois le début passé")
+        void refuseeApresLeDebut() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.confirmer(AVANT_LE_DEBUT);
+
+            assertThat(rdv.peutEtreModifieParLeGarage(DEBUT)).isFalse();
+            assertThatThrownBy(() -> rdv.modifierParLeGarage(nouveauDebut, pont, "Report", DEBUT))
+                    .isInstanceOf(IllegalStateException.class);
+            assertThat(rdv.getDebut()).isEqualTo(DEBUT);
+        }
+
+        @Test
+        @DisplayName("refusée vers un créneau déjà commencé")
+        void nouveauCreneauPasse() {
+            Rdv rdv = rdvDe(vidange);
+            assertThatThrownBy(() -> rdv.modifierParLeGarage(AVANT_LE_DEBUT, pont, "Report", AVANT_LE_DEBUT))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("refusée sur un rendez-vous terminé")
+        void refuseeSurEtatFinal() {
+            Rdv rdv = rdvDe(vidange);
+            rdv.refuser("Complet", AVANT_LE_DEBUT);
+
+            assertThat(rdv.peutEtreModifieParLeGarage(AVANT_LE_DEBUT)).isFalse();
+            assertThatThrownBy(() -> rdv.modifierParLeGarage(nouveauDebut, pont, "Report", AVANT_LE_DEBUT))
+                    .isInstanceOf(IllegalStateException.class);
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.REFUSE);
+        }
+    }
+
+    @Nested
     @DisplayName("montants")
     class Montants {
 

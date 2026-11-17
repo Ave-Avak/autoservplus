@@ -58,9 +58,10 @@ class CourrielSortantTest {
                 TypeUtilisateur.MEMBRE);
     }
 
-    /** Les vingt-sept envois du contrat, pour un destinataire de la langue donnée. */
+    /** Les trente-deux envois du contrat, pour un destinataire de la langue donnée. */
     private Map<String, Consumer<Langue>> tousLesEnvois() {
         DetailsRdvCourriel rdv = new DetailsRdvCourriel("RDV-2026-0001", DIMANCHE);
+        DetailsRdvCourriel deplace = new DetailsRdvCourriel("RDV-2026-0001", DIMANCHE.plusDays(2));
         PieceJointeCourriel agenda = new PieceJointeCourriel("rdv.ics", "text/calendar",
                 "BEGIN:VCALENDAR".getBytes());
         Instant fin = DIMANCHE.toInstant();
@@ -80,6 +81,15 @@ class CourrielSortantTest {
                 Map.entry("rdv-rappel", l -> courriel.envoyerRappelRdv(marie, rdv)),
                 Map.entry("rdv-annule-membre", l -> courriel.envoyerAnnulationParLeMembre(marie, rdv)),
                 Map.entry("rdv-expire", l -> courriel.envoyerExpirationRdv(marie, rdv)),
+                Map.entry("rdv-modifie", l -> courriel.envoyerModificationRdvConfirmee(marie, rdv, deplace, agenda)),
+                Map.entry("rdv-modifie-en-attente", l -> courriel.envoyerModificationRdvEnAttente(
+                        marie, rdv, deplace, DIMANCHE.plusDays(1).withHour(12))),
+                Map.entry("rdv-deplace-garage", l -> courriel.envoyerModificationParLeGarage(
+                        marie, rdv, deplace, "Pont en panne", "+32 2 000 00 00", agenda)),
+                Map.entry("rdv-modifie-garage", l -> courriel.envoyerAvisModificationAuGarage(
+                        rdv, deplace, "Marie Dupont", false, "/admin/rendez-vous/r")),
+                Map.entry("rdv-modifie-garage-confirme", l -> courriel.envoyerAvisModificationAuGarage(
+                        rdv, deplace, "Marie Dupont", true, "/admin/rendez-vous/r")),
                 Map.entry("rdv-relance-garage", l -> courriel.envoyerRelanceAuGarage(
                         rdv, "Marie Dupont", DIMANCHE.minusDays(1).withHour(12), "/admin/rendez-vous/r")),
                 Map.entry("depassement", l -> courriel.envoyerDemandeValidationDepassement(marie, rdv,
@@ -119,7 +129,7 @@ class CourrielSortantTest {
     void tousLesTypes(Langue langue) {
         marie.setLangue(langue);
         Map<String, Consumer<Langue>> envois = tousLesEnvois();
-        assertThat(envois).hasSize(27);
+        assertThat(envois).hasSize(32);
 
         envois.forEach((type, envoi) -> {
             partis.clear();

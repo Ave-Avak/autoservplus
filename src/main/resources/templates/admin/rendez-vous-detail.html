@@ -74,7 +74,7 @@
     <section aria-labelledby="titre-actions">
         <h2 id="titre-actions" th:text="#{admin.rdv.detail.actions}">Actions</h2>
         <p th:unless="${rdv.peutConfirmer() or rdv.peutRefuser() or rdv.peutAnnuler()
-                        or rdv.peutMarquerHonore() or rdv.peutMarquerAbsent()}"
+                        or rdv.peutMarquerHonore() or rdv.peutMarquerAbsent() or rdv.peutDeplacer()}"
            class="message" th:text="#{admin.rdv.detail.aucune-action}">Aucune action possible.</p>
         <div class="carte-actions" th:if="${rdv.peutConfirmer() or rdv.peutRefuser()}">
             <form th:if="${rdv.peutConfirmer()}"
@@ -87,6 +87,10 @@
                th:href="@{/admin/rendez-vous/{ref}/refuser(ref=${rdv.reference()})}"
                class="lien-bouton" th:text="#{admin.rdv.action.refuser}">Refuser</a>
         </div>
+        <p th:if="${rdv.peutDeplacer()}">
+            <a th:href="@{/admin/rendez-vous/{ref}/modifier(ref=${rdv.reference()})}"
+               class="lien-bouton" th:text="#{admin.rdv.modification.lien}">Déplacer</a>
+        </p>
         <div th:replace="~{fragments/rendez-vous-admin :: cloture(${rdv}, true)}"></div>
     </section>
 </main>

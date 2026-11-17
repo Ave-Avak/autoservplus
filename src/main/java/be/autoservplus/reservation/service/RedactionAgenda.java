@@ -78,6 +78,10 @@ public class RedactionAgenda {
                 // reexporter le meme rendez-vous met a jour l entree existante au lieu
                 // d en creer une seconde.
                 rdv.getReference() + "@autoservplus",
+                // La version du rendez-vous croît à chaque écriture, déplacement
+                // compris : elle sert de révision sans colonne de plus. Elle croît
+                // aussi à une confirmation, ce qui ne gêne pas un agenda.
+                rdv.getVersion(),
                 horloge.instant(),
                 rdv.getDebut(),
                 rdv.getFin(),

@@ -371,4 +371,119 @@ class DisponibiliteServiceTest {
             assertThat(service.estReservable(local(lundi, 14, 0), local(lundi, 15, 0))).isFalse();
         }
     }
+
+    @Nested
+    @DisplayName("déplacement d'un rendez-vous")
+    class Deplacement {
+
+        private final LocalDate lundi = LocalDate.of(2026, 9, 14);
+
+        private Rdv rdvSur(PosteAtelier poste, Instant debut) {
+            Utilisateur marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
+            Vehicule golf = new Vehicule(marie, "1-ABC-123", "VW", "Golf", Motorisation.DIESEL);
+            Categorie cat = new Categorie("ENT", "Entretien", TypeCategorie.SERVICE);
+            Prestation p = new Prestation(cat, "VID", "Vidange", new BigDecimal("49.00"), 60);
+            return new Rdv("RDV-2026-0001", marie, golf, poste, debut, Duration.ofMinutes(30), List.of(p), null);
+        }
+
+        private void ouvertLeLundiDe8a18() {
+            when(plages.findByJourSemaineAndActifTrueOrderByHeureDebut((short) 1))
+                    .thenReturn(List.of(new PlageOuverture(DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(18, 0))));
+        }
+
+        @Test
+        @DisplayName("le rendez-vous déplacé ne bloque pas son propre créneau")
+        void neSeBloquePasLuiMeme() {
+            ouvertLeMercrediDe8a12();
+            when(postes.findByActifTrueOrderByOrdreAscLibelleAsc()).thenReturn(List.of(pont1));
+            Rdv deplace = rdvSur(pont1, local(MERCREDI, 8, 0)); // 08:00-09:00
+            when(rdvs.actifsChevauchant(any(), any(), any())).thenReturn(List.of(deplace));
+
+            assertThat(debuts(service.creneauxPourDeplacer(deplace, MERCREDI, ReglesDeCreneau.MEMBRE)))
+                    .as("08:30 recoupe l'ancien créneau, libéré par le déplacement")
+                    .contains(local(MERCREDI, 8, 30))
+                    .hasSize(7);
+            assertThat(service.premierPosteLibre(local(MERCREDI, 8, 30), local(MERCREDI, 9, 30), deplace))
+                    .contains(pont1);
+            assertThat(service.premierPosteLibre(local(MERCREDI, 8, 30), local(MERCREDI, 9, 30)))
+                    .as("sans exclusion, le rendez-vous occupe son poste")
+                    .isEmpty();
+        }
+
+        @Test
+        @DisplayName("les autres rendez-vous restent occupants")
+        void autresOccupants() {
+            ouvertLeMercrediDe8a12();
+            when(postes.findByActifTrueOrderByOrdreAscLibelleAsc()).thenReturn(List.of(pont1));
+            Rdv autre = rdvSur(pont1, local(MERCREDI, 8, 0));
+            Rdv deplace = rdvSur(pont1, local(MERCREDI, 11, 0));
+            when(rdvs.actifsChevauchant(any(), any(), any())).thenReturn(List.of(autre, deplace));
+
+            assertThat(debuts(service.creneauxPourDeplacer(deplace, MERCREDI, ReglesDeCreneau.MEMBRE)))
+                    .doesNotContain(local(MERCREDI, 8, 0), local(MERCREDI, 9, 0))
+                    .contains(local(MERCREDI, 11, 0));
+        }
+
+        @Test
+        @DisplayName("le garage choisit sous le délai minimal, le membre non")
+        void garageSousLeDelaiMinimal() {
+            ouvertLeLundiDe8a18();
+            // Maintenant : lundi 10:00 à Bruxelles.
+            assertThat(service.estReservable(local(lundi, 14, 0), local(lundi, 15, 0), ReglesDeCreneau.MEMBRE)).isFalse();
+            assertThat(service.estReservable(local(lundi, 14, 0), local(lundi, 15, 0), ReglesDeCreneau.GARAGE)).isTrue();
+        }
+
+        @Test
+        @DisplayName("le garage ne choisit pas un créneau déjà commencé")
+        void garagePasDansLePasse() {
+            lenient().when(plages.findByJourSemaineAndActifTrueOrderByHeureDebut((short) 1))
+                    .thenReturn(List.of(new PlageOuverture(DayOfWeek.MONDAY, LocalTime.of(8, 0), LocalTime.of(18, 0))));
+            assertThat(service.estReservable(local(lundi, 9, 0), local(lundi, 10, 0), ReglesDeCreneau.GARAGE)).isFalse();
+            assertThat(service.estReservable(local(lundi, 10, 0), local(lundi, 11, 0), ReglesDeCreneau.GARAGE))
+                    .as("maintenant même n'est plus à venir")
+                    .isFalse();
+        }
+
+        @Test
+        @DisplayName("le garage choisit au-delà de l'horizon, le membre non")
+        void garageAuDelaDeLHorizon() {
+            LocalDate dansSeptanteJours = MERCREDI.plusDays(70);
+            ouvertLeMercrediDe8a12();
+
+            assertThat(service.estReservable(local(dansSeptanteJours, 9, 0), local(dansSeptanteJours, 10, 0),
+                    ReglesDeCreneau.MEMBRE)).isFalse();
+            assertThat(service.estReservable(local(dansSeptanteJours, 9, 0), local(dansSeptanteJours, 10, 0),
+                    ReglesDeCreneau.GARAGE)).isTrue();
+        }
+
+        @Test
+        @DisplayName("mode manuel : le garage n'attend pas sa propre réponse")
+        void garageSansEcheance() {
+            reglages.modifier(reglages.getFuseauHoraire(), reglages.getPasMinutes(), reglages.getTamponMinutes(),
+                    0, reglages.getHorizonJours(), reglages.getDelaiAnnulationHeures(), false,
+                    reglages.getMaxRdvEnAttenteParMembre());
+            ouvertLeMercrediDe8a12();
+            when(postes.findByActifTrueOrderByOrdreAscLibelleAsc()).thenReturn(List.of(pont1));
+            Rdv deplace = rdvSur(pont1, local(MERCREDI, 11, 0));
+            DisponibiliteService mardiApresMidi = new DisponibiliteService(parametres, plages, postes,
+                    indisponibilites, rdvs, new EcheanceReponse(plages, indisponibilites),
+                    Clock.fixed(local(MERCREDI.minusDays(1), 15, 0), ZoneOffset.UTC));
+
+            assertThat(mardiApresMidi.creneauxPourDeplacer(deplace, MERCREDI, ReglesDeCreneau.MEMBRE)).isEmpty();
+            assertThat(mardiApresMidi.creneauxPourDeplacer(deplace, MERCREDI, ReglesDeCreneau.GARAGE)).isNotEmpty();
+        }
+
+        @Test
+        @DisplayName("un jour férié reste fermé au garage")
+        void garageJourFerie() {
+            LocalDate armistice = LocalDate.of(2026, 11, 11);
+            lenient().when(plages.findByJourSemaineAndActifTrueOrderByHeureDebut((short) 3))
+                    .thenReturn(List.of(new PlageOuverture(DayOfWeek.WEDNESDAY, LocalTime.of(8, 0), LocalTime.of(12, 0))));
+            lenient().when(postes.findByActifTrueOrderByOrdreAscLibelleAsc()).thenReturn(List.of(pont1));
+            Rdv deplace = rdvSur(pont1, local(MERCREDI, 11, 0));
+
+            assertThat(service.estReservable(local(armistice, 9, 0), local(armistice, 10, 0), ReglesDeCreneau.GARAGE)).isFalse();
+            assertThat(service.creneauxPourDeplacer(deplace, armistice, ReglesDeCreneau.GARAGE)).isEmpty();
+        }
+    }
 }

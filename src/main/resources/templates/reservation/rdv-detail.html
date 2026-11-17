@@ -88,6 +88,11 @@
         </a>
     </p>
 
+    <p th:if="${rdv.modifiable()}" class="actions-page">
+        <a th:href="@{/mes-rendez-vous/{ref}/modifier(ref=${rdv.reference()})}"
+           th:text="#{rdv.modification.lien}">Déplacer ce rendez-vous</a>
+    </p>
+
     <form th:if="${rdv.annulable()}"
           th:action="@{/mes-rendez-vous/{ref}/annuler(ref=${rdv.reference()})}"
           method="post" class="formulaire-suppression"

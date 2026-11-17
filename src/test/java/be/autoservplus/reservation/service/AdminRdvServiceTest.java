@@ -80,7 +80,9 @@ class AdminRdvServiceTest {
     @BeforeEach
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
-        service = new AdminRdvService(rdvs, parametres, courriel, interventions, exportAgenda, evenements, horloge);
+        service = new AdminRdvService(rdvs, parametres, courriel, interventions, exportAgenda, evenements,
+                org.mockito.Mockito.mock(DisponibiliteService.class),
+                org.mockito.Mockito.mock(be.autoservplus.config.IdentiteGarage.class), horloge);
 
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         golf = new Vehicule(marie, "1-ABC-123", "Volkswagen", "Golf", Motorisation.DIESEL);

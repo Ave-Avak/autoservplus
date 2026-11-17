@@ -17,12 +17,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.List;
 
 /**
  * Avis émis par les gestes du membre et par la tâche planifiée : accusé de réception et
  * avis au garage d'une nouvelle demande, relance au garage à mi-délai, expiration d'une
- * demande, rappel avant le rendez-vous, annulation par le membre. Les transitions décidées par le garage restent dans {@link AdminRdvService}.
+ * demande, rappel avant le rendez-vous, annulation et déplacement par le membre. Les transitions décidées par le garage restent dans {@link AdminRdvService}.
  *
  * <p>Appelé dans la transaction du geste. Les courriels partent après sa validation
  * ({@code EnvoiApresCommit}), les notifications s'écrivent avec elle. Une erreur de
@@ -100,6 +101,28 @@ public class AvisRendezVous {
 
     public void annulationParLeMembre(Rdv rdv) {
         sansEchouer(rdv, () -> courriel.envoyerAnnulationParLeMembre(rdv.getMembre(), detailsPour(rdv)));
+    }
+
+    /**
+     * Le membre a déplacé son rendez-vous : accusé au membre, avec le fichier d'agenda
+     * s'il est confirmé, ou l'échéance s'il attend le garage, puis avis au garage et
+     * notification aux administrateurs, comme pour une nouvelle demande.
+     */
+    public void modificationParLeMembre(Rdv rdv, Instant ancienDebut) {
+        boolean confirme = rdv.getStatut() == StatutRdv.CONFIRME;
+        DetailsRdvCourriel ancien = new DetailsRdvCourriel(rdv.getNumero(),
+                ancienDebut.atZone(parametres.courants().zone()));
+        DetailsRdvCourriel nouveau = detailsPour(rdv);
+        if (confirme) {
+            sansEchouer(rdv, () -> courriel.envoyerModificationRdvConfirmee(rdv.getMembre(), ancien, nouveau,
+                    agendaPour(rdv)));
+        } else {
+            sansEchouer(rdv, () -> courriel.envoyerModificationRdvEnAttente(rdv.getMembre(), ancien, nouveau,
+                    rdv.getEcheanceReponse().atZone(parametres.courants().zone())));
+        }
+        sansEchouer(rdv, () -> courriel.envoyerAvisModificationAuGarage(ancien, nouveau,
+                rdv.getMembre().nomComplet(), confirme, "/admin/rendez-vous/" + rdv.getReference()));
+        notifierLesAdministrateurs(rdv, TypeNotification.RDV_MODIFIE);
     }
 
     /**

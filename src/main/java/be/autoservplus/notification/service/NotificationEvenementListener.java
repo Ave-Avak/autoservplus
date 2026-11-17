@@ -5,6 +5,7 @@ import be.autoservplus.intervention.service.InterventionTermineeEvent;
 import be.autoservplus.notification.domain.TypeNotification;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.repository.RdvRepository;
+import be.autoservplus.reservation.service.RdvDeplaceEvent;
 import be.autoservplus.reservation.service.RdvStatutModifieEvent;
 import be.autoservplus.retractation.domain.StatutDemandeAnnulation;
 import be.autoservplus.retractation.repository.DemandeAnnulationRepository;
@@ -77,6 +78,24 @@ public class NotificationEvenementListener {
                 return false;
             }
             notifications.deposer(rdv.getMembre(), type, rdv.getNumero());
+            return true;
+        });
+    }
+
+    /**
+     * Le garage a déplacé le rendez-vous : « rendez-vous déplacé », jamais « confirmé »,
+     * même pour une demande que le déplacement a confirmée. Le numéro seul, comme toute
+     * notification : les créneaux sont dans le courriel et sur le détail.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void surDeplacementRdv(RdvDeplaceEvent evenement) {
+        deposer("rendez-vous", evenement.referenceRdv(), () -> {
+            var rdv = rdvs.findByReference(evenement.referenceRdv()).orElse(null);
+            if (rdv == null) {
+                return false;
+            }
+            notifications.deposer(rdv.getMembre(), TypeNotification.RDV_DEPLACE, rdv.getNumero());
             return true;
         });
     }

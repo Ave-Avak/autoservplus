@@ -4,8 +4,11 @@ import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.service.AdminRdvService;
+import be.autoservplus.reservation.service.CreneauIndisponibleException;
+import be.autoservplus.reservation.web.dto.DeplacementRdvForm;
 import be.autoservplus.reservation.web.dto.MotifForm;
 import jakarta.validation.Valid;
+import org.springframework.context.MessageSource;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -20,7 +23,10 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.format.DateTimeParseException;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -37,7 +43,8 @@ import java.util.UUID;
  * {@code detail}. Toute autre valeur ramène à la liste, jamais à une adresse fournie
  * par la requête. Le refus et l'annulation par le garage exigent un motif : ils
  * s'appuient sur une page dédiée avec un formulaire, et aboutissent au détail, qui
- * montre le nouveau statut et le motif.</p>
+ * montre le nouveau statut et le motif. Le déplacement aussi, sur une page qui
+ * propose les heures libres du jour choisi.</p>
  */
 @Controller
 @RequestMapping("/admin/rendez-vous")
@@ -47,9 +54,11 @@ public class AdminRdvController {
     private static final String RETOUR_DETAIL = "detail";
 
     private final AdminRdvService adminRdvs;
+    private final MessageSource messages;
 
-    public AdminRdvController(AdminRdvService adminRdvs) {
+    public AdminRdvController(AdminRdvService adminRdvs, MessageSource messages) {
         this.adminRdvs = adminRdvs;
+        this.messages = messages;
     }
 
     // --- liste ------------------------------------------------------------------------
@@ -57,6 +66,7 @@ public class AdminRdvController {
     @GetMapping
     public String liste(Model modele) {
         modele.addAttribute("titre", "Rendez-vous à traiter");
+        modele.addAttribute("rendezVousJoursFeries", adminRdvs.rendezVousJoursFeries());
         modele.addAttribute("demandesEnAttente", adminRdvs.demandesEnAttente());
         modele.addAttribute("rendezVousDuJour", adminRdvs.rendezVousDuJour());
         modele.addAttribute("rendezVousPassesSansIssue", adminRdvs.rendezVousPassesSansIssue());
@@ -163,6 +173,85 @@ public class AdminRdvController {
                 motif -> adminRdvs.annulerParLeGarage(reference, motif),
                 formulaire.getMotif(),
                 numero -> "Le rendez-vous " + numero + " a été annulé par le garage.");
+    }
+
+    // --- déplacement par le garage (motif obligatoire) --------------------------------
+
+    @GetMapping("/{reference}/modifier")
+    public String afficherDeplacement(@PathVariable UUID reference,
+                                      @ModelAttribute("formulaire") DeplacementRdvForm formulaire,
+                                      Model modele, Locale langue, RedirectAttributes redirection) {
+        return ecranDeplacement(reference, formulaire, modele, langue, redirection);
+    }
+
+    /** Fragment HTMX : les heures où le garage peut déplacer le rendez-vous. */
+    @GetMapping("/{reference}/modifier/creneaux")
+    public String creneauxDeplacement(@PathVariable UUID reference,
+                                      @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate date,
+                                      Model modele) {
+        modele.addAttribute("creneaux", adminRdvs.creneauxPourDeplacer(reference, date));
+        modele.addAttribute("aucunePrestation", false);
+        return "reservation/fragments/creneaux :: liste";
+    }
+
+    @PostMapping("/{reference}/modifier")
+    public String deplacer(@PathVariable UUID reference,
+                           @ModelAttribute("formulaire") DeplacementRdvForm formulaire,
+                           Model modele, Locale langue, RedirectAttributes redirection) {
+        if (formulaire.getMotif() == null || formulaire.getMotif().isBlank()) {
+            modele.addAttribute("erreurMotif", messages.getMessage("admin.rdv.modification.motif-requis", null, langue));
+            return ecranDeplacement(reference, formulaire, modele, langue, redirection);
+        }
+        Instant debut;
+        try {
+            debut = Instant.parse(formulaire.getDebut() == null ? "" : formulaire.getDebut());
+        } catch (DateTimeParseException e) {
+            modele.addAttribute("erreurHeure", messages.getMessage("admin.rdv.modification.heure-requise", null, langue));
+            return ecranDeplacement(reference, formulaire, modele, langue, redirection);
+        }
+        try {
+            long version = formulaire.getVersion() == null ? -1 : formulaire.getVersion();
+            Rdv rdv = adminRdvs.deplacer(reference, debut, formulaire.getMotif(), version);
+            redirection.addFlashAttribute("message",
+                    messages.getMessage("admin.rdv.modification.fait", new Object[]{rdv.getNumero()}, langue));
+        } catch (CreneauIndisponibleException e) {
+            modele.addAttribute("erreurHeure",
+                    messages.getMessage("admin.rdv.modification.creneau-indisponible", null, langue));
+            return ecranDeplacement(reference, formulaire, modele, langue, redirection);
+        } catch (ConflitConcurrenceException | IllegalStateException e) {
+            // Page périmée, ou rendez-vous terminé ou commencé entre-temps : le détail
+            // montre son état réel.
+            redirection.addFlashAttribute("erreur", e.getMessage());
+        }
+        return versDetail(reference);
+    }
+
+    /**
+     * Écran de déplacement, ou retour au détail quand le rendez-vous ne se déplace plus.
+     * Le jour proposé est celui du rendez-vous s'il est à venir, sinon aujourd'hui.
+     */
+    private String ecranDeplacement(UUID reference, DeplacementRdvForm formulaire, Model modele,
+                                    Locale langue, RedirectAttributes redirection) {
+        var rdv = adminRdvs.vue(reference);
+        if (!rdv.peutDeplacer()) {
+            redirection.addFlashAttribute("erreur",
+                    messages.getMessage("admin.rdv.modification.impossible", null, langue));
+            return versDetail(reference);
+        }
+        LocalDate aujourdhui = adminRdvs.aujourdhui();
+        if (formulaire.getDate() == null) {
+            LocalDate jourDuRdv = rdv.debut().toLocalDate();
+            formulaire.setDate(jourDuRdv.isBefore(aujourdhui) ? aujourdhui : jourDuRdv);
+        }
+        if (formulaire.getVersion() == null) {
+            formulaire.setVersion(adminRdvs.version(reference));
+        }
+        modele.addAttribute("rdv", rdv);
+        modele.addAttribute("formulaire", formulaire);
+        modele.addAttribute("dateMin", aujourdhui);
+        modele.addAttribute("creneaux", adminRdvs.creneauxPourDeplacer(reference, formulaire.getDate()));
+        modele.addAttribute("aucunePrestation", false);
+        return "admin/rendez-vous-deplacer";
     }
 
     // --- helpers privees --------------------------------------------------------------

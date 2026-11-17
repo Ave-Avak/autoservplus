@@ -2,6 +2,7 @@ package be.autoservplus.reservation.service;
 
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PrestationRepository;
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.config.IdentiteGarage;
@@ -14,6 +15,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import be.autoservplus.catalogue.domain.Categorie;
@@ -21,6 +23,7 @@ import be.autoservplus.reservation.service.dto.ConditionsReservation;
 import be.autoservplus.reservation.service.dto.CreneauDisponible;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.reservation.web.dto.CreneauVue;
+import be.autoservplus.reservation.web.dto.ModificationRdvVue;
 import be.autoservplus.reservation.web.dto.RdvVue;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -292,7 +295,8 @@ public class RdvService {
                 FormatageRdv.euros(rdv.montantTvac()),
                 rdv.getCommentaire(),
                 rdv.getMotifRefus(),
-                peutEtreAnnule(rdv));
+                peutEtreAnnule(rdv),
+                rdv.peutEtreModifieParLeMembre(horloge.instant(), parametres.courants().delaiAnnulation()));
     }
 
     /**
@@ -323,5 +327,126 @@ public class RdvService {
 
     public boolean peutEtreAnnule(Rdv rdv) {
         return rdv.peutEtreAnnuleParLeMembre(horloge.instant(), parametres.courants().delaiAnnulation());
+    }
+
+    // --- déplacement par le membre ---------------------------------------------------
+
+    /**
+     * Déplace le rendez-vous du membre sur un nouveau créneau, aux règles d'une
+     * réservation neuve (délai minimal, horizon, plages, jours fériés, temps de réponse
+     * en mode manuel), sans le plafond des demandes en attente : déplacer n'ajoute
+     * aucune demande. Le rendez-vous est modifié en place, il garde numéro, référence et
+     * UID d'agenda.
+     *
+     * <p>{@code versionLue} est la version affichée au membre. Un écart dit que le
+     * rendez-vous a changé depuis l'ouverture de la page (confirmé, déplacé ailleurs),
+     * et le verrou de version départage deux déplacements simultanés que ce contrôle
+     * n'aurait pas séparés.</p>
+     */
+    @Transactional
+    public Rdv modifier(UUID reference, String email, Instant nouveauDebut, long versionLue) {
+        ParametreAtelier p = parametres.courants();
+        Rdv rdv = rdvDuMembre(reference, email);
+        if (rdv.getVersion() != versionLue) {
+            throw modificationPerimee();
+        }
+        Instant maintenant = horloge.instant();
+        if (!rdv.peutEtreModifieParLeMembre(maintenant, p.delaiAnnulation())) {
+            throw new RefusTraduit("RM-11", "rdv.modification.delai",
+                    "Le déplacement en ligne n'est plus possible à moins de %d heures du rendez-vous."
+                            .formatted(p.delaiAnnulation().toHours()));
+        }
+
+        Instant fin = nouveauDebut.plus(rdv.duree());
+        if (!disponibilites.estReservable(nouveauDebut, fin)) {
+            throw new CreneauIndisponibleException("Ce creneau n est pas ouvert a la reservation.");
+        }
+        PosteAtelier poste = disponibilites.premierPosteLibre(nouveauDebut, fin, rdv)
+                .orElseThrow(() -> new CreneauIndisponibleException(
+                        "Ce creneau vient d etre pris. Choisissez-en un autre."));
+
+        Instant ancienDebut = rdv.getDebut();
+        Instant echeance = p.isConfirmationAutomatique() ? null
+                : echeances.pour(maintenant, nouveauDebut.atZone(p.zone()).toLocalDate(), p);
+        rdv.modifierParLeMembre(nouveauDebut, poste, maintenant, p.delaiAnnulation(),
+                p.isConfirmationAutomatique(), echeance);
+        ecrireDeplacement(rdv, poste, nouveauDebut);
+
+        // Le rappel et la relance portaient sur l'ancien créneau.
+        rdvs.remettreRappelEtRelanceAZero(rdv.getId());
+        if (rdv.confirmationTientLieuDeRappel(maintenant, p.delaiRappel())) {
+            rdvs.reserverRappel(rdv.getId(), maintenant);
+        }
+        log.info("Rendez-vous {} deplace par le membre de {} a {}, poste {}, statut {}",
+                rdv.getNumero(), ancienDebut, nouveauDebut, poste.getLibelle(), rdv.getStatut());
+        avis.modificationParLeMembre(rdv, ancienDebut);
+        return rdv;
+    }
+
+    /**
+     * Écrit le déplacement et traduit ses trois échecs concurrents : un autre membre a
+     * pris le créneau (exclusion ou interblocage, comme à la réservation), ou un autre
+     * geste a modifié le rendez-vous depuis sa lecture (verrou de version).
+     */
+    private void ecrireDeplacement(Rdv rdv, PosteAtelier poste, Instant debut) {
+        try {
+            rdvs.saveAndFlush(rdv);
+        } catch (OptimisticLockingFailureException e) {
+            log.info("Deplacement concurrent du rendez-vous {} : {}", rdv.getNumero(), e.getMessage());
+            throw modificationPerimee();
+        } catch (DataIntegrityViolationException e) {
+            if (!EtatSql.estUneExclusion(e)) {
+                throw e;
+            }
+            throw new CreneauIndisponibleException(
+                    "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.", e);
+        } catch (DataAccessException e) {
+            if (!EtatSql.estUnInterblocage(e)) {
+                throw e;
+            }
+            log.info("Interblocage au deplacement de {} sur {} a {}", rdv.getNumero(), poste.getLibelle(), debut);
+            throw new CreneauIndisponibleException(
+                    "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.", e);
+        }
+    }
+
+    private static RefusTraduit modificationPerimee() {
+        return new RefusTraduit("rdv.modification.perimee",
+                "Le rendez-vous a changé depuis l'ouverture de cette page. Vérifiez-le avant de le déplacer.");
+    }
+
+    /** Écran de déplacement, ou refus traduit si le rendez-vous ne se déplace plus en ligne. */
+    public ModificationRdvVue vueModification(UUID reference, String email) {
+        ParametreAtelier p = parametres.courants();
+        Rdv rdv = rdvDuMembre(reference, email);
+        if (!rdv.peutEtreModifieParLeMembre(horloge.instant(), p.delaiAnnulation())) {
+            throw new RefusTraduit("RM-11", "rdv.modification.delai",
+                    "Le déplacement en ligne n'est plus possible.");
+        }
+        ZoneId zone = p.zone();
+        return new ModificationRdvVue(rdv.getReference(), rdv.getNumero(),
+                FormatageRdv.heureLisible(rdv.getDebut(), zone),
+                FormatageRdv.heureLisible(rdv.getFin(), zone),
+                rdv.getVersion(), p.isConfirmationAutomatique(),
+                rdv.getDebut().atZone(zone).toLocalDate());
+    }
+
+    /** Heures où déplacer le rendez-vous un jour donné, sur sa durée exacte. */
+    public List<CreneauVue> creneauxPourModifier(UUID reference, String email, LocalDate jour) {
+        Rdv rdv = rdvDuMembre(reference, email);
+        if (jour == null) {
+            return List.of();
+        }
+        ZoneId zone = parametres.courants().zone();
+        return disponibilites.creneauxPourDeplacer(rdv, jour, ReglesDeCreneau.MEMBRE).stream()
+                .map(c -> new CreneauVue(
+                        c.debut().toString(),
+                        FormatageRdv.heureLisible(c.debut(), zone) + " - " + FormatageRdv.heureLisible(c.fin(), zone),
+                        c.postesLibres()))
+                .toList();
+    }
+
+    public long delaiAnnulationHeures() {
+        return parametres.courants().delaiAnnulation().toHours();
     }
 }

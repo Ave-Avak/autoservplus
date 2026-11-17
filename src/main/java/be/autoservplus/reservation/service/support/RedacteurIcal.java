@@ -73,6 +73,7 @@ public final class RedacteurIcal {
 
         ligne(ics, "BEGIN", "VEVENT");
         ligne(ics, "UID", evenement.uid());
+        ligne(ics, "SEQUENCE", Long.toString(evenement.sequence()));
         ligne(ics, "DTSTAMP", HORODATAGE_UTC.format(evenement.horodatage()));
         ligne(ics, "DTSTART", HORODATAGE_UTC.format(evenement.debut()));
         ligne(ics, "DTEND", HORODATAGE_UTC.format(evenement.fin()));
