@@ -300,6 +300,19 @@ public class CourrielSortant implements ServiceCourriel {
     }
 
     @Override
+    public void envoyerAvisCommandeAuGarage(DetailsCommandeGarage details) {
+        Locale langue = Locale.FRENCH;
+        String contenu = texte(details.prestations()
+                ? "courriel.commande-a-preparer.prestations"
+                : "courriel.commande-a-preparer.pieces", langue);
+        String rupture = details.ruptureAHonorer()
+                ? texte("courriel.commande-a-preparer.rupture", langue)
+                : "";
+        auGarage("commande-a-preparer", details.numeroCommande(), langue,
+                details.numeroCommande(), details.montantTvac(), details.membre(), contenu, rupture);
+    }
+
+    @Override
     public void envoyerDecisionRetractation(DetailsRetractationCourriel details) {
         Locale langue = langue(details.langue());
         String corps = details.acceptee()
@@ -329,7 +342,7 @@ public class CourrielSortant implements ServiceCourriel {
     private void auGarage(String type, String numero, Locale langue, Object... arguments) {
         String adresse = garage.courriel();
         if (adresse == null || adresse.isBlank()) {
-            log.warn("Courriel {} du rendez-vous {} non envoyé : aucune adresse d'atelier.", type, numero);
+            log.warn("Courriel {} ({}) non envoyé : aucune adresse d'atelier.", type, numero);
             return;
         }
         partir(type, adresse, garage.enseigne(), garage.enseigne(), langue,

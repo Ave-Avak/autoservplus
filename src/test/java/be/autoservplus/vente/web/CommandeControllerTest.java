@@ -1,8 +1,10 @@
 package be.autoservplus.vente.web;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.vente.domain.SituationPaiement;
 import be.autoservplus.vente.service.CgvNonAccepteesException;
 import be.autoservplus.vente.service.CommandeService;
+import be.autoservplus.vente.service.DepartPaiement;
 import be.autoservplus.vente.service.PaiementImpossibleException;
 import be.autoservplus.vente.service.PaiementService;
 import be.autoservplus.vente.service.PrestataireIndisponibleException;
@@ -14,6 +16,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.thymeleaf.ThymeleafAutoConfiguration;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -122,7 +126,7 @@ class CommandeControllerTest {
     @WithMockUser(username = "marie@exemple.be")
     @DisplayName("POST avec CGV cochees : delegation (identite, case, IP) puis PRG vers la confirmation")
     void validationNominale() throws Exception {
-        doReturn(new ConfirmationCommandeVue(REF, "CMD-2026-0001", "80,21 €", true))
+        doReturn(new ConfirmationCommandeVue(REF, "CMD-2026-0001", "80,21 €", SituationPaiement.A_PAYER))
                 .when(service).passerCommande("marie@exemple.be", true, false, "127.0.0.1");
 
         mvc.perform(post("/commande").with(csrf()).param("cgv", "true"))
@@ -211,7 +215,7 @@ class CommandeControllerTest {
     @WithMockUser(username = "marie@exemple.be")
     @DisplayName("GET retour : commande payee, message de succes")
     void retourPaye() throws Exception {
-        doReturn(true).when(paiements).constaterRetour(REF, "marie@exemple.be");
+        doReturn(SituationPaiement.PAYEE).when(paiements).constaterRetour(REF, "marie@exemple.be");
 
         mvc.perform(get("/commande/{ref}/retour", REF))
                 .andExpect(status().is3xxRedirection())
@@ -225,7 +229,7 @@ class CommandeControllerTest {
     void retourNonAbouti() throws Exception {
         // Le retour survient aussi apres un abandon, et un paiement peut encore
         // aboutir plus tard (virement). Annoncer un echec pousserait a payer deux fois.
-        doReturn(false).when(paiements).constaterRetour(REF, "marie@exemple.be");
+        doReturn(SituationPaiement.A_PAYER).when(paiements).constaterRetour(REF, "marie@exemple.be");
 
         mvc.perform(get("/commande/{ref}/retour", REF))
                 .andExpect(status().is3xxRedirection())
@@ -233,11 +237,24 @@ class CommandeControllerTest {
                 .andExpect(flash().attributeCount(1));
     }
 
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({"EN_COURS", "ECHOUE"})
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("GET retour : paiement en cours ou échoué, aucun message d'invitation, la page le dit")
+    void retourEnCoursOuEchoue(SituationPaiement situation) throws Exception {
+        doReturn(situation).when(paiements).constaterRetour(REF, "marie@exemple.be");
+
+        mvc.perform(get("/commande/{ref}/retour", REF))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/commande/" + REF + "/confirmation"))
+                .andExpect(flash().attributeCount(0));
+    }
+
     @Test
     @WithMockUser(username = "marie@exemple.be")
     @DisplayName("GET confirmation rend la vue du proprietaire")
     void confirmation() throws Exception {
-        doReturn(new ConfirmationCommandeVue(REF, "CMD-2026-0001", "80,21 €", true))
+        doReturn(new ConfirmationCommandeVue(REF, "CMD-2026-0001", "80,21 €", SituationPaiement.A_PAYER))
                 .when(service).confirmation(REF, "marie@exemple.be");
 
         mvc.perform(get("/commande/{ref}/confirmation", REF))
@@ -261,12 +278,34 @@ class CommandeControllerTest {
     @WithMockUser(username = "marie@exemple.be")
     @DisplayName("POST /payer redirige vers l'URL du prestataire rendue par le service")
     void payerRedirigeVersLePrestataire() throws Exception {
-        doReturn("/paiement-fictif/tr_fictif_0001")
+        doReturn(DepartPaiement.vers("/paiement-fictif/tr_fictif_0001"))
                 .when(paiements).initierPaiement(REF, "marie@exemple.be");
 
         mvc.perform(post("/commande/{ref}/payer", REF).with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/paiement-fictif/tr_fictif_0001"));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({
+            "DEJA_PAYEE, succes, commande.retour.paye",
+            "EN_COURS, erreur, commande.paiement.en-cours",
+            "TENTATIVE_CONCURRENTE, erreur, commande.paiement.tentative-concurrente"
+    })
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("POST /payer sans page de paiement : retour a la commande avec le message de l'issue")
+    void payerSansPageDePaiement(DepartPaiement.Issue issue, String attribut, String cle)
+            throws Exception {
+        doReturn(DepartPaiement.sans(issue))
+                .when(paiements).initierPaiement(REF, "marie@exemple.be");
+
+        mvc.perform(post("/commande/{ref}/payer", REF).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/commande/" + REF + "/confirmation"))
+                // Le message est resolu, jamais la cle brute a l'ecran.
+                .andExpect(flash().attribute(attribut, org.hamcrest.Matchers.allOf(
+                        org.hamcrest.Matchers.notNullValue(),
+                        org.hamcrest.Matchers.not(org.hamcrest.Matchers.containsString(cle)))));
     }
 
     @Test

@@ -1,7 +1,9 @@
 package be.autoservplus.vente.web;
 
+import be.autoservplus.vente.domain.SituationPaiement;
 import be.autoservplus.vente.service.CgvNonAccepteesException;
 import be.autoservplus.vente.service.CommandeService;
+import be.autoservplus.vente.service.DepartPaiement;
 import be.autoservplus.vente.service.PaiementImpossibleException;
 import be.autoservplus.vente.service.PaiementService;
 import be.autoservplus.vente.service.PanierService;
@@ -104,14 +106,26 @@ public class CommandeController {
 
     /**
      * Depart vers la page de paiement du prestataire (F14). L URL de redirection
-     * vient de la passerelle : factice hors production, Mollie en production.
+     * vient de la passerelle : factice hors production, Mollie en production. Sans
+     * page de paiement, le membre revient a sa commande avec ce que la relecture de
+     * la tentative ouverte a constate.
      */
     @PostMapping("/{reference}/payer")
     public String payer(@AuthenticationPrincipal UserDetails membre,
                         @PathVariable UUID reference,
                         RedirectAttributes redirection) {
         try {
-            return "redirect:" + paiements.initierPaiement(reference, membre.getUsername());
+            DepartPaiement depart = paiements.initierPaiement(reference, membre.getUsername());
+            switch (depart.issue()) {
+                case REDIRECTION -> {
+                    return "redirect:" + depart.urlRedirection();
+                }
+                case DEJA_PAYEE -> redirection.addFlashAttribute("succes", msg("commande.retour.paye"));
+                case EN_COURS -> redirection.addFlashAttribute("erreur", msg("commande.paiement.en-cours"));
+                case TENTATIVE_CONCURRENTE -> redirection.addFlashAttribute("erreur",
+                        msg("commande.paiement.tentative-concurrente"));
+            }
+            return "redirect:/commande/" + reference + "/confirmation";
         } catch (PaiementImpossibleException e) {
             redirection.addFlashAttribute("erreur", msg("commande.erreur.paiement-impossible"));
             return "redirect:/commande/" + reference + "/confirmation";
@@ -151,9 +165,9 @@ public class CommandeController {
     public String retourDePaiement(@AuthenticationPrincipal UserDetails membre,
                                    @PathVariable UUID reference,
                                    RedirectAttributes redirection) {
-        boolean payee;
+        SituationPaiement situation;
         try {
-            payee = paiements.constaterRetour(reference, membre.getUsername());
+            situation = paiements.constaterRetour(reference, membre.getUsername());
         } catch (PrestataireIndisponibleException e) {
             // Le prestataire est injoignable a cet instant : on ne sait pas si le
             // paiement a abouti, et on se garde de trancher. La notification serveur a
@@ -166,12 +180,15 @@ public class CommandeController {
             redirection.addFlashAttribute("erreur", msg("commande.retour.indisponible"));
             return "redirect:/commande/" + reference + "/confirmation";
         }
-        if (payee) {
-            redirection.addFlashAttribute("succes", msg("commande.retour.paye"));
-        } else {
-            // Ni echec ni succes affirme : le paiement peut encore aboutir, notamment
-            // par virement. Annoncer un echec pousserait a payer une seconde fois.
-            redirection.addFlashAttribute("erreur", msg("commande.retour.en-attente"));
+        switch (situation) {
+            case PAYEE -> redirection.addFlashAttribute("succes", msg("commande.retour.paye"));
+            // Abandon sur la page du prestataire : la tentative reste ouverte, le membre
+            // peut la reprendre.
+            case A_PAYER -> redirection.addFlashAttribute("erreur", msg("commande.retour.en-attente"));
+            // Paiement en cours de traitement ou échoué : la page de confirmation le dit
+            // elle-même. Un message de plus inviterait à reprendre un paiement en cours.
+            case EN_COURS, ECHOUE, CLOSE -> {
+            }
         }
         return "redirect:/commande/" + reference + "/confirmation";
     }

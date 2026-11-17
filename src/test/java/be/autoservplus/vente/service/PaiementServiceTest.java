@@ -25,6 +25,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.transaction.support.TransactionOperations;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -36,6 +37,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -66,6 +68,7 @@ class PaiementServiceTest {
     @BeforeEach
     void setUp() {
         service = new PaiementService(paiements, commandes, pieces, prestataire, evenements,
+                TransactionOperations.withoutTransaction(),
                 Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")),
                 // Barre finale volontaire : elle verifie que le service la retire au
                 // lieu de produire une URL a double separateur.
@@ -126,15 +129,16 @@ class PaiementServiceTest {
         @Test
         @DisplayName("commande EN_ATTENTE_PAIEMENT : Paiement INITIE, reference stockee, URL rendue")
         void initiationNominale() {
-            when(commandes.findByReference(commande.getReference()))
-                    .thenReturn(Optional.of(commande));
+            commandeAPayer();
             when(prestataire.creerPaiement(any(DemandePaiement.class)))
                     .thenReturn(new PaiementCree("tr_fictif_0001", "/paiement-fictif/tr_fictif_0001"));
             when(paiements.saveAndFlush(any(Paiement.class))).thenAnswer(inv -> inv.getArgument(0));
 
-            String url = service.initierPaiement(commande.getReference(), EMAIL);
+            DepartPaiement depart = service.initierPaiement(commande.getReference(), EMAIL);
 
-            assertThat(url).isEqualTo("/paiement-fictif/tr_fictif_0001");
+            assertThat(depart).isEqualTo(DepartPaiement.vers("/paiement-fictif/tr_fictif_0001"));
+            // La commande est verrouillee avant la creation, comme par le webhook.
+            verify(commandes).verrouillerParId(10L);
             ArgumentCaptor<Paiement> captor = ArgumentCaptor.forClass(Paiement.class);
             verify(paiements).saveAndFlush(captor.capture());
             Paiement paiement = captor.getValue();
@@ -179,6 +183,114 @@ class PaiementServiceTest {
 
             assertThatThrownBy(() -> service.initierPaiement(commande.getReference(), "intrus@exemple.be"))
                     .isInstanceOf(RessourceIntrouvableException.class);
+            verifyNoInteractions(prestataire);
+        }
+    }
+
+    /** Commande du membre, en attente de paiement, sans tentative tant qu'aucune n'est ajoutee. */
+    private void commandeAPayer(Paiement... ouvertes) {
+        when(commandes.findByReference(commande.getReference())).thenReturn(Optional.of(commande));
+        when(commandes.verrouillerParId(10L)).thenReturn(Optional.of(commande));
+        when(paiements.findByCommandeAndStatutIn(eq(commande), any()))
+                .thenAnswer(inv -> java.util.Arrays.stream(ouvertes)
+                        .filter(p -> p.getStatut() == StatutPaiement.INITIE
+                                || p.getStatut() == StatutPaiement.EN_COURS)
+                        .toList());
+    }
+
+    @Nested
+    @DisplayName("reprise : la tentative ouverte est relue avant toute creation")
+    class Reprise {
+
+        @Test
+        @DisplayName("tentative encore ouverte : le membre retrouve sa page, rien n'est cree")
+        void tentativeOuverte() {
+            Paiement ouverte = paiementInitie();
+            commandeAPayer(ouverte);
+            when(prestataire.lireEtat("tr_fictif_0001")).thenReturn(new EtatPaiement(
+                    StatutPaiement.INITIE, null, "https://pay.example/tr_fictif_0001"));
+
+            DepartPaiement depart = service.initierPaiement(commande.getReference(), EMAIL);
+
+            assertThat(depart).isEqualTo(DepartPaiement.vers("https://pay.example/tr_fictif_0001"));
+            verify(prestataire, never()).creerPaiement(any());
+        }
+
+        @Test
+        @DisplayName("tentative en cours chez le prestataire : refus, aucune seconde tentative")
+        void tentativeEnCours() {
+            Paiement ouverte = paiementInitie();
+            commandeAPayer(ouverte);
+            when(paiements.saveAndFlush(any(Paiement.class))).thenAnswer(inv -> inv.getArgument(0));
+            statutAuthentique(StatutPaiement.EN_COURS);
+
+            DepartPaiement depart = service.initierPaiement(commande.getReference(), EMAIL);
+
+            assertThat(depart.issue()).isEqualTo(DepartPaiement.Issue.EN_COURS);
+            assertThat(ouverte.getStatut()).isEqualTo(StatutPaiement.EN_COURS);
+            verify(prestataire, never()).creerPaiement(any());
+        }
+
+        @Test
+        @DisplayName("tentative echouee chez le prestataire : close, puis une nouvelle est creee")
+        void tentativeEchouee() {
+            Paiement ouverte = paiementInitie();
+            commandeAPayer(ouverte);
+            when(paiements.saveAndFlush(any(Paiement.class))).thenAnswer(inv -> inv.getArgument(0));
+            statutAuthentique(StatutPaiement.ECHOUE);
+            when(prestataire.creerPaiement(any(DemandePaiement.class)))
+                    .thenReturn(new PaiementCree("tr_fictif_0002", "/paiement-fictif/tr_fictif_0002"));
+
+            DepartPaiement depart = service.initierPaiement(commande.getReference(), EMAIL);
+
+            assertThat(ouverte.getStatut()).isEqualTo(StatutPaiement.ECHOUE);
+            assertThat(depart).isEqualTo(DepartPaiement.vers("/paiement-fictif/tr_fictif_0002"));
+        }
+
+        @Test
+        @DisplayName("tentative deja payee : la relecture confirme la commande, aucune tentative")
+        void tentativeDejaPayee() {
+            Paiement ouverte = paiementInitie();
+            commandeAPayer(ouverte);
+            cheminConfirmation();
+            statutAuthentique(StatutPaiement.REUSSI);
+
+            DepartPaiement depart = service.initierPaiement(commande.getReference(), EMAIL);
+
+            assertThat(depart.issue()).isEqualTo(DepartPaiement.Issue.DEJA_PAYEE);
+            assertThat(commande.getStatut()).isEqualTo(StatutCommande.PAYEE);
+            // Facture et courriel partent par l'evenement, une seule fois.
+            verify(evenements).publishEvent(new CommandePayeeEvent(commande.getReference()));
+            verify(prestataire, never()).creerPaiement(any());
+        }
+
+        @Test
+        @DisplayName("tentative ouverte sans page de paiement : traitee comme en cours")
+        void tentativeOuverteSansPage() {
+            Paiement ouverte = paiementInitie();
+            commandeAPayer(ouverte);
+            statutAuthentique(StatutPaiement.INITIE);
+
+            DepartPaiement depart = service.initierPaiement(commande.getReference(), EMAIL);
+
+            assertThat(depart.issue()).isEqualTo(DepartPaiement.Issue.EN_COURS);
+            verify(prestataire, never()).creerPaiement(any());
+        }
+
+        @Test
+        @DisplayName("tentative ouverte apparue entre la relecture et le verrou : aucune seconde")
+        void tentativeConcurrente() {
+            Paiement concurrente = new Paiement(commande, commande.getMontantTvac(), MAINTENANT);
+            when(commandes.findByReference(commande.getReference())).thenReturn(Optional.of(commande));
+            when(commandes.verrouillerParId(10L)).thenReturn(Optional.of(commande));
+            // Aucune tentative a la premiere lecture, une sous le verrou.
+            when(paiements.findByCommandeAndStatutIn(eq(commande), any()))
+                    .thenReturn(List.of())
+                    .thenReturn(List.of(concurrente));
+
+            DepartPaiement depart = service.initierPaiement(commande.getReference(), EMAIL);
+
+            assertThat(depart.issue()).isEqualTo(DepartPaiement.Issue.TENTATIVE_CONCURRENTE);
             verifyNoInteractions(prestataire);
         }
     }

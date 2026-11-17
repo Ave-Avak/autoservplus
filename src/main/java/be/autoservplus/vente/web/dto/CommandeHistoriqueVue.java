@@ -2,6 +2,7 @@ package be.autoservplus.vente.web.dto;
 
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.vente.domain.Commande;
+import be.autoservplus.vente.domain.SituationPaiement;
 import be.autoservplus.vente.domain.StatutCommande;
 
 import java.time.ZoneId;
@@ -28,24 +29,35 @@ public record CommandeHistoriqueVue(
         String date,
         String totalTvac,
         StatutCommande statut,
+        SituationPaiement situation,
         UUID referenceFacture,
         String numeroFacture) {
 
-    public static CommandeHistoriqueVue de(Commande commande, ZoneId zone) {
+    public static CommandeHistoriqueVue de(Commande commande, SituationPaiement situation,
+                                           ZoneId zone) {
         return new CommandeHistoriqueVue(
                 commande.getReference(),
                 commande.getNumero(),
                 FormatageRdv.jourLisible(commande.getDateCommande(), zone),
                 FormatageRdv.euros(commande.getMontantTvac()),
                 commande.getStatut(),
+                situation,
                 null,
                 null);
     }
 
     /** La meme ligne, augmentee du lien vers sa facture. */
     public CommandeHistoriqueVue avecFacture(UUID referenceFacture, String numeroFacture) {
-        return new CommandeHistoriqueVue(reference, numero, date, totalTvac, statut,
+        return new CommandeHistoriqueVue(reference, numero, date, totalTvac, statut, situation,
                 referenceFacture, numeroFacture);
+    }
+
+    public boolean paiementEnCours() {
+        return situation == SituationPaiement.EN_COURS;
+    }
+
+    public boolean paiementEchoue() {
+        return situation == SituationPaiement.ECHOUE;
     }
 
     /** Le bouton de telechargement n apparait que si la facture existe. */
@@ -54,18 +66,18 @@ public record CommandeHistoriqueVue(
     }
 
     /**
-     * La commande attend encore son paiement : la liste peut proposer de le
-     * reprendre.
+     * La commande attend encore son paiement et aucune tentative n'est en cours de
+     * traitement : la liste peut proposer de payer, ou de réessayer après un échec.
      *
-     * <p>Même calcul que {@code ConfirmationCommandeVue.enAttenteDePaiement}, et
-     * même règle que la garde de {@code PaiementService.initierPaiement}, celle-ci
-     * reste seule à décider : le gabarit affiche, il n'autorise pas.</p>
+     * <p>Même règle que {@code ConfirmationCommandeVue}, et que la garde de
+     * {@code PaiementService.initierPaiement}, celle-ci reste seule à décider : le
+     * gabarit affiche, il n'autorise pas.</p>
      *
      * <p>Aucune notion de délai ici. L'expiration RM-21 n'est pas une durée à
      * comparer, c'est {@code ExpirationCommandesJob} qui fait passer la commande en
      * ANNULEE au bout de trente minutes. Le statut porte donc déjà le verdict.</p>
      */
     public boolean peutEtrePayee() {
-        return statut == StatutCommande.EN_ATTENTE_PAIEMENT;
+        return situation.peutEtrePayee();
     }
 }

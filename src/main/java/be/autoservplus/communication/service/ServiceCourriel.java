@@ -133,6 +133,12 @@ public interface ServiceCourriel {
     void envoyerConfirmationPaiement(DetailsPaiementCourriel details);
 
     /**
+     * Une commande est payée et attend le garage (F14) : avis à l'adresse de l'atelier,
+     * en français, après commit du passage à PAYEE. Rien sans adresse d'atelier.
+     */
+    void envoyerAvisCommandeAuGarage(DetailsCommandeGarage details);
+
+    /**
      * Le garage a tranche une demande de retractation (F30, RM-23), en l acceptant
      * ou en la refusant. Envoye apres commit de la decision.
      *

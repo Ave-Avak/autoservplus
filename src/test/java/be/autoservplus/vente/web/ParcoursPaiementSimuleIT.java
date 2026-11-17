@@ -125,7 +125,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
 
         // Le retour passe par la meme porte qu un prestataire reel : /retour, qui
         // reconcilie, puis la confirmation.
-        mvc.perform(post(urlPaiement).with(csrf()).param("reussite", "true"))
+        mvc.perform(post(urlPaiement).with(csrf()).param("issue", "REUSSITE"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/commande/" + reference + "/retour"));
         mvc.perform(get("/commande/{ref}/retour", reference))
@@ -145,7 +145,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
         UUID reference = commander();
         String urlPaiement = urlDePaiement(reference);
 
-        mvc.perform(post(urlPaiement).with(csrf()).param("reussite", "false"))
+        mvc.perform(post(urlPaiement).with(csrf()).param("issue", "ECHEC"))
                 .andExpect(status().is3xxRedirection());
 
         Commande commande = commandes.findByReference(reference).orElseThrow();
@@ -163,13 +163,148 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
         UUID reference = commander();
         String urlPaiement = urlDePaiement(reference);
 
-        mvc.perform(post(urlPaiement).with(csrf()).param("reussite", "true"))
+        mvc.perform(post(urlPaiement).with(csrf()).param("issue", "REUSSITE"))
                 .andExpect(status().is3xxRedirection());
         // Le membre rafraichit, ou revient en arriere : le traitement est idempotent
         // parce qu il passe par le meme chemin que le webhook rejoue.
-        mvc.perform(post(urlPaiement).with(csrf()).param("reussite", "true"))
+        mvc.perform(post(urlPaiement).with(csrf()).param("issue", "REUSSITE"))
                 .andExpect(status().is3xxRedirection());
 
+        assertThat(pieces.findById(filtre.getId()).orElseThrow().getQuantiteStock())
+                .isEqualTo(5);
+    }
+
+    private long tentativesDe(UUID reference) {
+        Commande commande = commandes.findByReference(reference).orElseThrow();
+        return paiements.findAll().stream()
+                .filter(p -> p.getCommande().getId().equals(commande.getId()))
+                .count();
+    }
+
+    @Test
+    @DisplayName("reprise d'une tentative ouverte : meme page de paiement, aucune seconde tentative")
+    void repriseTentativeOuverte() throws Exception {
+        UUID reference = commander();
+        String premiere = urlDePaiement(reference);
+
+        // Le membre quitte la page sans choisir, puis clique de nouveau « payer ».
+        assertThat(urlDePaiement(reference)).isEqualTo(premiere);
+        assertThat(tentativesDe(reference)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("reprise d'une tentative en cours : refus avec message, aucune seconde tentative")
+    void repriseTentativeEnCours() throws Exception {
+        UUID reference = commander();
+        String urlPaiement = urlDePaiement(reference);
+        mvc.perform(post(urlPaiement).with(csrf()).param("issue", "ATTENTE"))
+                .andExpect(status().is3xxRedirection());
+
+        mvc.perform(post("/commande/{ref}/payer", reference).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/commande/" + reference + "/confirmation"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .flash().attributeExists("erreur"));
+
+        assertThat(tentativesDe(reference)).isEqualTo(1);
+        assertThat(commandes.findByReference(reference).orElseThrow().getStatut())
+                .isEqualTo(StatutCommande.EN_ATTENTE_PAIEMENT);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest(name = "{0}")
+    @org.junit.jupiter.params.provider.CsvSource(delimiter = '|', value = {
+            "fr | Un paiement de cette commande est en cours de traitement chez le prestataire | Paiement en cours de traitement",
+            "nl | Een betaling van deze bestelling wordt bij de betaaldienst verwerkt | Betaling in verwerking",
+            "en | A payment for this order is being processed by the payment provider | Payment being processed"
+    })
+    @DisplayName("paiement en cours : confirmation, liste et détail le disent, sans bouton ni invitation à reprendre")
+    void ecransPaiementEnCours(String langue, String phrase, String mention) throws Exception {
+        UUID reference = commander();
+        String urlPaiement = urlDePaiement(reference);
+        mvc.perform(post(urlPaiement).with(csrf()).param("issue", "ATTENTE"))
+                .andExpect(status().is3xxRedirection());
+        mvc.perform(get("/commande/{ref}/retour", reference))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .flash().attributeCount(0));
+
+        mvc.perform(get("/commande/{ref}/confirmation", reference).param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(phrase)))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        containsString("/commande/" + reference + "/payer"))));
+        mvc.perform(get("/commandes").param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(mention)))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        containsString("/commande/" + reference + "/payer"))));
+        mvc.perform(get("/commandes/{ref}", reference).param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(phrase)))
+                .andExpect(content().string(org.hamcrest.Matchers.not(
+                        containsString("/commande/" + reference + "/payer"))));
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest(name = "{0}")
+    @org.junit.jupiter.params.provider.CsvSource(delimiter = '|', value = {
+            "fr | Votre paiement a échoué. Vous pouvez réessayer. | Paiement échoué | Réessayer le paiement",
+            "nl | Uw betaling is mislukt. U kunt het opnieuw proberen. | Betaling mislukt | Betaling opnieuw proberen",
+            "en | Your payment failed. You can try again. | Payment failed | Retry payment"
+    })
+    @DisplayName("paiement échoué : confirmation, liste et détail le disent et proposent de réessayer")
+    void ecransPaiementEchoue(String langue, String phrase, String mention, String bouton) throws Exception {
+        UUID reference = commander();
+        String urlPaiement = urlDePaiement(reference);
+        mvc.perform(post(urlPaiement).with(csrf()).param("issue", "ECHEC"))
+                .andExpect(status().is3xxRedirection());
+
+        mvc.perform(get("/commande/{ref}/confirmation", reference).param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(phrase)))
+                .andExpect(content().string(containsString(bouton)))
+                .andExpect(content().string(containsString("/commande/" + reference + "/payer")));
+        mvc.perform(get("/commandes").param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(mention)))
+                .andExpect(content().string(containsString(bouton)));
+        mvc.perform(get("/commandes/{ref}", reference).param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(phrase)))
+                .andExpect(content().string(containsString(bouton)))
+                .andExpect(content().string(containsString("/commande/" + reference + "/payer")));
+    }
+
+    @Test
+    @DisplayName("reprise apres un echec : une nouvelle tentative, une autre page")
+    void repriseApresEchec() throws Exception {
+        UUID reference = commander();
+        String premiere = urlDePaiement(reference);
+        mvc.perform(post(premiere).with(csrf()).param("issue", "ECHEC"))
+                .andExpect(status().is3xxRedirection());
+
+        String seconde = urlDePaiement(reference);
+
+        assertThat(seconde).startsWith("/paiement-fictif/").isNotEqualTo(premiere);
+        assertThat(tentativesDe(reference)).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("reprise d'une tentative payee sans notification : commande payee, aucune tentative")
+    void repriseTentativeDejaPayee() throws Exception {
+        UUID reference = commander();
+        String urlPaiement = urlDePaiement(reference);
+        // Encaisse chez le prestataire, ni notification ni retour du membre.
+        prestataireFictif.programmerStatut(
+                urlPaiement.substring(urlPaiement.lastIndexOf('/') + 1), StatutPaiement.REUSSI);
+
+        mvc.perform(post("/commande/{ref}/payer", reference).with(csrf()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/commande/" + reference + "/confirmation"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
+                        .flash().attributeExists("succes"));
+
+        assertThat(commandes.findByReference(reference).orElseThrow().getStatut())
+                .isEqualTo(StatutCommande.PAYEE);
+        assertThat(tentativesDe(reference)).isEqualTo(1);
         assertThat(pieces.findById(filtre.getId()).orElseThrow().getQuantiteStock())
                 .isEqualTo(5);
     }
@@ -239,7 +374,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
     void plusDeBoutonDePaiementApresPaiement() throws Exception {
         UUID reference = commander();
         String urlPaiement = urlDePaiement(reference);
-        mvc.perform(post(urlPaiement).with(csrf()).param("reussite", "true"));
+        mvc.perform(post(urlPaiement).with(csrf()).param("issue", "REUSSITE"));
         mvc.perform(get("/commande/{ref}/retour", reference));
 
         // Reproposer le paiement a qui vient de payer invite a payer deux fois.
@@ -260,7 +395,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
         mvc.perform(get(urlPaiement).with(user("luc@exemple.be")))
                 .andExpect(status().isNotFound());
         mvc.perform(post(urlPaiement).with(user("luc@exemple.be")).with(csrf())
-                        .param("reussite", "true"))
+                        .param("issue", "REUSSITE"))
                 .andExpect(status().isNotFound());
     }
 

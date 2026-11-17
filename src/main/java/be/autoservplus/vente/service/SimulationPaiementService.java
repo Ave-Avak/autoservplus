@@ -68,19 +68,40 @@ public class SimulationPaiementService {
      * du perimetre que le service a concu. Les deux lectures qui l encadrent se
      * suffisent d une transaction chacune.</p>
      *
-     * @param reussite issue a simuler : encaissement accepte, ou refuse par la banque
+     * @param issue issue a simuler : encaissement accepte, refuse par la banque, ou en
+     *              attente de confirmation
      */
     @PreAuthorize("isAuthenticated()")
-    public UUID simuler(String referencePrestataire, boolean reussite, String email) {
+    public UUID simuler(String referencePrestataire, IssueSimulee issue, String email) {
         Paiement paiement = paiementDuMembre(referencePrestataire, email);
         UUID referenceCommande = paiement.getCommande().getReference();
         // L ordre est celui du monde reel : le statut change CHEZ le prestataire,
         // puis la notification survient. L inverse ferait relire un statut qui n a
         // pas encore bouge, et la notification ne constaterait rien.
-        prestataire.programmerStatut(referencePrestataire,
-                reussite ? StatutPaiement.REUSSI : StatutPaiement.ECHOUE);
+        prestataire.programmerStatut(referencePrestataire, issue.statut());
         paiementService.traiterNotification(referencePrestataire);
         return referenceCommande;
+    }
+
+    /**
+     * Issues offertes par la page de paiement simulé. L'attente reproduit un virement
+     * ou une autorisation de carte : le prestataire a reçu l'ordre, sans page de
+     * paiement à rouvrir, et le membre ne doit pas pouvoir payer une seconde fois.
+     */
+    public enum IssueSimulee {
+        REUSSITE(StatutPaiement.REUSSI),
+        ECHEC(StatutPaiement.ECHOUE),
+        ATTENTE(StatutPaiement.EN_COURS);
+
+        private final StatutPaiement statut;
+
+        IssueSimulee(StatutPaiement statut) {
+            this.statut = statut;
+        }
+
+        StatutPaiement statut() {
+            return statut;
+        }
     }
 
     /**

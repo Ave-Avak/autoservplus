@@ -58,7 +58,7 @@ class CourrielSortantTest {
                 TypeUtilisateur.MEMBRE);
     }
 
-    /** Les trente-deux envois du contrat, pour un destinataire de la langue donnée. */
+    /** Les trente-trois envois du contrat, pour un destinataire de la langue donnée. */
     private Map<String, Consumer<Langue>> tousLesEnvois() {
         DetailsRdvCourriel rdv = new DetailsRdvCourriel("RDV-2026-0001", DIMANCHE);
         DetailsRdvCourriel deplace = new DetailsRdvCourriel("RDV-2026-0001", DIMANCHE.plusDays(2));
@@ -101,6 +101,9 @@ class CourrielSortantTest {
                 Map.entry("paiement-confirme", l -> courriel.envoyerConfirmationPaiement(
                         new DetailsPaiementCourriel("marie@exemple.be", "Marie", l,
                                 "CMD-2026-0001", "49,00 €"))),
+                Map.entry("commande-a-preparer", l -> courriel.envoyerAvisCommandeAuGarage(
+                        new DetailsCommandeGarage("CMD-2026-0001", "49,00 €", "Marie Dupont",
+                                false, true))),
                 Map.entry("retractation-acceptee", l -> courriel.envoyerDecisionRetractation(
                         new DetailsRetractationCourriel("marie@exemple.be", "Marie", l,
                                 "CMD-2026-0001", "49,00 €", true, "AV-2026-0001", null))),
@@ -129,7 +132,7 @@ class CourrielSortantTest {
     void tousLesTypes(Langue langue) {
         marie.setLangue(langue);
         Map<String, Consumer<Langue>> envois = tousLesEnvois();
-        assertThat(envois).hasSize(32);
+        assertThat(envois).hasSize(33);
 
         envois.forEach((type, envoi) -> {
             partis.clear();
@@ -145,6 +148,38 @@ class CourrielSortantTest {
                     .doesNotContainPattern("\\{\\d}")
                     .doesNotContain("''");
         });
+    }
+
+    @Test
+    @DisplayName("le reçu de paiement n'annonce aucun avis « commande prête », qui n'existe pas")
+    void recuSansPromesseNonTenue() {
+        courriel.envoyerConfirmationPaiement(new DetailsPaiementCourriel("marie@exemple.be",
+                "Marie", Langue.fr, "CMD-2026-0007", "80,21 €"));
+
+        assertThat(partis.get(0).corps())
+                .contains("Votre paiement de 80,21 € pour la commande CMD-2026-0007 est bien reçu. "
+                        + "Le garage prépare votre commande.")
+                .doesNotContain("prévenu");
+    }
+
+    @Test
+    @DisplayName("l'avis au garage d'une commande payée dit ce qu'elle porte, et la rupture à honorer")
+    void avisCommandeAuGarage() {
+        courriel.envoyerAvisCommandeAuGarage(
+                new DetailsCommandeGarage("CMD-2026-0007", "80,21 €", "Marie Dupont", true, true));
+
+        Courriel parti = partis.get(0);
+        assertThat(parti.corps())
+                .contains("Marie Dupont a payé la commande CMD-2026-0007, 80,21 € TVAC. "
+                        + "Elle porte des prestations à planifier avec le client.\n"
+                        + "Rupture à honorer : le stock ne couvrait pas toute la commande au moment du paiement.");
+
+        partis.clear();
+        courriel.envoyerAvisCommandeAuGarage(
+                new DetailsCommandeGarage("CMD-2026-0008", "12,50 €", "Marie Dupont", false, false));
+        assertThat(partis.get(0).corps())
+                .contains("Elle porte des pièces à préparer pour leur retrait à l'atelier.")
+                .doesNotContain("Rupture");
     }
 
     @Test

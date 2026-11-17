@@ -79,6 +79,21 @@ class FeuilleDeStyleTest {
                 .isGreaterThanOrEqualTo(4.5);
     }
 
+    @Test
+    @DisplayName("bouton présenté en lien : lisible dans le contenu comme dans l'en-tête, l'erreur l'emporte")
+    void lienBoutonLisible() {
+        String contenu = couleur(propriete(bloc(".lien-bouton"), "color"));
+        for (String fond : List.of("#FFFFFF", variables.get("--gris-50"))) {
+            assertThat(contraste(contenu, fond)).as("contenu sur " + fond).isGreaterThanOrEqualTo(4.5);
+        }
+        assertThat(contraste(couleur(propriete(bloc(".entete .lien-bouton"), "color")),
+                variables.get("--bleu-marine"))).as("en-tête").isGreaterThanOrEqualTo(4.5);
+        // Même spécificité : la règle déclarée la dernière gagne.
+        assertThat(feuille.indexOf("\n.texte-erreur")).isGreaterThan(feuille.indexOf("\n.lien-bouton {"));
+        assertThat(contraste(couleur(propriete(bloc(".texte-erreur"), "color")), "#FFFFFF"))
+                .isGreaterThanOrEqualTo(4.5);
+    }
+
     private static String bloc(String selecteur) {
         Matcher m = Pattern.compile("(?m)^" + Pattern.quote(selecteur) + "\\s*\\{([^}]*)}").matcher(feuille);
         assertThat(m.find()).as("règle " + selecteur).isTrue();

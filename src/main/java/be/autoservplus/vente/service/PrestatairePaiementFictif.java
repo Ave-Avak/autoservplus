@@ -6,14 +6,15 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.security.SecureRandom;
+import java.util.HexFormat;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 /**
  * Prestataire de paiement bouchonne, actif tant qu aucun identifiant de
  * prestataire n est fourni : toute la logique metier du module se developpe et se
- * teste contre lui, sans reseau et de maniere deterministe (meme role que
+ * teste contre lui, sans reseau, avec des statuts programmes (meme role que
  * {@code TransportConsole} pour le courriel).
  *
  * <p>Un paiement cree nait INITIE. Les tests, la demonstration et la page de
@@ -33,16 +34,27 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
     private static final Logger JOURNAL =
             LoggerFactory.getLogger(PrestatairePaiementFictif.class);
 
+    private static final SecureRandom ALEA = new SecureRandom();
+
     private final Map<String, StatutPaiement> statuts = new ConcurrentHashMap<>();
-    private final AtomicLong compteur = new AtomicLong(1);
 
     /** Remboursements deja accordes, indexes par cle d idempotence. */
     private final Map<String, String> remboursements = new ConcurrentHashMap<>();
-    private final AtomicLong compteurRemboursements = new AtomicLong(1);
+
+    /**
+     * Référence au hasard, et non un compteur. Un compteur en mémoire repartait de 1 à
+     * chaque démarrage, alors que la base garde les références des sessions précédentes :
+     * le premier paiement après un redémarrage butait sur uq_paiement_mollie. Seize
+     * chiffres hexadécimaux, soit 64 bits aléatoires, rendent une collision négligeable
+     * sans rien conserver.
+     */
+    static String referenceAleatoire(String prefixe) {
+        return prefixe + HexFormat.of().toHexDigits(ALEA.nextLong());
+    }
 
     @Override
     public PaiementCree creerPaiement(DemandePaiement demande) {
-        String reference = "tr_fictif_%04d".formatted(compteur.getAndIncrement());
+        String reference = referenceAleatoire("tr_fictif_");
         statuts.put(reference, StatutPaiement.INITIE);
         // URL factice, locale : aucun service externe dans les profils hors prod.
         return new PaiementCree(reference, "/paiement-fictif/" + reference);
@@ -52,15 +64,23 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
      * Aucun moyen de paiement n est rapporte, et c est volontaire : en inventer un
      * ferait afficher « Bancontact » sur une commande que personne n a payee. L ecran
      * de detail sait dire que le moyen n a pas ete communique.
+     *
+     * <p>Une référence inconnue rend EXPIRE. Les statuts vivent en mémoire : après un
+     * redémarrage, une tentative restée ouverte en base n'existe plus ici, comme un
+     * paiement ouvert que le prestataire réel aurait laissé expirer. La reprise en
+     * crée alors une nouvelle au lieu d'échouer. Le remboursement refuse toujours une
+     * référence inconnue.</p>
      */
     @Override
     public EtatPaiement lireEtat(String referencePrestataire) {
         StatutPaiement statut = statuts.get(referencePrestataire);
         if (statut == null) {
-            throw new IllegalStateException(
-                    "Reference inconnue du prestataire fictif : " + referencePrestataire);
+            return EtatPaiement.de(StatutPaiement.EXPIRE);
         }
-        return EtatPaiement.de(statut);
+        String page = statut == StatutPaiement.INITIE
+                ? "/paiement-fictif/" + referencePrestataire
+                : null;
+        return new EtatPaiement(statut, null, page);
     }
 
     /**
@@ -90,7 +110,7 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
                     "Seul un paiement encaisse peut etre rembourse (statut : %s).".formatted(statut));
         }
         String reference = remboursements.computeIfAbsent(demande.cleIdempotence(),
-                cle -> "re_fictif_%04d".formatted(compteurRemboursements.getAndIncrement()));
+                cle -> referenceAleatoire("re_fictif_"));
         statuts.put(demande.referencePrestataire(), StatutPaiement.REMBOURSE);
         return new RemboursementCree(reference);
     }
