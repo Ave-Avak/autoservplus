@@ -3,6 +3,9 @@ package be.autoservplus.communication.service;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.List;
+import java.util.stream.Collectors;
+
 /**
  * Repli des profils {@code dev}, {@code test} et {@code demo} sans relais SMTP : le
  * courriel entier est écrit au journal, lien compris, pour qu'un parcours reste
@@ -12,8 +15,9 @@ import org.slf4j.LoggerFactory;
  * ({@link be.autoservplus.config.ProprietesCourriel#verifierPourProduction()}). Un
  * journal de production ne porte donc aucun lien à jeton.</p>
  *
- * <p>La pièce jointe n'est pas écrite : son nom, son type et sa taille le sont. C'est
- * ce qui la rend observable, un fichier vide passerait sinon inaperçu.</p>
+ * <p>Les pièces jointes ne sont pas écrites : le nom, le type et la taille de chacune
+ * le sont. C'est ce qui les rend observables, un fichier vide passerait sinon
+ * inaperçu.</p>
  */
 public class TransportConsole implements TransportCourriel {
 
@@ -32,19 +36,21 @@ public class TransportConsole implements TransportCourriel {
                 ---------- COURRIEL NON EXPÉDIÉ ({}) ----------
                 À       : {} <{}>
                 Sujet   : {}
-                Pièce   : {}
+                Pièces  : {}
 
                 {}
                 ----------------------------------------------
                 """, courriel.type(), courriel.nomDestinataire(), courriel.adresse(),
-                courriel.sujet(), description(courriel.pieceJointe()), courriel.corps());
+                courriel.sujet(), description(courriel.piecesJointes()), courriel.corps());
     }
 
-    private static String description(PieceJointeCourriel piece) {
-        if (piece == null) {
+    static String description(List<PieceJointeCourriel> pieces) {
+        if (pieces.isEmpty()) {
             return "aucune";
         }
-        return "%s (%s, %d octets)".formatted(piece.nomFichier(), piece.typeMime(),
-                piece.tailleOctets());
+        return pieces.stream()
+                .map(piece -> "%s (%s, %d octets)".formatted(piece.nomFichier(),
+                        piece.typeMime(), piece.tailleOctets()))
+                .collect(Collectors.joining(", "));
     }
 }

@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -364,11 +365,17 @@ public class CourrielSortant implements ServiceCourriel {
 
     private void partir(String type, String adresse, String nom, String prenom, Locale langue,
                         String corps, PieceJointeCourriel piece) {
+        partirAvecPieces(type, adresse, nom, prenom, langue, corps,
+                piece == null ? List.of() : List.of(piece));
+    }
+
+    private void partirAvecPieces(String type, String adresse, String nom, String prenom,
+                                  Locale langue, String corps, List<PieceJointeCourriel> pieces) {
         String texte = messages.getMessage("courriel.salutation", new Object[]{prenom}, langue)
                 + "\n\n" + corps + "\n\n"
                 + messages.getMessage("courriel.signature", new Object[]{garage.enseigne()}, langue);
         envoi.planifier(new Courriel(type, adresse, nom,
-                texte("courriel." + type + ".sujet", langue), texte, piece));
+                texte("courriel." + type + ".sujet", langue), texte, pieces));
     }
 
     /**

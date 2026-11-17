@@ -218,7 +218,7 @@ class CourrielSortantTest {
         courriel.envoyerAccuseRdvConfirme(marie, new DetailsRdvCourriel("RDV-1", DIMANCHE), agenda);
 
         Courriel parti = partis.get(0);
-        assertThat(parti.pieceJointe()).isSameAs(agenda);
+        assertThat(parti.piecesJointes()).containsExactly(agenda);
         assertThat(parti.corps()).contains("Le fichier joint l'ajoute à votre agenda.");
     }
 
@@ -256,7 +256,7 @@ class CourrielSortantTest {
                 "BEGIN:VCALENDAR".getBytes());
         courriel.envoyerConfirmationRdv(marie, new DetailsRdvCourriel("RDV-1", DIMANCHE), agenda);
 
-        assertThat(partis.get(0).pieceJointe()).isSameAs(agenda);
+        assertThat(partis.get(0).piecesJointes()).containsExactly(agenda);
         assertThat(partis.get(0).corps()).contains("dimanche 13 septembre 2026")
                 .contains("Le fichier joint l'ajoute à votre agenda.");
     }
