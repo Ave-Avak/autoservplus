@@ -1,9 +1,11 @@
 package be.autoservplus.config;
 
+import be.autoservplus.identite.service.GardeConnexion;
 import be.autoservplus.identite.service.UtilisateurDetailsService;
 import be.autoservplus.identite.web.AuthentificationPartielle;
 import be.autoservplus.identite.web.ConnexionPartielleHorsEtapes;
 import be.autoservplus.identite.web.EtapeConnexion;
+import be.autoservplus.identite.web.GardeConnexionFiltre;
 import be.autoservplus.identite.web.ParcoursConnexion;
 import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
@@ -19,14 +21,18 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
+import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
 
 /**
  * Configuration de securite : chaine de filtres, en-tetes HTTP, encodage des mots de passe.
@@ -41,6 +47,10 @@ import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 public class SecuriteConfig {
 
     private static final int COUT_BCRYPT = 12;
+
+    /** POST du formulaire de connexion, reconnu par le garde et par le filtre d'authentification. */
+    private static final RequestMatcher ENVOI_CONNEXION =
+            PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/connexion");
 
     @Bean
     public PasswordEncoder passwordEncoder() {
@@ -124,7 +134,8 @@ public class SecuriteConfig {
     public SecurityFilterChain chaineDeFiltres(HttpSecurity http,
                                                EchecAuthentificationHandler echecHandler,
                                                ParcoursConnexion succesHandler,
-                                               SessionRegistry registreSessions)
+                                               SessionRegistry registreSessions,
+                                               GardeConnexion garde)
             throws Exception {
         http
                 .authorizeHttpRequests(acces -> acces
@@ -237,6 +248,10 @@ public class SecuriteConfig {
                 // Apres l autorisation : ce qui est public voit une connexion partielle
                 // comme anonyme. Voir ConnexionPartielleHorsEtapes.
                 .addFilterAfter(new ConnexionPartielleHorsEtapes(), AuthorizationFilter.class)
+                // Avant l'authentification : voir GardeConnexionFiltre. Le garde et le
+                // filtre d'authentification partagent le même matcher, voir plus bas.
+                .addFilterBefore(new GardeConnexionFiltre(garde, echecHandler, ENVOI_CONNEXION),
+                        UsernamePasswordAuthenticationFilter.class)
 
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/webhooks/**"))
                 .formLogin(formulaire -> formulaire
@@ -248,6 +263,16 @@ public class SecuriteConfig {
                         .successHandler(succesHandler)
                         .failureHandler(echecHandler)
                         .permitAll()
+                        // Le matcher que Spring déduirait de loginPage est remplacé par celui
+                        // du garde : les deux filtres reconnaissent alors exactement les mêmes
+                        // requêtes, par construction et non par deux écritures à tenir égales.
+                        .withObjectPostProcessor(new ObjectPostProcessor<UsernamePasswordAuthenticationFilter>() {
+                            @Override
+                            public <O extends UsernamePasswordAuthenticationFilter> O postProcess(O filtre) {
+                                filtre.setRequiresAuthenticationRequestMatcher(ENVOI_CONNEXION);
+                                return filtre;
+                            }
+                        })
                 )
                 // Les sessions authentifiees sont inscrites au registre, pour que la
                 // suspension d un compte puisse couper celles deja ouvertes. Sans

@@ -230,6 +230,11 @@ autoservplus:
     fenetre-echecs-minutes: 15
     duree-verrouillage-minutes: 15
 
+    # Plafond des echecs de connexion par IP, sur la meme fenetre (Stratégie A07,
+    # contrôle 4). IPv6 comptee par /64. Voir GardeConnexion.
+    connexion:
+      echecs-max-par-ip: 50
+
     # Plafond des formulaires PUBLICS qui declenchent un envoi de courriel : renvoi du
     # lien de verification et demande de reinitialisation. Sans lui, une adresse valide
     # peut etre inondee par un tiers et le quota du fournisseur d envoi consomme par
