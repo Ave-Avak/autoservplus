@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import org.springframework.context.support.StaticMessageSource;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Properties;
@@ -130,7 +131,7 @@ class AnonymisationUtilisateurTest {
     @Test
     @DisplayName("efface aussi les traces de connexion")
     void tracesDeConnexionEffacees() {
-        marie.enregistrerEchecConnexion(3, MAINTENANT.plusSeconds(900));
+        marie.enregistrerEchecConnexion(3, Duration.ofMinutes(15), Duration.ofMinutes(15), MAINTENANT);
         marie.enregistrerJetonVerification("empreinte-verification", MAINTENANT.plusSeconds(60));
         marie.preparerReinitialisation("empreinte-reinitialisation", MAINTENANT.plusSeconds(60));
 
@@ -139,6 +140,7 @@ class AnonymisationUtilisateurTest {
         // Donnees comportementales, pas comptables : elles partent avec le reste.
         assertThat(marie.getDerniereConnexion()).isNull();
         assertThat(marie.getTentativesEchouees()).isZero();
+        assertThat(marie.getPremierEchecLe()).isNull();
         assertThat(marie.getVerrouilleJusquA()).isNull();
         assertThat(marie.getJetonVerificationHache()).isNull();
         assertThat(marie.getJetonReinitialisationHache()).isNull();

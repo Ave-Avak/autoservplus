@@ -21,6 +21,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
@@ -188,7 +189,7 @@ class MotDePasseServiceTest {
         @DisplayName("leve le verrouillage du compte")
         void leveLeVerrouillage() {
             Utilisateur membre = membreActif();
-            membre.enregistrerEchecConnexion(5, MAINTENANT.plusSeconds(900));
+            membre.enregistrerEchecConnexion(5, Duration.ofMinutes(15), Duration.ofMinutes(15), MAINTENANT);
             membre.verrouillerJusqu(MAINTENANT.plusSeconds(900));
             armer(membre, "jeton-valide", MAINTENANT.plusSeconds(600));
 

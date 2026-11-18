@@ -224,7 +224,10 @@ autoservplus:
       mode-test: ${MOLLIE_MODE_TEST:true}
 
   securite:
+    # Cinq mots de passe faux dans les quinze minutes qui suivent le premier verrouillent
+    # le compte quinze minutes (F2).
     tentatives-max: 5
+    fenetre-echecs-minutes: 15
     duree-verrouillage-minutes: 15
 
     # Plafond des formulaires PUBLICS qui declenchent un envoi de courriel : renvoi du

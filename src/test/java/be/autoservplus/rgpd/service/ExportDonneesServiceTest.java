@@ -708,6 +708,7 @@ class ExportDonneesServiceTest {
                     .isEqualTo(Instant.parse("2026-08-20T06:00:00Z"));
             assertThat(connexion.emailVerifie()).isTrue();
             assertThat(connexion.tentativesEchoueesEnCours()).isZero();
+            assertThat(connexion.premierEchecEnCoursLe()).isNull();
             assertThat(connexion.compteVerrouilleJusquA()).isNull();
         }
     }
