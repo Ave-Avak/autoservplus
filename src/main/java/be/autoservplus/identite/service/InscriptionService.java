@@ -17,6 +17,7 @@ import be.autoservplus.communication.service.ServiceCourriel;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 
 /**
  * Inscription d un membre et verification de son adresse de courriel.
@@ -40,14 +41,20 @@ public class InscriptionService {
     private final Clock horloge;
     private final ServiceCourriel courriel;
     private final LiensCourriel liens;
+    private final MotDePasseService motsDePasse;
+    private final LimiteurDemandesCourriel limiteur;
 
     public InscriptionService(UtilisateurRepository repository,
                               PasswordEncoder encodeurMotDePasse,
                               Clock horloge,
                               ServiceCourriel courriel,
                               PolitiqueMotDePasse politique,
-                              LiensCourriel liens) {
+                              LiensCourriel liens,
+                              MotDePasseService motsDePasse,
+                              LimiteurDemandesCourriel limiteur) {
         this.repository = repository;
+        this.motsDePasse = motsDePasse;
+        this.limiteur = limiteur;
         this.liens = liens;
         this.politique = politique;
         this.encodeurMotDePasse = encodeurMotDePasse;
@@ -56,32 +63,42 @@ public class InscriptionService {
     }
 
     /**
-     * Inscrit un nouveau membre et genere son jeton de verification.
+     * Inscrit un nouveau membre et génère son jeton de vérification, ou, si l'adresse a
+     * déjà un compte, prévient son titulaire sans rien créer (RM-01).
      *
-     * <p>Le courriel de verification part apres la validation de la transaction. Un
-     * echec de remise n'annule donc plus l'inscription, comme il le faisait quand le
-     * courriel partait dedans : le compte existe, et le renvoi de verification comme la
-     * demande d'un nouveau mot de passe permettent d'obtenir un autre lien. Annuler le
-     * compte pour un relais injoignable obligerait au contraire a tout ressaisir.</p>
+     * <p><b>Aucune réponse ne dit si l'adresse a un compte</b> (F1). Le refus affiché sous
+     * le champ en faisait un oracle, et le chemin de l'adresse connue, qui sautait la
+     * politique, Have I Been Pwned et BCrypt, se distinguait aussi par sa durée. Les deux
+     * chemins passent désormais par la politique, appel à Have I Been Pwned compris, puis
+     * par un hachage BCrypt, jeté pour l'adresse connue. Seuls l'enregistrement et le
+     * courriel diffèrent, et les courriels partent hors de la requête.</p>
      *
-     * @throws RegleMetierException si l adresse est deja utilisee ou si le mot de passe
-     *                              ne respecte pas {@link PolitiqueMotDePasse}
+     * <p>Le courriel de vérification part après la validation de la transaction. Un
+     * échec de remise n'annule donc pas l'inscription : le compte existe, et le renvoi de
+     * vérification comme la demande d'un nouveau mot de passe donnent un autre lien.</p>
+     *
+     * @param ip adresse de la requête, pour le plafond des courriels au titulaire
+     * @return le compte créé, ou rien si l'adresse en avait déjà un
+     * @throws RefusTraduit si le mot de passe ne respecte pas {@link PolitiqueMotDePasse},
+     *                      quelle que soit l'adresse
      */
     @Transactional
-    public Utilisateur inscrire(String email, String motDePasseClair,
-                                String nom, String prenom, Langue langue) {
+    public Optional<Utilisateur> inscrire(String email, String motDePasseClair,
+                                          String nom, String prenom, Langue langue, String ip) {
 
         String emailNormalise = normaliser(email);
-
-        if (repository.existsByEmailIgnoreCase(emailNormalise)) {
-            throw new RegleMetierException("RM-01",
-                    "Un compte existe deja pour l adresse %s.".formatted(emailNormalise));
-        }
         politique.exiger(motDePasseClair);
+        String empreinte = encodeurMotDePasse.encode(motDePasseClair);
+
+        Optional<Utilisateur> existant = repository.findByEmailIgnoreCase(emailNormalise);
+        if (existant.isPresent()) {
+            prevenirTitulaire(existant.get(), ip);
+            return Optional.empty();
+        }
 
         Utilisateur membre = new Utilisateur(
                 emailNormalise,
-                encodeurMotDePasse.encode(motDePasseClair),
+                empreinte,
                 nom.trim(),
                 prenom.trim(),
                 TypeUtilisateur.MEMBRE);
@@ -91,7 +108,27 @@ public class InscriptionService {
 
         Utilisateur enregistre = repository.save(membre);
         courriel.envoyerVerificationAdresse(enregistre, lienVerification(jeton));
-        return enregistre;
+        return Optional.of(enregistre);
+    }
+
+    /**
+     * Courriel au titulaire d'une adresse qui a déjà un compte, selon son statut. Le
+     * limiteur en borne la fréquence : refusé, rien ne part, et la page reste la même.
+     */
+    private void prevenirTitulaire(Utilisateur titulaire, String ip) {
+        if (!limiteur.autoriser(titulaire.getEmail(), ip)) {
+            return;
+        }
+        switch (titulaire.getStatut()) {
+            // Avertissement sans jeton : la tentative ne doit rien ouvrir à qui l'a faite.
+            case ACTIF, SUSPENDU -> courriel.envoyerAvisTentativeInscription(titulaire);
+            // Même courriel que « Mot de passe oublié » : un nouveau lien d'activation,
+            // qui remplace le précédent.
+            case EN_ATTENTE_VALIDATION -> motsDePasse.envoyerCourrielAdapte(titulaire);
+            // Seul un compte anonymisé porte ce statut, et son adresse est un jeton qui ne
+            // reçoit rien : l'adresse réelle a été libérée à l'anonymisation.
+            case SUPPRIME -> JOURNAL.info("Inscription tentee sur une adresse anonymisee.");
+        }
     }
 
     /**

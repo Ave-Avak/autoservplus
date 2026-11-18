@@ -73,6 +73,7 @@ class CourrielSortantTest {
                 Map.entry("verification-adresse", l -> courriel.envoyerVerificationAdresse(marie, "http://x/v")),
                 Map.entry("reinitialisation", l -> courriel.envoyerReinitialisationMotDePasse(marie, "http://x/r")),
                 Map.entry("rappel-verification", l -> courriel.envoyerRappelVerification(marie, "http://x/v")),
+                Map.entry("tentative-inscription", l -> courriel.envoyerAvisTentativeInscription(marie)),
                 Map.entry("rdv-confirme", l -> courriel.envoyerConfirmationRdv(marie, rdv, agenda)),
                 Map.entry("rdv-refuse", l -> courriel.envoyerRefusRdv(marie, rdv, "Pièce indisponible")),
                 Map.entry("rdv-annule", l -> courriel.envoyerAnnulationParLeGarage(marie, rdv, "Panne")),
@@ -138,7 +139,7 @@ class CourrielSortantTest {
     void tousLesTypes(Langue langue) {
         marie.setLangue(langue);
         Map<String, Consumer<Langue>> envois = tousLesEnvois();
-        assertThat(envois).hasSize(34);
+        assertThat(envois).hasSize(35);
 
         envois.forEach((type, envoi) -> {
             partis.clear();
@@ -173,7 +174,7 @@ class CourrielSortantTest {
 
         assertThat(horsRequete).extracting(Courriel::type).containsExactlyInAnyOrder(
                 "verification-adresse", "reinitialisation", "rappel-verification",
-                "verrouillage-connexion");
+                "verrouillage-connexion", "tentative-inscription");
         assertThat(partis).extracting(Courriel::type)
                 .doesNotContainAnyElementsOf(CourrielSortant.HORS_DE_LA_REQUETE)
                 .hasSize(30);

@@ -122,7 +122,7 @@ class CourrielSmtpIT extends SocleIntegration {
     @DisplayName("l'inscription remet au relais un lien de vérification absolu et valable")
     void inscription() throws Exception {
         String email = adresse();
-        inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr);
+        inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr, "203.0.113.1");
 
         // Le lien de vérification part d'un autre fil (ExecuteurCourriels).
         await().atMost(Duration.ofSeconds(10)).until(() -> !recus(email).isEmpty());
@@ -151,7 +151,7 @@ class CourrielSmtpIT extends SocleIntegration {
     void annulation() throws Exception {
         String email = adresse();
         new TransactionTemplate(transactions).executeWithoutResult(statut -> {
-            inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr);
+            inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr, "203.0.113.1");
             statut.setRollbackOnly();
         });
 

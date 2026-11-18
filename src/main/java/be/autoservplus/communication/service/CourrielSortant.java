@@ -46,7 +46,8 @@ public class CourrielSortant implements ServiceCourriel {
      * l'adresse saisie existe.
      */
     static final Set<String> HORS_DE_LA_REQUETE = Set.of("verification-adresse",
-            "reinitialisation", "rappel-verification", "verrouillage-connexion");
+            "reinitialisation", "rappel-verification", "verrouillage-connexion",
+            "tentative-inscription");
 
     private final MessageSource messages;
     private final EnvoiApresCommit envoi;
@@ -76,6 +77,12 @@ public class CourrielSortant implements ServiceCourriel {
     @Override
     public void envoyerReinitialisationMotDePasse(Utilisateur destinataire, String lien) {
         auCompte("reinitialisation", destinataire, null, lien);
+    }
+
+    @Override
+    public void envoyerAvisTentativeInscription(Utilisateur destinataire) {
+        auCompte("tentative-inscription", destinataire, null, liens.vers("/connexion"),
+                liens.vers("/mot-de-passe/oublie"));
     }
 
     @Override

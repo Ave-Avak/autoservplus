@@ -48,16 +48,19 @@ class InscriptionServiceTest {
     private UtilisateurRepository repository;
     @Mock
     private ServiceCourriel courriel;
+    @Mock
+    private MotDePasseService motsDePasse;
     private PasswordEncoder encodeur;
     private InscriptionService service;
 
     @BeforeEach
     void preparer() {
-        encodeur = new BCryptPasswordEncoder(4); // cout reduit : les tests doivent rester rapides
+        encodeur = spy(new BCryptPasswordEncoder(4)); // cout reduit : les tests doivent rester rapides
         Clock horlogeFigee = Clock.fixed(MAINTENANT, ZoneOffset.UTC);
         service = new InscriptionService(repository, encodeur, horlogeFigee, courriel,
                 new PolitiqueMotDePasse(new MotsDePasseCourants(), motDePasse -> false),
-                new LiensCourriel("http://localhost:8080"));
+                new LiensCourriel("http://localhost:8080"), motsDePasse,
+                new LimiteurDemandesCourriel(horlogeFigee, 5, 20, 15));
     }
 
     @Nested
@@ -67,11 +70,11 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("cree un membre en attente de validation")
         void creeUnMembreEnAttente() {
-            when(repository.existsByEmailIgnoreCase("marie@exemple.be")).thenReturn(false);
+            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.empty());
             when(repository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
-                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr);
+                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();
 
             assertThat(membre.getEmail()).isEqualTo("marie@exemple.be");
             assertThat(membre.getNom()).isEqualTo("Dupont");
@@ -85,11 +88,11 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("normalise l adresse en minuscules et retire les espaces")
         void normaliseLAdresse() {
-            when(repository.existsByEmailIgnoreCase("marie@exemple.be")).thenReturn(false);
+            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.empty());
             when(repository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
-                    "  Marie@Exemple.BE  ", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr);
+                    "  Marie@Exemple.BE  ", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();
 
             assertThat(membre.getEmail()).isEqualTo("marie@exemple.be");
         }
@@ -97,12 +100,12 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("n enregistre jamais le mot de passe en clair")
         void chiffreLeMotDePasse() {
-            when(repository.existsByEmailIgnoreCase(any())).thenReturn(false);
+            when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
             when(repository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             String motDePasseClair = "MotDePasseSolide2026";
             Utilisateur membre = service.inscrire(
-                    "marie@exemple.be", motDePasseClair, "Dupont", "Marie", Langue.fr);
+                    "marie@exemple.be", motDePasseClair, "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();
 
             assertThat(membre.getMotDePasseHache()).isNotEqualTo(motDePasseClair);
             assertThat(membre.getMotDePasseHache()).startsWith("$2a$");
@@ -112,38 +115,105 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("genere un jeton de 64 caracteres valable vingt-quatre heures")
         void genereUnJetonValable24h() {
-            when(repository.existsByEmailIgnoreCase(any())).thenReturn(false);
+            when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
             when(repository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
-                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr);
+                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();
 
             assertThat(membre.getJetonVerificationHache()).hasSize(64);
             assertThat(membre.getJetonExpiration())
                     .isEqualTo(MAINTENANT.plus(InscriptionService.VALIDITE_JETON));
         }
 
-        @Test
-        @DisplayName("refuse une adresse deja utilisee")
-        void refuseUneAdresseDejaUtilisee() {
-            when(repository.existsByEmailIgnoreCase("marie@exemple.be")).thenReturn(true);
+        private Utilisateur titulaire(StatutUtilisateur statut) {
+            Utilisateur existant = new Utilisateur("marie@exemple.be", "$2a$04$empreinte",
+                    "Dupont", "Marie", TypeUtilisateur.MEMBRE);
+            existant.setStatut(statut);
+            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(existant));
+            return existant;
+        }
 
-            assertThatThrownBy(() -> service.inscrire(
-                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr))
-                    .isInstanceOf(RegleMetierException.class)
-                    .hasFieldOrPropertyWithValue("codeRegle", "RM-01");
+        private Optional<Utilisateur> inscrireMarie() {
+            return service.inscrire("marie@exemple.be", "MotDePasseSolide2026", "Dupont",
+                    "Marie", Langue.fr, "203.0.113.1");
+        }
+
+        @Test
+        @DisplayName("adresse d'un compte actif : rien n'est créé, le titulaire est averti, sans exception")
+        void adresseDUnCompteActif() {
+            Utilisateur existant = titulaire(StatutUtilisateur.ACTIF);
+
+            assertThat(inscrireMarie()).isEmpty();
 
             verify(repository, never()).save(any());
+            verify(courriel).envoyerAvisTentativeInscription(existant);
+            verifyNoInteractions(motsDePasse);
+        }
+
+        @Test
+        @DisplayName("adresse d'un compte suspendu : même avertissement")
+        void adresseDUnCompteSuspendu() {
+            Utilisateur existant = titulaire(StatutUtilisateur.SUSPENDU);
+
+            assertThat(inscrireMarie()).isEmpty();
+
+            verify(courriel).envoyerAvisTentativeInscription(existant);
+        }
+
+        @Test
+        @DisplayName("adresse d'un compte en attente : le courriel de « Mot de passe oublié », nouveau lien d'activation")
+        void adresseDUnCompteEnAttente() {
+            Utilisateur existant = titulaire(StatutUtilisateur.EN_ATTENTE_VALIDATION);
+
+            assertThat(inscrireMarie()).isEmpty();
+
+            verify(motsDePasse).envoyerCourrielAdapte(existant);
+            verifyNoInteractions(courriel);
+        }
+
+        @Test
+        @DisplayName("adresse d'un compte anonymisé : rien n'est envoyé")
+        void adresseDUnCompteAnonymise() {
+            titulaire(StatutUtilisateur.SUPPRIME);
+
+            assertThat(inscrireMarie()).isEmpty();
+
+            verifyNoInteractions(courriel, motsDePasse);
+        }
+
+        @Test
+        @DisplayName("adresse connue : le mot de passe passe la politique et un hachage, comme pour une adresse libre")
+        void memeTravailQuUneAdresseLibre() {
+            titulaire(StatutUtilisateur.ACTIF);
+
+            inscrireMarie();
+
+            verify(encodeur).encode("MotDePasseSolide2026");
+            assertThatThrownBy(() -> service.inscrire("marie@exemple.be", "atelier garage",
+                    "Dupont", "Marie", Langue.fr, "203.0.113.1"))
+                    .isInstanceOf(RegleMetierException.class)
+                    .hasFieldOrPropertyWithValue("codeRegle", "RM-02");
+        }
+
+        @Test
+        @DisplayName("au-delà du plafond de l'adresse, le titulaire n'est plus averti, la réponse reste la même")
+        void plafondDesAvertissements() {
+            titulaire(StatutUtilisateur.ACTIF);
+
+            for (int i = 0; i < 6; i++) {
+                assertThat(inscrireMarie()).isEmpty();
+            }
+
+            verify(courriel, times(5)).envoyerAvisTentativeInscription(any());
         }
 
         @Test
         @DisplayName("refuse, appelé directement, un mot de passe de quatorze caractères")
         void refuseUnMotDePasseTropCourt() {
-            when(repository.existsByEmailIgnoreCase(any())).thenReturn(false);
-
             // Quatorze : l ancien plancher de douze l acceptait, la politique le refuse.
             assertThatThrownBy(() -> service.inscrire(
-                    "marie@exemple.be", "atelier garage", "Dupont", "Marie", Langue.fr))
+                    "marie@exemple.be", "atelier garage", "Dupont", "Marie", Langue.fr, "203.0.113.1"))
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-02");
 
@@ -154,7 +224,7 @@ class InscriptionServiceTest {
         @DisplayName("refuse une adresse vide")
         void refuseUneAdresseVide() {
             assertThatThrownBy(() -> service.inscrire(
-                    "   ", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr))
+                    "   ", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1"))
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-01");
         }
@@ -162,11 +232,11 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("applique le francais lorsque la langue n est pas precisee")
         void appliqueLeFrancaisParDefaut() {
-            when(repository.existsByEmailIgnoreCase(any())).thenReturn(false);
+            when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
             when(repository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
-                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", null);
+                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", null, "203.0.113.1").orElseThrow();
 
             assertThat(membre.getLangue()).isEqualTo(Langue.fr);
         }
@@ -174,28 +244,26 @@ class InscriptionServiceTest {
         @DisplayName("refuse une adresse nulle")
         void refuseUneAdresseNulle() {
             assertThatThrownBy(() -> service.inscrire(
-                    null, "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr))
+                    null, "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1"))
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-01");
         }
         @Test
         @DisplayName("refuse un mot de passe nul")
         void refuseUnMotDePasseNul() {
-            when(repository.existsByEmailIgnoreCase(any())).thenReturn(false);
-
             assertThatThrownBy(() -> service.inscrire(
-                    "marie@exemple.be", null, "Dupont", "Marie", Langue.fr))
+                    "marie@exemple.be", null, "Dupont", "Marie", Langue.fr, "203.0.113.1"))
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-02");
         }
         @Test
         @DisplayName("envoie le courriel de verification apres enregistrement")
         void envoieLeCourrielDeVerification() {
-            when(repository.existsByEmailIgnoreCase(any())).thenReturn(false);
+            when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
             when(repository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
-                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr);
+                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();
 
             // Le lien porte le jeton en clair, la base sa seule empreinte.
             ArgumentCaptor<String> lien = ArgumentCaptor.forClass(String.class);
