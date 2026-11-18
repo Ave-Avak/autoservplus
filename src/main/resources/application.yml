@@ -232,8 +232,11 @@ autoservplus:
 
     # Plafond des echecs de connexion par IP, sur la meme fenetre (Stratégie A07,
     # contrôle 4). IPv6 comptee par /64. Voir GardeConnexion.
+    # Trois echecs sur l IP ou sur l adresse saisie exigent Turnstile a la tentative
+    # suivante, quand une cle est configuree.
     connexion:
       echecs-max-par-ip: 50
+      echecs-avant-verification: 3
 
     # Plafond des formulaires PUBLICS qui declenchent un envoi de courriel : renvoi du
     # lien de verification et demande de reinitialisation. Sans lui, une adresse valide

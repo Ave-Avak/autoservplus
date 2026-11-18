@@ -48,7 +48,8 @@ class TentativesConnexionServiceTest {
     @BeforeEach
     void preparer() {
         Clock horlogeFigee = Clock.fixed(MAINTENANT, ZoneOffset.UTC);
-        service = new TentativesConnexionService(repository, journal, courriel, horlogeFigee,
+        service = new TentativesConnexionService(repository, journal, courriel,
+                new GardeConnexion(horlogeFigee, 50, 3, 15), horlogeFigee,
                 TENTATIVES_MAX, 15, 15);
         membre = new Utilisateur("marie@exemple.be", "$2a$12$empreinte",
                 "Dupont", "Marie", TypeUtilisateur.MEMBRE);

@@ -38,6 +38,8 @@
             <input type="password" id="password" name="password" autocomplete="current-password" required>
         </div>
 
+        <div th:replace="~{fragments/antibot :: turnstile(${cleTurnstile})}"></div>
+
         <button type="submit" class="btn-cta">Se connecter</button>
     </form>
 

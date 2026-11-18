@@ -2,6 +2,7 @@ package be.autoservplus.config;
 
 import be.autoservplus.identite.service.GardeConnexion;
 import be.autoservplus.identite.service.UtilisateurDetailsService;
+import be.autoservplus.identite.service.VerificateurTurnstile;
 import be.autoservplus.identite.web.AuthentificationPartielle;
 import be.autoservplus.identite.web.ConnexionPartielleHorsEtapes;
 import be.autoservplus.identite.web.EtapeConnexion;
@@ -33,6 +34,8 @@ import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWrite
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
+
+import java.util.Optional;
 
 /**
  * Configuration de securite : chaine de filtres, en-tetes HTTP, encodage des mots de passe.
@@ -135,7 +138,8 @@ public class SecuriteConfig {
                                                EchecAuthentificationHandler echecHandler,
                                                ParcoursConnexion succesHandler,
                                                SessionRegistry registreSessions,
-                                               GardeConnexion garde)
+                                               GardeConnexion garde,
+                                               Optional<VerificateurTurnstile> turnstile)
             throws Exception {
         http
                 .authorizeHttpRequests(acces -> acces
@@ -250,7 +254,8 @@ public class SecuriteConfig {
                 .addFilterAfter(new ConnexionPartielleHorsEtapes(), AuthorizationFilter.class)
                 // Avant l'authentification : voir GardeConnexionFiltre. Le garde et le
                 // filtre d'authentification partagent le même matcher, voir plus bas.
-                .addFilterBefore(new GardeConnexionFiltre(garde, echecHandler, ENVOI_CONNEXION),
+                .addFilterBefore(new GardeConnexionFiltre(garde, echecHandler, ENVOI_CONNEXION,
+                                turnstile),
                         UsernamePasswordAuthenticationFilter.class)
 
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/webhooks/**"))

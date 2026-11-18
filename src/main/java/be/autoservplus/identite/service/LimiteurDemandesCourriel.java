@@ -163,7 +163,7 @@ public class LimiteurDemandesCourriel {
      * sinon « Alex@Exemple.be » et « alex@exemple.be » ouvriraient deux quotas pour un
      * seul destinataire.
      */
-    private static String empreinte(String adresse) {
+    static String empreinte(String adresse) {
         String normalisee = adresse == null ? "" : adresse.trim().toLowerCase(Locale.ROOT);
         try {
             return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256")

@@ -21,14 +21,24 @@ import java.io.IOException;
  * répondent désormais de la même façon, et le message unique de la page dit que la
  * connexion peut être bloquée un temps sans dire si elle l'est.</p>
  *
- * <p>Chaque echec est compte pour l IP de la requete ({@link GardeConnexion}). Le refus
- * prononce avant l authentification, plafond atteint, reprend la meme reponse sans
- * compter.</p>
+ * <p>Chaque échec est compté pour l'IP et pour l'adresse saisie ({@link GardeConnexion}).
+ * Le refus prononcé avant l'authentification, plafond atteint ou jeton Turnstile absent,
+ * reprend la même réponse sans compter.</p>
  */
 @Component
 public class EchecAuthentificationHandler extends SimpleUrlAuthenticationFailureHandler {
 
     public static final String DESTINATION = "/connexion?erreur";
+
+    /**
+     * Attribut de session : la page de connexion doit rendre le widget Turnstile. Posé
+     * quand la tentative suivante l'exigera, d'après l'IP ou d'après l'adresse saisie,
+     * que la page ne connaît plus une fois la redirection faite.
+     */
+    public static final String VERIFICATION_HUMAINE =
+            EchecAuthentificationHandler.class.getName() + ".verificationHumaine";
+
+    private static final String CHAMP_ADRESSE = "email";
 
     private final GardeConnexion garde;
 
@@ -41,13 +51,26 @@ public class EchecAuthentificationHandler extends SimpleUrlAuthenticationFailure
     public void onAuthenticationFailure(HttpServletRequest requete, HttpServletResponse reponse,
                                         AuthenticationException exception)
             throws IOException, ServletException {
-        garde.echec(requete.getRemoteAddr());
+        String adresse = requete.getParameter(CHAMP_ADRESSE);
+        garde.echec(adresse, requete.getRemoteAddr());
+        if (garde.exigeVerificationHumaine(adresse, requete.getRemoteAddr())) {
+            requete.getSession().setAttribute(VERIFICATION_HUMAINE, Boolean.TRUE);
+        }
         super.onAuthenticationFailure(requete, reponse, exception);
     }
 
-    /** Refus prononce avant toute authentification : meme reponse qu un echec, sans le compter. */
-    public void refuserSansCompter(HttpServletRequest requete, HttpServletResponse reponse)
+    /**
+     * Refus prononcé avant toute authentification : même réponse qu'un échec, sans le
+     * compter.
+     *
+     * @param verificationHumaine vrai si la page doit rendre le widget Turnstile
+     */
+    public void refuserSansCompter(HttpServletRequest requete, HttpServletResponse reponse,
+                                   boolean verificationHumaine)
             throws IOException, ServletException {
+        if (verificationHumaine) {
+            requete.getSession().setAttribute(VERIFICATION_HUMAINE, Boolean.TRUE);
+        }
         super.onAuthenticationFailure(requete, reponse,
                 new BadCredentialsException("Connexion refusee avant authentification."));
     }

@@ -39,6 +39,7 @@ public class TentativesConnexionService {
     private final UtilisateurRepository repository;
     private final JournalSecuriteCompte journal;
     private final ServiceCourriel courriel;
+    private final GardeConnexion garde;
     private final Clock horloge;
     private final int tentativesMax;
     private final Duration fenetre;
@@ -48,6 +49,7 @@ public class TentativesConnexionService {
             UtilisateurRepository repository,
             JournalSecuriteCompte journal,
             ServiceCourriel courriel,
+            GardeConnexion garde,
             Clock horloge,
             @Value("${autoservplus.securite.tentatives-max:5}") int tentativesMax,
             @Value("${autoservplus.securite.fenetre-echecs-minutes:15}") long fenetreMinutes,
@@ -55,6 +57,7 @@ public class TentativesConnexionService {
         this.repository = repository;
         this.journal = journal;
         this.courriel = courriel;
+        this.garde = garde;
         this.horloge = horloge;
         this.tentativesMax = tentativesMax;
         this.fenetre = Duration.ofMinutes(fenetreMinutes);
@@ -95,6 +98,7 @@ public class TentativesConnexionService {
      */
     @Transactional
     public void connexionAboutie(String email) {
+        garde.succes(email);
         repository.findByEmailIgnoreCase(email)
                 .ifPresent(membre -> membre.enregistrerConnexionReussie(Instant.now(horloge)));
     }
