@@ -15,6 +15,8 @@
 
 <main id="contenu">
     <h1 th:text="#{commandes.titre}">Mes commandes</h1>
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
 
     <p th:if="${#lists.isEmpty(commandes)}" th:text="#{commandes.aucune}">
         Vous n'avez encore passé aucune commande.

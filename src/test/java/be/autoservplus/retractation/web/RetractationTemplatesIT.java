@@ -15,6 +15,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.web.servlet.FlashMap;
+import org.springframework.web.util.HtmlUtils;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
@@ -180,19 +183,51 @@ class RetractationTemplatesIT extends SocleIntegration {
     }
 
     @Test
-    @DisplayName("le parcours nominal redirige vers la liste avec un message de confirmation")
+    @DisplayName("le parcours nominal redirige vers la liste, qui affiche la confirmation et l'adresse de l'accusé")
     void demandeAcceptee() throws Exception {
         Commande commande = commandePayee("CMD-IT-RETT-0004");
 
-        mvc.perform(post("/commandes/{ref}/annulation", commande.getReference())
+        MvcResult confirmation = mvc.perform(post("/commandes/{ref}/annulation", commande.getReference())
                         .with(csrf()).locale(Locale.FRENCH)
                         .param("motif", "piece non compatible"))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/commandes"))
                 .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers
-                        .flash().attribute("message", containsString("marie@exemple.be")));
+                        .flash().attribute("message", containsString("marie@exemple.be")))
+                .andReturn();
 
         org.assertj.core.api.Assertions.assertThat(demandes.historiqueDe(commande)).hasSize(1);
+        // La redirection suivie : le message posé en flash doit être rendu par la liste,
+        // pas seulement transmis. Un test arrêté à la redirection passait sans qu'il le soit.
+        suivre(confirmation, "message-succes");
+    }
+
+    @Test
+    @DisplayName("une seconde demande sur la même commande revient à la liste avec le refus affiché")
+    void refusAfficheSurLaListe() throws Exception {
+        Commande commande = commandePayee("CMD-IT-RETT-0007");
+        mvc.perform(post("/commandes/{ref}/annulation", commande.getReference())
+                .with(csrf()).locale(Locale.FRENCH).param("motif", ""));
+
+        MvcResult refus = mvc.perform(post("/commandes/{ref}/annulation", commande.getReference())
+                        .with(csrf()).locale(Locale.FRENCH).param("motif", ""))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/commandes"))
+                .andReturn();
+
+        suivre(refus, "message-erreur");
+    }
+
+    /** Ouvre la liste comme le navigateur après la redirection, avec le flash reçu. */
+    private void suivre(MvcResult redirection, String classe) throws Exception {
+        FlashMap flash = redirection.getFlashMap();
+        String texte = (String) flash.getOrDefault("message", flash.get("erreur"));
+        org.assertj.core.api.Assertions.assertThat(texte).isNotBlank();
+        mvc.perform(get(redirection.getResponse().getRedirectedUrl()).flashAttrs(flash)
+                        .locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(classe)))
+                .andExpect(content().string(containsString(HtmlUtils.htmlEscape(texte, "UTF-8"))));
     }
 
     // --- ecran admin --------------------------------------------------------------------
