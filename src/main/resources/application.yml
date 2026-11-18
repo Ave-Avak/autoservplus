@@ -268,6 +268,10 @@ autoservplus:
 logging:
   level:
     be.autoservplus: INFO
+  # Identifiant de la requete apres le niveau, pose par IdentifiantRequeteFiltre et recopie
+  # dans les fils de l executeur des courriels. Un tiret hors de toute requete.
+  pattern:
+    level: "%5p [%X{requete:--}]"
 
 # =====================================================================================
 # Profil « demo » : jeu de donnees transactionnelles pour l evaluation.
