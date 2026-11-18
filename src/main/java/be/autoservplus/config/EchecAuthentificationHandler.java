@@ -1,37 +1,24 @@
 package be.autoservplus.config;
 
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.springframework.security.authentication.LockedException;
-import org.springframework.security.core.AuthenticationException;
 import org.springframework.security.web.authentication.SimpleUrlAuthenticationFailureHandler;
 import org.springframework.stereotype.Component;
 
-import java.io.IOException;
-
 /**
- * Oriente l utilisateur selon la cause du refus d authentification.
+ * Un seul refus pour toute connexion qui échoue : {@code /connexion?erreur}.
  *
- * <p>Le verrouillage donne lieu a un message distinct, car un membre qui ne comprend pas
- * pourquoi il est refuse finit par contourner la securite. La formulation retenue decrit
- * le nombre de tentatives et non l etat d un compte, afin de ne pas confirmer l existence
- * de l adresse saisie.</p>
+ * <p>Le verrouillage avait sa propre redirection, {@code ?bloque}. Son texte était neutre,
+ * mais sa présence ne l'était pas : une adresse inconnue recevait {@code ?erreur} sans fin,
+ * une adresse connue passait à {@code ?bloque} à la sixième tentative, ce qui suffisait à
+ * énumérer les comptes. Mot de passe faux, compte verrouillé, désactivé ou inexistant
+ * répondent désormais de la même façon, et le message unique de la page dit que la
+ * connexion peut être bloquée un temps sans dire si elle l'est.</p>
  */
 @Component
 public class EchecAuthentificationHandler extends SimpleUrlAuthenticationFailureHandler {
 
-    @Override
-    public void onAuthenticationFailure(HttpServletRequest requete,
-                                        HttpServletResponse reponse,
-                                        AuthenticationException exception)
-            throws IOException, ServletException {
+    public static final String DESTINATION = "/connexion?erreur";
 
-        String destination = (exception instanceof LockedException)
-                ? "/connexion?bloque"
-                : "/connexion?erreur";
-
-        setDefaultFailureUrl(destination);
-        super.onAuthenticationFailure(requete, reponse, exception);
+    public EchecAuthentificationHandler() {
+        super(DESTINATION);
     }
 }

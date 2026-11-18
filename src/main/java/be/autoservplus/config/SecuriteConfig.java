@@ -1,5 +1,6 @@
 package be.autoservplus.config;
 
+import be.autoservplus.identite.service.UtilisateurDetailsService;
 import be.autoservplus.identite.web.AuthentificationPartielle;
 import be.autoservplus.identite.web.ConnexionPartielleHorsEtapes;
 import be.autoservplus.identite.web.EtapeConnexion;
@@ -8,8 +9,10 @@ import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -42,6 +45,26 @@ public class SecuriteConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder(COUT_BCRYPT);
+    }
+
+    /**
+     * Le mot de passe est vérifié AVANT le verrouillage et la désactivation.
+     *
+     * <p>Spring Security contrôle par défaut l'état du compte avant le hachage : un compte
+     * verrouillé ou désactivé répondait sans BCrypt, une adresse inconnue payait le
+     * hachage fictif de Spring, et la durée de la réponse disait laquelle des deux
+     * avait été saisie. Les mêmes contrôles passent ici après la vérification. Toute
+     * adresse paie donc un BCrypt de coût 12, et le refus d'un compte verrouillé reste
+     * entier : un mot de passe juste ne passe pas davantage.</p>
+     */
+    @Bean
+    public DaoAuthenticationProvider fournisseurAuthentification(
+            UtilisateurDetailsService comptes, PasswordEncoder encodeur) {
+        DaoAuthenticationProvider fournisseur = new DaoAuthenticationProvider(comptes);
+        fournisseur.setPasswordEncoder(encodeur);
+        fournisseur.setPreAuthenticationChecks(compte -> { });
+        fournisseur.setPostAuthenticationChecks(new AccountStatusUserDetailsChecker());
+        return fournisseur;
     }
 
     /**

@@ -18,6 +18,9 @@ import java.time.Instant;
  *
  * <p>Le message d erreur est volontairement identique que l adresse existe ou non :
  * une reponse differenciee permettrait d enumerer les comptes de la plateforme.</p>
+ *
+ * <p>Verrouillage et désactivation sont lus ici, mais contrôlés après le mot de passe
+ * (voir {@code SecuriteConfig.fournisseurAuthentification}).</p>
  */
 @Service
 @Transactional(readOnly = true)

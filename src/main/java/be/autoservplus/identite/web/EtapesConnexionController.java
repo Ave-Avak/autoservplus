@@ -1,6 +1,7 @@
 package be.autoservplus.identite.web;
 
 import be.autoservplus.common.exception.RefusTraduit;
+import be.autoservplus.config.EchecAuthentificationHandler;
 import be.autoservplus.identite.mfa.CodeQrSvg;
 import be.autoservplus.identite.service.PremierMotDePasseService;
 import be.autoservplus.identite.service.SecondFacteurService;
@@ -93,9 +94,11 @@ public class EtapesConnexionController {
             case VERROUILLE -> {
                 // La connexion partielle tombe : le verrouillage vaut pour le mot de
                 // passe aussi, et laisser l etape ouverte permettrait de continuer a
-                // essayer en attendant la fin du verrouillage.
+                // essayer en attendant la fin du verrouillage. Même refus que le mot de
+                // passe : pendant un verrou, un code juste et un code faux aboutissent à
+                // la même page.
                 parcours.abandonner(requete, reponse);
-                yield "redirect:/connexion?bloque";
+                yield "redirect:" + EchecAuthentificationHandler.DESTINATION;
             }
             case INDISPONIBLE -> {
                 // Message generique : la cause technique est au journal, pas a l ecran.

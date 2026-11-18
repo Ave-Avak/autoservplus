@@ -233,7 +233,7 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
         }
 
         assertThat(saisirCode(session, "000000").getResponse().getRedirectedUrl())
-                .isEqualTo("/connexion?bloque");
+                .isEqualTo("/connexion?erreur");
 
         assertThat(relire(admin).estVerrouille(horloge.instant())).isTrue();
         assertThat(evenements.evenementsDe(admin.getId()))
@@ -241,7 +241,47 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
                 .containsOnlyOnce(TypeEvenementSecurite.SECOND_FACTEUR_VERROUILLAGE)
                 .filteredOn(t -> t == TypeEvenementSecurite.SECOND_FACTEUR_ECHEC).hasSize(5);
         assertThat(connecter(admin, MOT_DE_PASSE).getResponse().getRedirectedUrl())
-                .isEqualTo("/connexion?bloque");
+                .isEqualTo("/connexion?erreur");
+    }
+
+    @Test
+    @DisplayName("pendant un verrou, code juste et code faux donnent la même redirection et la même page")
+    void codeJusteOuFauxPendantUnVerrou() throws Exception {
+        Utilisateur admin = creer(TypeUtilisateur.ADMINISTRATEUR, true, false);
+        // Deux étapes ouvertes avant le verrou : un mot de passe juste ne passe plus après.
+        MockHttpSession avecCodeJuste = session(connecter(admin, MOT_DE_PASSE));
+        MockHttpSession avecCodeFaux = session(connecter(admin, MOT_DE_PASSE));
+        MockHttpSession attaquant = session(connecter(admin, MOT_DE_PASSE));
+        for (int i = 0; i < 5; i++) {
+            saisirCode(attaquant, "000000");
+        }
+        assertThat(relire(admin).estVerrouille(horloge.instant())).isTrue();
+
+        MvcResult juste = saisirCode(avecCodeJuste, codeCourant(SECRET));
+        MvcResult faux = saisirCode(avecCodeFaux, "000000");
+
+        assertThat(juste.getResponse().getRedirectedUrl()).isEqualTo("/connexion?erreur");
+        assertThat(faux.getResponse().getRedirectedUrl()).isEqualTo("/connexion?erreur");
+        assertThat(pageSuivie(juste)).isEqualTo(pageSuivie(faux))
+                .contains("Identifiants incorrects ou connexion temporairement bloquée.");
+        var sessionApres = juste.getRequest().getSession(false);
+        assertThat(sessionApres == null || sessionApres.getAttribute(
+                org.springframework.security.web.context.HttpSessionSecurityContextRepository
+                        .SPRING_SECURITY_CONTEXT_KEY) == null).isTrue();
+    }
+
+    /** La page de refus suivie avec la session de la tentative, sans son jeton CSRF. */
+    private String pageSuivie(MvcResult tentative) throws Exception {
+        MockHttpSession session = (MockHttpSession) tentative.getRequest().getSession(false);
+        // MockMvc lit le paramètre sans valeur de « ?erreur » comme absent, un vrai
+        // conteneur comme une chaîne vide : il est donc posé explicitement.
+        assertThat(tentative.getResponse().getRedirectedUrl()).isEqualTo("/connexion?erreur");
+        var requete = get("/connexion").param("erreur", "").locale(Locale.FRENCH);
+        if (session != null) {
+            requete.session(session);
+        }
+        String page = mvc.perform(requete).andReturn().getResponse().getContentAsString();
+        return page.replaceAll("name=\"_csrf\" value=\"[^\"]*\"", "name=\"_csrf\"");
     }
 
     @Test
