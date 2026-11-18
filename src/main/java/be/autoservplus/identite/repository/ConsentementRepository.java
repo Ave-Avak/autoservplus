@@ -5,6 +5,7 @@ import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * Acces aux preuves d acceptation. Table append-only : ce repository sert a
@@ -14,4 +15,8 @@ public interface ConsentementRepository extends JpaRepository<Consentement, Long
 
     List<Consentement> findByUtilisateurEmailIgnoreCaseAndTypeDocument(
             String email, TypeDocumentConsentement typeDocument);
+
+    /** Preuve rattachée à une commande (V52) : CGV acceptées ou renonciation VI.53 décidée. */
+    Optional<Consentement> findFirstByCommandeIdAndTypeDocumentOrderByDateConsentementDesc(
+            Long commandeId, TypeDocumentConsentement typeDocument);
 }

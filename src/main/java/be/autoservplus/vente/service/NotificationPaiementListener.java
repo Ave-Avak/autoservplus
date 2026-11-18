@@ -1,7 +1,6 @@
 package be.autoservplus.vente.service;
 
 import be.autoservplus.communication.service.DetailsCommandeGarage;
-import be.autoservplus.communication.service.DetailsPaiementCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.reservation.service.support.FormatageRdv;
@@ -16,8 +15,8 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * Previent le membre (recu par courriel) et le garage quand une commande passe a
- * PAYEE. Meme patron que {@code NotificationInterventionListener} : AFTER_COMMIT :
+ * Previent le membre (confirmation du contrat par courriel, art. VI.46, § 7, CDE) et
+ * le garage quand une commande passe a PAYEE. Meme patron que {@code NotificationInterventionListener} : AFTER_COMMIT :
  * un rollback emporte l evenement, un courriel n annonce jamais un encaissement
  * non acquis, et exceptions du fournisseur avalees apres journal.
  *
@@ -33,10 +32,13 @@ public class NotificationPaiementListener {
 
     private final CommandeRepository commandes;
     private final ServiceCourriel courriel;
+    private final ConfirmationCommande confirmation;
 
-    public NotificationPaiementListener(CommandeRepository commandes, ServiceCourriel courriel) {
+    public NotificationPaiementListener(CommandeRepository commandes, ServiceCourriel courriel,
+                                        ConfirmationCommande confirmation) {
         this.commandes = commandes;
         this.courriel = courriel;
+        this.confirmation = confirmation;
     }
 
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
@@ -51,9 +53,7 @@ public class NotificationPaiementListener {
         Utilisateur membre = commande.getMembre();
         String montant = FormatageRdv.euros(commande.getMontantTvac());
         try {
-            courriel.envoyerConfirmationPaiement(new DetailsPaiementCourriel(
-                    membre.getEmail(), membre.getPrenom(), membre.getLangue(), commande.getNumero(),
-                    montant));
+            courriel.envoyerConfirmationCommande(confirmation.composer(commande));
         } catch (RuntimeException e) {
             log.warn("Confirmation de paiement impossible pour la commande {} : {}",
                     commande.getNumero(), e.getMessage());

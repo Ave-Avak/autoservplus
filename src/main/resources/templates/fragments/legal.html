@@ -44,6 +44,11 @@
             <dd th:text="${garage.formeJuridique()}">SRL</dd>
         </th:block>
 
+        <th:block th:if="${garage.aUnNomCommercial()}">
+            <dt th:text="#{legal.garage.nom-commercial}">Nom commercial</dt>
+            <dd th:text="${garage.nomCommercial()}">Garage Démo</dd>
+        </th:block>
+
         <dt th:text="#{legal.garage.adresse}">Adresse</dt>
         <dd>
             <span th:text="${garage.adresseLisible()}">Rue de l'Atelier 12, 1000 Bruxelles</span>

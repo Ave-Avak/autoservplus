@@ -83,6 +83,10 @@ public record IdentiteGarage(
         return estRenseigne(formeJuridique) ? raisonSociale + " " + formeJuridique : raisonSociale;
     }
 
+    public boolean aUnNomCommercial() {
+        return estRenseigne(nomCommercial);
+    }
+
     public boolean aUneFormeJuridique() {
         return estRenseigne(formeJuridique);
     }

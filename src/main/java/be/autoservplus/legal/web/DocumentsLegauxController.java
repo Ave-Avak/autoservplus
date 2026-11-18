@@ -49,8 +49,6 @@ import org.springframework.web.bind.annotation.PathVariable;
 @Controller
 public class DocumentsLegauxController {
 
-    private static final int LIGNES_AVANT_IDENTITE = 4;
-
     private final IdentiteGarage garage;
     private final CatalogueTraitements traitements;
     private final VersionsDocumentsService versionsDocuments;
@@ -105,9 +103,7 @@ public class DocumentsLegauxController {
                                 "Version de " + document.slug(), version)));
         modele.addAttribute("libelleDocument", document.cleLibelle());
         if (document == TypeDocumentVersionne.CGV) {
-            // Titre, introduction, titre et corps de l'article 1 : même ordre dans toutes
-            // les versions publiées des CGV (V33, V35, V43, V53).
-            modele.addAttribute("lignesAvantIdentite", LIGNES_AVANT_IDENTITE);
+            modele.addAttribute("lignesAvantIdentite", TypeDocumentVersionne.LIGNES_AVANT_IDENTITE_CGV);
             modele.addAttribute("garage", garage);
         }
         return "legal/archive";

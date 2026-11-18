@@ -4,7 +4,7 @@ import be.autoservplus.identite.domain.Langue;
 
 /**
  * Elements du courriel confirmant la suppression d un compte (F23). Chaines plates,
- * comme {@link DetailsPaiementCourriel} : le module communication ne depend ni de
+ * comme {@link DetailsConfirmationCommande} : le module communication ne depend ni de
  * l identite ni du module rgpd.
  *
  * <p>L adresse et le prenom sont ceux <b>captures avant l anonymisation</b>. Les

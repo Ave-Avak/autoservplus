@@ -5,7 +5,7 @@ import be.autoservplus.identite.domain.Langue;
 /**
  * Elements du courriel annoncant la decision du garage sur une demande de
  * retractation (F30). Chaines plates, deja formatees : meme principe que
- * {@link DetailsPaiementCourriel}, le module communication ne depend ni de la vente
+ * {@link DetailsConfirmationCommande}, le module communication ne depend ni de la vente
  * ni de la facturation.
  *
  * <p>Un seul record pour l acceptation et le refus, {@code acceptee} tranchant : ce

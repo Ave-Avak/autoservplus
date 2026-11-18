@@ -86,6 +86,14 @@ public enum TypeDocumentVersionne {
             "commande.vi53.libelle",
             "commande.vi53.explication"));
 
+    /**
+     * Lignes du texte des CGV qui précèdent l'identité du garage : titre, introduction,
+     * titre et corps de l'article 1, qui désigne le garage « identifié ci-dessous ». Même
+     * ordre dans toutes les versions publiées (V33, V35, V43, V53), d'où une seule valeur
+     * pour la page d'archive et pour le PDF joint à la confirmation de commande.
+     */
+    public static final int LIGNES_AVANT_IDENTITE_CGV = 4;
+
     private final String slug;
     private final String famille;
     private final List<String> cles;

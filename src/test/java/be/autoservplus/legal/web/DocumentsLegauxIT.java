@@ -270,6 +270,10 @@ class DocumentsLegauxIT extends SocleIntegration {
             assertThat(article1).isPositive();
             assertThat(identite).isGreaterThan(article1);
             assertThat(article2).isGreaterThan(identite);
+            // VI.45, § 1er, 2° : le nom commercial est nommé avec l'identité.
+            assertThat(page.substring(identite, article2))
+                    .contains("<dt>Nom commercial</dt>")
+                    .contains("<dd>Garage Démo</dd>");
 
             mvc.perform(get("/documents/cookies/COOKIES-2026-02").with(anonymous())
                             .header("Accept-Language", "fr"))

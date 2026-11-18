@@ -1,6 +1,7 @@
 package be.autoservplus.communication.service;
 
 import be.autoservplus.config.IdentiteGarage;
+import be.autoservplus.config.MentionsIdentiteGarage;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
@@ -10,8 +11,10 @@ import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -40,11 +43,13 @@ public class CourrielSortant implements ServiceCourriel {
     private final IdentiteGarage garage;
     private final ParametreAtelierRepository parametres;
     private final LiensCourriel liens;
+    private final MentionsIdentiteGarage identite;
 
     public CourrielSortant(MessageSource messages, EnvoiApresCommit envoi,
                            IdentiteGarage garage, ParametreAtelierRepository parametres,
-                           LiensCourriel liens) {
+                           LiensCourriel liens, MentionsIdentiteGarage identite) {
         this.liens = liens;
+        this.identite = identite;
         this.messages = messages;
         this.envoi = envoi;
         this.garage = garage;
@@ -292,12 +297,72 @@ public class CourrielSortant implements ServiceCourriel {
 
     // --- vente ----------------------------------------------------------------------
 
+    /**
+     * Confirmation du contrat (art. VI.46, § 7, CDE) : les informations de l'art. VI.45,
+     * § 1er, qui n'ont pas été remises sur un support durable avant la conclusion. Le
+     * courriel nomme le vendeur, la commande, le retrait, la rétractation, la garantie et
+     * les recours. Les conditions, le délai et les modalités de la rétractation (8° à 10°)
+     * sont dans l'article 7 des CGV jointes, qui reprend l'annexe 1 du livre VI (VI.45,
+     * § 3).
+     */
     @Override
-    public void envoyerConfirmationPaiement(DetailsPaiementCourriel details) {
+    public void envoyerConfirmationCommande(DetailsConfirmationCommande details) {
         Locale langue = langue(details.langue());
-        partir("paiement-confirme", details.adresseEmail(), details.prenom(), details.prenom(),
-                langue, corps("paiement-confirme", langue, details.numeroCommande(),
-                        details.montantTvac()), null);
+        ZoneId zone = parametres.courants().zone();
+        String cle = "courriel.confirmation-commande.";
+        List<String> blocs = new ArrayList<>();
+        blocs.add(corps("confirmation-commande", langue, details.numeroCommande(),
+                details.totalTvac(), jour(details.conclueLe().atZone(zone), langue, "d MMMM yyyy"),
+                jour(details.payeeLe().atZone(zone), langue, "d MMMM yyyy")));
+
+        blocs.add(texte(cle + "vendeur", langue) + "\n" + String.join("\n", identite.lignes(langue)));
+
+        List<String> commande = new ArrayList<>();
+        commande.add(texte(cle + "commande", langue));
+        for (DetailsConfirmationCommande.LigneCommandee ligne : details.lignes()) {
+            commande.add(message(cle + "ligne", langue, ligne.libelle(),
+                    String.valueOf(ligne.quantite()), ligne.totalTvac(), ligne.tauxTva()));
+        }
+        commande.add(message(cle + "total-htva", langue, details.totalHtva()));
+        commande.add(message(cle + "total-tva", langue, details.totalTva()));
+        commande.add(message(cle + "total-tvac", langue, details.totalTvac()));
+        commande.add(texte(cle + "paiement", langue));
+        blocs.add(String.join("\n", commande));
+
+        List<String> retrait = new ArrayList<>();
+        retrait.add(texte(cle + "retrait", langue));
+        if (details.pieces()) {
+            retrait.add(texte(cle + "retrait.pieces", langue));
+        }
+        if (details.prestations()) {
+            retrait.add(texte(cle + "retrait.prestations", langue));
+        }
+        blocs.add(String.join("\n", retrait));
+
+        // La fonction en ligne est désignée par les libellés de l'écran, comme dans
+        // l'article 7 des CGV : un libellé renommé se renomme ici en même temps.
+        String page = texte("commandes.nav", langue);
+        String lien = texte("commandes.annulation.demander", langue);
+        String retractation = texte(cle + "retractation", langue) + "\n" + (details.versionCgv() != null
+                ? message(cle + "retractation.corps", langue, details.versionCgv(), page, lien)
+                : message(cle + "retractation.sans-cgv", langue, page, lien));
+        if (details.renonciation() != null) {
+            DetailsConfirmationCommande.RenonciationConfirmee renonciation = details.renonciation();
+            retractation += "\n" + message(cle + "renonciation", langue,
+                    jour(renonciation.le().atZone(zone), langue, "d MMMM yyyy"),
+                    renonciation.version(), renonciation.libelle());
+        }
+        blocs.add(retractation);
+
+        if (details.pieces()) {
+            blocs.add(texte(cle + "garantie", langue) + "\n" + texte(cle + "garantie.corps", langue));
+        }
+        blocs.add(texte(cle + "reclamations", langue) + "\n" + texte(cle + "reclamations.corps", langue));
+        blocs.add(texte(cle + (details.versionCgv() != null ? "pieces-jointes" : "pieces-jointes.formulaire"),
+                langue));
+
+        partirAvecPieces("confirmation-commande", details.adresseEmail(), details.prenom(),
+                details.prenom(), langue, String.join("\n\n", blocs), details.piecesJointes());
     }
 
     @Override
@@ -391,6 +456,10 @@ public class CourrielSortant implements ServiceCourriel {
 
     private String texte(String cle, Locale langue) {
         return messages.getMessage(cle, null, langue);
+    }
+
+    private String message(String cle, Locale langue, Object... arguments) {
+        return messages.getMessage(cle, arguments, langue);
     }
 
     private static Locale langue(Langue langue) {
