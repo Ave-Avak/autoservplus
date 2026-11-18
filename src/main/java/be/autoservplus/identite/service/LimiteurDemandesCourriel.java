@@ -11,13 +11,8 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.HexFormat;
 import java.util.Locale;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * Plafonne les formulaires publics qui declenchent un envoi de courriel : renvoi du
@@ -92,13 +87,12 @@ public class LimiteurDemandesCourriel {
      */
     private static final int ENTREES_MAX = 100_000;
 
-    private final Map<String, Deque<Instant>> parAdresse = new ConcurrentHashMap<>();
-    private final Map<String, Deque<Instant>> parIp = new ConcurrentHashMap<>();
+    private final FenetresGlissantes parAdresse;
+    private final FenetresGlissantes parIp;
 
     private final Clock horloge;
     private final int maxParAdresse;
     private final int maxParIp;
-    private final Duration fenetre;
 
     public LimiteurDemandesCourriel(
             Clock horloge,
@@ -108,7 +102,9 @@ public class LimiteurDemandesCourriel {
         this.horloge = horloge;
         this.maxParAdresse = maxParAdresse;
         this.maxParIp = maxParIp;
-        this.fenetre = Duration.ofMinutes(fenetreMinutes);
+        Duration fenetre = Duration.ofMinutes(fenetreMinutes);
+        this.parAdresse = new FenetresGlissantes(fenetre, ENTREES_MAX);
+        this.parIp = new FenetresGlissantes(fenetre, ENTREES_MAX);
     }
 
     /**
@@ -154,36 +150,12 @@ public class LimiteurDemandesCourriel {
         return sousPlafond;
     }
 
-    /**
-     * Fenetre reellement glissante : les horodatages sortis de la fenetre sont purges
-     * a chaque passage, et l entree disparait quand elle se vide. C est ce qui borne
-     * la carte en regime normal, le plafond dur n etant qu un filet. Une fenetre fixe
-     * remise a zero d un coup laisserait passer deux fois le plafond a cheval sur deux
-     * periodes.
-     */
-    private boolean consommer(Map<String, Deque<Instant>> compteurs, String cle, int limite,
-                              Instant maintenant) {
-        if (compteurs.size() >= ENTREES_MAX && !compteurs.containsKey(cle)) {
+    private static boolean consommer(FenetresGlissantes compteurs, String cle, int limite,
+                                     Instant maintenant) {
+        if (compteurs.saturee(cle, maintenant)) {
             return true; // Voir « Saturation de la carte » : l autre plafond prend le relais.
         }
-        Instant debutFenetre = maintenant.minus(fenetre);
-        AtomicBoolean autorise = new AtomicBoolean();
-        compteurs.compute(cle, (ignore, horodatages) -> {
-            Deque<Instant> fenetreGlissante =
-                    horodatages == null ? new ArrayDeque<>() : horodatages;
-            while (!fenetreGlissante.isEmpty()
-                    && fenetreGlissante.peekFirst().isBefore(debutFenetre)) {
-                fenetreGlissante.pollFirst();
-            }
-            if (fenetreGlissante.size() < limite) {
-                fenetreGlissante.addLast(maintenant);
-                autorise.set(true);
-            }
-            // null retire l entree : une cle dont la fenetre s est videe ne doit pas
-            // survivre a la carte, sans quoi la purge ne borne rien.
-            return fenetreGlissante.isEmpty() ? null : fenetreGlissante;
-        });
-        return autorise.get();
+        return compteurs.ajouterSousLimite(cle, limite, maintenant);
     }
 
     /**
