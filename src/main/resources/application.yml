@@ -151,6 +151,11 @@ autoservplus:
       starttls: ${SMTP_STARTTLS:true}
       delai-connexion: ${SMTP_DELAI_CONNEXION:5s}
       delai-lecture: ${SMTP_DELAI_LECTURE:10s}
+    # Courriels des formulaires anonymes et avis de verrouillage, envoyes hors de la
+    # requete (ExecuteurCourriels). File pleine : courriel abandonne, avec un WARN.
+    executeur:
+      fils: 2
+      file: 200
 
   # Identification légale de l'émetteur des factures (mentions obligatoires :
   # Code TVA art. 53, AR n°1 art. 5, CSA art. 2:20). Mono-tenant V1 : un seul garage,

@@ -157,6 +157,29 @@ class CourrielSortantTest {
     }
 
     @Test
+    @DisplayName("seuls les courriels qui trahiraient un compte partent hors de la requête")
+    void envoisHorsDeLaRequete() {
+        List<Courriel> horsRequete = new ArrayList<>();
+        IdentiteGarage garage = mock(IdentiteGarage.class);
+        when(garage.enseigne()).thenReturn("Garage Test");
+        when(garage.courriel()).thenReturn("atelier@exemple.be");
+        ParametreAtelierRepository parametres = mock(ParametreAtelierRepository.class);
+        when(parametres.courants()).thenReturn(new ParametreAtelier());
+        courriel = new CourrielSortant(messages, new EnvoiApresCommit(partis::add, horsRequete::add),
+                garage, parametres, new LiensCourriel("http://localhost:8080/"),
+                new MentionsIdentiteGarage(garage, messages));
+
+        tousLesEnvois().forEach((type, envoi) -> envoi.accept(Langue.fr));
+
+        assertThat(horsRequete).extracting(Courriel::type).containsExactlyInAnyOrder(
+                "verification-adresse", "reinitialisation", "rappel-verification",
+                "verrouillage-connexion");
+        assertThat(partis).extracting(Courriel::type)
+                .doesNotContainAnyElementsOf(CourrielSortant.HORS_DE_LA_REQUETE)
+                .hasSize(30);
+    }
+
+    @Test
     @DisplayName("l'accusé de rétractation porte le contenu de la déclaration, sa date et son heure")
     void accuseDeRetractation() {
         courriel.envoyerAccuseRetractation(new DetailsAccuseRetractationCourriel("marie@exemple.be",

@@ -30,6 +30,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 
@@ -122,6 +124,8 @@ class CourrielSmtpIT extends SocleIntegration {
         String email = adresse();
         inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr);
 
+        // Le lien de vérification part d'un autre fil (ExecuteurCourriels).
+        await().atMost(Duration.ofSeconds(10)).until(() -> !recus(email).isEmpty());
         List<JsonNode> messages = recus(email);
         assertThat(messages).hasSize(1);
         JsonNode message = messages.get(0);

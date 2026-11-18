@@ -31,7 +31,8 @@ import java.util.HexFormat;
 public class IdentifiantRequeteFiltre extends OncePerRequestFilter {
 
     public static final String CLE = "requete";
-    static final String ATTRIBUT = IdentifiantRequeteFiltre.class.getName() + ".identifiant";
+    /** Attribut de requête qui garde l'identifiant pour le dispatch d'erreur. */
+    public static final String ATTRIBUT = IdentifiantRequeteFiltre.class.getName() + ".identifiant";
 
     private static final SecureRandom HASARD = new SecureRandom();
 
