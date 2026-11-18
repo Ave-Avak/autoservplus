@@ -66,7 +66,11 @@ class DocumentsLegauxIT extends SocleIntegration {
         void brouillonAnnonce(String adresse) throws Exception {
             mvc.perform(get(adresse).with(anonymous()).header("Accept-Language", "fr"))
                     .andExpect(content().string(
-                            org.hamcrest.Matchers.containsString("Document provisoire")));
+                            org.hamcrest.Matchers.containsString("Document provisoire")))
+                    // Aucune clause ne porte plus de passage entre crochets : le bandeau
+                    // n'annonce plus de texte à compléter.
+                    .andExpect(content().string(org.hamcrest.Matchers.not(
+                            org.hamcrest.Matchers.containsString("entre crochets"))));
         }
     }
 
