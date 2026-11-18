@@ -39,9 +39,10 @@ class VersionnageDocumentsIT extends SocleIntegration {
         void troisLanguesParVersion() {
             // Une version = un jeu de trois textes publies ensemble. Le compte total croit
             // donc de trois a chaque publication, et non de un : V33 amorce trois documents,
-            // V35 publie une seconde version des CGV, V43 une nouvelle version des trois.
+            // V35 publie une seconde version des CGV, V43 une nouvelle version des trois,
+            // V53 une quatrieme version des CGV.
             assertThat(versions.count())
-                    .isEqualTo((2L * TypeDocumentVersionne.values().length + 1)
+                    .isEqualTo((2L * TypeDocumentVersionne.values().length + 2)
                             * Langue.values().length);
 
             for (TypeDocumentVersionne type : TypeDocumentVersionne.values()) {
@@ -88,9 +89,10 @@ class VersionnageDocumentsIT extends SocleIntegration {
         @DisplayName("resout la version en vigueur, y compris apres une publication")
         void continuite() {
             // CGV a change de version avec V35 (article 9, conservation portee a dix ans),
-            // puis les trois documents avec V43 (typographie).
+            // puis les trois documents avec V43 (typographie), puis CGV avec V53 (annexe 1
+            // du livre VI, confirmation du contrat).
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.CGV))
-                    .isEqualTo("CGV-2026-03");
+                    .isEqualTo("CGV-2026-04");
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.COOKIES))
                     .isEqualTo("COOKIES-2026-02");
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.RENONCIATION_RETRACTATION))
@@ -160,7 +162,7 @@ class VersionnageDocumentsIT extends SocleIntegration {
 
             assertThat(versionsDocuments.versionCourante(TypeDocumentVersionne.CGV))
                     .as("La version annoncee pour dans trente jours ne s applique pas aujourd hui")
-                    .isEqualTo("CGV-2026-03");
+                    .isEqualTo("CGV-2026-04");
         }
     }
 
@@ -208,7 +210,7 @@ class VersionnageDocumentsIT extends SocleIntegration {
                     .isFalse();
 
             TexteArchiveVue courante = versionsDocuments
-                    .archive(TypeDocumentVersionne.CGV, "CGV-2026-03", Locale.FRENCH)
+                    .archive(TypeDocumentVersionne.CGV, "CGV-2026-04", Locale.FRENCH)
                     .orElseThrow();
             assertThat(courante.contenu()).contains("conservées dix ans");
             assertThat(courante.actif()).isTrue();

@@ -42,7 +42,16 @@ public enum TypeDocumentVersionne {
             "legal.cgv.art4.titre", "legal.cgv.art4.corps",
             "legal.cgv.art5.titre", "legal.cgv.art5.corps",
             "legal.cgv.art6.titre", "legal.cgv.art6.corps", "legal.cgv.art6.completer",
-            "legal.cgv.art7.titre", "legal.cgv.art7.corps", "legal.cgv.art7.completer",
+            "legal.cgv.art6.confirmation",
+            // Article 7 de CGV-2026-04 : les informations standardisées de l'annexe 1 du
+            // livre VI CDE, complétées aux endroits que l'annexe laisse à l'entreprise.
+            "legal.cgv.art7.titre", "legal.cgv.art7.entree", "legal.cgv.art7.droit",
+            "legal.cgv.art7.delai", "legal.cgv.art7.notification", "legal.cgv.art7.en-ligne",
+            "legal.cgv.art7.respect", "legal.cgv.art7.effets.titre", "legal.cgv.art7.effets",
+            "legal.cgv.art7.suite", "legal.cgv.art7.pieces.titre", "legal.cgv.art7.pieces.differer",
+            "legal.cgv.art7.pieces.renvoi", "legal.cgv.art7.pieces.frais",
+            "legal.cgv.art7.pieces.responsabilite", "legal.cgv.art7.prestation.titre",
+            "legal.cgv.art7.prestation.montant",
             "legal.cgv.art8.titre", "legal.cgv.art8.corps",
             "legal.cgv.art9.titre", "legal.cgv.art9.corps",
             "legal.cgv.art10.titre", "legal.cgv.art10.completer",
@@ -76,6 +85,14 @@ public enum TypeDocumentVersionne {
     RENONCIATION_RETRACTATION("renonciation", "commande.vi53.", List.of(
             "commande.vi53.libelle",
             "commande.vi53.explication"));
+
+    /**
+     * Lignes du texte des CGV qui précèdent l'identité du garage : titre, introduction,
+     * titre et corps de l'article 1, qui désigne le garage « identifié ci-dessous ». Même
+     * ordre dans toutes les versions publiées (V33, V35, V43, V53), d'où une seule valeur
+     * pour la page d'archive et pour le PDF joint à la confirmation de commande.
+     */
+    public static final int LIGNES_AVANT_IDENTITE_CGV = 4;
 
     private final String slug;
     private final String famille;

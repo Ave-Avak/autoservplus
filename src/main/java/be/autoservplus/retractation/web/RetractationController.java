@@ -3,8 +3,8 @@ package be.autoservplus.retractation.web;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.retractation.service.RetractationImpossibleException;
 import be.autoservplus.retractation.service.RetractationService;
+import be.autoservplus.retractation.service.dto.DeclarationRetractationVue;
 import be.autoservplus.retractation.web.dto.DemandeRetractationForm;
-import be.autoservplus.vente.service.CommandeService;
 import jakarta.validation.Valid;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -23,17 +23,20 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.UUID;
 
 /**
- * Demande de retractation par le membre (F30, RM-23).
+ * Fonction de rétractation en ligne du membre (F30, RM-23, CDE art. VI.61/2).
  *
- * <p><b>Confirmation explicite avant envoi</b> : le bouton de la liste des commandes
- * ne declenche rien, il ouvre une page qui rappelle ce qui va se passer (le garage
- * examine, le remboursement suit l acceptation) et exige une case cochee. Un clic
- * unique sur une action irreversible depuis une liste est une erreur d ergonomie
- * autant que de securite.</p>
+ * <p>Deux étapes, comme la loi les décrit. La déclaration montre le nom du
+ * consommateur, la commande visée et l'adresse de l'accusé de réception, avec un motif
+ * facultatif. La confirmation récapitule la déclaration et porte le seul bouton
+ * « Confirmer la rétractation » : c'est lui qui enregistre la rétractation et fait
+ * partir l'accusé de réception. Un clic unique depuis une liste sur un geste qui lie
+ * le garage serait une erreur d'ergonomie autant que de sécurité.</p>
  *
- * <p>Patron PRG : POST puis redirection vers la liste avec un flash message. Sans
- * lui, un rafraichissement du navigateur reposterait la demande, que l index partiel
- * refuserait, mais avec une erreur au lieu d un ecran normal.</p>
+ * <p>Patron PRG à la confirmation : POST puis redirection vers la liste avec un flash
+ * message. Sans lui, un rafraîchissement du navigateur reposterait la rétractation,
+ * que l'index partiel refuserait, mais avec une erreur au lieu d'un écran normal. La
+ * seconde étape, elle, est rendue en réponse au POST de la première : elle n'écrit
+ * rien, et la reposter ne fait que la rendre de nouveau.</p>
  *
  * <p>{@code RessourceIntrouvableException} est <b>catchee</b> et traduite en page
  * dediee plutot que laissee remonter en 500 : c est l asymetrie relevee sur
@@ -45,64 +48,83 @@ import java.util.UUID;
 public class RetractationController {
 
     private static final String LISTE = "redirect:/commandes";
+    private static final String INTROUVABLE = "retractation/commande-introuvable";
 
     private final RetractationService retractations;
-    private final CommandeService commandes;
     private final MessageSource messages;
 
-    public RetractationController(RetractationService retractations,
-                                  CommandeService commandes,
-                                  MessageSource messages) {
+    public RetractationController(RetractationService retractations, MessageSource messages) {
         this.retractations = retractations;
-        this.commandes = commandes;
         this.messages = messages;
     }
 
+    /** Première étape : la déclaration à compléter. */
     @GetMapping
-    public String formulaire(@AuthenticationPrincipal UserDetails membre,
-                             @PathVariable UUID reference,
-                             Model modele) {
-        return preparerFormulaire(membre, reference, new DemandeRetractationForm(), modele);
+    public String declaration(@AuthenticationPrincipal UserDetails membre,
+                              @PathVariable UUID reference,
+                              Model modele,
+                              RedirectAttributes redirection) {
+        return etape(membre, reference, new DemandeRetractationForm(), "retractation/demander",
+                "retractation.titre", modele, redirection);
     }
 
+    /** Seconde étape : le récapitulatif et la fonction de confirmation. Rien n'est écrit. */
+    @PostMapping("/verification")
+    public String verification(@AuthenticationPrincipal UserDetails membre,
+                               @PathVariable UUID reference,
+                               @Valid @ModelAttribute("formulaire") DemandeRetractationForm formulaire,
+                               BindingResult erreurs,
+                               Model modele,
+                               RedirectAttributes redirection) {
+        String gabarit = erreurs.hasErrors() ? "retractation/demander" : "retractation/confirmer";
+        String titre = erreurs.hasErrors() ? "retractation.titre" : "retractation.confirmer.titre";
+        return etape(membre, reference, formulaire, gabarit, titre, modele, redirection);
+    }
+
+    /** Confirmation : la rétractation est enregistrée, l'accusé de réception part. */
     @PostMapping
-    public String demander(@AuthenticationPrincipal UserDetails membre,
-                           @PathVariable UUID reference,
-                           @Valid @ModelAttribute("formulaire") DemandeRetractationForm formulaire,
-                           BindingResult erreurs,
-                           Model modele,
-                           RedirectAttributes redirection) {
+    public String confirmer(@AuthenticationPrincipal UserDetails membre,
+                            @PathVariable UUID reference,
+                            @Valid @ModelAttribute("formulaire") DemandeRetractationForm formulaire,
+                            BindingResult erreurs,
+                            Model modele,
+                            RedirectAttributes redirection) {
         if (erreurs.hasErrors()) {
-            return preparerFormulaire(membre, reference, formulaire, modele);
+            return etape(membre, reference, formulaire, "retractation/demander",
+                    "retractation.titre", modele, redirection);
         }
         try {
             retractations.demander(membre.getUsername(), reference, formulaire.getMotif());
-            redirection.addFlashAttribute("message", msg("retractation.confirmation"));
+            redirection.addFlashAttribute("message",
+                    msg("retractation.confirmation", membre.getUsername()));
         } catch (RetractationImpossibleException e) {
             // La cle i18n est derivee du motif : le service ne fabrique aucune chaine
             // destinee a l utilisateur, et ajouter un motif oblige a ajouter sa cle.
             redirection.addFlashAttribute("erreur",
                     msg("retractation.refus." + e.getMotif().name()));
         } catch (RessourceIntrouvableException e) {
-            return "retractation/commande-introuvable";
+            return INTROUVABLE;
         }
         return LISTE;
     }
 
-    private String preparerFormulaire(UserDetails membre, UUID reference,
-                                      DemandeRetractationForm formulaire, Model modele) {
+    private String etape(UserDetails membre, UUID reference, DemandeRetractationForm formulaire,
+                         String gabarit, String cleTitre, Model modele,
+                         RedirectAttributes redirection) {
+        DeclarationRetractationVue declaration;
         try {
-            // ConfirmationCommandeVue porte exactement ce que cet ecran rappelle :
-            // numero et montant TVAC. Creer une vue de plus pour deux champs deja
-            // exposes serait du bruit.
-            modele.addAttribute("titre", msg("retractation.titre"));
-            modele.addAttribute("commande",
-                    commandes.confirmation(reference, membre.getUsername()));
-            modele.addAttribute("formulaire", formulaire);
-            return "retractation/demander";
+            declaration = retractations.declaration(membre.getUsername(), reference);
+        } catch (RetractationImpossibleException e) {
+            redirection.addFlashAttribute("erreur",
+                    msg("retractation.refus." + e.getMotif().name()));
+            return LISTE;
         } catch (RessourceIntrouvableException e) {
-            return "retractation/commande-introuvable";
+            return INTROUVABLE;
         }
+        modele.addAttribute("titre", msg(cleTitre));
+        modele.addAttribute("declaration", declaration);
+        modele.addAttribute("formulaire", formulaire);
+        return gabarit;
     }
 
     private String msg(String cle, Object... arguments) {

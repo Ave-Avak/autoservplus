@@ -1,5 +1,6 @@
 package be.autoservplus.legal.web;
 
+import be.autoservplus.retractation.service.RetractationService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -10,6 +11,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -64,7 +66,11 @@ class DocumentsLegauxIT extends SocleIntegration {
         void brouillonAnnonce(String adresse) throws Exception {
             mvc.perform(get(adresse).with(anonymous()).header("Accept-Language", "fr"))
                     .andExpect(content().string(
-                            org.hamcrest.Matchers.containsString("Document provisoire")));
+                            org.hamcrest.Matchers.containsString("Document provisoire")))
+                    // Aucune clause ne porte plus de passage entre crochets : le bandeau
+                    // n'annonce plus de texte à compléter.
+                    .andExpect(content().string(org.hamcrest.Matchers.not(
+                            org.hamcrest.Matchers.containsString("entre crochets"))));
         }
     }
 
@@ -119,14 +125,16 @@ class DocumentsLegauxIT extends SocleIntegration {
         /**
          * Le delai affiche est celui que la regle applique reellement. Un texte qui
          * annoncerait quatorze jours quand le code en refuse au bout de sept serait
-         * une information trompeuse au sens du droit de la consommation.
+         * une information trompeuse au sens du droit de la consommation. Depuis
+         * CGV-2026-04, le nombre est celui de l annexe 1 du livre VI, ecrit dans le texte
+         * officiel : ce test le confronte a la constante qui refuse une demande hors delai.
          */
         @Test
         @DisplayName("le delai de retractation affiche est celui de la regle")
         void delaiAlignesSurLaRegle() throws Exception {
             mvc.perform(get("/cgv").with(anonymous()).header("Accept-Language", "fr"))
-                    .andExpect(content().string(
-                            org.hamcrest.Matchers.containsString("délai de 14 jours")));
+                    .andExpect(content().string(org.hamcrest.Matchers.containsString(
+                            "expire " + RetractationService.DELAI_LEGAL.toDays() + " jours après le jour")));
         }
 
         /**
@@ -204,15 +212,15 @@ class DocumentsLegauxIT extends SocleIntegration {
         @Test
         @DisplayName("les CGV annoncent la version en vigueur et menent a son texte archive")
         void mentionDeVersion() throws Exception {
-            // CGV-2026-03 depuis V43. La page publique annonce la version DU JOUR : c est
+            // CGV-2026-04 depuis V53. La page publique annonce la version DU JOUR : c est
             // ce numero que portera la preuve d acceptation du lecteur, pas celui de la
             // redaction precedente.
             mvc.perform(get("/cgv").with(anonymous()).header("Accept-Language", "fr"))
                     .andExpect(status().isOk())
                     .andExpect(content().string(
-                            org.hamcrest.Matchers.containsString("CGV-2026-03")))
+                            org.hamcrest.Matchers.containsString("CGV-2026-04")))
                     .andExpect(content().string(
-                            org.hamcrest.Matchers.containsString("/documents/cgv/CGV-2026-03")))
+                            org.hamcrest.Matchers.containsString("/documents/cgv/CGV-2026-04")))
                     .andExpect(content().string(
                             org.hamcrest.Matchers.containsString("conservées dix ans")));
         }
@@ -249,6 +257,33 @@ class DocumentsLegauxIT extends SocleIntegration {
                     // non par une recopie du fichier brut, ou il resterait « {0} ».
                     .andExpect(content().string(
                             org.hamcrest.Matchers.containsString("délai de 14 jours")));
+        }
+
+        @Test
+        @DisplayName("l archive des CGV porte l identite du garage sous l article 1, pas celle des cookies")
+        void identiteSousLArticle1() throws Exception {
+            // L article 1 renvoie au garage « identifie ci-dessous » : sans l identite, le
+            // texte archive designerait un vendeur que la page ne nomme pas.
+            String page = mvc.perform(get("/documents/cgv/CGV-2026-04").with(anonymous())
+                            .header("Accept-Language", "fr"))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            int article1 = page.indexOf("Le vendeur est le garage identifié ci-dessous");
+            int identite = page.indexOf("class=\"identite-garage\"");
+            int article2 = page.indexOf("Article 2. Champ d");
+            assertThat(article1).isPositive();
+            assertThat(identite).isGreaterThan(article1);
+            assertThat(article2).isGreaterThan(identite);
+            // VI.45, § 1er, 2° : le nom commercial est nommé avec l'identité.
+            assertThat(page.substring(identite, article2))
+                    .contains("<dt>Nom commercial</dt>")
+                    .contains("<dd>Garage Démo</dd>");
+
+            mvc.perform(get("/documents/cookies/COOKIES-2026-02").with(anonymous())
+                            .header("Accept-Language", "fr"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(org.hamcrest.Matchers.not(
+                            org.hamcrest.Matchers.containsString("identite-garage"))));
         }
 
         @Test

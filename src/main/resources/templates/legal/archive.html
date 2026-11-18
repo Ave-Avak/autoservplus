@@ -47,9 +47,17 @@
     <!-- th:text et non th:utext : le contenu est du texte, jamais du balisage. Le
          rendre en HTML ferait d'une colonne de base de données une surface d'injection
          sur une page publique. Les retours à la ligne sont restitués par la CSS. -->
-    <div class="texte-archive" th:text="${archive.contenu()}">
+    <div class="texte-archive" th:if="${lignesAvantIdentite == null}" th:text="${archive.contenu()}">
         Texte gelé de la version.
     </div>
+    <th:block th:if="${lignesAvantIdentite != null}">
+        <!--/* L'article 1 renvoie au garage « identifié ci-dessous » : l'identité suit son
+               corps, comme sur la page publique. Elle n'est pas dans le texte gelé, elle
+               vient de la configuration au moment de l'affichage. */-->
+        <div class="texte-archive" th:text="${archive.debut(lignesAvantIdentite)}">Article 1.</div>
+        <div th:replace="~{fragments/legal :: identite}"></div>
+        <div class="texte-archive" th:text="${archive.suite(lignesAvantIdentite)}">Article 2.</div>
+    </th:block>
 
     <nav th:attr="aria-label=#{legal.liens.aria}" aria-label="Documents légaux">
         <div th:replace="~{fragments/legal :: liens}"></div>

@@ -1,7 +1,7 @@
 package be.autoservplus.vente.service;
 
 import be.autoservplus.communication.service.DetailsCommandeGarage;
-import be.autoservplus.communication.service.DetailsPaiementCourriel;
+import be.autoservplus.communication.service.DetailsConfirmationCommande;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -37,13 +37,14 @@ class NotificationPaiementListenerTest {
 
     @Mock private CommandeRepository commandes;
     @Mock private ServiceCourriel courriel;
+    @Mock private ConfirmationCommande confirmation;
 
     private NotificationPaiementListener listener;
     private Commande commande;
 
     @BeforeEach
     void setUp() {
-        listener = new NotificationPaiementListener(commandes, courriel);
+        listener = new NotificationPaiementListener(commandes, courriel, confirmation);
         Utilisateur marie = new Utilisateur(
                 "marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         commande = new Commande("CMD-2026-0001", marie,
@@ -52,21 +53,29 @@ class NotificationPaiementListenerTest {
     }
 
     @Test
-    @DisplayName("recharge la commande et envoie le recu au membre")
-    void envoieLeRecu() {
+    @DisplayName("recharge la commande et envoie au membre la confirmation composee pour elle")
+    void envoieLaConfirmation() {
+        DetailsConfirmationCommande composee = mock(DetailsConfirmationCommande.class);
         when(commandes.findByReference(commande.getReference()))
                 .thenReturn(Optional.of(commande));
+        when(confirmation.composer(commande)).thenReturn(composee);
 
         listener.surCommandePayee(new CommandePayeeEvent(commande.getReference()));
 
-        ArgumentCaptor<DetailsPaiementCourriel> captor =
-                ArgumentCaptor.forClass(DetailsPaiementCourriel.class);
-        verify(courriel).envoyerConfirmationPaiement(captor.capture());
-        DetailsPaiementCourriel details = captor.getValue();
-        assertThat(details.adresseEmail()).isEqualTo("marie@exemple.be");
-        assertThat(details.prenom()).isEqualTo("Marie");
-        assertThat(details.numeroCommande()).isEqualTo("CMD-2026-0001");
-        assertThat(details.montantTvac()).contains("80,21");
+        verify(courriel).envoyerConfirmationCommande(composee);
+    }
+
+    @Test
+    @DisplayName("confirmation impossible a composer : avalee, l'avis au garage part quand meme")
+    void compositionEnEchecAbsorbee() {
+        when(commandes.findByReference(commande.getReference()))
+                .thenReturn(Optional.of(commande));
+        when(confirmation.composer(commande)).thenThrow(new IllegalStateException("PDF"));
+
+        assertThatCode(() -> listener.surCommandePayee(
+                new CommandePayeeEvent(commande.getReference())))
+                .doesNotThrowAnyException();
+        verify(courriel).envoyerAvisCommandeAuGarage(any());
     }
 
     @Test
@@ -86,7 +95,7 @@ class NotificationPaiementListenerTest {
         when(commandes.findByReference(commande.getReference()))
                 .thenReturn(Optional.of(commande));
         doThrow(new RuntimeException("SMTP indisponible"))
-                .when(courriel).envoyerConfirmationPaiement(any());
+                .when(courriel).envoyerConfirmationCommande(any());
 
         assertThatCode(() -> listener.surCommandePayee(
                 new CommandePayeeEvent(commande.getReference())))
@@ -141,6 +150,6 @@ class NotificationPaiementListenerTest {
         assertThatCode(() -> listener.surCommandePayee(
                 new CommandePayeeEvent(commande.getReference())))
                 .doesNotThrowAnyException();
-        verify(courriel).envoyerConfirmationPaiement(any());
+        verify(courriel).envoyerConfirmationCommande(any());
     }
 }

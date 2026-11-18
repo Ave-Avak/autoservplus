@@ -83,6 +83,7 @@ class CourrielSmtpIT extends SocleIntegration {
     @Autowired private PasswordEncoder encodeur;
     @Autowired private PlatformTransactionManager transactions;
     @Autowired private IdentiteGarage garage;
+    @Autowired private TransportCourriel transport;
 
     private static String adresse() {
         return "smtp-" + COMPTEUR.getAndIncrement() + "@exemple.be";
@@ -194,5 +195,22 @@ class CourrielSmtpIT extends SocleIntegration {
         assertThat(message.path("Attachments").get(0).path("FileName").asText())
                 .isEqualTo("rendez-vous-RDV-2026-0001.ics");
         assertThat(message.path("Text").asText()).contains("dimanche 13 septembre 2026");
+    }
+
+    @Test
+    @DisplayName("plusieurs pièces jointes arrivent toutes, dans leur ordre")
+    void plusieursPiecesJointes() throws Exception {
+        String email = adresse();
+
+        transport.transmettre(new Courriel("essai-pieces", email, "Marie", "Deux documents",
+                "Deux documents joints.", java.util.List.of(
+                        new PieceJointeCourriel("cgv.pdf", "application/pdf", "%PDF-1.4 a".getBytes()),
+                        new PieceJointeCourriel("formulaire.pdf", "application/pdf",
+                                "%PDF-1.4 b".getBytes()))));
+
+        JsonNode pieces = recus(email).get(0).path("Attachments");
+        assertThat(pieces).hasSize(2);
+        assertThat(pieces.get(0).path("FileName").asText()).isEqualTo("cgv.pdf");
+        assertThat(pieces.get(1).path("FileName").asText()).isEqualTo("formulaire.pdf");
     }
 }

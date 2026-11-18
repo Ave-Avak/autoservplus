@@ -41,15 +41,14 @@ public class TransportSmtp implements TransportCourriel {
     public void transmettre(Courriel courriel) {
         try {
             MimeMessage message = emetteur.createMimeMessage();
-            boolean avecPiece = courriel.pieceJointe() != null;
+            boolean avecPieces = !courriel.piecesJointes().isEmpty();
             MimeMessageHelper redaction = new MimeMessageHelper(
-                    message, avecPiece, StandardCharsets.UTF_8.name());
+                    message, avecPieces, StandardCharsets.UTF_8.name());
             redaction.setFrom(expediteur, nomExpediteur);
             redaction.setTo(courriel.adresse());
             redaction.setSubject(courriel.sujet());
             redaction.setText(courriel.corps(), false);
-            if (avecPiece) {
-                PieceJointeCourriel piece = courriel.pieceJointe();
+            for (PieceJointeCourriel piece : courriel.piecesJointes()) {
                 redaction.addAttachment(piece.nomFichier(),
                         new ByteArrayResource(piece.contenu()), piece.typeMime());
             }

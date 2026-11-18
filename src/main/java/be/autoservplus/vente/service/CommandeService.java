@@ -145,7 +145,7 @@ public class CommandeService {
         consentements.save(Consentement.acceptation(panier.getMembre(),
                 TypeDocumentConsentement.CGV,
                 versionsDocuments.versionCourante(TypeDocumentVersionne.CGV),
-                adresseIp, horloge.instant()));
+                adresseIp, horloge.instant()).pourLaCommande(commande.getId()));
 
         // Preuve VI.53 (F12), ecrite UNIQUEMENT si la question a ete posee, donc si
         // le panier contient des services. Le refus s enregistre autant que l accord :
@@ -159,7 +159,7 @@ public class CommandeService {
             consentements.save(Consentement.decision(panier.getMembre(),
                     TypeDocumentConsentement.RENONCIATION_RETRACTATION,
                     versionsDocuments.versionCourante(TypeDocumentVersionne.RENONCIATION_RETRACTATION),
-                    renonciationRetenue, adresseIp, horloge.instant()));
+                    renonciationRetenue, adresseIp, horloge.instant()).pourLaCommande(commande.getId()));
         }
 
         return ConfirmationCommandeVue.de(commande, SituationPaiement.A_PAYER);

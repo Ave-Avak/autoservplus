@@ -4,7 +4,6 @@ import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.legal.domain.TypeDocumentVersionne;
 import be.autoservplus.legal.domain.VersionDocument;
 import be.autoservplus.legal.repository.VersionDocumentRepository;
-import be.autoservplus.retractation.service.RetractationService;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,15 +49,6 @@ import be.autoservplus.support.SocleIntegration;
 @SpringBootTest
 @DisplayName("Texte gele des documents versionnes (F24)")
 class TexteDocumentGeleIT extends SocleIntegration {
-
-    /**
-     * Seule cle a arguments des trois familles surveillees. Le delai vient de la
-     * constante qui refuse effectivement une demande hors delai : changer la regle
-     * change le texte des CGV et impose donc une nouvelle version, consequence voulue,
-     * pas effet de bord.
-     */
-    private static final Map<String, Object[]> ARGUMENTS =
-            Map.of("legal.cgv.art7.corps", new Object[]{RetractationService.DELAI_LEGAL.toDays()});
 
     /**
      * Cles de la famille {@code cookies.} qui ne font PAS partie du texte engageant.
@@ -142,19 +132,19 @@ class TexteDocumentGeleIT extends SocleIntegration {
     }
 
     @Test
-    @DisplayName("les versions en vigueur sont celles publiees par V43")
+    @DisplayName("les versions en vigueur sont celles publiees par V43 et V53")
     void versionsEnVigueur() {
         // Valeurs recopiees en dur volontairement : c est un engagement de compatibilite,
         // pas une donnee de configuration. V43 publie les trois documents corriges pour la
-        // typographie.
-        assertThat(versionEnVigueur(TypeDocumentVersionne.CGV)).isEqualTo("CGV-2026-03");
+        // typographie, V53 les CGV alignees sur l annexe 1 du livre VI.
+        assertThat(versionEnVigueur(TypeDocumentVersionne.CGV)).isEqualTo("CGV-2026-04");
         assertThat(versionEnVigueur(TypeDocumentVersionne.COOKIES)).isEqualTo("COOKIES-2026-02");
         assertThat(versionEnVigueur(TypeDocumentVersionne.RENONCIATION_RETRACTATION))
                 .isEqualTo("VI53-2026-02");
     }
 
     /**
-     * Empreintes publiees par V33 et V35 pour chaque version retiree, recopiees en dur. Une
+     * Empreintes publiees par V33, V35 et V43 pour chaque version retiree, recopiees en dur. Une
      * preuve d acceptation designe l une de ces versions : son texte doit se relire a
      * l octet pres, quelle que soit la publication qui l a remplacee.
      */
@@ -167,6 +157,10 @@ class TexteDocumentGeleIT extends SocleIntegration {
                     Langue.fr, "5f850ad3f585526cbcf7a00dd96a4be439d0e588c34eb6ca837537f0d6e0163c",
                     Langue.nl, "70a5805d6834e303916ca12bb3f4281319b37e067946b124d3892dfb00413313",
                     Langue.en, "a91a1c38867fd7ac316d04da60cc3c5474ceec17a00e7d40d3a5088ccbbb064c"),
+            "CGV-2026-03", Map.of(
+                    Langue.fr, "c6d631c7cfbab5efa8421407a3561c9ae3d8bc30078e29cc30a3ae32771856c9",
+                    Langue.nl, "a709e13a7da99c5d92d21433dc7ee5223c2ddcd4b310e8960e7ef5e508219ff3",
+                    Langue.en, "778565ee6c0d9d4ded9efefbaba554f1b2e7d96803683c6a9f9c4c3fe5f11893"),
             "COOKIES-2026-01", Map.of(
                     Langue.fr, "bf9ba233cb33e346f06cc59f0eb2a169ad2c9ca0fce85fcb0ba82185e8348250",
                     Langue.nl, "8d30d7dae769d62d7be3449ea54410b0c8f3a3cdd79ce2e3681bf2c94800a9e4",
@@ -179,6 +173,7 @@ class TexteDocumentGeleIT extends SocleIntegration {
     private static final Map<String, TypeDocumentVersionne> TYPE_DES_VERSIONS_RETIREES = Map.of(
             "CGV-2026-01", TypeDocumentVersionne.CGV,
             "CGV-2026-02", TypeDocumentVersionne.CGV,
+            "CGV-2026-03", TypeDocumentVersionne.CGV,
             "COOKIES-2026-01", TypeDocumentVersionne.COOKIES,
             "VI53-2026-01", TypeDocumentVersionne.RENONCIATION_RETRACTATION);
 
@@ -223,7 +218,7 @@ class TexteDocumentGeleIT extends SocleIntegration {
     private String texteReellementPresente(TypeDocumentVersionne type, Langue langue) {
         Locale locale = Locale.forLanguageTag(langue.name());
         return type.cles().stream()
-                .map(cle -> messages.getMessage(cle, ARGUMENTS.get(cle), locale))
+                .map(cle -> messages.getMessage(cle, null, locale))
                 .reduce((debut, suite) -> debut + "\n" + suite)
                 .orElseThrow();
     }

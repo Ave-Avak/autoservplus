@@ -7,6 +7,7 @@ import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.vente.repository.CommandeRepository;
 import be.autoservplus.vente.service.CommandeService;
+import be.autoservplus.vente.service.ConfirmationCommande;
 import be.autoservplus.vente.service.PanierService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -110,6 +111,11 @@ class RenonciationVi53IT extends SocleIntegration {
             assertThat(nombreDePreuves(true))
                     .as("et la PREUVE horodatee vit dans consentement, comme les CGV")
                     .isEqualTo(1);
+            // Les deux preuves, CGV et renonciation, désignent cette commande (V52).
+            assertThat(jdbc.queryForList(
+                    "SELECT type_document FROM consentement WHERE commande_id = ? ORDER BY type_document",
+                    String.class, commande.getId()))
+                    .containsExactly("CGV", "RENONCIATION_RETRACTATION");
         }
 
         @Test
@@ -207,6 +213,72 @@ class RenonciationVi53IT extends SocleIntegration {
             mvc.perform(get("/commande").with(user(membre)))
                     .andExpect(status().isOk())
                     .andExpect(content().string(not(containsString("renonciationVi53"))));
+        }
+    }
+
+    /**
+     * Confirmation du contrat (art. VI.46, § 7, CDE) composée sur une commande réelle :
+     * les preuves que V52 rattache à la commande désignent la version des CGV et la
+     * renonciation, et le PDF joint porte le texte gelé de V53 avec l'identité du garage.
+     */
+    @Nested
+    @DisplayName("Confirmation du contrat, composée depuis les preuves de la commande")
+    class ConfirmationDuContrat {
+
+        @Autowired private ConfirmationCommande confirmation;
+
+        private String texte(byte[] document) throws java.io.IOException {
+            com.lowagie.text.pdf.PdfReader lecteur = new com.lowagie.text.pdf.PdfReader(document);
+            com.lowagie.text.pdf.parser.PdfTextExtractor extracteur =
+                    new com.lowagie.text.pdf.parser.PdfTextExtractor(lecteur);
+            StringBuilder texte = new StringBuilder();
+            for (int page = 1; page <= lecteur.getNumberOfPages(); page++) {
+                texte.append(extracteur.getTextFromPage(page)).append('\n');
+            }
+            return texte.toString();
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("prestation avec renonciation : CGV-2026-04 jointes, texte VI.53 coché confirmé")
+        void prestationAvecRenonciation() throws Exception {
+            paniers.ajouterService(membre, unePrestation(), 1);
+            var passee = commandes.passerCommande(membre, true, true, "127.0.0.1");
+            var commande = commandeRepository.findByReference(passee.reference()).orElseThrow();
+
+            var details = confirmation.composer(commande);
+
+            assertThat(details.prestations()).isTrue();
+            assertThat(details.pieces()).isFalse();
+            assertThat(details.versionCgv()).isEqualTo("CGV-2026-04");
+            assertThat(details.renonciation()).isNotNull();
+            assertThat(details.renonciation().version()).isEqualTo("VI53-2026-02");
+            assertThat(details.renonciation().libelle()).startsWith("Je demande que la prestation soit exécutée immédiatement");
+            assertThat(details.piecesJointes()).hasSize(2);
+            String cgv = texte(details.piecesJointes().get(0).contenu());
+            assertThat(cgv).contains("Version CGV-2026-04")
+                    .contains("pour la commande " + commande.getNumero())
+                    .contains("Numéro d'entreprise (BCE)")
+                    .contains("Article 7. Droit de rétractation");
+            assertThat(texte(details.piecesJointes().get(1).contenu()))
+                    .contains("Modèle de formulaire de rétractation");
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("commande de pièces : rien à confirmer côté renonciation, CGV jointes")
+        void commandeDePieces() {
+            paniers.ajouterPiece(membre, unePiece(), 1);
+            var passee = commandes.passerCommande(membre, true, false, "127.0.0.1");
+            var commande = commandeRepository.findByReference(passee.reference()).orElseThrow();
+
+            var details = confirmation.composer(commande);
+
+            assertThat(details.pieces()).isTrue();
+            assertThat(details.renonciation()).isNull();
+            assertThat(details.versionCgv()).isEqualTo("CGV-2026-04");
+            assertThat(details.lignes()).singleElement()
+                    .satisfies(ligne -> assertThat(ligne.libelle()).isEqualTo("Piece de test VI53"));
         }
     }
 }

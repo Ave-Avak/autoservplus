@@ -126,6 +126,10 @@ public class SecuriteConfig {
                                 // prefixe et non par joker ouvert sur tout : la route
                                 // ne sert que des textes contractuels generaux.
                                 "/documents/*/*",
+                                // Modèle de formulaire de rétractation (annexe 2 du
+                                // livre VI CDE), public comme les CGV qui l'annoncent :
+                                // il doit rester utilisable sans compte actif.
+                                "/retractation/formulaire", "/retractation/formulaire/pdf",
                                 // Page de contact : l article VI.45 CDE veut que
                                 // l identite du professionnel, son adresse, son
                                 // telephone et son courriel soient accessibles AVANT

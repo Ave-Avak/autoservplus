@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="${formulaire.titre()} + ' | AutoServ+'">Modèle de formulaire de rétractation | AutoServ+</title>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/entete :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="${formulaire.titre()}">Modèle de formulaire de rétractation</h1>
+
+    <p class="texte-info" th:text="#{retractation.formulaire.usage}">
+        Vous pouvez utiliser ce formulaire pour vous rétracter, mais ce n'est pas obligatoire.
+    </p>
+
+    <!--/* Texte de l'annexe 2 du livre VI du CDE (FR, NL) et de l'annexe I, B, de la
+           directive 2011/83/UE (EN), mot pour mot, prérempli de l'identité du garage. */-->
+    <section aria-labelledby="titre-modele">
+        <h2 id="titre-modele" class="visuellement-cache" th:text="${formulaire.titre()}">Modèle</h2>
+        <p th:text="${formulaire.entete()}">(Veuillez compléter et renvoyer le présent formulaire uniquement si vous souhaitez vous rétracter du contrat)</p>
+        <ul>
+            <li th:text="${formulaire.destinataire()}">A l'attention de Garage, adresse, courriel:</li>
+            <li th:each="rubrique : ${formulaire.rubriques()}" th:text="${rubrique}">Date</li>
+        </ul>
+        <p th:text="${formulaire.note()}">(*) Biffez la mention inutile.</p>
+    </section>
+
+    <p class="actions-page">
+        <a class="btn-cta" th:href="@{/retractation/formulaire/pdf}"
+           th:text="#{retractation.formulaire.telecharger}">Télécharger le formulaire (PDF)</a>
+    </p>
+
+    <div th:replace="~{fragments/legal :: liens}"></div>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

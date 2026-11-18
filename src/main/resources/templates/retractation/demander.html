@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{retractation.titre} + ' | AutoServ+'">Demander l'annulation | AutoServ+</title>
+    <title th:text="#{retractation.titre} + ' | AutoServ+'">Renoncer au contrat | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -16,56 +16,55 @@
 <main id="contenu">
     <p><a th:href="@{/commandes}" th:text="#{retractation.retour}">Retour à mes commandes</a></p>
 
-    <h1 th:text="#{retractation.titre}">Demander l'annulation et le remboursement</h1>
+    <h1 th:text="#{retractation.titre}">Renoncer au contrat</h1>
+    <p th:text="#{retractation.etape.declaration}">Étape 1 sur 2 : votre déclaration de rétractation.</p>
 
+    <!--/* Déclaration de rétractation en ligne (CDE, art. VI.61/2, §2) : le nom du
+           consommateur, le contrat visé et l'adresse de l'accusé de réception. */-->
     <dl class="vehicule-details">
         <div>
+            <dt th:text="#{retractation.declaration.nom}">Nom</dt>
+            <dd th:text="${declaration.nomMembre()}">Marie Dupont</dd>
+        </div>
+        <div>
             <dt th:text="#{commandes.colonne.numero}">Numéro</dt>
-            <dd th:text="${commande.numero()}">CMD-2026-0001</dd>
+            <dd th:text="${declaration.numeroCommande()}">CMD-2026-0001</dd>
         </div>
         <div>
             <dt th:text="#{commandes.colonne.montant}">Montant TVAC</dt>
-            <dd th:text="${commande.totalTvac()}">48,38 €</dd>
+            <dd th:text="${declaration.totalTvac()}">48,38 €</dd>
+        </div>
+        <div>
+            <dt th:text="#{retractation.declaration.adresse}">Accusé de réception envoyé à</dt>
+            <dd th:text="${declaration.adresseConfirmation()}">marie@exemple.be</dd>
         </div>
     </dl>
 
-    <!-- Information precontractuelle : le membre doit savoir ce qu'il declenche,
-         et dans quel delai le garage doit rembourser. -->
     <p class="texte-info" th:text="#{retractation.explication}">
-        Vous exercez votre droit de rétractation. Le garage vérifie que la pièce
-        n'a pas été montée ou déballée, puis vous rembourse.
+        Vous exercez votre droit de rétractation, sans avoir à vous justifier.
     </p>
     <p class="texte-info" th:text="#{retractation.delai}">
-        Le remboursement intervient au plus tard 14 jours après acceptation.
+        Le garage vous rembourse au plus tard 14 jours après avoir reçu votre rétractation.
     </p>
 
     <form class="formulaire"
-          th:action="@{/commandes/{ref}/annulation(ref=${commande.reference()})}"
+          th:action="@{/commandes/{ref}/annulation/verification(ref=${declaration.reference()})}"
           th:object="${formulaire}" method="post" novalidate>
 
         <div class="champ">
             <label for="motif" th:text="#{retractation.motif.libelle}">Motif (facultatif)</label>
             <textarea id="motif" th:field="*{motif}" rows="3" maxlength="1000"
                       aria-describedby="aide-motif"></textarea>
-            <!-- Facultatif, et dit comme tel : le droit de retractation est
-                 inconditionnel, exiger une justification serait une entrave. -->
+            <!--/* Facultatif, et dit comme tel : le droit de retractation est
+                   inconditionnel, exiger une justification serait une entrave. */-->
             <p id="aide-motif" class="texte-info" th:text="#{retractation.motif.aide}">
                 Vous n'avez pas à vous justifier. Ce champ aide seulement le garage.
             </p>
             <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motif')}" th:errors="*{motif}"></p>
         </div>
 
-        <div class="champ">
-            <label for="confirmation">
-                <input type="checkbox" id="confirmation" th:field="*{confirmation}">
-                <span th:text="#{retractation.confirmation.case}">Je confirme demander l'annulation de cette commande.</span>
-            </label>
-            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('confirmation')}"
-               th:errors="*{confirmation}"></p>
-        </div>
-
         <p class="actions-page">
-            <button type="submit" class="btn-cta" th:text="#{retractation.envoyer}">Envoyer la demande</button>
+            <button type="submit" class="btn-cta" th:text="#{retractation.continuer}">Continuer</button>
             <a th:href="@{/commandes}" th:text="#{retractation.retour}">Retour à mes commandes</a>
         </p>
     </form>

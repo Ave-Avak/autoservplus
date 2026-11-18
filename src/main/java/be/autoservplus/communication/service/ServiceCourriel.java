@@ -127,10 +127,12 @@ public interface ServiceCourriel {
     void envoyerInterventionTerminee(DetailsInterventionTerminee details);
 
     /**
-     * Le paiement de la commande est confirme (F14) : recu adresse au membre,
-     * envoye apres commit du passage a PAYEE, jamais pendant la transaction.
+     * La commande est payée (F14) : confirmation du contrat conclu sur un support durable
+     * (art. VI.46, § 7, CDE), avec les CGV acceptées et le formulaire type de
+     * rétractation en pièces jointes. Envoyée après commit du passage à PAYEE, jamais
+     * pendant la transaction.
      */
-    void envoyerConfirmationPaiement(DetailsPaiementCourriel details);
+    void envoyerConfirmationCommande(DetailsConfirmationCommande details);
 
     /**
      * Une commande est payée et attend le garage (F14) : avis à l'adresse de l'atelier,
@@ -153,6 +155,13 @@ public interface ServiceCourriel {
      * jamais.</p>
      */
     void envoyerDecisionRetractation(DetailsRetractationCourriel details);
+
+    /**
+     * Accusé de réception d'une rétractation en ligne (CDE, art. VI.61/2, §4) : envoyé
+     * dès la soumission, avant toute réponse du garage, avec le contenu de la
+     * déclaration ainsi que la date et l'heure de sa soumission.
+     */
+    void envoyerAccuseRetractation(DetailsAccuseRetractationCourriel details);
 
     /**
      * Lien de confirmation envoye a la NOUVELLE adresse (CdC 5.2.2). Tant qu il n est

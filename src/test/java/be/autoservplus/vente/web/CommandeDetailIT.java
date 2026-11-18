@@ -259,6 +259,8 @@ class CommandeDetailIT extends SocleIntegration {
 
             assertContient(page, "/factures/");
             assertContient(page, "Télécharger la facture");
+            // Lien permanent vers le modèle de formulaire de rétractation (CGV, art. 7).
+            assertContient(page, "/retractation/formulaire");
             // Meme calcul d eligibilite que la liste : commande payee, delai en cours.
             assertContient(page, "/commandes/" + reference + "/annulation");
         }
