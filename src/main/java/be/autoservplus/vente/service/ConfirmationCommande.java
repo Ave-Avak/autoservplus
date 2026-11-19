@@ -12,6 +12,7 @@ import be.autoservplus.identite.repository.ConsentementRepository;
 import be.autoservplus.legal.domain.TypeDocumentVersionne;
 import be.autoservplus.legal.service.ConditionsGeneralesPdf;
 import be.autoservplus.legal.service.FormulaireRetractation;
+import be.autoservplus.legal.service.NoticeGarantie;
 import be.autoservplus.legal.service.VersionsDocumentsService;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.vente.domain.Commande;
@@ -53,11 +54,14 @@ public class ConfirmationCommande {
     private final ConditionsGeneralesPdf conditionsGenerales;
     private final FormulaireRetractation formulaire;
     private final MessageSource messages;
+    private final NoticeGarantie notice;
 
     public ConfirmationCommande(CommandeRepository commandes, ConsentementRepository consentements,
                                 VersionsDocumentsService versions,
                                 ConditionsGeneralesPdf conditionsGenerales,
-                                FormulaireRetractation formulaire, MessageSource messages) {
+                                FormulaireRetractation formulaire, MessageSource messages,
+                                NoticeGarantie notice) {
+        this.notice = notice;
         this.commandes = commandes;
         this.consentements = consentements;
         this.versions = versions;
@@ -100,6 +104,13 @@ public class ConfirmationCommande {
         jointes.add(new PieceJointeCourriel(
                 messages.getMessage("courriel.confirmation-commande.fichier.formulaire", null, langue), PDF,
                 formulaire.pdf(langue)));
+        // VI.45 § 1er, 12° : la notice ne vise que les biens. Le PDF de la Commission part
+        // tel quel, page en couleur seule, sur le support durable qu'est ce courriel.
+        if (!pieces.isEmpty()) {
+            jointes.add(new PieceJointeCourriel(
+                    messages.getMessage("courriel.confirmation-commande.fichier.notice", null, langue), PDF,
+                    notice.pdf(langue)));
+        }
 
         return new DetailsConfirmationCommande(membre.getEmail(), membre.getPrenom(), membre.getLangue(),
                 commande.getNumero(), commande.getDateCommande(),

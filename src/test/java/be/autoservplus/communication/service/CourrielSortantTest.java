@@ -199,6 +199,8 @@ class CourrielSortantTest {
             new PieceJointeCourriel("conditions-generales-CGV-2026-04.pdf", "application/pdf", new byte[8]);
     private static final PieceJointeCourriel FORMULAIRE =
             new PieceJointeCourriel("formulaire-retractation.pdf", "application/pdf", new byte[8]);
+    private static final PieceJointeCourriel NOTICE =
+            new PieceJointeCourriel("garantie-legale.pdf", "application/pdf", new byte[8]);
 
     private static DetailsConfirmationCommande confirmation(Langue langue, boolean pieces,
             boolean prestations, String versionCgv, DetailsConfirmationCommande.RenonciationConfirmee renonciation) {
@@ -212,7 +214,20 @@ class CourrielSortantTest {
         return new DetailsConfirmationCommande("marie@exemple.be", "Marie", langue, "CMD-2026-0007",
                 DIMANCHE.toInstant(), DIMANCHE.plusMinutes(5).toInstant(), lignes,
                 "66,29 €", "13,92 €", "80,21 €", pieces, prestations, versionCgv, renonciation,
-                versionCgv == null ? List.of(FORMULAIRE) : List.of(CGV_JOINTES, FORMULAIRE));
+                jointes(versionCgv, pieces));
+    }
+
+    /** Les pièces jointes telles que ConfirmationCommande les assemble. */
+    private static List<PieceJointeCourriel> jointes(String versionCgv, boolean pieces) {
+        List<PieceJointeCourriel> jointes = new ArrayList<>();
+        if (versionCgv != null) {
+            jointes.add(CGV_JOINTES);
+        }
+        jointes.add(FORMULAIRE);
+        if (pieces) {
+            jointes.add(NOTICE);
+        }
+        return jointes;
     }
 
     /** Identité réelle plutôt que simulée : la confirmation l'imprime rubrique par rubrique. */
@@ -258,11 +273,16 @@ class CourrielSortantTest {
                         + "« Renoncer au contrat ici ».")
                 .contains("garantie légale de conformité de deux ans")
                 .contains("Service de médiation pour le consommateur")
-                .contains("Pièces jointes : les conditions générales de vente acceptées pour cette commande")
+                .contains("La notice de l'Union européenne sur la garantie légale est jointe à ce "
+                        + "courriel. Vos droits dans chaque pays de l'Union : https://europa.eu/youreurope/garanties")
+                .contains("Pièces jointes : les conditions générales de vente acceptées pour cette commande, "
+                        + "le modèle de formulaire de rétractation et la notice de l'Union européenne sur la "
+                        + "garantie légale.")
                 .doesNotContain("cochée", "coché")
                 .doesNotContain("''");
         assertThat(parti.piecesJointes()).extracting(PieceJointeCourriel::nomFichier)
-                .containsExactly("conditions-generales-CGV-2026-04.pdf", "formulaire-retractation.pdf");
+                .containsExactly("conditions-generales-CGV-2026-04.pdf", "formulaire-retractation.pdf",
+                        "garantie-legale.pdf");
     }
 
     @Test
@@ -277,7 +297,10 @@ class CourrielSortantTest {
                 .contains("Le garage vous contacte pour convenir de la date d'exécution, dans son atelier.")
                 .contains("Le 13 septembre 2026, vous avez coché la mention suivante (version "
                         + "VI53-2026-02) : « Je demande l'exécution immédiate. »")
-                .doesNotContain("garantie légale de conformité");
+                .doesNotContain("garantie légale de conformité")
+                .doesNotContain("youreurope")
+                .contains("Pièces jointes : les conditions générales de vente acceptées pour cette commande "
+                        + "et le modèle de formulaire de rétractation.");
     }
 
     @Test
@@ -287,9 +310,10 @@ class CourrielSortantTest {
 
         assertThat(partis.get(0).corps())
                 .contains("conditions générales de vente publiées sur le site du garage")
-                .contains("Pièce jointe : le modèle de formulaire de rétractation.")
+                .contains("Pièces jointes : le modèle de formulaire de rétractation et la notice de "
+                        + "l'Union européenne sur la garantie légale.")
                 .doesNotContain("acceptées pour cette commande");
-        assertThat(partis.get(0).piecesJointes()).hasSize(1);
+        assertThat(partis.get(0).piecesJointes()).hasSize(2);
     }
 
     @Test

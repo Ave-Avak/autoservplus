@@ -372,11 +372,14 @@ public class CourrielSortant implements ServiceCourriel {
         blocs.add(retractation);
 
         if (details.pieces()) {
-            blocs.add(texte(cle + "garantie", langue) + "\n" + texte(cle + "garantie.corps", langue));
+            // Le lien que porte le code QR de la notice jointe : un PDF n'a pas de lien cliquable.
+            blocs.add(texte(cle + "garantie", langue) + "\n" + texte(cle + "garantie.corps", langue)
+                    + "\n" + message(cle + "garantie.notice", langue,
+                            texte("garantie-legale.youreurope.url", langue)));
         }
         blocs.add(texte(cle + "reclamations", langue) + "\n" + texte(cle + "reclamations.corps", langue));
-        blocs.add(texte(cle + (details.versionCgv() != null ? "pieces-jointes" : "pieces-jointes.formulaire"),
-                langue));
+        String jointes = details.versionCgv() != null ? "pieces-jointes" : "pieces-jointes.formulaire";
+        blocs.add(texte(cle + jointes + (details.pieces() ? ".avec-notice" : ""), langue));
 
         partirAvecPieces("confirmation-commande", details.adresseEmail(), details.prenom(),
                 details.prenom(), langue, String.join("\n\n", blocs), details.piecesJointes());
