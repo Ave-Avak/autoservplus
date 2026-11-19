@@ -1,13 +1,16 @@
 package be.autoservplus.identite.web;
 
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.service.InscriptionService;
 import be.autoservplus.identite.service.LimiteurDemandesCourriel;
 import be.autoservplus.identite.service.PiegeAntiBot;
 import be.autoservplus.identite.service.VerificateurTurnstile;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.util.Arrays;
 import java.util.Optional;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -73,10 +76,23 @@ public class InscriptionController {
 
     @GetMapping("/inscription")
     public String afficherFormulaire(Model modele) {
-        modele.addAttribute("titre", "Créer un compte");
-        modele.addAttribute("formulaire", new InscriptionForm());
+        InscriptionForm formulaire = new InscriptionForm();
+        formulaire.setLangue(langueAffichee());
+        modele.addAttribute("formulaire", formulaire);
         armerFormulaire(modele);
         return "identite/inscription";
+    }
+
+    /**
+     * Langue de la page, proposée comme langue du compte. Une langue d'affichage que le
+     * compte ne connaît pas laisse le français, langue par défaut du formulaire.
+     */
+    private static Langue langueAffichee() {
+        String code = LocaleContextHolder.getLocale().getLanguage();
+        return Arrays.stream(Langue.values())
+                .filter(langue -> langue.name().equals(code))
+                .findFirst()
+                .orElse(Langue.fr);
     }
 
     /**
@@ -102,7 +118,6 @@ public class InscriptionController {
         // corriger. Un visiteur legitime ne peut pas atteindre ce cas.
         if (pieges.soumissionAutomatique(piege, horodatage)
                 || turnstileRefuse(jetonTurnstile, requete)) {
-            modele.addAttribute("titre", "Vérifiez votre courriel");
             modele.addAttribute("adresse", formulaire.getEmail());
             return "identite/inscription-confirmee";
         }
@@ -111,18 +126,16 @@ public class InscriptionController {
             erreurs.reject("securite.debit.trop-de-demandes",
                     messages.getMessage("securite.debit.trop-de-demandes", null,
                             LocaleContextHolder.getLocale()));
-            modele.addAttribute("titre", "Créer un compte");
             armerFormulaire(modele);
             return "identite/inscription";
         }
 
         if (!formulaire.motsDePasseConcordent()) {
-            erreurs.rejectValue("confirmationMotDePasse", "motsDePasse.differents",
+            erreurs.rejectValue("confirmationMotDePasse", "inscription.erreur.differents",
                     "Les deux mots de passe ne correspondent pas.");
         }
 
         if (erreurs.hasErrors()) {
-            modele.addAttribute("titre", "Créer un compte");
             armerFormulaire(modele);
             return "identite/inscription";
         }
@@ -133,15 +146,24 @@ public class InscriptionController {
                     formulaire.getNom(), formulaire.getPrenom(), formulaire.getLangue(),
                     requete.getRemoteAddr());
         } catch (RegleMetierException e) {
-            erreurs.addError(new FieldError("formulaire", "email", e.getMessage()));
-            modele.addAttribute("titre", "Créer un compte");
+            erreurs.addError(refusSousLAdresse(e));
             armerFormulaire(modele);
             return "identite/inscription";
         }
 
-        modele.addAttribute("titre", "Vérifiez votre courriel");
         modele.addAttribute("adresse", formulaire.getEmail());
         return "identite/inscription-confirmee";
+    }
+
+    /**
+     * Refus du service sous le champ de l'adresse. Un {@link RefusTraduit} s'affiche par sa
+     * clé, dans la langue de la page. La phrase française du refus reste le texte de repli.
+     */
+    private static FieldError refusSousLAdresse(RegleMetierException refus) {
+        String[] codes = refus instanceof RefusTraduit traduit
+                ? new String[] {traduit.getCleMessage()}
+                : null;
+        return new FieldError("formulaire", "email", null, false, codes, null, refus.getMessage());
     }
 
     /**

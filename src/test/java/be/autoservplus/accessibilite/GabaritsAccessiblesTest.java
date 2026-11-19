@@ -56,8 +56,6 @@ class GabaritsAccessiblesTest {
      */
     private static final List<String> EN_FRANCAIS_FIGE = List.of(
             "identite/connexion.html",
-            "identite/inscription.html",
-            "identite/inscription-confirmee.html",
             "identite/mot-de-passe-demande.html",
             "identite/mot-de-passe-lien-invalide.html",
             "identite/mot-de-passe-modifie.html",
