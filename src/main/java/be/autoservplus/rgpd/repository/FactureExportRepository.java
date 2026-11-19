@@ -34,7 +34,7 @@ public interface FactureExportRepository extends Repository<Facture, Long> {
     @Query("""
             SELECT f FROM Facture f
             LEFT JOIN FETCH f.commande
-            WHERE LOWER(f.membre.email) = LOWER(:email)
+            WHERE f.membre.email = :email
             ORDER BY f.dateEmission, f.id
             """)
     List<Facture> pourMembre(@Param("email") String email);

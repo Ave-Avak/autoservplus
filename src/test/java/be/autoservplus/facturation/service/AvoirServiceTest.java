@@ -102,7 +102,7 @@ class AvoirServiceTest {
                 Avoir.MOTIF_RETRACTATION, MAINTENANT);
         when(avoirs.findByReference(avoir.getReference())).thenReturn(Optional.of(avoir));
 
-        assertThat(service.pourMembre(avoir.getReference(), "MARIE@exemple.be")).isSameAs(avoir);
+        assertThat(service.pourMembre(avoir.getReference(), "marie@exemple.be")).isSameAs(avoir);
         // Confirmer l existence d une note de credit a un tiers lui apprendrait au
         // passage que son titulaire s est retracte.
         assertThatThrownBy(() -> service.pourMembre(avoir.getReference(), "jean@exemple.be"))

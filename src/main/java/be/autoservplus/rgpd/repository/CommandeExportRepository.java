@@ -28,7 +28,7 @@ public interface CommandeExportRepository extends Repository<Commande, Long> {
 
     @Query("""
             SELECT c FROM Commande c
-            WHERE LOWER(c.membre.email) = LOWER(:email)
+            WHERE c.membre.email = :email
             ORDER BY c.dateCommande
             """)
     List<Commande> pourMembre(@Param("email") String email);

@@ -198,7 +198,7 @@ public class PanierService {
      * trouve le panier cree par la premiere.
      */
     private Panier creerPour(String email) {
-        Utilisateur membre = utilisateurs.findByEmailIgnoreCase(email)
+        Utilisateur membre = utilisateurs.findByEmail(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
         try {
             return paniers.saveAndFlush(new Panier(membre));

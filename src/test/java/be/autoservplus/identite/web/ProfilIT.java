@@ -59,7 +59,7 @@ class ProfilIT extends SocleIntegration {
     }
 
     private Utilisateur relire() {
-        return utilisateurs.findByEmailIgnoreCase(email).orElseThrow();
+        return utilisateurs.findByEmail(email).orElseThrow();
     }
 
     /**

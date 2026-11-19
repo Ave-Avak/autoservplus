@@ -71,7 +71,7 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("cree un membre en attente de validation")
         void creeUnMembreEnAttente() {
-            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.empty());
+            when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.empty());
             when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
@@ -89,7 +89,7 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("normalise l adresse en minuscules et retire les espaces")
         void normaliseLAdresse() {
-            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.empty());
+            when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.empty());
             when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
@@ -101,7 +101,7 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("n enregistre jamais le mot de passe en clair")
         void chiffreLeMotDePasse() {
-            when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
+            when(repository.findByEmail(any())).thenReturn(Optional.empty());
             when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             String motDePasseClair = "MotDePasseSolide2026";
@@ -116,7 +116,7 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("genere un jeton de 64 caracteres valable vingt-quatre heures")
         void genereUnJetonValable24h() {
-            when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
+            when(repository.findByEmail(any())).thenReturn(Optional.empty());
             when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
@@ -131,7 +131,7 @@ class InscriptionServiceTest {
             Utilisateur existant = new Utilisateur("marie@exemple.be", "$2a$04$empreinte",
                     "Dupont", "Marie", TypeUtilisateur.MEMBRE);
             existant.setStatut(statut);
-            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(existant));
+            when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(existant));
             return existant;
         }
 
@@ -224,7 +224,7 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("la contrainte de casse de la base devient un refus sur le champ, sans courriel")
         void contrainteDeCasse() {
-            when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
+            when(repository.findByEmail(any())).thenReturn(Optional.empty());
             when(repository.saveAndFlush(any(Utilisateur.class)))
                     .thenThrow(AdresseCourrielTest.violation("ck_utilisateur_email_minuscules"));
 
@@ -247,7 +247,7 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("applique le francais lorsque la langue n est pas precisee")
         void appliqueLeFrancaisParDefaut() {
-            when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
+            when(repository.findByEmail(any())).thenReturn(Optional.empty());
             when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
@@ -274,7 +274,7 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("envoie le courriel de verification apres enregistrement")
         void envoieLeCourrielDeVerification() {
-            when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
+            when(repository.findByEmail(any())).thenReturn(Optional.empty());
             when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
@@ -346,7 +346,7 @@ class InscriptionServiceTest {
         void genereUnNouveauJeton() {
             Utilisateur membre = membreEnAttente();
             membre.enregistrerJetonVerification(JetonLien.empreinte("ancien"), MAINTENANT.minusSeconds(1));
-            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+            when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
             Utilisateur resultat = service.renvoyerVerification("marie@exemple.be");
 
@@ -362,7 +362,7 @@ class InscriptionServiceTest {
         void refuseUneAdresseDejaVerifiee() {
             Utilisateur membre = membreEnAttente();
             membre.confirmerAdresseEmail();
-            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+            when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
             assertThatThrownBy(() -> service.renvoyerVerification("marie@exemple.be"))
                     .isInstanceOf(RegleMetierException.class)
@@ -371,7 +371,7 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("refuse une adresse inconnue")
         void refuseUneAdresseInconnue() {
-            when(repository.findByEmailIgnoreCase("inconnu@exemple.be")).thenReturn(Optional.empty());
+            when(repository.findByEmail("inconnu@exemple.be")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.renvoyerVerification("inconnu@exemple.be"))
                     .isInstanceOf(RessourceIntrouvableException.class)
@@ -391,7 +391,7 @@ class InscriptionServiceTest {
         @Test
         @DisplayName("ne leve rien sur une adresse inconnue et n envoie aucun courriel")
         void adresseInconnueResteMuette() {
-            when(repository.findByEmailIgnoreCase("inconnu@exemple.be")).thenReturn(Optional.empty());
+            when(repository.findByEmail("inconnu@exemple.be")).thenReturn(Optional.empty());
 
             service.demanderRenvoiVerification("inconnu@exemple.be");
 
@@ -403,7 +403,7 @@ class InscriptionServiceTest {
         void adresseDejaVerifieeResteMuette() {
             Utilisateur membre = membreEnAttente();
             membre.confirmerAdresseEmail();
-            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+            when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
             service.demanderRenvoiVerification("marie@exemple.be");
 
@@ -428,7 +428,7 @@ class InscriptionServiceTest {
         void compteNonVerifieRecoitSonCourriel() {
             Utilisateur membre = membreEnAttente();
             membre.enregistrerJetonVerification("ancien", MAINTENANT.plusSeconds(60));
-            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+            when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
             service.demanderRenvoiVerification("marie@exemple.be");
 

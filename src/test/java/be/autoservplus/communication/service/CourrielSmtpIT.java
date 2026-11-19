@@ -155,7 +155,7 @@ class CourrielSmtpIT extends SocleIntegration {
             statut.setRollbackOnly();
         });
 
-        assertThat(utilisateurs.findByEmailIgnoreCase(email)).isEmpty();
+        assertThat(utilisateurs.findByEmail(email)).isEmpty();
         assertThat(recus(email)).isEmpty();
     }
 

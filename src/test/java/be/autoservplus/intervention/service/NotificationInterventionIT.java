@@ -77,7 +77,7 @@ class NotificationInterventionIT extends SocleIntegration {
         // Fixtures partagees, creees au premier test puis reutilisees : sans rollback,
         // une recreation violerait les contraintes d unicite (email, plaque).
         transactions.executeWithoutResult(statut -> {
-            Utilisateur marie = utilisateurs.findByEmailIgnoreCase("marie@exemple.be")
+            Utilisateur marie = utilisateurs.findByEmail("marie@exemple.be")
                     .orElseGet(() -> utilisateurs.save(new Utilisateur(
                             "marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE)));
             if (vehicules.findAll().stream().noneMatch(v -> "1-ABC-123".equals(v.getPlaque()))) {
@@ -97,7 +97,7 @@ class NotificationInterventionIT extends SocleIntegration {
     private UUID interventionEnCours() {
         UUID ref = transactions.execute(statut -> {
             int n = COMPTEUR.getAndIncrement();
-            Utilisateur marie = utilisateurs.findByEmailIgnoreCase("marie@exemple.be").orElseThrow();
+            Utilisateur marie = utilisateurs.findByEmail("marie@exemple.be").orElseThrow();
             Vehicule golf = vehicules.findAll().stream()
                     .filter(v -> "1-ABC-123".equals(v.getPlaque()))
                     .findFirst().orElseThrow();

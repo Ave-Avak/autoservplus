@@ -46,7 +46,7 @@ class AuteurCourantTest {
     void resoutLUtilisateurAuthentifie() {
         Utilisateur admin = new Utilisateur("admin@garage.be", "$2a$12$h", "Garage", "Paul",
                 TypeUtilisateur.ADMINISTRATEUR);
-        when(utilisateurs.findByEmailIgnoreCase("admin@garage.be")).thenReturn(Optional.of(admin));
+        when(utilisateurs.findByEmail("admin@garage.be")).thenReturn(Optional.of(admin));
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("admin@garage.be", "n/a", List.of()));
 
@@ -74,7 +74,7 @@ class AuteurCourantTest {
     @Test
     @DisplayName("un principal sans compte en base ne bloque pas l'ecriture du journal")
     void principalSansCompte() {
-        when(utilisateurs.findByEmailIgnoreCase("fantome@garage.be")).thenReturn(Optional.empty());
+        when(utilisateurs.findByEmail("fantome@garage.be")).thenReturn(Optional.empty());
         SecurityContextHolder.getContext().setAuthentication(
                 new UsernamePasswordAuthenticationToken("fantome@garage.be", "n/a", List.of()));
 

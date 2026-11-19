@@ -149,7 +149,7 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
     }
 
     Optional<EtapeConnexion> etapeSuivante(String email, boolean secondFacteurValide) {
-        Optional<Utilisateur> compte = utilisateurs.findByEmailIgnoreCase(email);
+        Optional<Utilisateur> compte = utilisateurs.findByEmail(email);
         if (compte.isEmpty()) {
             return Optional.empty();
         }

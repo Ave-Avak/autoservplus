@@ -159,7 +159,7 @@ class AvisIT extends SocleIntegration {
             // garde du service pour verifier que la BASE tient seule. C'est elle qui
             // protege de la course entre deux onglets, pas le controle applicatif.
             assertThatThrownBy(() -> transactions.executeWithoutResult(statut -> {
-                Utilisateur membre = utilisateurs.findByEmailIgnoreCase(c.email()).orElseThrow();
+                Utilisateur membre = utilisateurs.findByEmail(c.email()).orElseThrow();
                 Intervention it = interventions.findByReference(c.referenceIntervention())
                         .orElseThrow();
                 avis.saveAndFlush(new Avis(membre, it, (short) 1, "Second.", Instant.now()));
@@ -217,7 +217,7 @@ class AvisIT extends SocleIntegration {
             suppression.supprimer(c.email(), MOT_DE_PASSE,
                     SuppressionCompteService.MOT_DE_CONFIRMATION);
 
-            assertThat(utilisateurs.findByEmailIgnoreCase(c.email())).isEmpty();
+            assertThat(utilisateurs.findByEmail(c.email())).isEmpty();
         }
     }
 

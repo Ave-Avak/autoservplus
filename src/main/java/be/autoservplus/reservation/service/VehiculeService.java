@@ -58,7 +58,7 @@ public class VehiculeService {
 
         // Meme exception que pour une reference inconnue : repondre « acces refuse »
         // confirmerait l existence du vehicule et permettrait de sonder les references.
-        if (!vehicule.getMembre().getEmail().equalsIgnoreCase(email)) {
+        if (!vehicule.getMembre().getEmail().equals(email)) {
             throw new RessourceIntrouvableException("Vehicule", reference);
         }
         return vehicule;
@@ -93,7 +93,7 @@ public class VehiculeService {
                     "Vous avez atteint la limite de %d vehicules.".formatted(VEHICULES_MAXIMUM));
         }
 
-        Utilisateur membre = membres.findByEmailIgnoreCase(email)
+        Utilisateur membre = membres.findByEmail(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
 
         Vehicule vehicule = new Vehicule(membre, plaqueNormalisee, marque, modele, motorisation);

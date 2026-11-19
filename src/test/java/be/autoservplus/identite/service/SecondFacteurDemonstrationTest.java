@@ -47,7 +47,7 @@ class SecondFacteurDemonstrationTest {
         admin = new Utilisateur(SecondFacteurDemonstration.ADRESSE_ADMIN_DEMO, "x", "Admin", "Demo",
                 TypeUtilisateur.ADMINISTRATEUR);
         ReflectionTestUtils.setField(admin, "id", 7L);
-        when(utilisateurs.findByEmailIgnoreCase(SecondFacteurDemonstration.ADRESSE_ADMIN_DEMO))
+        when(utilisateurs.findByEmail(SecondFacteurDemonstration.ADRESSE_ADMIN_DEMO))
                 .thenReturn(Optional.of(admin));
     }
 

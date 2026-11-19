@@ -54,7 +54,7 @@ class CompteDemonstrationIT extends SocleIntegration {
     }
 
     private StatutUtilisateur statut() {
-        return utilisateurs.findByEmailIgnoreCase(ADRESSE).orElseThrow().getStatut();
+        return utilisateurs.findByEmail(ADRESSE).orElseThrow().getStatut();
     }
 
     private int lignesDeJournal() {

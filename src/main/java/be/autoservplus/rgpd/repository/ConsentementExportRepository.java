@@ -23,7 +23,7 @@ public interface ConsentementExportRepository extends Repository<Consentement, L
 
     @Query("""
             SELECT c FROM Consentement c
-            WHERE LOWER(c.utilisateur.email) = LOWER(:email)
+            WHERE c.utilisateur.email = :email
             ORDER BY c.dateConsentement, c.id
             """)
     List<Consentement> pourMembre(@Param("email") String email);

@@ -86,11 +86,11 @@ class TelechargementFactureIT extends SocleIntegration {
     @BeforeEach
     void setUp() {
         transactions.executeWithoutResult(statut -> {
-            utilisateurs.findByEmailIgnoreCase("marie@exemple.be")
+            utilisateurs.findByEmail("marie@exemple.be")
                     .orElseGet(() -> utilisateurs.save(new Utilisateur(
                             "marie@exemple.be", "$2a$12$h", "Dupont", "Marie",
                             TypeUtilisateur.MEMBRE)));
-            utilisateurs.findByEmailIgnoreCase("paul@exemple.be")
+            utilisateurs.findByEmail("paul@exemple.be")
                     .orElseGet(() -> utilisateurs.save(new Utilisateur(
                             "paul@exemple.be", "$2a$12$h", "Martin", "Paul",
                             TypeUtilisateur.MEMBRE)));
@@ -197,7 +197,7 @@ class TelechargementFactureIT extends SocleIntegration {
      * en base, l achat passant par des endpoints qui prendraient l identite courante.
      */
     private Facture factureDeMarie() {
-        Utilisateur marie = utilisateurs.findByEmailIgnoreCase("marie@exemple.be").orElseThrow();
+        Utilisateur marie = utilisateurs.findByEmail("marie@exemple.be").orElseThrow();
         jdbc.update("""
                 INSERT INTO commande (reference, numero, membre_id, statut, montant_htva,
                                       montant_tva, montant_tvac, date_commande, date_paiement)

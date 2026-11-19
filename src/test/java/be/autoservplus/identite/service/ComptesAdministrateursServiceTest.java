@@ -88,7 +88,7 @@ class ComptesAdministrateursServiceTest {
     @Test
     @DisplayName("une adresse déjà prise est refusée")
     void adressePrise() {
-        when(utilisateurs.existsByEmailIgnoreCase("pris@exemple.be")).thenReturn(true);
+        when(utilisateurs.existsByEmail("pris@exemple.be")).thenReturn(true);
 
         assertThatThrownBy(() -> service.creerAdministrateur("pris@exemple.be", "A", "B", null))
                 .isInstanceOf(RefusTraduit.class);

@@ -163,12 +163,12 @@ class RenvoiVerificationIT extends SocleIntegration {
         @DisplayName("un compte non verifie recoit un nouveau jeton")
         void jetonRegenere() throws Exception {
             String email = creerMembre(false);
-            String jetonInitial = utilisateurs.findByEmailIgnoreCase(email).orElseThrow()
+            String jetonInitial = utilisateurs.findByEmail(email).orElseThrow()
                     .getJetonVerificationHache();
 
             corpsApresDemande(email);
 
-            Utilisateur apres = utilisateurs.findByEmailIgnoreCase(email).orElseThrow();
+            Utilisateur apres = utilisateurs.findByEmail(email).orElseThrow();
             assertThat(apres.getJetonVerificationHache()).isNotNull().isNotEqualTo(jetonInitial);
             assertThat(apres.isEmailVerifie()).isFalse();
         }
@@ -185,7 +185,7 @@ class RenvoiVerificationIT extends SocleIntegration {
 
             corpsApresDemande(email);
 
-            Utilisateur apres = utilisateurs.findByEmailIgnoreCase(email).orElseThrow();
+            Utilisateur apres = utilisateurs.findByEmail(email).orElseThrow();
             assertThat(apres.isEmailVerifie()).isTrue();
         }
     }

@@ -84,7 +84,7 @@ class CommandeDetailIT extends SocleIntegration {
     }
 
     private void membre(String email, String nom, String prenom) {
-        utilisateurs.findByEmailIgnoreCase(email)
+        utilisateurs.findByEmail(email)
                 .orElseGet(() -> utilisateurs.save(new Utilisateur(
                         email, "$2a$12$h", nom, prenom, TypeUtilisateur.MEMBRE)));
     }

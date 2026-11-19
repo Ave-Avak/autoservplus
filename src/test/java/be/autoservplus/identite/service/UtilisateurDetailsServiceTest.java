@@ -49,7 +49,7 @@ class UtilisateurDetailsServiceTest {
     void autoriseUnCompteActif() {
         Utilisateur membre = membre();
         membre.confirmerAdresseEmail();
-        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
         UserDetails details = service.loadUserByUsername("marie@exemple.be");
 
@@ -66,7 +66,7 @@ class UtilisateurDetailsServiceTest {
     @DisplayName("refuse un compte dont l adresse n a jamais ete verifiee")
     void refuseUnCompteNonVerifie() {
         Utilisateur membre = membre();
-        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
         UserDetails details = service.loadUserByUsername("marie@exemple.be");
 
@@ -80,7 +80,7 @@ class UtilisateurDetailsServiceTest {
         Utilisateur membre = membre();
         membre.confirmerAdresseEmail();
         membre.verrouillerJusqu(MAINTENANT.plusSeconds(900));
-        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
         UserDetails details = service.loadUserByUsername("marie@exemple.be");
 
@@ -93,7 +93,7 @@ class UtilisateurDetailsServiceTest {
         Utilisateur membre = membre();
         membre.confirmerAdresseEmail();
         membre.verrouillerJusqu(MAINTENANT.minusSeconds(1));
-        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
         UserDetails details = service.loadUserByUsername("marie@exemple.be");
 
@@ -106,7 +106,7 @@ class UtilisateurDetailsServiceTest {
         Utilisateur admin = new Utilisateur("admin@autoservplus.be", "$2a$12$empreinte",
                 "Systeme", "Administrateur", TypeUtilisateur.ADMINISTRATEUR);
         admin.confirmerAdresseEmail();
-        when(repository.findByEmailIgnoreCase("admin@autoservplus.be")).thenReturn(Optional.of(admin));
+        when(repository.findByEmail("admin@autoservplus.be")).thenReturn(Optional.of(admin));
 
         assertThat(service.loadUserByUsername("admin@autoservplus.be").getAuthorities())
                 .extracting(Object::toString)
@@ -116,7 +116,7 @@ class UtilisateurDetailsServiceTest {
     @Test
     @DisplayName("refuse une adresse inconnue sans reveler qu elle est inconnue")
     void refuseUneAdresseInconnue() {
-        when(repository.findByEmailIgnoreCase("inconnu@exemple.be")).thenReturn(Optional.empty());
+        when(repository.findByEmail("inconnu@exemple.be")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> service.loadUserByUsername("inconnu@exemple.be"))
                 .isInstanceOf(UsernameNotFoundException.class)
@@ -129,7 +129,7 @@ class UtilisateurDetailsServiceTest {
         Utilisateur membre = membre();
         membre.confirmerAdresseEmail();
         membre.setStatut(StatutUtilisateur.SUSPENDU);
-        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
         assertThat(service.loadUserByUsername("marie@exemple.be").isEnabled()).isFalse();
     }

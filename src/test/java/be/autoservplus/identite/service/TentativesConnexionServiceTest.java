@@ -58,7 +58,7 @@ class TentativesConnexionServiceTest {
     @Test
     @DisplayName("incremente le compteur a chaque echec")
     void incrementeLeCompteur() {
-        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
         service.surEchec(echec("marie@exemple.be"));
         service.surEchec(echec("marie@exemple.be"));
@@ -70,7 +70,7 @@ class TentativesConnexionServiceTest {
     @Test
     @DisplayName("verrouille le compte au cinquieme echec")
     void verrouilleAuCinquiemeEchec() {
-        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
         for (int i = 0; i < TENTATIVES_MAX; i++) {
             service.surEchec(echec("marie@exemple.be"));
@@ -84,7 +84,7 @@ class TentativesConnexionServiceTest {
     @Test
     @DisplayName("aucun evenement de securite avant le seuil")
     void aucunEvenementAvantLeSeuil() {
-        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
         for (int i = 1; i < TENTATIVES_MAX; i++) {
             service.surEchec(echec("marie@exemple.be"));
@@ -96,7 +96,7 @@ class TentativesConnexionServiceTest {
     @Test
     @DisplayName("consigne le passage en verrouillage et avertit le titulaire")
     void consigneLePassageEnVerrouillage() {
-        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
         for (int i = 0; i < TENTATIVES_MAX; i++) {
             service.surEchec(echec("marie@exemple.be"));
@@ -109,7 +109,7 @@ class TentativesConnexionServiceTest {
     @Test
     @DisplayName("un echec sur un compte deja verrouille ne consigne rien de plus")
     void neConsignePasDeuxFois() {
-        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
         for (int i = 0; i < TENTATIVES_MAX; i++) {
             service.surEchec(echec("marie@exemple.be"));
         }
@@ -122,7 +122,7 @@ class TentativesConnexionServiceTest {
     @Test
     @DisplayName("une panne de courriel n annule pas le verrouillage")
     void panneDeCourrielSansEffet() {
-        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
         doThrow(new IllegalStateException("fournisseur indisponible"))
                 .when(courriel).envoyerAvisVerrouillageConnexion(any(), any());
 
@@ -137,7 +137,7 @@ class TentativesConnexionServiceTest {
     @Test
     @DisplayName("libere le compte apres la duree de verrouillage")
     void libereApresLaDuree() {
-        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
         for (int i = 0; i < TENTATIVES_MAX; i++) {
             service.surEchec(echec("marie@exemple.be"));
@@ -149,7 +149,7 @@ class TentativesConnexionServiceTest {
     @Test
     @DisplayName("remet le compteur a zero quand la connexion aboutit")
     void remetLeCompteurAZero() {
-        when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+        when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
         service.surEchec(echec("marie@exemple.be"));
         service.surEchec(echec("marie@exemple.be"));
 
@@ -163,7 +163,7 @@ class TentativesConnexionServiceTest {
     @Test
     @DisplayName("ignore un echec sur une adresse inconnue")
     void ignoreUneAdresseInconnue() {
-        when(repository.findByEmailIgnoreCase("inconnu@exemple.be")).thenReturn(Optional.empty());
+        when(repository.findByEmail("inconnu@exemple.be")).thenReturn(Optional.empty());
 
         service.surEchec(echec("inconnu@exemple.be"));
 

@@ -158,11 +158,11 @@ public class AvisService {
      */
     private boolean appartientA(Intervention intervention, String email) {
         return intervention.getRdv() != null
-                && intervention.getRdv().getMembre().getEmail().equalsIgnoreCase(email);
+                && intervention.getRdv().getMembre().getEmail().equals(email);
     }
 
     private Utilisateur membre(String email) {
-        return membres.findByEmailIgnoreCase(email)
+        return membres.findByEmail(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
     }
 

@@ -24,7 +24,7 @@ import java.util.UUID;
  */
 public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> {
 
-    Optional<Utilisateur> findByEmailIgnoreCase(String email);
+    Optional<Utilisateur> findByEmail(String email);
 
     /**
      * Le compte, verrou de ligne pose jusqu a la fin de la transaction, pour verifier un
@@ -33,7 +33,7 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
      * ce qui permettrait d essayer des codes sans jamais atteindre le seuil.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    Optional<Utilisateur> findForUpdateByEmailIgnoreCase(String email);
+    Optional<Utilisateur> findForUpdateByEmail(String email);
 
     /**
      * Anti-rejeu atomique : le pas n est enregistre que s il depasse strictement le
@@ -49,7 +49,7 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
 
     Optional<Utilisateur> findByReference(UUID reference);
 
-    boolean existsByEmailIgnoreCase(String email);
+    boolean existsByEmail(String email);
 
     // Recherches par EMPREINTE (JetonLien.empreinte) : aucun jeton n'est stocké en clair.
 
@@ -64,12 +64,12 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
     /**
      * Une demande de changement vise-t-elle deja cette adresse ?
      *
-     * <p>Distinct de {@link #existsByEmailIgnoreCase(String)} : une adresse peut
+     * <p>Distinct de {@link #existsByEmail(String)} : une adresse peut
      * n appartenir a personne et etre pourtant reservee par une demande en cours. Les
      * deux controles sont necessaires, et l index partiel
      * {@code uq_utilisateur_email_en_attente} reprend celui-ci en base.</p>
      */
-    boolean existsByEmailEnAttenteIgnoreCase(String emailEnAttente);
+    boolean existsByEmailEnAttente(String emailEnAttente);
 
     List<Utilisateur> findByTypeUtilisateurAndStatut(TypeUtilisateur type, StatutUtilisateur statut);
 
@@ -118,7 +118,7 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
            where u.typeUtilisateur = be.autoservplus.identite.domain.TypeUtilisateur.MEMBRE
              and (lower(u.nom) like :motif
                   or lower(u.prenom) like :motif
-                  or lower(u.email) like :motif)
+                  or u.email like :motif)
            order by u.nom asc, u.prenom asc
            """)
     List<Utilisateur> rechercherMembres(@Param("motif") String motif);

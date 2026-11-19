@@ -36,7 +36,7 @@ public interface FactureRepository extends JpaRepository<Facture, Long> {
     @Query("""
             SELECT f FROM Facture f
             JOIN FETCH f.commande c
-            WHERE lower(f.membre.email) = lower(:email)
+            WHERE f.membre.email = :email
             ORDER BY f.dateEmission DESC, f.id DESC
             """)
     List<Facture> facturesDuMembre(@Param("email") String email);
@@ -46,5 +46,5 @@ public interface FactureRepository extends JpaRepository<Facture, Long> {
      * qu une facture reste a generer. Charger la liste pour n en regarder que la
      * taille couterait les lignes et leurs relations.
      */
-    long countByMembreEmailIgnoreCase(String email);
+    long countByMembreEmail(String email);
 }

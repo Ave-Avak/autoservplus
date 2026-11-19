@@ -378,7 +378,7 @@ public class InterventionService {
     public UUID referenceParRdvDuMembre(UUID rdvReference, String email) {
         Intervention it = interventions.findByRdvReference(rdvReference)
                 .orElseThrow(() -> new RessourceIntrouvableException("Intervention pour RDV", rdvReference));
-        if (!it.getRdv().getMembre().getEmail().equalsIgnoreCase(email)) {
+        if (!it.getRdv().getMembre().getEmail().equals(email)) {
             throw new RessourceIntrouvableException("Intervention pour RDV", rdvReference);
         }
         return it.getReference();
@@ -415,7 +415,7 @@ public class InterventionService {
         // services payee (F12-b). Tester getRdv() seul privait le membre qui a achete
         // une prestation en ligne de l acces a sa propre intervention.
         var titulaire = it.titulaire();
-        if (titulaire == null || !titulaire.getEmail().equalsIgnoreCase(email)) {
+        if (titulaire == null || !titulaire.getEmail().equals(email)) {
             throw new RessourceIntrouvableException("Intervention", reference);
         }
         return it;

@@ -79,7 +79,7 @@ public class ComptesAdministrateursService {
     public Utilisateur creerAdministrateur(String email, String prenom, String nom, String fonction) {
         Utilisateur auteur = exigerAuteur();
         String adresse = AdresseCourriel.normaliser(email);
-        if (utilisateurs.existsByEmailIgnoreCase(adresse)) {
+        if (utilisateurs.existsByEmail(adresse)) {
             // Le super-administrateur peut apprendre qu une adresse est prise : il n est
             // pas l anonyme que la neutralite des formulaires publics protege.
             throw new RefusTraduit("admin.administrateurs.erreur.adresse-prise",

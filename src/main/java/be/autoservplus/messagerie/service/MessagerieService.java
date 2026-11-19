@@ -84,7 +84,7 @@ public class MessagerieService {
     }
 
     public long nombreFilsNonLus(String email) {
-        return membres.findByEmailIgnoreCase(email)
+        return membres.findByEmail(email)
                 .map(conversations::nombreFilsNonLusParLeMembre)
                 .orElse(0L);
     }
@@ -145,7 +145,7 @@ public class MessagerieService {
         Intervention intervention = interventions.findByReference(reference)
                 .orElseThrow(() -> new RessourceIntrouvableException("Intervention", reference));
         boolean sienne = intervention.getRdv() != null
-                && intervention.getRdv().getMembre().getEmail().equalsIgnoreCase(email);
+                && intervention.getRdv().getMembre().getEmail().equals(email);
         if (!sienne) {
             throw new RessourceIntrouvableException("Intervention", reference);
         }
@@ -153,7 +153,7 @@ public class MessagerieService {
     }
 
     private Utilisateur membre(String email) {
-        return membres.findByEmailIgnoreCase(email)
+        return membres.findByEmail(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
     }
 

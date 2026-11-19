@@ -69,7 +69,7 @@ public interface DemandeAnnulationRepository extends JpaRepository<DemandeAnnula
             SELECT d FROM DemandeAnnulation d
             JOIN FETCH d.commande c
             LEFT JOIN FETCH d.avoir
-            WHERE lower(c.membre.email) = lower(:email)
+            WHERE c.membre.email = :email
             ORDER BY d.dateDemande ASC, d.id ASC
             """)
     List<DemandeAnnulation> demandesDuMembre(@Param("email") String email);

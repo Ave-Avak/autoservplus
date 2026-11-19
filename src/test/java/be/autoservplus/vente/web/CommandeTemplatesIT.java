@@ -153,7 +153,7 @@ class CommandeTemplatesIT extends SocleIntegration {
         assertThat(enBase.get(0).getMontantTvac()).isEqualByComparingTo("80.21");
 
         List<Consentement> preuves = consentements
-                .findByUtilisateurEmailIgnoreCaseAndTypeDocument(
+                .findByUtilisateurEmailAndTypeDocument(
                         "marie@exemple.be", TypeDocumentConsentement.CGV);
         assertThat(preuves).hasSize(1);
         // Comparee a la version REELLEMENT en vigueur et non a un identifiant ecrit ici :

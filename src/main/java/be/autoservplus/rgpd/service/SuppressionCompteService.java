@@ -123,7 +123,7 @@ public class SuppressionCompteService {
      */
     @Transactional
     public void supprimer(String email, String motDePasse, String confirmation) {
-        Utilisateur membre = utilisateurs.findByEmailIgnoreCase(email)
+        Utilisateur membre = utilisateurs.findByEmail(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
 
         exigerMotDePasse(membre, motDePasse);

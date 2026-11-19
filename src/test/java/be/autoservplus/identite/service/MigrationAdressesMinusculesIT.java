@@ -9,22 +9,27 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.ConnectionCallback;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
 
+import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * V55 appliquée à une base qui porte des adresses écrites avant la contrainte.
+ * V55 appliquée à une base qui porte des adresses écrites avant la contrainte, puis V56
+ * qui porte l'index de l'adresse en attente sur la colonne elle-même.
  *
  * <p>Chaque cas part d'une base neuve amenée à V54 par Flyway, y écrit des comptes tels
- * qu'un ancien chemin d'écriture aurait pu les laisser, puis applique V55.</p>
+ * qu'un ancien chemin d'écriture aurait pu les laisser, puis applique les migrations
+ * suivantes.</p>
  */
 @SpringBootTest
-@DisplayName("V55 : adresses de courriel en minuscules (migration)")
+@DisplayName("V55 et V56 : adresses de courriel en minuscules (migration)")
 class MigrationAdressesMinusculesIT extends SocleIntegration {
 
     private static final AtomicInteger COMPTEUR = new AtomicInteger(1);
@@ -106,5 +111,34 @@ class MigrationAdressesMinusculesIT extends SocleIntegration {
         assertThatThrownBy(() -> compte(base, "b@exemple.be", "Cible@exemple.be"))
                 .isInstanceOf(DataIntegrityViolationException.class)
                 .hasMessageContaining("uq_utilisateur_email_en_attente");
+    }
+
+    @Test
+    @DisplayName("V56 : la recherche stricte de l'adresse en attente passe par son index d'unicité")
+    void indexAdresseEnAttente() {
+        JdbcTemplate base = baseAuStadeV54();
+        appliquerV55(base);
+        compte(base, "a@exemple.be", "cible@exemple.be");
+
+        assertThatThrownBy(() -> compte(base, "b@exemple.be", "cible@exemple.be"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("uq_utilisateur_email_en_attente");
+        // Parcours séquentiel interdit à la session, pour qu'une table presque vide ne le
+        // préfère pas. Sur l'index de V38, le plan parcourt l'index partiel en entier et
+        // n'applique l'adresse qu'en filtre : seule une condition d'index prouve qu'il sert.
+        String plan = base.execute((ConnectionCallback<String>) connexion -> {
+            try (Statement requete = connexion.createStatement()) {
+                requete.execute("SET enable_seqscan = off");
+                StringBuilder lignes = new StringBuilder();
+                try (ResultSet resultat = requete.executeQuery("EXPLAIN SELECT id FROM utilisateur "
+                        + "WHERE email_en_attente = 'cible@exemple.be'")) {
+                    while (resultat.next()) {
+                        lignes.append(resultat.getString(1)).append(System.lineSeparator());
+                    }
+                }
+                return lignes.toString();
+            }
+        });
+        assertThat(plan).contains("uq_utilisateur_email_en_attente").contains("Index Cond");
     }
 }

@@ -95,7 +95,7 @@ public class ChangementEmailService {
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public void demander(String emailCourant, String nouvelleAdresse, String motDePasse, String ip) {
-        Utilisateur membre = repository.findByEmailIgnoreCase(normaliser(emailCourant))
+        Utilisateur membre = repository.findByEmail(normaliser(emailCourant))
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", emailCourant));
 
         if (motDePasse == null || motDePasse.isEmpty()
@@ -203,7 +203,7 @@ public class ChangementEmailService {
         // DEMANDE, pas contre une INSCRIPTION intervenue depuis. Sans ce controle, la
         // bascule echouerait sur uq_utilisateur_email au flush, c est-a-dire par une
         // erreur technique, au pire moment et sans message exploitable.
-        if (repository.existsByEmailIgnoreCase(membre.getEmailEnAttente())) {
+        if (repository.existsByEmail(membre.getEmailEnAttente())) {
             membre.annulerChangementEmail();
             throw new ChangementEmailRefuseException("changement-email.erreur.prise",
                     "Cette adresse n est plus disponible.");
@@ -216,8 +216,8 @@ public class ChangementEmailService {
 
     /** Une adresse deja portee par un compte, ou deja reservee par une demande. */
     private boolean adresseIndisponible(String adresse) {
-        return repository.existsByEmailIgnoreCase(adresse)
-                || repository.existsByEmailEnAttenteIgnoreCase(adresse);
+        return repository.existsByEmail(adresse)
+                || repository.existsByEmailEnAttente(adresse);
     }
 
     private static String normaliser(String email) {

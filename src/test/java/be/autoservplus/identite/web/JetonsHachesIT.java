@@ -95,7 +95,7 @@ class JetonsHachesIT extends SocleIntegration {
     }
 
     private Utilisateur relire(String email) {
-        return utilisateurs.findByEmailIgnoreCase(email).orElseThrow();
+        return utilisateurs.findByEmail(email).orElseThrow();
     }
 
     private String lienDeReinitialisation() {
@@ -394,7 +394,7 @@ class JetonsHachesIT extends SocleIntegration {
             mvc.perform(get("/changement-adresse/confirmation").param("jeton", changement)
                             .locale(Locale.FRENCH))
                     .andExpect(model().attribute("echec", (Object) null));
-            assertThat(utilisateurs.findByEmailIgnoreCase(cible)).isPresent();
+            assertThat(utilisateurs.findByEmail(cible)).isPresent();
         }
     }
 }

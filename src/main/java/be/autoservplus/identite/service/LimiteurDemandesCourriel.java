@@ -25,7 +25,7 @@ import java.util.Locale;
  * <h2>Pourquoi pas le mecanisme de verrouillage de compte</h2>
  *
  * <p>Il ne convenait pas, et pas seulement par commodite. Il n agit que sur un compte
- * existant ({@code findByEmailIgnoreCase(...).ifPresent}), donc il ne compterait jamais
+ * existant ({@code findByEmail(...).ifPresent}), donc il ne compterait jamais
  * une adresse inconnue : la difference observable serait exactement l oracle que ces
  * formulaires doivent taire. Et il ecrit {@code verrouille_jusqu_a} sur
  * {@code utilisateur} : un tiers martelant le formulaire verrouillerait le compte de

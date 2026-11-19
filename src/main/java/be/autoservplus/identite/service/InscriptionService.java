@@ -92,7 +92,7 @@ public class InscriptionService {
         politique.exiger(motDePasseClair);
         String empreinte = encodeurMotDePasse.encode(motDePasseClair);
 
-        Optional<Utilisateur> existant = repository.findByEmailIgnoreCase(emailNormalise);
+        Optional<Utilisateur> existant = repository.findByEmail(emailNormalise);
         if (existant.isPresent()) {
             prevenirTitulaire(existant.get(), ip);
             return Optional.empty();
@@ -202,7 +202,7 @@ public class InscriptionService {
      */
     @Transactional
     public Utilisateur renvoyerVerification(String email) {
-        Utilisateur membre = repository.findByEmailIgnoreCase(normaliser(email))
+        Utilisateur membre = repository.findByEmail(normaliser(email))
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
 
         if (membre.isEmailVerifie()) {

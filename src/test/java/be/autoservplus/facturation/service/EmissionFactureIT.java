@@ -74,7 +74,7 @@ class EmissionFactureIT extends SocleIntegration {
     @BeforeEach
     void setUp() {
         transactions.executeWithoutResult(statut -> {
-            utilisateurs.findByEmailIgnoreCase("marie@exemple.be")
+            utilisateurs.findByEmail("marie@exemple.be")
                     .orElseGet(() -> utilisateurs.save(new Utilisateur(
                             "marie@exemple.be", "$2a$12$h", "Dupont", "Marie",
                             TypeUtilisateur.MEMBRE)));

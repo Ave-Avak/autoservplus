@@ -38,7 +38,7 @@ public class UtilisateurDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) {
-        Utilisateur membre = repository.findByEmailIgnoreCase(AdresseCourriel.normaliser(email))
+        Utilisateur membre = repository.findByEmail(AdresseCourriel.normaliser(email))
                 .orElseThrow(() -> new UsernameNotFoundException(MESSAGE_GENERIQUE));
 
         return User.builder()
@@ -57,7 +57,7 @@ public class UtilisateurDetailsService implements UserDetailsService {
      */
     @Transactional
     public void normaliserEmpreinte(String email, String empreinte) {
-        repository.findByEmailIgnoreCase(email)
+        repository.findByEmail(email)
                 .ifPresent(membre -> membre.remplacerEmpreinte(empreinte));
     }
 }

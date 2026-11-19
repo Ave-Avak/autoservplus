@@ -43,6 +43,6 @@ public class AuteurCourant {
         if (auth == null || !auth.isAuthenticated() || PRINCIPAL_ANONYME.equals(auth.getPrincipal())) {
             return null;
         }
-        return utilisateurs.findByEmailIgnoreCase(auth.getName()).orElse(null);
+        return utilisateurs.findByEmail(auth.getName()).orElse(null);
     }
 }

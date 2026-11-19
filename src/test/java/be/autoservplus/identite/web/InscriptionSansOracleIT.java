@@ -123,7 +123,7 @@ class InscriptionSansOracleIT extends SocleIntegration {
         assertThat(existante.getResponse().getStatus()).isEqualTo(neuve.getResponse().getStatus());
         assertThat(page(existante, actif.getEmail())).isEqualTo(page(neuve, libre))
                 .contains("Vérifiez votre courriel");
-        assertThat(utilisateurs.findByEmailIgnoreCase(libre)).isPresent();
+        assertThat(utilisateurs.findByEmail(libre)).isPresent();
     }
 
     @Test

@@ -92,7 +92,7 @@ class PanierServiceTest {
         void creeAuPremierAjout() {
             pieceConnue(plaquettes);
             when(paniers.findByMembreEmail(EMAIL)).thenReturn(Optional.empty());
-            when(utilisateurs.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(marie));
+            when(utilisateurs.findByEmail(EMAIL)).thenReturn(Optional.of(marie));
             when(paniers.saveAndFlush(any(Panier.class))).thenAnswer(inv -> inv.getArgument(0));
 
             PanierVue vue = service.ajouterPiece(EMAIL, plaquettes.getReference(), 2);
@@ -136,7 +136,7 @@ class PanierServiceTest {
         void courseALaCreation() {
             pieceConnue(plaquettes);
             when(paniers.findByMembreEmail(EMAIL)).thenReturn(Optional.empty());
-            when(utilisateurs.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(marie));
+            when(utilisateurs.findByEmail(EMAIL)).thenReturn(Optional.of(marie));
             when(paniers.saveAndFlush(any(Panier.class)))
                     .thenThrow(new DataIntegrityViolationException("uq_panier_membre_actif"));
 

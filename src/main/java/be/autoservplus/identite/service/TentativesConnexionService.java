@@ -68,7 +68,7 @@ public class TentativesConnexionService {
     @Transactional
     public void surEchec(AuthenticationFailureBadCredentialsEvent evenement) {
         String email = AdresseCourriel.normaliser(String.valueOf(evenement.getAuthentication().getName()));
-        repository.findByEmailIgnoreCase(email).ifPresent(membre -> {
+        repository.findByEmail(email).ifPresent(membre -> {
             Instant maintenant = Instant.now(horloge);
             if (membre.enregistrerEchecConnexion(tentativesMax, fenetre, dureeVerrouillage,
                     maintenant)) {
@@ -99,7 +99,7 @@ public class TentativesConnexionService {
     @Transactional
     public void connexionAboutie(String email) {
         garde.succes(email);
-        repository.findByEmailIgnoreCase(AdresseCourriel.normaliser(email))
+        repository.findByEmail(AdresseCourriel.normaliser(email))
                 .ifPresent(membre -> membre.enregistrerConnexionReussie(Instant.now(horloge)));
     }
 

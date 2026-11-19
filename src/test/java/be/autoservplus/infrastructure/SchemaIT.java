@@ -112,7 +112,7 @@ class SchemaIT extends SocleIntegration {
     void leCompteAdminDeSeedEstSuspendu() {
         // V10 insère l'admin et V37 lui pose le mot de passe publié au README. V45 le
         // suspend sur toute base, la graine de démonstration V902 le réactive sous demo.
-        Utilisateur admin = utilisateurs.findByEmailIgnoreCase("admin@autoservplus.be")
+        Utilisateur admin = utilisateurs.findByEmail("admin@autoservplus.be")
                 .orElseThrow(() -> new AssertionError(
                         "Le seed V10 doit insérer un compte admin@autoservplus.be"));
 
