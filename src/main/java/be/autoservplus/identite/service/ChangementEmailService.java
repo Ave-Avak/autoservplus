@@ -11,13 +11,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Locale;
 
 /**
  * Changement d adresse de courriel avec verification prealable (CdC 5.2.2).
@@ -141,6 +141,7 @@ public class ChangementEmailService {
             JetonLien jeton = JetonLien.tirer();
             membre.demanderChangementEmail(cible, jeton.empreinte(),
                     Instant.now(horloge).plus(VALIDITE_JETON));
+            enregistrer(membre);
             courriel.envoyerConfirmationNouvelleAdresse(
                     new DetailsChangementEmailCourriel(cible, prenom, membre.getLangue(), ancienne, cible),
                     liens.vers("/changement-adresse/confirmation?jeton=" + jeton.clair()));
@@ -169,6 +170,22 @@ public class ChangementEmailService {
      *                                        ete prise entre la demande et la
      *                                        confirmation
      */
+    /**
+     * Écrit la demande tout de suite : un refus de la contrainte de casse (V55) devient un
+     * message sous le champ, et non une erreur au moment de la validation.
+     */
+    private void enregistrer(Utilisateur membre) {
+        try {
+            repository.saveAndFlush(membre);
+        } catch (DataIntegrityViolationException refus) {
+            if (AdresseCourriel.violeLaCasse(refus)) {
+                throw new ChangementEmailRefuseException(AdresseCourriel.CLE_REFUS_CASSE,
+                        "Cette adresse contient un caractère qui ne peut pas être enregistré. Vérifiez-la ou utilisez-en une autre.");
+            }
+            throw refus;
+        }
+    }
+
     @Transactional
     public String confirmer(String jeton) {
         Utilisateur membre = repository.findByJetonChangementEmailHache(JetonLien.empreinte(jeton))
@@ -204,6 +221,6 @@ public class ChangementEmailService {
     }
 
     private static String normaliser(String email) {
-        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+        return AdresseCourriel.normaliser(email);
     }
 }

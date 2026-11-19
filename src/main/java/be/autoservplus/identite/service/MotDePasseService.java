@@ -78,7 +78,7 @@ public class MotDePasseService {
         if (email == null || email.isBlank()) {
             return;
         }
-        repository.findByEmailIgnoreCase(email.trim().toLowerCase()).ifPresentOrElse(
+        repository.findByEmailIgnoreCase(AdresseCourriel.normaliser(email)).ifPresentOrElse(
                 this::envoyerCourrielAdapte,
                 () -> JOURNAL.info("Demande de reinitialisation pour une adresse inconnue."));
     }

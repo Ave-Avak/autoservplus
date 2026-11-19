@@ -99,6 +99,19 @@ class ChangementEmailServiceTest {
         }
 
         @Test
+        @DisplayName("la contrainte de casse de la base devient un refus sur le champ, sans courriel")
+        void contrainteDeCasse() {
+            cibleLibre();
+            when(repository.saveAndFlush(membre))
+                    .thenThrow(AdresseCourrielTest.violation("ck_utilisateur_email_en_attente_minuscules"));
+
+            assertThatThrownBy(ChangementEmailServiceTest.this::demander)
+                    .isInstanceOf(ChangementEmailRefuseException.class)
+                    .hasFieldOrPropertyWithValue("cleMessage", AdresseCourriel.CLE_REFUS_CASSE);
+            verify(courriel, never()).envoyerConfirmationNouvelleAdresse(any(), any());
+        }
+
+        @Test
         @DisplayName("le lien part vers la NOUVELLE adresse, l'avis vers l'ANCIENNE")
         void deuxDestinatairesDistincts() {
             cibleLibre();

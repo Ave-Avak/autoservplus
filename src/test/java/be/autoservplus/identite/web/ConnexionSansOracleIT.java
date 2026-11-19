@@ -140,6 +140,15 @@ class ConnexionSansOracleIT extends SocleIntegration {
     }
 
     @Test
+    @DisplayName("l'adresse saisie en majuscules, espaces autour, ouvre la session du compte")
+    void adresseEnMajuscules() throws Exception {
+        MvcResult resultat = connecter("  " + actif.getEmail().toUpperCase(Locale.ROOT) + " ", MOT_DE_PASSE);
+
+        assertThat(resultat.getResponse().getRedirectedUrl()).isEqualTo("/mon-compte");
+        assertThat(sessionOuverte(resultat)).isTrue();
+    }
+
+    @Test
     @DisplayName("un compte suspendu avec son mot de passe reçoit le refus commun")
     void compteSuspendu() throws Exception {
         Utilisateur suspendu = creer(StatutUtilisateur.SUSPENDU);

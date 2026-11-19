@@ -2,6 +2,7 @@ package be.autoservplus.identite.service;
 
 import be.autoservplus.communication.service.LiensCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Langue;
@@ -71,7 +72,7 @@ class InscriptionServiceTest {
         @DisplayName("cree un membre en attente de validation")
         void creeUnMembreEnAttente() {
             when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.empty());
-            when(repository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
+            when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
                     "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();
@@ -89,7 +90,7 @@ class InscriptionServiceTest {
         @DisplayName("normalise l adresse en minuscules et retire les espaces")
         void normaliseLAdresse() {
             when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.empty());
-            when(repository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
+            when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
                     "  Marie@Exemple.BE  ", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();
@@ -101,7 +102,7 @@ class InscriptionServiceTest {
         @DisplayName("n enregistre jamais le mot de passe en clair")
         void chiffreLeMotDePasse() {
             when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
-            when(repository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
+            when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             String motDePasseClair = "MotDePasseSolide2026";
             Utilisateur membre = service.inscrire(
@@ -116,7 +117,7 @@ class InscriptionServiceTest {
         @DisplayName("genere un jeton de 64 caracteres valable vingt-quatre heures")
         void genereUnJetonValable24h() {
             when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
-            when(repository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
+            when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
                     "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();
@@ -146,7 +147,7 @@ class InscriptionServiceTest {
 
             assertThat(inscrireMarie()).isEmpty();
 
-            verify(repository, never()).save(any());
+            verify(repository, never()).saveAndFlush(any());
             verify(courriel).envoyerAvisTentativeInscription(existant);
             verifyNoInteractions(motsDePasse);
         }
@@ -217,7 +218,21 @@ class InscriptionServiceTest {
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-02");
 
-            verify(repository, never()).save(any());
+            verify(repository, never()).saveAndFlush(any());
+        }
+
+        @Test
+        @DisplayName("la contrainte de casse de la base devient un refus sur le champ, sans courriel")
+        void contrainteDeCasse() {
+            when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
+            when(repository.saveAndFlush(any(Utilisateur.class)))
+                    .thenThrow(AdresseCourrielTest.violation("ck_utilisateur_email_minuscules"));
+
+            assertThatThrownBy(() -> service.inscrire(
+                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1"))
+                    .isInstanceOf(RefusTraduit.class)
+                    .hasFieldOrPropertyWithValue("cleMessage", AdresseCourriel.CLE_REFUS_CASSE);
+            verifyNoInteractions(courriel);
         }
 
         @Test
@@ -233,7 +248,7 @@ class InscriptionServiceTest {
         @DisplayName("applique le francais lorsque la langue n est pas precisee")
         void appliqueLeFrancaisParDefaut() {
             when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
-            when(repository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
+            when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
                     "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", null, "203.0.113.1").orElseThrow();
@@ -260,7 +275,7 @@ class InscriptionServiceTest {
         @DisplayName("envoie le courriel de verification apres enregistrement")
         void envoieLeCourrielDeVerification() {
             when(repository.findByEmailIgnoreCase(any())).thenReturn(Optional.empty());
-            when(repository.save(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
+            when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
                     "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();

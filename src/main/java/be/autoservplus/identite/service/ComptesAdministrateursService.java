@@ -12,13 +12,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.Clock;
 import java.util.Base64;
-import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -78,7 +78,7 @@ public class ComptesAdministrateursService {
     @Transactional
     public Utilisateur creerAdministrateur(String email, String prenom, String nom, String fonction) {
         Utilisateur auteur = exigerAuteur();
-        String adresse = email.strip().toLowerCase(Locale.ROOT);
+        String adresse = AdresseCourriel.normaliser(email);
         if (utilisateurs.existsByEmailIgnoreCase(adresse)) {
             // Le super-administrateur peut apprendre qu une adresse est prise : il n est
             // pas l anonyme que la neutralite des formulaires publics protege.
@@ -91,7 +91,16 @@ public class ComptesAdministrateursService {
         JetonLien jeton = JetonLien.tirer();
         administrateur.preparerDefinitionMotDePasse(jeton.empreinte(),
                 horloge.instant().plus(PremierMotDePasseService.VALIDITE_LIEN));
-        utilisateurs.saveAndFlush(administrateur);
+        try {
+            utilisateurs.saveAndFlush(administrateur);
+        } catch (DataIntegrityViolationException refus) {
+            if (AdresseCourriel.violeLaCasse(refus)) {
+                // La contrainte de casse de V55 : un message sous le champ, pas une erreur.
+                throw new RefusTraduit(AdresseCourriel.CLE_REFUS_CASSE,
+                        "Cette adresse contient un caractère qui ne peut pas être enregistré. Vérifiez-la ou utilisez-en une autre.");
+            }
+            throw refus;
+        }
 
         journal.consigner(administrateur, TypeEvenementSecurite.ADMINISTRATEUR_CREE, auteur);
         journal.consigner(administrateur, TypeEvenementSecurite.LIEN_DEFINITION_ENVOYE, auteur);

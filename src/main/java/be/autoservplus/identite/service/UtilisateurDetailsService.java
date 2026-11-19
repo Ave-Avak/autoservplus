@@ -38,7 +38,7 @@ public class UtilisateurDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) {
-        Utilisateur membre = repository.findByEmailIgnoreCase(email)
+        Utilisateur membre = repository.findByEmailIgnoreCase(AdresseCourriel.normaliser(email))
                 .orElseThrow(() -> new UsernameNotFoundException(MESSAGE_GENERIQUE));
 
         return User.builder()

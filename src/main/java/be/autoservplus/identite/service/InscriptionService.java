@@ -1,5 +1,6 @@
 package be.autoservplus.identite.service;
 
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Langue;
@@ -8,6 +9,7 @@ import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -106,7 +108,7 @@ public class InscriptionService {
         membre.setLangue(langue == null ? Langue.fr : langue);
         JetonLien jeton = armerVerification(membre);
 
-        Utilisateur enregistre = repository.save(membre);
+        Utilisateur enregistre = enregistrer(membre);
         courriel.envoyerVerificationAdresse(enregistre, lienVerification(jeton));
         return Optional.of(enregistre);
     }
@@ -227,6 +229,22 @@ public class InscriptionService {
         if (email == null || email.isBlank()) {
             throw new RegleMetierException("RM-01", "L adresse de courriel est obligatoire.");
         }
-        return email.trim().toLowerCase();
+        return AdresseCourriel.normaliser(email);
+    }
+
+    /**
+     * Écrit le compte tout de suite, pour qu'un refus de la contrainte de casse (V55)
+     * devienne une erreur sur le champ et non une erreur au moment de la validation.
+     */
+    private Utilisateur enregistrer(Utilisateur membre) {
+        try {
+            return repository.saveAndFlush(membre);
+        } catch (DataIntegrityViolationException refus) {
+            if (AdresseCourriel.violeLaCasse(refus)) {
+                throw new RefusTraduit(AdresseCourriel.CLE_REFUS_CASSE,
+                        "Cette adresse contient un caractère qui ne peut pas être enregistré. Vérifiez-la ou utilisez-en une autre.");
+            }
+            throw refus;
+        }
     }
 }
