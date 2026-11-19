@@ -1,13 +1,18 @@
 package be.autoservplus.identite.web;
 
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.service.InscriptionService;
 import be.autoservplus.identite.service.LimiteurDemandesCourriel;
+import be.autoservplus.legal.domain.TypeDocumentVersionne;
+import be.autoservplus.legal.service.VersionsDocumentsService;
 import be.autoservplus.identite.service.PiegeAntiBot;
 import be.autoservplus.identite.service.VerificateurTurnstile;
 import org.springframework.beans.factory.annotation.Value;
 
+import java.util.Arrays;
 import java.util.Optional;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -22,6 +27,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * Parcours d inscription et de verification d adresse.
@@ -40,6 +46,7 @@ public class InscriptionController {
     /** Absent quand aucune cle secrete n est configuree : voir TurnstileClientConfig. */
     private final Optional<VerificateurTurnstile> turnstile;
     private final String cleTurnstile;
+    private final VersionsDocumentsService versionsDocuments;
 
     public InscriptionController(InscriptionService service,
                                  LimiteurDemandesCourriel limiteur,
@@ -47,7 +54,9 @@ public class InscriptionController {
                                  PiegeAntiBot pieges,
                                  Optional<VerificateurTurnstile> turnstile,
                                  @Value("${autoservplus.securite.turnstile.cle-site:}")
-                                 String cleTurnstile) {
+                                 String cleTurnstile,
+                                 VersionsDocumentsService versionsDocuments) {
+        this.versionsDocuments = versionsDocuments;
         this.service = service;
         this.limiteur = limiteur;
         this.messages = messages;
@@ -65,18 +74,35 @@ public class InscriptionController {
                 && !turnstile.get().jetonValide(jeton, requete.getRemoteAddr());
     }
 
-    /** Pose de quoi rendre le widget. Vide, le fragment ne rend rien. */
+    /**
+     * Pose de quoi rendre le widget, vide si Turnstile n'est pas configuré, et le numéro des
+     * CGV en vigueur, affiché à côté de la case.
+     */
     private void armerFormulaire(Model modele) {
+        modele.addAttribute("versionCgv", versionsDocuments.versionCourante(TypeDocumentVersionne.CGV));
         modele.addAttribute("horodatageAntiBot", pieges.horodatageActuel());
         modele.addAttribute("cleTurnstile", cleTurnstile);
     }
 
     @GetMapping("/inscription")
     public String afficherFormulaire(Model modele) {
-        modele.addAttribute("titre", "Créer un compte");
-        modele.addAttribute("formulaire", new InscriptionForm());
+        InscriptionForm formulaire = new InscriptionForm();
+        formulaire.setLangue(langueAffichee());
+        modele.addAttribute("formulaire", formulaire);
         armerFormulaire(modele);
         return "identite/inscription";
+    }
+
+    /**
+     * Langue de la page, proposée comme langue du compte. Une langue d'affichage que le
+     * compte ne connaît pas laisse le français, langue par défaut du formulaire.
+     */
+    private static Langue langueAffichee() {
+        String code = LocaleContextHolder.getLocale().getLanguage();
+        return Arrays.stream(Langue.values())
+                .filter(langue -> langue.name().equals(code))
+                .findFirst()
+                .orElse(Langue.fr);
     }
 
     /**
@@ -90,6 +116,7 @@ public class InscriptionController {
     public String traiterFormulaire(@Valid @ModelAttribute("formulaire") InscriptionForm formulaire,
                                     BindingResult erreurs,
                                     Model modele,
+                                    RedirectAttributes redirection,
                                     HttpServletRequest requete,
                                     @RequestParam(name = PiegeAntiBot.CHAMP_PIEGE,
                                             required = false) String piege,
@@ -102,27 +129,23 @@ public class InscriptionController {
         // corriger. Un visiteur legitime ne peut pas atteindre ce cas.
         if (pieges.soumissionAutomatique(piege, horodatage)
                 || turnstileRefuse(jetonTurnstile, requete)) {
-            modele.addAttribute("titre", "Vérifiez votre courriel");
-            modele.addAttribute("adresse", formulaire.getEmail());
-            return "identite/inscription-confirmee";
+            return versConfirmation(formulaire, erreurs, redirection);
         }
 
         if (!limiteur.autoriserParIp(requete.getRemoteAddr())) {
             erreurs.reject("securite.debit.trop-de-demandes",
                     messages.getMessage("securite.debit.trop-de-demandes", null,
                             LocaleContextHolder.getLocale()));
-            modele.addAttribute("titre", "Créer un compte");
             armerFormulaire(modele);
             return "identite/inscription";
         }
 
         if (!formulaire.motsDePasseConcordent()) {
-            erreurs.rejectValue("confirmationMotDePasse", "motsDePasse.differents",
+            erreurs.rejectValue("confirmationMotDePasse", "inscription.erreur.differents",
                     "Les deux mots de passe ne correspondent pas.");
         }
 
         if (erreurs.hasErrors()) {
-            modele.addAttribute("titre", "Créer un compte");
             armerFormulaire(modele);
             return "identite/inscription";
         }
@@ -131,17 +154,52 @@ public class InscriptionController {
             // Compte créé ou titulaire prévenu : la même page dans les deux cas.
             service.inscrire(formulaire.getEmail(), formulaire.getMotDePasse(),
                     formulaire.getNom(), formulaire.getPrenom(), formulaire.getLangue(),
-                    requete.getRemoteAddr());
+                    formulaire.isCgv(), requete.getRemoteAddr());
         } catch (RegleMetierException e) {
-            erreurs.addError(new FieldError("formulaire", "email", e.getMessage()));
-            modele.addAttribute("titre", "Créer un compte");
+            erreurs.addError(refusSousLeChamp(e));
             armerFormulaire(modele);
             return "identite/inscription";
         }
 
-        modele.addAttribute("titre", "Vérifiez votre courriel");
-        modele.addAttribute("adresse", formulaire.getEmail());
+        return versConfirmation(formulaire, erreurs, redirection);
+    }
+
+    /**
+     * Après l'envoi, redirection vers une page lue en GET : actualiser la page n'envoie plus
+     * le formulaire une seconde fois. L'adresse saisie passe en attribut flash, lu une fois,
+     * si elle a passé la validation du formulaire. Un envoi automatique écarté peut porter
+     * une adresse vide ou mal formée : la page prend alors sa version générique.
+     */
+    private static String versConfirmation(InscriptionForm formulaire, BindingResult erreurs,
+                                           RedirectAttributes redirection) {
+        if (!erreurs.hasFieldErrors("email")) {
+            redirection.addFlashAttribute("adresse", formulaire.getEmail());
+        }
+        return "redirect:/inscription/confirmee";
+    }
+
+    /**
+     * Confirmation de l'envoi. Sans attribut flash, page ouverte directement ou actualisée
+     * une seconde fois, la version générique s'affiche, sans adresse et sans erreur.
+     */
+    @GetMapping("/inscription/confirmee")
+    public String afficherConfirmation() {
         return "identite/inscription-confirmee";
+    }
+
+    /**
+     * Refus du service sous son champ : la case pour les CGV, l'adresse sinon. Un
+     * {@link RefusTraduit} s'affiche par sa clé, dans la langue de la page. La phrase
+     * française du refus reste le texte de repli.
+     */
+    private static FieldError refusSousLeChamp(RegleMetierException refus) {
+        String[] codes = refus instanceof RefusTraduit traduit
+                ? new String[] {traduit.getCleMessage()}
+                : null;
+        String champ = refus instanceof RefusTraduit traduit
+                && InscriptionService.CLE_CGV_OBLIGATOIRES.equals(traduit.getCleMessage())
+                ? "cgv" : "email";
+        return new FieldError("formulaire", champ, null, false, codes, null, refus.getMessage());
     }
 
     /**

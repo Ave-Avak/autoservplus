@@ -1,6 +1,7 @@
 package be.autoservplus.identite.web.dto;
 
 import be.autoservplus.identite.domain.Langue;
+import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -36,6 +37,10 @@ public class InscriptionForm {
 
     private Langue langue = Langue.fr;
 
+    /** Case des CGV. Faux tant que le visiteur ne l'a pas cochée : rien ne la coche pour lui. */
+    @AssertTrue(message = "{inscription.cgv.obligatoire}")
+    private boolean cgv;
+
     /** Vrai lorsque les deux saisies du mot de passe concordent. */
     public boolean motsDePasseConcordent() {
         return motDePasse != null && motDePasse.equals(confirmationMotDePasse);
@@ -53,4 +58,6 @@ public class InscriptionForm {
     public void setPrenom(String prenom) { this.prenom = prenom; }
     public Langue getLangue() { return langue; }
     public void setLangue(Langue langue) { this.langue = langue; }
+    public boolean isCgv() { return cgv; }
+    public void setCgv(boolean cgv) { this.cgv = cgv; }
 }

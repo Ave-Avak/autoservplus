@@ -77,7 +77,7 @@ public class Consentement {
 
     /**
      * Commande pour laquelle les CGV ont été acceptées ou la renonciation décidée (V52),
-     * nulle pour les cookies. Un identifiant et non une relation : le consentement relève
+     * nulle pour les cookies et pour les CGV acceptées à l'inscription. Un identifiant et non une relation : le consentement relève
      * de l'identité, qui n'a pas à dépendre du module de vente.
      */
     @Column(name = "commande_id", updatable = false)

@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Créer un compte | AutoServ+</title>
+  <title th:text="#{inscription.titre} + ' | AutoServ+'">Créer un compte | AutoServ+</title>
   <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-  <h1>Créer un compte</h1>
+  <h1 th:text="#{inscription.titre}">Créer un compte</h1>
 
   <form class="formulaire" th:action="@{/inscription}" th:object="${formulaire}" method="post" novalidate>
 
@@ -22,25 +22,25 @@
     </div>
 
     <div class="champ">
-      <label for="prenom">Prénom</label>
+      <label for="prenom" th:text="#{inscription.prenom}">Prénom</label>
       <input type="text" id="prenom" th:field="*{prenom}" autocomplete="given-name" required>
       <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('prenom')}" th:errors="*{prenom}"></p>
     </div>
 
     <div class="champ">
-      <label for="nom">Nom</label>
+      <label for="nom" th:text="#{inscription.nom}">Nom</label>
       <input type="text" id="nom" th:field="*{nom}" autocomplete="family-name" required>
       <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('nom')}" th:errors="*{nom}"></p>
     </div>
 
     <div class="champ">
-      <label for="email">Adresse de courriel</label>
+      <label for="email" th:text="#{inscription.email}">Adresse de courriel</label>
       <input type="email" id="email" th:field="*{email}" autocomplete="email" required>
       <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
     </div>
 
     <div class="champ">
-      <label for="motDePasse">Mot de passe</label>
+      <label for="motDePasse" th:text="#{inscription.motDePasse}">Mot de passe</label>
       <input type="password" id="motDePasse" th:field="*{motDePasse}"
              autocomplete="new-password" minlength="12" required
              aria-describedby="aide-mot-de-passe">
@@ -49,7 +49,7 @@
     </div>
 
     <div class="champ">
-      <label for="confirmationMotDePasse">Confirmez le mot de passe</label>
+      <label for="confirmationMotDePasse" th:text="#{inscription.confirmation}">Confirmez le mot de passe</label>
       <input type="password" id="confirmationMotDePasse" th:field="*{confirmationMotDePasse}"
              autocomplete="new-password" required>
       <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('confirmationMotDePasse')}"
@@ -57,7 +57,7 @@
     </div>
 
     <div class="champ">
-      <label for="langue">Langue</label>
+      <label for="langue" th:text="#{inscription.langue}">Langue</label>
       <select id="langue" th:field="*{langue}">
         <option value="fr">Français</option>
         <option value="nl">Nederlands</option>
@@ -65,15 +65,31 @@
       </select>
     </div>
 
-    <button type="submit" class="btn-cta">Créer mon compte</button>
+    <!--/* Case jamais cochée par le serveur, même après une erreur : l'acceptation doit
+         être un geste du visiteur à chaque envoi. D'où l'absence de th:field. */-->
+    <div class="champ champ-case">
+      <input type="checkbox" id="cgv" name="cgv" value="true" required
+             th:attr="aria-describedby=${#fields.hasErrors('cgv')} ? 'cgv-erreur' : null">
+      <label for="cgv">
+        <span th:text="#{inscription.cgv.prefixe}">J'ai lu et j'accepte les</span>
+        <a th:href="@{/cgv}" th:text="#{inscription.cgv.lien}">conditions générales de vente</a>
+        <span th:text="#{inscription.cgv.version(${versionCgv})}">(version CGV-2026-03).</span>
+      </label>
+      <p id="cgv-erreur" role="alert" class="texte-erreur" th:if="${#fields.hasErrors('cgv')}" th:errors="*{cgv}"></p>
+    </div>
+
+    <p class="texte-info">
+      <span th:text="#{inscription.confidentialite.prefixe}">Vos données sont traitées selon notre</span>
+      <a th:href="@{/confidentialite}" th:text="#{inscription.confidentialite.lien}">politique de confidentialité</a>.
+    </p>
+
+    <button type="submit" class="btn-cta" th:text="#{inscription.envoyer}">Créer mon compte</button>
       <div th:replace="~{fragments/antibot :: pieges(${horodatageAntiBot})}"></div>
     <div th:replace="~{fragments/antibot :: turnstile(${cleTurnstile})}"></div>
 </form>
 </main>
 
-<footer class="pied">
-  <p>&copy; 2026 AutoServ+</p>
-</footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 
 <div th:replace="~{fragments/cookies :: bandeau}"></div>
 </body>

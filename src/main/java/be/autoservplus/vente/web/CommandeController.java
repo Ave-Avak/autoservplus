@@ -1,5 +1,7 @@
 package be.autoservplus.vente.web;
 
+import be.autoservplus.legal.domain.TypeDocumentVersionne;
+import be.autoservplus.legal.service.VersionsDocumentsService;
 import be.autoservplus.vente.domain.SituationPaiement;
 import be.autoservplus.vente.service.CgvNonAccepteesException;
 import be.autoservplus.vente.service.CommandeService;
@@ -56,10 +58,13 @@ public class CommandeController {
     private final PanierService paniers;
     private final PaiementService paiements;
     private final MessageSource messages;
+    private final VersionsDocumentsService versionsDocuments;
 
     public CommandeController(CommandeService service, PanierService paniers,
-                              PaiementService paiements, MessageSource messages) {
+                              PaiementService paiements, MessageSource messages,
+                              VersionsDocumentsService versionsDocuments) {
         this.service = service;
+        this.versionsDocuments = versionsDocuments;
         this.paniers = paniers;
         this.paiements = paiements;
         this.messages = messages;
@@ -76,6 +81,7 @@ public class CommandeController {
         }
         modele.addAttribute("titre", msg("commande.recap.titre"));
         modele.addAttribute("panier", panier);
+        ajouterVersionCgv(modele);
         return "vente/recapitulatif";
     }
 
@@ -209,7 +215,16 @@ public class CommandeController {
         modele.addAttribute("titre", msg("commande.recap.titre"));
         modele.addAttribute("panier", paniers.panierDuMembre(membre.getUsername()));
         modele.addAttribute(attribut, message);
+        ajouterVersionCgv(modele);
         return "vente/recapitulatif";
+    }
+
+    /**
+     * Numéro des CGV en vigueur, affiché à côté de la case. Il est lu à la même source que
+     * la version écrite dans la preuve par {@link CommandeService#passerCommande}.
+     */
+    private void ajouterVersionCgv(Model modele) {
+        modele.addAttribute("versionCgv", versionsDocuments.versionCourante(TypeDocumentVersionne.CGV));
     }
 
     private String msg(String cle, Object... arguments) {

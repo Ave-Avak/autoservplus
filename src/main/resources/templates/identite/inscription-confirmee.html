@@ -3,22 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Vérifiez votre courriel | AutoServ+</title>
+    <title th:text="#{inscription.confirmee.titre} + ' | AutoServ+'">Vérifiez votre courriel | AutoServ+</title>
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 <header th:replace="~{fragments/entete :: entete}"></header>
 <main id="contenu">
-    <h1>Votre compte est presque prêt</h1>
+    <h1 th:text="#{inscription.confirmee.h1}">Votre compte est presque prêt</h1>
     <div class="message message-succes" role="status">
-        <p>Un courriel de vérification a été envoyé à
+        <p th:if="${not #strings.isEmpty(adresse)}"><span th:text="#{inscription.confirmee.envoye}">Un courriel de vérification a été envoyé à</span>
             <strong th:text="${adresse}">adresse@exemple.be</strong>.</p>
-        <p>Cliquez sur le lien qu'il contient pour activer votre compte.
+        <p th:if="${#strings.isEmpty(adresse)}" th:text="#{inscription.confirmee.generique}">Si vous venez de créer un compte, un courriel de vérification vous a été envoyé.</p>
+        <p th:text="#{inscription.confirmee.lien}">Cliquez sur le lien qu'il contient pour activer votre compte.
             Le lien reste valable vingt-quatre heures.</p>
     </div>
-    <p><a th:href="@{/}">Retour à l'accueil</a></p>
+    <p><a th:href="@{/}" th:text="#{inscription.confirmee.accueil}">Retour à l'accueil</a></p>
 </main>
-<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 <div th:replace="~{fragments/cookies :: bandeau}"></div>
 </body>
 </html>

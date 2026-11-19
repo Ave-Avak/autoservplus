@@ -200,6 +200,13 @@ main code { overflow-wrap: anywhere; }
 .champ input:user-invalid,
 .champ input[aria-invalid="true"] { border-color: var(--erreur-texte); }
 
+/* Case à cocher et son libellé sur une même ligne. Sans cette règle, la case prend la
+   largeur des champs de saisie et s'affiche seule au-dessus de son libellé. */
+.champ-case { display: flex; flex-wrap: wrap; align-items: baseline; gap: var(--espace-s); }
+.champ-case input { width: auto; flex: none; }
+.champ-case label { display: inline; flex: 1; font-weight: normal; margin-bottom: 0; }
+.champ-case .texte-erreur { flex-basis: 100%; }
+
 .texte-succes { color: var(--succes-texte); }
 .texte-alerte { color: var(--alerte-texte); }
 .texte-info   { color: var(--info-texte); }

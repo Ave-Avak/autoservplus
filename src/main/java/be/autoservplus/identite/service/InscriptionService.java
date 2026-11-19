@@ -3,10 +3,15 @@ package be.autoservplus.identite.service;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.Langue;
+import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.identite.repository.ConsentementRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.legal.domain.TypeDocumentVersionne;
+import be.autoservplus.legal.service.VersionsDocumentsService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -35,6 +40,9 @@ public class InscriptionService {
     /** Duree de validite du jeton de verification. */
     public static final Duration VALIDITE_JETON = Duration.ofHours(24);
 
+    /** Clé du refus d'une inscription sans acceptation des CGV, affiché sous la case. */
+    public static final String CLE_CGV_OBLIGATOIRES = "inscription.cgv.obligatoire";
+
     private static final Logger JOURNAL = LoggerFactory.getLogger(InscriptionService.class);
 
     private final UtilisateurRepository repository;
@@ -45,6 +53,8 @@ public class InscriptionService {
     private final LiensCourriel liens;
     private final MotDePasseService motsDePasse;
     private final LimiteurDemandesCourriel limiteur;
+    private final ConsentementRepository consentements;
+    private final VersionsDocumentsService versionsDocuments;
 
     public InscriptionService(UtilisateurRepository repository,
                               PasswordEncoder encodeurMotDePasse,
@@ -53,8 +63,12 @@ public class InscriptionService {
                               PolitiqueMotDePasse politique,
                               LiensCourriel liens,
                               MotDePasseService motsDePasse,
-                              LimiteurDemandesCourriel limiteur) {
+                              LimiteurDemandesCourriel limiteur,
+                              ConsentementRepository consentements,
+                              VersionsDocumentsService versionsDocuments) {
         this.repository = repository;
+        this.consentements = consentements;
+        this.versionsDocuments = versionsDocuments;
         this.motsDePasse = motsDePasse;
         this.limiteur = limiteur;
         this.liens = liens;
@@ -75,19 +89,33 @@ public class InscriptionService {
      * par un hachage BCrypt, jeté pour l'adresse connue. Seuls l'enregistrement et le
      * courriel diffèrent, et les courriels partent hors de la requête.</p>
      *
+     * <p>L'acceptation des CGV est exigée ici et non seulement par le formulaire (F1) : un
+     * envoi forgé sans la case est refusé, avant toute recherche de l'adresse, donc de la
+     * même façon qu'elle ait un compte ou non. La preuve porte la version en vigueur et
+     * n'est rattachée à aucune commande. Elle ne remplace pas l'acceptation demandée à
+     * chaque commande, seule à porter sur la version en vigueur le jour de la vente. Une
+     * adresse qui a déjà un compte n'en reçoit aucune : rien n'est créé.</p>
+     *
      * <p>Le courriel de vérification part après la validation de la transaction. Un
      * échec de remise n'annule donc pas l'inscription : le compte existe, et le renvoi de
      * vérification comme la demande d'un nouveau mot de passe donnent un autre lien.</p>
      *
-     * @param ip adresse de la requête, pour le plafond des courriels au titulaire
+     * @param cgvAcceptees état de la case des CGV tel que reçu, jamais supposé
+     * @param ip adresse de la requête, pour le plafond des courriels au titulaire et la
+     *           preuve d'acceptation des CGV
      * @return le compte créé, ou rien si l'adresse en avait déjà un
-     * @throws RefusTraduit si le mot de passe ne respecte pas {@link PolitiqueMotDePasse},
-     *                      quelle que soit l'adresse
+     * @throws RefusTraduit si les CGV ne sont pas acceptées ou si le mot de passe ne
+     *                      respecte pas {@link PolitiqueMotDePasse}, quelle que soit l'adresse
      */
     @Transactional
     public Optional<Utilisateur> inscrire(String email, String motDePasseClair,
-                                          String nom, String prenom, Langue langue, String ip) {
+                                          String nom, String prenom, Langue langue,
+                                          boolean cgvAcceptees, String ip) {
 
+        if (!cgvAcceptees) {
+            throw new RefusTraduit(CLE_CGV_OBLIGATOIRES,
+                    "Vous devez accepter les conditions générales de vente pour créer un compte.");
+        }
         String emailNormalise = normaliser(email);
         politique.exiger(motDePasseClair);
         String empreinte = encodeurMotDePasse.encode(motDePasseClair);
@@ -109,6 +137,9 @@ public class InscriptionService {
         JetonLien jeton = armerVerification(membre);
 
         Utilisateur enregistre = enregistrer(membre);
+        consentements.save(Consentement.acceptation(enregistre, TypeDocumentConsentement.CGV,
+                versionsDocuments.versionCourante(TypeDocumentVersionne.CGV), ip,
+                Instant.now(horloge)));
         courriel.envoyerVerificationAdresse(enregistre, lienVerification(jeton));
         return Optional.of(enregistre);
     }

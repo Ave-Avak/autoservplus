@@ -21,6 +21,7 @@ import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.Duration;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -35,10 +36,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 /**
  * L'inscription ne dit pas si l'adresse a déjà un compte (F1, RM-01).
  *
- * <p>Même statut et même page pour une adresse libre et pour l'adresse d'un compte, à
- * l'adresse affichée et au jeton CSRF près. Le titulaire existant reçoit un courriel selon
- * le statut de son compte, parti d'un fil de l'exécuteur comme le lien d'une inscription
- * neuve.</p>
+ * <p>Même statut et même redirection pour une adresse libre et pour l'adresse d'un
+ * compte, seule l'adresse saisie passant en attribut flash. Le titulaire existant reçoit
+ * un courriel selon le statut de son compte, parti d'un fil de l'exécuteur comme le lien
+ * d'une inscription neuve.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -93,7 +94,7 @@ class InscriptionSansOracleIT extends SocleIntegration {
                         - PiegeAntiBot.DELAI_MINIMAL.plusSeconds(7).toMillis()))
                 .param("email", email).param("motDePasse", MOT_DE_PASSE)
                 .param("confirmationMotDePasse", MOT_DE_PASSE)
-                .param("nom", "Dupont").param("prenom", "Marie").param("langue", "fr"))
+                .param("nom", "Dupont").param("prenom", "Marie").param("langue", "fr").param("cgv", "true"))
                 .andReturn();
     }
 
@@ -121,8 +122,12 @@ class InscriptionSansOracleIT extends SocleIntegration {
         MvcResult existante = inscrire(actif.getEmail(), "203.0.113.71");
 
         assertThat(existante.getResponse().getStatus()).isEqualTo(neuve.getResponse().getStatus());
-        assertThat(page(existante, actif.getEmail())).isEqualTo(page(neuve, libre))
-                .contains("Vérifiez votre courriel");
+        assertThat(existante.getResponse().getRedirectedUrl())
+                .isEqualTo(neuve.getResponse().getRedirectedUrl())
+                .isEqualTo("/inscription/confirmee");
+        assertThat(page(existante, actif.getEmail())).isEqualTo(page(neuve, libre));
+        assertThat((Map<String, Object>) existante.getFlashMap()).containsEntry("adresse", actif.getEmail());
+        assertThat((Map<String, Object>) neuve.getFlashMap()).containsEntry("adresse", libre);
         assertThat(utilisateurs.findByEmail(libre)).isPresent();
     }
 

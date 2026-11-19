@@ -23,6 +23,8 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -107,6 +109,36 @@ class CommandeTemplatesIT extends SocleIntegration {
                 // Art. VI.45 CDE : la formule exacte, pas « Valider » ni « Payer ».
                 .andExpect(content().string(containsString("Commande avec obligation de paiement")))
                 .andExpect(content().string(containsString("conditions générales de vente")));
+    }
+
+    @Test
+    @DisplayName("la case des CGV est sur la même ligne que son libellé")
+    void caseEnLigne() throws Exception {
+        remplirLePanier();
+
+        String page = mvc.perform(get("/commande").locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(page).containsPattern(
+                "<div class=\"champ champ-case\">\\s*<input type=\"checkbox\" id=\"cgv\"");
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @CsvSource({"fr, (version {0}).", "nl, (versie {0}).", "en, (version {0})."})
+    @DisplayName("le libellé de la case affiche la version en vigueur, celle qu'écrit la preuve")
+    void versionAffichee(String langue, String motif) throws Exception {
+        remplirLePanier();
+        String version = versionsDocuments.versionCourante(TypeDocumentVersionne.CGV);
+        String attendu = motif.replace("{0}", version);
+
+        mvc.perform(get("/commande").param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(attendu)));
+        // Réaffiché après un refus, le récapitulatif garde la version.
+        mvc.perform(post("/commande").with(csrf()).param("lang", langue))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(attendu)));
     }
 
     @Test
