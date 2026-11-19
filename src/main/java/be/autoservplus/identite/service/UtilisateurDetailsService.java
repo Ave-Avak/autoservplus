@@ -49,4 +49,15 @@ public class UtilisateurDetailsService implements UserDetailsService {
                 .disabled(membre.getStatut() != StatutUtilisateur.ACTIF)
                 .build();
     }
+
+    /**
+     * Remplace l'empreinte de la forme brute d'un mot de passe par celle de sa forme
+     * normalisée, après une connexion qui l'a prouvé. Rien d'autre ne change : c'est le
+     * même mot de passe, ni changé ni réinitialisé.
+     */
+    @Transactional
+    public void normaliserEmpreinte(String email, String empreinte) {
+        repository.findByEmailIgnoreCase(email)
+                .ifPresent(membre -> membre.remplacerEmpreinte(empreinte));
+    }
 }

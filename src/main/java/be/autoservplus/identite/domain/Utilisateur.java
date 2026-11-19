@@ -548,6 +548,15 @@ public class Utilisateur extends BaseEntity {
         return anonymiseLe != null;
     }
 
+    /**
+     * Nouvelle empreinte du même mot de passe, sa forme normalisée. Contrairement à
+     * {@link #changerMotDePasse}, ni les compteurs ni une demande de changement d'adresse
+     * ne sont touchés : le titulaire n'a rien changé.
+     */
+    public void remplacerEmpreinte(String empreinte) {
+        this.motDePasseHache = Objects.requireNonNull(empreinte, "empreinte");
+    }
+
     public void changerMotDePasse(String nouvelleEmpreinte) {
         this.motDePasseHache = Objects.requireNonNull(nouvelleEmpreinte, "nouvelleEmpreinte");
         this.tentativesEchouees = 0;

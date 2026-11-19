@@ -1,5 +1,6 @@
 package be.autoservplus.config;
 
+import be.autoservplus.identite.service.EncodeurNormalise;
 import be.autoservplus.identite.service.GardeConnexion;
 import be.autoservplus.identite.service.UtilisateurDetailsService;
 import be.autoservplus.identite.service.VerificateurTurnstile;
@@ -19,13 +20,14 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
 import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
@@ -55,9 +57,10 @@ public class SecuriteConfig {
     private static final RequestMatcher ENVOI_CONNEXION =
             PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/connexion");
 
+    /** BCrypt de coût 12 sur la forme NFKC du mot de passe, voir {@link EncodeurNormalise}. */
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(COUT_BCRYPT);
+    public EncodeurNormalise passwordEncoder() {
+        return new EncodeurNormalise(new BCryptPasswordEncoder(COUT_BCRYPT));
     }
 
     /**
@@ -69,11 +72,27 @@ public class SecuriteConfig {
      * avait été saisie. Les mêmes contrôles passent ici après la vérification. Toute
      * adresse paie donc un BCrypt de coût 12, et le refus d'un compte verrouillé reste
      * entier : un mot de passe juste ne passe pas davantage.</p>
+     *
+     * <p>Une connexion réussie par la forme brute d'un mot de passe, empreinte écrite
+     * avant la normalisation NFKC, fait réécrire l'empreinte de sa forme normalisée. Le
+     * mot de passe présenté n'est disponible qu'ici, avant l'effacement des
+     * identifiants.</p>
      */
     @Bean
     public DaoAuthenticationProvider fournisseurAuthentification(
-            UtilisateurDetailsService comptes, PasswordEncoder encodeur) {
-        DaoAuthenticationProvider fournisseur = new DaoAuthenticationProvider(comptes);
+            UtilisateurDetailsService comptes, EncodeurNormalise encodeur) {
+        DaoAuthenticationProvider fournisseur = new DaoAuthenticationProvider(comptes) {
+            @Override
+            protected Authentication createSuccessAuthentication(Object principal,
+                                                                 Authentication authentification,
+                                                                 UserDetails compte) {
+                String presente = String.valueOf(authentification.getCredentials());
+                if (encodeur.exigeMigration(presente, compte.getPassword())) {
+                    comptes.normaliserEmpreinte(compte.getUsername(), encodeur.encode(presente));
+                }
+                return super.createSuccessAuthentication(principal, authentification, compte);
+            }
+        };
         fournisseur.setPasswordEncoder(encodeur);
         fournisseur.setPreAuthenticationChecks(compte -> { });
         fournisseur.setPostAuthenticationChecks(new AccountStatusUserDetailsChecker());
