@@ -631,9 +631,9 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     color: var(--gris-700);
 }
 
-/* Ligne « Gérer mes cookies » : rendue comme la continuation du pied de page. Elle
-   est rattachée au fragment du bandeau plutôt qu'à chaque <footer>, dont la structure
-   varie d'un écran à l'autre depuis la suppression de layout/base.html. */
+/* Ligne légale et « Gérer mes cookies » : rendue comme la continuation du pied de page.
+   Elle est rattachée au fragment du bandeau plutôt qu'à chaque <footer>, dont la
+   structure varie d'un écran à l'autre depuis la suppression de layout/base.html. */
 .pied-cookies {
     margin: 0;
     border-top: none;

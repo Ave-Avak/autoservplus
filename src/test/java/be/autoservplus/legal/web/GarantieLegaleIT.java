@@ -42,7 +42,12 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class GarantieLegaleIT extends SocleIntegration {
 
     private static final AtomicInteger COMPTEUR = new AtomicInteger(1);
-    private static final String LIEN = "href=\"/garantie-legale\"";
+    /**
+     * La phrase de lien du parcours d'achat, et non le lien « Garantie légale » de la ligne
+     * légale, présent au pied de toutes les pages.
+     */
+    private static final String LIEN =
+            "<a href=\"/garantie-legale\">Vos droits de garantie légale</a>";
 
     @Autowired private MockMvc mvc;
     @Autowired private PanierService paniers;
