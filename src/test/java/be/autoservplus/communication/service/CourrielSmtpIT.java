@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -86,6 +87,7 @@ class CourrielSmtpIT extends SocleIntegration {
     @Autowired private PlatformTransactionManager transactions;
     @Autowired private IdentiteGarage garage;
     @Autowired private TransportCourriel transport;
+    @Value("${autoservplus.url-publique}") private String urlPublique;
 
     private static String adresse() {
         return "smtp-" + COMPTEUR.getAndIncrement() + "@exemple.be";
@@ -138,6 +140,9 @@ class CourrielSmtpIT extends SocleIntegration {
                 .isNotBlank();
         String texte = message.path("Text").asText();
         assertThat(texte).startsWith("Bonjour Marie,").contains("valable 24 heures");
+        // Domaine de l'identifiant fixé par mail.host, sans recherche du nom de la machine.
+        assertThat(message.path("MessageID").asText())
+                .endsWith("@" + URI.create(urlPublique).getHost());
 
         String lien = texte.lines().filter(l -> l.startsWith("http")).findFirst().orElseThrow();
         assertThat(lien).startsWith("http://localhost:8080/inscription/verification?jeton=");
