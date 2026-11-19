@@ -101,7 +101,10 @@ class InscriptionTraduiteIT extends SocleIntegration {
             "en, Check your email, A verification email has been sent to"})
     @DisplayName("la page de confirmation est traduite")
     void confirmationTraduite(String langue, String titre, String envoye) throws Exception {
-        mvc.perform(envoi(langue, MOT_DE_PASSE))
+        var envoiFait = mvc.perform(envoi(langue, MOT_DE_PASSE)).andReturn();
+
+        mvc.perform(get("/inscription/confirmee").param("lang", langue).with(anonymous())
+                        .flashAttrs(envoiFait.getFlashMap()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(allOf(
                         containsString("<title>" + titre + " | AutoServ+</title>"),

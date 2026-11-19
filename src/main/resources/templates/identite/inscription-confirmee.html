@@ -12,8 +12,9 @@
 <main id="contenu">
     <h1 th:text="#{inscription.confirmee.h1}">Votre compte est presque prêt</h1>
     <div class="message message-succes" role="status">
-        <p><span th:text="#{inscription.confirmee.envoye}">Un courriel de vérification a été envoyé à</span>
+        <p th:if="${not #strings.isEmpty(adresse)}"><span th:text="#{inscription.confirmee.envoye}">Un courriel de vérification a été envoyé à</span>
             <strong th:text="${adresse}">adresse@exemple.be</strong>.</p>
+        <p th:if="${#strings.isEmpty(adresse)}" th:text="#{inscription.confirmee.generique}">Si vous venez de créer un compte, un courriel de vérification vous a été envoyé.</p>
         <p th:text="#{inscription.confirmee.lien}">Cliquez sur le lien qu'il contient pour activer votre compte.
             Le lien reste valable vingt-quatre heures.</p>
     </div>

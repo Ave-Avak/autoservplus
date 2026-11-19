@@ -20,6 +20,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -114,6 +115,7 @@ class TurnstileIT extends SocleIntegration {
         if (jeton != null) {
             requete = requete.param(VerificateurTurnstile.CHAMP_JETON, jeton);
         }
-        mvc.perform(requete).andExpect(status().isOk());
+        // Jeton accepté ou refusé, la même redirection vers la confirmation.
+        mvc.perform(requete).andExpect(redirectedUrl("/inscription/confirmee"));
     }
 }

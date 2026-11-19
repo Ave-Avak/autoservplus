@@ -27,6 +27,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
  * Parcours d inscription et de verification d adresse.
@@ -115,6 +116,7 @@ public class InscriptionController {
     public String traiterFormulaire(@Valid @ModelAttribute("formulaire") InscriptionForm formulaire,
                                     BindingResult erreurs,
                                     Model modele,
+                                    RedirectAttributes redirection,
                                     HttpServletRequest requete,
                                     @RequestParam(name = PiegeAntiBot.CHAMP_PIEGE,
                                             required = false) String piege,
@@ -127,8 +129,7 @@ public class InscriptionController {
         // corriger. Un visiteur legitime ne peut pas atteindre ce cas.
         if (pieges.soumissionAutomatique(piege, horodatage)
                 || turnstileRefuse(jetonTurnstile, requete)) {
-            modele.addAttribute("adresse", formulaire.getEmail());
-            return "identite/inscription-confirmee";
+            return versConfirmation(formulaire, erreurs, redirection);
         }
 
         if (!limiteur.autoriserParIp(requete.getRemoteAddr())) {
@@ -160,7 +161,29 @@ public class InscriptionController {
             return "identite/inscription";
         }
 
-        modele.addAttribute("adresse", formulaire.getEmail());
+        return versConfirmation(formulaire, erreurs, redirection);
+    }
+
+    /**
+     * Après l'envoi, redirection vers une page lue en GET : actualiser la page n'envoie plus
+     * le formulaire une seconde fois. L'adresse saisie passe en attribut flash, lu une fois,
+     * si elle a passé la validation du formulaire. Un envoi automatique écarté peut porter
+     * une adresse vide ou mal formée : la page prend alors sa version générique.
+     */
+    private static String versConfirmation(InscriptionForm formulaire, BindingResult erreurs,
+                                           RedirectAttributes redirection) {
+        if (!erreurs.hasFieldErrors("email")) {
+            redirection.addFlashAttribute("adresse", formulaire.getEmail());
+        }
+        return "redirect:/inscription/confirmee";
+    }
+
+    /**
+     * Confirmation de l'envoi. Sans attribut flash, page ouverte directement ou actualisée
+     * une seconde fois, la version générique s'affiche, sans adresse et sans erreur.
+     */
+    @GetMapping("/inscription/confirmee")
+    public String afficherConfirmation() {
         return "identite/inscription-confirmee";
     }
 

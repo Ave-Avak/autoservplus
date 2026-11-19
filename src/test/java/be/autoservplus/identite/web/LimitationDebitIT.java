@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import be.autoservplus.support.SocleIntegration;
 
@@ -212,7 +213,6 @@ class LimitationDebitIT extends SocleIntegration {
                             .param("confirmationMotDePasse", MOT_DE_PASSE)
                             .param("nom", "Test").param("prenom", "Alex")
                             .param("langue", "fr").param("cgv", "true"))
-                    .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
         }
     }
@@ -233,7 +233,7 @@ class LimitationDebitIT extends SocleIntegration {
                             .param("email", email).param("motDePasse", MOT_DE_PASSE)
                             .param("confirmationMotDePasse", MOT_DE_PASSE)
                             .param("nom", "Test").param("prenom", "Alex").param("langue", "fr").param("cgv", "true"))
-                    .andExpect(status().isOk());
+                    .andExpect(redirectedUrl("/inscription/confirmee"));
 
             // Rien en base, et rien dans la page qui dise au robot ce qui l a trahi.
             assertThat(utilisateurs.findByEmail(email)).isEmpty();
@@ -252,7 +252,7 @@ class LimitationDebitIT extends SocleIntegration {
                             .param("email", email).param("motDePasse", MOT_DE_PASSE)
                             .param("confirmationMotDePasse", MOT_DE_PASSE)
                             .param("nom", "Test").param("prenom", "Alex").param("langue", "fr").param("cgv", "true"))
-                    .andExpect(status().isOk());
+                    .andExpect(redirectedUrl("/inscription/confirmee"));
 
             assertThat(utilisateurs.findByEmail(email)).isEmpty();
         }
