@@ -182,7 +182,7 @@ class LimitationDebitIT extends SocleIntegration {
                                 .with(brute -> { brute.setRemoteAddr(ip); return brute; })
                                 .param("email", "pas-une-adresse").param("motDePasse", "")
                                 .param("confirmationMotDePasse", "").param("nom", "")
-                                .param("prenom", "").param("langue", "fr"))
+                                .param("prenom", "").param("langue", "fr").param("cgv", "true"))
                         .andExpect(status().isOk());
             }
 
@@ -211,7 +211,7 @@ class LimitationDebitIT extends SocleIntegration {
                             .param("motDePasse", MOT_DE_PASSE)
                             .param("confirmationMotDePasse", MOT_DE_PASSE)
                             .param("nom", "Test").param("prenom", "Alex")
-                            .param("langue", "fr"))
+                            .param("langue", "fr").param("cgv", "true"))
                     .andExpect(status().isOk())
                     .andReturn().getResponse().getContentAsString();
         }
@@ -232,7 +232,7 @@ class LimitationDebitIT extends SocleIntegration {
                             .param(PiegeAntiBot.CHAMP_PIEGE, "ACME SA")
                             .param("email", email).param("motDePasse", MOT_DE_PASSE)
                             .param("confirmationMotDePasse", MOT_DE_PASSE)
-                            .param("nom", "Test").param("prenom", "Alex").param("langue", "fr"))
+                            .param("nom", "Test").param("prenom", "Alex").param("langue", "fr").param("cgv", "true"))
                     .andExpect(status().isOk());
 
             // Rien en base, et rien dans la page qui dise au robot ce qui l a trahi.
@@ -251,7 +251,7 @@ class LimitationDebitIT extends SocleIntegration {
                             .with(brute -> { brute.setRemoteAddr("203.0.113.62"); return brute; })
                             .param("email", email).param("motDePasse", MOT_DE_PASSE)
                             .param("confirmationMotDePasse", MOT_DE_PASSE)
-                            .param("nom", "Test").param("prenom", "Alex").param("langue", "fr"))
+                            .param("nom", "Test").param("prenom", "Alex").param("langue", "fr").param("cgv", "true"))
                     .andExpect(status().isOk());
 
             assertThat(utilisateurs.findByEmail(email)).isEmpty();

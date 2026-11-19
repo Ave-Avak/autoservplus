@@ -65,6 +65,24 @@
       </select>
     </div>
 
+    <!--/* Case jamais cochée par le serveur, même après une erreur : l'acceptation doit
+         être un geste du visiteur à chaque envoi. D'où l'absence de th:field. */-->
+    <div class="champ champ-case">
+      <input type="checkbox" id="cgv" name="cgv" value="true" required
+             th:attr="aria-describedby=${#fields.hasErrors('cgv')} ? 'cgv-erreur' : null">
+      <label for="cgv">
+        <span th:text="#{inscription.cgv.prefixe}">J'ai lu et j'accepte les</span>
+        <a th:href="@{/cgv}" th:text="#{inscription.cgv.lien}">conditions générales de vente</a>
+        <span th:text="#{inscription.cgv.version(${versionCgv})}">(version CGV-2026-03).</span>
+      </label>
+      <p id="cgv-erreur" role="alert" class="texte-erreur" th:if="${#fields.hasErrors('cgv')}" th:errors="*{cgv}"></p>
+    </div>
+
+    <p class="texte-info">
+      <span th:text="#{inscription.confidentialite.prefixe}">Vos données sont traitées selon notre</span>
+      <a th:href="@{/confidentialite}" th:text="#{inscription.confidentialite.lien}">politique de confidentialité</a>.
+    </p>
+
     <button type="submit" class="btn-cta" th:text="#{inscription.envoyer}">Créer mon compte</button>
       <div th:replace="~{fragments/antibot :: pieges(${horodatageAntiBot})}"></div>
     <div th:replace="~{fragments/antibot :: turnstile(${cleTurnstile})}"></div>

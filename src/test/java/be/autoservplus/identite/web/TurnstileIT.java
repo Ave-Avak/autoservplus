@@ -110,7 +110,7 @@ class TurnstileIT extends SocleIntegration {
                 .param("email", email)
                 .param("motDePasse", MOT_DE_PASSE)
                 .param("confirmationMotDePasse", MOT_DE_PASSE)
-                .param("nom", "Test").param("prenom", "Alex").param("langue", "fr");
+                .param("nom", "Test").param("prenom", "Alex").param("langue", "fr").param("cgv", "true");
         if (jeton != null) {
             requete = requete.param(VerificateurTurnstile.CHAMP_JETON, jeton);
         }

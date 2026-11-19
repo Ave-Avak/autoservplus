@@ -5,17 +5,21 @@ import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.Langue;
+import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.identite.repository.ConsentementRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.legal.domain.TypeDocumentVersionne;
+import be.autoservplus.legal.service.VersionsDocumentsService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -51,6 +55,10 @@ class InscriptionServiceTest {
     private ServiceCourriel courriel;
     @Mock
     private MotDePasseService motsDePasse;
+    @Mock
+    private ConsentementRepository consentements;
+    @Mock
+    private VersionsDocumentsService versionsDocuments;
     private PasswordEncoder encodeur;
     private InscriptionService service;
 
@@ -61,7 +69,10 @@ class InscriptionServiceTest {
         service = new InscriptionService(repository, encodeur, horlogeFigee, courriel,
                 new PolitiqueMotDePasse(new MotsDePasseCourants(), motDePasse -> false),
                 new LiensCourriel("http://localhost:8080"), motsDePasse,
-                new LimiteurDemandesCourriel(horlogeFigee, 5, 20, 15));
+                new LimiteurDemandesCourriel(horlogeFigee, 5, 20, 15),
+                consentements, versionsDocuments);
+        lenient().when(versionsDocuments.versionCourante(TypeDocumentVersionne.CGV))
+                .thenReturn("CGV-2026-03");
     }
 
     @Nested
@@ -75,7 +86,7 @@ class InscriptionServiceTest {
             when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
-                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();
+                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, true, "203.0.113.1").orElseThrow();
 
             assertThat(membre.getEmail()).isEqualTo("marie@exemple.be");
             assertThat(membre.getNom()).isEqualTo("Dupont");
@@ -93,7 +104,7 @@ class InscriptionServiceTest {
             when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
-                    "  Marie@Exemple.BE  ", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();
+                    "  Marie@Exemple.BE  ", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, true, "203.0.113.1").orElseThrow();
 
             assertThat(membre.getEmail()).isEqualTo("marie@exemple.be");
         }
@@ -106,7 +117,7 @@ class InscriptionServiceTest {
 
             String motDePasseClair = "MotDePasseSolide2026";
             Utilisateur membre = service.inscrire(
-                    "marie@exemple.be", motDePasseClair, "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();
+                    "marie@exemple.be", motDePasseClair, "Dupont", "Marie", Langue.fr, true, "203.0.113.1").orElseThrow();
 
             assertThat(membre.getMotDePasseHache()).isNotEqualTo(motDePasseClair);
             assertThat(membre.getMotDePasseHache()).startsWith("$2a$");
@@ -120,7 +131,7 @@ class InscriptionServiceTest {
             when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
-                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();
+                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, true, "203.0.113.1").orElseThrow();
 
             assertThat(membre.getJetonVerificationHache()).hasSize(64);
             assertThat(membre.getJetonExpiration())
@@ -137,7 +148,7 @@ class InscriptionServiceTest {
 
         private Optional<Utilisateur> inscrireMarie() {
             return service.inscrire("marie@exemple.be", "MotDePasseSolide2026", "Dupont",
-                    "Marie", Langue.fr, "203.0.113.1");
+                    "Marie", Langue.fr, true, "203.0.113.1");
         }
 
         @Test
@@ -192,7 +203,7 @@ class InscriptionServiceTest {
 
             verify(encodeur).encode("MotDePasseSolide2026");
             assertThatThrownBy(() -> service.inscrire("marie@exemple.be", "atelier garage",
-                    "Dupont", "Marie", Langue.fr, "203.0.113.1"))
+                    "Dupont", "Marie", Langue.fr, true, "203.0.113.1"))
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-02");
         }
@@ -214,7 +225,7 @@ class InscriptionServiceTest {
         void refuseUnMotDePasseTropCourt() {
             // Quatorze : l ancien plancher de douze l acceptait, la politique le refuse.
             assertThatThrownBy(() -> service.inscrire(
-                    "marie@exemple.be", "atelier garage", "Dupont", "Marie", Langue.fr, "203.0.113.1"))
+                    "marie@exemple.be", "atelier garage", "Dupont", "Marie", Langue.fr, true, "203.0.113.1"))
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-02");
 
@@ -229,7 +240,7 @@ class InscriptionServiceTest {
                     .thenThrow(AdresseCourrielTest.violation("ck_utilisateur_email_minuscules"));
 
             assertThatThrownBy(() -> service.inscrire(
-                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1"))
+                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, true, "203.0.113.1"))
                     .isInstanceOf(RefusTraduit.class)
                     .hasFieldOrPropertyWithValue("cleMessage", AdresseCourriel.CLE_REFUS_CASSE);
             verifyNoInteractions(courriel);
@@ -239,7 +250,7 @@ class InscriptionServiceTest {
         @DisplayName("refuse une adresse vide")
         void refuseUneAdresseVide() {
             assertThatThrownBy(() -> service.inscrire(
-                    "   ", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1"))
+                    "   ", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, true, "203.0.113.1"))
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-01");
         }
@@ -251,7 +262,7 @@ class InscriptionServiceTest {
             when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
-                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", null, "203.0.113.1").orElseThrow();
+                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", null, true, "203.0.113.1").orElseThrow();
 
             assertThat(membre.getLangue()).isEqualTo(Langue.fr);
         }
@@ -259,7 +270,7 @@ class InscriptionServiceTest {
         @DisplayName("refuse une adresse nulle")
         void refuseUneAdresseNulle() {
             assertThatThrownBy(() -> service.inscrire(
-                    null, "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1"))
+                    null, "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, true, "203.0.113.1"))
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-01");
         }
@@ -267,7 +278,7 @@ class InscriptionServiceTest {
         @DisplayName("refuse un mot de passe nul")
         void refuseUnMotDePasseNul() {
             assertThatThrownBy(() -> service.inscrire(
-                    "marie@exemple.be", null, "Dupont", "Marie", Langue.fr, "203.0.113.1"))
+                    "marie@exemple.be", null, "Dupont", "Marie", Langue.fr, true, "203.0.113.1"))
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-02");
         }
@@ -278,7 +289,7 @@ class InscriptionServiceTest {
             when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
 
             Utilisateur membre = service.inscrire(
-                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, "203.0.113.1").orElseThrow();
+                    "marie@exemple.be", "MotDePasseSolide2026", "Dupont", "Marie", Langue.fr, true, "203.0.113.1").orElseThrow();
 
             // Le lien porte le jeton en clair, la base sa seule empreinte.
             ArgumentCaptor<String> lien = ArgumentCaptor.forClass(String.class);
@@ -288,6 +299,57 @@ class InscriptionServiceTest {
             assertThat(membre.getJetonVerificationHache())
                     .isEqualTo(JetonLien.empreinte(clair))
                     .isNotEqualTo(clair);
+        }
+    }
+
+    @Nested
+    @DisplayName("acceptation des CGV (F1)")
+    class AcceptationCgv {
+
+        @Test
+        @DisplayName("sans la case, refus avant toute recherche de l'adresse, rien n'est écrit")
+        void refusSansCgv() {
+            assertThatThrownBy(() -> service.inscrire("marie@exemple.be", "MotDePasseSolide2026",
+                    "Dupont", "Marie", Langue.fr, false, "203.0.113.1"))
+                    .isInstanceOf(RefusTraduit.class)
+                    .hasFieldOrPropertyWithValue("cleMessage", InscriptionService.CLE_CGV_OBLIGATOIRES);
+
+            verifyNoInteractions(repository, consentements, courriel, motsDePasse);
+            verify(encodeur, never()).encode(any());
+        }
+
+        @Test
+        @DisplayName("compte créé : preuve de la version en vigueur, avec l'adresse IP et l'instant, sans commande")
+        void preuveEcrite() {
+            when(repository.findByEmail(any())).thenReturn(Optional.empty());
+            when(repository.saveAndFlush(any(Utilisateur.class))).thenAnswer(i -> i.getArgument(0));
+
+            Utilisateur membre = service.inscrire("marie@exemple.be", "MotDePasseSolide2026",
+                    "Dupont", "Marie", Langue.fr, true, "203.0.113.9").orElseThrow();
+
+            ArgumentCaptor<Consentement> preuve = ArgumentCaptor.forClass(Consentement.class);
+            verify(consentements).save(preuve.capture());
+            assertThat(preuve.getValue().getUtilisateur()).isSameAs(membre);
+            assertThat(preuve.getValue().getTypeDocument()).isEqualTo(TypeDocumentConsentement.CGV);
+            assertThat(preuve.getValue().getVersionAcceptee()).isEqualTo("CGV-2026-03");
+            assertThat(preuve.getValue().isAccorde()).isTrue();
+            assertThat(preuve.getValue().getAdresseIp()).isEqualTo("203.0.113.9");
+            assertThat(preuve.getValue().getDateConsentement()).isEqualTo(MAINTENANT);
+            assertThat(preuve.getValue().getCommandeId()).isNull();
+        }
+
+        @Test
+        @DisplayName("adresse qui a déjà un compte : aucune preuve, rien n'est créé")
+        void aucunePreuvePourUneAdresseConnue() {
+            Utilisateur existant = new Utilisateur("marie@exemple.be", "$2a$04$empreinte",
+                    "Dupont", "Marie", TypeUtilisateur.MEMBRE);
+            existant.setStatut(StatutUtilisateur.ACTIF);
+            when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(existant));
+
+            assertThat(service.inscrire("marie@exemple.be", "MotDePasseSolide2026",
+                    "Dupont", "Marie", Langue.fr, true, "203.0.113.1")).isEmpty();
+
+            verifyNoInteractions(consentements);
         }
     }
 

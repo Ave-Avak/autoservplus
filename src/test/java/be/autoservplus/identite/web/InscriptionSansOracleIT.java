@@ -93,7 +93,7 @@ class InscriptionSansOracleIT extends SocleIntegration {
                         - PiegeAntiBot.DELAI_MINIMAL.plusSeconds(7).toMillis()))
                 .param("email", email).param("motDePasse", MOT_DE_PASSE)
                 .param("confirmationMotDePasse", MOT_DE_PASSE)
-                .param("nom", "Dupont").param("prenom", "Marie").param("langue", "fr"))
+                .param("nom", "Dupont").param("prenom", "Marie").param("langue", "fr").param("cgv", "true"))
                 .andReturn();
     }
 

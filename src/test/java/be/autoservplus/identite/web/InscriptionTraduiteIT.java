@@ -52,7 +52,7 @@ class InscriptionTraduiteIT extends SocleIntegration {
                 .param("email", "inscription-traduite-" + numero + "@exemple.be")
                 .param("motDePasse", MOT_DE_PASSE)
                 .param("confirmationMotDePasse", confirmation)
-                .param("nom", "Dupont").param("prenom", "Marie").param("langue", langue);
+                .param("nom", "Dupont").param("prenom", "Marie").param("langue", langue).param("cgv", "true");
     }
 
     @ParameterizedTest(name = "{0}")

@@ -6,6 +6,8 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.service.InscriptionService;
 import be.autoservplus.identite.service.LimiteurDemandesCourriel;
+import be.autoservplus.legal.domain.TypeDocumentVersionne;
+import be.autoservplus.legal.service.VersionsDocumentsService;
 import be.autoservplus.identite.service.PiegeAntiBot;
 import be.autoservplus.identite.service.VerificateurTurnstile;
 import org.springframework.beans.factory.annotation.Value;
@@ -43,6 +45,7 @@ public class InscriptionController {
     /** Absent quand aucune cle secrete n est configuree : voir TurnstileClientConfig. */
     private final Optional<VerificateurTurnstile> turnstile;
     private final String cleTurnstile;
+    private final VersionsDocumentsService versionsDocuments;
 
     public InscriptionController(InscriptionService service,
                                  LimiteurDemandesCourriel limiteur,
@@ -50,7 +53,9 @@ public class InscriptionController {
                                  PiegeAntiBot pieges,
                                  Optional<VerificateurTurnstile> turnstile,
                                  @Value("${autoservplus.securite.turnstile.cle-site:}")
-                                 String cleTurnstile) {
+                                 String cleTurnstile,
+                                 VersionsDocumentsService versionsDocuments) {
+        this.versionsDocuments = versionsDocuments;
         this.service = service;
         this.limiteur = limiteur;
         this.messages = messages;
@@ -68,8 +73,12 @@ public class InscriptionController {
                 && !turnstile.get().jetonValide(jeton, requete.getRemoteAddr());
     }
 
-    /** Pose de quoi rendre le widget. Vide, le fragment ne rend rien. */
+    /**
+     * Pose de quoi rendre le widget, vide si Turnstile n'est pas configuré, et le numéro des
+     * CGV en vigueur, affiché à côté de la case.
+     */
     private void armerFormulaire(Model modele) {
+        modele.addAttribute("versionCgv", versionsDocuments.versionCourante(TypeDocumentVersionne.CGV));
         modele.addAttribute("horodatageAntiBot", pieges.horodatageActuel());
         modele.addAttribute("cleTurnstile", cleTurnstile);
     }
@@ -144,9 +153,9 @@ public class InscriptionController {
             // Compte créé ou titulaire prévenu : la même page dans les deux cas.
             service.inscrire(formulaire.getEmail(), formulaire.getMotDePasse(),
                     formulaire.getNom(), formulaire.getPrenom(), formulaire.getLangue(),
-                    requete.getRemoteAddr());
+                    formulaire.isCgv(), requete.getRemoteAddr());
         } catch (RegleMetierException e) {
-            erreurs.addError(refusSousLAdresse(e));
+            erreurs.addError(refusSousLeChamp(e));
             armerFormulaire(modele);
             return "identite/inscription";
         }
@@ -156,14 +165,18 @@ public class InscriptionController {
     }
 
     /**
-     * Refus du service sous le champ de l'adresse. Un {@link RefusTraduit} s'affiche par sa
-     * clé, dans la langue de la page. La phrase française du refus reste le texte de repli.
+     * Refus du service sous son champ : la case pour les CGV, l'adresse sinon. Un
+     * {@link RefusTraduit} s'affiche par sa clé, dans la langue de la page. La phrase
+     * française du refus reste le texte de repli.
      */
-    private static FieldError refusSousLAdresse(RegleMetierException refus) {
+    private static FieldError refusSousLeChamp(RegleMetierException refus) {
         String[] codes = refus instanceof RefusTraduit traduit
                 ? new String[] {traduit.getCleMessage()}
                 : null;
-        return new FieldError("formulaire", "email", null, false, codes, null, refus.getMessage());
+        String champ = refus instanceof RefusTraduit traduit
+                && InscriptionService.CLE_CGV_OBLIGATOIRES.equals(traduit.getCleMessage())
+                ? "cgv" : "email";
+        return new FieldError("formulaire", champ, null, false, codes, null, refus.getMessage());
     }
 
     /**
