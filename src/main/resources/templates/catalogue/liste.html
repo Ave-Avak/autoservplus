@@ -20,6 +20,8 @@
 <main id="contenu">
     <h1 th:text="${titre}">Nos prestations</h1>
 
+    <p th:if="${typeArticle == 'piece'}"><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
+
     <form class="recherche" th:action="@{/recherche}" method="get" role="search">
         <label for="q" class="visuellement-cache">Rechercher dans le catalogue</label>
         <input type="search" id="q" name="q" placeholder="Rechercher une prestation ou une pièce">

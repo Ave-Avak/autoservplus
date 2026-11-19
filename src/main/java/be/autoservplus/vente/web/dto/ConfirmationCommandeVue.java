@@ -21,14 +21,18 @@ public record ConfirmationCommandeVue(
         UUID reference,
         String numero,
         String totalTvac,
-        SituationPaiement situation) {
+        SituationPaiement situation,
+        /** Au moins une pièce : la notice sur la garantie légale ne vise que les biens. */
+        boolean contientDesPieces) {
 
-    public static ConfirmationCommandeVue de(Commande commande, SituationPaiement situation) {
+    public static ConfirmationCommandeVue de(Commande commande, SituationPaiement situation,
+                                             boolean contientDesPieces) {
         return new ConfirmationCommandeVue(
                 commande.getReference(),
                 commande.getNumero(),
                 FormatageRdv.euros(commande.getMontantTvac()),
-                situation);
+                situation,
+                contientDesPieces);
     }
 
     /** Premier paiement : rien n'a encore été tenté, ou la tentative reste ouverte. */

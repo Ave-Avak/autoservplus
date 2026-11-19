@@ -30,7 +30,12 @@ public record PanierVue(
         boolean estVide,
         boolean contientPieceInactive,
         /** F12 : le panier ne contient que des prestations. Conditionne la case VI.53. */
-        boolean contientService) {
+        boolean contientService,
+        /**
+         * Au moins une pièce : la notice harmonisée sur la garantie légale (VI.45 § 1er,
+         * 12°) ne vise que la vente de biens.
+         */
+        boolean contientDesPieces) {
 
     public static PanierVue de(Panier panier) {
         return new PanierVue(
@@ -45,13 +50,14 @@ public record PanierVue(
                 panier.getLignes().stream()
                         .filter(ligne -> !ligne.estService())
                         .anyMatch(ligne -> !ligne.getPiece().isActif()),
-                panier.estPanierDeServices());
+                panier.estPanierDeServices(),
+                panier.getLignes().stream().anyMatch(ligne -> !ligne.estService()));
     }
 
     /** Panier jamais cree : la lecture ne provoque aucune ecriture, elle rend du vide. */
     public static PanierVue vide() {
         String zero = FormatageRdv.euros(BigDecimal.ZERO);
-        return new PanierVue(List.of(), 0, zero, zero, zero, true, false, false);
+        return new PanierVue(List.of(), 0, zero, zero, zero, true, false, false, false);
     }
 
     public record LignePanierVue(

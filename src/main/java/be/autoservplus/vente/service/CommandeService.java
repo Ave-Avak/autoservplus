@@ -163,7 +163,8 @@ public class CommandeService {
                     renonciationRetenue, adresseIp, horloge.instant()).pourLaCommande(commande.getId()));
         }
 
-        return ConfirmationCommandeVue.de(commande, SituationPaiement.A_PAYER);
+        return ConfirmationCommandeVue.de(commande, SituationPaiement.A_PAYER,
+                lignes.stream().anyMatch(ligne -> !ligne.estService()));
     }
 
     /**
@@ -172,7 +173,8 @@ public class CommandeService {
      */
     public ConfirmationCommandeVue confirmation(UUID reference, String email) {
         Commande commande = commandeDuMembre(reference, email);
-        return ConfirmationCommandeVue.de(commande, situation(commande));
+        return ConfirmationCommandeVue.de(commande, situation(commande),
+                !commandes.lignesDe(commande).isEmpty());
     }
 
     /**

@@ -26,6 +26,8 @@
 
     <p th:text="#{commande.confirmation.total(${commande.totalTvac()})}">Montant à régler : 80,21 €</p>
 
+    <p th:if="${commande.contientDesPieces()}"><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
+
     <!--/* Sans objet une fois la commande payee : ce texte annonce l'attente. */-->
     <p th:if="${commande.aPayer()}" th:text="#{commande.confirmation.paiement}">
         Votre commande sera préparée dès réception du paiement.

@@ -102,6 +102,8 @@
                     th:text="#{commande.bouton}">Commande avec obligation de paiement</button>
             <a th:href="@{/panier}" th:text="#{commande.recap.retour}">Retour au panier</a>
         </p>
+        <!--/* Près du bouton : la notice est une information due avant que le membre soit lié. */-->
+        <p th:if="${panier.contientDesPieces()}"><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
     </form>
 </main>
 

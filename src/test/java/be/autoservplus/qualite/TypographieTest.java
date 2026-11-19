@@ -58,6 +58,13 @@ class TypographieTest {
             "liste tierce (SecLists) de mots de passe, des donnees et non de la prose");
 
     /**
+     * Transcription de la notice harmonisée sur la garantie légale (règlement (UE)
+     * 2025/1960, annexe I), dont les énumérations se terminent par un point-virgule.
+     */
+    private static final String NOTICE_GARANTIE =
+            "notice du règlement (UE) 2025/1960, annexe I, transcrite des PDF de la Commission";
+
+    /**
      * Libelles i18n qui citent un texte officiel mot pour mot, avec son point-virgule :
      * le paragraphe des effets de la retractation, repris de l annexe 1 du livre VI CDE
      * (FR, NL) et de l annexe I, A, de la directive 2011/83/UE (EN). Le reecrire pour la
@@ -65,7 +72,10 @@ class TypographieTest {
      * Seul le point-virgule est admis, les caracteres proscrits restent controles.
      */
     private static final Map<String, String> CITATIONS_OFFICIELLES = Map.of(
-            "legal.cgv.art7.effets", "annexe 1 du livre VI CDE, annexe I, A, de la directive 2011/83/UE");
+            "legal.cgv.art7.effets", "annexe 1 du livre VI CDE, annexe I, A, de la directive 2011/83/UE",
+            "garantie-legale.notice.cas.1", NOTICE_GARANTIE,
+            "garantie-legale.notice.remede.1", NOTICE_GARANTIE,
+            "garantie-legale.notice.etape.1", NOTICE_GARANTIE);
 
     /** Derniere migration de schema committee avant la regle, et graines de demonstration. */
     private static final int DERNIERE_MIGRATION_FIGEE = 42;

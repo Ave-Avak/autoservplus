@@ -174,7 +174,7 @@ public class SecuriteConfig {
                         // catalogue, publiques. La recherche l est donc aussi (F5).
                         .requestMatchers("/", "/accueil", "/services/**", "/pieces/**", "/recherche",
                                 "/inscription/**", "/connexion", "/mot-de-passe/**",
-                                "/cgv", "/mentions-legales", "/confidentialite",
+                                "/cgv", "/mentions-legales", "/confidentialite", "/garantie-legale",
                                 // Texte gele d une version de document (F24). Public
                                 // pour la meme raison que les CGV elles-memes : exiger
                                 // une connexion pour relire les conditions qu on a

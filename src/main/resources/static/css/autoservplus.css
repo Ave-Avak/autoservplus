@@ -207,6 +207,10 @@ main code { overflow-wrap: anywhere; }
 .champ-case label { display: inline; flex: 1; font-weight: normal; margin-bottom: 0; }
 .champ-case .texte-erreur { flex-basis: 100%; }
 
+/* Notice harmonisée de l'UE sur la garantie légale : à la largeur de l'écran, sans
+   déformation (règlement (UE) 2025/1960, annexe I : rien ne s'étire ni ne se recadre). */
+.notice-garantie img { display: block; max-width: 100%; height: auto; }
+
 .texte-succes { color: var(--succes-texte); }
 .texte-alerte { color: var(--alerte-texte); }
 .texte-info   { color: var(--info-texte); }
