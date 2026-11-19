@@ -117,6 +117,13 @@
             <artifactId>spring-security-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Attente bornee des courriels partis d un autre fil (ExecuteurCourriels), au
+             lieu de pauses fixes. Version geree par Spring Boot. Apache 2.0. -->
+        <dependency>
+            <groupId>org.awaitility</groupId>
+            <artifactId>awaitility</artifactId>
+            <scope>test</scope>
+        </dependency>
         <!-- Lecture du HTML rendu par les tests de navigation (menus, liens) : un
              analyseur plutot que des expressions regulieres sur le balisage. MIT. -->
         <dependency>

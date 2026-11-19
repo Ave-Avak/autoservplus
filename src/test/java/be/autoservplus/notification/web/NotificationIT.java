@@ -80,7 +80,7 @@ class NotificationIT extends SocleIntegration {
     }
 
     private Utilisateur charger(String email) {
-        return utilisateurs.findByEmailIgnoreCase(email).orElseThrow();
+        return utilisateurs.findByEmail(email).orElseThrow();
     }
 
     private Notification deposerPour(String email, String numero) {

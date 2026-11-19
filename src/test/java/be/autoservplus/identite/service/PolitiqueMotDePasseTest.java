@@ -96,4 +96,24 @@ class PolitiqueMotDePasseTest {
     void nul() {
         assertThat(politique.evaluer(null)).isEqualTo(Verdict.REFUSE);
     }
+
+    @Test
+    @DisplayName("les 72 octets se mesurent après normalisation NFKC")
+    void plafondApresNormalisation() {
+        // « ㍻ » occupe 3 octets et devient « 平成 », 6 octets : 24 fois, 72 puis 144.
+        String saisi = "㍻".repeat(24);
+        assertThat(saisi.getBytes(java.nio.charset.StandardCharsets.UTF_8)).hasSize(72);
+
+        assertThat(politique.evaluer(saisi)).isEqualTo(Verdict.TROP_LONG);
+    }
+
+    @Test
+    @DisplayName("le minimum se compte aussi sur la forme normalisée")
+    void minimumApresNormalisation() {
+        // La ligature « ﬃ » est un point de code, « ffi » en fait trois.
+        String saisi = "ﬃ".repeat(5);
+        assertThat(saisi.codePointCount(0, saisi.length())).isEqualTo(5);
+
+        assertThat(politique.evaluer(saisi)).isEqualTo(Verdict.CONFORME);
+    }
 }

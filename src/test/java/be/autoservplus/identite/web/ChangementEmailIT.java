@@ -74,7 +74,7 @@ class ChangementEmailIT extends SocleIntegration {
     }
 
     private Utilisateur relire(String adresse) {
-        return utilisateurs.findByEmailIgnoreCase(adresse).orElseThrow();
+        return utilisateurs.findByEmail(adresse).orElseThrow();
     }
 
     private org.springframework.test.web.servlet.ResultActions demander(String nouvelle,
@@ -182,7 +182,7 @@ class ChangementEmailIT extends SocleIntegration {
                     .andExpect(status().isOk())
                     .andExpect(content().string(containsString("Adresse confirmée")));
 
-            assertThat(utilisateurs.findByEmailIgnoreCase(email)).isEmpty();
+            assertThat(utilisateurs.findByEmail(email)).isEmpty();
             Utilisateur apres = relire(cible);
             assertThat(apres.isEmailVerifie()).isTrue();
             assertThat(apres.changementEmailEnCours()).isFalse();

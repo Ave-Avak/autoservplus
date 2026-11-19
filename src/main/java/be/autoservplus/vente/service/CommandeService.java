@@ -226,7 +226,7 @@ public class CommandeService {
     private Commande commandeDuMembre(UUID reference, String email) {
         Commande commande = commandes.findByReference(reference)
                 .orElseThrow(() -> new RessourceIntrouvableException("Commande", reference));
-        if (!commande.getMembre().getEmail().equalsIgnoreCase(email)) {
+        if (!commande.getMembre().getEmail().equals(email)) {
             throw new RessourceIntrouvableException("Commande", reference);
         }
         return commande;

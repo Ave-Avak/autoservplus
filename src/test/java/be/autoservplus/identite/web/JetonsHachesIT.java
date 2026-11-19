@@ -95,7 +95,7 @@ class JetonsHachesIT extends SocleIntegration {
     }
 
     private Utilisateur relire(String email) {
-        return utilisateurs.findByEmailIgnoreCase(email).orElseThrow();
+        return utilisateurs.findByEmail(email).orElseThrow();
     }
 
     private String lienDeReinitialisation() {
@@ -166,7 +166,7 @@ class JetonsHachesIT extends SocleIntegration {
         @DisplayName("un lien de vérification n'ouvre pas le formulaire de nouveau mot de passe")
         void verificationNOuvrePasLaReinitialisation() throws Exception {
             String email = adresse();
-            inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr);
+            inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr, "203.0.113.1");
             String jeton = jetonDuLien(dernierLienDeVerification());
 
             mvc.perform(get("/mot-de-passe/nouveau").param("jeton", jeton))
@@ -182,7 +182,7 @@ class JetonsHachesIT extends SocleIntegration {
         @DisplayName("un compte non vérifié reçoit un rappel de vérification, sans jeton de réinitialisation")
         void compteNonVerifie() {
             String email = adresse();
-            inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr);
+            inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr, "203.0.113.1");
 
             motDePasse.demanderReinitialisation(email);
 
@@ -200,7 +200,7 @@ class JetonsHachesIT extends SocleIntegration {
         @DisplayName("le renvoi émet un jeton neuf et l'ancien lien cesse de valoir")
         void ancienLienInvalide() throws Exception {
             String email = adresse();
-            inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr);
+            inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr, "203.0.113.1");
             String ancien = jetonDuLien(dernierLienDeVerification());
 
             inscription.renvoyerVerification(email);
@@ -394,7 +394,7 @@ class JetonsHachesIT extends SocleIntegration {
             mvc.perform(get("/changement-adresse/confirmation").param("jeton", changement)
                             .locale(Locale.FRENCH))
                     .andExpect(model().attribute("echec", (Object) null));
-            assertThat(utilisateurs.findByEmailIgnoreCase(cible)).isPresent();
+            assertThat(utilisateurs.findByEmail(cible)).isPresent();
         }
     }
 }

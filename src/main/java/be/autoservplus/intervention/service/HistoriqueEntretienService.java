@@ -54,7 +54,7 @@ public class HistoriqueEntretienService {
     @PreAuthorize("isAuthenticated()")
     public HistoriqueVehiculeMembre pourMembre(UUID vehiculeReference, String email) {
         Vehicule vehicule = vehicules.findByReference(vehiculeReference)
-                .filter(v -> v.getMembre().getEmail().equalsIgnoreCase(email))
+                .filter(v -> v.getMembre().getEmail().equals(email))
                 .orElseThrow(() -> new RessourceIntrouvableException("Véhicule", vehiculeReference));
         return HistoriqueVehiculeMembre.de(vehicule.getReference(), designation(vehicule),
                 interventionsDe(vehicule), parametres.courants().zone());

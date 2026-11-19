@@ -187,7 +187,7 @@ class SuppressionCompteIT extends SocleIntegration {
         // L ancien mot de passe ne connecte plus, et la verification refuse
         // proprement : le hachage reste un BCrypt valide.
         assertThat(encodeur.matches(MOT_DE_PASSE, apres.getMotDePasseHache())).isFalse();
-        assertThat(utilisateurs.findByEmailIgnoreCase(adresseReelle)).isEmpty();
+        assertThat(utilisateurs.findByEmail(adresseReelle)).isEmpty();
     }
 
     @Test
@@ -421,7 +421,7 @@ class SuppressionCompteIT extends SocleIntegration {
                 new Utilisateur(adresseReelle, encodeur.encode(MOT_DE_PASSE),
                         "Dupont", "Marie", TypeUtilisateur.MEMBRE)));
         assertThat(nouveau.getId()).isNotEqualTo(marie.getId());
-        assertThat(utilisateurs.findByEmailIgnoreCase(adresseReelle)).isPresent();
+        assertThat(utilisateurs.findByEmail(adresseReelle)).isPresent();
     }
 
     @Test

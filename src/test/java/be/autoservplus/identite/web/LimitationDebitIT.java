@@ -165,7 +165,7 @@ class LimitationDebitIT extends SocleIntegration {
             String page = inscrire(refusee, ip);
 
             assertThat(page).contains("Trop de demandes");
-            assertThat(utilisateurs.findByEmailIgnoreCase(refusee)).isEmpty();
+            assertThat(utilisateurs.findByEmail(refusee)).isEmpty();
         }
 
         /**
@@ -200,7 +200,7 @@ class LimitationDebitIT extends SocleIntegration {
             String intacte = "intacte-" + COMPTEUR.getAndIncrement() + "@exemple.be";
 
             assertThat(inscrire(intacte, "203.0.113.54")).doesNotContain("Trop de demandes");
-            assertThat(utilisateurs.findByEmailIgnoreCase(intacte)).isPresent();
+            assertThat(utilisateurs.findByEmail(intacte)).isPresent();
         }
 
         private String inscrire(String email, String ip) throws Exception {
@@ -236,7 +236,7 @@ class LimitationDebitIT extends SocleIntegration {
                     .andExpect(status().isOk());
 
             // Rien en base, et rien dans la page qui dise au robot ce qui l a trahi.
-            assertThat(utilisateurs.findByEmailIgnoreCase(email)).isEmpty();
+            assertThat(utilisateurs.findByEmail(email)).isEmpty();
         }
 
         @Test
@@ -254,7 +254,7 @@ class LimitationDebitIT extends SocleIntegration {
                             .param("nom", "Test").param("prenom", "Alex").param("langue", "fr"))
                     .andExpect(status().isOk());
 
-            assertThat(utilisateurs.findByEmailIgnoreCase(email)).isEmpty();
+            assertThat(utilisateurs.findByEmail(email)).isEmpty();
         }
     }
 
@@ -408,7 +408,7 @@ class LimitationDebitIT extends SocleIntegration {
     }
 
     private String jetonDe(String email) {
-        return utilisateurs.findByEmailIgnoreCase(email).orElseThrow().getJetonVerificationHache();
+        return utilisateurs.findByEmail(email).orElseThrow().getJetonVerificationHache();
     }
 
     private String creerMembreNonVerifie() {

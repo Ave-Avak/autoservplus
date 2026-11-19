@@ -75,8 +75,8 @@ class SecondFacteurServiceTest {
         titulaire = new Utilisateur(EMAIL, encodeur.encode(MOT_DE_PASSE), "Nom", "Prenom",
                 TypeUtilisateur.MEMBRE);
         ReflectionTestUtils.setField(titulaire, "id", 42L);
-        lenient().when(utilisateurs.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(titulaire));
-        lenient().when(utilisateurs.findForUpdateByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(titulaire));
+        lenient().when(utilisateurs.findByEmail(EMAIL)).thenReturn(Optional.of(titulaire));
+        lenient().when(utilisateurs.findForUpdateByEmail(EMAIL)).thenReturn(Optional.of(titulaire));
         // L UPDATE conditionnel reussit ici : la concurrence est prouvee en integration.
         lenient().when(utilisateurs.accepterPasSiNouveau(eq(42L), anyLong())).thenReturn(1);
         lenient().when(codes.consommerSiUtilisable(any(), any())).thenReturn(1);
@@ -201,7 +201,7 @@ class SecondFacteurServiceTest {
     void desactivationRefuseeAuBackOffice() {
         Utilisateur admin = new Utilisateur("admin@exemple.be", encodeur.encode(MOT_DE_PASSE),
                 "Nom", "Prenom", TypeUtilisateur.ADMINISTRATEUR);
-        when(utilisateurs.findForUpdateByEmailIgnoreCase("admin@exemple.be")).thenReturn(Optional.of(admin));
+        when(utilisateurs.findForUpdateByEmail("admin@exemple.be")).thenReturn(Optional.of(admin));
 
         assertThatThrownBy(() -> service.desactiver("admin@exemple.be", MOT_DE_PASSE, "123456", "s"))
                 .isInstanceOf(RefusTraduit.class)

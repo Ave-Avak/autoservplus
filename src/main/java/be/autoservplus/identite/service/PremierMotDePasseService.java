@@ -81,7 +81,7 @@ public class PremierMotDePasseService {
      */
     @Transactional
     public void changerImpose(String email, String motDePasse) {
-        Utilisateur compte = utilisateurs.findByEmailIgnoreCase(email)
+        Utilisateur compte = utilisateurs.findByEmail(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
         politique.exiger(motDePasse);
         if (encodeur.matches(motDePasse, compte.getMotDePasseHache())) {

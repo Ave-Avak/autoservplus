@@ -68,7 +68,7 @@ class AvisServiceTest {
         patron = new Utilisateur("patron@autoservplus.be", "$2a$12$h", "Garage", "Patron",
                 TypeUtilisateur.ADMINISTRATEUR);
 
-        when(membres.findByEmailIgnoreCase(MARIE)).thenReturn(Optional.of(marie));
+        when(membres.findByEmail(MARIE)).thenReturn(Optional.of(marie));
         when(parametres.courants()).thenReturn(new ParametreAtelier());
         when(membres.findByTypeUtilisateurAndStatut(
                 TypeUtilisateur.ADMINISTRATEUR, StatutUtilisateur.ACTIF))

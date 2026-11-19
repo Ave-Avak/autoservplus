@@ -1,6 +1,7 @@
 package be.autoservplus.identite.web;
 
 import be.autoservplus.common.exception.RefusTraduit;
+import be.autoservplus.config.EchecAuthentificationHandler;
 import be.autoservplus.identite.mfa.CodeQrSvg;
 import be.autoservplus.identite.service.PremierMotDePasseService;
 import be.autoservplus.identite.service.SecondFacteurService;
@@ -60,16 +61,18 @@ public class EtapesConnexionController {
      * une connexion deja aboutie.
      */
     @GetMapping
-    public String aiguiller(Authentication authentification) {
-        String garde = parcours.garder(authentification, null);
+    public String aiguiller(Authentication authentification,
+            HttpServletRequest requete, HttpServletResponse reponse) {
+        String garde = parcours.garder(authentification, null, requete, reponse);
         return garde;
     }
 
     // --- second facteur ---------------------------------------------------------------
 
     @GetMapping("/second-facteur")
-    public String secondFacteur(Authentication authentification, Model modele) {
-        String garde = parcours.garder(authentification, EtapeConnexion.SECOND_FACTEUR);
+    public String secondFacteur(Authentication authentification, Model modele,
+            HttpServletRequest requete, HttpServletResponse reponse) {
+        String garde = parcours.garder(authentification, EtapeConnexion.SECOND_FACTEUR, requete, reponse);
         if (garde != null) {
             return garde;
         }
@@ -83,7 +86,7 @@ public class EtapesConnexionController {
                                         @RequestParam(required = false) String mode,
                                         Model modele, HttpServletRequest requete,
                                         HttpServletResponse reponse) {
-        String garde = parcours.garder(authentification, EtapeConnexion.SECOND_FACTEUR);
+        String garde = parcours.garder(authentification, EtapeConnexion.SECOND_FACTEUR, requete, reponse);
         if (garde != null) {
             return garde;
         }
@@ -93,9 +96,11 @@ public class EtapesConnexionController {
             case VERROUILLE -> {
                 // La connexion partielle tombe : le verrouillage vaut pour le mot de
                 // passe aussi, et laisser l etape ouverte permettrait de continuer a
-                // essayer en attendant la fin du verrouillage.
+                // essayer en attendant la fin du verrouillage. Même refus que le mot de
+                // passe : pendant un verrou, un code juste et un code faux aboutissent à
+                // la même page.
                 parcours.abandonner(requete, reponse);
-                yield "redirect:/connexion?bloque";
+                yield "redirect:" + EchecAuthentificationHandler.DESTINATION;
             }
             case INDISPONIBLE -> {
                 // Message generique : la cause technique est au journal, pas a l ecran.
@@ -117,8 +122,10 @@ public class EtapesConnexionController {
     // --- changement impose ------------------------------------------------------------
 
     @GetMapping("/mot-de-passe")
-    public String motDePasse(Authentication authentification, Model modele) {
-        String garde = parcours.garder(authentification, EtapeConnexion.CHANGEMENT_MOT_DE_PASSE);
+    public String motDePasse(Authentication authentification, Model modele,
+            HttpServletRequest requete, HttpServletResponse reponse) {
+        String garde = parcours.garder(authentification, EtapeConnexion.CHANGEMENT_MOT_DE_PASSE,
+                requete, reponse);
         if (garde != null) {
             return garde;
         }
@@ -132,7 +139,8 @@ public class EtapesConnexionController {
                                     @Valid @ModelAttribute("formulaire") MotDePasseImposeForm formulaire,
                                     BindingResult erreurs, Model modele,
                                     HttpServletRequest requete, HttpServletResponse reponse) {
-        String garde = parcours.garder(authentification, EtapeConnexion.CHANGEMENT_MOT_DE_PASSE);
+        String garde = parcours.garder(authentification, EtapeConnexion.CHANGEMENT_MOT_DE_PASSE,
+                requete, reponse);
         if (garde != null) {
             return garde;
         }
@@ -161,8 +169,9 @@ public class EtapesConnexionController {
     // --- enrolement -------------------------------------------------------------------
 
     @GetMapping("/enrolement")
-    public String enrolement(Authentication authentification, Model modele) {
-        String garde = parcours.garder(authentification, EtapeConnexion.ENROLEMENT);
+    public String enrolement(Authentication authentification, Model modele,
+            HttpServletRequest requete, HttpServletResponse reponse) {
+        String garde = parcours.garder(authentification, EtapeConnexion.ENROLEMENT, requete, reponse);
         if (garde != null) {
             return garde;
         }
@@ -176,7 +185,7 @@ public class EtapesConnexionController {
                                       Model modele, HttpServletRequest requete,
                                       HttpServletResponse reponse,
                                       RedirectAttributes redirection) {
-        String garde = parcours.garder(authentification, EtapeConnexion.ENROLEMENT);
+        String garde = parcours.garder(authentification, EtapeConnexion.ENROLEMENT, requete, reponse);
         if (garde != null) {
             return garde;
         }

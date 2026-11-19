@@ -31,7 +31,7 @@ public interface RdvExportRepository extends Repository<Rdv, Long> {
     @Query("""
             SELECT DISTINCT r FROM Rdv r
             LEFT JOIN FETCH r.lignes l LEFT JOIN FETCH l.prestation
-            WHERE LOWER(r.membre.email) = LOWER(:email)
+            WHERE r.membre.email = :email
             ORDER BY r.debut
             """)
     List<Rdv> pourMembre(@Param("email") String email);

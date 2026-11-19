@@ -1,29 +1,43 @@
 package be.autoservplus.config;
 
+import be.autoservplus.identite.service.EncodeurNormalise;
+import be.autoservplus.identite.service.GardeConnexion;
+import be.autoservplus.identite.service.UtilisateurDetailsService;
+import be.autoservplus.identite.service.VerificateurTurnstile;
 import be.autoservplus.identite.web.AuthentificationPartielle;
 import be.autoservplus.identite.web.ConnexionPartielleHorsEtapes;
 import be.autoservplus.identite.web.EtapeConnexion;
+import be.autoservplus.identite.web.GardeConnexionFiltre;
 import be.autoservplus.identite.web.ParcoursConnexion;
 import jakarta.servlet.DispatcherType;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
+import org.springframework.security.authentication.AccountStatusUserDetailsChecker;
 import org.springframework.security.authentication.AuthenticationTrustResolver;
 import org.springframework.security.authentication.AuthenticationTrustResolverImpl;
+import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.session.SessionRegistry;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchy;
 import org.springframework.security.access.hierarchicalroles.RoleHierarchyImpl;
+import org.springframework.security.config.ObjectPostProcessor;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.access.intercept.AuthorizationFilter;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
+import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
 import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.security.web.util.matcher.RequestMatcher;
+
+import java.util.Optional;
 
 /**
  * Configuration de securite : chaine de filtres, en-tetes HTTP, encodage des mots de passe.
@@ -39,9 +53,50 @@ public class SecuriteConfig {
 
     private static final int COUT_BCRYPT = 12;
 
+    /** POST du formulaire de connexion, reconnu par le garde et par le filtre d'authentification. */
+    private static final RequestMatcher ENVOI_CONNEXION =
+            PathPatternRequestMatcher.withDefaults().matcher(HttpMethod.POST, "/connexion");
+
+    /** BCrypt de coût 12 sur la forme NFKC du mot de passe, voir {@link EncodeurNormalise}. */
     @Bean
-    public PasswordEncoder passwordEncoder() {
-        return new BCryptPasswordEncoder(COUT_BCRYPT);
+    public EncodeurNormalise passwordEncoder() {
+        return new EncodeurNormalise(new BCryptPasswordEncoder(COUT_BCRYPT));
+    }
+
+    /**
+     * Le mot de passe est vérifié AVANT le verrouillage et la désactivation.
+     *
+     * <p>Spring Security contrôle par défaut l'état du compte avant le hachage : un compte
+     * verrouillé ou désactivé répondait sans BCrypt, une adresse inconnue payait le
+     * hachage fictif de Spring, et la durée de la réponse disait laquelle des deux
+     * avait été saisie. Les mêmes contrôles passent ici après la vérification. Toute
+     * adresse paie donc un BCrypt de coût 12, et le refus d'un compte verrouillé reste
+     * entier : un mot de passe juste ne passe pas davantage.</p>
+     *
+     * <p>Une connexion réussie par la forme brute d'un mot de passe, empreinte écrite
+     * avant la normalisation NFKC, fait réécrire l'empreinte de sa forme normalisée. Le
+     * mot de passe présenté n'est disponible qu'ici, avant l'effacement des
+     * identifiants.</p>
+     */
+    @Bean
+    public DaoAuthenticationProvider fournisseurAuthentification(
+            UtilisateurDetailsService comptes, EncodeurNormalise encodeur) {
+        DaoAuthenticationProvider fournisseur = new DaoAuthenticationProvider(comptes) {
+            @Override
+            protected Authentication createSuccessAuthentication(Object principal,
+                                                                 Authentication authentification,
+                                                                 UserDetails compte) {
+                String presente = String.valueOf(authentification.getCredentials());
+                if (encodeur.exigeMigration(presente, compte.getPassword())) {
+                    comptes.normaliserEmpreinte(compte.getUsername(), encodeur.encode(presente));
+                }
+                return super.createSuccessAuthentication(principal, authentification, compte);
+            }
+        };
+        fournisseur.setPasswordEncoder(encodeur);
+        fournisseur.setPreAuthenticationChecks(compte -> { });
+        fournisseur.setPostAuthenticationChecks(new AccountStatusUserDetailsChecker());
+        return fournisseur;
     }
 
     /**
@@ -101,7 +156,9 @@ public class SecuriteConfig {
     public SecurityFilterChain chaineDeFiltres(HttpSecurity http,
                                                EchecAuthentificationHandler echecHandler,
                                                ParcoursConnexion succesHandler,
-                                               SessionRegistry registreSessions)
+                                               SessionRegistry registreSessions,
+                                               GardeConnexion garde,
+                                               Optional<VerificateurTurnstile> turnstile)
             throws Exception {
         http
                 .authorizeHttpRequests(acces -> acces
@@ -214,6 +271,11 @@ public class SecuriteConfig {
                 // Apres l autorisation : ce qui est public voit une connexion partielle
                 // comme anonyme. Voir ConnexionPartielleHorsEtapes.
                 .addFilterAfter(new ConnexionPartielleHorsEtapes(), AuthorizationFilter.class)
+                // Avant l'authentification : voir GardeConnexionFiltre. Le garde et le
+                // filtre d'authentification partagent le même matcher, voir plus bas.
+                .addFilterBefore(new GardeConnexionFiltre(garde, echecHandler, ENVOI_CONNEXION,
+                                turnstile),
+                        UsernamePasswordAuthenticationFilter.class)
 
                 .csrf(csrf -> csrf.ignoringRequestMatchers("/webhooks/**"))
                 .formLogin(formulaire -> formulaire
@@ -225,6 +287,16 @@ public class SecuriteConfig {
                         .successHandler(succesHandler)
                         .failureHandler(echecHandler)
                         .permitAll()
+                        // Le matcher que Spring déduirait de loginPage est remplacé par celui
+                        // du garde : les deux filtres reconnaissent alors exactement les mêmes
+                        // requêtes, par construction et non par deux écritures à tenir égales.
+                        .withObjectPostProcessor(new ObjectPostProcessor<UsernamePasswordAuthenticationFilter>() {
+                            @Override
+                            public <O extends UsernamePasswordAuthenticationFilter> O postProcess(O filtre) {
+                                filtre.setRequiresAuthenticationRequestMatcher(ENVOI_CONNEXION);
+                                return filtre;
+                            }
+                        })
                 )
                 // Les sessions authentifiees sont inscrites au registre, pour que la
                 // suspension d un compte puisse couper celles deja ouvertes. Sans

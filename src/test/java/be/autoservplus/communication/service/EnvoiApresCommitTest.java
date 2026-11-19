@@ -66,4 +66,32 @@ class EnvoiApresCommitTest {
 
         assertThat(partis).isEmpty();
     }
+
+    @Test
+    @DisplayName("hors de la requête : confié à l'exécuteur après la validation, jamais au transport direct")
+    void horsRequeteApresValidation() {
+        List<Courriel> confies = new ArrayList<>();
+        EnvoiApresCommit differe = new EnvoiApresCommit(partis::add, confies::add);
+        TransactionSynchronizationManager.initSynchronization();
+
+        differe.planifierHorsRequete(courriel);
+        assertThat(confies).isEmpty();
+
+        terminer(TransactionSynchronization.STATUS_COMMITTED);
+        assertThat(confies).containsExactly(courriel);
+        assertThat(partis).isEmpty();
+    }
+
+    @Test
+    @DisplayName("hors de la requête : une transaction annulée ne confie rien")
+    void horsRequeteAnnulation() {
+        List<Courriel> confies = new ArrayList<>();
+        EnvoiApresCommit differe = new EnvoiApresCommit(partis::add, confies::add);
+        TransactionSynchronizationManager.initSynchronization();
+
+        differe.planifierHorsRequete(courriel);
+        terminer(TransactionSynchronization.STATUS_ROLLED_BACK);
+
+        assertThat(confies).isEmpty();
+    }
 }

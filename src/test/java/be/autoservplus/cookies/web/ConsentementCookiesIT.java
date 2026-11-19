@@ -80,7 +80,7 @@ class ConsentementCookiesIT extends SocleIntegration {
     /** Preuves d une finalite, de la plus ancienne a la plus recente. */
     private List<Consentement> preuves(String email, TypeDocumentConsentement finalite) {
         return transactions.execute(statut ->
-                consentements.findByUtilisateurEmailIgnoreCaseAndTypeDocument(email, finalite)
+                consentements.findByUtilisateurEmailAndTypeDocument(email, finalite)
                         .stream()
                         .sorted(Comparator.comparing(Consentement::getId))
                         .toList());

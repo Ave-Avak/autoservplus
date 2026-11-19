@@ -128,8 +128,10 @@ public class InscriptionController {
         }
 
         try {
+            // Compte créé ou titulaire prévenu : la même page dans les deux cas.
             service.inscrire(formulaire.getEmail(), formulaire.getMotDePasse(),
-                    formulaire.getNom(), formulaire.getPrenom(), formulaire.getLangue());
+                    formulaire.getNom(), formulaire.getPrenom(), formulaire.getLangue(),
+                    requete.getRemoteAddr());
         } catch (RegleMetierException e) {
             erreurs.addError(new FieldError("formulaire", "email", e.getMessage()));
             modele.addAttribute("titre", "Créer un compte");

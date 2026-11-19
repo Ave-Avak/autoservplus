@@ -162,7 +162,7 @@ class ExportDonneesServiceTest {
      * echouer le mode strict pour une raison sans rapport avec ce qui est teste.
      */
     private void compteSansDonnees() {
-        lenient().when(utilisateurs.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(marie));
+        lenient().when(utilisateurs.findByEmail(EMAIL)).thenReturn(Optional.of(marie));
         lenient().when(vehicules.pourMembre(ID_MARIE)).thenReturn(List.of());
         lenient().when(rendezVous.pourMembre(EMAIL)).thenReturn(List.of());
         lenient().when(commandes.pourMembre(EMAIL)).thenReturn(List.of());
@@ -708,6 +708,7 @@ class ExportDonneesServiceTest {
                     .isEqualTo(Instant.parse("2026-08-20T06:00:00Z"));
             assertThat(connexion.emailVerifie()).isTrue();
             assertThat(connexion.tentativesEchoueesEnCours()).isZero();
+            assertThat(connexion.premierEchecEnCoursLe()).isNull();
             assertThat(connexion.compteVerrouilleJusquA()).isNull();
         }
     }
@@ -728,7 +729,7 @@ class ExportDonneesServiceTest {
             // membre connecte est la condition de chaque chargement, pas un filtre
             // applique apres coup. L'etancheite reelle, cote SQL, est prouvee par
             // ExportDonneesIT sur deux membres en base.
-            verify(utilisateurs).findByEmailIgnoreCase(EMAIL);
+            verify(utilisateurs).findByEmail(EMAIL);
             verify(vehicules).pourMembre(ID_MARIE);
             verify(rendezVous).pourMembre(EMAIL);
             verify(commandes).pourMembre(EMAIL);
@@ -742,7 +743,7 @@ class ExportDonneesServiceTest {
         @Test
         @DisplayName("refuse d'exporter pour une adresse sans compte")
         void adresseInconnue() {
-            when(utilisateurs.findByEmailIgnoreCase("inconnu@exemple.be"))
+            when(utilisateurs.findByEmail("inconnu@exemple.be"))
                     .thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.assembler("inconnu@exemple.be"))

@@ -101,7 +101,7 @@ class PremierMotDePasseServiceTest {
         Utilisateur exploitant = new Utilisateur("chef@exemple.be", encodeur.encode("secret du fichier env"),
                 "Nom", "Prenom", TypeUtilisateur.SUPER_ADMINISTRATEUR);
         exploitant.exigerChangementMotDePasse();
-        when(utilisateurs.findByEmailIgnoreCase("chef@exemple.be")).thenReturn(Optional.of(exploitant));
+        when(utilisateurs.findByEmail("chef@exemple.be")).thenReturn(Optional.of(exploitant));
 
         // Aucun formulaire ici : c est la garde du service qui refuse.
         assertThatThrownBy(() -> service.definir(jeton.clair(), "atelier garage"))
@@ -119,7 +119,7 @@ class PremierMotDePasseServiceTest {
         Utilisateur exploitant = new Utilisateur("chef@exemple.be", encodeur.encode("secret du fichier env"),
                 "Nom", "Prenom", TypeUtilisateur.SUPER_ADMINISTRATEUR);
         exploitant.exigerChangementMotDePasse();
-        when(utilisateurs.findByEmailIgnoreCase("chef@exemple.be")).thenReturn(Optional.of(exploitant));
+        when(utilisateurs.findByEmail("chef@exemple.be")).thenReturn(Optional.of(exploitant));
 
         assertThatThrownBy(() -> service.changerImpose("chef@exemple.be", "secret du fichier env"))
                 .isInstanceOf(RefusTraduit.class);

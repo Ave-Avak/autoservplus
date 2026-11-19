@@ -512,7 +512,8 @@ public record ExportDonnees(
     /**
      * Donnees de connexion reellement conservees par la V1. Il n existe pas de
      * journal des tentatives : la table {@code utilisateur} ne garde qu un
-     * <b>compteur</b> courant, remis a zero a chaque connexion reussie. L export
+     * <b>compteur</b> courant et l'heure du premier échec de sa fenêtre, remis à zéro à
+     * chaque connexion réussie. L'export
      * dit donc ce qui existe, sans laisser croire a un historique.
      *
      * <p>Sont exclus le jeton de verification et sa date d expiration : ce sont des
@@ -532,6 +533,7 @@ public record ExportDonnees(
             boolean emailVerifie,
             String adresseEnAttenteDeConfirmation,
             short tentativesEchoueesEnCours,
+            Instant premierEchecEnCoursLe,
             Instant compteVerrouilleJusquA,
             boolean secondFacteurActif,
             Instant secondFacteurActiveLe,
@@ -544,6 +546,7 @@ public record ExportDonnees(
                     membre.isEmailVerifie(),
                     membre.getEmailEnAttente(),
                     membre.getTentativesEchouees(),
+                    membre.getPremierEchecLe(),
                     membre.getVerrouilleJusquA(),
                     membre.secondFacteurActif(),
                     membre.getMfaActiveLe(),

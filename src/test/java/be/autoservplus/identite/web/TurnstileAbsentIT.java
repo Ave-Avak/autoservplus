@@ -90,6 +90,6 @@ class TurnstileAbsentIT extends SocleIntegration {
                         .param("nom", "Test").param("prenom", "Alex").param("langue", "fr"))
                 .andExpect(status().isOk());
 
-        assertThat(utilisateurs.findByEmailIgnoreCase(email)).isPresent();
+        assertThat(utilisateurs.findByEmail(email)).isPresent();
     }
 }

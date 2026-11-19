@@ -64,7 +64,7 @@ class ChangementEmailServiceTest {
         membre = new Utilisateur(ACTUELLE, "$2a$12$empreinte", "Dupont", "Marie",
                 TypeUtilisateur.MEMBRE);
         membre.confirmerAdresseEmail();
-        lenient().when(repository.findByEmailIgnoreCase(ACTUELLE)).thenReturn(Optional.of(membre));
+        lenient().when(repository.findByEmail(ACTUELLE)).thenReturn(Optional.of(membre));
         lenient().when(encodeur.matches(MOT_DE_PASSE, membre.getMotDePasseHache())).thenReturn(true);
         lenient().when(limiteur.autoriser(anyString(), anyString())).thenReturn(true);
     }
@@ -74,8 +74,8 @@ class ChangementEmailServiceTest {
     }
 
     private void cibleLibre() {
-        when(repository.existsByEmailIgnoreCase(CIBLE)).thenReturn(false);
-        when(repository.existsByEmailEnAttenteIgnoreCase(CIBLE)).thenReturn(false);
+        when(repository.existsByEmail(CIBLE)).thenReturn(false);
+        when(repository.existsByEmailEnAttente(CIBLE)).thenReturn(false);
     }
 
     @Nested
@@ -96,6 +96,19 @@ class ChangementEmailServiceTest {
             assertThat(membre.getJetonChangementEmailHache()).hasSize(64);
             assertThat(membre.getJetonChangementExpiration())
                     .isEqualTo(MAINTENANT.plus(ChangementEmailService.VALIDITE_JETON));
+        }
+
+        @Test
+        @DisplayName("la contrainte de casse de la base devient un refus sur le champ, sans courriel")
+        void contrainteDeCasse() {
+            cibleLibre();
+            when(repository.saveAndFlush(membre))
+                    .thenThrow(AdresseCourrielTest.violation("ck_utilisateur_email_en_attente_minuscules"));
+
+            assertThatThrownBy(ChangementEmailServiceTest.this::demander)
+                    .isInstanceOf(ChangementEmailRefuseException.class)
+                    .hasFieldOrPropertyWithValue("cleMessage", AdresseCourriel.CLE_REFUS_CASSE);
+            verify(courriel, never()).envoyerConfirmationNouvelleAdresse(any(), any());
         }
 
         @Test
@@ -148,7 +161,7 @@ class ChangementEmailServiceTest {
         void origineNonVerifiee() {
             Utilisateur neuf = new Utilisateur(ACTUELLE, "$2a$12$empreinte", "Dupont",
                     "Marie", TypeUtilisateur.MEMBRE);
-            when(repository.findByEmailIgnoreCase(ACTUELLE)).thenReturn(Optional.of(neuf));
+            when(repository.findByEmail(ACTUELLE)).thenReturn(Optional.of(neuf));
             when(encodeur.matches(MOT_DE_PASSE, neuf.getMotDePasseHache())).thenReturn(true);
 
             assertThatThrownBy(ChangementEmailServiceTest.this::demander)
@@ -181,7 +194,7 @@ class ChangementEmailServiceTest {
                     .extracting(e -> ((ChangementEmailRefuseException) e).getCleMessage())
                     .isEqualTo("changement-email.erreur.trop-de-demandes");
 
-            verify(repository, never()).existsByEmailIgnoreCase(anyString());
+            verify(repository, never()).existsByEmail(anyString());
         }
     }
 
@@ -192,7 +205,7 @@ class ChangementEmailServiceTest {
         @Test
         @DisplayName("adresse déjà portée par un compte : aucun refus, aucun lien, mais l'avis part quand même")
         void cibleDejaPrise() {
-            when(repository.existsByEmailIgnoreCase(CIBLE)).thenReturn(true);
+            when(repository.existsByEmail(CIBLE)).thenReturn(true);
 
             demander();
 
@@ -207,8 +220,8 @@ class ChangementEmailServiceTest {
         @Test
         @DisplayName("adresse déjà réservée par une autre demande : même comportement")
         void cibleDejaReservee() {
-            when(repository.existsByEmailIgnoreCase(CIBLE)).thenReturn(false);
-            when(repository.existsByEmailEnAttenteIgnoreCase(CIBLE)).thenReturn(true);
+            when(repository.existsByEmail(CIBLE)).thenReturn(false);
+            when(repository.existsByEmailEnAttente(CIBLE)).thenReturn(true);
 
             demander();
 
@@ -240,7 +253,7 @@ class ChangementEmailServiceTest {
         void bascule() {
             String jeton = armer();
             when(repository.findByJetonChangementEmailHache(JetonLien.empreinte(jeton))).thenReturn(Optional.of(membre));
-            when(repository.existsByEmailIgnoreCase(CIBLE)).thenReturn(false);
+            when(repository.existsByEmail(CIBLE)).thenReturn(false);
 
             String ancienne = service.confirmer(jeton);
 
@@ -260,7 +273,7 @@ class ChangementEmailServiceTest {
         void priseEntreTemps() {
             String jeton = armer();
             when(repository.findByJetonChangementEmailHache(JetonLien.empreinte(jeton))).thenReturn(Optional.of(membre));
-            when(repository.existsByEmailIgnoreCase(CIBLE)).thenReturn(true);
+            when(repository.existsByEmail(CIBLE)).thenReturn(true);
 
             assertThatThrownBy(() -> service.confirmer(jeton))
                     .isInstanceOf(ChangementEmailRefuseException.class)

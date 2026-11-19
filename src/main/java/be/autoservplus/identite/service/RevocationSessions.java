@@ -20,8 +20,8 @@ import java.util.List;
  *
  * <p><b>La cle du registre est le principal, pas l entite.</b> Spring Security y range
  * les sessions sous l objet qu il a authentifie, un {@code UserDetails} dont le nom
- * est l adresse de courriel. On cherche donc par adresse, et la comparaison est
- * insensible a la casse comme partout ailleurs dans le projet.</p>
+ * est l'adresse de courriel. On cherche donc par adresse, par égalité stricte : la base
+ * garantit l'adresse en minuscules (V55), et le nom du principal en vient.</p>
  *
  * <p><b>Expiration plutot que suppression.</b> {@link SessionInformation#expireNow()}
  * marque la session : le filtre de Spring Security la refuse a la requete suivante et
@@ -91,6 +91,6 @@ public class RevocationSessions {
         String nom = principal instanceof UserDetails details
                 ? details.getUsername()
                 : String.valueOf(principal);
-        return email.equalsIgnoreCase(nom);
+        return email.equals(nom);
     }
 }

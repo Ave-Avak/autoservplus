@@ -13,7 +13,7 @@ import java.util.Optional;
  */
 public interface ConsentementRepository extends JpaRepository<Consentement, Long> {
 
-    List<Consentement> findByUtilisateurEmailIgnoreCaseAndTypeDocument(
+    List<Consentement> findByUtilisateurEmailAndTypeDocument(
             String email, TypeDocumentConsentement typeDocument);
 
     /** Preuve rattachée à une commande (V52) : CGV acceptées ou renonciation VI.53 décidée. */

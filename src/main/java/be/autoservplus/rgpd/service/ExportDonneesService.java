@@ -225,7 +225,7 @@ public class ExportDonneesService {
     }
 
     private Utilisateur charger(String email) {
-        return utilisateurs.findByEmailIgnoreCase(email)
+        return utilisateurs.findByEmail(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
     }
 

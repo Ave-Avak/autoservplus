@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -30,6 +31,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.ArrayList;
@@ -37,6 +39,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
 
@@ -84,6 +87,7 @@ class CourrielSmtpIT extends SocleIntegration {
     @Autowired private PlatformTransactionManager transactions;
     @Autowired private IdentiteGarage garage;
     @Autowired private TransportCourriel transport;
+    @Value("${autoservplus.url-publique}") private String urlPublique;
 
     private static String adresse() {
         return "smtp-" + COMPTEUR.getAndIncrement() + "@exemple.be";
@@ -120,8 +124,10 @@ class CourrielSmtpIT extends SocleIntegration {
     @DisplayName("l'inscription remet au relais un lien de vérification absolu et valable")
     void inscription() throws Exception {
         String email = adresse();
-        inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr);
+        inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr, "203.0.113.1");
 
+        // Le lien de vérification part d'un autre fil (ExecuteurCourriels).
+        await().atMost(Duration.ofSeconds(10)).until(() -> !recus(email).isEmpty());
         List<JsonNode> messages = recus(email);
         assertThat(messages).hasSize(1);
         JsonNode message = messages.get(0);
@@ -134,6 +140,9 @@ class CourrielSmtpIT extends SocleIntegration {
                 .isNotBlank();
         String texte = message.path("Text").asText();
         assertThat(texte).startsWith("Bonjour Marie,").contains("valable 24 heures");
+        // Domaine de l'identifiant fixé par mail.host, sans recherche du nom de la machine.
+        assertThat(message.path("MessageID").asText())
+                .endsWith("@" + URI.create(urlPublique).getHost());
 
         String lien = texte.lines().filter(l -> l.startsWith("http")).findFirst().orElseThrow();
         assertThat(lien).startsWith("http://localhost:8080/inscription/verification?jeton=");
@@ -147,11 +156,11 @@ class CourrielSmtpIT extends SocleIntegration {
     void annulation() throws Exception {
         String email = adresse();
         new TransactionTemplate(transactions).executeWithoutResult(statut -> {
-            inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr);
+            inscription.inscrire(email, MOT_DE_PASSE, "Dupont", "Marie", Langue.fr, "203.0.113.1");
             statut.setRollbackOnly();
         });
 
-        assertThat(utilisateurs.findByEmailIgnoreCase(email)).isEmpty();
+        assertThat(utilisateurs.findByEmail(email)).isEmpty();
         assertThat(recus(email)).isEmpty();
     }
 

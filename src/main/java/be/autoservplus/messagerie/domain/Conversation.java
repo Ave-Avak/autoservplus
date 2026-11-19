@@ -137,7 +137,7 @@ public class Conversation extends BaseEntity {
     }
 
     public boolean appartientA(String email) {
-        return membre.getEmail().equalsIgnoreCase(email);
+        return membre.getEmail().equals(email);
     }
 
     public Long getId() { return id; }

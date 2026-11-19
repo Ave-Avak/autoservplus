@@ -62,7 +62,10 @@ public class PolitiqueMotDePasse {
         this.compromission = compromission;
     }
 
-    public Verdict evaluer(String motDePasse) {
+    public Verdict evaluer(String saisi) {
+        // La forme normalisée est celle qui sera hachée (EncodeurNormalise) : c'est elle
+        // que la politique mesure, plafond de 72 octets compris, et non la saisie brute.
+        String motDePasse = saisi == null ? null : EncodeurNormalise.normaliser(saisi);
         // En points de code, comme le NIST le demande (§3.1.1.2) : length() compte les
         // unites UTF-16, et un emoji, qui en occupe deux, y compterait double.
         if (motDePasse == null

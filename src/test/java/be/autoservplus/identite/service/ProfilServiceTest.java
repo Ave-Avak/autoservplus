@@ -46,7 +46,7 @@ class ProfilServiceTest {
     void setUp() {
         service = new ProfilService(utilisateurs, factures);
         membre = new Utilisateur(EMAIL, "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
-        lenient().when(utilisateurs.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(membre));
+        lenient().when(utilisateurs.findByEmail(EMAIL)).thenReturn(Optional.of(membre));
     }
 
     private void avecAdresse() {
@@ -62,7 +62,7 @@ class ProfilServiceTest {
     @DisplayName("sans facture, le membre peut effacer son adresse")
     void sansFactureEffacementPermis() {
         avecAdresse();
-        when(factures.countByMembreEmailIgnoreCase(EMAIL)).thenReturn(0L);
+        when(factures.countByMembreEmail(EMAIL)).thenReturn(0L);
 
         viderAdresse();
 
@@ -74,7 +74,7 @@ class ProfilServiceTest {
     @DisplayName("avec une facture, l'effacement est refusé et l'adresse reste intacte")
     void avecFactureEffacementRefuse() {
         avecAdresse();
-        when(factures.countByMembreEmailIgnoreCase(EMAIL)).thenReturn(1L);
+        when(factures.countByMembreEmail(EMAIL)).thenReturn(1L);
 
         assertThatThrownBy(this::viderAdresse)
                 .isInstanceOf(RegleMetierException.class);

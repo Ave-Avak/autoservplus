@@ -114,7 +114,7 @@ public class NotificationService {
     /** Compteur affiche dans la navigation. */
     @PreAuthorize("isAuthenticated()")
     public long nombreNonLues(String email) {
-        return membres.findByEmailIgnoreCase(email)
+        return membres.findByEmail(email)
                 .map(membre -> notifications.countByMembreAndStatut(membre, StatutNotification.NON_LUE))
                 .orElse(0L);
     }
@@ -144,7 +144,7 @@ public class NotificationService {
     // --- helpers privees ---------------------------------------------------------------
 
     private Utilisateur membre(String email) {
-        return membres.findByEmailIgnoreCase(email)
+        return membres.findByEmail(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
     }
 

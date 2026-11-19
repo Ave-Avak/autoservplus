@@ -389,12 +389,12 @@ public class SecondFacteurService {
     }
 
     private Utilisateur chargerPourVerification(String email) {
-        return utilisateurs.findForUpdateByEmailIgnoreCase(email)
+        return utilisateurs.findForUpdateByEmail(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
     }
 
     private Utilisateur charger(String email) {
-        return utilisateurs.findByEmailIgnoreCase(email)
+        return utilisateurs.findByEmail(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
     }
 }

@@ -41,7 +41,7 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
      */
     @Query("""
             SELECT c FROM Commande c
-            WHERE lower(c.membre.email) = lower(:email)
+            WHERE c.membre.email = :email
             ORDER BY c.dateCommande DESC, c.id DESC
             """)
     List<Commande> historiqueDuMembre(@Param("email") String email);

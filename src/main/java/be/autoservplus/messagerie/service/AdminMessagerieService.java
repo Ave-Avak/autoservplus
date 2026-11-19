@@ -79,7 +79,7 @@ public class AdminMessagerieService {
     @Transactional
     public void repondre(String emailAdministrateur, UUID reference, String corps) {
         Conversation fil = charger(reference);
-        Utilisateur auteur = membres.findByEmailIgnoreCase(emailAdministrateur)
+        Utilisateur auteur = membres.findByEmail(emailAdministrateur)
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Utilisateur", emailAdministrateur));
         fil.ajouter(auteur, RoleExpediteur.ADMINISTRATEUR, corps, horloge.instant());

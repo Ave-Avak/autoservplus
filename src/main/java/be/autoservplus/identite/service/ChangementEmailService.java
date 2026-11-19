@@ -11,13 +11,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.Locale;
 
 /**
  * Changement d adresse de courriel avec verification prealable (CdC 5.2.2).
@@ -95,7 +95,7 @@ public class ChangementEmailService {
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public void demander(String emailCourant, String nouvelleAdresse, String motDePasse, String ip) {
-        Utilisateur membre = repository.findByEmailIgnoreCase(normaliser(emailCourant))
+        Utilisateur membre = repository.findByEmail(normaliser(emailCourant))
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", emailCourant));
 
         if (motDePasse == null || motDePasse.isEmpty()
@@ -141,6 +141,7 @@ public class ChangementEmailService {
             JetonLien jeton = JetonLien.tirer();
             membre.demanderChangementEmail(cible, jeton.empreinte(),
                     Instant.now(horloge).plus(VALIDITE_JETON));
+            enregistrer(membre);
             courriel.envoyerConfirmationNouvelleAdresse(
                     new DetailsChangementEmailCourriel(cible, prenom, membre.getLangue(), ancienne, cible),
                     liens.vers("/changement-adresse/confirmation?jeton=" + jeton.clair()));
@@ -169,6 +170,22 @@ public class ChangementEmailService {
      *                                        ete prise entre la demande et la
      *                                        confirmation
      */
+    /**
+     * Écrit la demande tout de suite : un refus de la contrainte de casse (V55) devient un
+     * message sous le champ, et non une erreur au moment de la validation.
+     */
+    private void enregistrer(Utilisateur membre) {
+        try {
+            repository.saveAndFlush(membre);
+        } catch (DataIntegrityViolationException refus) {
+            if (AdresseCourriel.violeLaCasse(refus)) {
+                throw new ChangementEmailRefuseException(AdresseCourriel.CLE_REFUS_CASSE,
+                        "Cette adresse contient un caractère qui ne peut pas être enregistré. Vérifiez-la ou utilisez-en une autre.");
+            }
+            throw refus;
+        }
+    }
+
     @Transactional
     public String confirmer(String jeton) {
         Utilisateur membre = repository.findByJetonChangementEmailHache(JetonLien.empreinte(jeton))
@@ -186,7 +203,7 @@ public class ChangementEmailService {
         // DEMANDE, pas contre une INSCRIPTION intervenue depuis. Sans ce controle, la
         // bascule echouerait sur uq_utilisateur_email au flush, c est-a-dire par une
         // erreur technique, au pire moment et sans message exploitable.
-        if (repository.existsByEmailIgnoreCase(membre.getEmailEnAttente())) {
+        if (repository.existsByEmail(membre.getEmailEnAttente())) {
             membre.annulerChangementEmail();
             throw new ChangementEmailRefuseException("changement-email.erreur.prise",
                     "Cette adresse n est plus disponible.");
@@ -199,11 +216,11 @@ public class ChangementEmailService {
 
     /** Une adresse deja portee par un compte, ou deja reservee par une demande. */
     private boolean adresseIndisponible(String adresse) {
-        return repository.existsByEmailIgnoreCase(adresse)
-                || repository.existsByEmailEnAttenteIgnoreCase(adresse);
+        return repository.existsByEmail(adresse)
+                || repository.existsByEmailEnAttente(adresse);
     }
 
     private static String normaliser(String email) {
-        return email == null ? "" : email.trim().toLowerCase(Locale.ROOT);
+        return AdresseCourriel.normaliser(email);
     }
 }

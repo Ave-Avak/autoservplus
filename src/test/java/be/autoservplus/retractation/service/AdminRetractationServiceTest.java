@@ -103,7 +103,7 @@ class AdminRetractationServiceTest {
 
     private void demandeChargeable() {
         when(demandes.findByReference(demande.getReference())).thenReturn(Optional.of(demande));
-        when(utilisateurs.findByEmailIgnoreCase("admin@autoservplus.be"))
+        when(utilisateurs.findByEmail("admin@autoservplus.be"))
                 .thenReturn(Optional.of(admin));
     }
 

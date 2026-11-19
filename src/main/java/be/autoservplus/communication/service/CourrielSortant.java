@@ -17,6 +17,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 
 /**
  * Seule implémentation de {@link ServiceCourriel} : rédige chaque courriel puis le
@@ -37,6 +38,16 @@ import java.util.Locale;
 public class CourrielSortant implements ServiceCourriel {
 
     private static final Logger log = LoggerFactory.getLogger(CourrielSortant.class);
+
+    /**
+     * Types envoyés hors du fil de la requête ({@link ExecuteurCourriels}) : ceux qu'un
+     * formulaire anonyme ou un mot de passe faux déclenche pour une adresse qui a un
+     * compte, et pour elle seule. Dans la requête, leur durée dirait à un tiers que
+     * l'adresse saisie existe.
+     */
+    static final Set<String> HORS_DE_LA_REQUETE = Set.of("verification-adresse",
+            "reinitialisation", "rappel-verification", "verrouillage-connexion",
+            "tentative-inscription");
 
     private final MessageSource messages;
     private final EnvoiApresCommit envoi;
@@ -66,6 +77,12 @@ public class CourrielSortant implements ServiceCourriel {
     @Override
     public void envoyerReinitialisationMotDePasse(Utilisateur destinataire, String lien) {
         auCompte("reinitialisation", destinataire, null, lien);
+    }
+
+    @Override
+    public void envoyerAvisTentativeInscription(Utilisateur destinataire) {
+        auCompte("tentative-inscription", destinataire, null, liens.vers("/connexion"),
+                liens.vers("/mot-de-passe/oublie"));
     }
 
     @Override
@@ -439,8 +456,13 @@ public class CourrielSortant implements ServiceCourriel {
         String texte = messages.getMessage("courriel.salutation", new Object[]{prenom}, langue)
                 + "\n\n" + corps + "\n\n"
                 + messages.getMessage("courriel.signature", new Object[]{garage.enseigne()}, langue);
-        envoi.planifier(new Courriel(type, adresse, nom,
-                texte("courriel." + type + ".sujet", langue), texte, pieces));
+        Courriel courriel = new Courriel(type, adresse, nom,
+                texte("courriel." + type + ".sujet", langue), texte, pieces);
+        if (HORS_DE_LA_REQUETE.contains(type)) {
+            envoi.planifierHorsRequete(courriel);
+        } else {
+            envoi.planifier(courriel);
+        }
     }
 
     /**

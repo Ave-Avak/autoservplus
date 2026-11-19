@@ -102,7 +102,7 @@ public class Vehicule extends BaseEntity {
      */
     public boolean appartientA(Utilisateur candidat) {
         return membre != null && candidat != null
-                && membre.getEmail().equalsIgnoreCase(candidat.getEmail());
+                && membre.getEmail().equals(candidat.getEmail());
     }
 
     public String designation() {

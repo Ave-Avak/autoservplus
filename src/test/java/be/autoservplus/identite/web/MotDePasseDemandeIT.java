@@ -89,12 +89,12 @@ class MotDePasseDemandeIT extends SocleIntegration {
     @DisplayName("le compte existant recoit bien un jeton, la neutralite n'est pas de l'inaction")
     void laNeutraliteNEstPasDeLInaction() throws Exception {
         String email = creerMembreActif();
-        assertThat(utilisateurs.findByEmailIgnoreCase(email).orElseThrow()
+        assertThat(utilisateurs.findByEmail(email).orElseThrow()
                 .getJetonReinitialisationHache()).isNull();
 
         corpsApresDemande(email);
 
-        assertThat(utilisateurs.findByEmailIgnoreCase(email).orElseThrow()
+        assertThat(utilisateurs.findByEmail(email).orElseThrow()
                 .getJetonReinitialisationHache()).isNotNull();
     }
 

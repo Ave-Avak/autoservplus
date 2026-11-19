@@ -87,7 +87,7 @@ class TurnstileIT extends SocleIntegration {
 
         inscrire(email, null);
 
-        assertThat(utilisateurs.findByEmailIgnoreCase(email)).isEmpty();
+        assertThat(utilisateurs.findByEmail(email)).isEmpty();
     }
 
     /**

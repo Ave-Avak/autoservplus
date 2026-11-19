@@ -21,6 +21,7 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.Optional;
@@ -76,7 +77,7 @@ class MotDePasseServiceTest {
         @DisplayName("envoie un lien de reinitialisation pour un compte actif")
         void envoieUnLienPourUnCompteActif() {
             Utilisateur membre = membreActif();
-            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+            when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
             service.demanderReinitialisation("marie@exemple.be");
 
@@ -99,7 +100,7 @@ class MotDePasseServiceTest {
         @DisplayName("envoie un rappel de verification pour un compte jamais active")
         void envoieUnRappelPourUnCompteNonActive() {
             Utilisateur membre = membreEnAttente();
-            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+            when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
             service.demanderReinitialisation("marie@exemple.be");
 
@@ -114,7 +115,7 @@ class MotDePasseServiceTest {
         @Test
         @DisplayName("reste silencieux sur une adresse inconnue")
         void resteSilencieuxSurUneAdresseInconnue() {
-            when(repository.findByEmailIgnoreCase("inconnu@exemple.be")).thenReturn(Optional.empty());
+            when(repository.findByEmail("inconnu@exemple.be")).thenReturn(Optional.empty());
 
             assertThatCode(() -> service.demanderReinitialisation("inconnu@exemple.be"))
                     .doesNotThrowAnyException();
@@ -142,11 +143,11 @@ class MotDePasseServiceTest {
         @DisplayName("normalise l adresse avant la recherche")
         void normaliseLAdresse() {
             Utilisateur membre = membreActif();
-            when(repository.findByEmailIgnoreCase("marie@exemple.be")).thenReturn(Optional.of(membre));
+            when(repository.findByEmail("marie@exemple.be")).thenReturn(Optional.of(membre));
 
             service.demanderReinitialisation("  Marie@Exemple.BE  ");
 
-            verify(repository).findByEmailIgnoreCase("marie@exemple.be");
+            verify(repository).findByEmail("marie@exemple.be");
         }
     }
 
@@ -188,7 +189,7 @@ class MotDePasseServiceTest {
         @DisplayName("leve le verrouillage du compte")
         void leveLeVerrouillage() {
             Utilisateur membre = membreActif();
-            membre.enregistrerEchecConnexion(5, MAINTENANT.plusSeconds(900));
+            membre.enregistrerEchecConnexion(5, Duration.ofMinutes(15), Duration.ofMinutes(15), MAINTENANT);
             membre.verrouillerJusqu(MAINTENANT.plusSeconds(900));
             armer(membre, "jeton-valide", MAINTENANT.plusSeconds(600));
 

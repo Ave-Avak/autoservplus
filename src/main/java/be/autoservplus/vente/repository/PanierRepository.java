@@ -25,7 +25,7 @@ public interface PanierRepository extends JpaRepository<Panier, Long> {
             SELECT DISTINCT p FROM Panier p
             JOIN FETCH p.membre
             LEFT JOIN FETCH p.lignes l LEFT JOIN FETCH l.piece
-            WHERE LOWER(p.membre.email) = LOWER(:email)
+            WHERE p.membre.email = :email
             """)
     Optional<Panier> findByMembreEmail(@Param("email") String email);
 
@@ -36,7 +36,7 @@ public interface PanierRepository extends JpaRepository<Panier, Long> {
      */
     @Query("""
             SELECT COALESCE(SUM(l.quantite), 0) FROM Panier p JOIN p.lignes l
-            WHERE LOWER(p.membre.email) = LOWER(:email)
+            WHERE p.membre.email = :email
             """)
     int nombreArticles(@Param("email") String email);
 }

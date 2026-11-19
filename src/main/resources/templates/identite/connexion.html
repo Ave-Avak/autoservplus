@@ -16,15 +16,19 @@
     <h1>Connexion</h1>
 
     <div class="message message-erreur" th:if="${erreur}" role="alert">
-        <p>Identifiants incorrects.</p>
-        <p>Si vous avez oublié votre mot de passe, ou si vous n'avez jamais activé votre
-            compte, <a th:href="@{/mot-de-passe/oublie}">demandez un lien de réinitialisation</a>.</p>
+        <p>Identifiants incorrects ou connexion temporairement bloquée.</p>
+        <p>Vérifiez votre adresse et votre mot de passe. Après plusieurs essais infructueux,
+            la connexion est bloquée pendant un temps limité.</p>
+        <p>Si vous avez oublié votre mot de passe ou n'avez jamais activé votre compte,
+            utilisez « <a th:href="@{/mot-de-passe/oublie}">Mot de passe oublié</a> ».</p>
     </div>
 
-    <div class="message message-erreur" th:if="${bloque}" role="alert">
-        <p>Trop de tentatives. Réessayez dans quelques minutes.</p>
-        <p>Vous pouvez aussi <a th:href="@{/mot-de-passe/oublie}">réinitialiser votre mot de
-            passe</a> pour retrouver l'accès immédiatement.</p>
+    <div class="message message-erreur" th:if="${delaiCode}" role="alert">
+        <p>Le délai de saisie du code est dépassé. Reconnectez-vous.</p>
+    </div>
+
+    <div class="message message-erreur" th:if="${delaiMotDePasse}" role="alert">
+        <p>Le délai de saisie du nouveau mot de passe est dépassé. Reconnectez-vous.</p>
     </div>
 
     <div class="message message-succes" th:if="${deconnecte}" role="status">
@@ -41,6 +45,8 @@
             <label for="password">Mot de passe</label>
             <input type="password" id="password" name="password" autocomplete="current-password" required>
         </div>
+
+        <div th:replace="~{fragments/antibot :: turnstile(${cleTurnstile})}"></div>
 
         <button type="submit" class="btn-cta">Se connecter</button>
     </form>

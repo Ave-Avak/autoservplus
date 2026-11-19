@@ -18,6 +18,9 @@ import java.time.Instant;
  *
  * <p>Le message d erreur est volontairement identique que l adresse existe ou non :
  * une reponse differenciee permettrait d enumerer les comptes de la plateforme.</p>
+ *
+ * <p>Verrouillage et désactivation sont lus ici, mais contrôlés après le mot de passe
+ * (voir {@code SecuriteConfig.fournisseurAuthentification}).</p>
  */
 @Service
 @Transactional(readOnly = true)
@@ -35,7 +38,7 @@ public class UtilisateurDetailsService implements UserDetailsService {
 
     @Override
     public UserDetails loadUserByUsername(String email) {
-        Utilisateur membre = repository.findByEmailIgnoreCase(email)
+        Utilisateur membre = repository.findByEmail(AdresseCourriel.normaliser(email))
                 .orElseThrow(() -> new UsernameNotFoundException(MESSAGE_GENERIQUE));
 
         return User.builder()
@@ -45,5 +48,16 @@ public class UtilisateurDetailsService implements UserDetailsService {
                 .accountLocked(membre.estVerrouille(Instant.now(horloge)))
                 .disabled(membre.getStatut() != StatutUtilisateur.ACTIF)
                 .build();
+    }
+
+    /**
+     * Remplace l'empreinte de la forme brute d'un mot de passe par celle de sa forme
+     * normalisée, après une connexion qui l'a prouvé. Rien d'autre ne change : c'est le
+     * même mot de passe, ni changé ni réinitialisé.
+     */
+    @Transactional
+    public void normaliserEmpreinte(String email, String empreinte) {
+        repository.findByEmail(email)
+                .ifPresent(membre -> membre.remplacerEmpreinte(empreinte));
     }
 }

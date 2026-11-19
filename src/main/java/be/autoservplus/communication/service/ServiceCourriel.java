@@ -25,6 +25,12 @@ public interface ServiceCourriel {
      * l utilisateur croit avoir oublie son mot de passe alors qu il n a pas termine
      * son inscription.
      */
+    /**
+     * Avertit le titulaire qu'une inscription a été tentée avec son adresse, sans jeton :
+     * liens vers la connexion et vers la demande d'un nouveau mot de passe.
+     */
+    void envoyerAvisTentativeInscription(Utilisateur destinataire);
+
     void envoyerRappelVerification(Utilisateur destinataire, String lienVerification);
 
     /**

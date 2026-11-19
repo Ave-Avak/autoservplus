@@ -72,7 +72,7 @@ class VehiculeServiceTest {
         void enregistreLeVehicule() {
             when(vehicules.existsByPlaque("1-ABC-123")).thenReturn(false);
             when(vehicules.countByMembreEmailAndActifTrue(MARIE)).thenReturn(0L);
-            when(membres.findByEmailIgnoreCase(MARIE)).thenReturn(Optional.of(membre(MARIE)));
+            when(membres.findByEmail(MARIE)).thenReturn(Optional.of(membre(MARIE)));
             when(vehicules.save(any(Vehicule.class))).thenAnswer(i -> i.getArgument(0));
 
             Vehicule vehicule = service.ajouter(MARIE, "1-ABC-123", "Volkswagen", "Golf",
@@ -89,7 +89,7 @@ class VehiculeServiceTest {
         void normaliseLaPlaque() {
             when(vehicules.existsByPlaque("1-ABC-123")).thenReturn(false);
             when(vehicules.countByMembreEmailAndActifTrue(MARIE)).thenReturn(0L);
-            when(membres.findByEmailIgnoreCase(MARIE)).thenReturn(Optional.of(membre(MARIE)));
+            when(membres.findByEmail(MARIE)).thenReturn(Optional.of(membre(MARIE)));
             when(vehicules.save(any(Vehicule.class))).thenAnswer(i -> i.getArgument(0));
 
             Vehicule vehicule = service.ajouter(MARIE, "  1-abc-123 ", "Volkswagen", "Golf",
@@ -128,7 +128,7 @@ class VehiculeServiceTest {
         void refuseUnMembreInconnu() {
             when(vehicules.existsByPlaque("1-ABC-123")).thenReturn(false);
             when(vehicules.countByMembreEmailAndActifTrue("inconnu@exemple.be")).thenReturn(0L);
-            when(membres.findByEmailIgnoreCase("inconnu@exemple.be")).thenReturn(Optional.empty());
+            when(membres.findByEmail("inconnu@exemple.be")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.ajouter("inconnu@exemple.be", "1-ABC-123",
                     "Volkswagen", "Golf", Motorisation.DIESEL, null, null))
@@ -174,13 +174,13 @@ class VehiculeServiceTest {
         }
 
         @Test
-        @DisplayName("tolere une difference de casse dans l adresse")
-        void tolereLaCasse() {
+        @DisplayName("compare l'adresse telle quelle : la base la garantit en minuscules (V55)")
+        void adresseCompareeTelleQuelle() {
             Vehicule vehicule = vehiculeDe(MARIE);
             when(vehicules.findByReference(vehicule.getReference())).thenReturn(Optional.of(vehicule));
 
-            assertThat(service.vehiculeDuMembre(vehicule.getReference(), "MARIE@EXEMPLE.BE"))
-                    .isEqualTo(vehicule);
+            assertThat(attraper(() -> service.vehiculeDuMembre(vehicule.getReference(), "MARIE@EXEMPLE.BE")))
+                    .isEqualTo(attraper(() -> service.vehiculeDuMembre(vehicule.getReference(), PAUL)));
         }
     }
 

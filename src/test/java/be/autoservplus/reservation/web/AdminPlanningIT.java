@@ -121,7 +121,7 @@ class AdminPlanningIT extends SocleIntegration {
         jdbc.update("DELETE FROM plage_ouverture");
         jdbc.update("DELETE FROM poste_atelier");
 
-        marie = utilisateurs.findByEmailIgnoreCase("marie.planning@exemple.be").orElseGet(() -> {
+        marie = utilisateurs.findByEmail("marie.planning@exemple.be").orElseGet(() -> {
             Utilisateur u = new Utilisateur("marie.planning@exemple.be", "{noop}x", "Dupont", "Marie",
                     TypeUtilisateur.MEMBRE);
             u.confirmerAdresseEmail();

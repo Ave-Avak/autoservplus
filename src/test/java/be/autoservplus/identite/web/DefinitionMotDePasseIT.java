@@ -98,7 +98,7 @@ class DefinitionMotDePasseIT extends SocleIntegration {
     }
 
     private Utilisateur parEmail(String email) {
-        return utilisateurs.findByEmailIgnoreCase(email).orElseThrow();
+        return utilisateurs.findByEmail(email).orElseThrow();
     }
 
     @Test

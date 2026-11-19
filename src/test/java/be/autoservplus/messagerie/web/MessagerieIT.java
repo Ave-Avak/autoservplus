@@ -139,7 +139,7 @@ class MessagerieIT extends SocleIntegration {
         @DisplayName("la reponse du garage notifie le membre, et inversement")
         void notificationCroisee() {
             UUID reference = filDe(marie, "Devis");
-            var membre = utilisateurs.findByEmailIgnoreCase(marie).orElseThrow();
+            var membre = utilisateurs.findByEmail(marie).orElseThrow();
             long avant = notifications.countByMembreAndStatut(membre, StatutNotification.NON_LUE);
 
             adminMessagerie.repondre("admin@autoservplus.be", reference, "Voici votre devis.");

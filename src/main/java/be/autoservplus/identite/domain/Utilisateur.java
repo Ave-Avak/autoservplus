@@ -142,6 +142,9 @@ public class Utilisateur extends BaseEntity {
     @Column(name = "verrouille_jusqu_a")
     private Instant verrouilleJusquA;
 
+    @Column(name = "premier_echec_le")
+    private Instant premierEchecLe;
+
     /** Fonction occupee dans le garage. Renseigne uniquement pour les administrateurs. */
     @Size(max = 80)
     @Column(name = "fonction", length = 80)
@@ -283,17 +286,44 @@ public class Utilisateur extends BaseEntity {
     public void enregistrerConnexionReussie(Instant maintenant) {
         this.derniereConnexion = maintenant;
         this.tentativesEchouees = 0;
+        this.premierEchecLe = null;
         this.verrouilleJusquA = null;
         this.mfaEchecs = 0;
         this.mfaVerrouillages = 0;
     }
 
-    /** Incremente le compteur d echecs et verrouille le compte au seuil atteint. */
-    public void enregistrerEchecConnexion(int seuil, Instant verrouillageJusqu) {
-        this.tentativesEchouees++;
-        if (this.tentativesEchouees >= seuil) {
-            this.verrouilleJusquA = verrouillageJusqu;
+    /**
+     * Compte un mot de passe faux sur une fenêtre fixe, ouverte par le premier échec.
+     *
+     * <p>Passée la fenêtre, ou levé le verrou, le compteur repart de zéro : sans fenêtre,
+     * un mot de passe faux par semaine finissait par verrouiller le compte, et un échec
+     * juste après la levée d'un verrou le reposait aussitôt. Une fenêtre glissante
+     * exigerait de garder chaque échec horodaté.</p>
+     *
+     * <p>Pendant un verrou, l'échec ne compte pas et ne touche pas l'échéance. La
+     * prolonger laisserait un tiers reconduire le verrou indéfiniment, la remplacer
+     * ramènerait à quinze minutes un verrou de 24 h posé par le second facteur.</p>
+     *
+     * @return vrai si cet échec vient de poser le verrou
+     */
+    public boolean enregistrerEchecConnexion(int seuil, Duration fenetre,
+                                             Duration dureeVerrouillage, Instant maintenant) {
+        if (estVerrouille(maintenant)) {
+            return false;
         }
+        boolean fenetrePassee = premierEchecLe == null
+                || !maintenant.isBefore(premierEchecLe.plus(fenetre));
+        if (fenetrePassee || verrouilleJusquA != null) {
+            this.tentativesEchouees = 0;
+            this.premierEchecLe = maintenant;
+            this.verrouilleJusquA = null;
+        }
+        this.tentativesEchouees++;
+        if (this.tentativesEchouees < seuil) {
+            return false;
+        }
+        this.verrouilleJusquA = maintenant.plus(dureeVerrouillage);
+        return true;
     }
 
     /** Verrouille immediatement le compte jusqu a la date indiquee. */
@@ -501,6 +531,7 @@ public class Utilisateur extends BaseEntity {
         annulerChangementEmail();
         this.derniereConnexion = null;
         this.tentativesEchouees = 0;
+        this.premierEchecLe = null;
         this.verrouilleJusquA = null;
         this.fonction = null;
         // Le secret TOTP n identifie personne, mais un compte anonymise ne doit plus
@@ -517,9 +548,19 @@ public class Utilisateur extends BaseEntity {
         return anonymiseLe != null;
     }
 
+    /**
+     * Nouvelle empreinte du même mot de passe, sa forme normalisée. Contrairement à
+     * {@link #changerMotDePasse}, ni les compteurs ni une demande de changement d'adresse
+     * ne sont touchés : le titulaire n'a rien changé.
+     */
+    public void remplacerEmpreinte(String empreinte) {
+        this.motDePasseHache = Objects.requireNonNull(empreinte, "empreinte");
+    }
+
     public void changerMotDePasse(String nouvelleEmpreinte) {
         this.motDePasseHache = Objects.requireNonNull(nouvelleEmpreinte, "nouvelleEmpreinte");
         this.tentativesEchouees = 0;
+        this.premierEchecLe = null;
         this.verrouilleJusquA = null;
         // Un mot de passe choisi par le titulaire, quel que soit le chemin (changement
         // impose, reinitialisation par courriel), leve l obligation : elle ne visait que
@@ -711,7 +752,12 @@ public class Utilisateur extends BaseEntity {
         if (duree.compareTo(plafond) > 0) {
             duree = plafond;
         }
-        this.verrouilleJusquA = maintenant.plus(duree);
+        // Un verrou se combine avec celui des mots de passe faux, il ne le remplace pas :
+        // la plus tardive des deux échéances l'emporte.
+        Instant echeance = maintenant.plus(duree);
+        if (verrouilleJusquA == null || echeance.isAfter(verrouilleJusquA)) {
+            this.verrouilleJusquA = echeance;
+        }
         return Optional.of(this.verrouilleJusquA);
     }
 
@@ -743,6 +789,7 @@ public class Utilisateur extends BaseEntity {
     public Instant getDerniereConnexion() { return derniereConnexion; }
     public short getTentativesEchouees() { return tentativesEchouees; }
     public Instant getVerrouilleJusquA() { return verrouilleJusquA; }
+    public Instant getPremierEchecLe() { return premierEchecLe; }
     public String getFonction() { return fonction; }
 
     public void setTelephone(String telephone) { this.telephone = telephone; }

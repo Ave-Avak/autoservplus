@@ -94,7 +94,7 @@ public class RdvService {
     public Rdv rdvDuMembre(UUID reference, String email) {
         Rdv rdv = rdvs.findByReference(reference)
                 .orElseThrow(() -> new RessourceIntrouvableException("Rdv", reference));
-        if (!rdv.getMembre().getEmail().equalsIgnoreCase(email)) {
+        if (!rdv.getMembre().getEmail().equals(email)) {
             throw new RessourceIntrouvableException("Rdv", reference);
         }
         return rdv;
@@ -108,7 +108,7 @@ public class RdvService {
 
         ParametreAtelier p = parametres.courants();
 
-        Utilisateur membre = membres.findByEmailIgnoreCase(email)
+        Utilisateur membre = membres.findByEmail(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
         Vehicule vehicule = vehicules.vehiculeDuMembre(vehiculeReference, email);
         List<Prestation> choisies = prestationsActives(prestationReferences);

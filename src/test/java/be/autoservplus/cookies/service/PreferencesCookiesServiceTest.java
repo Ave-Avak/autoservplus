@@ -64,7 +64,7 @@ class PreferencesCookiesServiceTest {
     }
 
     private void compteExiste() {
-        when(utilisateurs.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(marie));
+        when(utilisateurs.findByEmail(EMAIL)).thenReturn(Optional.of(marie));
         // La version figee sur les deux preuves vient desormais de version_document (F24).
         lenient().when(versionsDocuments.versionCourante(TypeDocumentVersionne.COOKIES))
                 .thenReturn(VERSION_COOKIES);
@@ -189,13 +189,13 @@ class PreferencesCookiesServiceTest {
             service.enregistrer(null, PreferencesCookies.refusTotal(), IP);
 
             verify(consentements, never()).save(any());
-            verify(utilisateurs, never()).findByEmailIgnoreCase(any());
+            verify(utilisateurs, never()).findByEmail(any());
         }
 
         @Test
         @DisplayName("un compte disparu entre-temps n'echoue pas : le cookie a deja ete pose")
         void compteDisparu() {
-            when(utilisateurs.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.empty());
+            when(utilisateurs.findByEmail(EMAIL)).thenReturn(Optional.empty());
 
             service.enregistrer(EMAIL, PreferencesCookies.refusTotal(), IP);
 

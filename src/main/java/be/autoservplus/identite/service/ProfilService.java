@@ -31,7 +31,7 @@ public class ProfilService {
     }
 
     public Utilisateur profilDe(String email) {
-        return utilisateurs.findByEmailIgnoreCase(email)
+        return utilisateurs.findByEmail(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
     }
 
@@ -77,6 +77,6 @@ public class ProfilService {
      * une facture emise il y a des mois, sans sa mention obligatoire.
      */
     private boolean aDesFactures(String email) {
-        return factures.countByMembreEmailIgnoreCase(email) > 0;
+        return factures.countByMembreEmail(email) > 0;
     }
 }

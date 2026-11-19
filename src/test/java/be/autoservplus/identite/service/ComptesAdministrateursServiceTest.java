@@ -88,10 +88,22 @@ class ComptesAdministrateursServiceTest {
     @Test
     @DisplayName("une adresse déjà prise est refusée")
     void adressePrise() {
-        when(utilisateurs.existsByEmailIgnoreCase("pris@exemple.be")).thenReturn(true);
+        when(utilisateurs.existsByEmail("pris@exemple.be")).thenReturn(true);
 
         assertThatThrownBy(() -> service.creerAdministrateur("pris@exemple.be", "A", "B", null))
                 .isInstanceOf(RefusTraduit.class);
+        verify(courriel, never()).envoyerLienDefinitionMotDePasse(any(), any());
+    }
+
+    @Test
+    @DisplayName("la contrainte de casse de la base devient un refus sur le champ, pas une erreur")
+    void contrainteDeCasse() {
+        when(utilisateurs.saveAndFlush(any(Utilisateur.class)))
+                .thenThrow(AdresseCourrielTest.violation("ck_utilisateur_email_minuscules"));
+
+        assertThatThrownBy(() -> service.creerAdministrateur("nouvel@exemple.be", "A", "B", null))
+                .isInstanceOf(RefusTraduit.class)
+                .hasFieldOrPropertyWithValue("cleMessage", AdresseCourriel.CLE_REFUS_CASSE);
         verify(courriel, never()).envoyerLienDefinitionMotDePasse(any(), any());
     }
 

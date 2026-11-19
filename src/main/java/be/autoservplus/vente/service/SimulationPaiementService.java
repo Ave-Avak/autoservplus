@@ -119,7 +119,7 @@ public class SimulationPaiementService {
         Paiement paiement = paiements.findByReferenceMollie(referencePrestataire)
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "Paiement", referencePrestataire));
-        if (!paiement.getCommande().getMembre().getEmail().equalsIgnoreCase(email)) {
+        if (!paiement.getCommande().getMembre().getEmail().equals(email)) {
             throw new RessourceIntrouvableException("Paiement", referencePrestataire);
         }
         return paiement;

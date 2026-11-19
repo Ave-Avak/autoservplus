@@ -94,7 +94,7 @@ class VerrouillageConnexionIT extends SocleIntegration {
                         .param("email", membre.getEmail()).param("password", MOT_DE_PASSE))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(result -> assertThat(result.getResponse().getRedirectedUrl())
-                        .contains("bloque"));
+                        .isEqualTo("/connexion?erreur"));
 
         assertThat(evenements.evenementsDe(membre.getId())).hasSize(1);
     }

@@ -98,7 +98,7 @@ public class FactureService {
     public Facture pourMembre(UUID reference, String email) {
         Facture facture = factures.findByReference(reference)
                 .orElseThrow(() -> new RessourceIntrouvableException("Facture", reference));
-        if (!facture.getMembre().getEmail().equalsIgnoreCase(email)) {
+        if (!facture.getMembre().getEmail().equals(email)) {
             throw new RessourceIntrouvableException("Facture", reference);
         }
         return facture;

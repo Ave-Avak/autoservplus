@@ -195,7 +195,7 @@ class ExportDonneesIT extends SocleIntegration {
         // vraiment.
         entites.flush();
         entites.clear();
-        return utilisateurs.findByEmailIgnoreCase(email).orElseThrow();
+        return utilisateurs.findByEmail(email).orElseThrow();
     }
 
     private void deuxMembres() {

@@ -151,6 +151,11 @@ autoservplus:
       starttls: ${SMTP_STARTTLS:true}
       delai-connexion: ${SMTP_DELAI_CONNEXION:5s}
       delai-lecture: ${SMTP_DELAI_LECTURE:10s}
+    # Courriels des formulaires anonymes et avis de verrouillage, envoyes hors de la
+    # requete (ExecuteurCourriels). File pleine : courriel abandonne, avec un WARN.
+    executeur:
+      fils: 2
+      file: 200
 
   # Identification légale de l'émetteur des factures (mentions obligatoires :
   # Code TVA art. 53, AR n°1 art. 5, CSA art. 2:20). Mono-tenant V1 : un seul garage,
@@ -224,8 +229,19 @@ autoservplus:
       mode-test: ${MOLLIE_MODE_TEST:true}
 
   securite:
+    # Cinq mots de passe faux dans les quinze minutes qui suivent le premier verrouillent
+    # le compte quinze minutes (F2).
     tentatives-max: 5
+    fenetre-echecs-minutes: 15
     duree-verrouillage-minutes: 15
+
+    # Plafond des echecs de connexion par IP, sur la meme fenetre (Stratégie A07,
+    # contrôle 4). IPv6 comptee par /64. Voir GardeConnexion.
+    # Trois echecs sur l IP ou sur l adresse saisie exigent Turnstile a la tentative
+    # suivante, quand une cle est configuree.
+    connexion:
+      echecs-max-par-ip: 50
+      echecs-avant-verification: 3
 
     # Plafond des formulaires PUBLICS qui declenchent un envoi de courriel : renvoi du
     # lien de verification et demande de reinitialisation. Sans lui, une adresse valide
@@ -257,6 +273,10 @@ autoservplus:
 logging:
   level:
     be.autoservplus: INFO
+  # Identifiant de la requete apres le niveau, pose par IdentifiantRequeteFiltre et recopie
+  # dans les fils de l executeur des courriels. Un tiret hors de toute requete.
+  pattern:
+    level: "%5p [%X{requete:--}]"
 
 # =====================================================================================
 # Profil « demo » : jeu de donnees transactionnelles pour l evaluation.

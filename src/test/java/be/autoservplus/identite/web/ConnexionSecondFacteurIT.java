@@ -15,13 +15,17 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockHttpSession;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextImpl;
 import org.springframework.security.core.session.SessionRegistry;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.web.context.HttpSessionSecurityContextRepository;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -29,6 +33,7 @@ import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -223,6 +228,66 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
         mvc.perform(get("/admin/comptes").session(seconde)).andExpect(redirectedUrl(EtapeConnexion.PREFIXE));
     }
 
+    /** Recule l'ouverture de l'étape en cours, comme si ce temps s'était écoulé. */
+    private static void vieillir(MockHttpSession session, Duration duree) {
+        String cle = HttpSessionSecurityContextRepository.SPRING_SECURITY_CONTEXT_KEY;
+        AuthentificationPartielle partielle = (AuthentificationPartielle)
+                ((SecurityContext) session.getAttribute(cle)).getAuthentication();
+        session.setAttribute(cle, new SecurityContextImpl(
+                partielle.etapeOuverteA(partielle.etapeOuverteLe().minus(duree))));
+    }
+
+    @Test
+    @DisplayName("au-delà de cinq minutes, l'étape est abandonnée sans remettre à zéro les échecs du code")
+    void delaiDepasse() throws Exception {
+        Utilisateur admin = creer(TypeUtilisateur.ADMINISTRATEUR, true, false);
+        MockHttpSession session = session(connecter(admin, MOT_DE_PASSE));
+        assertThat(saisirCode(session, "000000").getResponse().getStatus()).isEqualTo(200);
+        vieillir(session, Duration.ofMinutes(5).plusSeconds(1));
+
+        assertThat(saisirCode(session, codeCourant(SECRET)).getResponse().getRedirectedUrl())
+                .isEqualTo("/connexion?delai");
+
+        assertThat(session.isInvalid()).isTrue();
+        assertThat(relire(admin).getMfaEchecs()).isEqualTo((short) 1);
+        mvc.perform(get("/connexion").param("delai", ""))
+                .andExpect(content().string(containsString(
+                        "Le délai de saisie du code est dépassé. Reconnectez-vous.")));
+    }
+
+    @Test
+    @DisplayName("à quatre minutes cinquante-neuf, le code juste fait encore aboutir la connexion")
+    void delaiNonAtteint() throws Exception {
+        Utilisateur admin = creer(TypeUtilisateur.ADMINISTRATEUR, true, false);
+        MockHttpSession session = session(connecter(admin, MOT_DE_PASSE));
+        vieillir(session, Duration.ofMinutes(5).minusSeconds(1));
+
+        saisirCode(session, codeCourant(SECRET));
+
+        mvc.perform(get("/admin/comptes").session(session)).andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("le délai court de l'ouverture de chaque étape, et le changement imposé a son message")
+    void delaiParEtape() throws Exception {
+        Utilisateur admin = creer(TypeUtilisateur.ADMINISTRATEUR, true, true);
+        MockHttpSession session = session(connecter(admin, MOT_DE_PASSE));
+        vieillir(session, Duration.ofMinutes(4));
+        assertThat(saisirCode(session, codeCourant(SECRET)).getResponse().getRedirectedUrl())
+                .isEqualTo(EtapeConnexion.CHANGEMENT_MOT_DE_PASSE.chemin());
+
+        vieillir(session, Duration.ofMinutes(4));
+        mvc.perform(get(EtapeConnexion.CHANGEMENT_MOT_DE_PASSE.chemin()).session(session))
+                .andExpect(status().isOk());
+
+        vieillir(session, Duration.ofMinutes(2));
+        mvc.perform(get(EtapeConnexion.CHANGEMENT_MOT_DE_PASSE.chemin()).session(session))
+                .andExpect(redirectedUrl("/connexion?delai-mot-de-passe"));
+        mvc.perform(get("/connexion").param("delai-mot-de-passe", ""))
+                .andExpect(content().string(containsString(
+                        "Le délai de saisie du nouveau mot de passe est dépassé. Reconnectez-vous.")));
+    }
+
     @Test
     @DisplayName("cinq codes faux verrouillent le compte, journalisent, et le mot de passe ne suffit plus")
     void verrouillage() throws Exception {
@@ -233,7 +298,7 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
         }
 
         assertThat(saisirCode(session, "000000").getResponse().getRedirectedUrl())
-                .isEqualTo("/connexion?bloque");
+                .isEqualTo("/connexion?erreur");
 
         assertThat(relire(admin).estVerrouille(horloge.instant())).isTrue();
         assertThat(evenements.evenementsDe(admin.getId()))
@@ -241,7 +306,47 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
                 .containsOnlyOnce(TypeEvenementSecurite.SECOND_FACTEUR_VERROUILLAGE)
                 .filteredOn(t -> t == TypeEvenementSecurite.SECOND_FACTEUR_ECHEC).hasSize(5);
         assertThat(connecter(admin, MOT_DE_PASSE).getResponse().getRedirectedUrl())
-                .isEqualTo("/connexion?bloque");
+                .isEqualTo("/connexion?erreur");
+    }
+
+    @Test
+    @DisplayName("pendant un verrou, code juste et code faux donnent la même redirection et la même page")
+    void codeJusteOuFauxPendantUnVerrou() throws Exception {
+        Utilisateur admin = creer(TypeUtilisateur.ADMINISTRATEUR, true, false);
+        // Deux étapes ouvertes avant le verrou : un mot de passe juste ne passe plus après.
+        MockHttpSession avecCodeJuste = session(connecter(admin, MOT_DE_PASSE));
+        MockHttpSession avecCodeFaux = session(connecter(admin, MOT_DE_PASSE));
+        MockHttpSession attaquant = session(connecter(admin, MOT_DE_PASSE));
+        for (int i = 0; i < 5; i++) {
+            saisirCode(attaquant, "000000");
+        }
+        assertThat(relire(admin).estVerrouille(horloge.instant())).isTrue();
+
+        MvcResult juste = saisirCode(avecCodeJuste, codeCourant(SECRET));
+        MvcResult faux = saisirCode(avecCodeFaux, "000000");
+
+        assertThat(juste.getResponse().getRedirectedUrl()).isEqualTo("/connexion?erreur");
+        assertThat(faux.getResponse().getRedirectedUrl()).isEqualTo("/connexion?erreur");
+        assertThat(pageSuivie(juste)).isEqualTo(pageSuivie(faux))
+                .contains("Identifiants incorrects ou connexion temporairement bloquée.");
+        var sessionApres = juste.getRequest().getSession(false);
+        assertThat(sessionApres == null || sessionApres.getAttribute(
+                org.springframework.security.web.context.HttpSessionSecurityContextRepository
+                        .SPRING_SECURITY_CONTEXT_KEY) == null).isTrue();
+    }
+
+    /** La page de refus suivie avec la session de la tentative, sans son jeton CSRF. */
+    private String pageSuivie(MvcResult tentative) throws Exception {
+        MockHttpSession session = (MockHttpSession) tentative.getRequest().getSession(false);
+        // MockMvc lit le paramètre sans valeur de « ?erreur » comme absent, un vrai
+        // conteneur comme une chaîne vide : il est donc posé explicitement.
+        assertThat(tentative.getResponse().getRedirectedUrl()).isEqualTo("/connexion?erreur");
+        var requete = get("/connexion").param("erreur", "").locale(Locale.FRENCH);
+        if (session != null) {
+            requete.session(session);
+        }
+        String page = mvc.perform(requete).andReturn().getResponse().getContentAsString();
+        return page.replaceAll("name=\"_csrf\" value=\"[^\"]*\"", "name=\"_csrf\"");
     }
 
     @Test

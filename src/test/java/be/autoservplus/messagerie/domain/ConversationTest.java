@@ -59,11 +59,12 @@ class ConversationTest {
         }
 
         @Test
-        @DisplayName("l appartenance se lit sur le membre, sans tenir compte de la casse")
+        @DisplayName("l'appartenance se lit sur l'adresse du membre, telle quelle : la base la garantit en minuscules (V55)")
         void appartenance() {
             Conversation fil = filDe(marie());
 
-            assertThat(fil.appartientA("MARIE@EXEMPLE.BE")).isTrue();
+            assertThat(fil.appartientA("marie@exemple.be")).isTrue();
+            assertThat(fil.appartientA("MARIE@EXEMPLE.BE")).isFalse();
             assertThat(fil.appartientA("paul@exemple.be")).isFalse();
         }
     }

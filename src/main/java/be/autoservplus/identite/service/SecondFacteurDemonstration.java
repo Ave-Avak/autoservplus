@@ -64,7 +64,7 @@ public class SecondFacteurDemonstration implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments arguments) {
-        utilisateurs.findByEmailIgnoreCase(ADRESSE_ADMIN_DEMO)
+        utilisateurs.findByEmail(ADRESSE_ADMIN_DEMO)
                 .filter(Utilisateur::estAdministrateur)
                 .ifPresentOrElse(this::semerSiManquant,
                         () -> JOURNAL.warn("Compte {} absent : second facteur de demonstration "

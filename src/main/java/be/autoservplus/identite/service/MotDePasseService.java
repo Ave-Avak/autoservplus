@@ -78,7 +78,7 @@ public class MotDePasseService {
         if (email == null || email.isBlank()) {
             return;
         }
-        repository.findByEmailIgnoreCase(email.trim().toLowerCase()).ifPresentOrElse(
+        repository.findByEmail(AdresseCourriel.normaliser(email)).ifPresentOrElse(
                 this::envoyerCourrielAdapte,
                 () -> JOURNAL.info("Demande de reinitialisation pour une adresse inconnue."));
     }
@@ -87,8 +87,12 @@ public class MotDePasseService {
      * Le contenu du courriel depend de l etat reel du compte. Une adresse non vérifiée
      * reçoit un rappel de vérification, avec un jeton de vérification de la durée
      * ordinaire : le suivre active le compte, il ne pose aucun mot de passe.
+     *
+     * <p>Sert aussi à l'inscription sur une adresse dont le compte attend sa validation :
+     * le nouveau jeton remplace le précédent, dans la même boîte.</p>
      */
-    private void envoyerCourrielAdapte(Utilisateur membre) {
+    @Transactional
+    public void envoyerCourrielAdapte(Utilisateur membre) {
         JetonLien jeton = JetonLien.tirer();
         Instant maintenant = Instant.now(horloge);
 

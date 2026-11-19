@@ -81,7 +81,7 @@ class RdvServiceTest {
         vidangeReference = vidange.getReference();
 
         when(parametres.courants()).thenReturn(new ParametreAtelier());
-        when(membres.findByEmailIgnoreCase(EMAIL)).thenReturn(Optional.of(marie));
+        when(membres.findByEmail(EMAIL)).thenReturn(Optional.of(marie));
         when(vehicules.vehiculeDuMembre(golfReference, EMAIL)).thenReturn(golf);
         when(prestations.findByReference(vidangeReference)).thenReturn(Optional.of(vidange));
         when(disponibilites.estReservable(any(), any())).thenReturn(true);

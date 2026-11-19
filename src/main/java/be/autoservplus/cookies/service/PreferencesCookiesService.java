@@ -79,7 +79,7 @@ public class PreferencesCookiesService {
         if (email == null || email.isBlank()) {
             return;
         }
-        Optional<Utilisateur> titulaire = utilisateurs.findByEmailIgnoreCase(email);
+        Optional<Utilisateur> titulaire = utilisateurs.findByEmail(email);
         if (titulaire.isEmpty()) {
             // Compte disparu entre l affichage de la page et l envoi du formulaire
             // (suppression de compte, session survivante) : le cookie a deja ete pose

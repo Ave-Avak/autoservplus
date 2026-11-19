@@ -237,7 +237,7 @@ public class AdminRetractationService {
     }
 
     private Utilisateur administrateur(String email) {
-        return utilisateurs.findByEmailIgnoreCase(email)
+        return utilisateurs.findByEmail(email)
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
     }
 }

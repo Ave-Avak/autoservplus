@@ -103,7 +103,7 @@ public class AvoirService {
     public Avoir pourMembre(UUID reference, String email) {
         Avoir avoir = avoirs.findByReference(reference)
                 .orElseThrow(() -> new RessourceIntrouvableException("Avoir", reference));
-        if (!avoir.getFacture().getMembre().getEmail().equalsIgnoreCase(email)) {
+        if (!avoir.getFacture().getMembre().getEmail().equals(email)) {
             throw new RessourceIntrouvableException("Avoir", reference);
         }
         return avoir;

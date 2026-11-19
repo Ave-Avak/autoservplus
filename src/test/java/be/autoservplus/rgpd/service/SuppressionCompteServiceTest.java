@@ -70,7 +70,7 @@ class SuppressionCompteServiceTest {
     }
 
     private void compteExiste() {
-        when(utilisateurs.findByEmailIgnoreCase("marie@exemple.be"))
+        when(utilisateurs.findByEmail("marie@exemple.be"))
                 .thenReturn(Optional.of(marie));
     }
 
@@ -144,7 +144,7 @@ class SuppressionCompteServiceTest {
         @Test
         @DisplayName("une adresse inconnue remonte comme introuvable")
         void compteInconnu() {
-            when(utilisateurs.findByEmailIgnoreCase("fantome@exemple.be"))
+            when(utilisateurs.findByEmail("fantome@exemple.be"))
                     .thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.supprimer(

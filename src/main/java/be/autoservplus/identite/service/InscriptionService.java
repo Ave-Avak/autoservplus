@@ -1,5 +1,6 @@
 package be.autoservplus.identite.service;
 
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Langue;
@@ -8,6 +9,7 @@ import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +19,7 @@ import be.autoservplus.communication.service.ServiceCourriel;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.Optional;
 
 /**
  * Inscription d un membre et verification de son adresse de courriel.
@@ -40,14 +43,20 @@ public class InscriptionService {
     private final Clock horloge;
     private final ServiceCourriel courriel;
     private final LiensCourriel liens;
+    private final MotDePasseService motsDePasse;
+    private final LimiteurDemandesCourriel limiteur;
 
     public InscriptionService(UtilisateurRepository repository,
                               PasswordEncoder encodeurMotDePasse,
                               Clock horloge,
                               ServiceCourriel courriel,
                               PolitiqueMotDePasse politique,
-                              LiensCourriel liens) {
+                              LiensCourriel liens,
+                              MotDePasseService motsDePasse,
+                              LimiteurDemandesCourriel limiteur) {
         this.repository = repository;
+        this.motsDePasse = motsDePasse;
+        this.limiteur = limiteur;
         this.liens = liens;
         this.politique = politique;
         this.encodeurMotDePasse = encodeurMotDePasse;
@@ -56,32 +65,42 @@ public class InscriptionService {
     }
 
     /**
-     * Inscrit un nouveau membre et genere son jeton de verification.
+     * Inscrit un nouveau membre et génère son jeton de vérification, ou, si l'adresse a
+     * déjà un compte, prévient son titulaire sans rien créer (RM-01).
      *
-     * <p>Le courriel de verification part apres la validation de la transaction. Un
-     * echec de remise n'annule donc plus l'inscription, comme il le faisait quand le
-     * courriel partait dedans : le compte existe, et le renvoi de verification comme la
-     * demande d'un nouveau mot de passe permettent d'obtenir un autre lien. Annuler le
-     * compte pour un relais injoignable obligerait au contraire a tout ressaisir.</p>
+     * <p><b>Aucune réponse ne dit si l'adresse a un compte</b> (F1). Le refus affiché sous
+     * le champ en faisait un oracle, et le chemin de l'adresse connue, qui sautait la
+     * politique, Have I Been Pwned et BCrypt, se distinguait aussi par sa durée. Les deux
+     * chemins passent désormais par la politique, appel à Have I Been Pwned compris, puis
+     * par un hachage BCrypt, jeté pour l'adresse connue. Seuls l'enregistrement et le
+     * courriel diffèrent, et les courriels partent hors de la requête.</p>
      *
-     * @throws RegleMetierException si l adresse est deja utilisee ou si le mot de passe
-     *                              ne respecte pas {@link PolitiqueMotDePasse}
+     * <p>Le courriel de vérification part après la validation de la transaction. Un
+     * échec de remise n'annule donc pas l'inscription : le compte existe, et le renvoi de
+     * vérification comme la demande d'un nouveau mot de passe donnent un autre lien.</p>
+     *
+     * @param ip adresse de la requête, pour le plafond des courriels au titulaire
+     * @return le compte créé, ou rien si l'adresse en avait déjà un
+     * @throws RefusTraduit si le mot de passe ne respecte pas {@link PolitiqueMotDePasse},
+     *                      quelle que soit l'adresse
      */
     @Transactional
-    public Utilisateur inscrire(String email, String motDePasseClair,
-                                String nom, String prenom, Langue langue) {
+    public Optional<Utilisateur> inscrire(String email, String motDePasseClair,
+                                          String nom, String prenom, Langue langue, String ip) {
 
         String emailNormalise = normaliser(email);
-
-        if (repository.existsByEmailIgnoreCase(emailNormalise)) {
-            throw new RegleMetierException("RM-01",
-                    "Un compte existe deja pour l adresse %s.".formatted(emailNormalise));
-        }
         politique.exiger(motDePasseClair);
+        String empreinte = encodeurMotDePasse.encode(motDePasseClair);
+
+        Optional<Utilisateur> existant = repository.findByEmail(emailNormalise);
+        if (existant.isPresent()) {
+            prevenirTitulaire(existant.get(), ip);
+            return Optional.empty();
+        }
 
         Utilisateur membre = new Utilisateur(
                 emailNormalise,
-                encodeurMotDePasse.encode(motDePasseClair),
+                empreinte,
                 nom.trim(),
                 prenom.trim(),
                 TypeUtilisateur.MEMBRE);
@@ -89,9 +108,29 @@ public class InscriptionService {
         membre.setLangue(langue == null ? Langue.fr : langue);
         JetonLien jeton = armerVerification(membre);
 
-        Utilisateur enregistre = repository.save(membre);
+        Utilisateur enregistre = enregistrer(membre);
         courriel.envoyerVerificationAdresse(enregistre, lienVerification(jeton));
-        return enregistre;
+        return Optional.of(enregistre);
+    }
+
+    /**
+     * Courriel au titulaire d'une adresse qui a déjà un compte, selon son statut. Le
+     * limiteur en borne la fréquence : refusé, rien ne part, et la page reste la même.
+     */
+    private void prevenirTitulaire(Utilisateur titulaire, String ip) {
+        if (!limiteur.autoriser(titulaire.getEmail(), ip)) {
+            return;
+        }
+        switch (titulaire.getStatut()) {
+            // Avertissement sans jeton : la tentative ne doit rien ouvrir à qui l'a faite.
+            case ACTIF, SUSPENDU -> courriel.envoyerAvisTentativeInscription(titulaire);
+            // Même courriel que « Mot de passe oublié » : un nouveau lien d'activation,
+            // qui remplace le précédent.
+            case EN_ATTENTE_VALIDATION -> motsDePasse.envoyerCourrielAdapte(titulaire);
+            // Seul un compte anonymisé porte ce statut, et son adresse est un jeton qui ne
+            // reçoit rien : l'adresse réelle a été libérée à l'anonymisation.
+            case SUPPRIME -> JOURNAL.info("Inscription tentee sur une adresse anonymisee.");
+        }
     }
 
     /**
@@ -163,7 +202,7 @@ public class InscriptionService {
      */
     @Transactional
     public Utilisateur renvoyerVerification(String email) {
-        Utilisateur membre = repository.findByEmailIgnoreCase(normaliser(email))
+        Utilisateur membre = repository.findByEmail(normaliser(email))
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
 
         if (membre.isEmailVerifie()) {
@@ -190,6 +229,22 @@ public class InscriptionService {
         if (email == null || email.isBlank()) {
             throw new RegleMetierException("RM-01", "L adresse de courriel est obligatoire.");
         }
-        return email.trim().toLowerCase();
+        return AdresseCourriel.normaliser(email);
+    }
+
+    /**
+     * Écrit le compte tout de suite, pour qu'un refus de la contrainte de casse (V55)
+     * devienne une erreur sur le champ et non une erreur au moment de la validation.
+     */
+    private Utilisateur enregistrer(Utilisateur membre) {
+        try {
+            return repository.saveAndFlush(membre);
+        } catch (DataIntegrityViolationException refus) {
+            if (AdresseCourriel.violeLaCasse(refus)) {
+                throw new RefusTraduit(AdresseCourriel.CLE_REFUS_CASSE,
+                        "Cette adresse contient un caractère qui ne peut pas être enregistré. Vérifiez-la ou utilisez-en une autre.");
+            }
+            throw refus;
+        }
     }
 }

@@ -62,7 +62,7 @@ class PreuveConsentementCookiesIT extends SocleIntegration {
 
     private Consentement preuveUnique(String email, TypeDocumentConsentement finalite) {
         List<Consentement> trouvees = transactions.execute(statut ->
-                consentements.findByUtilisateurEmailIgnoreCaseAndTypeDocument(email, finalite));
+                consentements.findByUtilisateurEmailAndTypeDocument(email, finalite));
         assertThat(trouvees).as("preuve pour %s", finalite).hasSize(1);
         return trouvees.get(0);
     }
@@ -100,7 +100,7 @@ class PreuveConsentementCookiesIT extends SocleIntegration {
         service.enregistrer(marie.getEmail(), PreferencesCookies.acceptationTotale(), IP);
 
         List<Consentement> generiques = transactions.execute(statut -> consentements
-                .findByUtilisateurEmailIgnoreCaseAndTypeDocument(marie.getEmail(),
+                .findByUtilisateurEmailAndTypeDocument(marie.getEmail(),
                         TypeDocumentConsentement.COOKIES));
 
         assertThat(generiques).isEmpty();

@@ -73,8 +73,8 @@ class NotificationServiceTest {
         marie = new Utilisateur(MARIE, "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         paul = new Utilisateur(PAUL, "$2a$12$h", "Martin", "Paul", TypeUtilisateur.MEMBRE);
 
-        when(membres.findByEmailIgnoreCase(MARIE)).thenReturn(Optional.of(marie));
-        when(membres.findByEmailIgnoreCase(PAUL)).thenReturn(Optional.of(paul));
+        when(membres.findByEmail(MARIE)).thenReturn(Optional.of(marie));
+        when(membres.findByEmail(PAUL)).thenReturn(Optional.of(paul));
         when(parametres.courants()).thenReturn(new ParametreAtelier());
 
         Locale.setDefault(Locale.FRENCH);
@@ -157,7 +157,7 @@ class NotificationServiceTest {
         @Test
         @DisplayName("rend zero si le compte est inconnu, sans lever")
         void compteurCompteInconnu() {
-            when(membres.findByEmailIgnoreCase("fantome@exemple.be")).thenReturn(Optional.empty());
+            when(membres.findByEmail("fantome@exemple.be")).thenReturn(Optional.empty());
 
             assertThat(service.nombreNonLues("fantome@exemple.be")).isZero();
         }

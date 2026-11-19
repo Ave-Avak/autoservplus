@@ -14,6 +14,7 @@ import java.time.Duration;
 import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * Relais SMTP exigé sous {@code prod}, facultatif ailleurs, lu dans le vrai
@@ -93,7 +94,7 @@ class ControleCourrielProductionTest {
                 new ProprietesCourriel.Smtp("smtp-relay.exemple.test", 587, "compte", "secret",
                         true, Duration.ofSeconds(5), Duration.ofSeconds(10)));
 
-        JavaMailSenderImpl emetteur = TransportCourrielConfig.emetteur(proprietes);
+        JavaMailSenderImpl emetteur = TransportCourrielConfig.emetteur(proprietes, "garage.exemple.be");
         Properties reglages = emetteur.getJavaMailProperties();
 
         assertThat(emetteur.getHost()).isEqualTo("smtp-relay.exemple.test");
@@ -102,6 +103,39 @@ class ControleCourrielProductionTest {
         assertThat(reglages.getProperty("mail.smtp.starttls.required")).isEqualTo("true");
         assertThat(reglages.getProperty("mail.smtp.connectiontimeout")).isEqualTo("5000");
         assertThat(reglages.getProperty("mail.smtp.timeout")).isEqualTo("10000");
+        assertThat(reglages.getProperty("mail.smtp.localhost")).isEqualTo("garage.exemple.be");
+        assertThat(reglages.getProperty("mail.host")).isEqualTo("garage.exemple.be");
+    }
+
+    @Test
+    @DisplayName("le nom annoncé au relais est l'hôte de l'URL publique, sans schéma ni port")
+    void hoteAnnonce() {
+        assertThat(TransportCourrielConfig.hoteAnnonce("https://garage.exemple.be:8443/accueil"))
+                .isEqualTo("garage.exemple.be");
+        assertThat(TransportCourrielConfig.hoteAnnonce("http://localhost:8080")).isEqualTo("localhost");
+    }
+
+    @Test
+    @DisplayName("une URL publique absente, sans hôte ou invalide est refusée, sans repli sur la machine")
+    void hoteAnnonceInvalide() {
+        for (String valeur : new String[] {null, "", "  ", "garage.exemple.be", "http://", "http://a b"}) {
+            assertThatThrownBy(() -> TransportCourrielConfig.hoteAnnonce(valeur))
+                    .as("valeur %s", valeur)
+                    .isInstanceOf(IllegalStateException.class)
+                    .hasMessageContaining("URL_PUBLIQUE");
+        }
+    }
+
+    @Test
+    @DisplayName("avec un relais, une URL publique sans hôte refuse le démarrage")
+    void relaisSansHoteAnnonce() {
+        sous("dev").withPropertyValues(RELAIS)
+                .withPropertyValues("autoservplus.url-publique=garage.exemple.be")
+                .run(contexte -> {
+                    assertThat(contexte).hasFailed();
+                    assertThat(contexte.getStartupFailure()).rootCause()
+                            .hasMessageContaining("URL_PUBLIQUE");
+                });
     }
 
     @Test
@@ -111,7 +145,7 @@ class ControleCourrielProductionTest {
                 new ProprietesCourriel.Smtp("localhost", 1025, "", "", false,
                         Duration.ofSeconds(5), Duration.ofSeconds(10)));
 
-        JavaMailSenderImpl emetteur = TransportCourrielConfig.emetteur(proprietes);
+        JavaMailSenderImpl emetteur = TransportCourrielConfig.emetteur(proprietes, "garage.exemple.be");
 
         assertThat(emetteur.getUsername()).isNull();
         assertThat(emetteur.getJavaMailProperties().getProperty("mail.smtp.auth")).isEqualTo("false");

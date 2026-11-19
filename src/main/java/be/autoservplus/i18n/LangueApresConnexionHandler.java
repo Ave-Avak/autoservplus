@@ -96,7 +96,7 @@ public class LangueApresConnexionHandler extends SavedRequestAwareAuthentication
             return;
         }
         try {
-            utilisateurs.findByEmailIgnoreCase(authentification.getName())
+            utilisateurs.findByEmail(authentification.getName())
                     .map(membre -> Locale.forLanguageTag(membre.getLangue().name()))
                     .ifPresent(langue -> resolveur.setLocale(requete, reponse, langue));
         } catch (RuntimeException echec) {
