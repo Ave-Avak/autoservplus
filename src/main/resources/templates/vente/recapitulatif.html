@@ -70,12 +70,13 @@
          Le bouton porte la mention imposee par l'art. VI.45 CDE (cle commande.bouton) :
          « Commande avec obligation de paiement ». -->
     <form th:action="@{/commande}" method="post" class="formulaire">
-        <div class="champ">
+        <div class="champ champ-case">
             <input type="checkbox" id="cgv" name="cgv" value="true" required
                    aria-describedby="cgv-erreur">
             <label for="cgv">
                 <span th:text="#{commande.cgv.prefixe}">J'ai lu et j'accepte les</span>
                 <a th:href="@{/cgv}" th:text="#{commande.cgv.lien}">conditions générales de vente</a>
+                <span th:text="#{commande.cgv.version(${versionCgv})}">(version CGV-2026-04).</span>
             </label>
             <p id="cgv-erreur" class="texte-erreur" th:if="${erreurCgv}" role="alert"
                th:text="${erreurCgv}">Erreur</p>

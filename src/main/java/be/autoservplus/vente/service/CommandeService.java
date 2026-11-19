@@ -135,13 +135,14 @@ public class CommandeService {
                 horloge.instant(), renonciationRetenue));
         commande.reprendreLignes(lignes);
 
-        // Preuve contractuelle F24, dans la MEME transaction : un rollback de la
+        // Preuve contractuelle F24, dans la MÊME transaction : un rollback de la
         // conversion emporte la preuve, jamais de consentement orphelin.
-        // La version vient de version_document (F24) et non plus d une constante : elle
-        // designe une ligne dont le texte est archive, donc une preuve qui dit QUOI a
-        // ete accepte et pas seulement QUE quelque chose l a ete. Resolue DANS la
-        // transaction : une version publiee entre l affichage du recapitulatif et la
-        // validation serait de toute facon celle que le membre vient de voir a l ecran.
+        // La version vient de version_document (F24) et non plus d'une constante : elle
+        // désigne une ligne dont le texte est archivé, donc une preuve qui dit QUOI a
+        // été accepté et pas seulement QUE quelque chose l'a été. La version écrite est
+        // celle en vigueur à la validation. Elle peut différer de celle affichée au
+        // récapitulatif si une version est publiée entre les deux. Parade non réalisée :
+        // transmettre la version affichée et refuser l'envoi si elle n'est plus en vigueur.
         consentements.save(Consentement.acceptation(panier.getMembre(),
                 TypeDocumentConsentement.CGV,
                 versionsDocuments.versionCourante(TypeDocumentVersionne.CGV),

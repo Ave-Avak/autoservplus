@@ -1,6 +1,7 @@
 package be.autoservplus.vente.web;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.legal.service.VersionsDocumentsService;
 import be.autoservplus.vente.domain.SituationPaiement;
 import be.autoservplus.vente.service.CgvNonAccepteesException;
 import be.autoservplus.vente.service.CommandeService;
@@ -69,6 +70,7 @@ class CommandeControllerTest {
     @MockitoBean private CommandeService service;
     @MockitoBean private PanierService paniers;
     @MockitoBean private PaiementService paiements;
+    @MockitoBean private VersionsDocumentsService versionsDocuments;
 
     @TestConfiguration
     static class SecuriteTest {
