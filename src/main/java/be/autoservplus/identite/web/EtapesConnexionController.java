@@ -61,16 +61,18 @@ public class EtapesConnexionController {
      * une connexion deja aboutie.
      */
     @GetMapping
-    public String aiguiller(Authentication authentification) {
-        String garde = parcours.garder(authentification, null);
+    public String aiguiller(Authentication authentification,
+            HttpServletRequest requete, HttpServletResponse reponse) {
+        String garde = parcours.garder(authentification, null, requete, reponse);
         return garde;
     }
 
     // --- second facteur ---------------------------------------------------------------
 
     @GetMapping("/second-facteur")
-    public String secondFacteur(Authentication authentification, Model modele) {
-        String garde = parcours.garder(authentification, EtapeConnexion.SECOND_FACTEUR);
+    public String secondFacteur(Authentication authentification, Model modele,
+            HttpServletRequest requete, HttpServletResponse reponse) {
+        String garde = parcours.garder(authentification, EtapeConnexion.SECOND_FACTEUR, requete, reponse);
         if (garde != null) {
             return garde;
         }
@@ -84,7 +86,7 @@ public class EtapesConnexionController {
                                         @RequestParam(required = false) String mode,
                                         Model modele, HttpServletRequest requete,
                                         HttpServletResponse reponse) {
-        String garde = parcours.garder(authentification, EtapeConnexion.SECOND_FACTEUR);
+        String garde = parcours.garder(authentification, EtapeConnexion.SECOND_FACTEUR, requete, reponse);
         if (garde != null) {
             return garde;
         }
@@ -120,8 +122,10 @@ public class EtapesConnexionController {
     // --- changement impose ------------------------------------------------------------
 
     @GetMapping("/mot-de-passe")
-    public String motDePasse(Authentication authentification, Model modele) {
-        String garde = parcours.garder(authentification, EtapeConnexion.CHANGEMENT_MOT_DE_PASSE);
+    public String motDePasse(Authentication authentification, Model modele,
+            HttpServletRequest requete, HttpServletResponse reponse) {
+        String garde = parcours.garder(authentification, EtapeConnexion.CHANGEMENT_MOT_DE_PASSE,
+                requete, reponse);
         if (garde != null) {
             return garde;
         }
@@ -135,7 +139,8 @@ public class EtapesConnexionController {
                                     @Valid @ModelAttribute("formulaire") MotDePasseImposeForm formulaire,
                                     BindingResult erreurs, Model modele,
                                     HttpServletRequest requete, HttpServletResponse reponse) {
-        String garde = parcours.garder(authentification, EtapeConnexion.CHANGEMENT_MOT_DE_PASSE);
+        String garde = parcours.garder(authentification, EtapeConnexion.CHANGEMENT_MOT_DE_PASSE,
+                requete, reponse);
         if (garde != null) {
             return garde;
         }
@@ -164,8 +169,9 @@ public class EtapesConnexionController {
     // --- enrolement -------------------------------------------------------------------
 
     @GetMapping("/enrolement")
-    public String enrolement(Authentication authentification, Model modele) {
-        String garde = parcours.garder(authentification, EtapeConnexion.ENROLEMENT);
+    public String enrolement(Authentication authentification, Model modele,
+            HttpServletRequest requete, HttpServletResponse reponse) {
+        String garde = parcours.garder(authentification, EtapeConnexion.ENROLEMENT, requete, reponse);
         if (garde != null) {
             return garde;
         }
@@ -179,7 +185,7 @@ public class EtapesConnexionController {
                                       Model modele, HttpServletRequest requete,
                                       HttpServletResponse reponse,
                                       RedirectAttributes redirection) {
-        String garde = parcours.garder(authentification, EtapeConnexion.ENROLEMENT);
+        String garde = parcours.garder(authentification, EtapeConnexion.ENROLEMENT, requete, reponse);
         if (garde != null) {
             return garde;
         }

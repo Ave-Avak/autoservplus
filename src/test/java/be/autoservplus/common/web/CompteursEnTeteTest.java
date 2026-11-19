@@ -15,6 +15,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.AuthorityUtils;
 
+import java.time.Instant;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
@@ -71,7 +73,7 @@ class CompteursEnTeteTest {
     @Test
     @DisplayName("connexion partielle : zéro, sans aucune requête")
     void connexionPartielle() {
-        Authentication partielle = new AuthentificationPartielle(complete(), false);
+        Authentication partielle = new AuthentificationPartielle(complete(), false, Instant.EPOCH);
 
         assertThat(compteurPanier.nombreArticlesPanier(partielle)).isZero();
         assertThat(compteurNotifications.nombreNonLues(partielle)).isZero();

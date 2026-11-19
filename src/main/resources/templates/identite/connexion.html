@@ -23,6 +23,14 @@
             utilisez « <a th:href="@{/mot-de-passe/oublie}">Mot de passe oublié</a> ».</p>
     </div>
 
+    <div class="message message-erreur" th:if="${delaiCode}" role="alert">
+        <p>Le délai de saisie du code est dépassé. Reconnectez-vous.</p>
+    </div>
+
+    <div class="message message-erreur" th:if="${delaiMotDePasse}" role="alert">
+        <p>Le délai de saisie du nouveau mot de passe est dépassé. Reconnectez-vous.</p>
+    </div>
+
     <div class="message message-succes" th:if="${deconnecte}" role="status">
         <p>Vous avez été déconnecté.</p>
     </div>

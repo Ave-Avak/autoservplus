@@ -20,6 +20,9 @@ import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.function.Function;
 
@@ -41,6 +44,13 @@ import java.util.function.Function;
  * fixation : l identifiant connu d un tiers pendant l etape partielle ne doit pas
  * devenir celui d une session complete), compteurs remis a zero, langue du profil
  * appliquee.</p>
+ *
+ * <p><b>Cinq minutes par étape.</b> Au-delà, la connexion partielle est abandonnée et
+ * l'utilisateur recommence au mot de passe. Le délai court de l'ouverture de l'étape,
+ * et non du mot de passe : un administrateur neuf change son mot de passe puis installe
+ * une application d'authentification, ce qu'un délai unique pour tout le parcours
+ * rendrait difficile. L'abandon ne touche pas aux compteurs d'échecs du second facteur :
+ * recommencer ne rouvre pas d'essais.</p>
  */
 @Component
 public class ParcoursConnexion implements AuthenticationSuccessHandler {
@@ -49,6 +59,7 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
     private final TentativesConnexionService tentatives;
     private final LangueApresConnexionHandler langue;
     private final PageArrivee pageArrivee;
+    private final Clock horloge;
     private final SecurityContextHolderStrategy strategie =
             SecurityContextHolder.getContextHolderStrategy();
     /** Meme composition que celle que HttpSecurity installe par defaut. */
@@ -56,13 +67,20 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
             new RequestAttributeSecurityContextRepository(),
             new HttpSessionSecurityContextRepository());
 
+    /** Durée d'une étape, de son ouverture à sa validation. */
+    static final Duration DELAI_ETAPE = Duration.ofMinutes(5);
+    static final String DELAI_CODE_DEPASSE = "/connexion?delai";
+    static final String DELAI_MOT_DE_PASSE_DEPASSE = "/connexion?delai-mot-de-passe";
+
     public ParcoursConnexion(UtilisateurRepository utilisateurs,
                              TentativesConnexionService tentatives,
-                             LangueApresConnexionHandler langue, PageArrivee pageArrivee) {
+                             LangueApresConnexionHandler langue, PageArrivee pageArrivee,
+                             Clock horloge) {
         this.utilisateurs = utilisateurs;
         this.tentatives = tentatives;
         this.langue = langue;
         this.pageArrivee = pageArrivee;
+        this.horloge = horloge;
     }
 
     /** Le mot de passe vient d etre verifie. */
@@ -72,7 +90,8 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
             throws IOException, ServletException {
         Optional<EtapeConnexion> etape = etapeSuivante(complete.getName(), false);
         if (etape.isPresent()) {
-            installer(requete, reponse, new AuthentificationPartielle(complete, false));
+            installer(requete, reponse,
+                    new AuthentificationPartielle(complete, false, Instant.now(horloge)));
             reponse.sendRedirect(requete.getContextPath() + etape.get().chemin());
             return;
         }
@@ -109,7 +128,7 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
         Optional<EtapeConnexion> etape =
                 etapeSuivante(partielle.getName(), partielle.secondFacteurValide());
         if (etape.isPresent()) {
-            installer(requete, reponse, partielle);
+            installer(requete, reponse, partielle.etapeOuverteA(Instant.now(horloge)));
             return "redirect:" + etape.get().chemin();
         }
         requete.changeSessionId();
@@ -123,9 +142,11 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
     /**
      * Garde d un ecran d etape : {@code null} si la requete est bien a cette etape,
      * sinon la redirection qui y remet de l ordre. Un compte deja connecte n a rien a
-     * faire ici. Une connexion partielle ne choisit pas son etape.
+     * faire ici. Une connexion partielle ne choisit pas son étape. Une étape ouverte
+     * depuis plus de {@link #DELAI_ETAPE} est abandonnée.
      */
-    public String garder(Authentication authentification, EtapeConnexion attendue) {
+    public String garder(Authentication authentification, EtapeConnexion attendue,
+                         HttpServletRequest requete, HttpServletResponse reponse) {
         if (!(authentification instanceof AuthentificationPartielle partielle)) {
             return "redirect:" + pageArrivee.de(authentification);
         }
@@ -135,6 +156,12 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
             // Plus rien a franchir : un tiers a pu lever l obligation entre-temps. On
             // ne fait pas aboutir sur un GET : l utilisateur recommence proprement.
             return "redirect:/connexion";
+        }
+        if (Instant.now(horloge).isAfter(partielle.etapeOuverteLe().plus(DELAI_ETAPE))) {
+            abandonner(requete, reponse);
+            return "redirect:" + (courante.get() == EtapeConnexion.CHANGEMENT_MOT_DE_PASSE
+                    ? DELAI_MOT_DE_PASSE_DEPASSE
+                    : DELAI_CODE_DEPASSE);
         }
         return courante.get() == attendue ? null : "redirect:" + courante.get().chemin();
     }

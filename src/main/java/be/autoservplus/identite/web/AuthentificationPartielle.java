@@ -4,6 +4,7 @@ import org.springframework.security.authentication.AbstractAuthenticationToken;
 import org.springframework.security.authentication.AnonymousAuthenticationToken;
 import org.springframework.security.core.Authentication;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Objects;
 
@@ -26,16 +27,24 @@ import java.util.Objects;
  * facteur mot de passe sans le second. Le passage à ce mécanisme a été écarté en V1 : il
  * suppose Spring Boot 4, et TOTP n'y est pas un facteur fourni, il faudrait encore lui
  * écrire sa propre autorité.</p>
+ *
+ * <p>Le jeton porte l'instant où son étape s'est ouverte : {@link ParcoursConnexion}
+ * l'abandonne au-delà de cinq minutes. Sans cette date, une connexion partielle durait
+ * autant que la session, et un mot de passe juste laissait l'étape ouverte tant que la
+ * session était entretenue.</p>
  */
 public class AuthentificationPartielle extends AbstractAuthenticationToken {
 
     private final Authentication complete;
     private final boolean secondFacteurValide;
+    private final Instant etapeOuverteLe;
 
-    public AuthentificationPartielle(Authentication complete, boolean secondFacteurValide) {
+    public AuthentificationPartielle(Authentication complete, boolean secondFacteurValide,
+                                     Instant etapeOuverteLe) {
         super(List.of());
         this.complete = Objects.requireNonNull(complete, "complete");
         this.secondFacteurValide = secondFacteurValide;
+        this.etapeOuverteLe = Objects.requireNonNull(etapeOuverteLe, "etapeOuverteLe");
         // Authentifie au sens du filtre d exception : un refus d acces mene alors au
         // gestionnaire de refus, qui renvoie vers l etape, et non a la page de connexion,
         // ce qui ferait recommencer le mot de passe a chaque clic.
@@ -56,7 +65,16 @@ public class AuthentificationPartielle extends AbstractAuthenticationToken {
     }
 
     public AuthentificationPartielle avecSecondFacteurValide() {
-        return new AuthentificationPartielle(complete, true);
+        return new AuthentificationPartielle(complete, true, etapeOuverteLe);
+    }
+
+    /** Le même jeton, pour l'étape qui s'ouvre à cet instant. */
+    public AuthentificationPartielle etapeOuverteA(Instant instant) {
+        return new AuthentificationPartielle(complete, secondFacteurValide, instant);
+    }
+
+    public Instant etapeOuverteLe() {
+        return etapeOuverteLe;
     }
 
     public Authentication complete() {
@@ -86,11 +104,12 @@ public class AuthentificationPartielle extends AbstractAuthenticationToken {
     public boolean equals(Object autre) {
         return autre instanceof AuthentificationPartielle partielle
                 && complete.equals(partielle.complete)
-                && secondFacteurValide == partielle.secondFacteurValide;
+                && secondFacteurValide == partielle.secondFacteurValide
+                && etapeOuverteLe.equals(partielle.etapeOuverteLe);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(complete, secondFacteurValide);
+        return Objects.hash(complete, secondFacteurValide, etapeOuverteLe);
     }
 }
