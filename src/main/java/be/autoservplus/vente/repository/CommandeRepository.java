@@ -138,6 +138,9 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
             nativeQuery = true)
     boolean aUneDemandeDeRetractation(@Param("commande") Long commande);
 
+    /** Le membre a-t-il une commande dans ce statut ? Sert la garde de l'adresse. */
+    boolean existsByMembreIdAndStatut(Long membreId, StatutCommande statut);
+
     /** Commandes d'un membre pour sa fiche du back-office (A12), sans limite de période. */
     @Query("""
             SELECT c FROM Commande c

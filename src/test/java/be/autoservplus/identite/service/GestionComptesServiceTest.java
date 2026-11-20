@@ -61,7 +61,7 @@ class GestionComptesServiceTest {
     @Mock private AuteurCourant auteurCourant;
     @Mock private RevocationSessions revocation;
     @Mock private HistoriqueModificationsCompte historiqueCompte;
-    @Mock private GardeAdresseFactures gardeAdresse;
+    @Mock private GardeAdresseCommande gardeAdresse;
     @Mock private ServiceCourriel courriel;
 
     private GestionComptesService service;

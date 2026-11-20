@@ -22,10 +22,10 @@ import org.springframework.transaction.annotation.Transactional;
 public class ProfilService {
 
     private final UtilisateurRepository utilisateurs;
-    private final GardeAdresseFactures gardeAdresse;
+    private final GardeAdresseCommande gardeAdresse;
     private final HistoriqueModificationsCompte historique;
 
-    public ProfilService(UtilisateurRepository utilisateurs, GardeAdresseFactures gardeAdresse,
+    public ProfilService(UtilisateurRepository utilisateurs, GardeAdresseCommande gardeAdresse,
                          HistoriqueModificationsCompte historique) {
         this.utilisateurs = utilisateurs;
         this.gardeAdresse = gardeAdresse;
@@ -45,8 +45,8 @@ public class ProfilService {
      * et a tout appelant non web. L ecran, lui, rend sa propre cle i18n pour suivre la
      * langue de session (F6).</p>
      *
-     * @throws RegleMetierException si le membre vide son adresse postale alors qu une
-     *                              facture peut encore etre generee pour lui
+     * @throws RegleMetierException si le membre vide son adresse postale alors qu'une
+     *                              de ses commandes attend son paiement
      */
     @Transactional
     public Utilisateur enregistrer(String email, String prenom, String nom, String telephone,

@@ -23,6 +23,13 @@
     <div class="message message-erreur" th:if="${erreurLignes}" role="alert"
          th:text="${erreurLignes}">Erreur</div>
 
+    <!--/* La facture imprime l'adresse du client (AR n°1, art. 5) : sans elle, la commande
+         est refusée au serveur, et l'écran le dit avant l'envoi. */-->
+    <div class="message message-erreur" th:if="${adresseIncomplete}" role="alert">
+        <p th:text="${erreurAdresse} ?: #{commande.recap.adresse-incomplete}">Renseignez votre adresse avant de commander.</p>
+        <p><a th:href="@{/mon-profil}" th:text="#{commande.recap.adresse-lien}">Compléter mon adresse</a></p>
+    </div>
+
     <div class="message message-erreur" th:if="${panier.contientPieceInactive()}" role="alert"
          th:text="#{panier.avertissement.piece-inactive}">Certains articles ne sont plus vendus.</div>
 

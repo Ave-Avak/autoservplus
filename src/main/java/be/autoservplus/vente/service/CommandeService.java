@@ -99,6 +99,11 @@ public class CommandeService {
         if (panier.estVide()) {
             throw new PanierVideException();
         }
+        // La facture émise au paiement imprime le nom et l'adresse du client (AR n°1,
+        // art. 5) : sans adresse complète, aucune commande.
+        if (!panier.getMembre().adressePostaleComplete()) {
+            throw new AdresseIncompleteException();
+        }
         List<LignePanier> lignes = panier.getLignes();
         for (LignePanier ligne : lignes) {
             // Contrainte F13 prolongee a la conversion : on ne commande pas un article
@@ -240,6 +245,13 @@ public class CommandeService {
      * plus ancienne. Les champs de facture des vues restent nuls : le module vente
      * ignore la facturation, c est le controleur qui les complete.
      */
+    /** L'adresse que la facture imprimera est-elle complète ? Le récapitulatif prévient. */
+    public boolean adresseComplete(String email) {
+        return paniers.findByMembreEmail(email)
+                .map(panier -> panier.getMembre().adressePostaleComplete())
+                .orElse(true);
+    }
+
     public List<CommandeHistoriqueVue> historiqueDuMembre(String email) {
         ZoneId zone = ZoneId.of(horloge.getZone().getId());
         return commandes.historiqueDuMembre(email).stream()

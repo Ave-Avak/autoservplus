@@ -411,7 +411,20 @@ public class Utilisateur extends BaseEntity {
 
     /** Les trois champs que la facture exige pour imprimer une adresse. */
     public boolean adressePostaleComplete() {
-        return rue != null && codePostal != null && localite != null;
+        return adresseComplete(rue, codePostal, localite);
+    }
+
+    /**
+     * Règle unique de l'adresse complète, pour l'adresse en place comme pour une saisie :
+     * la commande l'exige et la facture l'imprime (AR n°1, art. 5). Le numéro n'en fait
+     * pas partie, certaines adresses belges n'en ont pas.
+     */
+    public static boolean adresseComplete(String rue, String codePostal, String localite) {
+        return renseigne(rue) && renseigne(codePostal) && renseigne(localite);
+    }
+
+    private static boolean renseigne(String valeur) {
+        return valeur != null && !valeur.isBlank();
     }
 
     public boolean estActif() {

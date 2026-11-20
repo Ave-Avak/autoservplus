@@ -51,7 +51,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Instantané du client sur la facture (V61) : figé à l'émission, lu par le PDF, restitué
- * et restitué par l'export.
+ * par l'export, et adresse exigée à la commande.
  *
  * <p>Sans {@code @Transactional} de classe : la facture naît d'un écouteur exécuté après
  * la validation du paiement.</p>
@@ -224,5 +224,44 @@ class InstantaneClientIT extends SocleIntegration {
             assertThat(facture.clientNom()).isEqualTo("Dupont");
             assertThat(facture.adresseClient().rue()).isEqualTo(MembresDeTest.RUE);
         });
+    }
+
+    @Test
+    @DisplayName("sans adresse : le récapitulatif prévient, la commande est refusée, lien vers le profil")
+    void commandeSansAdresseRefusee() throws Exception {
+        Utilisateur jean = creer(false);
+        panier(jean);
+
+        mvc.perform(get("/commande").with(user(jean.getEmail())).locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("href=\"/mon-profil\"")));
+        mvc.perform(post("/commande").with(user(jean.getEmail())).with(csrf())
+                        .param("cgv", "true").locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Renseignez votre adresse")));
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM commande WHERE membre_id = ?",
+                Long.class, jean.getId())).isZero();
+    }
+
+    /**
+     * Cas limite assumé : l'adresse disparaît entre la commande et le paiement malgré les
+     * gardes, ici par une écriture directe. Le paiement est encaissé, la facture est émise
+     * quand même, sans adresse, et l'émission le journalise en WARN.
+     */
+    @Test
+    @DisplayName("adresse manquante au paiement : la facture est émise quand même, sans adresse")
+    void adresseManquanteAuPaiement() throws Exception {
+        Utilisateur marie = creer(true);
+        panier(marie);
+        UUID commande = commander(marie);
+        jdbc.update("UPDATE utilisateur SET rue = NULL, code_postal = NULL, localite = NULL WHERE id = ?",
+                marie.getId());
+
+        payer(marie, commande);
+
+        Map<String, Object> facture = instantane(commande);
+        assertThat(facture).containsEntry("client_nom", "Dupont");
+        assertThat(facture.get("client_rue")).isNull();
     }
 }

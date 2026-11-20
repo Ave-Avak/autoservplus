@@ -69,7 +69,7 @@ public class GestionComptesService {
     private final AuteurCourant auteurCourant;
     private final RevocationSessions revocation;
     private final HistoriqueModificationsCompte historiqueCompte;
-    private final GardeAdresseFactures gardeAdresse;
+    private final GardeAdresseCommande gardeAdresse;
     private final ServiceCourriel courriel;
     private final Clock horloge;
 
@@ -77,7 +77,7 @@ public class GestionComptesService {
                                  HistoriqueStatutUtilisateurRepository historique,
                                  AuteurCourant auteurCourant, RevocationSessions revocation,
                                  HistoriqueModificationsCompte historiqueCompte,
-                                 GardeAdresseFactures gardeAdresse, ServiceCourriel courriel,
+                                 GardeAdresseCommande gardeAdresse, ServiceCourriel courriel,
                                  Clock horloge) {
         this.utilisateurs = utilisateurs;
         this.historique = historique;
@@ -222,7 +222,7 @@ public class GestionComptesService {
      * @return les champs modifiés, vide si rien n'a changé
      * @throws RefusTraduit         cible hors des membres, compte supprimé, motif absent
      *                              ou trop long
-     * @throws RegleMetierException adresse effacée alors que des factures existent
+     * @throws RegleMetierException adresse effacée alors qu'une commande attend son paiement
      */
     @Transactional
     public List<ChampCompte> modifierMembre(UUID reference, String motif, String prenom,
