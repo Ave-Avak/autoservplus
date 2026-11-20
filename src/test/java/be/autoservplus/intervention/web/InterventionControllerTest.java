@@ -81,10 +81,10 @@ class InterventionControllerTest {
     void setUp() {
         org.mockito.Mockito.reset(service);
         vueDemo = new InterventionVueMembre(REF, "INT-2026-0001",
-                "EN_COURS", "En cours",
+                "EN_COURS", "statut.percu.en_cours",
                 "VW Golf (1-ABC-123)",
                 "Piece commandee, livraison mardi",
-                "Lundi 14 septembre 2026 09:00", null,
+                java.time.LocalDateTime.of(2026, 9, 14, 9, 0), null,
                 List.of(), "59,29 €", List.of(), false, false);
     }
 
