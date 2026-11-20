@@ -38,13 +38,14 @@ class ProfilServiceTest {
 
     @Mock private UtilisateurRepository utilisateurs;
     @Mock private FactureRepository factures;
+    @Mock private HistoriqueModificationsCompte historique;
 
     private ProfilService service;
     private Utilisateur membre;
 
     @BeforeEach
     void setUp() {
-        service = new ProfilService(utilisateurs, factures);
+        service = new ProfilService(utilisateurs, factures, historique);
         membre = new Utilisateur(EMAIL, "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         lenient().when(utilisateurs.findByEmail(EMAIL)).thenReturn(Optional.of(membre));
     }

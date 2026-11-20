@@ -190,6 +190,49 @@ class SuppressionCompteIT extends SocleIntegration {
         assertThat(utilisateurs.findByEmail(adresseReelle)).isEmpty();
     }
 
+    /**
+     * Le motif d'une modification faite par l'administrateur peut citer la nouvelle
+     * adresse : il est remplacé par le marqueur. Les valeurs sont vidées, le champ,
+     * l'auteur et la date restent, et la ligne du titulaire garde son motif nul.
+     */
+    @Test
+    @DisplayName("l'historique du compte : valeurs vidées, motif remplacé par le marqueur")
+    void historiqueDuCompteAnonymise() {
+        Utilisateur marie = membre();
+        Utilisateur chef = transactions.execute(statut -> utilisateurs.saveAndFlush(new Utilisateur(
+                "chef-suppression-" + COMPTEUR.getAndIncrement() + "@exemple.be",
+                encodeur.encode(MOT_DE_PASSE), "Garage", "Chef", TypeUtilisateur.ADMINISTRATEUR)));
+        jdbc.update("""
+                INSERT INTO historique_modification_compte
+                    (utilisateur_id, champ, valeur_avant, valeur_apres, horodatage, auteur_id, motif)
+                VALUES (?, 'RUE', 'Rue de la Loi', 'Rue Haute', now(), ?, 'Appel : nouvelle adresse Rue Haute')
+                """, marie.getId(), chef.getId());
+        jdbc.update("""
+                INSERT INTO historique_modification_compte
+                    (utilisateur_id, champ, valeur_avant, valeur_apres, horodatage, auteur_id)
+                VALUES (?, 'TELEPHONE', '+32 470 12 34 56', '+32 470 65 43 21', now(), ?)
+                """, marie.getId(), marie.getId());
+
+        supprimer(marie);
+
+        List<java.util.Map<String, Object>> lignes = jdbc.queryForList("""
+                SELECT champ, valeur_avant, valeur_apres, auteur_id, motif, horodatage
+                FROM historique_modification_compte WHERE utilisateur_id = ? ORDER BY champ
+                """, marie.getId());
+        assertThat(lignes).hasSize(2);
+        assertThat(lignes).allSatisfy(ligne -> {
+            assertThat(ligne.get("valeur_avant")).isNull();
+            assertThat(ligne.get("valeur_apres")).isNull();
+            assertThat(ligne.get("horodatage")).isNotNull();
+        });
+        assertThat(lignes.get(0)).containsEntry("champ", "RUE")
+                .containsEntry("auteur_id", chef.getId())
+                .containsEntry("motif", Utilisateur.MARQUEUR_ANONYME);
+        assertThat(lignes.get(1)).containsEntry("champ", "TELEPHONE")
+                .containsEntry("auteur_id", marie.getId());
+        assertThat(lignes.get(1).get("motif")).isNull();
+    }
+
     @Test
     @DisplayName("la ligne reste jointe : deleted_at vide, le compte est encore lisible")
     void ligneNonMasquee() {

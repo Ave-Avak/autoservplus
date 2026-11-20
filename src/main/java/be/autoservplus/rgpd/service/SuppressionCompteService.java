@@ -6,6 +6,7 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.CodeSecoursRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.identite.service.HistoriqueModificationsCompte;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.rgpd.repository.TracesAuditRepository;
 import be.autoservplus.rgpd.repository.VehiculeAnonymisationRepository;
@@ -84,6 +85,7 @@ public class SuppressionCompteService {
     private final AvisRepository avis;
     private final TracesAuditRepository tracesAudit;
     private final CodeSecoursRepository codesSecours;
+    private final HistoriqueModificationsCompte historiqueCompte;
     private final PasswordEncoder encodeur;
     private final ApplicationEventPublisher evenements;
     private final Clock horloge;
@@ -93,6 +95,7 @@ public class SuppressionCompteService {
                                     AvisRepository avis,
                                     TracesAuditRepository tracesAudit,
                                     CodeSecoursRepository codesSecours,
+                                    HistoriqueModificationsCompte historiqueCompte,
                                     PasswordEncoder encodeur,
                                     ApplicationEventPublisher evenements,
                                     Clock horloge) {
@@ -101,6 +104,7 @@ public class SuppressionCompteService {
         this.avis = avis;
         this.tracesAudit = tracesAudit;
         this.codesSecours = codesSecours;
+        this.historiqueCompte = historiqueCompte;
         this.encodeur = encodeur;
         this.evenements = evenements;
         this.horloge = horloge;
@@ -139,6 +143,9 @@ public class SuppressionCompteService {
 
         int supprimes = anonymiserLeParc(membre);
         int avisNeutralises = anonymiserLesAvis(membre);
+        // Un ancien nom ou une ancienne adresse resterait lisible dans l'historique du
+        // compte : les valeurs partent, le fait de la modification reste.
+        int modifications = historiqueCompte.effacerValeurs(membre);
         membre.anonymiser(jetonEmail(membre), hachageInerte(), horloge.instant());
         // Le secret TOTP part avec anonymiser(). Les codes de secours encore valables
         // sont invalides, et non supprimes : leur date reste la trace de leur fin.
@@ -151,8 +158,8 @@ public class SuppressionCompteService {
         // la personne. Une trace de suppression qui contiendrait le nom ou l adresse
         // recreerait ce que la suppression vient d effacer.
         JOURNAL.info("Compte {} anonymise : {} vehicule(s) supprime(s), {} avis neutralise(s), "
-                        + "{} trace(s) d audit nettoyee(s).",
-                membre.getReference(), supprimes, avisNeutralises, traces);
+                        + "{} modification(s) de compte videe(s), {} trace(s) d audit nettoyee(s).",
+                membre.getReference(), supprimes, avisNeutralises, modifications, traces);
 
         evenements.publishEvent(evenement);
     }

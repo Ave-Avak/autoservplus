@@ -24,10 +24,13 @@ public class ProfilService {
 
     private final UtilisateurRepository utilisateurs;
     private final FactureRepository factures;
+    private final HistoriqueModificationsCompte historique;
 
-    public ProfilService(UtilisateurRepository utilisateurs, FactureRepository factures) {
+    public ProfilService(UtilisateurRepository utilisateurs, FactureRepository factures,
+                         HistoriqueModificationsCompte historique) {
         this.utilisateurs = utilisateurs;
         this.factures = factures;
+        this.historique = historique;
     }
 
     public Utilisateur profilDe(String email) {
@@ -64,8 +67,8 @@ public class ProfilService {
                     "Renseignez votre adresse : elle figure sur vos factures.");
         }
 
-        membre.modifierProfil(prenom, nom, telephone, rue, numeroRue, codePostal,
-                localite, pays, langue);
+        historique.consigner(membre, membre.modifierProfil(prenom, nom, telephone, rue,
+                numeroRue, codePostal, localite, pays, langue), membre, null);
         return membre;
     }
 

@@ -5,6 +5,8 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsChangementEmailCourriel;
 import be.autoservplus.communication.service.LiensCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.identite.domain.ChampCompte;
+import be.autoservplus.identite.domain.ChangementChamp;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import org.slf4j.Logger;
@@ -18,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 
 /**
  * Changement d adresse de courriel avec verification prealable (CdC 5.2.2).
@@ -62,12 +65,14 @@ public class ChangementEmailService {
     private final LimiteurDemandesCourriel limiteur;
     private final Clock horloge;
     private final LiensCourriel liens;
+    private final HistoriqueModificationsCompte historique;
 
     public ChangementEmailService(UtilisateurRepository repository, ServiceCourriel courriel,
                                   PasswordEncoder encodeur,
                                   LimiteurDemandesCourriel limiteur, Clock horloge,
-                                  LiensCourriel liens) {
+                                  LiensCourriel liens, HistoriqueModificationsCompte historique) {
         this.repository = repository;
+        this.historique = historique;
         this.liens = liens;
         this.courriel = courriel;
         this.encodeur = encodeur;
@@ -210,6 +215,11 @@ public class ChangementEmailService {
         }
 
         String ancienne = membre.appliquerChangementEmail();
+        // Le titulaire est l'auteur, même si le lien est ouvert sans session : c'est lui
+        // qui a demandé le changement, mot de passe à l'appui, et lui seul a reçu le lien.
+        historique.consigner(membre,
+                List.of(new ChangementChamp(ChampCompte.EMAIL, ancienne, membre.getEmail())),
+                membre, null);
         JOURNAL.info("Adresse de courriel changee pour le compte {}", membre.getReference());
         return ancienne;
     }
