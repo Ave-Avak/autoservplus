@@ -7,13 +7,9 @@
     <title th:text="${article.libelle()} + ' | AutoServ+'">Article | AutoServ+</title>
     <meta name="description" th:content="${article.description()}">
 
-    <!--
-      Donnees structurees schema.org au format JSON-LD.
-      Elles indiquent explicitement aux moteurs de recherche la nature de la page,
-      son prix et sa disponibilite. Google peut alors afficher ces informations
-      directement dans ses resultats, ce qui ameliore le taux de clic sans depenser
-      en publicite. Le prix expose est le prix TVAC, conformement a la regle RM-30.
-    -->
+    <!--/* Données structurées schema.org en JSON-LD : elles disent aux moteurs de
+         recherche la nature de la page, son prix et sa disponibilité, qu'ils peuvent
+         afficher dans leurs résultats. Le prix exposé est le prix TVAC (RM-30). */-->
     <script type="application/ld+json" th:if="${typeArticle == 'service'}" th:inline="text">
         {
             "@context": "https://schema.org",
@@ -66,17 +62,17 @@
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
 
-    <nav class="fil-ariane" aria-label="Fil d'Ariane">
+    <nav class="fil-ariane" th:aria-label="#{fil-ariane.aria}">
         <ol>
-            <li><a th:href="@{/}">Accueil</a></li>
+            <li><a th:href="@{/}" th:text="#{fil-ariane.accueil}">Accueil</a></li>
             <li><a th:href="${typeArticle == 'service'} ? @{/services} : @{/pieces}"
-                   th:text="${typeArticle == 'service'} ? 'Prestations' : 'Pièces'">Catalogue</a></li>
+                   th:text="${typeArticle == 'service'} ? #{catalogue.fil.services} : #{catalogue.fil.pieces}">Catalogue</a></li>
             <li aria-current="page" th:text="${article.libelle()}">Article</li>
         </ol>
     </nav>
@@ -89,39 +85,40 @@
 
         <dl class="fiche-details">
             <div th:if="${article.dureeMinutes() != null}">
-                <dt>Durée estimée</dt>
+                <dt th:text="#{catalogue.fiche.duree}">Durée estimée</dt>
                 <dd th:text="${article.dureeLisible()}">1 h</dd>
             </div>
             <div th:if="${article.marque() != null}">
-                <dt>Marque</dt>
+                <dt th:text="#{catalogue.fiche.marque}">Marque</dt>
                 <dd th:text="${article.marque()}">Marque</dd>
             </div>
             <div>
-                <dt>Référence</dt>
+                <dt th:text="#{catalogue.fiche.reference}">Référence</dt>
                 <dd th:text="${article.code()}">REF-001</dd>
             </div>
         </dl>
 
         <div class="fiche-prix">
             <p class="prix-principal">
-                <span th:text="${#numbers.formatDecimal(article.prixTvac(), 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</span>
-                <span class="prix-mention">TVA comprise</span>
+                <span th:text="${#numbers.formatDecimal(article.prixTvac(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">0,00 €</span>
+                <span class="prix-mention" th:text="#{catalogue.fiche.tva-comprise}">TVA comprise</span>
             </p>
             <p class="prix-htva"
-               th:text="'Soit ' + ${#numbers.formatDecimal(article.prixHtva(), 1, 'POINT', 2, 'COMMA')} + ' € hors TVA'">
+               th:text="#{catalogue.fiche.hors-tva(${#numbers.formatDecimal(article.prixHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">
                 Soit 0,00 € hors TVA</p>
         </div>
 
-        <p class="message message-erreur" th:unless="${article.disponible()}" role="status">
+        <p class="message message-erreur" th:unless="${article.disponible()}" role="status"
+           th:text="#{catalogue.fiche.indisponible}">
             Cet article est momentanément indisponible.
         </p>
 
         <div class="fiche-actions" th:if="${article.disponible()}">
             <a class="btn-cta" th:href="@{/mes-rendez-vous/nouveau(prestation=${article.reference()})}"
-               th:if="${typeArticle == 'service'}">Prendre rendez-vous</a>
-            <!-- F12 : la prestation s'achete aussi hors rendez-vous. Modele DECOUPLE :
-                 payer le service ne reserve pas le creneau, la planification reste une
-                 etape separee. Reserve aux membres connectes, comme le panier. -->
+               th:if="${typeArticle == 'service'}" th:text="#{catalogue.fiche.rendez-vous}">Prendre rendez-vous</a>
+            <!--/* F12 : la prestation s'achète aussi hors rendez-vous. Payer le service ne
+                 réserve pas le créneau, la planification reste une étape séparée.
+                 Réservé aux membres connectés, comme le panier. */-->
             <form th:action="@{/panier/ajouter-service}" method="post"
                   th:if="${typeArticle == 'service'}" sec:authorize="isAuthenticated()">
                 <input type="hidden" name="reference" th:value="${article.reference()}">
@@ -131,9 +128,9 @@
                 <button type="submit" class="btn-cta"
                         th:text="#{panier.ajout.service}">Ajouter au panier</button>
             </form>
-            <!-- F13 : ajout au panier en POST (jeton CSRF injecte par th:action), avec
-                 quantite choisie ici. Un GET mutateur (l'ancien lien) contournerait
-                 la protection CSRF et le pattern PRG. -->
+            <!--/* F13 : ajout au panier en POST, avec le jeton CSRF injecté par th:action
+                 et la quantité choisie ici. Un GET qui modifie le panier contournerait
+                 la protection CSRF et le patron PRG. */-->
             <form th:action="@{/panier/ajouter}" method="post" th:if="${typeArticle == 'piece'}">
                 <input type="hidden" name="reference" th:value="${article.reference()}">
                 <label for="quantite" th:text="#{panier.ajout.quantite}">Quantité</label>
@@ -145,8 +142,8 @@
     </article>
 
 
-    <!-- BL-9 : galerie. Images servies par notre propre controleur depuis un stockage
-         hors webroot, ce qui laisse la CSP a img-src 'self' sans relachement. -->
+    <!--/* BL-9 : galerie. Les images sont servies par l'application depuis un stockage
+         hors de la racine web, ce qui laisse la CSP à img-src 'self'. */-->
     <section th:unless="${#lists.isEmpty(photos)}" class="galerie">
         <h2 th:text="#{galerie.titre}">Photos</h2>
         <ul>
@@ -157,8 +154,8 @@
         </ul>
     </section>
 
-    <!-- BL-4 : avis publies. Reserve aux prestations : un avis porte sur un travail
-         effectue sur le vehicule, pas sur un article de stock. -->
+    <!--/* BL-4 : avis publiés, réservés aux prestations : un avis porte sur un travail
+         effectué sur le véhicule, pas sur un article de stock. */-->
     <section th:if="${typeArticle == 'service'}" class="avis">
         <h2 th:text="#{avis.section.titre}">Avis des clients</h2>
 
@@ -173,28 +170,23 @@
 
         <ol class="liste-avis" th:unless="${#lists.isEmpty(avis)}">
             <li th:each="a : ${avis}">
-                <!-- Note rendue en toutes lettres et pas seulement en etoiles : un
-                     lecteur d'ecran doit pouvoir l'annoncer. -->
+                <!--/* Note en toutes lettres et pas seulement en étoiles : un lecteur
+                     d'écran doit pouvoir l'annoncer. */-->
                 <p><strong th:text="#{avis.note(${a.note()})}">4 sur 5</strong></p>
                 <p th:if="${a.aUnCommentaire()}" th:text="${a.commentaire()}">Travail soigné.</p>
                 <p class="carte-meta">
                     <span th:text="${a.prenomAuteur()}">Marie</span>
-                    <span th:text="${a.date()}">23 août 2026</span>
+                    <span th:text="${#temporals.format(a.date(), 'd MMMM yyyy')}">23 août 2026</span>
                 </p>
             </li>
         </ol>
     </section>
 
-    <p><a th:href="${typeArticle == 'service'} ? @{/services} : @{/pieces}">Retour au catalogue</a></p>
+    <p><a th:href="${typeArticle == 'service'} ? @{/services} : @{/pieces}" th:text="#{catalogue.fiche.retour}">Retour au catalogue</a></p>
 </main>
 
 <footer class="pied">
-    <ul>
-        <li><a th:href="@{/cgv}">CGV</a></li>
-        <li><a th:href="@{/mentions-legales}">Mentions légales</a></li>
-        <li><a th:href="@{/confidentialite}">Confidentialité</a></li>
-    </ul>
-    <p>&copy; 2026 AutoServ+</p>
+    <p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p>
 </footer>
 
 <div th:replace="~{fragments/cookies :: bandeau}"></div>

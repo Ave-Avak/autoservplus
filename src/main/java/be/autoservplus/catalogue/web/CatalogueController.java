@@ -39,7 +39,6 @@ public class CatalogueController {
 
     @GetMapping("/services")
     public String listerPrestations(@RequestParam(required = false) String categorie, Model modele) {
-        modele.addAttribute("titre", "Nos prestations");
         modele.addAttribute("articles", (categorie == null || categorie.isBlank())
                 ? service.prestationsActives()
                 : service.prestationsDeCategorie(categorie));
@@ -51,7 +50,6 @@ public class CatalogueController {
 
     @GetMapping("/pieces")
     public String listerPieces(@RequestParam(required = false) String categorie, Model modele) {
-        modele.addAttribute("titre", "Pièces détachées");
         modele.addAttribute("articles", (categorie == null || categorie.isBlank())
                 ? service.piecesActives()
                 : service.piecesDeCategorie(categorie));

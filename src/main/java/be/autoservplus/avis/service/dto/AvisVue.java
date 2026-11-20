@@ -2,6 +2,7 @@ package be.autoservplus.avis.service.dto;
 
 import be.autoservplus.avis.domain.Avis;
 
+import java.time.LocalDate;
 import java.util.UUID;
 
 /**
@@ -20,12 +21,13 @@ public record AvisVue(
         String prenomAuteur,
         short note,
         String commentaire,
-        String date,
+        LocalDate date,
         boolean publie,
         boolean signale,
         String numeroIntervention) {
 
-    public static AvisVue de(Avis avis, String date) {
+    /** Le jour du dépôt, à l'heure de l'atelier : le gabarit le formate dans la langue de l'écran. */
+    public static AvisVue de(Avis avis, LocalDate date) {
         return new AvisVue(
                 avis.getReference(),
                 avis.getMembre().getPrenom(),
