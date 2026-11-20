@@ -10,37 +10,37 @@
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <header th:replace="~{fragments/back-office :: entete}"></header>
 
 <main id="contenu">
-    <p><a th:href="@{/admin/rendez-vous/{ref}(ref=${rdv.reference()})}">Retour au rendez-vous</a></p>
+    <p><a th:href="@{/admin/rendez-vous/{ref}(ref=${rdv.reference()})}" th:text="#{admin.rdv.motif.retour}">Retour au rendez-vous</a></p>
 
-    <h1>Refuser un rendez-vous</h1>
+    <h1 th:text="#{admin.rdv.refuser.titre}">Refuser un rendez-vous</h1>
 
     <dl class="vehicule-details">
         <div>
-            <dt>Numéro</dt>
+            <dt th:text="#{admin.rdv.colonne.numero}">Numéro</dt>
             <dd th:text="${rdv.numero()}">RDV-2026-0001</dd>
         </div>
         <div>
-            <dt>Membre</dt>
+            <dt th:text="#{admin.rdv.colonne.membre}">Membre</dt>
             <dd>
                 <span th:text="${rdv.membreNom()}">Marie Dupont</span>
                 (<a th:href="'mailto:' + ${rdv.membreEmail()}" th:text="${rdv.membreEmail()}">marie@exemple.be</a>)
             </dd>
         </div>
         <div>
-            <dt>Date</dt>
-            <dd th:text="${#strings.capitalize(rdv.jourLisible())}">Dimanche 13 septembre 2026</dd>
+            <dt th:text="#{admin.rdv.colonne.date}">Date</dt>
+            <dd th:text="${#strings.capitalize(#temporals.format(rdv.debut(), 'EEEE d MMMM yyyy'))}">Dimanche 13 septembre 2026</dd>
         </div>
         <div>
-            <dt>Heure</dt>
+            <dt th:text="#{admin.rdv.colonne.heure}">Heure</dt>
             <dd th:text="${rdv.heureDebut()} + ' - ' + ${rdv.heureFin()}">10:00 - 11:00</dd>
         </div>
         <div>
-            <dt>Véhicule</dt>
+            <dt th:text="#{admin.rdv.colonne.vehicule}">Véhicule</dt>
             <dd th:text="${rdv.vehicule()}">VW Golf (1-ABC-123)</dd>
         </div>
     </dl>
@@ -50,23 +50,23 @@
           th:object="${formulaire}" method="post" novalidate>
 
         <div class="champ">
-            <label for="motif">Motif du refus</label>
+            <label for="motif" th:text="#{admin.rdv.refuser.motif}">Motif du refus</label>
             <textarea id="motif" th:field="*{motif}" rows="4" maxlength="500" required
                       aria-describedby="aide-motif"></textarea>
-            <p id="aide-motif" class="texte-info">
+            <p id="aide-motif" class="texte-info" th:text="#{admin.rdv.motif.aide}">
                 Le motif est communiqué au membre par courriel.
             </p>
             <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motif')}" th:errors="*{motif}"></p>
         </div>
 
         <p class="actions-page">
-            <button type="submit" class="btn-cta">Refuser</button>
-            <a th:href="@{/admin/rendez-vous}">Retour à la liste</a>
+            <button type="submit" class="btn-cta" th:text="#{admin.rdv.refuser.bouton}">Refuser</button>
+            <a th:href="@{/admin/rendez-vous}" th:text="#{admin.rdv.motif.retour-liste}">Retour à la liste</a>
         </p>
     </form>
 </main>
 
-<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 <div th:replace="~{fragments/cookies :: bandeau}"></div>
 </body>
 </html>

@@ -39,7 +39,6 @@ public class AdminInterventionController {
 
     @GetMapping
     public String liste(Model modele) {
-        modele.addAttribute("titre", "Interventions à traiter");
         modele.addAttribute("interventions", service.interventionsEnCours());
         return "admin/interventions";
     }
@@ -48,7 +47,6 @@ public class AdminInterventionController {
     @GetMapping("/{reference}")
     public String detail(@PathVariable UUID reference, Model modele) {
         InterventionVueAdmin vue = service.vueAdmin(reference);
-        modele.addAttribute("titre", "Intervention " + vue.numero());
         modele.addAttribute("intervention", vue);
         modele.addAttribute("prestations", service.prestationsActives());
         return "admin/intervention-detail";
@@ -61,7 +59,7 @@ public class AdminInterventionController {
                            @PathVariable UUID reference,
                            RedirectAttributes redirection) {
         return appliquerTransition(reference, redirection,
-                () -> service.demarrer(reference), "démarrée");
+                () -> service.demarrer(reference), "admin.intervention.message.demarree");
     }
 
     @PostMapping("/{reference}/suspendre")
@@ -69,7 +67,7 @@ public class AdminInterventionController {
                             @PathVariable UUID reference,
                             RedirectAttributes redirection) {
         return appliquerTransition(reference, redirection,
-                () -> service.suspendre(reference), "suspendue");
+                () -> service.suspendre(reference), "admin.intervention.message.suspendue");
     }
 
     @PostMapping("/{reference}/reprendre")
@@ -77,7 +75,7 @@ public class AdminInterventionController {
                             @PathVariable UUID reference,
                             RedirectAttributes redirection) {
         return appliquerTransition(reference, redirection,
-                () -> service.reprendre(reference), "reprise");
+                () -> service.reprendre(reference), "admin.intervention.message.reprise");
     }
 
     @PostMapping("/{reference}/terminer")
@@ -85,7 +83,7 @@ public class AdminInterventionController {
                            @PathVariable UUID reference,
                            RedirectAttributes redirection) {
         return appliquerTransition(reference, redirection,
-                () -> service.terminer(reference), "terminée");
+                () -> service.terminer(reference), "admin.intervention.message.terminee");
     }
 
     @PostMapping("/{reference}/annuler")
@@ -93,7 +91,7 @@ public class AdminInterventionController {
                           @PathVariable UUID reference,
                           RedirectAttributes redirection) {
         return appliquerTransition(reference, redirection,
-                () -> service.annuler(reference), "annulée");
+                () -> service.annuler(reference), "admin.intervention.message.annulee");
     }
 
     // --- commentaire et lignes ------------------------------------------------------
@@ -105,11 +103,11 @@ public class AdminInterventionController {
                                       RedirectAttributes redirection) {
         try {
             service.modifierCommentaireAdmin(reference, commentaire);
-            redirection.addFlashAttribute("message", "Commentaire mis à jour.");
-        } catch (RessourceIntrouvableException | ConflitConcurrenceException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
+            redirection.addFlashAttribute("message", message("admin.intervention.message.commentaire"));
+        } catch (ConflitConcurrenceException e) {
+            redirection.addFlashAttribute("erreur", message("erreur.409.message"));
         } catch (IllegalStateException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
+            redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.etat"));
         }
         return "redirect:/admin/interventions/" + reference;
     }
@@ -125,8 +123,8 @@ public class AdminInterventionController {
         } catch (IllegalArgumentException e) {
             redirection.addFlashAttribute("erreur", message("admin.intervention.note.trop-longue",
                     Intervention.LONGUEUR_NOTE_INTERNE));
-        } catch (RessourceIntrouvableException | ConflitConcurrenceException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
+        } catch (ConflitConcurrenceException e) {
+            redirection.addFlashAttribute("erreur", message("erreur.409.message"));
         }
         return "redirect:/admin/interventions/" + reference;
     }
@@ -139,11 +137,16 @@ public class AdminInterventionController {
                                RedirectAttributes redirection) {
         try {
             service.ajouterLigneMainOeuvre(reference, prestation, quantite);
-            redirection.addFlashAttribute("message", "Ligne ajoutée.");
-        } catch (RessourceIntrouvableException | ConflitConcurrenceException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
-        } catch (IllegalArgumentException | IllegalStateException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
+            redirection.addFlashAttribute("message", message("admin.intervention.message.ligne-ajoutee"));
+        } catch (RessourceIntrouvableException e) {
+            // La prestation choisie dans la liste a disparu du catalogue entre-temps.
+            redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.prestation"));
+        } catch (ConflitConcurrenceException e) {
+            redirection.addFlashAttribute("erreur", message("erreur.409.message"));
+        } catch (IllegalArgumentException e) {
+            redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.quantite"));
+        } catch (IllegalStateException e) {
+            redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.etat"));
         }
         return "redirect:/admin/interventions/" + reference;
     }
@@ -155,11 +158,11 @@ public class AdminInterventionController {
                                  RedirectAttributes redirection) {
         try {
             service.retirerLigne(reference, ligneId);
-            redirection.addFlashAttribute("message", "Ligne retirée.");
-        } catch (RessourceIntrouvableException | ConflitConcurrenceException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
+            redirection.addFlashAttribute("message", message("admin.intervention.message.ligne-retiree"));
+        } catch (ConflitConcurrenceException e) {
+            redirection.addFlashAttribute("erreur", message("erreur.409.message"));
         } catch (IllegalStateException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
+            redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.etat"));
         }
         return "redirect:/admin/interventions/" + reference;
     }
@@ -167,15 +170,15 @@ public class AdminInterventionController {
     // --- helpers privees ------------------------------------------------------------
 
     private String appliquerTransition(UUID reference, RedirectAttributes redirection,
-                                       Supplier<Intervention> action, String verbe) {
+                                       Supplier<Intervention> action, String cleSucces) {
         try {
             Intervention it = action.get();
-            redirection.addFlashAttribute("message",
-                    "L'intervention " + it.getNumero() + " a été " + verbe + ".");
-        } catch (RessourceIntrouvableException | ConflitConcurrenceException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
+            redirection.addFlashAttribute("message", message(cleSucces, it.getNumero()));
+        } catch (ConflitConcurrenceException e) {
+            redirection.addFlashAttribute("erreur", message("erreur.409.message"));
         } catch (IllegalStateException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
+            // Machine à états du domaine : la phrase française reste aux journaux.
+            redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.etat"));
         }
         return "redirect:/admin/interventions/" + reference;
     }

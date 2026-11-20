@@ -1,11 +1,8 @@
 package be.autoservplus.reservation.service.support;
 
-import be.autoservplus.reservation.domain.StatutRdv;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -78,25 +75,6 @@ class FormatageRdvTest {
                     .isEqualTo("0,00" + NBSP + "€");
             assertThat(FormatageRdv.euros(new BigDecimal("9.5")))
                     .isEqualTo("9,50" + NBSP + "€");
-        }
-    }
-
-    @Nested
-    @DisplayName("statut lisible")
-    class StatutLisible {
-
-        @ParameterizedTest(name = "{0} -> {1}")
-        @CsvSource({
-                "EN_ATTENTE, En attente de confirmation",
-                "CONFIRME,   Confirmé",
-                "REFUSE,     Refusé par le garage",
-                "ANNULE,     Annulé",
-                "HONORE,     Effectué",
-                "ABSENT,     Non présenté"
-        })
-        @DisplayName("chaque statut a un libelle stable")
-        void libelleParStatut(StatutRdv statut, String attendu) {
-            assertThat(FormatageRdv.statutLisible(statut)).isEqualTo(attendu);
         }
     }
 }

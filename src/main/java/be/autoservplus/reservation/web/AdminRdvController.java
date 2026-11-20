@@ -1,7 +1,9 @@
 package be.autoservplus.reservation.web;
 
 import be.autoservplus.common.exception.ConflitConcurrenceException;
-import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.exception.RefusTraduit;
+import be.autoservplus.common.exception.RegleMetierException;
+import be.autoservplus.common.exception.TransitionRefusee;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.service.AdminRdvService;
 import be.autoservplus.reservation.service.CreneauIndisponibleException;
@@ -9,6 +11,7 @@ import be.autoservplus.reservation.web.dto.DeplacementRdvForm;
 import be.autoservplus.reservation.web.dto.MotifForm;
 import jakarta.validation.Valid;
 import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -65,7 +68,6 @@ public class AdminRdvController {
 
     @GetMapping
     public String liste(Model modele) {
-        modele.addAttribute("titre", "Rendez-vous à traiter");
         modele.addAttribute("rendezVousJoursFeries", adminRdvs.rendezVousJoursFeries());
         modele.addAttribute("demandesEnAttente", adminRdvs.demandesEnAttente());
         modele.addAttribute("rendezVousDuJour", adminRdvs.rendezVousDuJour());
@@ -100,7 +102,7 @@ public class AdminRdvController {
                             RedirectAttributes redirection) {
         return appliquerTransition(reference, retour, redirection,
                 () -> adminRdvs.confirmer(reference),
-                numero -> "Le rendez-vous " + numero + " a été confirmé.");
+                "admin.rdv.message.confirme");
     }
 
     @PostMapping("/{reference}/honorer")
@@ -110,7 +112,7 @@ public class AdminRdvController {
                           RedirectAttributes redirection) {
         return appliquerTransition(reference, retour, redirection,
                 () -> adminRdvs.marquerHonore(reference),
-                numero -> "Le rendez-vous " + numero + " a été marqué comme honoré.");
+                "admin.rdv.message.honore");
     }
 
     @PostMapping("/{reference}/absent")
@@ -120,15 +122,14 @@ public class AdminRdvController {
                          RedirectAttributes redirection) {
         return appliquerTransition(reference, retour, redirection,
                 () -> adminRdvs.marquerAbsent(reference),
-                numero -> "Le rendez-vous " + numero + " a été marqué comme non présenté.");
+                "admin.rdv.message.absent");
     }
 
     // --- refus (motif obligatoire) ----------------------------------------------------
 
     @GetMapping("/{reference}/refuser")
     public String afficherRefuser(@PathVariable UUID reference, Model modele) {
-        return preparerFormulaireMotif(reference, new MotifForm(), modele,
-                "Refuser le rendez-vous", "admin/refuser");
+        return preparerFormulaireMotif(reference, new MotifForm(), modele, "admin/refuser");
     }
 
     @PostMapping("/{reference}/refuser")
@@ -140,21 +141,19 @@ public class AdminRdvController {
                           RedirectAttributes redirection) {
 
         if (erreurs.hasErrors()) {
-            return preparerFormulaireMotif(reference, formulaire, modele,
-                    "Refuser le rendez-vous", "admin/refuser");
+            return preparerFormulaireMotif(reference, formulaire, modele, "admin/refuser");
         }
         return appliquerTransitionAvecMotif(reference, redirection,
                 motif -> adminRdvs.refuser(reference, motif),
                 formulaire.getMotif(),
-                numero -> "Le rendez-vous " + numero + " a été refusé.");
+                "admin.rdv.message.refuse");
     }
 
     // --- annulation par le garage (motif obligatoire) ---------------------------------
 
     @GetMapping("/{reference}/annuler")
     public String afficherAnnuler(@PathVariable UUID reference, Model modele) {
-        return preparerFormulaireMotif(reference, new MotifForm(), modele,
-                "Annuler le rendez-vous", "admin/annuler");
+        return preparerFormulaireMotif(reference, new MotifForm(), modele, "admin/annuler");
     }
 
     @PostMapping("/{reference}/annuler")
@@ -166,13 +165,12 @@ public class AdminRdvController {
                           RedirectAttributes redirection) {
 
         if (erreurs.hasErrors()) {
-            return preparerFormulaireMotif(reference, formulaire, modele,
-                    "Annuler le rendez-vous", "admin/annuler");
+            return preparerFormulaireMotif(reference, formulaire, modele, "admin/annuler");
         }
         return appliquerTransitionAvecMotif(reference, redirection,
                 motif -> adminRdvs.annulerParLeGarage(reference, motif),
                 formulaire.getMotif(),
-                numero -> "Le rendez-vous " + numero + " a été annulé par le garage.");
+                "admin.rdv.message.annule");
     }
 
     // --- déplacement par le garage (motif obligatoire) --------------------------------
@@ -221,7 +219,7 @@ public class AdminRdvController {
         } catch (ConflitConcurrenceException | IllegalStateException e) {
             // Page périmée, ou rendez-vous terminé ou commencé entre-temps : le détail
             // montre son état réel.
-            redirection.addFlashAttribute("erreur", e.getMessage());
+            redirection.addFlashAttribute("erreur", motifDuRefus(e, langue));
         }
         return versDetail(reference);
     }
@@ -257,9 +255,7 @@ public class AdminRdvController {
     // --- helpers privees --------------------------------------------------------------
 
     /** Reference inconnue : 404 par GestionnaireErreursGlobal, comme partout. */
-    private String preparerFormulaireMotif(UUID reference, MotifForm formulaire,
-                                           Model modele, String titre, String vue) {
-        modele.addAttribute("titre", titre);
+    private String preparerFormulaireMotif(UUID reference, MotifForm formulaire, Model modele, String vue) {
         modele.addAttribute("rdv", adminRdvs.vue(reference));
         modele.addAttribute("formulaire", formulaire);
         return vue;
@@ -267,16 +263,15 @@ public class AdminRdvController {
 
     private String appliquerTransition(UUID reference, String retour, RedirectAttributes redirection,
                                        java.util.function.Supplier<Rdv> action,
-                                       java.util.function.Function<String, String> messageSuccesPourNumero) {
+                                       String cleSucces) {
+        Locale langue = LocaleContextHolder.getLocale();
         try {
             Rdv rdv = action.get();
-            redirection.addFlashAttribute("message", messageSuccesPourNumero.apply(rdv.getNumero()));
-        } catch (RessourceIntrouvableException | ConflitConcurrenceException
-                | be.autoservplus.common.exception.RegleMetierException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
-        } catch (IllegalStateException e) {
-            // machine a etats du domaine : transition interdite (RM-10)
-            redirection.addFlashAttribute("erreur", e.getMessage());
+            redirection.addFlashAttribute("message",
+                    messages.getMessage(cleSucces, new Object[]{rdv.getNumero()}, langue));
+        } catch (ConflitConcurrenceException | IllegalStateException | RegleMetierException e) {
+            // Machine à états du domaine (RM-10), page périmée ou refus métier.
+            redirection.addFlashAttribute("erreur", motifDuRefus(e, langue));
         }
         return RETOUR_DETAIL.equals(retour) ? versDetail(reference) : LISTE;
     }
@@ -284,16 +279,37 @@ public class AdminRdvController {
     private String appliquerTransitionAvecMotif(UUID reference, RedirectAttributes redirection,
                                                 java.util.function.Function<String, Rdv> action,
                                                 String motif,
-                                                java.util.function.Function<String, String> messageSuccesPourNumero) {
+                                                String cleSucces) {
+        Locale langue = LocaleContextHolder.getLocale();
         try {
             Rdv rdv = action.apply(motif);
-            redirection.addFlashAttribute("message", messageSuccesPourNumero.apply(rdv.getNumero()));
-        } catch (RessourceIntrouvableException | ConflitConcurrenceException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
-        } catch (IllegalStateException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
+            redirection.addFlashAttribute("message",
+                    messages.getMessage(cleSucces, new Object[]{rdv.getNumero()}, langue));
+        } catch (ConflitConcurrenceException | IllegalStateException e) {
+            redirection.addFlashAttribute("erreur", motifDuRefus(e, langue));
         }
         return versDetail(reference);
+    }
+
+    /**
+     * Message d'un refus dans la langue de l'écran. Une référence inconnue n'arrive pas
+     * ici : elle remonte en 404. Un refus sans clé reçoit le message générique de son
+     * genre, la phrase française de l'exception restant aux journaux.
+     */
+    private String motifDuRefus(RuntimeException refus, Locale langue) {
+        String cle;
+        Object[] arguments = null;
+        if (refus instanceof TransitionRefusee transition) {
+            cle = transition.getCleMessage();
+        } else if (refus instanceof RefusTraduit traduit) {
+            cle = traduit.getCleMessage();
+            arguments = traduit.getArguments();
+        } else if (refus instanceof ConflitConcurrenceException) {
+            cle = "erreur.409.message";
+        } else {
+            cle = "admin.rdv.erreur.transition";
+        }
+        return messages.getMessage(cle, arguments, langue);
     }
 
     private static String versDetail(UUID reference) {

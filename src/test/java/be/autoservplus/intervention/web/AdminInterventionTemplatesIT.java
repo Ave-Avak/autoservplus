@@ -83,7 +83,7 @@ class AdminInterventionTemplatesIT extends SocleIntegration {
     @Test
     @DisplayName("GET /admin/interventions rend la liste sans erreur de template")
     void listeInterventions() throws Exception {
-        mvc.perform(get("/admin/interventions"))
+        mvc.perform(get("/admin/interventions").locale(java.util.Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Interventions en cours")));
     }
@@ -91,7 +91,7 @@ class AdminInterventionTemplatesIT extends SocleIntegration {
     @Test
     @DisplayName("GET /admin/interventions/{ref} rend le detail avec les lignes pre-remplies")
     void detailIntervention() throws Exception {
-        mvc.perform(get("/admin/interventions/{ref}", reference))
+        mvc.perform(get("/admin/interventions/{ref}", reference).locale(java.util.Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("marie@exemple.be")))
                 .andExpect(content().string(containsString("Vidange")))
@@ -106,11 +106,11 @@ class AdminInterventionTemplatesIT extends SocleIntegration {
     @Test
     @DisplayName("PLANIFIEE : pas de formulaire d'ajout de ligne, mais l'explication (RM-14)")
     void ajoutDeLigneMasqueEnPlanifiee() throws Exception {
-        mvc.perform(get("/admin/interventions/{ref}", reference))
+        mvc.perform(get("/admin/interventions/{ref}", reference).locale(java.util.Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("Ajouter une prestation"))))
                 .andExpect(content().string(containsString(
-                        "Démarrez l'intervention pour pouvoir y ajouter des prestations")))
+                        "Démarrez l&#39;intervention pour pouvoir y ajouter des prestations")))
                 // Le commentaire client reste editable : il ne peut pas gonfler le devis.
                 .andExpect(content().string(containsString("Commentaire pour le client")));
     }
@@ -122,10 +122,10 @@ class AdminInterventionTemplatesIT extends SocleIntegration {
         it.demarrer(java.time.Instant.parse("2026-12-01T09:00:00Z"));
         interventions.saveAndFlush(it);
 
-        mvc.perform(get("/admin/interventions/{ref}", reference))
+        mvc.perform(get("/admin/interventions/{ref}", reference).locale(java.util.Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Ajouter une prestation")))
                 .andExpect(content().string(not(containsString(
-                        "Démarrez l'intervention pour pouvoir y ajouter des prestations"))));
+                        "Démarrez l&#39;intervention pour pouvoir y ajouter des prestations"))));
     }
 }

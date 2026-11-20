@@ -1,7 +1,5 @@
 package be.autoservplus.reservation.service.support;
 
-import be.autoservplus.reservation.domain.StatutRdv;
-
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.Instant;
@@ -44,17 +42,5 @@ public final class FormatageRdv {
      */
     public static String euros(BigDecimal montant) {
         return NumberFormat.getCurrencyInstance(Locale.forLanguageTag("fr-BE")).format(montant);
-    }
-
-    public static String statutLisible(StatutRdv statut) {
-        return switch (statut) {
-            case EN_ATTENTE -> "En attente de confirmation";
-            case CONFIRME -> "Confirmé";
-            case REFUSE -> "Refusé par le garage";
-            case ANNULE -> "Annulé";
-            case HONORE -> "Effectué";
-            case ABSENT -> "Non présenté";
-            case EXPIRE -> "Expiré sans réponse du garage";
-        };
     }
 }
