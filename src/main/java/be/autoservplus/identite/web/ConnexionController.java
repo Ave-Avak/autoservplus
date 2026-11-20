@@ -40,12 +40,15 @@ public class ConnexionController {
                                      @RequestParam(required = false) String delai,
                                      @RequestParam(name = "delai-mot-de-passe", required = false)
                                      String delaiMotDePasse,
+                                     @RequestParam(name = "session-fermee", required = false)
+                                     String sessionFermee,
                                      HttpServletRequest requete, Model modele) {
         modele.addAttribute("titre", "Connexion");
         modele.addAttribute("erreur", erreur != null);
         modele.addAttribute("deconnecte", deconnecte != null);
         modele.addAttribute("delaiCode", delai != null);
         modele.addAttribute("delaiMotDePasse", delaiMotDePasse != null);
+        modele.addAttribute("sessionFermee", sessionFermee != null);
         HttpSession session = requete.getSession(false);
         boolean notee = session != null && Boolean.TRUE.equals(
                 session.getAttribute(EchecAuthentificationHandler.VERIFICATION_HUMAINE));

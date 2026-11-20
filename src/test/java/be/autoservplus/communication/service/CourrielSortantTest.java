@@ -450,6 +450,15 @@ class CourrielSortantTest {
     }
 
     @Test
+    @DisplayName("l'avis d'un changement depuis le profil annonce la fermeture des autres sessions")
+    void avisChangementDepuisLeProfil() {
+        courriel.envoyerAvisMotDePasseModifie(marie, OrigineMotDePasse.CHANGEMENT_PROFIL);
+
+        assertThat(partis.get(0).corps()).doesNotContain("http")
+                .contains("depuis votre profil").contains("autres sessions");
+    }
+
+    @Test
     @DisplayName("l'adresse visée est celle du message, pas celle du compte")
     void adresseDuMessage() {
         courriel.envoyerConfirmationNouvelleAdresse(new DetailsChangementEmailCourriel(

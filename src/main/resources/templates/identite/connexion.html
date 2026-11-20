@@ -31,6 +31,10 @@
         <p>Le délai de saisie du nouveau mot de passe est dépassé. Reconnectez-vous.</p>
     </div>
 
+    <div class="message message-erreur" th:if="${sessionFermee}" role="alert">
+        <p th:text="#{connexion.session-fermee}">Votre session a été fermée après cinq mots de passe actuels incorrects. Reconnectez-vous pour continuer.</p>
+    </div>
+
     <div class="message message-succes" th:if="${deconnecte}" role="status">
         <p>Vous avez été déconnecté.</p>
     </div>

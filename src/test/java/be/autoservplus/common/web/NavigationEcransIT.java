@@ -137,6 +137,7 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/mon-compte", Acces.CONNECTE),
             ecran("/mon-profil", Acces.CONNECTE),
             ecran("/mon-profil/adresse", Acces.CONNECTE),
+            ecran("/mon-profil/mot-de-passe", Acces.CONNECTE),
             ecran("/mon-profil/securite", Acces.CONNECTE),
             ecran("/mon-profil/securite/enrolement", Acces.CONNECTE),
             new Route("/mon-profil/securite/codes", "/mon-profil/securite/codes", Acces.CONNECTE, true, 302),
@@ -275,6 +276,7 @@ class NavigationEcransIT extends SocleIntegration {
         ATTEINTS_DEPUIS.put("/garantie-legale", new Atteinte("/pieces", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/retractation/formulaire", new Atteinte("/", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/mon-profil/adresse", new Atteinte("/mon-profil", Role.MEMBRE));
+        ATTEINTS_DEPUIS.put("/mon-profil/mot-de-passe", new Atteinte("/mon-profil", Role.MEMBRE));
         ATTEINTS_DEPUIS.put("/mon-profil/securite", new Atteinte("/mon-profil", Role.MEMBRE));
         ATTEINTS_DEPUIS.put("/mon-profil/securite/enrolement", new Atteinte("/mon-profil/securite", Role.MEMBRE));
         ATTEINTS_DEPUIS.put("/mes-vehicules/nouveau", new Atteinte("/mes-vehicules", Role.MEMBRE));
