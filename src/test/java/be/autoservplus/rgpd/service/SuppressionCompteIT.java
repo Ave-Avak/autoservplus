@@ -269,6 +269,12 @@ class SuppressionCompteIT extends SocleIntegration {
         // reecrit.
         assertThat(jdbc.queryForObject("SELECT numero FROM facture WHERE id = ?",
                 String.class, facture.getId())).isEqualTo(numeroAvant);
+        // L'instantané du client (V61) reste tel qu'émis : la facture doit porter
+        // l'identité du client pendant toute sa conservation (art. 17.3.b RGPD).
+        assertThat(jdbc.queryForObject("SELECT client_nom FROM facture WHERE id = ?",
+                String.class, facture.getId())).isEqualTo("Dupont");
+        assertThat(jdbc.queryForObject("SELECT client_rue FROM facture WHERE id = ?",
+                String.class, facture.getId())).isEqualTo("Rue de la Loi");
         assertThat(jdbc.queryForObject("SELECT montant_tvac FROM facture WHERE id = ?",
                 BigDecimal.class, facture.getId())).isEqualByComparingTo(montantAvant);
         // La commande garde ses montants. Seule la ligne utilisateur a change.
@@ -293,12 +299,16 @@ class SuppressionCompteIT extends SocleIntegration {
         assertThat(titulaire).isEqualTo("Client supprimé");
     }
 
+    /**
+     * Depuis l'instantané client (V61), la facture garde le nom et l'adresse figés à son
+     * émission, même régénérée après la suppression du compte : elle doit porter
+     * l'identité du client pendant toute sa conservation (art. 17.3.b RGPD, Code TVA
+     * art. 60). La langue du document est elle aussi celle de l'émission.
+     */
     @Test
-    @DisplayName("la facture regeneree apres anonymisation porte le marqueur dans la langue du client")
-    void factureRegenereePorteLeMarqueurTraduit() throws Exception {
+    @DisplayName("la facture régénérée après anonymisation garde l'identité figée, dans la langue d'émission")
+    void factureRegenereeGardeLInstantane() throws Exception {
         Utilisateur marie = membre();
-        // Cliente neerlandophone : c est le cas que le marqueur fige en francais
-        // aurait casse.
         transactions.executeWithoutResult(statut -> {
             Utilisateur relue = utilisateurs.findById(marie.getId()).orElseThrow();
             relue.setLangue(Langue.nl);
@@ -309,20 +319,17 @@ class SuppressionCompteIT extends SocleIntegration {
 
         supprimer(marie);
 
-        // Le PDF archive n est jamais regenere. Mais s il a disparu, la
-        // reconstruction lit le compte anonymise. La langue, elle, n est pas effacee
-        // par l anonymisation : ce n est pas une donnee identifiante.
         byte[] pdf = transactions.execute(s -> pdfFactures.pdfDe(
                 factures.pourMembre(facture.getReference(),
                         "anonyme-" + marie.getId() + "@supprime.invalid")));
         assertThat(pdf).startsWith("%PDF".getBytes());
-        // Le flux de contenu est compresse : on extrait le texte plutot que de
-        // chercher dans les octets, comme le fait GenerateurPdfFactureTest.
         String texte = texteDe(pdf);
         assertThat(texte)
-                .as("Le document doit porter le marqueur neerlandais, pas le francais")
-                .contains("Verwijderde klant")
+                .contains("Marie Dupont", "Rue de la Loi")
+                .doesNotContain("Verwijderde klant")
                 .doesNotContain("Client supprim");
+        assertThat(jdbc.queryForObject("SELECT langue_document FROM facture WHERE id = ?",
+                String.class, facture.getId())).isEqualTo("nl");
     }
 
     /** Texte de la premiere page, flux de contenu decompresse. */

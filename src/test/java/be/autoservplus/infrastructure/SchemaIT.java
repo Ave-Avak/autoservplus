@@ -250,9 +250,11 @@ class SchemaIT extends SocleIntegration {
                 """, Long.class, membreId);
         Long factureId = jdbc.queryForObject("""
                 INSERT INTO facture (numero, exercice, sequence_annuelle, commande_id, membre_id,
-                                     montant_htva, montant_tva, montant_tvac, created_by, updated_by)
+                                     montant_htva, montant_tva, montant_tvac, created_by, updated_by,
+                                     client_prenom, client_nom, client_pays, langue_document)
                 VALUES ('2026-9001', 2026, 9001, ?, ?, 10.00, 2.10, 12.10,
-                        'cible@exemple.be', 'cible@exemple.be') RETURNING id
+                        'cible@exemple.be', 'cible@exemple.be', 'Chef', 'Garage', 'Belgique', 'fr')
+                RETURNING id
                 """, Long.class, commandeId, membreId);
 
         jdbc.queryForObject(

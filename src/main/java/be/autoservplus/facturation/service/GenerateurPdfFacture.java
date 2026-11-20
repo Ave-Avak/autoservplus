@@ -132,8 +132,6 @@ public class GenerateurPdfFacture {
             client.add(new Phrase(adresse + "\n" + nonNul(document.client().pays()) + "\n",
                     police(9, Font.NORMAL, GRIS_TEXTE)));
         }
-        client.add(new Phrase(nonNul(document.client().courriel()),
-                police(9, Font.NORMAL, GRIS_TEXTE)));
         bloc.addCell(celluleInvisible(client, Element.ALIGN_LEFT));
         bloc.addCell(celluleInvisible(new Paragraph(), Element.ALIGN_RIGHT));
         return bloc;

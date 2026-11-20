@@ -341,8 +341,16 @@ public record ExportDonnees(
             BigDecimal montantTva,
             BigDecimal montantTvac,
             String numeroCommande,
-            boolean pdfArchive) {
+            boolean pdfArchive,
+            String clientPrenom,
+            String clientNom,
+            AdresseExport adresseClient) {
 
+        /**
+         * L'instantané du client (V61) est restitué tel que la facture le porte : c'est
+         * une donnée sur la personne, conservée dix ans même après la suppression du
+         * compte, et que le membre doit pouvoir lire.
+         */
         public static FactureExport de(Facture facture) {
             return new FactureExport(
                     facture.getNumero(),
@@ -351,7 +359,12 @@ public record ExportDonnees(
                     facture.getMontantTva(),
                     facture.getMontantTvac(),
                     facture.getCommande() == null ? null : facture.getCommande().getNumero(),
-                    facture.estArchivee());
+                    facture.estArchivee(),
+                    facture.getClientPrenom(),
+                    facture.getClientNom(),
+                    new AdresseExport(facture.getClientRue(), facture.getClientNumeroRue(),
+                            facture.getClientCodePostal(), facture.getClientLocalite(),
+                            facture.getClientPays()));
         }
     }
 

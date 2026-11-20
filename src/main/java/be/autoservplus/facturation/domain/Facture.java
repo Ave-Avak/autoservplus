@@ -1,9 +1,11 @@
 package be.autoservplus.facturation.domain;
 
+import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.vente.domain.Commande;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
+import org.springframework.context.MessageSource;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -13,6 +15,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -94,6 +97,34 @@ public class Facture {
     @Column(name = "date_echeance", updatable = false)
     private LocalDate dateEcheance;
 
+    // Instantané du client, figé à l'émission (V61) : nom, adresse et langue du
+    // document. Une adresse changée ensuite, ou un compte anonymisé, ne réécrit plus la
+    // facture. L'adresse peut manquer : voir l'émission dans FactureService.
+    @Column(name = "client_prenom", nullable = false, updatable = false, length = 80)
+    private String clientPrenom;
+
+    @Column(name = "client_nom", nullable = false, updatable = false, length = 80)
+    private String clientNom;
+
+    @Column(name = "client_rue", updatable = false, length = 150)
+    private String clientRue;
+
+    @Column(name = "client_numero_rue", updatable = false, length = 15)
+    private String clientNumeroRue;
+
+    @Column(name = "client_code_postal", updatable = false, length = 10)
+    private String clientCodePostal;
+
+    @Column(name = "client_localite", updatable = false, length = 100)
+    private String clientLocalite;
+
+    @Column(name = "client_pays", nullable = false, updatable = false, length = 60)
+    private String clientPays;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "langue_document", nullable = false, updatable = false, length = 2)
+    private Langue langueDocument;
+
     /** Chemin du PDF archive, pose a la premiere generation (a la demande). */
     @Column(name = "chemin_pdf", length = 255)
     private String cheminPdf;
@@ -137,6 +168,15 @@ public class Facture {
         facture.sequenceAnnuelle = sequenceAnnuelle;
         facture.commande = commande;
         facture.membre = Objects.requireNonNull(commande.getMembre(), "commande.membre");
+        Utilisateur client = facture.membre;
+        facture.clientPrenom = client.getPrenom();
+        facture.clientNom = client.getNom();
+        facture.clientRue = client.getRue();
+        facture.clientNumeroRue = client.getNumeroRue();
+        facture.clientCodePostal = client.getCodePostal();
+        facture.clientLocalite = client.getLocalite();
+        facture.clientPays = client.getPays();
+        facture.langueDocument = client.getLangue();
         facture.montantHtva = Objects.requireNonNull(commande.getMontantHtva(), "montantHtva");
         facture.montantTva = Objects.requireNonNull(commande.getMontantTva(), "montantTva");
         facture.montantTvac = Objects.requireNonNull(commande.getMontantTvac(), "montantTvac");
@@ -164,6 +204,26 @@ public class Facture {
     public boolean estArchivee() {
         return cheminPdf != null;
     }
+
+    /**
+     * Nom du client tel qu'il figure sur la facture. Une facture reprise par V61 d'un
+     * compte déjà anonymisé porte le marqueur, traduit dans la langue du document.
+     */
+    public String clientNomComplet(MessageSource messages, Locale langue) {
+        if (Utilisateur.PRENOM_ANONYME.equals(clientPrenom) && Utilisateur.NOM_ANONYME.equals(clientNom)) {
+            return messages.getMessage(Utilisateur.CLE_MARQUEUR_ANONYME, null, langue);
+        }
+        return clientPrenom + " " + clientNom;
+    }
+
+    public String getClientPrenom() { return clientPrenom; }
+    public String getClientNom() { return clientNom; }
+    public String getClientRue() { return clientRue; }
+    public String getClientNumeroRue() { return clientNumeroRue; }
+    public String getClientCodePostal() { return clientCodePostal; }
+    public String getClientLocalite() { return clientLocalite; }
+    public String getClientPays() { return clientPays; }
+    public Langue getLangueDocument() { return langueDocument; }
 
     public Long getId() { return id; }
     public UUID getReference() { return reference; }
