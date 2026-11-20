@@ -10,6 +10,7 @@ import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.retractation.service.RetractationService;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.support.SocleIntegration;
 import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.service.PanierService;
@@ -72,8 +73,8 @@ class AdminRemiseIT extends SocleIntegration {
     private Utilisateur membre() {
         String email = "remise-membre-" + COMPTEUR.getAndIncrement() + "@exemple.be";
         return transactions.execute(statut -> {
-            Utilisateur nouveau = new Utilisateur(email, encodeur.encode("phrase de passe du test"),
-                    "Dupont", "Marie", TypeUtilisateur.MEMBRE);
+            Utilisateur nouveau = MembresDeTest.membre(email, encodeur.encode("phrase de passe du test"),
+                    "Dupont", "Marie");
             nouveau.confirmerAdresseEmail();
             nouveau.setStatut(StatutUtilisateur.ACTIF);
             return utilisateurs.saveAndFlush(nouveau);

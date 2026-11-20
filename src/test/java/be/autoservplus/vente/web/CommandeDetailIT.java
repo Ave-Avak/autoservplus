@@ -8,6 +8,7 @@ import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.service.PanierService;
 import be.autoservplus.vente.service.PrestatairePaiementFictif;
@@ -85,8 +86,8 @@ class CommandeDetailIT extends SocleIntegration {
 
     private void membre(String email, String nom, String prenom) {
         utilisateurs.findByEmail(email)
-                .orElseGet(() -> utilisateurs.save(new Utilisateur(
-                        email, "$2a$12$h", nom, prenom, TypeUtilisateur.MEMBRE)));
+                .orElseGet(() -> utilisateurs.save(MembresDeTest.membre(
+                        email, "$2a$12$h", nom, prenom)));
     }
 
     private Piece piece(String libelle, String prixHtva) {

@@ -12,6 +12,7 @@ import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.ConsentementRepository;
 import be.autoservplus.reservation.service.support.FormatageRdv;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Panier;
@@ -74,7 +75,7 @@ class CommandeServiceTest {
         service = new CommandeService(commandes, paiements, paniers, consentements, numeros,
                 versionsDocuments, Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
 
-        marie = new Utilisateur(EMAIL, "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
+        marie = MembresDeTest.membre(EMAIL, "$2a$12$h", "Dupont", "Marie");
         Categorie freinage = new Categorie("FRE", "Freinage", TypeCategorie.PIECE);
         plaquettes = new Piece(freinage, "FRE-001", "Plaquettes avant", new BigDecimal("19.99"));
         plaquettes.setQuantiteStock(10); // taux par defaut : 21.00

@@ -4,6 +4,7 @@ import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.support.SocleIntegration;
 import be.autoservplus.vente.service.CommandeService;
 import be.autoservplus.vente.service.PanierService;
@@ -61,8 +62,8 @@ class GarantieLegaleIT extends SocleIntegration {
     @BeforeEach
     void setUp() {
         membre = "garantie-" + COMPTEUR.getAndIncrement() + "@exemple.be";
-        utilisateurs.save(new Utilisateur(membre, "$2a$12$abcdefghijklmnopqrstuv",
-                "Test", "Alex", TypeUtilisateur.MEMBRE));
+        utilisateurs.save(MembresDeTest.membre(membre, "$2a$12$abcdefghijklmnopqrstuv",
+                "Test", "Alex"));
     }
 
     /** La graine ne crée aucune pièce : chaque cas fabrique la sienne. */

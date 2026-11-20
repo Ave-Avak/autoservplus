@@ -10,6 +10,7 @@ import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.service.PanierService;
 import be.autoservplus.vente.service.PrestatairePaiementFictif;
@@ -87,13 +88,11 @@ class TelechargementFactureIT extends SocleIntegration {
     void setUp() {
         transactions.executeWithoutResult(statut -> {
             utilisateurs.findByEmail("marie@exemple.be")
-                    .orElseGet(() -> utilisateurs.save(new Utilisateur(
-                            "marie@exemple.be", "$2a$12$h", "Dupont", "Marie",
-                            TypeUtilisateur.MEMBRE)));
+                    .orElseGet(() -> utilisateurs.save(MembresDeTest.membre(
+                            "marie@exemple.be", "$2a$12$h", "Dupont", "Marie")));
             utilisateurs.findByEmail("paul@exemple.be")
-                    .orElseGet(() -> utilisateurs.save(new Utilisateur(
-                            "paul@exemple.be", "$2a$12$h", "Martin", "Paul",
-                            TypeUtilisateur.MEMBRE)));
+                    .orElseGet(() -> utilisateurs.save(MembresDeTest.membre(
+                            "paul@exemple.be", "$2a$12$h", "Martin", "Paul")));
             categorie = categories.findByCode("IT-DL-CAT")
                     .orElseGet(() -> categories.save(
                             new Categorie("IT-DL-CAT", "Pieces", TypeCategorie.PIECE)));

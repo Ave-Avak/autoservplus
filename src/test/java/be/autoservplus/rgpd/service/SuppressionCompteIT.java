@@ -20,6 +20,7 @@ import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.VehiculeRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.service.PanierService;
 import be.autoservplus.vente.service.PrestatairePaiementFictif;
@@ -101,8 +102,8 @@ class SuppressionCompteIT extends SocleIntegration {
     private Utilisateur membre() {
         String email = "membre-" + COMPTEUR.getAndIncrement() + "@exemple.be";
         return transactions.execute(statut -> {
-            Utilisateur nouveau = new Utilisateur(email, encodeur.encode(MOT_DE_PASSE),
-                    "Dupont", "Marie", TypeUtilisateur.MEMBRE);
+            Utilisateur nouveau = MembresDeTest.membre(email, encodeur.encode(MOT_DE_PASSE),
+                    "Dupont", "Marie");
             nouveau.setTelephone("+32 470 12 34 56");
             nouveau.setRue("Rue de la Loi");
             nouveau.setCodePostal("1000");
@@ -461,8 +462,8 @@ class SuppressionCompteIT extends SocleIntegration {
 
         // uq_utilisateur_email porte sur toute la table : le jeton libere l adresse.
         Utilisateur nouveau = transactions.execute(statut -> utilisateurs.saveAndFlush(
-                new Utilisateur(adresseReelle, encodeur.encode(MOT_DE_PASSE),
-                        "Dupont", "Marie", TypeUtilisateur.MEMBRE)));
+                MembresDeTest.membre(adresseReelle, encodeur.encode(MOT_DE_PASSE),
+                        "Dupont", "Marie")));
         assertThat(nouveau.getId()).isNotEqualTo(marie.getId());
         assertThat(utilisateurs.findByEmail(adresseReelle)).isPresent();
     }

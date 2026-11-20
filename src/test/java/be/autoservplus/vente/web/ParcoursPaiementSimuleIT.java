@@ -8,6 +8,7 @@ import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.vente.domain.StatutPaiement;
@@ -79,10 +80,10 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
 
     @BeforeEach
     void setUp() {
-        utilisateurs.save(new Utilisateur(
-                "marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE));
-        utilisateurs.save(new Utilisateur(
-                "luc@exemple.be", "$2a$12$h", "Martin", "Luc", TypeUtilisateur.MEMBRE));
+        utilisateurs.save(MembresDeTest.membre(
+                "marie@exemple.be", "$2a$12$h", "Dupont", "Marie"));
+        utilisateurs.save(MembresDeTest.membre(
+                "luc@exemple.be", "$2a$12$h", "Martin", "Luc"));
         Categorie moteur = categories.save(
                 new Categorie("IT-SIM-MOT", "Moteur", TypeCategorie.PIECE));
         filtre = new Piece(moteur, "IT-SIM-001", "Filtre a huile", new BigDecimal("12.50"));

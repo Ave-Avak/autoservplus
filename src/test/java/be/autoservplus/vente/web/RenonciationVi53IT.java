@@ -5,6 +5,7 @@ import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.vente.repository.CommandeRepository;
 import be.autoservplus.vente.service.CommandeService;
 import be.autoservplus.vente.service.ConfirmationCommande;
@@ -59,8 +60,8 @@ class RenonciationVi53IT extends SocleIntegration {
     @BeforeEach
     void setUp() {
         membre = "vi53-" + COMPTEUR.getAndIncrement() + "@exemple.be";
-        utilisateurs.save(new Utilisateur(membre, "$2a$12$abcdefghijklmnopqrstuv",
-                "Test", "Alex", TypeUtilisateur.MEMBRE));
+        utilisateurs.save(MembresDeTest.membre(membre, "$2a$12$abcdefghijklmnopqrstuv",
+                "Test", "Alex"));
     }
 
     /**

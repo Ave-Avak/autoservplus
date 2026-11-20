@@ -23,6 +23,7 @@ import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.PosteAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
 import be.autoservplus.reservation.repository.VehiculeRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.vente.service.CommandeService;
 import be.autoservplus.vente.service.PanierService;
 import org.junit.jupiter.api.BeforeEach;
@@ -92,8 +93,8 @@ class AdminCatalogueServiceIT extends SocleIntegration {
         plaquettes = new Piece(freinage, "IT-CAT-001", "Plaquettes avant", new BigDecimal("19.99"));
         plaquettes.setQuantiteStock(10);
         plaquettes = pieces.save(plaquettes);
-        marie = utilisateurs.save(new Utilisateur(
-                "marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE));
+        marie = utilisateurs.save(MembresDeTest.membre(
+                "marie@exemple.be", "$2a$12$h", "Dupont", "Marie"));
         // Le compte derriere le @WithMockUser de classe : sans lui en base, le « qui »
         // du journal des modifications resterait nul faute de cible pour la FK.
         utilisateurs.save(new Utilisateur(
