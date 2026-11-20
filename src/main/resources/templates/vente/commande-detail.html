@@ -160,6 +160,7 @@
     </ul>
 
     <p><a th:href="@{/retractation/formulaire}" th:text="#{retractation.formulaire.lien}">Formulaire de rétractation</a></p>
+    <p th:if="${commande.contientDesPieces()}"><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
 </main>
 
 <footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>

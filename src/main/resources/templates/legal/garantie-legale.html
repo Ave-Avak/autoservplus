@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{garantie-legale.titre} + ' | AutoServ+'">Garantie légale | AutoServ+</title>
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/entete :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{garantie-legale.titre}">Garantie légale</h1>
+
+    <p th:text="#{garantie-legale.intro}">Les pièces vendues par le garage bénéficient de la garantie légale de conformité.</p>
+
+    <!--/* Fichier de la Commission servi tel quel, en <img> et jamais inséré dans la page :
+         un SVG chargé comme image n'exécute rien. Annexe I du règlement (UE) 2025/1960 :
+         aucun élément ne se modifie, d'où une transcription à côté plutôt qu'un texte
+         superposé. */-->
+    <figure class="notice-garantie">
+        <img th:src="@{${imageNotice}}" src="/images/notice-garantie/notice-garantie-fr.svg"
+             th:alt="#{garantie-legale.notice.alt}" alt="" width="595" height="842">
+        <figcaption>
+            <details>
+                <summary th:text="#{garantie-legale.notice.resume}">Texte de la notice</summary>
+                <h2 th:text="#{garantie-legale.notice.titre}">GARANTIE LÉGALE</h2>
+                <p th:text="#{garantie-legale.notice.protection}">Protection offerte par la garantie légale.</p>
+                <p th:text="#{garantie-legale.notice.consommateurs}">Les consommateurs peuvent faire valoir leurs droits.</p>
+                <ul>
+                    <li th:text="#{garantie-legale.notice.cas.1}">ne correspondent pas à la description</li>
+                    <li th:text="#{garantie-legale.notice.cas.2}">ne fonctionnent pas comme prévu.</li>
+                </ul>
+                <p th:text="#{garantie-legale.notice.vendeurs}">Les vendeurs sont responsables.</p>
+                <ul>
+                    <li th:text="#{garantie-legale.notice.remede.1}">une réparation gratuite ou un remplacement gratuit</li>
+                    <li th:text="#{garantie-legale.notice.remede.2}">dans certains cas, une réduction de prix.</li>
+                </ul>
+                <p th:text="#{garantie-legale.notice.pays}">Dans certains pays, la période est plus longue.</p>
+                <p th:text="#{garantie-legale.notice.savoir-plus}">Pour en savoir plus, scannez le code QR.</p>
+                <p th:text="#{garantie-legale.notice.adresse}">europa.eu/youreurope/garanties</p>
+                <h3 th:text="#{garantie-legale.notice.quefaire}">Que faire</h3>
+                <p th:text="#{garantie-legale.notice.quefaire.sous}">si vous recevez des biens non conformes:</p>
+                <ol>
+                    <li th:text="#{garantie-legale.notice.etape.1}">contactez le vendeur</li>
+                    <li th:text="#{garantie-legale.notice.etape.2}">fournissez une preuve d'achat.</li>
+                </ol>
+                <p th:text="#{garantie-legale.notice.commerciales}">Les vendeurs peuvent offrir des garanties commerciales.</p>
+            </details>
+        </figcaption>
+    </figure>
+
+    <p>
+        <a th:href="#{garantie-legale.youreurope.url}" rel="noopener noreferrer"
+           th:text="#{garantie-legale.youreurope.texte}">Vos droits sur le portail Your Europe</a>
+    </p>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

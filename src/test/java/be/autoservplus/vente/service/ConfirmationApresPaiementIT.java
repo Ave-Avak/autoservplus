@@ -119,13 +119,20 @@ class ConfirmationApresPaiementIT extends SocleIntegration {
         assertThat(courriel.adresse()).isEqualTo(EMAIL);
         assertThat(courriel.sujet()).isEqualTo("Bevestiging van uw bestelling");
         assertThat(courriel.piecesJointes()).extracting(PieceJointeCourriel::nomFichier)
-                .containsExactly("algemene-voorwaarden-" + version + ".pdf", "modelformulier-herroeping.pdf");
+                .containsExactly("algemene-voorwaarden-" + version + ".pdf", "modelformulier-herroeping.pdf",
+                        "wettelijke-garantie.pdf");
         assertThat(texte(courriel.piecesJointes().get(0).contenu()))
                 .contains("Versie " + version)
                 .contains("voor bestelling " + numero)
                 .contains("Handelsnaam: Garage Démo");
         assertThat(texte(courriel.piecesJointes().get(1).contenu()))
                 .contains("Modelformulier voor herroeping");
+        assertThat(texte(courriel.piecesJointes().get(2).contenu()))
+                // L'extracteur d'OpenPDF double certaines espaces : fragments sans espace ambiguë.
+                .contains("WETTELIJKE")
+                .contains("Wat moet u doen")
+                .contains("europa.eu/youreurope/garantie");
+        assertThat(courriel.corps()).contains("https://europa.eu/youreurope/garantie");
     }
 
     private List<Courriel> confirmationsParties() {

@@ -11,6 +11,7 @@ import be.autoservplus.identite.repository.ConsentementRepository;
 import be.autoservplus.legal.domain.TypeDocumentVersionne;
 import be.autoservplus.legal.service.ConditionsGeneralesPdf;
 import be.autoservplus.legal.service.FormulaireRetractation;
+import be.autoservplus.legal.service.NoticeGarantie;
 import be.autoservplus.legal.service.VersionsDocumentsService;
 import be.autoservplus.legal.service.dto.TexteArchiveVue;
 import be.autoservplus.reservation.service.support.FormatageRdv;
@@ -64,7 +65,7 @@ class ConfirmationCommandeTest {
         messages.setDefaultEncoding("UTF-8");
         messages.setFallbackToSystemLocale(false);
         confirmation = new ConfirmationCommande(commandes, consentements, versions,
-                conditionsGenerales, formulaire, messages);
+                conditionsGenerales, formulaire, messages, new NoticeGarantie());
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         marie.setLangue(Langue.nl);
     }
@@ -122,8 +123,12 @@ class ConfirmationCommandeTest {
         assertThat(details.versionCgv()).isEqualTo("CGV-2026-04");
         assertThat(details.renonciation()).isNull();
         assertThat(details.piecesJointes()).extracting(PieceJointeCourriel::nomFichier)
-                .containsExactly("algemene-voorwaarden-CGV-2026-04.pdf", "modelformulier-herroeping.pdf");
+                .containsExactly("algemene-voorwaarden-CGV-2026-04.pdf", "modelformulier-herroeping.pdf",
+                        "wettelijke-garantie.pdf");
         assertThat(details.piecesJointes().get(0).contenu()).isEqualTo(CGV);
+        // VI.45 § 1er, 12° : la notice de la Commission, dans la langue du membre, telle quelle.
+        assertThat(details.piecesJointes().get(2).contenu())
+                .isEqualTo(new NoticeGarantie().pdf(Locale.of("nl")));
         // Aucune preuve de renonciation n'est cherchée quand la case n'a pas été cochée.
         verify(consentements, never()).findFirstByCommandeIdAndTypeDocumentOrderByDateConsentementDesc(
                 42L, TypeDocumentConsentement.RENONCIATION_RETRACTATION);
@@ -153,6 +158,9 @@ class ConfirmationCommandeTest {
         assertThat(details.pieces()).isFalse();
         assertThat(details.renonciation()).isEqualTo(new DetailsConfirmationCommande.RenonciationConfirmee(
                 COMMANDE, "VI53-2026-02", "Ik vraag de onmiddellijke uitvoering."));
+        // Prestations seules : pas une vente de biens, donc pas de notice (VI.45 § 1er, 12°).
+        assertThat(details.piecesJointes()).extracting(PieceJointeCourriel::nomFichier)
+                .containsExactly("algemene-voorwaarden-CGV-2026-04.pdf", "modelformulier-herroeping.pdf");
     }
 
     @Test
@@ -170,7 +178,7 @@ class ConfirmationCommandeTest {
 
         assertThat(details.versionCgv()).isNull();
         assertThat(details.piecesJointes()).extracting(PieceJointeCourriel::nomFichier)
-                .containsExactly("modelformulier-herroeping.pdf");
+                .containsExactly("modelformulier-herroeping.pdf", "wettelijke-garantie.pdf");
         verify(conditionsGenerales, never()).pdf(any(), any(), any(), any());
     }
 

@@ -4,7 +4,7 @@
 <body>
 
 <!--
-  Bandeau de consentement aux cookies (F25) et lien permanent de gestion.
+  Bandeau de consentement aux cookies (F25) et ligne légale de toutes les pages.
 
   Un seul point d'insertion par page (<div th:replace="~{fragments/cookies :: bandeau}">
   juste avant </body>) porte les deux, parce que le pied de page n'a pas la même
@@ -12,6 +12,9 @@
   template recopie son propre <footer>. Greffer le lien dans quarante-cinq pieds de
   page différents multiplierait les variantes. Le rattacher au bandeau n'en demande
   qu'une, visuellement rendue comme la continuation du pied par la classe .pied.
+  C'est pour la même raison que cette ligne porte aussi les liens légaux (F24) : CGV,
+  mentions légales, politique de confidentialité et garantie légale y sont atteints
+  de toutes les pages, ce que les pieds recopiés n'assuraient que sur une dizaine.
 
   Aucun JavaScript : le bandeau est un formulaire, « Personnaliser » un <details>
   natif. La politique de sécurité du contenu n'a donc pas eu à être touchée.
@@ -55,11 +58,18 @@
         </form>
     </section>
 
-    <!-- Lien permanent : le consentement se retire aussi facilement qu'il se donne
-         (art. 7.3 RGPD), donc il doit rester atteignable de n'importe quelle page. -->
-    <p class="pied pied-cookies">
-        <a th:href="@{/cookies}" th:text="#{cookies.gerer}">Gérer mes cookies</a>
-    </p>
+    <!-- Liens permanents : le consentement se retire aussi facilement qu'il se donne
+         (art. 7.3 RGPD), et les documents légaux se consultent de n'importe quelle page
+         (F24). -->
+    <nav class="pied pied-cookies" th:attr="aria-label=#{pied.liens.aria}" aria-label="Liens légaux">
+        <ul>
+            <li><a th:href="@{/cgv}" th:text="#{legal.lien.cgv}">Conditions générales de vente</a></li>
+            <li><a th:href="@{/mentions-legales}" th:text="#{legal.lien.mentions}">Mentions légales</a></li>
+            <li><a th:href="@{/confidentialite}" th:text="#{legal.lien.confidentialite}">Politique de confidentialité</a></li>
+            <li><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.titre}">Garantie légale</a></li>
+            <li><a th:href="@{/cookies}" th:text="#{cookies.gerer}">Gérer mes cookies</a></li>
+        </ul>
+    </nav>
 </th:block>
 
 

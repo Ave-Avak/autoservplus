@@ -119,6 +119,15 @@ public record CommandeDetailVue(
                 statutPaiement, situation, referenceFacture, numeroFacture);
     }
 
+    /**
+     * Au moins une pièce : la notice sur la garantie légale ne vise que les biens. Les
+     * lignes de ce détail sont celles de {@code CommandeRepository.lignesDe}, qui ne rend
+     * que les lignes de pièce.
+     */
+    public boolean contientDesPieces() {
+        return !lignes.isEmpty();
+    }
+
     /** Le lien de telechargement n apparait que si la facture existe : condition de la liste. */
     public boolean estFacturee() {
         return referenceFacture != null;

@@ -62,3 +62,35 @@ est employé : il calcule la matrice du QR code, que le serveur rend en SVG inli
 Le module `javase` (AWT, ImageIO) n'est pas embarqué, et aucun service externe n'est
 appelé. L'URI `otpauth://` porte le secret TOTP et ne quitte donc jamais le serveur
 autrement que dans la page d'enrôlement elle-même.
+
+## Notice harmonisée de l'UE sur la garantie légale de conformité
+
+`src/main/resources/static/images/notice-garantie/notice-garantie-fr.svg`, `-nl.svg`, `-en.svg`
+et `src/main/resources/notice-garantie/notice-garantie-fr.pdf`, `-nl.pdf`, `-en.pdf`
+
+© Union européenne. Contenu publié par la Commission européenne (DG Justice et
+consommateurs) sous licence [Creative Commons Attribution 4.0](https://creativecommons.org/licenses/by/4.0/),
+sur la page « Practical guidelines and high resolution vector files, EU notice and label
+for product guarantees » :
+<https://commission.europa.eu/publications/practical-guidelines-and-high-resolution-vector-files-eu-notice-and-label-product-guarantees_en>.
+Maquette et contenu fixés par le règlement d'exécution (UE) 2025/1960 de la Commission
+du 25 septembre 2025, annexe I. La notice reproduit l'emblème européen : il est affiché
+parce que le règlement impose la notice telle quelle, et n'est employé à aucun autre titre.
+
+Sources téléchargées le 2026-11-19 :
+
+- `SVG.zip`, SHA-256 `6797b40b19af8c26906ef31b8aec3351685b9b6fb4d3d9a3bffa90f14bdf6b84` :
+  fichiers `Legal guarantee_notice FR.svg`, `NL.svg` et `EN.svg` (couleur), repris sans
+  modification sous les noms ci-dessus.
+- `Harmonised notice in 24 languages colour and black and white_0.zip`, SHA-256
+  `baae862aabc57e79ae28ebc2dcfb445f5c8ec768bb558b8518b1f2c3b928c992` : fichiers
+  `Legal guarantee_notice FRN.pdf`, `NLN.pdf` et `ENN.pdf`. Chacun porte deux pages, la
+  notice en couleur puis en noir et blanc, réservée aux magasins physiques. Seule la
+  page 1 est conservée, copiée par `PdfCopy` d'OpenPDF sans être redessinée : son texte
+  est identique à celui de la page 1 d'origine.
+
+Changement apporté : extraction de la page 1 des PDF. Les SVG sont inchangés. Les
+empreintes des six fichiers sont vérifiées par `NoticeGarantieFichiersTest`.
+
+Usage : notice affichée sur la page « Garantie légale » et jointe au courriel de
+confirmation d'une commande de pièces (art. VI.45 § 1er, 12° du Code de droit économique).

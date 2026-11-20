@@ -106,6 +106,7 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/cgv", Acces.PUBLIC),
             ecran("/mentions-legales", Acces.PUBLIC),
             ecran("/confidentialite", Acces.PUBLIC),
+            ecran("/garantie-legale", Acces.PUBLIC),
             ecran("/retractation/formulaire", Acces.PUBLIC),
             ecran("/connexion", Acces.PUBLIC),
             ecran("/inscription", Acces.PUBLIC),
@@ -270,6 +271,7 @@ class NavigationEcransIT extends SocleIntegration {
         ATTEINTS_DEPUIS.put("/cgv", new Atteinte("/", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/mentions-legales", new Atteinte("/", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/confidentialite", new Atteinte("/", Role.ANONYME));
+        ATTEINTS_DEPUIS.put("/garantie-legale", new Atteinte("/pieces", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/retractation/formulaire", new Atteinte("/", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/mon-profil/adresse", new Atteinte("/mon-profil", Role.MEMBRE));
         ATTEINTS_DEPUIS.put("/mon-profil/securite", new Atteinte("/mon-profil", Role.MEMBRE));

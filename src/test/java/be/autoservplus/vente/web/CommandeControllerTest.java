@@ -97,7 +97,7 @@ class CommandeControllerTest {
     void setUp() {
         org.mockito.Mockito.reset(service, paniers, paiements);
         panierNonVide = new PanierVue(List.of(), 5, "70,01 €", "10,20 €", "80,21 €",
-                false, false, false);
+                false, false, false, true);
     }
 
     @Test
@@ -128,7 +128,7 @@ class CommandeControllerTest {
     @WithMockUser(username = "marie@exemple.be")
     @DisplayName("POST avec CGV cochees : delegation (identite, case, IP) puis PRG vers la confirmation")
     void validationNominale() throws Exception {
-        doReturn(new ConfirmationCommandeVue(REF, "CMD-2026-0001", "80,21 €", SituationPaiement.A_PAYER))
+        doReturn(new ConfirmationCommandeVue(REF, "CMD-2026-0001", "80,21 €", SituationPaiement.A_PAYER, true))
                 .when(service).passerCommande("marie@exemple.be", true, false, "127.0.0.1");
 
         mvc.perform(post("/commande").with(csrf()).param("cgv", "true"))
@@ -256,7 +256,7 @@ class CommandeControllerTest {
     @WithMockUser(username = "marie@exemple.be")
     @DisplayName("GET confirmation rend la vue du proprietaire")
     void confirmation() throws Exception {
-        doReturn(new ConfirmationCommandeVue(REF, "CMD-2026-0001", "80,21 €", SituationPaiement.A_PAYER))
+        doReturn(new ConfirmationCommandeVue(REF, "CMD-2026-0001", "80,21 €", SituationPaiement.A_PAYER, true))
                 .when(service).confirmation(REF, "marie@exemple.be");
 
         mvc.perform(get("/commande/{ref}/confirmation", REF))
