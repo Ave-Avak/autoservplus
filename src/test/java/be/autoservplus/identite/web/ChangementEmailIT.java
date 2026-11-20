@@ -226,17 +226,17 @@ class ChangementEmailIT extends SocleIntegration {
             String jeton = jetonDe(email);
 
             // Le formulaire de nouveau mot de passe n est meme pas propose.
-            mvc.perform(get("/mot-de-passe/nouveau").param("jeton", jeton))
+            mvc.perform(get("/mot-de-passe/nouveau").param("jeton", jeton).locale(Locale.FRENCH))
                     .andExpect(status().isNotFound())
-                    .andExpect(content().string(containsString("Ce lien n'est plus valable")));
+                    .andExpect(content().string(containsString("est plus valable")));
 
             // Et le forçage direct ne change rien : l'empreinte est intacte.
             String empreinteAvant = relire(email).getMotDePasseHache();
-            mvc.perform(post("/mot-de-passe/nouveau").with(csrf())
+            mvc.perform(post("/mot-de-passe/nouveau").with(csrf()).locale(Locale.FRENCH)
                             .param("jeton", jeton)
                             .param("motDePasse", "phrase de passe de l attaquant")
                             .param("confirmation", "phrase de passe de l attaquant"))
-                    .andExpect(content().string(containsString("Ce lien n'est plus valable")));
+                    .andExpect(content().string(containsString("est plus valable")));
 
             assertThat(relire(email).getMotDePasseHache()).isEqualTo(empreinteAvant);
             assertThat(relire(email).getEmail()).isEqualTo(email);

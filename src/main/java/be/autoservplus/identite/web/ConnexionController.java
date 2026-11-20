@@ -43,7 +43,6 @@ public class ConnexionController {
                                      @RequestParam(name = "session-fermee", required = false)
                                      String sessionFermee,
                                      HttpServletRequest requete, Model modele) {
-        modele.addAttribute("titre", "Connexion");
         modele.addAttribute("erreur", erreur != null);
         modele.addAttribute("deconnecte", deconnecte != null);
         modele.addAttribute("delaiCode", delai != null);

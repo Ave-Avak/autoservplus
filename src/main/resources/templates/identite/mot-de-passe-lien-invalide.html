@@ -3,19 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Lien invalide | AutoServ+</title>
+    <title th:text="#{mot-de-passe.invalide.titre} + ' | AutoServ+'">Lien invalide | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 <header th:replace="~{fragments/entete :: entete}"></header>
 <main id="contenu">
-    <h1>Ce lien n'est plus valable</h1>
+    <h1 th:text="#{mot-de-passe.invalide.message}">Ce lien n'est plus valable</h1>
     <div class="message message-erreur" role="alert">
         <p th:text="#{${motif}}">Le lien est invalide ou a expiré.</p>
     </div>
-    <a class="btn-cta" th:href="@{/mot-de-passe/oublie}">Demander un nouveau lien</a>
+    <a class="btn-cta" th:href="@{/mot-de-passe/oublie}" th:text="#{mot-de-passe.invalide.nouveau-lien}">Demander un nouveau lien</a>
 </main>
-<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 <div th:replace="~{fragments/cookies :: bandeau}"></div>
 </body>
 </html>

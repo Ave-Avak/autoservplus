@@ -3,32 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Connexion | AutoServ+</title>
+    <title th:text="#{connexion.titre} + ' | AutoServ+'">Connexion | AutoServ+</title>
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <h1>Connexion</h1>
+    <h1 th:text="#{connexion.titre}">Connexion</h1>
 
     <div class="message message-erreur" th:if="${erreur}" role="alert">
-        <p>Identifiants incorrects ou connexion temporairement bloquée.</p>
-        <p>Vérifiez votre adresse et votre mot de passe. Après plusieurs essais infructueux,
-            la connexion est bloquée pendant un temps limité.</p>
-        <p>Si vous avez oublié votre mot de passe ou n'avez jamais activé votre compte,
-            utilisez « <a th:href="@{/mot-de-passe/oublie}">Mot de passe oublié</a> ».</p>
+        <p th:text="#{connexion.erreur.identifiants}">Identifiants incorrects ou connexion temporairement bloquée.</p>
+        <p th:text="#{connexion.erreur.verifier}">Vérifiez votre adresse et votre mot de passe.</p>
+        <p><span th:text="#{connexion.erreur.oubli}">Si vous avez oublié votre mot de passe ou n'avez jamais activé votre compte :</span>
+            <a th:href="@{/mot-de-passe/oublie}" th:text="#{connexion.erreur.oubli.lien}">Mot de passe oublié</a></p>
     </div>
 
     <div class="message message-erreur" th:if="${delaiCode}" role="alert">
-        <p>Le délai de saisie du code est dépassé. Reconnectez-vous.</p>
+        <p th:text="#{connexion.delai-code}">Le délai de saisie du code est dépassé. Reconnectez-vous.</p>
     </div>
 
     <div class="message message-erreur" th:if="${delaiMotDePasse}" role="alert">
-        <p>Le délai de saisie du nouveau mot de passe est dépassé. Reconnectez-vous.</p>
+        <p th:text="#{connexion.delai-mot-de-passe}">Le délai de saisie du nouveau mot de passe est dépassé. Reconnectez-vous.</p>
     </div>
 
     <div class="message message-erreur" th:if="${sessionFermee}" role="alert">
@@ -36,34 +35,34 @@
     </div>
 
     <div class="message message-succes" th:if="${deconnecte}" role="status">
-        <p>Vous avez été déconnecté.</p>
+        <p th:text="#{connexion.deconnecte}">Vous avez été déconnecté.</p>
     </div>
 
     <form class="formulaire" th:action="@{/connexion}" method="post">
         <div class="champ">
-            <label for="email">Adresse de courriel</label>
+            <label for="email" th:text="#{connexion.email}">Adresse de courriel</label>
             <input type="email" id="email" name="email" autocomplete="email" required autofocus>
         </div>
 
         <div class="champ">
-            <label for="password">Mot de passe</label>
+            <label for="password" th:text="#{connexion.mot-de-passe}">Mot de passe</label>
             <input type="password" id="password" name="password" autocomplete="current-password" required>
         </div>
 
         <div th:replace="~{fragments/antibot :: turnstile(${cleTurnstile})}"></div>
 
-        <button type="submit" class="btn-cta">Se connecter</button>
+        <button type="submit" class="btn-cta" th:text="#{connexion.envoyer}">Se connecter</button>
     </form>
 
-    <p><a th:href="@{/mot-de-passe/oublie}">Mot de passe oublié ?</a></p>
+    <p><a th:href="@{/mot-de-passe/oublie}" th:text="#{connexion.oublie}">Mot de passe oublié ?</a></p>
 
-    <!-- Un compte non verifie ne peut PAS se connecter : c'est ici, sur l'ecran ou il
-         echoue, qu'il doit pouvoir redemander son lien d'activation. -->
+    <!--/* Un compte non vérifié ne peut pas se connecter : c'est ici, sur l'écran où il
+         échoue, qu'il doit pouvoir redemander son lien d'activation. */-->
     <p><a th:href="@{/inscription/renvoyer-verification}"
           th:text="#{verification.renvoi.lien}">Vous n'avez pas reçu l'e-mail de vérification ?</a></p>
 </main>
 
-<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 
 <div th:replace="~{fragments/cookies :: bandeau}"></div>
 </body>

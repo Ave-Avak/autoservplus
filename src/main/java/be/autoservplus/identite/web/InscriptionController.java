@@ -255,7 +255,6 @@ public class InscriptionController {
      */
     @GetMapping("/inscription/verification")
     public String verifierAdresse(@RequestParam String jeton, Model modele, HttpServletResponse reponse) {
-        modele.addAttribute("titre", "Vérification de votre adresse");
         try {
             service.confirmerAdresse(jeton);
             modele.addAttribute("succes", true);

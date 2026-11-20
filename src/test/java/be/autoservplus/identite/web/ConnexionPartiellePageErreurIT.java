@@ -115,15 +115,15 @@ class ConnexionPartiellePageErreurIT extends SocleIntegration {
         assertThat(connexion.headers().firstValue("Location").orElseThrow())
                 .endsWith("/connexion/etape/second-facteur");
 
-        // Rattrapee par le controleur : la page d erreur du projet est rendue.
+        // Référence inconnue : le conteneur rend la page d'erreur au dispatch ERROR.
         HttpResponse<String> introuvable = lire("/pieces/" + UUID.randomUUID());
         assertThat(introuvable.statusCode()).isEqualTo(404);
         assertThat(introuvable.body()).contains("<main id=\"contenu\">");
         sansTraceDeConnexion(introuvable);
 
-        // Non rattrapee : le conteneur rend sa page d erreur au dispatch ERROR, sous le
-        // meme contexte anonyme. La session partielle survit : l etape aboutit ensuite.
-        HttpResponse<String> conteneur = lire("/pieces/pas-un-identifiant");
+        // Paramètre mal formé : même chemin, sous le même contexte anonyme, avec un autre
+        // statut. La session partielle survit : l'étape aboutit ensuite.
+        HttpResponse<String> conteneur = lire("/recherche?q=filtre&page=pas-un-nombre");
         assertThat(conteneur.statusCode()).isEqualTo(400);
         assertThat(conteneur.body()).contains("<main id=\"contenu\">");
         sansTraceDeConnexion(conteneur);

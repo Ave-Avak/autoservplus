@@ -54,7 +54,6 @@ public class MotDePasseController {
 
     @GetMapping("/oublie")
     public String afficherDemande(Model modele) {
-        modele.addAttribute("titre", "Mot de passe oublié");
         modele.addAttribute("horodatageAntiBot", pieges.horodatageActuel());
         modele.addAttribute("cleTurnstile", cleTurnstile);
         return "identite/mot-de-passe-oublie";
@@ -86,7 +85,6 @@ public class MotDePasseController {
         // Meme page que le cas nominal, pour la meme raison qu au renvoi.
         if (pieges.soumissionAutomatique(piege, horodatage)
                 || turnstileRefuse(jetonTurnstile, requete)) {
-            modele.addAttribute("titre", "Vérifiez votre courriel");
             return "identite/mot-de-passe-demande";
         }
         // Le decompte precede l appel au service, donc tout acces a la base : c est ce
@@ -97,7 +95,6 @@ public class MotDePasseController {
         } else {
             modele.addAttribute("debitDepasse", true);
         }
-        modele.addAttribute("titre", "Vérifiez votre courriel");
         return "identite/mot-de-passe-demande";
     }
 
@@ -107,7 +104,6 @@ public class MotDePasseController {
      */
     @GetMapping("/nouveau")
     public String afficherFormulaire(@RequestParam String jeton, Model modele, HttpServletResponse reponse) {
-        modele.addAttribute("titre", "Nouveau mot de passe");
         try {
             service.verifierJeton(jeton);
         } catch (RessourceIntrouvableException | RegleMetierException e) {
@@ -123,11 +119,9 @@ public class MotDePasseController {
     public String appliquer(@Valid @ModelAttribute("formulaire") NouveauMotDePasseForm formulaire,
                             BindingResult erreurs, Model modele, HttpServletResponse reponse) {
 
-        modele.addAttribute("titre", "Nouveau mot de passe");
-
         if (!formulaire.concordent()) {
-            erreurs.rejectValue("confirmation", "motsDePasse.differents",
-                    "Les deux mots de passe ne correspondent pas.");
+            // Code résolu par la source de messages au rendu, dans la langue de l'écran.
+            erreurs.rejectValue("confirmation", "mot-de-passe-a-definir.erreur.differents");
         }
         if (erreurs.hasErrors()) {
             return "identite/mot-de-passe-nouveau";
@@ -139,7 +133,6 @@ public class MotDePasseController {
             return lienInvalide(e, modele, reponse);
         }
 
-        modele.addAttribute("titre", "Mot de passe modifié");
         return "identite/mot-de-passe-modifie";
     }
 
