@@ -45,20 +45,6 @@ class GabaritsAccessiblesTest {
     private static final Pattern ERREUR_DE_CHAMP = Pattern.compile("<[a-z]+\\b[^>]*\\bth:errors=[^>]*>");
     private static final Pattern TITRE = Pattern.compile("<title\\b[^>]*>");
 
-    /**
-     * Pages encore ecrites en francais dans le dur, <b>corps compris</b> : leur titre
-     * n y fait pas exception. Leur poser un titre traduit produirait un onglet
-     * neerlandais au-dessus d une page francaise, soit une incoherence de plus et non
-     * de moins. Elles relevent de la passe i18n inscrite a la dette, qui les traduira
-     * d un bloc. La liste vaut donc constat date, et non dispense : elle est fermee aux
-     * ajouts (toute page NEUVE est balayee) et {@code exclusionSansEntreePerimee}
-     * refuse qu une entree y survive a sa traduction.
-     */
-    private static final List<String> EN_FRANCAIS_FIGE = List.of(
-            "reservation/rdv-formulaire.html",
-            "reservation/rdv-liste.html",
-            "reservation/vehicules.html");
-
     private static final Pattern RETOUR_FLASH =
             Pattern.compile("<[a-z]+\\b[^>]*th:if=\"\\$\\{(?:erreur|message)\\}\"[^>]*>");
 
@@ -215,36 +201,16 @@ class GabaritsAccessiblesTest {
          * d une balise les prendrait pour des pages.</p>
          */
         @Test
-        @DisplayName("toute page servie lie son titre a la locale")
+        @DisplayName("toute page servie lie son titre a la locale, sans exception")
         void titreLieALaLocale() {
             List<String> figes = new ArrayList<>();
             for (Path gabarit : pages()) {
-                if (!EN_FRANCAIS_FIGE.contains(nom(gabarit)) && !titreLocalise(gabarit)) {
+                if (!titreLocalise(gabarit)) {
                     figes.add(nom(gabarit));
                 }
             }
             assertThat(figes)
-                    .as("pages dont le titre ne suit pas la locale (hors %s)", EN_FRANCAIS_FIGE)
-                    .isEmpty();
-        }
-
-        /**
-         * Le garde-fou de la liste d exclusion elle-meme. Sans ce cas, une page
-         * traduite au fil de la passe i18n resterait inscrite ici indefiniment, et la
-         * liste finirait par dispenser du balayage des ecrans qui n en ont plus besoin :
-         * exactement le sort qu un test doit empecher. Meme parti que le refus des
-         * entrees fantomes dans {@code SchemaIT}.
-         */
-        @Test
-        @DisplayName("aucune page traduite ne reste inscrite a l exclusion")
-        void exclusionSansEntreePerimee() {
-            List<String> aRetirer = pages().stream()
-                    .filter(gabarit -> EN_FRANCAIS_FIGE.contains(nom(gabarit)))
-                    .filter(Titres::titreLocalise)
-                    .map(GabaritsAccessiblesTest::nom)
-                    .toList();
-            assertThat(aRetirer)
-                    .as("pages a retirer de EN_FRANCAIS_FIGE : leur titre suit desormais la locale")
+                    .as("pages dont le titre ne suit pas la locale")
                     .isEmpty();
         }
 

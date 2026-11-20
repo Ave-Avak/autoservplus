@@ -1,6 +1,7 @@
 package be.autoservplus.reservation.service;
 
 import be.autoservplus.reservation.web.dto.VehiculeVue;
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -85,12 +86,14 @@ public class VehiculeService {
         String plaqueNormalisee = Vehicule.normaliserPlaque(plaque);
 
         if (vehicules.existsByPlaque(plaqueNormalisee)) {
-            throw new RegleMetierException("RM-12",
-                    "Le vehicule immatricule %s est deja enregistre.".formatted(plaqueNormalisee));
+            throw new RefusTraduit("RM-12", "vehicule.erreur.plaque-enregistree",
+                    new Object[]{plaqueNormalisee},
+                    "Le véhicule immatriculé %s est déjà enregistré.".formatted(plaqueNormalisee));
         }
         if (vehicules.countByMembreEmailAndActifTrue(email) >= VEHICULES_MAXIMUM) {
-            throw new RegleMetierException("RM-13",
-                    "Vous avez atteint la limite de %d vehicules.".formatted(VEHICULES_MAXIMUM));
+            throw new RefusTraduit("RM-13", "vehicule.erreur.limite",
+                    new Object[]{VEHICULES_MAXIMUM},
+                    "Vous avez atteint la limite de %d véhicules.".formatted(VEHICULES_MAXIMUM));
         }
 
         Utilisateur membre = membres.findByEmail(email)

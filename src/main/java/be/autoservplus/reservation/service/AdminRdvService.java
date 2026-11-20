@@ -256,10 +256,11 @@ public class AdminRdvService {
         Instant maintenant = horloge.instant();
         Instant fin = nouveauDebut.plus(rdv.duree());
         if (!disponibilites.estReservable(nouveauDebut, fin, ReglesDeCreneau.GARAGE)) {
-            throw new CreneauIndisponibleException("Ce créneau n'est pas ouvert.");
+            throw new CreneauIndisponibleException(CreneauIndisponibleException.NON_OUVERT, "Ce créneau n'est pas ouvert.");
         }
         PosteAtelier poste = disponibilites.premierPosteLibre(nouveauDebut, fin, rdv)
-                .orElseThrow(() -> new CreneauIndisponibleException("Aucun poste libre sur ce créneau."));
+                .orElseThrow(() -> new CreneauIndisponibleException(
+                        CreneauIndisponibleException.AUCUN_POSTE, "Aucun poste libre sur ce créneau."));
 
         Instant ancienDebut = rdv.getDebut();
         rdv.modifierParLeGarage(nouveauDebut, poste, motif, maintenant);
@@ -291,12 +292,14 @@ public class AdminRdvService {
             if (!EtatSql.estUneExclusion(e)) {
                 throw e;
             }
-            throw new CreneauIndisponibleException("Ce créneau vient d'être pris. Choisissez-en un autre.", e);
+            throw new CreneauIndisponibleException(CreneauIndisponibleException.PRIS,
+                    "Ce créneau vient d'être pris. Choisissez-en un autre.", e);
         } catch (DataAccessException e) {
             if (!EtatSql.estUnInterblocage(e)) {
                 throw e;
             }
-            throw new CreneauIndisponibleException("Ce créneau vient d'être pris. Choisissez-en un autre.", e);
+            throw new CreneauIndisponibleException(CreneauIndisponibleException.PRIS,
+                    "Ce créneau vient d'être pris. Choisissez-en un autre.", e);
         }
     }
 

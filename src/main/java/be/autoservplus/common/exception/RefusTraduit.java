@@ -25,6 +25,8 @@ public class RefusTraduit extends RegleMetierException {
 
     private final transient String cleMessage;
 
+    private final transient Object[] arguments;
+
     /**
      * @param cleMessage cle i18n du texte a afficher
      * @param message    phrase francaise affichable sans retouche, pour les journaux
@@ -33,6 +35,7 @@ public class RefusTraduit extends RegleMetierException {
     public RefusTraduit(String cleMessage, String message) {
         super(message);
         this.cleMessage = cleMessage;
+        this.arguments = null;
     }
 
     /**
@@ -40,11 +43,29 @@ public class RefusTraduit extends RegleMetierException {
      * l ecran, le code la tracabilite, deux roles, deux champs, comme ci-dessus.
      */
     public RefusTraduit(String codeRegle, String cleMessage, String message) {
+        this(codeRegle, cleMessage, null, message);
+    }
+
+    /**
+     * Refus dont le message d'écran attend des valeurs, un délai ou une limite. Le
+     * tableau est explicite, et non variable : avec trois chaînes, un constructeur à
+     * arguments variables se confondrait avec celui qui porte un code de règle.
+     *
+     * @param codeRegle code d'une règle du cahier des charges, ou {@code null}
+     * @param arguments valeurs du message, dans l'ordre de ses {@code {0}}, {@code {1}}
+     */
+    public RefusTraduit(String codeRegle, String cleMessage, Object[] arguments, String message) {
         super(codeRegle, message);
         this.cleMessage = cleMessage;
+        this.arguments = arguments == null ? null : arguments.clone();
     }
 
     public String getCleMessage() {
         return cleMessage;
+    }
+
+    /** Valeurs du message, ou {@code null} quand il n'en attend aucune. */
+    public Object[] getArguments() {
+        return arguments == null ? null : arguments.clone();
     }
 }

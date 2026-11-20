@@ -135,7 +135,8 @@ class RdvControllerFormulaireTest {
                 .param("vehicule", UUID.randomUUID().toString())
                 .param("prestations", UUID.randomUUID().toString())
                 .param("date", "2026-09-15")
-                .param("debut", "2026-09-15T08:00:00Z");
+                .param("debut", "2026-09-15T08:00:00Z")
+                .locale(Locale.FRENCH);
     }
 
     @Test
@@ -149,7 +150,7 @@ class RdvControllerFormulaireTest {
         mvc.perform(postReservation())
                 .andExpect(status().isOk())
                 .andExpect(model().attributeHasFieldErrors("formulaire", "prestations"))
-                .andExpect(content().string(containsString("La prestation Vidange n est plus proposee.")))
+                .andExpect(content().string(containsString("La prestation Vidange n&#39;est plus proposée.")))
                 .andExpect(content().string(not(containsString("[RM-"))));
     }
 
@@ -217,13 +218,13 @@ class RdvControllerFormulaireTest {
     void creneauIndisponibleSousLeChampDebut() throws Exception {
         stubsFormulaire();
         when(rdvs.reserver(any(), any(), any(), any(), any()))
-                .thenThrow(new CreneauIndisponibleException(
-                        "Ce creneau vient d etre pris. Choisissez-en un autre."));
+                .thenThrow(new CreneauIndisponibleException(CreneauIndisponibleException.PRIS,
+                        "Ce créneau vient d'être pris. Choisissez-en un autre."));
 
         mvc.perform(postReservation())
                 .andExpect(status().isOk())
                 .andExpect(model().attributeHasFieldErrors("formulaire", "debut"))
-                .andExpect(content().string(containsString("Ce creneau vient d etre pris. Choisissez-en un autre.")))
+                .andExpect(content().string(containsString("Ce créneau vient d&#39;être pris. Choisissez-en un autre.")))
                 .andExpect(content().string(not(containsString("[RM-"))));
     }
 
@@ -234,9 +235,9 @@ class RdvControllerFormulaireTest {
         stubsFormulaire();
         when(rdvs.conditions()).thenReturn(new ConditionsReservation(false, 36, "+32 2 123 45 67"));
 
-        mvc.perform(get("/mes-rendez-vous/nouveau"))
+        mvc.perform(get("/mes-rendez-vous/nouveau").locale(Locale.FRENCH))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Le garage vous répond sous <span>36</span> heures.")))
+                .andExpect(content().string(containsString("Le garage vous répond sous 36 heures.")))
                 .andExpect(content().string(containsString("Attendez sa confirmation avant de vous organiser.")))
                 .andExpect(content().string(containsString("href=\"tel:+3221234567\"")));
     }
@@ -247,7 +248,7 @@ class RdvControllerFormulaireTest {
     void conditionsConfirmationAutomatique() throws Exception {
         stubsFormulaire();
 
-        mvc.perform(get("/mes-rendez-vous/nouveau"))
+        mvc.perform(get("/mes-rendez-vous/nouveau").locale(Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Pour un rendez-vous plus rapproché, appelez le garage au")))
                 .andExpect(content().string(not(containsString("Le garage vous répond sous"))));

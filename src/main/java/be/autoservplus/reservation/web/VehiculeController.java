@@ -1,18 +1,19 @@
 package be.autoservplus.reservation.web;
 
-import be.autoservplus.common.exception.RegleMetierException;
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.intervention.service.HistoriqueEntretienService;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.service.VehiculeService;
 import be.autoservplus.reservation.web.dto.VehiculeForm;
 import be.autoservplus.reservation.web.dto.VehiculeVue;
 import jakarta.validation.Valid;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -31,15 +32,17 @@ public class VehiculeController {
 
     private final VehiculeService service;
     private final HistoriqueEntretienService historiques;
+    private final MessageSource messages;
 
-    public VehiculeController(VehiculeService service, HistoriqueEntretienService historiques) {
+    public VehiculeController(VehiculeService service, HistoriqueEntretienService historiques,
+                              MessageSource messages) {
         this.service = service;
         this.historiques = historiques;
+        this.messages = messages;
     }
 
     @GetMapping
     public String lister(@AuthenticationPrincipal UserDetails membre, Model modele) {
-        modele.addAttribute("titre", "Mes véhicules");
         modele.addAttribute("vehicules", service.vuesDuMembre(membre.getUsername()));
         return "reservation/vehicules";
     }
@@ -55,7 +58,6 @@ public class VehiculeController {
 
     @GetMapping("/nouveau")
     public String afficherAjout(Model modele) {
-        modele.addAttribute("titre", "Ajouter un véhicule");
         modele.addAttribute("formulaire", new VehiculeForm());
         modele.addAttribute("motorisations", Motorisation.values());
         modele.addAttribute("modeAjout", true);
@@ -77,12 +79,14 @@ public class VehiculeController {
             service.ajouter(membre.getUsername(), formulaire.getPlaque(), formulaire.getMarque(),
                     formulaire.getModele(), formulaire.getMotorisation(),
                     formulaire.getAnnee(), formulaire.getKilometrage());
-        } catch (RegleMetierException e) {
-            erreurs.addError(new FieldError("formulaire", "plaque", e.getMessage()));
+        } catch (RefusTraduit refus) {
+            // Plaque déjà enregistrée (RM-12) ou parc complet (RM-13) : sous la plaque,
+            // le champ qui identifie le véhicule refusé.
+            erreurs.rejectValue("plaque", refus.getCleMessage(), refus.getArguments(), refus.getMessage());
             return retourFormulaire(modele, true);
         }
 
-        redirection.addFlashAttribute("message", "Le véhicule a été ajouté.");
+        redirection.addFlashAttribute("message", msg("vehicule.message.ajoute"));
         return "redirect:/mes-vehicules";
     }
 
@@ -101,7 +105,6 @@ public class VehiculeController {
         formulaire.setKilometrage(vehicule.kilometrage());
         formulaire.setNumeroChassis(vehicule.numeroChassis());
 
-        modele.addAttribute("titre", "Modifier " + vehicule.designation());
         modele.addAttribute("formulaire", formulaire);
         modele.addAttribute("motorisations", Motorisation.values());
         modele.addAttribute("reference", reference);
@@ -130,13 +133,15 @@ public class VehiculeController {
             try {
                 service.releverKilometrage(reference, membre.getUsername(), formulaire.getKilometrage());
             } catch (IllegalArgumentException e) {
-                erreurs.addError(new FieldError("formulaire", "kilometrage", e.getMessage()));
+                // Le seul refus restant : un compteur qui recule. Un kilométrage négatif
+                // est arrêté plus tôt par la validation du formulaire.
+                erreurs.rejectValue("kilometrage", "vehicule.erreur.kilometrage-diminue", e.getMessage());
                 modele.addAttribute("reference", reference);
                 return retourFormulaire(modele, false);
             }
         }
 
-        redirection.addFlashAttribute("message", "Le véhicule a été mis à jour.");
+        redirection.addFlashAttribute("message", msg("vehicule.message.modifie"));
         return "redirect:/mes-vehicules";
     }
 
@@ -145,14 +150,17 @@ public class VehiculeController {
                             @PathVariable UUID reference,
                             RedirectAttributes redirection) {
         service.supprimer(reference, membre.getUsername());
-        redirection.addFlashAttribute("message", "Le véhicule a été retiré de votre parc.");
+        redirection.addFlashAttribute("message", msg("vehicule.message.retire"));
         return "redirect:/mes-vehicules";
     }
 
     private String retourFormulaire(Model modele, boolean modeAjout) {
-        modele.addAttribute("titre", modeAjout ? "Ajouter un véhicule" : "Modifier le véhicule");
         modele.addAttribute("motorisations", Motorisation.values());
         modele.addAttribute("modeAjout", modeAjout);
         return "reservation/vehicule-formulaire";
+    }
+
+    private String msg(String cle) {
+        return messages.getMessage(cle, null, LocaleContextHolder.getLocale());
     }
 }

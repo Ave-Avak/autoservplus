@@ -3,26 +3,25 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Mes véhicules | AutoServ+</title>
+    <title th:text="#{vehicule.liste.titre} + ' | AutoServ+'">Mes véhicules | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <h1>Mes véhicules</h1>
+    <h1 th:text="#{vehicule.liste.titre}">Mes véhicules</h1>
 
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">
         Message
     </div>
 
-    <p th:if="${vehicules.isEmpty()}" class="message">
-        Vous n'avez pas encore enregistré de véhicule. Ajoutez-en un pour pouvoir
-        prendre rendez-vous et suivre son historique d'entretien.
+    <p th:if="${vehicules.isEmpty()}" class="message" th:text="#{vehicule.liste.vide}">
+        Vous n'avez pas encore enregistré de véhicule.
     </p>
 
     <ul class="grille-articles" th:unless="${vehicules.isEmpty()}">
@@ -32,44 +31,48 @@
 
             <dl class="vehicule-details">
                 <div>
-                    <dt>Motorisation</dt>
-                    <dd th:text="${v.motorisationLisible()}">Diesel</dd>
+                    <dt th:text="#{vehicule.motorisation}">Motorisation</dt>
+                    <dd th:text="#{'vehicule.motorisation.' + ${v.motorisation()}}">Diesel</dd>
                 </div>
                 <div th:if="${v.annee() != null}">
-                    <dt>Année</dt>
+                    <dt th:text="#{vehicule.annee}">Année</dt>
                     <dd th:text="${v.annee()}">2018</dd>
                 </div>
                 <div>
-                    <dt>Kilométrage</dt>
-                    <dd th:text="${v.kilometrageLisible()}">85 000 km</dd>
+                    <dt th:text="#{vehicule.kilometrage}">Kilométrage</dt>
+                    <dd th:text="${v.kilometrage() == null} ? #{vehicule.kilometrage.non-renseigne}
+                                 : #{vehicule.kilometrage.valeur(${v.kilometrage()})}">85 000 km</dd>
                 </div>
             </dl>
 
             <div class="carte-actions">
                 <a th:href="@{/mes-vehicules/{ref}/historique(ref=${v.reference()})}"
-                   th:aria-label="|Historique d'entretien ${v.designation()}|">Historique d'entretien</a>
+                   th:aria-label="#{vehicule.historique.lien.aria(${v.designation()})}"
+                   th:text="#{vehicule.historique.lien}">Historique d'entretien</a>
                 <a th:href="@{/mes-vehicules/{ref}/modifier(ref=${v.reference()})}"
-                   th:aria-label="'Modifier ' + ${v.designation()}">Modifier</a>
+                   th:aria-label="#{vehicule.modifier.aria(${v.designation()})}"
+                   th:text="#{vehicule.modifier}">Modifier</a>
 
                 <form th:action="@{/mes-vehicules/{ref}/supprimer(ref=${v.reference()})}"
                       method="post"
                       class="formulaire-suppression"
-                      th:data-designation="${v.designation()}">
+                      th:data-message="#{vehicule.retirer.confirmation(${v.designation()})}">
                     <button type="submit" class="lien-bouton texte-erreur"
-                            th:aria-label="'Retirer ' + ${v.designation()}">Retirer</button>
+                            th:aria-label="#{vehicule.retirer.aria(${v.designation()})}"
+                            th:text="#{vehicule.retirer}">Retirer</button>
                 </form>
             </div>
         </li>
     </ul>
 
     <p class="actions-page">
-        <a class="btn-cta" th:href="@{/mes-vehicules/nouveau}">Ajouter un véhicule</a>
+        <a class="btn-cta" th:href="@{/mes-vehicules/nouveau}" th:text="#{vehicule.liste.ajouter}">Ajouter un véhicule</a>
     </p>
 
-    <p><a th:href="@{/mon-compte}">Retour à mon compte</a></p>
+    <p><a th:href="@{/mon-compte}" th:text="#{erreur.retour-compte}">Retour à mon compte</a></p>
 </main>
 
-<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 
 <script th:src="@{/js/confirmation.js}"></script>
 <div th:replace="~{fragments/cookies :: bandeau}"></div>

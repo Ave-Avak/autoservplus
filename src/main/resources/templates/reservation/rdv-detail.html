@@ -3,44 +3,44 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="'Rendez-vous ' + ${rdv.numero()} + ' | AutoServ+'">Rendez-vous | AutoServ+</title>
+    <title th:text="#{rdv.detail.titre(${rdv.numero()})} + ' | AutoServ+'">Rendez-vous | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <p><a th:href="@{/mes-rendez-vous}">Retour à mes rendez-vous</a></p>
+    <p><a th:href="@{/mes-rendez-vous}" th:text="#{rdv.detail.retour}">Retour à mes rendez-vous</a></p>
 
-    <h1 th:text="'Rendez-vous ' + ${rdv.numero()}">Rendez-vous RDV-2026-0001</h1>
+    <h1 th:text="#{rdv.detail.titre(${rdv.numero()})}">Rendez-vous RDV-2026-0001</h1>
 
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
 
     <p>
         <span th:class="'badge badge-' + ${#strings.toLowerCase(rdv.statut())}"
-              th:text="${rdv.statutLisible()}">En attente</span>
+              th:text="#{'rdv.membre.statut.' + ${rdv.statut()}}">En attente de confirmation</span>
     </p>
 
     <dl class="vehicule-details">
         <div>
-            <dt>Date</dt>
-            <dd th:text="${#strings.capitalize(rdv.jourLisible())}">Mercredi 16 septembre 2026</dd>
+            <dt th:text="#{rdv.detail.date}">Date</dt>
+            <dd th:text="${#strings.capitalize(#temporals.format(rdv.jour(), 'EEEE d MMMM yyyy'))}">Mercredi 16 septembre 2026</dd>
         </div>
         <div>
-            <dt>Heure</dt>
+            <dt th:text="#{rdv.detail.heure}">Heure</dt>
             <dd th:text="${rdv.heureDebut()} + ' - ' + ${rdv.heureFin()}">10:00 - 11:00</dd>
         </div>
         <div>
-            <dt>Véhicule</dt>
+            <dt th:text="#{rdv.detail.vehicule}">Véhicule</dt>
             <dd th:text="${rdv.vehicule()}">VW Golf (1-ABC-123)</dd>
         </div>
         <div>
-            <dt>Prestations</dt>
+            <dt th:text="#{rdv.detail.prestations}">Prestations</dt>
             <dd>
                 <ul>
                     <li th:each="p : ${rdv.prestations()}" th:text="${p}">Vidange</li>
@@ -48,31 +48,28 @@
             </dd>
         </div>
         <div>
-            <dt>Montant estimé TVAC</dt>
+            <dt th:text="#{rdv.detail.montant}">Montant estimé TVAC</dt>
             <dd th:text="${rdv.montantTvac()}">59,29 €</dd>
         </div>
         <div th:if="${rdv.commentaire()}">
-            <dt>Votre commentaire</dt>
+            <dt th:text="#{rdv.detail.commentaire}">Votre commentaire</dt>
             <dd th:text="${rdv.commentaire()}">Bruit au freinage</dd>
         </div>
         <div th:if="${rdv.motifRefus()}">
-            <dt>Motif indiqué par le garage</dt>
+            <dt th:text="#{rdv.detail.motif-refus}">Motif indiqué par le garage</dt>
             <dd th:text="${rdv.motifRefus()}">Pièce indisponible</dd>
         </div>
     </dl>
 
-    <p class="aide" th:if="${rdv.estActif() and !rdv.annulable()}">
-        L'annulation en ligne n'est plus possible à moins de 24 heures du rendez-vous.
-        Contactez directement le garage.
+    <p class="aide" th:if="${rdv.estActif() and !rdv.annulable()}" th:text="#{rdv.detail.annulation-impossible}">
+        L'annulation en ligne n'est plus possible aussi près du rendez-vous. Contactez directement le garage.
     </p>
 
-    <!--
-      Export iCalendar (F38), proposé sur les seuls rendez-vous CONFIRMÉS. Une demande
-      encore en attente n'a pas de date arrêtée : déposée dans l'agenda du membre, elle
-      s'y installerait comme un fait et rien ne viendrait l'en retirer si le garage
-      refusait, le fichier vit chez lui, hors de portée du site. Le contrôleur applique
-      la même condition, un accès direct à l'adresse répond 404.
-    -->
+    <!--/* Export iCalendar (F38), proposé sur les seuls rendez-vous confirmés. Une demande
+         encore en attente n'a pas de date arrêtée : déposée dans l'agenda du membre, elle
+         s'y installerait comme un fait et rien ne viendrait l'en retirer si le garage
+         refusait, le fichier vit chez lui, hors de portée du site. Le contrôleur applique
+         la même condition, un accès direct à l'adresse répond 404. */-->
     <p th:if="${rdv.statut()} == 'CONFIRME'" class="actions-page">
         <a th:href="@{/mes-rendez-vous/{ref}/agenda.ics(ref=${rdv.reference()})}"
            th:text="#{rdv.agenda.bouton}">Ajouter à mon agenda</a>
@@ -83,7 +80,8 @@
 
     <p th:if="${rdv.statut()} == 'HONORE'" class="actions-page">
         <a class="btn-cta"
-           th:href="@{/mes-interventions/depuis-rdv/{ref}(ref=${rdv.reference()})}">
+           th:href="@{/mes-interventions/depuis-rdv/{ref}(ref=${rdv.reference()})}"
+           th:text="#{rdv.detail.suivre}">
             Suivre l'intervention
         </a>
     </p>
@@ -96,12 +94,12 @@
     <form th:if="${rdv.annulable()}"
           th:action="@{/mes-rendez-vous/{ref}/annuler(ref=${rdv.reference()})}"
           method="post" class="formulaire-suppression"
-          th:data-designation="'le rendez-vous ' + ${rdv.numero()}">
-        <button type="submit" class="lien-bouton texte-erreur">Annuler ce rendez-vous</button>
+          th:data-message="#{rdv.detail.annuler.confirmation(${rdv.numero()})}">
+        <button type="submit" class="lien-bouton texte-erreur" th:text="#{rdv.detail.annuler}">Annuler ce rendez-vous</button>
     </form>
 </main>
 
-<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 
 <script th:src="@{/js/confirmation.js}"></script>
 <div th:replace="~{fragments/cookies :: bandeau}"></div>

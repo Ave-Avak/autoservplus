@@ -3,59 +3,59 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Prendre rendez-vous | AutoServ+</title>
+    <title th:text="#{rdv.formulaire.titre} + ' | AutoServ+'">Prendre rendez-vous | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
-    <!-- HTMX injecte par defaut une feuille de style en ligne pour ses indicateurs,
-         ce que la CSP interdit. On la desactive et on stylise nous-memes. -->
+    <!--/* HTMX injecte par défaut une feuille de style en ligne pour ses indicateurs, ce
+         que la politique de sécurité du contenu interdit. Elle est désactivée, et le
+         style vient de la feuille du site. */-->
     <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <h1>Prendre rendez-vous</h1>
+    <h1 th:text="#{rdv.formulaire.titre}">Prendre rendez-vous</h1>
 
-    <!--/* Page en français figé, comme le reste de ce formulaire : ces phrases se traduiront avec elle. */-->
-    <p th:unless="${conditions.confirmationAutomatique()}" class="texte-info">
-        Le garage vous répond sous <span th:text="${conditions.delaiReponseHeures()}">24</span> heures.
-        Attendez sa confirmation avant de vous organiser.
+    <p th:unless="${conditions.confirmationAutomatique()}" class="texte-info"
+       th:text="#{rdv.formulaire.delai-reponse(${conditions.delaiReponseHeures()})}">
+        Le garage vous répond sous 24 heures. Attendez sa confirmation avant de vous organiser.
     </p>
     <p th:if="${conditions.telephoneGarage() != null and !#strings.isEmpty(conditions.telephoneGarage())}"
        class="texte-info">
-        Pour un rendez-vous plus rapproché, appelez le garage au
+        <span th:text="#{rdv.formulaire.telephone}">Pour un rendez-vous plus rapproché, appelez le garage au</span>
         <a th:href="'tel:' + ${#strings.replace(conditions.telephoneGarage(), ' ', '')}"
            th:text="${conditions.telephoneGarage()}">+32 2 000 00 00</a>.
     </p>
 
     <p th:if="${vehicules.isEmpty()}" class="message">
-        Vous devez d'abord enregistrer un véhicule.
-        <a th:href="@{/mes-vehicules/nouveau}">Ajouter un véhicule</a>
+        <span th:text="#{rdv.formulaire.sans-vehicule}">Vous devez d'abord enregistrer un véhicule.</span>
+        <a th:href="@{/mes-vehicules/nouveau}" th:text="#{vehicule.liste.ajouter}">Ajouter un véhicule</a>
     </p>
 
     <form th:unless="${vehicules.isEmpty()}"
           th:action="@{/mes-rendez-vous/nouveau}" th:object="${formulaire}" method="post"
           class="formulaire formulaire-rdv" novalidate>
 
-        <!-- Erreurs qui ne visent aucun champ : un plafond de demandes en attente
-             porte sur le compte, pas sur le vehicule ni sur les prestations. Les
-             ancrer sous un champ dirait au membre de corriger un choix qui n'est
-             pas en cause. role=alert : l'erreur survient apres coup, un lecteur
-             d'ecran doit l'annoncer sans qu'on ait a lui redonner le focus. -->
+        <!--/* Erreurs qui ne visent aucun champ : un plafond de demandes en attente porte
+             sur le compte, pas sur le véhicule ni sur les prestations. Les ancrer sous un
+             champ dirait au membre de corriger un choix qui n'est pas en cause.
+             role=alert : l'erreur survient après coup, un lecteur d'écran doit l'annoncer
+             sans qu'on ait à lui redonner le focus. */-->
         <p class="erreur" role="alert" th:if="${#fields.hasGlobalErrors()}"
            th:each="erreur : ${#fields.globalErrors()}" th:text="${erreur}">Erreur</p>
 
         <fieldset>
-            <legend>1. Votre véhicule</legend>
+            <legend th:text="#{rdv.formulaire.etape.vehicule}">1. Votre véhicule</legend>
             <div class="champ">
-                <label for="vehicule">Véhicule</label>
+                <label for="vehicule" th:text="#{rdv.detail.vehicule}">Véhicule</label>
                 <select id="vehicule" th:field="*{vehicule}"
                         th:aria-invalid="${#fields.hasErrors('vehicule')}"
                         aria-describedby="vehicule-erreur">
-                    <option value="">Choisissez</option>
+                    <option value="" th:text="#{rdv.formulaire.choisir}">Choisissez</option>
                     <option th:each="v : ${vehicules}" th:value="${v.reference()}"
                             th:text="${v.designation()}">VW Golf (1-ABC-123)</option>
                 </select>
@@ -65,7 +65,7 @@
         </fieldset>
 
         <fieldset>
-            <legend>2. Les prestations souhaitées</legend>
+            <legend th:text="#{rdv.formulaire.etape.prestations}">2. Les prestations souhaitées</legend>
             <p role="alert" id="prestations-erreur" class="erreur" th:if="${#fields.hasErrors('prestations')}"
                th:errors="*{prestations}">Erreur</p>
 
@@ -78,7 +78,7 @@
                                th:checked="${formulaire.prestations.contains(p.reference)}">
                         <label th:for="'p-' + ${p.reference}">
                             <span th:text="${p.libelle}">Vidange</span>
-                            <small th:text="${p.dureeMinutes} + ' min · ' + ${#numbers.formatDecimal(p.prixHtva, 1, 2, 'COMMA')} + ' € HTVA'">30 min · 49,00 € HTVA</small>
+                            <small th:text="#{rdv.formulaire.prestation.detail(${p.dureeMinutes}, ${#numbers.formatDecimal(p.prixHtva, 1, 'DEFAULT', 2, 'DEFAULT')})}">30 min, 49,00 € HTVA</small>
                         </label>
                     </li>
                 </ul>
@@ -86,26 +86,26 @@
         </fieldset>
 
         <fieldset>
-            <legend>3. La date</legend>
+            <legend th:text="#{rdv.formulaire.etape.date}">3. La date</legend>
             <div class="champ">
-                <label for="date">Jour souhaité</label>
+                <label for="date" th:text="#{rdv.formulaire.jour}">Jour souhaité</label>
                 <input type="date" id="date" name="date"
                        th:value="${#temporals.format(formulaire.date, 'yyyy-MM-dd')}"
                        th:min="${#temporals.format(dateMin, 'yyyy-MM-dd')}"
                        th:max="${#temporals.format(dateMax, 'yyyy-MM-dd')}" required>
-                <p class="aide">Réservation possible à partir du
-                    <span th:text="${#temporals.format(dateMin, 'd MMMM yyyy')}">15 septembre 2026</span>.</p>
+                <p class="aide" th:text="#{rdv.formulaire.jour.aide(${#temporals.format(dateMin, 'd MMMM yyyy')})}">
+                    Réservation possible à partir du 15 septembre 2026.</p>
             </div>
         </fieldset>
 
         <fieldset>
-            <legend>4. L'heure</legend>
+            <legend th:text="#{rdv.formulaire.etape.heure}">4. L'heure</legend>
             <p role="alert" id="debut-erreur" class="erreur" th:if="${#fields.hasErrors('debut')}"
                th:errors="*{debut}">Erreur</p>
 
-            <!-- Recharge les heures disponibles a chaque changement dans le formulaire.
+            <!--/* Recharge les heures disponibles à chaque changement dans le formulaire.
                  Sans JavaScript, le formulaire reste soumissible : la liste initiale est
-                 rendue cote serveur et le bouton ci-dessous la rafraichit. -->
+                 rendue côté serveur et le bouton ci-dessous la rafraîchit. */-->
             <div id="creneaux"
                  th:hx-get="@{/mes-rendez-vous/nouveau/creneaux}"
                  hx-trigger="change from:#date, change from:input[name='prestations']"
@@ -117,30 +117,31 @@
             </div>
             <noscript>
                 <button type="submit" formmethod="get"
-                        th:formaction="@{/mes-rendez-vous/nouveau}" class="lien-bouton">
+                        th:formaction="@{/mes-rendez-vous/nouveau}" class="lien-bouton"
+                        th:text="#{rdv.formulaire.actualiser}">
                     Actualiser les heures disponibles
                 </button>
             </noscript>
         </fieldset>
 
         <fieldset>
-            <legend>5. Un mot pour le garage (facultatif)</legend>
+            <legend th:text="#{rdv.formulaire.etape.commentaire}">5. Un mot pour le garage (facultatif)</legend>
             <div class="champ">
-                <label for="commentaire">Commentaire</label>
+                <label for="commentaire" th:text="#{rdv.formulaire.commentaire}">Commentaire</label>
                 <textarea id="commentaire" th:field="*{commentaire}" rows="3" maxlength="2000"
-                          placeholder="Par exemple : bruit au freinage à froid, voyant moteur allumé..."></textarea>
+                          th:placeholder="#{rdv.formulaire.commentaire.exemple}"></textarea>
                 <p role="alert" class="erreur" th:if="${#fields.hasErrors('commentaire')}" th:errors="*{commentaire}">Erreur</p>
             </div>
         </fieldset>
 
         <p class="actions-page">
-            <button type="submit" class="btn-cta">Demander le rendez-vous</button>
-            <a th:href="@{/mes-rendez-vous}">Annuler</a>
+            <button type="submit" class="btn-cta" th:text="#{rdv.formulaire.envoyer}">Demander le rendez-vous</button>
+            <a th:href="@{/mes-rendez-vous}" th:text="#{rdv.formulaire.annuler}">Annuler</a>
         </p>
     </form>
 </main>
 
-<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 
 <script th:src="@{/js/htmx.min.js}"></script>
 <div th:replace="~{fragments/cookies :: bandeau}"></div>

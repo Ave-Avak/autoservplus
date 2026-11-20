@@ -28,20 +28,4 @@ public record VehiculeVue(
                 vehicule.getNumeroChassis(),
                 vehicule.designation());
     }
-
-    /** Motorisation en toutes lettres pour l affichage. */
-    public String motorisationLisible() {
-        return switch (motorisation) {
-            case "ESSENCE" -> "Essence";
-            case "DIESEL" -> "Diesel";
-            case "HYBRIDE" -> "Hybride";
-            case "ELECTRIQUE" -> "Électrique";
-            case "GPL" -> "GPL";
-            default -> "Autre";
-        };
-    }
-
-    public String kilometrageLisible() {
-        return kilometrage == null ? "Non renseigné" : "%,d km".formatted(kilometrage).replace(',', ' ');
-    }
 }

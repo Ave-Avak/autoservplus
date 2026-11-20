@@ -1,7 +1,6 @@
 package be.autoservplus.reservation.web;
 
 import be.autoservplus.common.exception.RefusTraduit;
-import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.service.AucunePrestationChoisieException;
 import be.autoservplus.reservation.service.CreneauIndisponibleException;
@@ -25,7 +24,6 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -63,7 +61,6 @@ public class RdvController {
 
     @GetMapping
     public String lister(@AuthenticationPrincipal UserDetails membre, Model modele) {
-        modele.addAttribute("titre", "Mes rendez-vous");
         modele.addAttribute("rendezVous", rdvs.vuesDuMembre(membre.getUsername()));
         return "reservation/rdv-liste";
     }
@@ -88,9 +85,9 @@ public class RdvController {
                            Model modele) {
         try {
             modele.addAttribute("creneaux", rdvs.creneauxPour(date, prestations));
-        } catch (RegleMetierException e) {
+        } catch (RefusTraduit refus) {
             modele.addAttribute("creneaux", List.of());
-            modele.addAttribute("erreurCreneaux", e.getMessage());
+            modele.addAttribute("erreurCreneaux", traduire(refus, LocaleContextHolder.getLocale()));
         }
         modele.addAttribute("aucunePrestation", prestations == null || prestations.isEmpty());
         return "reservation/fragments/creneaux :: liste";
@@ -111,7 +108,7 @@ public class RdvController {
         try {
             debut = Instant.parse(formulaire.getDebut());
         } catch (DateTimeParseException e) {
-            erreurs.addError(new FieldError("formulaire", "debut", "Choisissez une heure dans la liste."));
+            erreurs.rejectValue("debut", "rdv.formulaire.heure.liste", "Choisissez une heure dans la liste.");
             return retourFormulaire(membre, formulaire, modele);
         }
 
@@ -131,20 +128,17 @@ public class RdvController {
             // membre a trop de demandes en attente, quelles que soient les
             // prestations choisies. L ancrer sous un champ lui disait de corriger un
             // choix qui n est pas en cause, et changer ce choix n aurait rien change.
-            erreurs.reject("rdv.limite-demandes", e.getMessage());
+            erreurs.reject(e.getCleMessage(), e.getArguments(), e.getMessage());
             return retourFormulaire(membre, formulaire, modele);
         } catch (PrestationIndisponibleException | AucunePrestationChoisieException e) {
             // Ces deux-la visent bien le choix de prestations : l erreur s ancre sous
             // ce champ, ou le membre peut agir.
-            erreurs.addError(new FieldError("formulaire", "prestations", e.getMessage()));
+            erreurs.rejectValue("prestations", e.getCleMessage(), e.getArguments(), e.getMessage());
             return retourFormulaire(membre, formulaire, modele);
-        } catch (RegleMetierException e) {
-            // Creneau indisponible (RM-08) et tout refus metier futur : sous le champ
-            // date, comme l ancien default. Le routage par TYPE remplace le switch sur
-            // getCodeRegle() : plus de NPE possible sur un code null, et le case
-            // « RM-06 -> vehicule » disparait. Aucune exception ne portait ce code,
-            // le controle d appartenance du vehicule repond deja 404 en amont.
-            erreurs.addError(new FieldError("formulaire", "debut", e.getMessage()));
+        } catch (RefusTraduit e) {
+            // Créneau indisponible (RM-08) et tout refus futur : sous le champ de l'heure.
+            // Le routage se fait par type, et non par le code de règle, qui peut manquer.
+            erreurs.rejectValue("debut", e.getCleMessage(), e.getArguments(), e.getMessage());
             return retourFormulaire(membre, formulaire, modele);
         }
     }
@@ -154,7 +148,6 @@ public class RdvController {
                          @PathVariable UUID reference,
                          Model modele) {
         var rdv = rdvs.vueDuMembre(reference, membre.getUsername());
-        modele.addAttribute("titre", "Rendez-vous " + rdv.numero());
         modele.addAttribute("rdv", rdv);
         return "reservation/rdv-detail";
     }
@@ -185,9 +178,10 @@ public class RdvController {
                           RedirectAttributes redirection) {
         try {
             var rdv = rdvs.annuler(reference, membre.getUsername());
-            redirection.addFlashAttribute("message", "Le rendez-vous " + rdv.getNumero() + " a été annulé.");
-        } catch (RegleMetierException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
+            redirection.addFlashAttribute("message", messages.getMessage("rdv.annulation.confirmee",
+                    new Object[]{rdv.getNumero()}, LocaleContextHolder.getLocale()));
+        } catch (RefusTraduit refus) {
+            redirection.addFlashAttribute("erreur", traduire(refus, LocaleContextHolder.getLocale()));
         }
         return "redirect:/mes-rendez-vous/" + reference;
     }
@@ -238,14 +232,15 @@ public class RdvController {
                     ? "rdv.modification.confirmee" : "rdv.modification.en-attente";
             redirection.addFlashAttribute("message", messages.getMessage(cle, new Object[]{rdv.getNumero()}, langue));
             return "redirect:/mes-rendez-vous/" + reference;
+        } catch (CreneauIndisponibleException e) {
+            // Avant le cas général : un créneau pris se corrige sur le même écran.
+            modele.addAttribute("erreurHeure",
+                    messages.getMessage("rdv.modification.creneau-indisponible", null, langue));
+            return retourModificationOuDetail(membre, reference, formulaire, modele, langue, redirection);
         } catch (RefusTraduit refus) {
             // Page périmée ou délai dépassé : le détail montre l'état réel du rendez-vous.
             redirection.addFlashAttribute("erreur", traduire(refus, langue));
             return "redirect:/mes-rendez-vous/" + reference;
-        } catch (CreneauIndisponibleException e) {
-            modele.addAttribute("erreurHeure",
-                    messages.getMessage("rdv.modification.creneau-indisponible", null, langue));
-            return retourModificationOuDetail(membre, reference, formulaire, modele, langue, redirection);
         }
     }
 
@@ -275,17 +270,14 @@ public class RdvController {
     }
 
     /**
-     * Seul le refus de délai attend un argument. Les autres messages n'en reçoivent pas :
-     * avec un argument, MessageFormat avalerait leurs apostrophes simples.
+     * Le refus porte sa clé et ses valeurs. Un message sans valeur n'est pas passé par
+     * MessageFormat, qui avalerait ses apostrophes simples.
      */
     private String traduire(RefusTraduit refus, Locale langue) {
-        Object[] arguments = "rdv.modification.delai".equals(refus.getCleMessage())
-                ? new Object[]{rdvs.delaiAnnulationHeures()} : null;
-        return messages.getMessage(refus.getCleMessage(), arguments, langue);
+        return messages.getMessage(refus.getCleMessage(), refus.getArguments(), langue);
     }
 
     private String retourFormulaire(UserDetails membre, RdvForm formulaire, Model modele) {
-        modele.addAttribute("titre", "Prendre rendez-vous");
         modele.addAttribute("formulaire", formulaire);
         modele.addAttribute("vehicules", vehicules.vuesDuMembre(membre.getUsername()));
         modele.addAttribute("prestationsParCategorie", rdvs.prestationsProposees());

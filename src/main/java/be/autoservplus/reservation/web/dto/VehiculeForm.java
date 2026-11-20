@@ -11,26 +11,26 @@ import jakarta.validation.constraints.*;
  */
 public class VehiculeForm {
 
-    @NotBlank(message = "La plaque d'immatriculation est obligatoire.")
+    @NotBlank(message = "{vehicule.validation.plaque}")
     @Size(max = 15)
     private String plaque;
 
-    @NotBlank(message = "La marque est obligatoire.")
+    @NotBlank(message = "{vehicule.validation.marque}")
     @Size(max = 60)
     private String marque;
 
-    @NotBlank(message = "Le modèle est obligatoire.")
+    @NotBlank(message = "{vehicule.validation.modele}")
     @Size(max = 80)
     private String modele;
 
-    @NotNull(message = "La motorisation est obligatoire.")
+    @NotNull(message = "{vehicule.validation.motorisation}")
     private Motorisation motorisation;
 
-    @Min(value = 1900, message = "L'année doit être postérieure à 1900.")
-    @Max(value = 2100, message = "L'année semble erronée.")
+    @Min(value = 1900, message = "{vehicule.validation.annee.min}")
+    @Max(value = 2100, message = "{vehicule.validation.annee.max}")
     private Short annee;
 
-    @PositiveOrZero(message = "Le kilométrage ne peut pas être négatif.")
+    @PositiveOrZero(message = "{vehicule.validation.kilometrage}")
     private Integer kilometrage;
 
     @Size(max = 20)
