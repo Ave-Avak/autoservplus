@@ -28,6 +28,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -151,6 +152,24 @@ class PagesErreurIT extends SocleIntegration {
             assertThat(page.statusCode()).isEqualTo(404);
             assertThat(page.body()).contains("<h1>Page introuvable</h1>", "<a href=\"/mon-compte\">")
                     .doesNotContain(WHITELABEL);
+        }
+
+        /**
+         * Une référence inconnue lève une exception que le conteneur rend par
+         * {@code /error}. Le sélecteur y pointait {@code /error}, et le bandeau manquait
+         * quand la page était rendue par un gestionnaire d'exception.
+         */
+        @Test
+        @DisplayName("référence inconnue : sélecteur de langue vers la page demandée, bandeau des cookies")
+        void selecteurEtBandeau() throws Exception {
+            String chemin = "/commandes/" + UUID.randomUUID();
+            HttpResponse<String> page = connecte(TypeUtilisateur.MEMBRE).lire(chemin + "?jeton=secret");
+            assertThat(page.statusCode()).isEqualTo(404);
+            assertThat(page.body())
+                    .contains("<h1>Page introuvable</h1>")
+                    .contains("href=\"" + chemin + "?lang=nl\"", "href=\"" + chemin + "?lang=en\"")
+                    .contains("class=\"bandeau-cookies\"")
+                    .doesNotContain("/error?lang", "jeton=secret");
         }
     }
 

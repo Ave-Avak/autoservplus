@@ -1,5 +1,6 @@
 package be.autoservplus.cookies.web;
 
+import be.autoservplus.common.web.PageCourante;
 import be.autoservplus.cookies.domain.PreferencesCookies;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.ui.Model;
@@ -54,8 +55,8 @@ public class BandeauCookiesAdvice {
      * resultats filtres renverrait sur la liste non filtree.
      */
     private String uriCourante(HttpServletRequest requete) {
-        String chemin = requete.getRequestURI();
-        String parametres = requete.getQueryString();
+        String chemin = PageCourante.chemin(requete);
+        String parametres = PageCourante.parametres(requete);
         return parametres == null ? chemin : chemin + "?" + parametres;
     }
 }

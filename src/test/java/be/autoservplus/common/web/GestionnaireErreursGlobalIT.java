@@ -1,7 +1,7 @@
 package be.autoservplus.common.web;
 
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.DisplayName;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -11,83 +11,64 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
-import be.autoservplus.support.SocleIntegration;
 
 /**
- * Traitement global des erreurs (passe de consolidation).
+ * Statut des références inconnues ou mal formées.
  *
- * <p><b>Ce que ce test verrouille n'est pas ce que la dette annonçait.</b> Elle
- * disait « 500 brut sur référence absente ». C'était périmé :
- * {@code RessourceIntrouvableException} porte {@code @ResponseStatus(NOT_FOUND)}
- * depuis F32 et rendait deja 404. Le test fige donc ce 404 pour qu il ne
- * regresse pas, et verifie surtout les deux apports reels : une page rendue au
- * lieu du Whitelabel de Boot, et l absence de fuite technique.</p>
+ * <p>MockMvc s'arrête au {@code sendError} et ne repasse pas par {@code /error} : ce test
+ * ne vérifie que le statut. La page rendue, sa langue, son sélecteur et l'absence de
+ * détail technique sont vérifiés sur un vrai serveur, par {@code PagesErreurIT} et
+ * {@code ErreursSansDetailTechniqueIT}.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@DisplayName("Gestionnaire d erreurs global (integration)")
+@DisplayName("Gestionnaire d'erreurs global (intégration)")
 class GestionnaireErreursGlobalIT extends SocleIntegration {
 
     @Autowired private MockMvc mvc;
 
-    @Nested
-    @DisplayName("Reference absente")
-    class ReferenceAbsente {
+    @Test
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("un rendez-vous inconnu rend 404, jamais 500")
+    void rdvInconnu() throws Exception {
+        mvc.perform(get("/mes-rendez-vous/{ref}", UUID.randomUUID())).andExpect(status().isNotFound());
+    }
 
-        @Test
-        @WithMockUser(username = "marie@exemple.be")
-        @DisplayName("un rendez-vous inconnu rend 404, jamais 500")
-        void rdvInconnu() throws Exception {
-            // RdvController.detail ne catche pas RessourceIntrouvableException :
-            // c'est precisement le chemin que la dette signalait.
-            mvc.perform(get("/mes-rendez-vous/{ref}", UUID.randomUUID()))
-                    .andExpect(status().isNotFound())
-                    .andExpect(view().name("erreur"));
-        }
+    @Test
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("un véhicule inconnu rend 404")
+    void vehiculeInconnu() throws Exception {
+        mvc.perform(get("/mes-vehicules/{ref}/modifier", UUID.randomUUID())).andExpect(status().isNotFound());
+    }
 
-        @Test
-        @WithMockUser(username = "marie@exemple.be")
-        @DisplayName("un vehicule inconnu rend 404 par le meme chemin")
-        void vehiculeInconnu() throws Exception {
-            mvc.perform(get("/mes-vehicules/{ref}/modifier", UUID.randomUUID()))
-                    .andExpect(status().isNotFound())
-                    .andExpect(view().name("erreur"));
-        }
+    @Test
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("une commande inconnue rend 404")
+    void commandeInconnue() throws Exception {
+        mvc.perform(get("/commandes/{ref}", UUID.randomUUID())).andExpect(status().isNotFound());
+    }
 
-        @Test
-        @WithMockUser(username = "marie@exemple.be")
-        @DisplayName("une commande inconnue rend 404")
-        void commandeInconnue() throws Exception {
-            mvc.perform(get("/commandes/{ref}", UUID.randomUUID()))
-                    .andExpect(status().isNotFound());
-        }
+    @Test
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("une référence mal formée dans le chemin rend 404, comme une référence inconnue")
+    void referenceMalFormee() throws Exception {
+        mvc.perform(get("/commandes/pas-un-uuid")).andExpect(status().isNotFound());
+        mvc.perform(get("/mes-rendez-vous/12345")).andExpect(status().isNotFound());
+    }
 
-        @Test
-        @WithMockUser(username = "marie@exemple.be")
-        @DisplayName("la page d erreur ne divulgue aucun detail technique")
-        void aucuneFuiteTechnique() throws Exception {
-            mvc.perform(get("/mes-rendez-vous/{ref}", UUID.randomUUID()))
-                    .andExpect(status().isNotFound())
-                    // Ni nom d'exception, ni trace, ni identifiant recherche : une
-                    // page d'erreur qui recopie le message raconte la structure interne.
-                    .andExpect(content().string(not(containsString("Exception"))))
-                    .andExpect(content().string(not(containsString("be.autoservplus"))))
-                    .andExpect(content().string(not(containsString("introuvable :"))));
-        }
+    @Test
+    @WithMockUser(roles = "ADMINISTRATEUR")
+    @DisplayName("au back-office aussi, une référence mal formée rend 404")
+    void referenceMalFormeeBackOffice() throws Exception {
+        mvc.perform(get("/admin/interventions/pas-un-uuid")).andExpect(status().isNotFound());
+        mvc.perform(get("/admin/commandes/pas-un-uuid")).andExpect(status().isNotFound());
+    }
 
-        @Test
-        @WithMockUser(username = "marie@exemple.be")
-        @DisplayName("la page d erreur est rendue par nous, pas par le Whitelabel de Boot")
-        void pageMaison() throws Exception {
-            mvc.perform(get("/mes-rendez-vous/{ref}", UUID.randomUUID()))
-                    .andExpect(content().string(containsString("AutoServ+")))
-                    .andExpect(content().string(not(containsString("Whitelabel"))));
-        }
+    @Test
+    @DisplayName("un paramètre de requête mal formé reste une demande mal formée : 400")
+    void parametreMalForme() throws Exception {
+        mvc.perform(get("/recherche").param("q", "filtre").param("page", "pas-un-nombre")).andExpect(status().isBadRequest());
     }
 }

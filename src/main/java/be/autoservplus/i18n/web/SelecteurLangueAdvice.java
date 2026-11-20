@@ -1,5 +1,6 @@
 package be.autoservplus.i18n.web;
 
+import be.autoservplus.common.web.PageCourante;
 import be.autoservplus.config.InternationalisationConfig;
 import be.autoservplus.i18n.LanguesSupportees;
 import jakarta.servlet.http.HttpServletRequest;
@@ -65,8 +66,8 @@ public class SelecteurLangueAdvice {
      */
     private String pageCouranteEn(HttpServletRequest requete, String code) {
         try {
-            return UriComponentsBuilder.fromPath(requete.getRequestURI())
-                    .query(requete.getQueryString())
+            return UriComponentsBuilder.fromPath(PageCourante.chemin(requete))
+                    .query(PageCourante.parametres(requete))
                     .replaceQueryParam(InternationalisationConfig.PARAMETRE_LANGUE, code)
                     .build()
                     .toUriString();
@@ -74,7 +75,7 @@ public class SelecteurLangueAdvice {
             // La chaine de requete vient du client : une valeur mal encodee ne doit
             // pas faire echouer le rendu de TOUTES les pages. Le lien perd alors les
             // parametres, ce qui degrade le confort sans casser la fonction.
-            return requete.getRequestURI()
+            return PageCourante.chemin(requete)
                     + "?" + InternationalisationConfig.PARAMETRE_LANGUE + "=" + code;
         }
     }
