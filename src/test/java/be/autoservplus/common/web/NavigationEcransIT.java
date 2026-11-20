@@ -4,6 +4,7 @@ import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.navigation.TableFilAriane;
 import be.autoservplus.support.SocleIntegration;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -327,6 +328,7 @@ class NavigationEcransIT extends SocleIntegration {
     @Autowired private MockMvc mvc;
     @Autowired private UtilisateurRepository utilisateurs;
     @Autowired @Qualifier("requestMappingHandlerMapping") private RequestMappingHandlerMapping mapping;
+    private final TableFilAriane filAriane = new TableFilAriane();
 
     private final Map<Role, Utilisateur> comptes = new LinkedHashMap<>();
 
@@ -398,6 +400,20 @@ class NavigationEcransIT extends SocleIntegration {
             }
         }
         return liens;
+    }
+
+    /**
+     * Le fil d'Ariane (Charte graphique §6.1) couvre chaque écran : une route d'écran neuve
+     * doit y recevoir un parent et un libellé, ou figurer parmi les écrans sans fil avec
+     * son motif. Une entrée sans route casse la build aussi, comme une route sans
+     * classement ici.
+     */
+    @Test
+    @DisplayName("chaque écran figure au fil d'Ariane ou parmi les écrans sans fil, et réciproquement")
+    void filArianeCouvreLesEcrans() {
+        Set<String> ecrans = ROUTES.stream().filter(Route::ecran).map(Route::patron)
+                .collect(Collectors.toCollection(TreeSet::new));
+        assertThat(filAriane.patronsClasses()).as("classement du fil d'Ariane").isEqualTo(ecrans);
     }
 
     @Nested

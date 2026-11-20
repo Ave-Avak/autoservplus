@@ -68,15 +68,6 @@
 
 <main id="contenu">
 
-    <nav class="fil-ariane" th:aria-label="#{fil-ariane.aria}">
-        <ol>
-            <li><a th:href="@{/}" th:text="#{fil-ariane.accueil}">Accueil</a></li>
-            <li><a th:href="${typeArticle == 'service'} ? @{/services} : @{/pieces}"
-                   th:text="${typeArticle == 'service'} ? #{catalogue.fil.services} : #{catalogue.fil.pieces}">Catalogue</a></li>
-            <li aria-current="page" th:text="${article.libelle()}">Article</li>
-        </ol>
-    </nav>
-
     <article class="fiche">
         <p class="fiche-categorie" th:text="${article.categorie()}">Catégorie</p>
         <h1 th:text="${article.libelle()}">Libellé</h1>

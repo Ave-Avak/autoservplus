@@ -394,6 +394,13 @@ main code { overflow-wrap: anywhere; }
 .fil-ariane li + li::before { content: "› "; color: var(--gris-500); }
 .fil-ariane a { color: var(--gris-700); }
 .fil-ariane [aria-current] { color: var(--gris-900); font-weight: 600; }
+/* Fil commun, inséré entre l'en-tête et le contenu : même largeur et même marge
+   latérale que main, pour s'aligner sur le titre de la page. */
+.fil-ariane-page {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: var(--espace-m) var(--espace-l) 0;
+}
 
 .fiche { max-width: 44rem; }
 .fiche-categorie {
