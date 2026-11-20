@@ -1,9 +1,11 @@
 package be.autoservplus.communication.service;
 
+import be.autoservplus.identite.domain.ChampCompte;
 import be.autoservplus.identite.domain.Utilisateur;
 
 import java.time.Instant;
 import java.time.ZonedDateTime;
+import java.util.List;
 
 /**
  * Envoi des courriels transactionnels.
@@ -237,4 +239,11 @@ public interface ServiceCourriel {
      * n'ouvre rien à qui lirait sa boîte de réception. Rédigé dans la langue du compte.
      */
     void envoyerAvisMotDePasseModifie(Utilisateur destinataire, OrigineMotDePasse origine);
+
+    /**
+     * Un administrateur a modifié les coordonnées du titulaire, à sa demande. L'avis
+     * nomme les champs sans leurs valeurs : un courriel lu par un tiers ne livre ni la
+     * nouvelle adresse ni le nouveau numéro. Rédigé dans la langue du compte.
+     */
+    void envoyerAvisModificationCompte(Utilisateur destinataire, List<ChampCompte> champs);
 }

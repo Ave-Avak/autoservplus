@@ -45,7 +45,7 @@ class ProfilServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new ProfilService(utilisateurs, factures, historique);
+        service = new ProfilService(utilisateurs, new GardeAdresseFactures(factures), historique);
         membre = new Utilisateur(EMAIL, "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         lenient().when(utilisateurs.findByEmail(EMAIL)).thenReturn(Optional.of(membre));
     }

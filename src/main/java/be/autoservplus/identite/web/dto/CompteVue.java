@@ -1,5 +1,6 @@
 package be.autoservplus.identite.web.dto;
 
+import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -19,13 +20,19 @@ import java.util.UUID;
  * <p>Du second facteur, l ecran ne recoit que deux booleens : s il est actif, et si un
  * enrolement est commence. Ni secret, ni version de cle, ni dernier pas.</p>
  *
- * @param suspendu etat derive, pour que le gabarit n ait pas a comparer une enumeration
+ * <p>Les coordonnées (téléphone, adresse, langue) servent la fiche d'un membre, où
+ * l'administrateur les corrige à sa demande.</p>
+ *
+ * @param suspendu   etat derive, pour que le gabarit n ait pas a comparer une enumeration
+ * @param modifiable membre non supprimé, dont les coordonnées se modifient depuis la fiche
  */
 public record CompteVue(UUID reference, String nom, String prenom, String email,
                         TypeUtilisateur type, StatutUtilisateur statut, boolean suspendu,
                         boolean emailVerifie, Instant derniereConnexion,
                         boolean secondFacteurActif, boolean enrolementEnCours,
-                        boolean motDePasseADefinir) {
+                        boolean motDePasseADefinir, String telephone, String rue,
+                        String numeroRue, String codePostal, String localite, String pays,
+                        Langue langue, boolean membre, boolean modifiable) {
 
     public static CompteVue de(Utilisateur compte) {
         return new CompteVue(
@@ -40,7 +47,17 @@ public record CompteVue(UUID reference, String nom, String prenom, String email,
                 compte.getDerniereConnexion(),
                 compte.secondFacteurActif(),
                 compte.enrolementEnCours(),
-                compte.motDePasseADefinir());
+                compte.motDePasseADefinir(),
+                compte.getTelephone(),
+                compte.getRue(),
+                compte.getNumeroRue(),
+                compte.getCodePostal(),
+                compte.getLocalite(),
+                compte.getPays(),
+                compte.getLangue(),
+                compte.getTypeUtilisateur() == TypeUtilisateur.MEMBRE,
+                compte.getTypeUtilisateur() == TypeUtilisateur.MEMBRE
+                        && compte.getStatut() != StatutUtilisateur.SUPPRIME);
     }
 
     public String nomComplet() {

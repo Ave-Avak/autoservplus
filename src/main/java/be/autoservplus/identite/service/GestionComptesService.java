@@ -3,7 +3,12 @@ package be.autoservplus.identite.service;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.identite.domain.ChampCompte;
+import be.autoservplus.identite.domain.ChangementChamp;
 import be.autoservplus.identite.domain.HistoriqueStatutUtilisateur;
+import be.autoservplus.identite.domain.Langue;
+import be.autoservplus.identite.domain.ModificationCompte;
 import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -63,16 +68,24 @@ public class GestionComptesService {
     private final HistoriqueStatutUtilisateurRepository historique;
     private final AuteurCourant auteurCourant;
     private final RevocationSessions revocation;
+    private final HistoriqueModificationsCompte historiqueCompte;
+    private final GardeAdresseFactures gardeAdresse;
+    private final ServiceCourriel courriel;
     private final Clock horloge;
 
     public GestionComptesService(UtilisateurRepository utilisateurs,
                                  HistoriqueStatutUtilisateurRepository historique,
                                  AuteurCourant auteurCourant, RevocationSessions revocation,
+                                 HistoriqueModificationsCompte historiqueCompte,
+                                 GardeAdresseFactures gardeAdresse, ServiceCourriel courriel,
                                  Clock horloge) {
         this.utilisateurs = utilisateurs;
         this.historique = historique;
         this.auteurCourant = auteurCourant;
         this.revocation = revocation;
+        this.historiqueCompte = historiqueCompte;
+        this.gardeAdresse = gardeAdresse;
+        this.courriel = courriel;
         this.horloge = horloge;
     }
 
@@ -101,6 +114,29 @@ public class GestionComptesService {
 
     public List<HistoriqueStatutUtilisateur> historiqueDe(Utilisateur compte) {
         return historique.historiqueDe(compte.getId());
+    }
+
+    public List<ModificationCompte> modificationsDe(Utilisateur compte) {
+        return historiqueCompte.historiqueDe(compte);
+    }
+
+    /**
+     * Membre dont l'administrateur peut modifier les coordonnées.
+     *
+     * @throws RefusTraduit compte du back-office, réservé au super-administrateur et
+     *                      hors de ce formulaire, ou compte supprimé
+     */
+    public Utilisateur membreModifiable(UUID reference) {
+        Utilisateur cible = parReference(reference);
+        if (cible.getTypeUtilisateur() != TypeUtilisateur.MEMBRE) {
+            throw new RefusTraduit("admin.compte.modification.erreur.membre",
+                    "Seules les coordonnées d'un membre se modifient ici.");
+        }
+        if (cible.getStatut() == StatutUtilisateur.SUPPRIME) {
+            throw new RefusTraduit("admin.compte.modification.erreur.supprime",
+                    "Ce compte est supprimé : ses coordonnées ne se modifient plus.");
+        }
+        return cible;
     }
 
     // --- ecritures --------------------------------------------------------------------
@@ -172,6 +208,50 @@ public class GestionComptesService {
         }
 
         return transiter(cible, StatutUtilisateur.ACTIF, auteur, null);
+    }
+
+    /**
+     * Modifie les coordonnées d'un membre, à sa demande explicite (A12).
+     *
+     * <p>Chaque champ changé laisse une ligne d'historique avec le motif, qui note la
+     * demande. Le titulaire reçoit ensuite un avis qui nomme les champs sans leurs
+     * valeurs : il apprend qu'on a touché à son compte, et un courriel lu par un tiers
+     * ne livre pas sa nouvelle adresse. Un formulaire renvoyé sans changement n'écrit
+     * rien et n'avertit personne.</p>
+     *
+     * @return les champs modifiés, vide si rien n'a changé
+     * @throws RefusTraduit         cible hors des membres, compte supprimé, motif absent
+     *                              ou trop long
+     * @throws RegleMetierException adresse effacée alors que des factures existent
+     */
+    @Transactional
+    public List<ChampCompte> modifierMembre(UUID reference, String motif, String prenom,
+                                            String nom, String telephone, String rue,
+                                            String numeroRue, String codePostal,
+                                            String localite, String pays, Langue langue) {
+        Utilisateur cible = membreModifiable(reference);
+        Utilisateur auteur = exigerAuteur();
+        if (motif == null || motif.isBlank()) {
+            throw new RefusTraduit("admin.compte.modification.motif.obligatoire",
+                    "Indiquez la demande du membre : elle figurera à l'historique.");
+        }
+        if (motif.strip().length() > ModificationCompte.MOTIF_MAX) {
+            throw new RefusTraduit("admin.compte.modification.motif.longueur",
+                    "Le motif dépasse 500 caractères.");
+        }
+        gardeAdresse.exigerAdresseConservee(cible, rue, codePostal, localite);
+
+        List<ChangementChamp> changements = cible.modifierProfil(prenom, nom, telephone, rue,
+                numeroRue, codePostal, localite, pays, langue);
+        if (changements.isEmpty()) {
+            return List.of();
+        }
+        historiqueCompte.consigner(cible, changements, auteur, motif.strip());
+        List<ChampCompte> champs = changements.stream().map(ChangementChamp::champ).toList();
+        courriel.envoyerAvisModificationCompte(cible, champs);
+        JOURNAL.info("Compte {} : {} champ(s) modifie(s) par {}",
+                cible.getReference(), champs.size(), auteur.getReference());
+        return champs;
     }
 
     private Utilisateur transiter(Utilisateur cible, StatutUtilisateur vers,

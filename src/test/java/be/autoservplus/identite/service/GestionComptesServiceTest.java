@@ -1,7 +1,11 @@
 package be.autoservplus.identite.service;
 
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
+import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.identite.domain.ChampCompte;
 import be.autoservplus.identite.domain.HistoriqueStatutUtilisateur;
+import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -20,6 +24,7 @@ import java.lang.reflect.Field;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -27,10 +32,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -52,6 +60,9 @@ class GestionComptesServiceTest {
     @Mock private HistoriqueStatutUtilisateurRepository historique;
     @Mock private AuteurCourant auteurCourant;
     @Mock private RevocationSessions revocation;
+    @Mock private HistoriqueModificationsCompte historiqueCompte;
+    @Mock private GardeAdresseFactures gardeAdresse;
+    @Mock private ServiceCourriel courriel;
 
     private GestionComptesService service;
     private Utilisateur membre;
@@ -61,7 +72,8 @@ class GestionComptesServiceTest {
     @BeforeEach
     void setUp() {
         service = new GestionComptesService(utilisateurs, historique, auteurCourant,
-                revocation, Clock.fixed(MAINTENANT, ZoneOffset.UTC));
+                revocation, historiqueCompte, gardeAdresse, courriel,
+                Clock.fixed(MAINTENANT, ZoneOffset.UTC));
         membre = compte(1L, "marie@exemple.be", TypeUtilisateur.MEMBRE);
         admin = compte(2L, "admin@exemple.be", TypeUtilisateur.ADMINISTRATEUR);
         chef = compte(3L, "chef@exemple.be", TypeUtilisateur.SUPER_ADMINISTRATEUR);
@@ -328,6 +340,62 @@ class GestionComptesServiceTest {
             assertThatThrownBy(() -> service.reactiver(ref(membre)))
                     .isInstanceOf(RegleMetierException.class)
                     .hasMessageContaining("suspendu");
+        }
+    }
+
+    @Nested
+    @DisplayName("modification des coordonnées d'un membre")
+    class Modification {
+
+        private static final String DEMANDE = "Appel du membre.";
+
+        private List<ChampCompte> modifier(Utilisateur cible, String motif) {
+            return service.modifierMembre(cible.getReference(), motif, "Prenom", "Nom", null,
+                    "Rue Haute", null, "1000", "Bruxelles", "Belgique", Langue.fr);
+        }
+
+        @Test
+        @DisplayName("historise avec le motif et avertit le titulaire des seuls champs changés")
+        void modificationHistoriseeEtAnnoncee() {
+            when(auteurCourant.resoudre()).thenReturn(admin);
+
+            List<ChampCompte> champs = modifier(membre, DEMANDE);
+
+            assertThat(champs).containsExactly(ChampCompte.RUE, ChampCompte.CODE_POSTAL,
+                    ChampCompte.LOCALITE);
+            verify(historiqueCompte).consigner(eq(membre), anyList(), eq(admin), eq(DEMANDE));
+            verify(courriel).envoyerAvisModificationCompte(membre, champs);
+        }
+
+        @Test
+        @DisplayName("sans motif : refus, rien d'écrit ni d'envoyé")
+        void motifObligatoire() {
+            when(auteurCourant.resoudre()).thenReturn(admin);
+
+            assertThatThrownBy(() -> modifier(membre, "  ")).isInstanceOf(RefusTraduit.class);
+
+            assertThat(membre.getRue()).isNull();
+            verifyNoInteractions(historiqueCompte, courriel);
+        }
+
+        @Test
+        @DisplayName("un compte du back-office est refusé, même au super-administrateur")
+        void compteDuBackOffice() {
+            assertThatThrownBy(() -> modifier(admin, DEMANDE)).isInstanceOf(RefusTraduit.class);
+
+            verifyNoInteractions(historiqueCompte, courriel);
+        }
+
+        @Test
+        @DisplayName("rien de changé : ni historique ni avis")
+        void sansChangement() {
+            when(auteurCourant.resoudre()).thenReturn(admin);
+            membre.modifierProfil("Prenom", "Nom", null, "Rue Haute", null, "1000", "Bruxelles",
+                    "Belgique", Langue.fr);
+
+            assertThat(modifier(membre, DEMANDE)).isEmpty();
+
+            verifyNoInteractions(historiqueCompte, courriel);
         }
     }
 }

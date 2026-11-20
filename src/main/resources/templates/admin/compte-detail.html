@@ -36,6 +36,27 @@
         <dd th:text="${compte.secondFacteurActif()} ? #{admin.compte.mfa.active} : #{admin.compte.mfa.inactive}">Active</dd>
     </dl>
 
+    <section th:if="${compte.membre()}">
+        <h2 th:text="#{admin.compte.coordonnees.titre}">Coordonnées</h2>
+        <dl>
+            <dt th:text="#{profil.telephone}">Téléphone</dt>
+            <dd th:text="${compte.telephone()} ?: #{admin.compte.coordonnees.non-renseigne}">+32 470 00 00 00</dd>
+            <dt th:text="#{profil.section.adresse}">Adresse</dt>
+            <dd th:if="${compte.rue() != null}">
+                <span th:text="${compte.rue()} + ${compte.numeroRue() != null ? ' ' + compte.numeroRue() : ''}">Rue Neuve 12</span><br>
+                <span th:text="${compte.codePostal()} + ' ' + ${compte.localite()}">1000 Bruxelles</span><br>
+                <span th:text="${compte.pays()}">Belgique</span>
+            </dd>
+            <dd th:if="${compte.rue() == null}" th:text="#{admin.compte.coordonnees.non-renseigne}">Non renseigné</dd>
+            <dt th:text="#{profil.langue}">Langue</dt>
+            <dd th:text="${compte.langue().name() == 'fr'} ? 'Français' : (${compte.langue().name() == 'nl'} ? 'Nederlands' : 'English')">Français</dd>
+        </dl>
+        <p th:if="${compte.modifiable()}">
+            <a th:href="@{/admin/comptes/{ref}/modification(ref=${compte.reference()})}"
+               th:text="#{admin.compte.modification.lien}">Modifier les coordonnées</a>
+        </p>
+    </section>
+
     <!--/* Pouvoirs du super-administrateur seul : le service les garde aussi, le
          gabarit ne fait que ne pas proposer ce qui serait refusé. */-->
     <section sec:authorize="hasRole('SUPER_ADMINISTRATEUR')" th:if="${compte.motDePasseADefinir()}">
@@ -134,6 +155,39 @@
                 <!--/* Auteur nul : le système a constaté (échec, verrouillage) sans savoir qui saisissait. */-->
                 <td th:text="${e.parTitulaire()} ? #{admin.compte.securite.titulaire}
                              : (${e.auteur()} ?: #{admin.compte.securite.systeme})">Titulaire</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <h2 th:text="#{admin.compte.modifications.titre}">Historique des modifications</h2>
+    <p th:if="${#lists.isEmpty(modifications)}" th:text="#{admin.compte.modifications.aucune}">
+        Aucune modification enregistrée.</p>
+
+    <div class="defilement" th:unless="${#lists.isEmpty(modifications)}">
+        <table class="tableau">
+            <caption th:text="#{admin.compte.modifications.legende}">Du plus récent au plus ancien.</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.compte.journal.date}">Date</th>
+                <th scope="col" th:text="#{admin.compte.modifications.champ}">Champ</th>
+                <th scope="col" th:text="#{admin.compte.modifications.avant}">Ancienne valeur</th>
+                <th scope="col" th:text="#{admin.compte.modifications.apres}">Nouvelle valeur</th>
+                <th scope="col" th:text="#{admin.compte.journal.auteur}">Auteur</th>
+                <th scope="col" th:text="#{admin.compte.journal.motif}">Motif</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="m : ${modifications}">
+                <td th:text="${#temporals.format(m.horodatage(), 'dd/MM/yyyy HH:mm')}">20/11/2026 10:12</td>
+                <td th:text="#{'compte.champ.' + ${m.champ()}}">rue</td>
+                <!--/* Valeurs nulles : champ vide avant ou après, ou valeurs effacées à la suppression du compte. */-->
+                <td th:text="${m.valeurAvant()} ?: #{admin.compte.coordonnees.non-renseigne}">Rue Neuve</td>
+                <td th:text="${m.valeurApres()} ?: #{admin.compte.coordonnees.non-renseigne}">Rue Haute</td>
+                <td th:text="${m.parTitulaire()} ? #{admin.compte.securite.titulaire}
+                             : (${m.auteur()} ?: #{admin.compte.journal.auteur-inconnu})">Titulaire</td>
+                <td th:text="${m.motifAnonymise()} ? #{admin.compte.modifications.donnee-anonymisee}
+                             : (${m.motif()} ?: #{admin.compte.journal.sans-motif})">Appel du membre</td>
             </tr>
             </tbody>
         </table>

@@ -241,6 +241,7 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/admin/avis", Acces.BACK_OFFICE),
             ecran("/admin/comptes", Acces.BACK_OFFICE),
             variable("/admin/comptes/{reference}", Acces.BACK_OFFICE),
+            variable("/admin/comptes/{reference}/modification", Acces.BACK_OFFICE),
             ecran("/admin/journal", Acces.BACK_OFFICE),
             ecran("/admin/comptes/administrateurs", Acces.SUPER),
             ecran("/admin/comptes/administrateurs/nouveau", Acces.SUPER));

@@ -2,6 +2,7 @@ package be.autoservplus.communication.service;
 
 import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.config.MentionsIdentiteGarage;
+import be.autoservplus.identite.domain.ChampCompte;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
@@ -18,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Seule implémentation de {@link ServiceCourriel} : rédige chaque courriel puis le
@@ -124,6 +126,15 @@ public class CourrielSortant implements ServiceCourriel {
                 langue) + "\n" + texte(prefixe + "conseil", langue);
         partir("mot-de-passe-modifie", destinataire.getEmail(), destinataire.nomComplet(),
                 destinataire.getPrenom(), langue, corps, null);
+    }
+
+    @Override
+    public void envoyerAvisModificationCompte(Utilisateur destinataire, List<ChampCompte> champs) {
+        Locale langue = langue(destinataire.getLangue());
+        String liste = champs.stream()
+                .map(champ -> texte("compte.champ." + champ.name(), langue))
+                .collect(Collectors.joining(", "));
+        auCompte("compte-modifie", destinataire, null, liste);
     }
 
     @Override
