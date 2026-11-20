@@ -73,4 +73,14 @@ public interface DemandeAnnulationRepository extends JpaRepository<DemandeAnnula
             ORDER BY d.dateDemande ASC, d.id ASC
             """)
     List<DemandeAnnulation> demandesDuMembre(@Param("email") String email);
+
+    /** Toutes les demandes d'une commande, pour son détail au back-office. */
+    @Query("""
+            SELECT d FROM DemandeAnnulation d
+            JOIN FETCH d.commande c
+            JOIN FETCH c.membre
+            WHERE c.reference = :reference
+            ORDER BY d.dateDemande DESC, d.id DESC
+            """)
+    List<DemandeAnnulation> historiqueDeLaCommande(@Param("reference") UUID reference);
 }

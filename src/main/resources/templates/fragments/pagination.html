@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Fragments pagination et période</title></head>
+<body>
+<!--/* Liens de pagination d'une liste du back-office. Les filtres en cours (période,
+     statut, recherche) sont repris du modèle pour que changer de page ne les perde pas. */-->
+<nav th:fragment="liens(resultats, chemin)" class="pagination"
+     th:if="${resultats.totalPages > 1}" th:attr="aria-label=#{pagination.aria}">
+    <a th:if="${resultats.hasPrevious()}"
+       th:href="@{${chemin}(du=${periode.duSaisi()},au=${periode.auSaisi()},statut=${statut},recherche=${recherche},page=${resultats.number})}"
+       th:text="#{pagination.precedente}" rel="prev">Page précédente</a>
+    <span th:text="#{pagination.position(${resultats.number + 1}, ${resultats.totalPages})}">Page 1 sur 3</span>
+    <a th:if="${resultats.hasNext()}"
+       th:href="@{${chemin}(du=${periode.duSaisi()},au=${periode.auSaisi()},statut=${statut},recherche=${recherche},page=${resultats.number + 2})}"
+       th:text="#{pagination.suivante}" rel="next">Page suivante</a>
+</nav>
+
+<!--/* Filtre commun des listes : période du / au, recherche libre. Les dates sont rendues
+     au format ISO, jamais par th:field, qui appliquerait le format belge. */-->
+<div th:fragment="periode" class="filtre-periode">
+    <div class="champ">
+        <label for="du" th:text="#{admin.ventes.filtre.du}">Du</label>
+        <input type="date" id="du" name="du" th:value="${periode.duSaisi()}" aria-describedby="aide-periode">
+    </div>
+    <div class="champ">
+        <label for="au" th:text="#{admin.ventes.filtre.au}">Au</label>
+        <input type="date" id="au" name="au" th:value="${periode.auSaisi()}" aria-describedby="aide-periode">
+    </div>
+    <p class="texte-info" id="aide-periode" th:text="#{admin.ventes.filtre.periode.aide}">
+        Sans date : les trente derniers jours, ou tout l'historique pour une recherche.</p>
+</div>
+</body>
+</html>

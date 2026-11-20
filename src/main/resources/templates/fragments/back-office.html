@@ -82,6 +82,10 @@
                     <li class="section">
                         <span class="section-titre" id="section-commandes" th:text="#{admin.nav.commandes}">Commandes</span>
                         <ul aria-labelledby="section-commandes">
+                            <li><a th:href="@{/admin/commandes}" th:text="#{admin.nav.liste-commandes}"
+                                   th:attr="aria-current=${c == '/admin/commandes' or #strings.startsWith(c, '/admin/commandes/')} ? 'page' : null">Commandes</a></li>
+                            <li><a th:href="@{/admin/factures}" th:text="#{admin.nav.factures}"
+                                   th:attr="aria-current=${#strings.startsWith(c, '/admin/factures') or #strings.startsWith(c, '/admin/avoirs')} ? 'page' : null">Factures et avoirs</a></li>
                             <li><a th:href="@{/admin/retractations}" th:text="#{admin.nav.retractations}"
                                    th:attr="aria-current=${#strings.startsWith(c, '/admin/retractations')} ? 'page' : null">Rétractations</a></li>
                             <li><a th:href="@{/admin/export}" th:text="#{admin.nav.export}"
@@ -100,7 +104,7 @@
                         </ul>
                     </li>
                     <li class="section">
-                        <span class="section-titre" id="section-parametres" th:text="#{admin.nav.parametres}">Paramètres</span>
+                        <span class="section-titre" id="section-parametres" th:text="#{admin.nav.section-parametres}">Paramètres</span>
                         <ul aria-labelledby="section-parametres">
                             <li sec:authorize="hasRole('SUPER_ADMINISTRATEUR')"><a th:href="@{/admin/comptes/administrateurs}" th:text="#{admin.nav.administrateurs}"
                                    th:attr="aria-current=${#strings.startsWith(c, '/admin/comptes/administrateurs')} ? 'page' : null">Comptes du back-office</a></li>

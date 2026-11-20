@@ -31,7 +31,7 @@
         <dt th:text="#{admin.compte.type}">Nature</dt>
         <dd th:text="#{'admin.comptes.type.' + ${compte.type()}}">Membre</dd>
         <dt th:text="#{admin.compte.derniere-connexion}">Dernière connexion</dt>
-        <dd th:text="${compte.derniereConnexion()} ?: #{admin.compte.jamais}">jamais</dd>
+        <dd th:text="${derniereConnexion != null} ? ${#temporals.format(derniereConnexion, 'dd/MM/yyyy HH:mm')} : #{admin.compte.jamais}">20/11/2026 10:12</dd>
         <dt th:text="#{admin.compte.mfa}">Vérification en deux étapes</dt>
         <dd th:text="${compte.secondFacteurActif()} ? #{admin.compte.mfa.active} : #{admin.compte.mfa.inactive}">Active</dd>
     </dl>
@@ -103,6 +103,32 @@
         <form th:action="@{/admin/comptes/{ref}/reactiver(ref=${compte.reference()})}" method="post">
             <button type="submit" class="btn-cta" th:text="#{admin.compte.reactiver}">Réactiver</button>
         </form>
+    </section>
+
+    <section th:if="${compte.membre()}">
+        <h2 th:text="#{admin.compte.commandes.titre}">Commandes</h2>
+        <p th:if="${#lists.isEmpty(commandes)}" th:text="#{admin.compte.commandes.aucune}">Aucune commande.</p>
+        <div class="defilement" th:unless="${#lists.isEmpty(commandes)}">
+            <table class="tableau">
+                <caption th:text="#{admin.compte.commandes.legende}">Commandes du membre, de la plus récente à la plus ancienne.</caption>
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{admin.ventes.colonne.numero}">Numéro</th>
+                    <th scope="col" th:text="#{admin.ventes.colonne.date}">Date</th>
+                    <th scope="col" th:text="#{admin.ventes.colonne.statut}">Statut</th>
+                    <th scope="col" th:text="#{admin.ventes.colonne.montant}">Montant TVAC</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${commandes}">
+                    <td><a th:href="@{/admin/commandes/{ref}(ref=${c.reference()})}" th:text="${c.numero()}">CMD-2026-0001</a></td>
+                    <td th:text="${#temporals.format(c.date(), 'dd/MM/yyyy HH:mm')}">20/11/2026 10:12</td>
+                    <td th:text="#{'commande.statut.' + ${c.statut()}}">Payée</td>
+                    <td th:text="${c.totalTvac()}">48,38 €</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
     </section>
 
     <h2 th:text="#{admin.compte.journal.titre}">Journal des statuts</h2>

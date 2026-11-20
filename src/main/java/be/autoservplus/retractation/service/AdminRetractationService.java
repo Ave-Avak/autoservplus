@@ -116,6 +116,18 @@ public class AdminRetractationService {
                 .toList();
     }
 
+    /**
+     * Historique complet des demandes d'une commande, de la plus récente à la plus
+     * ancienne, pour son détail au back-office. Le membre ne voit que la dernière.
+     */
+    public List<DemandeAnnulationVueAdmin> historiqueDeLaCommande(UUID referenceCommande) {
+        ZoneId zone = horloge.getZone();
+        Instant maintenant = horloge.instant();
+        return demandes.historiqueDeLaCommande(referenceCommande).stream()
+                .map(demande -> DemandeAnnulationVueAdmin.de(demande, zone, maintenant))
+                .toList();
+    }
+
     /** Une demande precise, pour l ecran de refus motive. */
     public DemandeAnnulationVueAdmin vue(UUID reference) {
         return DemandeAnnulationVueAdmin.de(charger(reference), horloge.getZone(), horloge.instant());

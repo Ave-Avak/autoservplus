@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.ventes.commandes.titre} + ' | AutoServ+'">Commandes | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.ventes.commandes.titre}">Commandes</h1>
+
+    <p>
+        <a th:href="@{/admin/factures}" th:text="#{admin.ventes.factures.titre}">Factures</a>
+        <span aria-hidden="true">|</span>
+        <a th:href="@{/admin/avoirs}" th:text="#{admin.ventes.avoirs.titre}">Avoirs</a>
+    </p>
+
+    <form class="formulaire" th:action="@{/admin/commandes}" method="get" role="search">
+        <div th:replace="~{fragments/pagination :: periode}"></div>
+        <div class="champ">
+            <label for="statut" th:text="#{admin.ventes.filtre.statut}">Statut</label>
+            <select id="statut" name="statut">
+                <option value="" th:text="#{admin.ventes.filtre.tous}">Tous</option>
+                <option th:each="s : ${statuts}" th:value="${s}" th:selected="${s == statut}"
+                        th:text="#{'commande.statut.' + ${s}}">Payée</option>
+            </select>
+        </div>
+        <div class="champ">
+            <label for="recherche" th:text="#{admin.ventes.filtre.recherche.commandes}">Numéro de commande ou adresse du membre</label>
+            <input type="search" id="recherche" name="recherche" th:value="${recherche}">
+        </div>
+        <button type="submit" class="btn-cta" th:text="#{admin.ventes.filtre.appliquer}">Afficher</button>
+    </form>
+
+    <p class="message message-erreur" role="alert" th:if="${periode.inversee()}"
+       th:text="#{admin.ventes.periode-inversee}">La date de début suit la date de fin.</p>
+
+    <p th:if="${periode.ignoreePour(recherche) and resultats.totalElements == 0}"
+       th:text="#{admin.ventes.commandes.aucune.recherche(${recherche})}">Aucun résultat pour cette recherche.</p>
+
+    <p th:if="${!periode.inversee() and !periode.ignoreePour(recherche) and resultats.totalElements == 0}"
+       th:text="#{admin.ventes.commandes.aucune(${#temporals.format(periode.du(), 'dd/MM/yyyy')}, ${#temporals.format(periode.au(), 'dd/MM/yyyy')})}">
+        Aucune commande du 22/10/2026 au 20/11/2026.</p>
+
+    <div class="defilement" th:if="${resultats.totalElements > 0}">
+        <table class="tableau">
+            <caption th:text="#{admin.ventes.commandes.legende(${resultats.totalElements})}">3 commandes, de la plus récente à la plus ancienne.</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.ventes.colonne.numero}">Numéro</th>
+                <th scope="col" th:text="#{admin.ventes.colonne.date}">Date</th>
+                <th scope="col" th:text="#{admin.ventes.colonne.client}">Client</th>
+                <th scope="col" th:text="#{admin.ventes.colonne.statut}">Statut</th>
+                <th scope="col" th:text="#{admin.ventes.colonne.montant}">Montant TVAC</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="c : ${resultats.content}">
+                <td><a th:href="@{/admin/commandes/{ref}(ref=${c.reference()})}" th:text="${c.numero()}">CMD-2026-0001</a></td>
+                <td th:text="${#temporals.format(c.date(), 'dd/MM/yyyy HH:mm')}">20/11/2026 10:12</td>
+                <td><span th:text="${c.client()}">Marie Dupont</span><br><span th:text="${c.email()}">marie@exemple.be</span></td>
+                <td th:text="#{'commande.statut.' + ${c.statut()}}">Payée</td>
+                <td th:text="${c.totalTvac()}">48,38 €</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav th:replace="~{fragments/pagination :: liens(${resultats}, '/admin/commandes')}"></nav>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

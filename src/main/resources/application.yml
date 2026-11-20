@@ -97,6 +97,9 @@ management:
         include: health,info
 
 autoservplus:
+  # Lignes par page des listes du back-office (commandes, factures, avoirs).
+  back-office:
+    taille-page: 50
   tva:
     taux-standard: 21.00
 

@@ -48,6 +48,7 @@ class AdminComptesIT extends SocleIntegration {
     @Autowired private UtilisateurRepository utilisateurs;
     @Autowired private HistoriqueStatutUtilisateurRepository historique;
     @Autowired private PasswordEncoder encodeur;
+    @Autowired private org.springframework.jdbc.core.JdbcTemplate jdbc;
 
     private Utilisateur membre;
     private Utilisateur admin;
@@ -123,6 +124,18 @@ class AdminComptesIT extends SocleIntegration {
                             .locale(Locale.FRENCH))
                     .andExpect(status().isOk())
                     .andExpect(content().string(containsString("Motif consigne au journal.")));
+        }
+
+        @Test
+        @DisplayName("la dernière connexion s'affiche à l'heure de l'atelier, au format jj/mm/aaaa hh:mm")
+        void derniereConnexionLisible() throws Exception {
+            jdbc.update("UPDATE utilisateur SET derniere_connexion = '2026-11-20T09:05:00Z' WHERE id = ?",
+                    membre.getId());
+
+            mvc.perform(get("/admin/comptes/{ref}", membre.getReference())
+                            .with(user(admin.getEmail()).roles("ADMINISTRATEUR")).locale(Locale.FRENCH))
+                    .andExpect(content().string(containsString("20/11/2026 10:05")))
+                    .andExpect(content().string(org.hamcrest.Matchers.not(containsString("2026-11-20T09:05"))));
         }
 
         @Test
