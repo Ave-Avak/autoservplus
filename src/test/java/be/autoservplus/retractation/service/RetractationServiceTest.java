@@ -3,6 +3,7 @@ package be.autoservplus.retractation.service;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.retractation.domain.DemandeAnnulation;
 import be.autoservplus.retractation.domain.StatutDemandeAnnulation;
 import be.autoservplus.retractation.repository.DemandeAnnulationRepository;
@@ -51,6 +52,7 @@ class RetractationServiceTest {
     private static final Instant MAINTENANT = Instant.parse("2026-09-04T10:00:00Z");
     private static final ZoneId BRUXELLES = ZoneId.of("Europe/Brussels");
 
+    @Mock private ParametreAtelierRepository parametres;
     @Mock private CommandeRepository commandes;
     @Mock private DemandeAnnulationRepository demandes;
     @Mock private be.autoservplus.intervention.repository.InterventionRepository interventionsRepo;
@@ -64,7 +66,7 @@ class RetractationServiceTest {
     @BeforeEach
     void setUp() {
         service = new RetractationService(commandes, demandes, interventionsRepo, courriel,
-                Clock.fixed(MAINTENANT, BRUXELLES));
+                parametres, Clock.fixed(MAINTENANT, BRUXELLES));
     }
 
     @Nested
@@ -227,7 +229,9 @@ class RetractationServiceTest {
             // depuis la prise de possession, le refus automatique ne la touche pas.
             Commande commande = commandePayeeIlYA(30);
             commandeExiste(commande);
-            commandeDePrestations(commande);
+            // Les lignes de prestation ne sont plus lues : la présence de pièces décide.
+            org.mockito.Mockito.lenient().when(commandes.lignesServiceDe(commande)).thenReturn(List.of(
+                    org.mockito.Mockito.mock(be.autoservplus.vente.domain.LignePanier.class)));
             when(commandes.lignesDe(commande)).thenReturn(List.of(
                     org.mockito.Mockito.mock(be.autoservplus.vente.domain.LignePanier.class)));
             when(demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE))

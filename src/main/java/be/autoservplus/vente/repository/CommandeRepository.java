@@ -129,6 +129,15 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
                                    @Param("statuts") Collection<StatutCommande> statuts,
                                    @Param("motif") String motif, Pageable pagination);
 
+    /**
+     * Une demande de rétractation existe-t-elle pour la commande, quel que soit son statut ?
+     * Requête native : le module de rétractation dépend de la vente, l'inverse créerait un
+     * cycle entre les deux.
+     */
+    @Query(value = "SELECT EXISTS (SELECT 1 FROM demande_annulation WHERE commande_id = :commande)",
+            nativeQuery = true)
+    boolean aUneDemandeDeRetractation(@Param("commande") Long commande);
+
     /** Commandes d'un membre pour sa fiche du back-office (A12), sans limite de période. */
     @Query("""
             SELECT c FROM Commande c

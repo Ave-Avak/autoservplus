@@ -48,6 +48,50 @@
         </th:block>
     </dl>
 
+    <section th:if="${commande.contientDesPieces()}">
+        <h2 th:text="#{admin.ventes.remise.titre}">Remise des pièces</h2>
+        <p th:if="${commande.dateRemise() == null}" th:text="#{admin.ventes.remise.aucune}">
+            Date de remise non saisie : le délai de rétractation ne se calcule pas.</p>
+        <p th:if="${commande.dateRemise() != null}"
+           th:text="#{admin.ventes.remise.saisie(${#temporals.format(commande.dateRemise(), 'dd/MM/yyyy')}, ${#temporals.format(commande.dernierJourRetractation(), 'dd/MM/yyyy')})}">
+            Remises le 02/11/2026. Rétractation possible jusqu'au 16/11/2026 inclus.</p>
+        <p class="texte-info" th:if="${commande.demandeDeRetractation()}"
+           th:text="#{admin.ventes.remise.verrouillee}">Une demande de rétractation existe : la date de remise ne se modifie plus.</p>
+        <form class="formulaire" th:if="${commande.remiseSaisissable()}"
+              th:action="@{/admin/commandes/{ref}/remise(ref=${commande.reference()})}" method="post">
+            <div class="champ">
+                <label for="dateRemise" th:text="#{admin.ventes.remise.champ}">Date de remise au membre</label>
+                <input type="date" id="dateRemise" name="dateRemise" required
+                       th:value="${commande.dateRemise()}" aria-describedby="aide-remise">
+                <p class="texte-info" id="aide-remise" th:text="#{admin.ventes.remise.aide}">
+                    Le jour où le membre a reçu ses pièces, ni futur ni antérieur au paiement.</p>
+            </div>
+            <button type="submit" class="btn-cta" th:text="#{admin.ventes.remise.enregistrer}">Enregistrer la date</button>
+        </form>
+
+        <div class="defilement" th:unless="${#lists.isEmpty(modifications)}">
+            <table class="tableau">
+                <caption th:text="#{admin.ventes.remise.historique}">Saisies de la date de remise, de la plus récente à la plus ancienne.</caption>
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{admin.compte.journal.date}">Date</th>
+                    <th scope="col" th:text="#{admin.compte.modifications.avant}">Ancienne valeur</th>
+                    <th scope="col" th:text="#{admin.compte.modifications.apres}">Nouvelle valeur</th>
+                    <th scope="col" th:text="#{admin.compte.journal.auteur}">Auteur</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="m : ${modifications}">
+                    <td th:text="${#temporals.format(m.horodatage(), 'dd/MM/yyyy HH:mm')}">20/11/2026 10:12</td>
+                    <td th:text="${m.avant() != null} ? ${#temporals.format(m.avant(), 'dd/MM/yyyy')} : #{admin.compte.coordonnees.non-renseigne}">Non renseigné</td>
+                    <td th:text="${#temporals.format(m.apres(), 'dd/MM/yyyy')}">20/11/2026</td>
+                    <td th:text="${m.auteur()} ?: #{admin.compte.journal.auteur-inconnu}">Chef Garage</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
     <h2 th:text="#{commande.detail.lignes}">Articles</h2>
     <div class="defilement">
         <table class="tableau">

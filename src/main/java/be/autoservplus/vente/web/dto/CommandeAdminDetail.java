@@ -2,6 +2,7 @@ package be.autoservplus.vente.web.dto;
 
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.vente.domain.Commande;
+import be.autoservplus.vente.domain.DelaiRetractationBien;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.MotifAnnulationCommande;
 import be.autoservplus.vente.domain.Paiement;
@@ -9,6 +10,7 @@ import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.vente.domain.StatutPaiement;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -41,11 +43,22 @@ public record CommandeAdminDetail(
         StatutPaiement statutPaiement,
         MotifAnnulationCommande motifAnnulation,
         LocalDateTime dateAnnulation,
-        boolean renonciationVi53) {
+        boolean renonciationVi53,
+        LocalDate dateRemise,
+        LocalDate dernierJourRetractation,
+        boolean demandeDeRetractation) {
+
+    /**
+     * La date de remise se saisit sur une commande payée qui porte des pièces, tant
+     * qu'aucune demande de rétractation n'a été faite.
+     */
+    public boolean remiseSaisissable() {
+        return contientDesPieces && statut == StatutCommande.PAYEE && !demandeDeRetractation;
+    }
 
     public static CommandeAdminDetail de(Commande commande, List<LignePanier> pieces,
                                          List<LignePanier> prestations, Paiement paiement,
-                                         ZoneId zone) {
+                                         boolean demandeDeRetractation, ZoneId zone) {
         List<CommandeDetailVue.LigneVue> lignes = new ArrayList<>();
         pieces.forEach(ligne -> lignes.add(CommandeDetailVue.LigneVue.de(ligne)));
         prestations.forEach(ligne -> lignes.add(CommandeDetailVue.LigneVue.de(ligne)));
@@ -67,7 +80,11 @@ public record CommandeAdminDetail(
                 paiement == null ? null : paiement.getStatut(),
                 commande.getMotifAnnulation(),
                 local(commande.getDateAnnulation(), zone),
-                commande.isRenonciationVi53());
+                commande.isRenonciationVi53(),
+                commande.getDateRemise(),
+                commande.getDateRemise() == null ? null
+                        : DelaiRetractationBien.dernierJour(commande.getDateRemise()),
+                demandeDeRetractation);
     }
 
     private static LocalDateTime local(Instant instant, ZoneId zone) {
