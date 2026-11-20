@@ -20,6 +20,7 @@ import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.VehiculeRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.service.PanierService;
 import be.autoservplus.vente.service.PrestatairePaiementFictif;
@@ -101,8 +102,8 @@ class SuppressionCompteIT extends SocleIntegration {
     private Utilisateur membre() {
         String email = "membre-" + COMPTEUR.getAndIncrement() + "@exemple.be";
         return transactions.execute(statut -> {
-            Utilisateur nouveau = new Utilisateur(email, encodeur.encode(MOT_DE_PASSE),
-                    "Dupont", "Marie", TypeUtilisateur.MEMBRE);
+            Utilisateur nouveau = MembresDeTest.membre(email, encodeur.encode(MOT_DE_PASSE),
+                    "Dupont", "Marie");
             nouveau.setTelephone("+32 470 12 34 56");
             nouveau.setRue("Rue de la Loi");
             nouveau.setCodePostal("1000");
@@ -190,6 +191,49 @@ class SuppressionCompteIT extends SocleIntegration {
         assertThat(utilisateurs.findByEmail(adresseReelle)).isEmpty();
     }
 
+    /**
+     * Le motif d'une modification faite par l'administrateur peut citer la nouvelle
+     * adresse : il est remplacé par le marqueur. Les valeurs sont vidées, le champ,
+     * l'auteur et la date restent, et la ligne du titulaire garde son motif nul.
+     */
+    @Test
+    @DisplayName("l'historique du compte : valeurs vidées, motif remplacé par le marqueur")
+    void historiqueDuCompteAnonymise() {
+        Utilisateur marie = membre();
+        Utilisateur chef = transactions.execute(statut -> utilisateurs.saveAndFlush(new Utilisateur(
+                "chef-suppression-" + COMPTEUR.getAndIncrement() + "@exemple.be",
+                encodeur.encode(MOT_DE_PASSE), "Garage", "Chef", TypeUtilisateur.ADMINISTRATEUR)));
+        jdbc.update("""
+                INSERT INTO historique_modification_compte
+                    (utilisateur_id, champ, valeur_avant, valeur_apres, horodatage, auteur_id, motif)
+                VALUES (?, 'RUE', 'Rue de la Loi', 'Rue Haute', now(), ?, 'Appel : nouvelle adresse Rue Haute')
+                """, marie.getId(), chef.getId());
+        jdbc.update("""
+                INSERT INTO historique_modification_compte
+                    (utilisateur_id, champ, valeur_avant, valeur_apres, horodatage, auteur_id)
+                VALUES (?, 'TELEPHONE', '+32 470 12 34 56', '+32 470 65 43 21', now(), ?)
+                """, marie.getId(), marie.getId());
+
+        supprimer(marie);
+
+        List<java.util.Map<String, Object>> lignes = jdbc.queryForList("""
+                SELECT champ, valeur_avant, valeur_apres, auteur_id, motif, horodatage
+                FROM historique_modification_compte WHERE utilisateur_id = ? ORDER BY champ
+                """, marie.getId());
+        assertThat(lignes).hasSize(2);
+        assertThat(lignes).allSatisfy(ligne -> {
+            assertThat(ligne.get("valeur_avant")).isNull();
+            assertThat(ligne.get("valeur_apres")).isNull();
+            assertThat(ligne.get("horodatage")).isNotNull();
+        });
+        assertThat(lignes.get(0)).containsEntry("champ", "RUE")
+                .containsEntry("auteur_id", chef.getId())
+                .containsEntry("motif", Utilisateur.MARQUEUR_ANONYME);
+        assertThat(lignes.get(1)).containsEntry("champ", "TELEPHONE")
+                .containsEntry("auteur_id", marie.getId());
+        assertThat(lignes.get(1).get("motif")).isNull();
+    }
+
     @Test
     @DisplayName("la ligne reste jointe : deleted_at vide, le compte est encore lisible")
     void ligneNonMasquee() {
@@ -225,6 +269,12 @@ class SuppressionCompteIT extends SocleIntegration {
         // reecrit.
         assertThat(jdbc.queryForObject("SELECT numero FROM facture WHERE id = ?",
                 String.class, facture.getId())).isEqualTo(numeroAvant);
+        // L'instantané du client (V61) reste tel qu'émis : la facture doit porter
+        // l'identité du client pendant toute sa conservation (art. 17.3.b RGPD).
+        assertThat(jdbc.queryForObject("SELECT client_nom FROM facture WHERE id = ?",
+                String.class, facture.getId())).isEqualTo("Dupont");
+        assertThat(jdbc.queryForObject("SELECT client_rue FROM facture WHERE id = ?",
+                String.class, facture.getId())).isEqualTo("Rue de la Loi");
         assertThat(jdbc.queryForObject("SELECT montant_tvac FROM facture WHERE id = ?",
                 BigDecimal.class, facture.getId())).isEqualByComparingTo(montantAvant);
         // La commande garde ses montants. Seule la ligne utilisateur a change.
@@ -249,12 +299,16 @@ class SuppressionCompteIT extends SocleIntegration {
         assertThat(titulaire).isEqualTo("Client supprimé");
     }
 
+    /**
+     * Depuis l'instantané client (V61), la facture garde le nom et l'adresse figés à son
+     * émission, même régénérée après la suppression du compte : elle doit porter
+     * l'identité du client pendant toute sa conservation (art. 17.3.b RGPD, Code TVA
+     * art. 60). La langue du document est elle aussi celle de l'émission.
+     */
     @Test
-    @DisplayName("la facture regeneree apres anonymisation porte le marqueur dans la langue du client")
-    void factureRegenereePorteLeMarqueurTraduit() throws Exception {
+    @DisplayName("la facture régénérée après anonymisation garde l'identité figée, dans la langue d'émission")
+    void factureRegenereeGardeLInstantane() throws Exception {
         Utilisateur marie = membre();
-        // Cliente neerlandophone : c est le cas que le marqueur fige en francais
-        // aurait casse.
         transactions.executeWithoutResult(statut -> {
             Utilisateur relue = utilisateurs.findById(marie.getId()).orElseThrow();
             relue.setLangue(Langue.nl);
@@ -265,20 +319,17 @@ class SuppressionCompteIT extends SocleIntegration {
 
         supprimer(marie);
 
-        // Le PDF archive n est jamais regenere. Mais s il a disparu, la
-        // reconstruction lit le compte anonymise. La langue, elle, n est pas effacee
-        // par l anonymisation : ce n est pas une donnee identifiante.
         byte[] pdf = transactions.execute(s -> pdfFactures.pdfDe(
                 factures.pourMembre(facture.getReference(),
                         "anonyme-" + marie.getId() + "@supprime.invalid")));
         assertThat(pdf).startsWith("%PDF".getBytes());
-        // Le flux de contenu est compresse : on extrait le texte plutot que de
-        // chercher dans les octets, comme le fait GenerateurPdfFactureTest.
         String texte = texteDe(pdf);
         assertThat(texte)
-                .as("Le document doit porter le marqueur neerlandais, pas le francais")
-                .contains("Verwijderde klant")
+                .contains("Marie Dupont", "Rue de la Loi")
+                .doesNotContain("Verwijderde klant")
                 .doesNotContain("Client supprim");
+        assertThat(jdbc.queryForObject("SELECT langue_document FROM facture WHERE id = ?",
+                String.class, facture.getId())).isEqualTo("nl");
     }
 
     /** Texte de la premiere page, flux de contenu decompresse. */
@@ -418,8 +469,8 @@ class SuppressionCompteIT extends SocleIntegration {
 
         // uq_utilisateur_email porte sur toute la table : le jeton libere l adresse.
         Utilisateur nouveau = transactions.execute(statut -> utilisateurs.saveAndFlush(
-                new Utilisateur(adresseReelle, encodeur.encode(MOT_DE_PASSE),
-                        "Dupont", "Marie", TypeUtilisateur.MEMBRE)));
+                MembresDeTest.membre(adresseReelle, encodeur.encode(MOT_DE_PASSE),
+                        "Dupont", "Marie")));
         assertThat(nouveau.getId()).isNotEqualTo(marie.getId());
         assertThat(utilisateurs.findByEmail(adresseReelle)).isPresent();
     }

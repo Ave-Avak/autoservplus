@@ -12,6 +12,7 @@ import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.support.SocleIntegration;
 import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.repository.CommandeRepository;
@@ -77,7 +78,7 @@ class ConfirmationApresPaiementIT extends SocleIntegration {
 
     @BeforeAll
     void catalogue() {
-        Utilisateur lies = new Utilisateur(EMAIL, "$2a$12$h", "Peeters", "Lies", TypeUtilisateur.MEMBRE);
+        Utilisateur lies = MembresDeTest.membre(EMAIL, "$2a$12$h", "Peeters", "Lies");
         lies.setLangue(Langue.nl);
         utilisateurs.save(lies);
         Categorie moteur = categories.save(new Categorie("IT-CAP-MOT", "Moteur", TypeCategorie.PIECE));

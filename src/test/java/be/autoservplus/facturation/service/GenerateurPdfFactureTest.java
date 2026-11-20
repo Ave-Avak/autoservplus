@@ -54,7 +54,7 @@ class GenerateurPdfFactureTest {
 
     private static DocumentFacture.ClientFacture marie() {
         return new DocumentFacture.ClientFacture("Marie Dupont", "Avenue Louise", "250",
-                "1050", "Ixelles", "Belgique", "marie@exemple.be");
+                "1050", "Ixelles", "Belgique");
     }
 
     /** Facture a taux mixtes 6 % / 21 %, le cas ou la ventilation devient obligatoire. */
@@ -139,8 +139,8 @@ class GenerateurPdfFactureTest {
     void identificationDuClient() throws Exception {
         String texte = texteDu(generateur.engendrer(factureMultiTaux(Locale.FRENCH)));
 
-        assertThat(texte).contains("Marie Dupont", "Avenue Louise 250, 1050 Ixelles",
-                "marie@exemple.be");
+        assertThat(texte).contains("Marie Dupont", "Avenue Louise 250, 1050 Ixelles")
+                .doesNotContain("@");
     }
 
     @Test
@@ -202,7 +202,7 @@ class GenerateurPdfFactureTest {
                 Instant.parse("2026-08-22T14:30:00Z"), "CMD-2026-0108",
                 Instant.parse("2026-08-22T14:28:00Z"),
                 new DocumentFacture.ClientFacture("Jean Sansadresse", null, null, null, null,
-                        "Belgique", "jean@exemple.be"),
+                        "Belgique"),
                 List.of(new DocumentFacture.LigneFacture("Ampoule H7", 2,
                         new BigDecimal("9.90"), new BigDecimal("21.00"), new BigDecimal("19.80"))),
                 new VentilationTva(List.of(new VentilationTva.TrancheTva(

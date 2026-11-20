@@ -2,6 +2,7 @@ package be.autoservplus.communication.service;
 
 import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.config.MentionsIdentiteGarage;
+import be.autoservplus.identite.domain.ChampCompte;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -130,7 +131,9 @@ class CourrielSortantTest {
                 Map.entry("verrouillage-connexion", l -> courriel.envoyerAvisVerrouillageConnexion(marie, fin)),
                 Map.entry("second-facteur-reinitialise", l -> courriel.envoyerAvisReinitialisationSecondFacteur(marie)),
                 Map.entry("mot-de-passe-modifie", l -> courriel.envoyerAvisMotDePasseModifie(
-                        marie, OrigineMotDePasse.REINITIALISATION)));
+                        marie, OrigineMotDePasse.REINITIALISATION)),
+                Map.entry("compte-modifie", l -> courriel.envoyerAvisModificationCompte(
+                        marie, List.of(ChampCompte.RUE, ChampCompte.LOCALITE))));
     }
 
     @ParameterizedTest
@@ -139,7 +142,7 @@ class CourrielSortantTest {
     void tousLesTypes(Langue langue) {
         marie.setLangue(langue);
         Map<String, Consumer<Langue>> envois = tousLesEnvois();
-        assertThat(envois).hasSize(35);
+        assertThat(envois).hasSize(36);
 
         envois.forEach((type, envoi) -> {
             partis.clear();
@@ -177,7 +180,7 @@ class CourrielSortantTest {
                 "verrouillage-connexion", "tentative-inscription");
         assertThat(partis).extracting(Courriel::type)
                 .doesNotContainAnyElementsOf(CourrielSortant.HORS_DE_LA_REQUETE)
-                .hasSize(30);
+                .hasSize(31);
     }
 
     @Test
@@ -427,11 +430,32 @@ class CourrielSortantTest {
     }
 
     @Test
+    @DisplayName("l'avis de modification du compte nomme les champs, sans leurs valeurs")
+    void avisModificationCompte() {
+        marie.setRue("Rue Neuve");
+        marie.setLangue(Langue.nl);
+
+        courriel.envoyerAvisModificationCompte(marie, List.of(ChampCompte.RUE, ChampCompte.LOCALITE));
+
+        assertThat(partis.get(0).corps()).contains("straat, gemeente")
+                .doesNotContain("Rue Neuve").doesNotContain("http");
+    }
+
+    @Test
     @DisplayName("l'avis de mot de passe modifié ne porte aucun lien")
     void avisSansLien() {
         courriel.envoyerAvisMotDePasseModifie(marie, OrigineMotDePasse.CHANGEMENT_IMPOSE);
 
         assertThat(partis.get(0).corps()).doesNotContain("http").contains("première connexion");
+    }
+
+    @Test
+    @DisplayName("l'avis d'un changement depuis le profil annonce la fermeture des autres sessions")
+    void avisChangementDepuisLeProfil() {
+        courriel.envoyerAvisMotDePasseModifie(marie, OrigineMotDePasse.CHANGEMENT_PROFIL);
+
+        assertThat(partis.get(0).corps()).doesNotContain("http")
+                .contains("depuis votre profil").contains("autres sessions");
     }
 
     @Test

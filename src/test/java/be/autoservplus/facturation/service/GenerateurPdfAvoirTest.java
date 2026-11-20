@@ -58,7 +58,7 @@ class GenerateurPdfAvoirTest {
                 "2026-0042", Instant.parse("2026-08-22T14:30:00Z"), "CMD-2026-0107",
                 "RETRACTATION_F30",
                 new DocumentFacture.ClientFacture("Marie Dupont", "Avenue Louise", "250",
-                        "1050", "Ixelles", "Belgique", "marie@exemple.be"),
+                        "1050", "Ixelles", "Belgique"),
                 lignes, ventilation,
                 new BigDecimal("100.00"), new BigDecimal("21.00"), new BigDecimal("121.00"),
                 Locale.FRENCH);

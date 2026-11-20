@@ -22,5 +22,7 @@ public enum TypeEvenementSecurite {
     ADMINISTRATEUR_CREE,
     LIEN_DEFINITION_ENVOYE,
     CONNEXION_VERROUILLAGE,
-    MOT_DE_PASSE_REINITIALISE
+    MOT_DE_PASSE_REINITIALISE,
+    /** Session fermée après cinq mots de passe actuels incorrects sur l'écran de changement. */
+    CHANGEMENT_MOT_DE_PASSE_BLOQUE
 }

@@ -5,7 +5,6 @@ import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.repository.AvoirRepository;
 import be.autoservplus.facturation.service.dto.DocumentAvoir;
 import be.autoservplus.facturation.service.dto.DocumentFacture;
-import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import org.slf4j.Logger;
@@ -99,8 +98,9 @@ public class PdfAvoirService {
     private DocumentAvoir documentDe(Avoir avoir) {
         Facture facture = avoir.getFacture();
         Commande commande = avoirService.commandeDe(avoir);
-        Utilisateur membre = facture.getMembre();
-        Locale langue = Locale.forLanguageTag(membre.getLangue().name());
+        // Instantané de la facture corrigée : la note de crédit vise le même client,
+        // dans la même langue.
+        Locale langue = Locale.forLanguageTag(facture.getLangueDocument().name());
         List<DocumentFacture.LigneFacture> lignes = factureService.lignesDe(facture).stream()
                 .map(PdfAvoirService::ligneDe)
                 .toList();
@@ -111,14 +111,7 @@ public class PdfAvoirService {
                 facture.getDateEmission(),
                 commande.getNumero(),
                 avoir.getMotif(),
-                new DocumentFacture.ClientFacture(
-                        // Marqueur traduit si le compte a ete anonymise (F23) : le
-                        // document est emis dans la langue du client, meme regenere
-                        // apres son depart.
-                        membre.nomComplet(messages, langue),
-                        membre.getRue(), membre.getNumeroRue(),
-                        membre.getCodePostal(), membre.getLocalite(), membre.getPays(),
-                        membre.getEmail()),
+                PdfFactureService.clientDe(facture, messages, langue),
                 lignes,
                 factureService.ventilationDe(facture),
                 avoir.getMontantHtva(),

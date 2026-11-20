@@ -53,6 +53,7 @@ class ChangementEmailServiceTest {
     @Mock private ServiceCourriel courriel;
     @Mock private PasswordEncoder encodeur;
     @Mock private LimiteurDemandesCourriel limiteur;
+    @Mock private HistoriqueModificationsCompte historique;
 
     private ChangementEmailService service;
     private Utilisateur membre;
@@ -60,7 +61,8 @@ class ChangementEmailServiceTest {
     @BeforeEach
     void setUp() {
         service = new ChangementEmailService(repository, courriel, encodeur, limiteur,
-                Clock.fixed(MAINTENANT, ZoneOffset.UTC), new LiensCourriel("http://localhost:8080"));
+                Clock.fixed(MAINTENANT, ZoneOffset.UTC), new LiensCourriel("http://localhost:8080"),
+                historique);
         membre = new Utilisateur(ACTUELLE, "$2a$12$empreinte", "Dupont", "Marie",
                 TypeUtilisateur.MEMBRE);
         membre.confirmerAdresseEmail();
@@ -293,7 +295,8 @@ class ChangementEmailServiceTest {
             ChangementEmailService tardif = new ChangementEmailService(repository, courriel,
                     encodeur, limiteur,
                     Clock.fixed(MAINTENANT.plus(ChangementEmailService.VALIDITE_JETON)
-                            .plusSeconds(1), ZoneOffset.UTC), new LiensCourriel("http://localhost:8080"));
+                            .plusSeconds(1), ZoneOffset.UTC), new LiensCourriel("http://localhost:8080"),
+                    historique);
             when(repository.findByJetonChangementEmailHache(JetonLien.empreinte(jeton))).thenReturn(Optional.of(membre));
 
             assertThatThrownBy(() -> tardif.confirmer(jeton))

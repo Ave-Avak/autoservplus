@@ -1,6 +1,7 @@
 package be.autoservplus.vente.domain;
 
 import be.autoservplus.common.entity.BaseEntity;
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.identite.domain.Utilisateur;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -8,6 +9,7 @@ import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -106,6 +108,10 @@ public class Commande extends BaseEntity {
      */
     @Column(name = "renonciation_vi53", nullable = false, updatable = false)
     private boolean renonciationVi53;
+
+    /** Jour de remise des pièces au membre, point de départ du délai de rétractation (V59). */
+    @Column(name = "date_remise")
+    private LocalDate dateRemise;
 
     protected Commande() {
         // requis par JPA
@@ -224,6 +230,36 @@ public class Commande extends BaseEntity {
     public Instant getDateAnnulation() { return dateAnnulation; }
     /** Voir le champ : ETAT lu par F30, la preuve est dans consentement. */
     public boolean isRenonciationVi53() { return renonciationVi53; }
+    public LocalDate getDateRemise() { return dateRemise; }
+
+    /**
+     * Enregistre le jour où le membre a reçu ses pièces (CDE, art. VI.47, § 2, 2°).
+     *
+     * <p>La date se corrige tant que la commande est payée : une erreur de saisie se
+     * rectifie, l'auteur et l'instant de la dernière saisie restent dans les colonnes
+     * d'audit. Elle ne peut ni précéder le jour du paiement, la pièce n'étant remise
+     * qu'une fois réglée, ni dépasser aujourd'hui.</p>
+     *
+     * @param aujourdhui  le jour courant de l'atelier
+     * @param jourPaiement le jour du paiement, à l'heure de l'atelier
+     * @throws RefusTraduit commande non payée, date future ou antérieure au paiement
+     */
+    public void enregistrerRemise(LocalDate jour, LocalDate aujourdhui, LocalDate jourPaiement) {
+        Objects.requireNonNull(jour, "jour");
+        if (statut != StatutCommande.PAYEE || datePaiement == null) {
+            throw new RefusTraduit("admin.ventes.remise.erreur.non-payee",
+                    "Seule une commande payée reçoit une date de remise.");
+        }
+        if (jour.isAfter(aujourdhui)) {
+            throw new RefusTraduit("admin.ventes.remise.erreur.future",
+                    "La date de remise ne peut pas être future.");
+        }
+        if (jour.isBefore(jourPaiement)) {
+            throw new RefusTraduit("admin.ventes.remise.erreur.avant-paiement",
+                    "La date de remise ne peut pas précéder le paiement.");
+        }
+        this.dateRemise = jour;
+    }
 
     public boolean isRuptureAHonorer() { return ruptureAHonorer; }
 

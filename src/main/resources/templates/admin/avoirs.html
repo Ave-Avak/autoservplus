@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.ventes.avoirs.titre} + ' | AutoServ+'">Avoirs | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.ventes.avoirs.titre}">Avoirs</h1>
+
+    <p>
+        <a th:href="@{/admin/commandes}" th:text="#{admin.ventes.commandes.titre}">Commandes</a>
+        <span aria-hidden="true">|</span>
+        <a th:href="@{/admin/factures}" th:text="#{admin.ventes.factures.titre}">Factures</a>
+    </p>
+
+    <form class="formulaire" th:action="@{/admin/avoirs}" method="get" role="search">
+        <div th:replace="~{fragments/pagination :: periode}"></div>
+        <div class="champ">
+            <label for="recherche" th:text="#{admin.ventes.filtre.recherche.avoirs}">Numéro d'avoir ou de facture, ou adresse du membre</label>
+            <input type="search" id="recherche" name="recherche" th:value="${recherche}">
+        </div>
+        <button type="submit" class="btn-cta" th:text="#{admin.ventes.filtre.appliquer}">Afficher</button>
+    </form>
+
+    <p class="message message-erreur" role="alert" th:if="${periode.inversee()}"
+       th:text="#{admin.ventes.periode-inversee}">La date de début suit la date de fin.</p>
+
+    <p th:if="${periode.ignoreePour(recherche) and resultats.totalElements == 0}"
+       th:text="#{admin.ventes.avoirs.aucun.recherche(${recherche})}">Aucun résultat pour cette recherche.</p>
+
+    <p th:if="${!periode.inversee() and !periode.ignoreePour(recherche) and resultats.totalElements == 0}"
+       th:text="#{admin.ventes.avoirs.aucun(${#temporals.format(periode.du(), 'dd/MM/yyyy')}, ${#temporals.format(periode.au(), 'dd/MM/yyyy')})}">
+        Aucun avoir du 22/10/2026 au 20/11/2026.</p>
+
+    <div class="defilement" th:if="${resultats.totalElements > 0}">
+        <table class="tableau">
+            <caption th:text="#{admin.ventes.avoirs.legende(${resultats.totalElements})}">1 avoir, du plus récent au plus ancien.</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.ventes.colonne.numero}">Numéro</th>
+                <th scope="col" th:text="#{admin.ventes.colonne.date}">Date</th>
+                <th scope="col" th:text="#{admin.ventes.colonne.client}">Client</th>
+                <th scope="col" th:text="#{admin.ventes.colonne.facture}">Facture corrigée</th>
+                <th scope="col" th:text="#{admin.ventes.colonne.commande}">Commande</th>
+                <th scope="col" th:text="#{admin.ventes.colonne.montant}">Montant TVAC</th>
+                <th scope="col" th:text="#{admin.ventes.colonne.motif}">Motif</th>
+                <th scope="col" th:text="#{admin.ventes.colonne.document}">Document</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="a : ${resultats.content}">
+                <td th:text="${a.numero()}">NC-2026-0001</td>
+                <td th:text="${#temporals.format(a.dateEmission(), 'dd/MM/yyyy HH:mm')}">20/11/2026 10:12</td>
+                <td><span th:text="${a.client()}">Marie Dupont</span><br><span th:text="${a.email()}">marie@exemple.be</span></td>
+                <td th:text="${a.numeroFacture()}">F-2026-0001</td>
+                <td>
+                    <a th:if="${a.referenceCommande() != null}" th:href="@{/admin/commandes/{ref}(ref=${a.referenceCommande()})}"
+                       th:text="${a.numeroCommande()}">CMD-2026-0001</a>
+                </td>
+                <td th:text="${a.totalTvac()}">48,38 €</td>
+                <td th:text="${a.motif()}">Rétractation</td>
+                <td><a th:href="@{/admin/avoirs/{ref}/pdf(ref=${a.reference()})}"
+                       th:text="#{admin.ventes.telecharger.avoir(${a.numero()})}">Télécharger NC-2026-0001 (PDF)</a></td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <nav th:replace="~{fragments/pagination :: liens(${resultats}, '/admin/avoirs')}"></nav>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

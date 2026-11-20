@@ -45,8 +45,7 @@ public record DocumentFacture(
             String numeroRue,
             String codePostal,
             String localite,
-            String pays,
-            String courriel) {
+            String pays) {
 
         /**
          * Adresse sur une ligne, ou {@code null} si le membre n en a pas renseigne :

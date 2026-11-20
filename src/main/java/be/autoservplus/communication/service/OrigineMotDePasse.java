@@ -7,5 +7,8 @@ public enum OrigineMotDePasse {
     REINITIALISATION,
 
     /** Par le changement imposé au premier accès. */
-    CHANGEMENT_IMPOSE
+    CHANGEMENT_IMPOSE,
+
+    /** Par le titulaire, depuis son profil, mot de passe actuel à l'appui. */
+    CHANGEMENT_PROFIL
 }

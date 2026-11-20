@@ -137,6 +137,7 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/mon-compte", Acces.CONNECTE),
             ecran("/mon-profil", Acces.CONNECTE),
             ecran("/mon-profil/adresse", Acces.CONNECTE),
+            ecran("/mon-profil/mot-de-passe", Acces.CONNECTE),
             ecran("/mon-profil/securite", Acces.CONNECTE),
             ecran("/mon-profil/securite/enrolement", Acces.CONNECTE),
             new Route("/mon-profil/securite/codes", "/mon-profil/securite/codes", Acces.CONNECTE, true, 302),
@@ -241,6 +242,13 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/admin/avis", Acces.BACK_OFFICE),
             ecran("/admin/comptes", Acces.BACK_OFFICE),
             variable("/admin/comptes/{reference}", Acces.BACK_OFFICE),
+            variable("/admin/comptes/{reference}/modification", Acces.BACK_OFFICE),
+            ecran("/admin/commandes", Acces.BACK_OFFICE),
+            variable("/admin/commandes/{reference}", Acces.BACK_OFFICE),
+            ecran("/admin/factures", Acces.BACK_OFFICE),
+            ecran("/admin/avoirs", Acces.BACK_OFFICE),
+            new Route("/admin/factures/{reference}/pdf", "/admin/factures/" + REF + "/pdf", Acces.BACK_OFFICE, false, 404),
+            new Route("/admin/avoirs/{reference}/pdf", "/admin/avoirs/" + REF + "/pdf", Acces.BACK_OFFICE, false, 404),
             ecran("/admin/journal", Acces.BACK_OFFICE),
             ecran("/admin/comptes/administrateurs", Acces.SUPER),
             ecran("/admin/comptes/administrateurs/nouveau", Acces.SUPER));
@@ -274,6 +282,7 @@ class NavigationEcransIT extends SocleIntegration {
         ATTEINTS_DEPUIS.put("/garantie-legale", new Atteinte("/pieces", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/retractation/formulaire", new Atteinte("/", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/mon-profil/adresse", new Atteinte("/mon-profil", Role.MEMBRE));
+        ATTEINTS_DEPUIS.put("/mon-profil/mot-de-passe", new Atteinte("/mon-profil", Role.MEMBRE));
         ATTEINTS_DEPUIS.put("/mon-profil/securite", new Atteinte("/mon-profil", Role.MEMBRE));
         ATTEINTS_DEPUIS.put("/mon-profil/securite/enrolement", new Atteinte("/mon-profil/securite", Role.MEMBRE));
         ATTEINTS_DEPUIS.put("/mes-vehicules/nouveau", new Atteinte("/mes-vehicules", Role.MEMBRE));
@@ -288,6 +297,7 @@ class NavigationEcransIT extends SocleIntegration {
                 new Atteinte("/admin/planning/postes", Role.ADMINISTRATEUR));
         ATTEINTS_DEPUIS.put("/admin/planning/indisponibilites/nouvelle",
                 new Atteinte("/admin/planning/indisponibilites", Role.ADMINISTRATEUR));
+        ATTEINTS_DEPUIS.put("/admin/avoirs", new Atteinte("/admin/factures", Role.ADMINISTRATEUR));
         ATTEINTS_DEPUIS.put("/admin/comptes/administrateurs/nouveau",
                 new Atteinte("/admin/comptes/administrateurs", Role.SUPER_ADMINISTRATEUR));
     }

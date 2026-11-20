@@ -1,6 +1,10 @@
 package be.autoservplus.identite.web;
 
 import be.autoservplus.common.exception.RefusTraduit;
+import be.autoservplus.common.exception.RegleMetierException;
+import be.autoservplus.identite.domain.ChampCompte;
+import be.autoservplus.identite.domain.Langue;
+import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.service.ComptesAdministrateursService;
 import be.autoservplus.identite.service.GestionComptesService;
@@ -9,6 +13,10 @@ import be.autoservplus.identite.web.dto.CompteVue;
 import be.autoservplus.identite.web.dto.CreationAdministrateurForm;
 import be.autoservplus.identite.web.dto.EvenementSecuriteVue;
 import be.autoservplus.identite.web.dto.EvenementStatutVue;
+import be.autoservplus.identite.web.dto.ModificationCompteForm;
+import be.autoservplus.identite.web.dto.ModificationCompteVue;
+import be.autoservplus.reservation.repository.ParametreAtelierRepository;
+import be.autoservplus.vente.service.AdminCommandeService;
 import jakarta.validation.Valid;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -24,6 +32,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,15 +55,21 @@ public class AdminComptesController {
     private final GestionComptesService service;
     private final ComptesAdministrateursService administrateurs;
     private final JournalSecuriteCompte journalSecurite;
+    private final AdminCommandeService commandes;
+    private final ParametreAtelierRepository parametres;
     private final MessageSource messages;
 
     public AdminComptesController(GestionComptesService service,
                                   ComptesAdministrateursService administrateurs,
                                   JournalSecuriteCompte journalSecurite,
+                                  AdminCommandeService commandes,
+                                  ParametreAtelierRepository parametres,
                                   MessageSource messages) {
         this.service = service;
         this.administrateurs = administrateurs;
         this.journalSecurite = journalSecurite;
+        this.commandes = commandes;
+        this.parametres = parametres;
         this.messages = messages;
     }
 
@@ -84,6 +99,9 @@ public class AdminComptesController {
     public String detail(@PathVariable UUID reference, Model modele) {
         Utilisateur compte = service.parReference(reference);
         modele.addAttribute("compte", CompteVue.de(compte));
+        // À l'heure de l'atelier, et non du serveur : un conteneur tourne souvent en UTC.
+        modele.addAttribute("derniereConnexion", compte.getDerniereConnexion() == null ? null
+                : LocalDateTime.ofInstant(compte.getDerniereConnexion(), parametres.courants().zone()));
         List<EvenementStatutVue> journal = service.historiqueDe(compte).stream()
                 .map(EvenementStatutVue::de)
                 .toList();
@@ -91,7 +109,72 @@ public class AdminComptesController {
         modele.addAttribute("journalSecurite", journalSecurite.evenementsDe(compte).stream()
                 .map(EvenementSecuriteVue::de)
                 .toList());
+        modele.addAttribute("modifications", service.modificationsDe(compte).stream()
+                .map(ModificationCompteVue::de)
+                .toList());
+        modele.addAttribute("commandes", compte.getTypeUtilisateur() == TypeUtilisateur.MEMBRE
+                ? commandes.commandesDuMembre(compte.getReference())
+                : List.of());
         return "admin/compte-detail";
+    }
+
+    /** Formulaire des coordonnées d'un membre, prérempli. */
+    @GetMapping("/{reference}/modification")
+    public String formulaireModification(@PathVariable UUID reference, Model modele,
+                                         RedirectAttributes redirection) {
+        try {
+            Utilisateur membre = service.membreModifiable(reference);
+            modele.addAttribute("formulaire", ModificationCompteForm.de(membre));
+            preparerModification(modele, membre);
+            return "admin/compte-modification";
+        } catch (RefusTraduit refus) {
+            redirection.addFlashAttribute("erreur", msg(refus.getCleMessage()));
+            return "redirect:/admin/comptes/" + reference;
+        }
+    }
+
+    @PostMapping("/{reference}/modification")
+    public String modifier(@PathVariable UUID reference,
+                           @Valid @ModelAttribute("formulaire") ModificationCompteForm formulaire,
+                           BindingResult erreurs, Model modele, RedirectAttributes redirection) {
+        Utilisateur membre;
+        try {
+            membre = service.membreModifiable(reference);
+        } catch (RefusTraduit refus) {
+            redirection.addFlashAttribute("erreur", msg(refus.getCleMessage()));
+            return "redirect:/admin/comptes/" + reference;
+        }
+        // Erreur globale, comme au profil : la règle lie trois champs.
+        if (!formulaire.adresseCoherente()) {
+            erreurs.reject("adresse.incomplete", msg("profil.erreur.adresse-incomplete"));
+        }
+        if (!erreurs.hasErrors()) {
+            try {
+                List<ChampCompte> champs = service.modifierMembre(reference,
+                        formulaire.getMotif(), formulaire.getPrenom(), formulaire.getNom(),
+                        formulaire.getTelephone(), formulaire.getRue(),
+                        formulaire.getNumeroRue(), formulaire.getCodePostal(),
+                        formulaire.getLocalite(), formulaire.getPays(), formulaire.getLangue());
+                redirection.addFlashAttribute("message", msg(champs.isEmpty()
+                        ? "admin.compte.modification.inchangee"
+                        : "admin.compte.modification.enregistree"));
+                return "redirect:/admin/comptes/" + reference;
+            } catch (RefusTraduit refus) {
+                erreurs.reject("refus", msg(refus.getCleMessage()));
+            } catch (RegleMetierException refus) {
+                erreurs.reject("adresse.requise.facture",
+                        msg("admin.compte.modification.erreur.adresse-facture"));
+            }
+        }
+        preparerModification(modele, membre);
+        return "admin/compte-modification";
+    }
+
+    private static void preparerModification(Model modele, Utilisateur membre) {
+        modele.addAttribute("reference", membre.getReference());
+        modele.addAttribute("nomComplet", membre.nomComplet());
+        modele.addAttribute("email", membre.getEmail());
+        modele.addAttribute("langues", Langue.values());
     }
 
     /**

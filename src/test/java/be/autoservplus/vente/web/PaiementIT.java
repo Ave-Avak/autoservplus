@@ -8,6 +8,7 @@ import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.Paiement;
 import be.autoservplus.vente.domain.StatutCommande;
@@ -64,8 +65,8 @@ class PaiementIT extends SocleIntegration {
 
     @BeforeEach
     void setUp() {
-        utilisateurs.save(new Utilisateur(
-                "marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE));
+        utilisateurs.save(MembresDeTest.membre(
+                "marie@exemple.be", "$2a$12$h", "Dupont", "Marie"));
         Categorie freinage = categories.save(
                 new Categorie("IT-PAY-FRE", "Freinage", TypeCategorie.PIECE));
         plaquettes = new Piece(freinage, "IT-PAY-001", "Plaquettes avant", new BigDecimal("19.99"));

@@ -8,6 +8,7 @@ import be.autoservplus.intervention.service.InterventionService;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.VehiculeRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.vente.service.CommandeService;
 import be.autoservplus.vente.service.PanierService;
 import be.autoservplus.vente.service.PrestatairePaiementFictif;
@@ -74,8 +75,8 @@ class RetractationServiceVi53IT extends SocleIntegration {
     void setUp() {
         n = COMPTEUR.getAndIncrement();
         membre = "vi53b-" + n + "@exemple.be";
-        Utilisateur u = utilisateurs.save(new Utilisateur(membre,
-                "$2a$12$abcdefghijklmnopqrstuv", "Test", "Alex", TypeUtilisateur.MEMBRE));
+        Utilisateur u = utilisateurs.save(MembresDeTest.membre(membre,
+                "$2a$12$abcdefghijklmnopqrstuv", "Test", "Alex"));
         vehicules.save(new Vehicule(u, "9-VI%03d-53".formatted(n), "Renault", "Clio",
                 Motorisation.ESSENCE));
     }

@@ -10,6 +10,7 @@ import be.autoservplus.facturation.repository.FactureRepository;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.repository.CommandeRepository;
@@ -75,9 +76,8 @@ class EmissionFactureIT extends SocleIntegration {
     void setUp() {
         transactions.executeWithoutResult(statut -> {
             utilisateurs.findByEmail("marie@exemple.be")
-                    .orElseGet(() -> utilisateurs.save(new Utilisateur(
-                            "marie@exemple.be", "$2a$12$h", "Dupont", "Marie",
-                            TypeUtilisateur.MEMBRE)));
+                    .orElseGet(() -> utilisateurs.save(MembresDeTest.membre(
+                            "marie@exemple.be", "$2a$12$h", "Dupont", "Marie")));
             categorie = categories.findByCode("IT-FAC-CAT")
                     .orElseGet(() -> categories.save(
                             new Categorie("IT-FAC-CAT", "Pieces", TypeCategorie.PIECE)));

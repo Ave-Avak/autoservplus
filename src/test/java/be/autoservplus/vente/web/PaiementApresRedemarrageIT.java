@@ -8,6 +8,7 @@ import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.support.SocleIntegration;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.Paiement;
@@ -61,8 +62,7 @@ class PaiementApresRedemarrageIT extends SocleIntegration {
     @Test
     @DisplayName("la base porte déjà tr_fictif_0001 : le premier paiement passe, sous une autre référence")
     void premierPaiementApresRedemarrage() throws Exception {
-        Utilisateur marie = utilisateurs.save(new Utilisateur(EMAIL, "$2a$12$h", "Dupont", "Marie",
-                TypeUtilisateur.MEMBRE));
+        Utilisateur marie = utilisateurs.save(MembresDeTest.membre(EMAIL, "$2a$12$h", "Dupont", "Marie"));
         Categorie moteur = categories.save(new Categorie("IT-RED-MOT", "Moteur", TypeCategorie.PIECE));
         Piece filtre = new Piece(moteur, "IT-RED-001", "Filtre a huile", new BigDecimal("12.50"));
         filtre.setQuantiteStock(5);

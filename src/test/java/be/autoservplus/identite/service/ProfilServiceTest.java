@@ -1,11 +1,12 @@
 package be.autoservplus.identite.service;
 
 import be.autoservplus.common.exception.RegleMetierException;
-import be.autoservplus.facturation.repository.FactureRepository;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.vente.domain.StatutCommande;
+import be.autoservplus.vente.repository.CommandeRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,34 +18,35 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
- * Regle d adresse liee aux factures.
+ * Règle d'adresse liée aux commandes en attente de paiement.
  *
- * <p>Le point defendu ici n est pas evident : l instantane client d une facture
- * <b>n est pas fige a l emission</b>. {@code PdfFactureService} lit l entite vive au
- * moment de produire le document, si bien qu une adresse effacee aujourd hui sortirait
- * sur une facture emise il y a des mois : privee de sa mention obligatoire
- * (AR n°1, art. 5). Les PDF deja archives, eux, sont immuables et ne bougent pas.</p>
+ * <p>Depuis l'instantané client (V61), une facture émise garde l'adresse qu'elle portait.
+ * Reste une commande validée mais pas encore payée : sa facture sera émise au paiement
+ * avec l'adresse du moment, qui ne doit donc pas disparaître d'ici là.</p>
  */
 @ExtendWith(MockitoExtension.class)
-@DisplayName("ProfilService : adresse et factures")
+@DisplayName("ProfilService : adresse et commandes en attente de paiement")
 class ProfilServiceTest {
 
     private static final String EMAIL = "marie@exemple.be";
 
     @Mock private UtilisateurRepository utilisateurs;
-    @Mock private FactureRepository factures;
+    @Mock private CommandeRepository commandes;
+    @Mock private HistoriqueModificationsCompte historique;
 
     private ProfilService service;
     private Utilisateur membre;
 
     @BeforeEach
     void setUp() {
-        service = new ProfilService(utilisateurs, factures);
+        service = new ProfilService(utilisateurs, new GardeAdresseCommande(commandes), historique);
         membre = new Utilisateur(EMAIL, "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         lenient().when(utilisateurs.findByEmail(EMAIL)).thenReturn(Optional.of(membre));
     }
@@ -58,11 +60,16 @@ class ProfilServiceTest {
         service.enregistrer(EMAIL, "Marie", "Dupont", null, "", "", "", "", "Belgique", Langue.fr);
     }
 
+    private void commandeEnAttente(boolean presente) {
+        when(commandes.existsByMembreIdAndStatut(any(), eq(StatutCommande.EN_ATTENTE_PAIEMENT)))
+                .thenReturn(presente);
+    }
+
     @Test
-    @DisplayName("sans facture, le membre peut effacer son adresse")
-    void sansFactureEffacementPermis() {
+    @DisplayName("sans commande en attente de paiement, le membre peut effacer son adresse")
+    void sansCommandeEnAttenteEffacementPermis() {
         avecAdresse();
-        when(factures.countByMembreEmail(EMAIL)).thenReturn(0L);
+        commandeEnAttente(false);
 
         viderAdresse();
 
@@ -71,36 +78,30 @@ class ProfilServiceTest {
     }
 
     @Test
-    @DisplayName("avec une facture, l'effacement est refusé et l'adresse reste intacte")
-    void avecFactureEffacementRefuse() {
+    @DisplayName("une commande attend son paiement : l'effacement est refusé, l'adresse reste intacte")
+    void commandeEnAttenteEffacementRefuse() {
         avecAdresse();
-        when(factures.countByMembreEmail(EMAIL)).thenReturn(1L);
+        commandeEnAttente(true);
 
-        assertThatThrownBy(this::viderAdresse)
-                .isInstanceOf(RegleMetierException.class);
+        assertThatThrownBy(this::viderAdresse).isInstanceOf(RegleMetierException.class);
 
-        // Le refus doit etre TOTAL : rien ne doit avoir ete applique avant la levee.
+        // Le refus doit être total : rien n'est appliqué avant la levée.
         assertThat(membre.getRue()).isEqualTo("Rue des Ateliers");
         assertThat(membre.getLocalite()).isEqualTo("Bruxelles");
     }
 
-    /**
-     * Le controle ne se declenche que sur un <b>effacement</b>. Un membre qui n avait
-     * aucune adresse et n en saisit toujours pas ne retire rien : ses factures
-     * anciennes ne doivent pas le bloquer, et le depot n a meme pas a etre interroge.
-     */
     @Test
-    @DisplayName("sans adresse au départ : aucun effacement, et les factures ne sont pas consultées")
+    @DisplayName("sans adresse au départ : aucun effacement, les commandes ne sont pas consultées")
     void absenceInitialeNonBloquante() {
         viderAdresse();
 
         assertThat(membre.getRue()).isNull();
-        verifyNoInteractions(factures);
+        verifyNoInteractions(commandes);
     }
 
     @Test
-    @DisplayName("modifier une adresse complète en une autre reste permis")
-    void modificationPermiseAvecFacture() {
+    @DisplayName("remplacer une adresse complète par une autre reste permis")
+    void modificationPermise() {
         avecAdresse();
 
         service.enregistrer(EMAIL, "Marie", "Dupont", null, "Chaussee de Mons", "5",

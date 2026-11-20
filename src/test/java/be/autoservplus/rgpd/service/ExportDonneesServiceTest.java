@@ -11,6 +11,7 @@ import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.EvenementSecuriteCompteRepository;
+import be.autoservplus.identite.repository.ModificationCompteRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.reservation.domain.Motorisation;
@@ -93,6 +94,7 @@ class ExportDonneesServiceTest {
     @Mock private PanierRepository paniers;
     @Mock private PanierExportRepository panierExport;
     @Mock private EvenementSecuriteCompteRepository evenementsSecurite;
+    @Mock private ModificationCompteRepository modificationsCompte;
     @Mock private PasswordEncoder encodeur;
 
     private ExportDonneesService service;
@@ -115,7 +117,7 @@ class ExportDonneesServiceTest {
         registre = new RegistreExportsRecents(horloge);
         service = new ExportDonneesService(utilisateurs, vehicules, rendezVous, interventions,
                 commandes, factures, consentements, paniers, panierExport, evenementsSecurite,
-                new CatalogueTraitements(messages), serialiseur, registre, encodeur, horloge);
+                modificationsCompte, new CatalogueTraitements(messages), serialiseur, registre, encodeur, horloge);
 
         marie = new Utilisateur(EMAIL, EMPREINTE, "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         marie.setTelephone("+32470000000");

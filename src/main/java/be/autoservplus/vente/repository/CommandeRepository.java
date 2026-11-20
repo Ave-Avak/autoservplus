@@ -4,12 +4,15 @@ import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.StatutCommande;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -102,4 +105,47 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
             ORDER BY c.dateCommande DESC
             """)
     List<Commande> payeesAvecService();
+
+    /**
+     * Commandes du back-office sur une période, filtrées par statut et par numéro ou
+     * adresse du membre. Le motif vaut {@code %} sans recherche et la liste des statuts
+     * les contient tous sans filtre : aucun paramètre nul n'a à être typé par la base.
+     */
+    @Query(value = """
+            SELECT c FROM Commande c
+            JOIN FETCH c.membre m
+            WHERE c.dateCommande >= :debut AND c.dateCommande < :fin
+              AND c.statut IN :statuts
+              AND (lower(c.numero) LIKE :motif OR lower(m.email) LIKE :motif)
+            ORDER BY c.dateCommande DESC, c.id DESC
+            """, countQuery = """
+            SELECT count(c) FROM Commande c
+            JOIN c.membre m
+            WHERE c.dateCommande >= :debut AND c.dateCommande < :fin
+              AND c.statut IN :statuts
+              AND (lower(c.numero) LIKE :motif OR lower(m.email) LIKE :motif)
+            """)
+    Page<Commande> rechercherAdmin(@Param("debut") Instant debut, @Param("fin") Instant fin,
+                                   @Param("statuts") Collection<StatutCommande> statuts,
+                                   @Param("motif") String motif, Pageable pagination);
+
+    /**
+     * Une demande de rétractation existe-t-elle pour la commande, quel que soit son statut ?
+     * Requête native : le module de rétractation dépend de la vente, l'inverse créerait un
+     * cycle entre les deux.
+     */
+    @Query(value = "SELECT EXISTS (SELECT 1 FROM demande_annulation WHERE commande_id = :commande)",
+            nativeQuery = true)
+    boolean aUneDemandeDeRetractation(@Param("commande") Long commande);
+
+    /** Le membre a-t-il une commande dans ce statut ? Sert la garde de l'adresse. */
+    boolean existsByMembreIdAndStatut(Long membreId, StatutCommande statut);
+
+    /** Commandes d'un membre pour sa fiche du back-office (A12), sans limite de période. */
+    @Query("""
+            SELECT c FROM Commande c
+            WHERE c.membre.reference = :membre
+            ORDER BY c.dateCommande DESC, c.id DESC
+            """)
+    List<Commande> commandesDuMembre(@Param("membre") UUID membre);
 }

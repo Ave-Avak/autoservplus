@@ -2,6 +2,7 @@ package be.autoservplus.rgpd.service.dto;
 
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.EvenementSecuriteCompte;
+import be.autoservplus.identite.domain.ModificationCompte;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -62,7 +63,8 @@ public record ExportDonnees(
             List<RdvExport> rendezVous,
             List<InterventionExport> interventions,
             List<ConsentementExport> consentements,
-            ConnexionExport connexionEtSecurite) {
+            ConnexionExport connexionEtSecurite,
+            List<ModificationCompteExport> modificationsDuCompte) {
     }
 
     /**
@@ -339,8 +341,16 @@ public record ExportDonnees(
             BigDecimal montantTva,
             BigDecimal montantTvac,
             String numeroCommande,
-            boolean pdfArchive) {
+            boolean pdfArchive,
+            String clientPrenom,
+            String clientNom,
+            AdresseExport adresseClient) {
 
+        /**
+         * L'instantané du client (V61) est restitué tel que la facture le porte : c'est
+         * une donnée sur la personne, conservée dix ans même après la suppression du
+         * compte, et que le membre doit pouvoir lire.
+         */
         public static FactureExport de(Facture facture) {
             return new FactureExport(
                     facture.getNumero(),
@@ -349,7 +359,12 @@ public record ExportDonnees(
                     facture.getMontantTva(),
                     facture.getMontantTvac(),
                     facture.getCommande() == null ? null : facture.getCommande().getNumero(),
-                    facture.estArchivee());
+                    facture.estArchivee(),
+                    facture.getClientPrenom(),
+                    facture.getClientNom(),
+                    new AdresseExport(facture.getClientRue(), facture.getClientNumeroRue(),
+                            facture.getClientCodePostal(), facture.getClientLocalite(),
+                            facture.getClientPays()));
         }
     }
 
@@ -563,6 +578,24 @@ public record ExportDonnees(
 
         public static EvenementSecuriteExport de(EvenementSecuriteCompte evenement) {
             return new EvenementSecuriteExport(evenement.getHorodatage(), evenement.getType().name());
+        }
+    }
+
+    /**
+     * Une modification du profil ou de l'adresse de courriel. Les valeurs avant et après
+     * sont des données sur la personne, comme le motif, qui note sa demande quand un
+     * administrateur a agi pour elle. L'administrateur n'est pas nommé, pour la raison
+     * dite à {@link EvenementSecuriteExport}.
+     */
+    public record ModificationCompteExport(Instant horodatage, String champ,
+                                           String valeurAvant, String valeurApres,
+                                           boolean parAdministrateur, String motif) {
+
+        public static ModificationCompteExport de(ModificationCompte modification) {
+            return new ModificationCompteExport(modification.getHorodatage(),
+                    modification.getChamp().name(), modification.getValeurAvant(),
+                    modification.getValeurApres(), !modification.parTitulaire(),
+                    modification.getMotif());
         }
     }
 

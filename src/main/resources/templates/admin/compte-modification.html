@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.compte.modification.titre} + ' | AutoServ+'">Modifier les coordonnées | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.compte.modification.titre}">Modifier les coordonnées</h1>
+    <p th:text="${nomComplet} + ' (' + ${email} + ')'">Marie Dupont (marie@exemple.be)</p>
+
+    <p class="texte-info" th:text="#{admin.compte.modification.aide}">
+        Modifiez ces coordonnées seulement à la demande explicite du membre.</p>
+
+    <!--/* Ni adresse de courriel ni mot de passe : la première se confirme depuis la
+         boîte du titulaire, le second n'est connu que de lui. */-->
+    <form class="formulaire" th:action="@{/admin/comptes/{ref}/modification(ref=${reference})}"
+          th:object="${formulaire}" method="post" novalidate>
+
+        <div class="message message-erreur" th:if="${#fields.hasGlobalErrors()}" role="alert">
+            <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Erreur</p>
+        </div>
+
+        <fieldset>
+            <legend th:text="#{profil.section.identite}">Identité</legend>
+
+            <div class="champ">
+                <label for="prenom" th:text="#{profil.prenom}">Prénom</label>
+                <input type="text" id="prenom" th:field="*{prenom}" autocomplete="off" required>
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('prenom')}"
+                   th:errors="*{prenom}"></p>
+            </div>
+
+            <div class="champ">
+                <label for="nom" th:text="#{profil.nom}">Nom</label>
+                <input type="text" id="nom" th:field="*{nom}" autocomplete="off" required>
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('nom')}"
+                   th:errors="*{nom}"></p>
+            </div>
+
+            <div class="champ">
+                <label for="telephone" th:text="#{profil.telephone}">Téléphone</label>
+                <input type="tel" id="telephone" th:field="*{telephone}" autocomplete="off">
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('telephone')}"
+                   th:errors="*{telephone}"></p>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend th:text="#{profil.section.adresse}">Adresse</legend>
+            <p class="texte-info" th:text="#{profil.adresse.aide}">
+                Rue, code postal et localité vont ensemble.</p>
+
+            <div class="champ">
+                <label for="rue" th:text="#{profil.rue}">Rue</label>
+                <input type="text" id="rue" th:field="*{rue}" autocomplete="off">
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('rue')}"
+                   th:errors="*{rue}"></p>
+            </div>
+
+            <div class="champ">
+                <label for="numeroRue" th:text="#{profil.numero}">Numéro</label>
+                <input type="text" id="numeroRue" th:field="*{numeroRue}" autocomplete="off">
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('numeroRue')}"
+                   th:errors="*{numeroRue}"></p>
+            </div>
+
+            <div class="champ">
+                <label for="codePostal" th:text="#{profil.code-postal}">Code postal</label>
+                <input type="text" id="codePostal" th:field="*{codePostal}" autocomplete="off">
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('codePostal')}"
+                   th:errors="*{codePostal}"></p>
+            </div>
+
+            <div class="champ">
+                <label for="localite" th:text="#{profil.localite}">Localité</label>
+                <input type="text" id="localite" th:field="*{localite}" autocomplete="off">
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('localite')}"
+                   th:errors="*{localite}"></p>
+            </div>
+
+            <div class="champ">
+                <label for="pays" th:text="#{profil.pays}">Pays</label>
+                <input type="text" id="pays" th:field="*{pays}" autocomplete="off">
+                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('pays')}"
+                   th:errors="*{pays}"></p>
+            </div>
+        </fieldset>
+
+        <fieldset>
+            <legend th:text="#{profil.section.preferences}">Préférences</legend>
+            <div class="champ">
+                <label for="langue" th:text="#{profil.langue}">Langue</label>
+                <select id="langue" th:field="*{langue}">
+                    <option th:each="l : ${langues}" th:value="${l}"
+                            th:text="${l.name() == 'fr'} ? 'Français' : (${l.name() == 'nl'} ? 'Nederlands' : 'English')">Français</option>
+                </select>
+            </div>
+        </fieldset>
+
+        <div class="champ">
+            <label for="motif" th:text="#{admin.compte.modification.motif}">Demande du membre</label>
+            <textarea id="motif" th:field="*{motif}" maxlength="500" rows="3" required
+                      aria-describedby="aide-motif"></textarea>
+            <p class="texte-info" id="aide-motif" th:text="#{admin.compte.modification.motif.aide}">
+                Notez comment et quand le membre l'a demandé.</p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motif')}"
+               th:errors="*{motif}"></p>
+        </div>
+
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{admin.compte.modification.enregistrer}">Enregistrer</button>
+            <a th:href="@{/admin/comptes/{ref}(ref=${reference})}" th:text="#{admin.compte.modification.retour}">Retour à la fiche</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

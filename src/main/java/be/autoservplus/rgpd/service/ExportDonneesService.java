@@ -4,6 +4,7 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.EvenementSecuriteCompteRepository;
+import be.autoservplus.identite.repository.ModificationCompteRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.rgpd.repository.AjoutAuPanier;
@@ -116,6 +117,7 @@ public class ExportDonneesService {
     private final PanierRepository paniers;
     private final PanierExportRepository panierExport;
     private final EvenementSecuriteCompteRepository evenementsSecurite;
+    private final ModificationCompteRepository modificationsCompte;
     private final CatalogueTraitements catalogue;
     private final SerialiseurExportJson serialiseur;
     private final RegistreExportsRecents registre;
@@ -132,6 +134,7 @@ public class ExportDonneesService {
                                 PanierRepository paniers,
                                 PanierExportRepository panierExport,
                                 EvenementSecuriteCompteRepository evenementsSecurite,
+                                ModificationCompteRepository modificationsCompte,
                                 CatalogueTraitements catalogue,
                                 SerialiseurExportJson serialiseur,
                                 RegistreExportsRecents registre,
@@ -147,6 +150,7 @@ public class ExportDonneesService {
         this.paniers = paniers;
         this.panierExport = panierExport;
         this.evenementsSecurite = evenementsSecurite;
+        this.modificationsCompte = modificationsCompte;
         this.catalogue = catalogue;
         this.serialiseur = serialiseur;
         this.registre = registre;
@@ -262,7 +266,10 @@ public class ExportDonneesService {
                         interventionsDuParc(plaques),
                         preuves.stream().map(ExportDonnees.ConsentementExport::de).toList(),
                         ExportDonnees.ConnexionExport.de(membre,
-                                evenementsSecurite.evenementsDe(membre.getId()))),
+                                evenementsSecurite.evenementsDe(membre.getId())),
+                        modificationsCompte.historiqueDe(membre.getId()).stream()
+                                .map(ExportDonnees.ModificationCompteExport::de)
+                                .toList()),
                 catalogue.informationsTraitement(langue),
                 catalogue.exclusions(langue));
     }

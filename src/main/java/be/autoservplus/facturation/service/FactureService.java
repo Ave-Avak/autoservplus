@@ -116,6 +116,16 @@ public class FactureService {
                 commande, tauxApplique, horloge.instant()));
         log.info("Facture {} emise pour la commande {} ({} EUR TVAC).",
                 facture.getNumero(), commande.getNumero(), facture.getMontantTvac());
+        // Limite assumée : le récapitulatif exige l'adresse et le profil refuse de
+        // l'effacer tant que la commande attend son paiement. Si elle manque malgré
+        // tout, la facture est émise : le paiement est encaissé, et refuser laisserait
+        // une commande payée sans facture. Le défaut est signalé pour être corrigé par
+        // une note de crédit et une nouvelle facture.
+        if (facture.getClientRue() == null || facture.getClientCodePostal() == null
+                || facture.getClientLocalite() == null) {
+            log.warn("Facture {} emise sans adresse complete du client (commande {}).",
+                    facture.getNumero(), commande.getNumero());
+        }
         return facture;
     }
 

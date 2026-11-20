@@ -3,7 +3,6 @@ package be.autoservplus.facturation.service;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.repository.FactureRepository;
 import be.autoservplus.facturation.service.dto.DocumentFacture;
-import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import org.slf4j.Logger;
@@ -89,8 +88,8 @@ public class PdfFactureService {
      */
     private DocumentFacture documentDe(Facture facture) {
         Commande commande = facture.getCommande();
-        Utilisateur membre = facture.getMembre();
-        Locale langue = Locale.forLanguageTag(membre.getLangue().name());
+        // Langue et client de l'instantané figé à l'émission (V61), jamais du compte vif.
+        Locale langue = Locale.forLanguageTag(facture.getLangueDocument().name());
         List<DocumentFacture.LigneFacture> lignes = factureService.lignesDe(facture).stream()
                 .map(PdfFactureService::ligneDe)
                 .toList();
@@ -99,20 +98,23 @@ public class PdfFactureService {
                 facture.getDateEmission(),
                 commande.getNumero(),
                 commande.getDatePaiement(),
-                new DocumentFacture.ClientFacture(
-                        // Marqueur traduit si le compte a ete anonymise (F23) : le
-                        // document est emis dans la langue du client, meme regenere
-                        // apres son depart.
-                        membre.nomComplet(messages, langue),
-                        membre.getRue(), membre.getNumeroRue(),
-                        membre.getCodePostal(), membre.getLocalite(), membre.getPays(),
-                        membre.getEmail()),
+                clientDe(facture, messages, langue),
                 lignes,
                 factureService.ventilationDe(facture),
                 facture.getMontantHtva(),
                 facture.getMontantTva(),
                 facture.getMontantTvac(),
                 langue);
+    }
+
+    /** Client de l'instantané de la facture, repris tel quel par la note de crédit. */
+    static DocumentFacture.ClientFacture clientDe(Facture facture, MessageSource messages,
+                                                  Locale langue) {
+        return new DocumentFacture.ClientFacture(
+                facture.clientNomComplet(messages, langue),
+                facture.getClientRue(), facture.getClientNumeroRue(),
+                facture.getClientCodePostal(), facture.getClientLocalite(),
+                facture.getClientPays());
     }
 
     private static DocumentFacture.LigneFacture ligneDe(LignePanier ligne) {

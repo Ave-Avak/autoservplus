@@ -3,6 +3,7 @@ package be.autoservplus.vente.web;
 import be.autoservplus.legal.domain.TypeDocumentVersionne;
 import be.autoservplus.legal.service.VersionsDocumentsService;
 import be.autoservplus.vente.domain.SituationPaiement;
+import be.autoservplus.vente.service.AdresseIncompleteException;
 import be.autoservplus.vente.service.CgvNonAccepteesException;
 import be.autoservplus.vente.service.CommandeService;
 import be.autoservplus.vente.service.DepartPaiement;
@@ -81,6 +82,7 @@ public class CommandeController {
         }
         modele.addAttribute("titre", msg("commande.recap.titre"));
         modele.addAttribute("panier", panier);
+        modele.addAttribute("adresseIncomplete", !service.adresseComplete(membre.getUsername()));
         ajouterVersionCgv(modele);
         return "vente/recapitulatif";
     }
@@ -107,6 +109,9 @@ public class CommandeController {
         } catch (PanierVideException e) {
             redirection.addFlashAttribute("erreur", msg("commande.erreur.panier-vide"));
             return "redirect:/panier";
+        } catch (AdresseIncompleteException e) {
+            modele.addAttribute("adresseIncomplete", true);
+            return recapAvecErreur(membre, modele, "erreurAdresse", msg("commande.erreur.adresse"));
         }
     }
 

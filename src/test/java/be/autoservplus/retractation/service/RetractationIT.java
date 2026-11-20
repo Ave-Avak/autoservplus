@@ -15,6 +15,7 @@ import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.retractation.domain.DemandeAnnulation;
 import be.autoservplus.retractation.domain.StatutDemandeAnnulation;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.vente.domain.StatutPaiement;
 import be.autoservplus.vente.repository.CommandeRepository;
@@ -99,13 +100,11 @@ class RetractationIT extends SocleIntegration {
     void setUp() {
         transactions.executeWithoutResult(statut -> {
             utilisateurs.findByEmail("marie@exemple.be")
-                    .orElseGet(() -> utilisateurs.save(new Utilisateur(
-                            "marie@exemple.be", "$2a$12$h", "Dupont", "Marie",
-                            TypeUtilisateur.MEMBRE)));
+                    .orElseGet(() -> utilisateurs.save(MembresDeTest.membre(
+                            "marie@exemple.be", "$2a$12$h", "Dupont", "Marie")));
             utilisateurs.findByEmail("jean@exemple.be")
-                    .orElseGet(() -> utilisateurs.save(new Utilisateur(
-                            "jean@exemple.be", "$2a$12$h", "Martin", "Jean",
-                            TypeUtilisateur.MEMBRE)));
+                    .orElseGet(() -> utilisateurs.save(MembresDeTest.membre(
+                            "jean@exemple.be", "$2a$12$h", "Martin", "Jean")));
             categorie = categories.findByCode("IT-RET-CAT")
                     .orElseGet(() -> categories.save(
                             new Categorie("IT-RET-CAT", "Pieces", TypeCategorie.PIECE)));

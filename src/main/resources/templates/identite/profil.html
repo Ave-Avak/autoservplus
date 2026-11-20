@@ -21,6 +21,9 @@
     <div class="message message-succes" th:if="${enregistre}" role="status"
          th:text="#{profil.enregistre}">Vos informations sont enregistrées.</div>
 
+    <div class="message message-succes" th:if="${motDePasseChange}" role="status"
+         th:text="#{mot-de-passe-changement.enregistre}">Votre mot de passe est changé.</div>
+
     <!--/* Message NEUTRE : identique que l'adresse visée soit libre ou déjà prise. Le
          distinguer ferait du formulaire un oracle d'existence de compte. */-->
     <div class="message message-succes" th:if="${demandeEnregistree}" role="status"
@@ -56,6 +59,9 @@
                  que l'on enregistrerait avec le reste. */-->
             <p class="texte-info">
                 <a th:href="@{/mon-profil/adresse}" th:text="#{changement-email.lien}">Changer mon adresse de courriel</a>
+            </p>
+            <p>
+                <a th:href="@{/mon-profil/mot-de-passe}" th:text="#{mot-de-passe-changement.lien}">Changer mon mot de passe</a>
             </p>
             <p>
                 <a th:href="@{/mon-profil/securite}" th:text="#{securite.lien}">Vérification en deux étapes</a>

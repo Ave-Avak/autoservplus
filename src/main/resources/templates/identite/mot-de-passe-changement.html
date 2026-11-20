@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{mot-de-passe-changement.titre} + ' | AutoServ+'">Changer mon mot de passe | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/entete :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{mot-de-passe-changement.titre}">Changer mon mot de passe</h1>
+
+    <p th:text="#{mot-de-passe-changement.aide}">
+        Vos autres sessions seront fermées, et vous recevrez un avis par courriel.</p>
+
+    <form class="formulaire" th:action="@{/mon-profil/mot-de-passe}" th:object="${formulaire}"
+          method="post" novalidate>
+
+        <!--/* Jamais th:field sur un mot de passe : il renverrait la saisie dans la page
+             au retour d'une erreur. */-->
+        <div class="champ">
+            <label for="actuel" th:text="#{mot-de-passe-changement.actuel}">Mot de passe actuel</label>
+            <input type="password" id="actuel" name="actuel" autocomplete="current-password" required
+                   th:attr="aria-invalid=${#fields.hasErrors('actuel')} ? 'true' : null,
+                            aria-describedby=${#fields.hasErrors('actuel')} ? 'erreur-actuel' : null">
+            <p role="alert" class="texte-erreur" id="erreur-actuel" th:if="${#fields.hasErrors('actuel')}"
+               th:errors="*{actuel}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="motDePasse" th:text="#{mot-de-passe-a-definir.nouveau}">Nouveau mot de passe</label>
+            <input type="password" id="motDePasse" name="motDePasse" autocomplete="new-password" required
+                   th:attr="aria-invalid=${#fields.hasErrors('motDePasse')} ? 'true' : null,
+                            aria-describedby=${#fields.hasErrors('motDePasse')} ? 'aide-mdp erreur-mdp' : 'aide-mdp'">
+            <p id="aide-mdp" class="texte-info" th:text="#{validation.motDePasse.aide}">
+                Au moins 15 caractères. Une phrase que vous seul connaissez convient, espaces compris.</p>
+            <p role="alert" class="texte-erreur" id="erreur-mdp" th:if="${#fields.hasErrors('motDePasse')}"
+               th:errors="*{motDePasse}"></p>
+        </div>
+
+        <div class="champ">
+            <label for="confirmation" th:text="#{mot-de-passe-a-definir.confirmation}">Confirmez le mot de passe</label>
+            <input type="password" id="confirmation" name="confirmation" autocomplete="new-password" required
+                   th:attr="aria-invalid=${#fields.hasErrors('confirmation')} ? 'true' : null,
+                            aria-describedby=${#fields.hasErrors('confirmation')} ? 'erreur-confirmation' : null">
+            <p role="alert" class="texte-erreur" id="erreur-confirmation" th:if="${#fields.hasErrors('confirmation')}"
+               th:errors="*{confirmation}"></p>
+        </div>
+
+        <p class="actions-page">
+            <button type="submit" class="btn-cta" th:text="#{mot-de-passe-changement.enregistrer}">Changer le mot de passe</button>
+            <a th:href="@{/mon-profil}" th:text="#{mot-de-passe-changement.retour}">Retour à mon profil</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

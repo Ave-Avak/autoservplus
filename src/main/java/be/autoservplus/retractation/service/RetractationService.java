@@ -6,6 +6,7 @@ import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.intervention.repository.InterventionRepository;
+import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.retractation.domain.DemandeAnnulation;
 import be.autoservplus.retractation.domain.StatutDemandeAnnulation;
 import be.autoservplus.retractation.repository.DemandeAnnulationRepository;
@@ -13,6 +14,7 @@ import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.retractation.service.dto.DeclarationRetractationVue;
 import be.autoservplus.retractation.service.dto.RetractationVue;
 import be.autoservplus.vente.domain.Commande;
+import be.autoservplus.vente.domain.DelaiRetractationBien;
 import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.vente.repository.CommandeRepository;
 import org.slf4j.Logger;
@@ -24,6 +26,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -44,12 +47,12 @@ import java.util.UUID;
  * <p>Point de départ du délai de quatorze jours, selon la nature de la commande
  * (CDE, art. VI.47 §2). Pour une prestation, la conclusion du contrat : le délai se
  * calcule et une demande tardive est refusée ici. Pour des pièces, la prise de
- * possession du bien : aucune date de remise n'existe en base, le délai ne se calcule
- * donc pas, et la demande est toujours enregistrée. Le garage la refuse au besoin
- * pour délai expiré, motif à l'appui, depuis la date de remise qu'il connaît. Compter
- * depuis la conclusion pour des pièces refuserait une rétractation que la loi admet
- * encore : la fenêtre serait plus courte que la fenêtre légale, au détriment du
- * consommateur.</p>
+ * possession du bien, que le garage saisit au back-office comme date de remise (V59) :
+ * le délai se calcule alors en jours par {@link DelaiRetractationBien}. Tant que la date
+ * n'est pas saisie, la demande est toujours enregistrée et le garage la refuse au besoin,
+ * motif à l'appui. Compter depuis la conclusion pour des pièces refuserait une
+ * rétractation que la loi admet encore : la fenêtre serait plus courte que la fenêtre
+ * légale, au détriment du consommateur.</p>
  *
  * <p>Arithmetique en {@link Duration} de 14 x 24 h, et non en jours calendaires
  * arretes a minuit. L horloge est injectee ({@link Clock}), jamais
@@ -69,17 +72,20 @@ public class RetractationService {
     private final DemandeAnnulationRepository demandes;
     private final InterventionRepository interventions;
     private final ServiceCourriel courriel;
+    private final ParametreAtelierRepository parametres;
     private final Clock horloge;
 
     public RetractationService(CommandeRepository commandes,
                                DemandeAnnulationRepository demandes,
                                InterventionRepository interventions,
                                ServiceCourriel courriel,
+                               ParametreAtelierRepository parametres,
                                Clock horloge) {
         this.commandes = commandes;
         this.demandes = demandes;
         this.interventions = interventions;
         this.courriel = courriel;
+        this.parametres = parametres;
         this.horloge = horloge;
     }
 
@@ -243,15 +249,20 @@ public class RetractationService {
     }
 
     /**
-     * Le délai ne se calcule que pour une commande de prestations sans aucune pièce,
-     * depuis sa conclusion. Le panier refuse de mêler les deux natures (F12-b), mais la
-     * base ne l'interdit pas : une commande mixte suit la règle des pièces, dont le délai
-     * court de la prise de possession, plutôt que d'être refusée tout entière.
+     * Une commande de prestations sans aucune pièce : délai depuis sa conclusion. Une
+     * commande qui porte des pièces : délai depuis la date de remise, si le garage l'a
+     * saisie, en jours de l'atelier. Le panier refuse de mêler les deux natures (F12-b),
+     * mais la base ne l'interdit pas : une commande mixte suit la règle des pièces,
+     * plutôt que d'être refusée tout entière.
      */
     private boolean delaiCalculableEtExpire(Commande commande, Instant maintenant) {
+        if (!commandes.lignesDe(commande).isEmpty()) {
+            return commande.getDateRemise() != null
+                    && DelaiRetractationBien.expire(commande.getDateRemise(),
+                            LocalDate.ofInstant(maintenant, parametres.courants().zone()));
+        }
         return !maintenant.isBefore(commande.getDateCommande().plus(DELAI_LEGAL))
-                && !commandes.lignesServiceDe(commande).isEmpty()
-                && commandes.lignesDe(commande).isEmpty();
+                && !commandes.lignesServiceDe(commande).isEmpty();
     }
 
     private MotifRefusRetractation refusEventuel(Commande commande, Instant maintenant) {

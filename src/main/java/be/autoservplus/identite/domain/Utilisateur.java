@@ -10,6 +10,8 @@ import org.springframework.context.MessageSource;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
@@ -352,10 +354,24 @@ public class Utilisateur extends BaseEntity {
      * formulaire, qui peut dire a l utilisateur ce qui manque. L entite accepte les
      * deux etats parce que le schema les accepte : les colonnes sont nullables depuis
      * le socle et des comptes anciens n ont jamais renseigne d adresse.</p>
+     *
+     * @return les champs réellement changés, valeurs normalisées, pour l'historique
+     *         du compte. Vide si le formulaire a été renvoyé tel quel.
      */
-    public void modifierProfil(String prenom, String nom, String telephone,
-                               String rue, String numeroRue, String codePostal,
-                               String localite, String pays, Langue langue) {
+    public List<ChangementChamp> modifierProfil(String prenom, String nom, String telephone,
+                                                String rue, String numeroRue, String codePostal,
+                                                String localite, String pays, Langue langue) {
+        List<ChangementChamp> changements = new ArrayList<>();
+        noter(changements, ChampCompte.PRENOM, this.prenom, normaliser(prenom));
+        noter(changements, ChampCompte.NOM, this.nom, normaliser(nom));
+        noter(changements, ChampCompte.TELEPHONE, this.telephone, normaliser(telephone));
+        noter(changements, ChampCompte.RUE, this.rue, normaliser(rue));
+        noter(changements, ChampCompte.NUMERO_RUE, this.numeroRue, normaliser(numeroRue));
+        noter(changements, ChampCompte.CODE_POSTAL, this.codePostal, normaliser(codePostal));
+        noter(changements, ChampCompte.LOCALITE, this.localite, normaliser(localite));
+        noter(changements, ChampCompte.PAYS, this.pays, normaliser(pays));
+        noter(changements, ChampCompte.LANGUE, nomDe(this.langue), nomDe(langue));
+
         this.prenom = normaliser(prenom);
         this.nom = normaliser(nom);
         this.telephone = normaliser(telephone);
@@ -365,6 +381,18 @@ public class Utilisateur extends BaseEntity {
         this.localite = normaliser(localite);
         this.pays = normaliser(pays);
         this.langue = langue;
+        return List.copyOf(changements);
+    }
+
+    private static String nomDe(Langue langue) {
+        return langue == null ? null : langue.name();
+    }
+
+    private static void noter(List<ChangementChamp> changements, ChampCompte champ,
+                              String avant, String apres) {
+        if (!Objects.equals(avant, apres)) {
+            changements.add(new ChangementChamp(champ, avant, apres));
+        }
     }
 
     /**
@@ -383,7 +411,20 @@ public class Utilisateur extends BaseEntity {
 
     /** Les trois champs que la facture exige pour imprimer une adresse. */
     public boolean adressePostaleComplete() {
-        return rue != null && codePostal != null && localite != null;
+        return adresseComplete(rue, codePostal, localite);
+    }
+
+    /**
+     * Règle unique de l'adresse complète, pour l'adresse en place comme pour une saisie :
+     * la commande l'exige et la facture l'imprime (AR n°1, art. 5). Le numéro n'en fait
+     * pas partie, certaines adresses belges n'en ont pas.
+     */
+    public static boolean adresseComplete(String rue, String codePostal, String localite) {
+        return renseigne(rue) && renseigne(codePostal) && renseigne(localite);
+    }
+
+    private static boolean renseigne(String valeur) {
+        return valeur != null && !valeur.isBlank();
     }
 
     public boolean estActif() {
@@ -465,6 +506,14 @@ public class Utilisateur extends BaseEntity {
      * comptes deja anonymises et les suivants portent le meme marqueur.</p>
      */
     public static final String PAYS_ANONYME = "\u2014";
+
+    /**
+     * Marqueur d'une donnée effacée à l'anonymisation dans une colonne qui ne peut pas
+     * rester vide, comme le motif d'une modification faite par un administrateur (V57).
+     * Valeur stockée et jamais affichée telle quelle : l'écran la reconnaît et affiche
+     * un libellé traduit.
+     */
+    public static final String MARQUEUR_ANONYME = "ANONYMISE";
 
     /**
      * Vide le compte de toute donnee personnelle et le marque anonymise.
