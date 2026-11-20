@@ -29,8 +29,6 @@ import java.util.function.Supplier;
 @RequestMapping("/admin/interventions")
 public class AdminInterventionController {
 
-    private static final String LISTE = "redirect:/admin/interventions";
-
     private final InterventionService service;
     private final MessageSource messages;
 
@@ -46,18 +44,14 @@ public class AdminInterventionController {
         return "admin/interventions";
     }
 
+    /** Une intervention inconnue répond 404 par la page d'erreur commune, et non par un renvoi à la liste. */
     @GetMapping("/{reference}")
-    public String detail(@PathVariable UUID reference, Model modele, RedirectAttributes redirection) {
-        try {
-            InterventionVueAdmin vue = service.vueAdmin(reference);
-            modele.addAttribute("titre", "Intervention " + vue.numero());
-            modele.addAttribute("intervention", vue);
-            modele.addAttribute("prestations", service.prestationsActives());
-            return "admin/intervention-detail";
-        } catch (RessourceIntrouvableException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
-            return LISTE;
-        }
+    public String detail(@PathVariable UUID reference, Model modele) {
+        InterventionVueAdmin vue = service.vueAdmin(reference);
+        modele.addAttribute("titre", "Intervention " + vue.numero());
+        modele.addAttribute("intervention", vue);
+        modele.addAttribute("prestations", service.prestationsActives());
+        return "admin/intervention-detail";
     }
 
     // --- transitions ----------------------------------------------------------------

@@ -172,14 +172,19 @@ class RetractationTemplatesIT extends SocleIntegration {
     }
 
     @Test
-    @DisplayName("la commande d'un autre membre rend la page « introuvable », pas une erreur brute")
+    @DisplayName("une commande inconnue ou celle d'un autre membre répond 404, à l'affichage comme à l'envoi")
     void commandeIntrouvable() throws Exception {
-        // 404 fonctionnel plutot que 500 : c est l asymetrie relevee sur RdvController,
-        // qu on ne reproduit pas dans du code neuf.
-        mvc.perform(get("/commandes/{ref}/annulation", UUID.randomUUID()).locale(Locale.FRENCH))
-                .andExpect(status().isOk())
-                .andExpect(content().string(containsString("introuvable")))
-                .andExpect(content().string(not(containsString("??retractation"))));
+        Commande deMarie = commandePayee("CMD-IT-RETT-0009");
+        var paul = user("paul@exemple.be").roles("MEMBRE");
+
+        mvc.perform(get("/commandes/{ref}/annulation", UUID.randomUUID())).andExpect(status().isNotFound());
+        mvc.perform(get("/commandes/{ref}/annulation", deMarie.getReference()).with(paul))
+                .andExpect(status().isNotFound());
+        mvc.perform(post("/commandes/{ref}/annulation/verification", deMarie.getReference())
+                        .with(paul).with(csrf()))
+                .andExpect(status().isNotFound());
+        mvc.perform(post("/commandes/{ref}/annulation", deMarie.getReference()).with(paul).with(csrf()))
+                .andExpect(status().isNotFound());
     }
 
     @Test

@@ -175,9 +175,7 @@ class NavigationEcransIT extends SocleIntegration {
             variable("/commande/{reference}/confirmation", Acces.CONNECTE),
             ecran("/commandes", Acces.CONNECTE),
             variable("/commandes/{reference}", Acces.CONNECTE),
-            // Reference inconnue : page « commande introuvable », rendue en 200.
-            new Route("/commandes/{reference}/annulation", "/commandes/" + REF + "/annulation",
-                    Acces.CONNECTE, true, 200),
+            variable("/commandes/{reference}/annulation", Acces.CONNECTE),
             new Route("/factures/{reference}/pdf", "/factures/" + REF + "/pdf", Acces.CONNECTE, false, 404),
             new Route("/avoirs/{reference}/pdf", "/avoirs/" + REF + "/pdf", Acces.CONNECTE, false, 404),
             new Route("/paiement-fictif/{referencePrestataire}", "/paiement-fictif/inconnue",
@@ -193,9 +191,7 @@ class NavigationEcransIT extends SocleIntegration {
             new Route("/admin/rendez-vous/{reference}/modifier/creneaux",
                     "/admin/rendez-vous/" + REF + "/modifier/creneaux?date=2026-01-05", Acces.BACK_OFFICE, false, 404),
             ecran("/admin/interventions", Acces.BACK_OFFICE),
-            // Reference inconnue : retour a la liste, avec message.
-            new Route("/admin/interventions/{reference}", "/admin/interventions/" + REF,
-                    Acces.BACK_OFFICE, true, 302),
+            variable("/admin/interventions/{reference}", Acces.BACK_OFFICE),
             variable("/admin/vehicules/{reference}/historique", Acces.BACK_OFFICE),
             ecran("/admin/commandes-a-planifier", Acces.BACK_OFFICE),
             variable("/admin/commandes-a-planifier/{reference}", Acces.BACK_OFFICE),
@@ -223,10 +219,8 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/admin/planning/indisponibilites/nouvelle", Acces.BACK_OFFICE),
             variable("/admin/planning/indisponibilites/{reference}/modifier", Acces.BACK_OFFICE),
             variable("/admin/planning/indisponibilites/{reference}/retirer", Acces.BACK_OFFICE),
-            // Reference inconnue : galerie vide, rendue en 200. L ecran ne verifie pas que
-            // la fiche existe. Ecart releve, non traite ici.
             new Route("/admin/galerie/{type}/{reference}", "/admin/galerie/interventions/" + REF,
-                    Acces.BACK_OFFICE, true, 200),
+                    Acces.BACK_OFFICE, true, 404),
             ecran("/admin/import", Acces.BACK_OFFICE),
             ecran("/admin/export", Acces.BACK_OFFICE),
             new Route("/admin/export/factures.csv", "/admin/export/factures.csv" + PERIODE,
@@ -234,9 +228,7 @@ class NavigationEcransIT extends SocleIntegration {
             new Route("/admin/export/commandes.csv", "/admin/export/commandes.csv" + PERIODE,
                     Acces.BACK_OFFICE, false, 200),
             ecran("/admin/retractations", Acces.BACK_OFFICE),
-            // Reference inconnue : page « demande introuvable », rendue en 200.
-            new Route("/admin/retractations/{reference}/refuser", "/admin/retractations/" + REF + "/refuser",
-                    Acces.BACK_OFFICE, true, 200),
+            variable("/admin/retractations/{reference}/refuser", Acces.BACK_OFFICE),
             ecran("/admin/messages", Acces.BACK_OFFICE),
             variable("/admin/messages/{reference}", Acces.BACK_OFFICE),
             ecran("/admin/avis", Acces.BACK_OFFICE),
