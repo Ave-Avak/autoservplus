@@ -227,11 +227,10 @@ class ChangementEmailIT extends SocleIntegration {
 
             // Le formulaire de nouveau mot de passe n est meme pas propose.
             mvc.perform(get("/mot-de-passe/nouveau").param("jeton", jeton))
-                    .andExpect(status().isOk())
+                    .andExpect(status().isNotFound())
                     .andExpect(content().string(containsString("Ce lien n'est plus valable")));
 
-            // Et le forcage direct ne change rien : l empreinte est intacte. C est
-            // l effet qui repond, pas le code HTTP : la page de refus est rendue en 200.
+            // Et le forçage direct ne change rien : l'empreinte est intacte.
             String empreinteAvant = relire(email).getMotDePasseHache();
             mvc.perform(post("/mot-de-passe/nouveau").with(csrf())
                             .param("jeton", jeton)
@@ -244,10 +243,12 @@ class ChangementEmailIT extends SocleIntegration {
         }
 
         @Test
-        @DisplayName("jeton inconnu : page d'erreur, aucune bascule")
+        @DisplayName("jeton inconnu : page « lien inutilisable » en 404, comme les autres liens reçus par courriel")
         void jetonInconnu() throws Exception {
-            mvc.perform(get("/changement-adresse/confirmation").param("jeton", "inexistant"))
-                    .andExpect(status().isNotFound());
+            mvc.perform(get("/changement-adresse/confirmation").param("jeton", "inexistant").locale(Locale.FRENCH))
+                    .andExpect(status().isNotFound())
+                    .andExpect(content().string(containsString("Lien inutilisable")))
+                    .andExpect(content().string(containsString("pas valable")));
 
             assertThat(relire(email).getEmail()).isEqualTo(email);
         }

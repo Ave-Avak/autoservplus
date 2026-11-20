@@ -114,15 +114,14 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/inscription/confirmee", Acces.PUBLIC),
             ecran("/mot-de-passe/oublie", Acces.PUBLIC),
             ecran("/compte-supprime", Acces.PUBLIC),
+            // Liens reçus par courriel : un jeton inconnu rend la page « lien invalide » en 404.
             new Route("/inscription/verification", "/inscription/verification?jeton=inconnu",
-                    Acces.PUBLIC, true, 200),
+                    Acces.PUBLIC, true, 404),
             new Route("/mot-de-passe/nouveau", "/mot-de-passe/nouveau?jeton=inconnu",
-                    Acces.PUBLIC, true, 200),
-            // Jeton inconnu : 404, la ou les trois autres liens de courriel rendent une page
-            // « lien invalide ». Ecart releve, non traite ici.
+                    Acces.PUBLIC, true, 404),
             new Route("/changement-adresse/confirmation", "/changement-adresse/confirmation?jeton=inconnu",
                     Acces.PUBLIC, true, 404),
-            new Route("/compte/definition", "/compte/definition?jeton=inconnu", Acces.PUBLIC, true, 200),
+            new Route("/compte/definition", "/compte/definition?jeton=inconnu", Acces.PUBLIC, true, 404),
             variable("/services/{reference}", Acces.PUBLIC),
             variable("/pieces/{reference}", Acces.PUBLIC),
             new Route("/documents/{type}/{version}", "/documents/CGV/inconnue", Acces.PUBLIC, true, 404),

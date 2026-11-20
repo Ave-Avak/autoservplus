@@ -57,7 +57,7 @@ public class DefinitionMotDePasseController {
         try {
             service.verifierJeton(jeton);
         } catch (RessourceIntrouvableException | RefusTraduit invalide) {
-            return lienInvalide(modele);
+            return lienInvalide(modele, reponse);
         }
         NouveauMotDePasseForm formulaire = new NouveauMotDePasseForm();
         formulaire.setJeton(jeton);
@@ -81,7 +81,7 @@ public class DefinitionMotDePasseController {
         try {
             service.definir(formulaire.getJeton(), formulaire.getMotDePasse());
         } catch (RessourceIntrouvableException | RefusTraduit invalide) {
-            return lienInvalide(modele);
+            return lienInvalide(modele, reponse);
         }
         modele.addAttribute("titre", msg("definition.terminee.titre"));
         return "identite/definition-terminee";
@@ -94,8 +94,9 @@ public class DefinitionMotDePasseController {
         modele.addAttribute("enConnexion", false);
     }
 
-    /** Expire, consomme ou inconnu : un seul message, le lien n a pas a dire lequel. */
-    private String lienInvalide(Model modele) {
+    /** Expiré, consommé ou inconnu : un seul message et un seul statut, 404, le lien n'a pas à dire lequel. */
+    private String lienInvalide(Model modele, HttpServletResponse reponse) {
+        reponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
         modele.addAttribute("titre", msg("definition.invalide.titre"));
         return "identite/definition-lien-invalide";
     }

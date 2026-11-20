@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Value;
 import java.util.Optional;
 import be.autoservplus.identite.web.dto.NouveauMotDePasseForm;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -100,14 +101,17 @@ public class MotDePasseController {
         return "identite/mot-de-passe-demande";
     }
 
+    /**
+     * Un lien expiré, déjà servi ou inconnu répond 404 avec la page « lien invalide » :
+     * le même statut dans les trois cas, pour qu'il ne dise pas qu'un jeton a existé.
+     */
     @GetMapping("/nouveau")
-    public String afficherFormulaire(@RequestParam String jeton, Model modele) {
+    public String afficherFormulaire(@RequestParam String jeton, Model modele, HttpServletResponse reponse) {
         modele.addAttribute("titre", "Nouveau mot de passe");
         try {
             service.verifierJeton(jeton);
         } catch (RessourceIntrouvableException | RegleMetierException e) {
-            modele.addAttribute("motif", motifRefus(e));
-            return "identite/mot-de-passe-lien-invalide";
+            return lienInvalide(e, modele, reponse);
         }
         NouveauMotDePasseForm formulaire = new NouveauMotDePasseForm();
         formulaire.setJeton(jeton);
@@ -117,7 +121,7 @@ public class MotDePasseController {
 
     @PostMapping("/nouveau")
     public String appliquer(@Valid @ModelAttribute("formulaire") NouveauMotDePasseForm formulaire,
-                            BindingResult erreurs, Model modele) {
+                            BindingResult erreurs, Model modele, HttpServletResponse reponse) {
 
         modele.addAttribute("titre", "Nouveau mot de passe");
 
@@ -132,12 +136,17 @@ public class MotDePasseController {
         try {
             service.reinitialiser(formulaire.getJeton(), formulaire.getMotDePasse());
         } catch (RessourceIntrouvableException | RegleMetierException e) {
-            modele.addAttribute("motif", motifRefus(e));
-            return "identite/mot-de-passe-lien-invalide";
+            return lienInvalide(e, modele, reponse);
         }
 
         modele.addAttribute("titre", "Mot de passe modifié");
         return "identite/mot-de-passe-modifie";
+    }
+
+    private static String lienInvalide(RuntimeException refus, Model modele, HttpServletResponse reponse) {
+        reponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        modele.addAttribute("motif", motifRefus(refus));
+        return "identite/mot-de-passe-lien-invalide";
     }
 
     /**

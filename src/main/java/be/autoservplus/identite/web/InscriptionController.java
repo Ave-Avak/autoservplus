@@ -18,6 +18,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import be.autoservplus.identite.web.dto.InscriptionForm;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -248,13 +249,18 @@ public class InscriptionController {
         return "identite/renvoyer-verification-envoye";
     }
 
+    /**
+     * Un lien refusé, expiré, déjà servi ou inconnu, répond 404 avec sa page : le même
+     * statut dans les trois cas, pour qu'il ne dise pas qu'un jeton a existé.
+     */
     @GetMapping("/inscription/verification")
-    public String verifierAdresse(@RequestParam String jeton, Model modele) {
+    public String verifierAdresse(@RequestParam String jeton, Model modele, HttpServletResponse reponse) {
         modele.addAttribute("titre", "Vérification de votre adresse");
         try {
             service.confirmerAdresse(jeton);
             modele.addAttribute("succes", true);
         } catch (RessourceIntrouvableException | RegleMetierException e) {
+            reponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
             modele.addAttribute("succes", false);
             modele.addAttribute("motif", motifRefus(e));
         }

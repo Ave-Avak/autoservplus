@@ -50,6 +50,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 /**
@@ -237,6 +238,7 @@ class JetonsHachesIT extends SocleIntegration {
             for (Map.Entry<Locale, String> cas : attendus.entrySet()) {
                 mvc.perform(get("/inscription/verification").param("jeton", "inconnu")
                                 .locale(cas.getKey()))
+                        .andExpect(status().isNotFound())
                         .andExpect(content().string(allOf(
                                 containsString(cas.getValue().replace("'", "&#39;")),
                                 not(containsString(INTROUVABLE)))));
@@ -253,6 +255,7 @@ class JetonsHachesIT extends SocleIntegration {
             for (Map.Entry<Locale, String> cas : attendus.entrySet()) {
                 mvc.perform(get("/mot-de-passe/nouveau").param("jeton", "inconnu")
                                 .locale(cas.getKey()))
+                        .andExpect(status().isNotFound())
                         .andExpect(view().name("identite/mot-de-passe-lien-invalide"))
                         .andExpect(content().string(allOf(
                                 // Thymeleaf échappe l'apostrophe à l'affichage.
@@ -262,7 +265,7 @@ class JetonsHachesIT extends SocleIntegration {
         }
 
         @Test
-        @DisplayName("lien de réinitialisation expiré : message d'expiration traduit")
+        @DisplayName("lien de réinitialisation expiré : message d'expiration traduit, même 404 qu'un lien inconnu")
         void reinitialisationExpiree() throws Exception {
             String email = adresse();
             Utilisateur membre = membreVerifie(email);
@@ -272,6 +275,7 @@ class JetonsHachesIT extends SocleIntegration {
 
             mvc.perform(get("/mot-de-passe/nouveau").param("jeton", jeton.clair())
                             .locale(Locale.ENGLISH))
+                    .andExpect(status().isNotFound())
                     .andExpect(content().string(allOf(
                             containsString("This link has expired. Request a new one."),
                             not(containsString("expire. Demandez")))));

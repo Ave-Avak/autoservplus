@@ -1,5 +1,6 @@
 package be.autoservplus.identite.web;
 
+import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.service.ChangementEmailRefuseException;
 import be.autoservplus.identite.service.ChangementEmailService;
 import be.autoservplus.identite.web.dto.ChangementEmailForm;
@@ -33,6 +34,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  */
 @Controller
 public class ChangementEmailController {
+
+    /** Message des liens à jeton inconnu, commun aux liens reçus par courriel. */
+    private static final String CLE_LIEN_INCONNU = "lien-courriel.inconnu";
 
     private final ChangementEmailService service;
     private final MessageSource messages;
@@ -93,9 +97,10 @@ public class ChangementEmailController {
                             Model modele) {
         try {
             service.confirmer(jeton);
+        } catch (RessourceIntrouvableException inconnu) {
+            return lienInutilisable(modele, reponse, CLE_LIEN_INCONNU);
         } catch (ChangementEmailRefuseException refus) {
-            modele.addAttribute("echec", traduire(refus));
-            return "identite/changement-email-resultat";
+            return lienInutilisable(modele, reponse, refus.getCleMessage());
         }
 
         Authentication session = SecurityContextHolder.getContext().getAuthentication();
@@ -107,11 +112,18 @@ public class ChangementEmailController {
     }
 
     /**
-     * Le refus PORTE sa cle i18n : il n y a plus de table a tenir a jour, donc plus
-     * de refus nouveau qui s afficherait en francais faute d y avoir ete inscrit.
+     * Lien inconnu, expiré ou devenu inutilisable : la page du résultat, en 404, comme
+     * les trois autres liens reçus par courriel. Un statut par cas dirait qu'un jeton a
+     * existé. Le refus porte sa clé i18n : aucun refus nouveau ne s'affiche en français
+     * faute d'avoir été inscrit dans une table.
      */
+    private String lienInutilisable(Model modele, HttpServletResponse reponse, String cleMessage) {
+        reponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        modele.addAttribute("echec", messages.getMessage(cleMessage, null, LocaleContextHolder.getLocale()));
+        return "identite/changement-email-resultat";
+    }
+
     private String traduire(ChangementEmailRefuseException refus) {
-        return messages.getMessage(refus.getCleMessage(), null,
-                LocaleContextHolder.getLocale());
+        return messages.getMessage(refus.getCleMessage(), null, LocaleContextHolder.getLocale());
     }
 }

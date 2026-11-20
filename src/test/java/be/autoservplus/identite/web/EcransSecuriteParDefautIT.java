@@ -14,8 +14,10 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.Locale;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -84,10 +86,14 @@ class EcransSecuriteParDefautIT extends SocleIntegration {
     }
 
     @Test
-    @DisplayName("lien de définition sans jeton : page d'explication, pas d'erreur")
+    @DisplayName("lien de définition sans jeton ou à jeton inconnu : page « lien invalide » en 404, pas d'erreur")
     void definitionSansJeton() throws Exception {
-        mvc.perform(get("/compte/definition")).andExpect(status().isOk());
-        mvc.perform(get("/compte/definition").param("jeton", "inconnu")).andExpect(status().isOk());
+        mvc.perform(get("/compte/definition").locale(Locale.FRENCH))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string(containsString("plus valable")));
+        mvc.perform(get("/compte/definition").param("jeton", "inconnu").locale(Locale.FRENCH))
+                .andExpect(status().isNotFound())
+                .andExpect(content().string(containsString("plus valable")));
     }
 
     @Test
