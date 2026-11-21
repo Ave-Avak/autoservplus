@@ -134,8 +134,11 @@ public class VehiculeController {
                 service.releverKilometrage(reference, membre.getUsername(), formulaire.getKilometrage());
             } catch (IllegalArgumentException e) {
                 // Le seul refus restant : un compteur qui recule. Un kilométrage négatif
-                // est arrêté plus tôt par la validation du formulaire.
-                erreurs.rejectValue("kilometrage", "vehicule.erreur.kilometrage-diminue", e.getMessage());
+                // est arrêté plus tôt par la validation du formulaire. L'aide du champ
+                // énonce déjà la règle : l'erreur dit le fait, avec le dernier relevé.
+                Integer dernierReleve = service.vue(reference, membre.getUsername()).kilometrage();
+                erreurs.rejectValue("kilometrage", "vehicule.erreur.kilometrage-diminue",
+                        new Object[]{dernierReleve}, e.getMessage());
                 modele.addAttribute("reference", reference);
                 return retourFormulaire(modele, false);
             }
