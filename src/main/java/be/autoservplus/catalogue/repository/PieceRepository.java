@@ -76,14 +76,33 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
     @Query("SELECT p FROM Piece p WHERE p.id = :id")
     Optional<Piece> verrouillerParId(@Param("id") Long id);
 
-    /** Recherche insensible a la casse sur le libelle, la marque et la reference fabricant. */
-    @Query("""
-            SELECT p FROM Piece p JOIN FETCH p.categorie
+    /**
+     * Recherche sur le libellé, la description, la marque, la référence du fabricant et
+     * le libellé de la catégorie, sans tenir compte de la casse ni des accents.
+     *
+     * <p>Le motif arrive en minuscules, encadré de jokers, ceux du terme neutralisés par
+     * « ! » ({@code MotifRecherche}). {@code unaccent} est l'extension installée par V62.
+     * La requête de comptage est écrite à la main : un {@code JOIN FETCH} n'a pas sa
+     * place dans un comptage.</p>
+     */
+    @Query(value = """
+            SELECT p FROM Piece p JOIN FETCH p.categorie c
             WHERE p.actif = true
-              AND (LOWER(p.libelle) LIKE LOWER(CONCAT('%', :terme, '%'))
-                OR LOWER(p.marque) LIKE LOWER(CONCAT('%', :terme, '%'))
-                OR LOWER(p.referenceFabricant) LIKE LOWER(CONCAT('%', :terme, '%')))
-            ORDER BY p.libelle
+              AND ( cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.description)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.marque)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.referenceFabricant)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(c.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!')
+            ORDER BY p.libelle, p.id
+            """,
+            countQuery = """
+            SELECT COUNT(p) FROM Piece p JOIN p.categorie c
+            WHERE p.actif = true
+              AND ( cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.description)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.marque)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.referenceFabricant)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(c.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!')
             """)
-    Page<Piece> rechercher(@Param("terme") String terme, Pageable pagination);
+    Page<Piece> rechercher(@Param("motif") String motif, Pageable pagination);
 }

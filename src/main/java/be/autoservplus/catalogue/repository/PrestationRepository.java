@@ -65,13 +65,24 @@ public interface PrestationRepository extends JpaRepository<Prestation, Long> {
     List<Prestation> findByCategorieCodeAndActifTrueOrderByLibelleAsc(
             @Param("codeCategorie") String codeCategorie);
 
-    /** Recherche insensible a la casse sur le libelle et la description. */
-    @Query("""
-            SELECT p FROM Prestation p JOIN FETCH p.categorie
+    /**
+     * Recherche sur le libellé, la description et le libellé de la catégorie, sans tenir
+     * compte de la casse ni des accents. Mêmes règles que {@code PieceRepository.rechercher}.
+     */
+    @Query(value = """
+            SELECT p FROM Prestation p JOIN FETCH p.categorie c
             WHERE p.actif = true
-              AND (LOWER(p.libelle) LIKE LOWER(CONCAT('%', :terme, '%'))
-                OR LOWER(p.description) LIKE LOWER(CONCAT('%', :terme, '%')))
-            ORDER BY p.libelle
+              AND ( cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.description)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(c.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!')
+            ORDER BY p.libelle, p.id
+            """,
+            countQuery = """
+            SELECT COUNT(p) FROM Prestation p JOIN p.categorie c
+            WHERE p.actif = true
+              AND ( cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.description)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(c.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!')
             """)
-    Page<Prestation> rechercher(@Param("terme") String terme, Pageable pagination);
+    Page<Prestation> rechercher(@Param("motif") String motif, Pageable pagination);
 }

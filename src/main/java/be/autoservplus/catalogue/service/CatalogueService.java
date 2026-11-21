@@ -31,7 +31,7 @@ import java.util.UUID;
 public class CatalogueService {
 
     private static final int TAILLE_PAGE_PAR_DEFAUT = 12;
-    private static final int LONGUEUR_MINIMALE_RECHERCHE = 2;
+    public static final int LONGUEUR_MINIMALE_RECHERCHE = 2;
 
     private final CategorieRepository categories;
     private final PrestationRepository prestations;
@@ -84,21 +84,40 @@ public class CatalogueService {
     /**
      * Recherche dans les prestations.
      *
-     * <p>Un terme trop court renvoie une page vide plutot que l integralite du catalogue :
-     * une requete sur un seul caractere ramenerait presque tout et n aiderait personne.</p>
+     * <p>Un terme trop court renvoie une page vide plutôt que l'intégralité du catalogue :
+     * une requête sur un seul caractère ramènerait presque tout et n'aiderait personne.</p>
+     *
+     * <p>Une page demandée au-delà de la dernière rend la dernière : une adresse gardée en
+     * favori reste utile quand le catalogue a rétréci.</p>
      */
     public Page<ArticleVue> rechercherPrestations(String terme, int numeroPage) {
-        if (termeInsuffisant(terme)) {
+        if (termeTropCourt(terme)) {
             return Page.empty();
         }
-        return prestations.rechercher(terme.trim(), pagination(numeroPage)).map(ArticleVue::de);
+        String motif = MotifRecherche.de(terme);
+        Page<Prestation> page = prestations.rechercher(motif, pagination(numeroPage));
+        if (page.isEmpty() && page.getTotalElements() > 0) {
+            page = prestations.rechercher(motif, pagination(page.getTotalPages() - 1));
+        }
+        return page.map(ArticleVue::de);
     }
 
+    /** Recherche dans les pièces, aux mêmes règles que {@link #rechercherPrestations}. */
     public Page<ArticleVue> rechercherPieces(String terme, int numeroPage) {
-        if (termeInsuffisant(terme)) {
+        if (termeTropCourt(terme)) {
             return Page.empty();
         }
-        return pieces.rechercher(terme.trim(), pagination(numeroPage)).map(ArticleVue::de);
+        String motif = MotifRecherche.de(terme);
+        Page<Piece> page = pieces.rechercher(motif, pagination(numeroPage));
+        if (page.isEmpty() && page.getTotalElements() > 0) {
+            page = pieces.rechercher(motif, pagination(page.getTotalPages() - 1));
+        }
+        return page.map(ArticleVue::de);
+    }
+
+    /** Vrai pour un terme absent ou plus court que {@link #LONGUEUR_MINIMALE_RECHERCHE}. */
+    public boolean termeTropCourt(String terme) {
+        return terme == null || terme.trim().length() < LONGUEUR_MINIMALE_RECHERCHE;
     }
 
     /** Entite complete, reservee aux operations d administration. */
@@ -114,10 +133,6 @@ public class CatalogueService {
     }
 
     // --- utilitaires -------------------------------------------------------------------
-
-    private boolean termeInsuffisant(String terme) {
-        return terme == null || terme.trim().length() < LONGUEUR_MINIMALE_RECHERCHE;
-    }
 
     private Pageable pagination(int numeroPage) {
         return PageRequest.of(Math.max(0, numeroPage), TAILLE_PAGE_PAR_DEFAUT);

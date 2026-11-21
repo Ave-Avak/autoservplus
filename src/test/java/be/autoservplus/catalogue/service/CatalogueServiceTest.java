@@ -62,13 +62,13 @@ class CatalogueServiceTest {
         }
 
         @Test
-        @DisplayName("interroge le repository avec le terme nettoye")
+        @DisplayName("interroge le dépôt avec un motif en minuscules, encadré de jokers")
         void nettoieLeTerme() {
-            when(prestations.rechercher(eq("vidange"), any())).thenReturn(org.springframework.data.domain.Page.empty());
+            when(prestations.rechercher(eq("%vidange%"), any())).thenReturn(org.springframework.data.domain.Page.empty());
 
-            service.rechercherPrestations("  vidange  ", 0);
+            service.rechercherPrestations("  Vidange  ", 0);
 
-            verify(prestations).rechercher(eq("vidange"), any());
+            verify(prestations).rechercher(eq("%vidange%"), any());
         }
     }
 
