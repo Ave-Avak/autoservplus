@@ -90,10 +90,10 @@ class EcransSecuriteParDefautIT extends SocleIntegration {
     void definitionSansJeton() throws Exception {
         mvc.perform(get("/compte/definition").locale(Locale.FRENCH))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string(containsString("plus valable")));
+                .andExpect(content().string(containsString("Lien invalide")));
         mvc.perform(get("/compte/definition").param("jeton", "inconnu").locale(Locale.FRENCH))
                 .andExpect(status().isNotFound())
-                .andExpect(content().string(containsString("plus valable")));
+                .andExpect(content().string(containsString("Lien invalide")));
     }
 
     @Test

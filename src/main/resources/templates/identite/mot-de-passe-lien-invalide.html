@@ -11,9 +11,9 @@
 <a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 <header th:replace="~{fragments/entete :: entete}"></header>
 <main id="contenu">
-    <h1 th:text="#{mot-de-passe.invalide.message}">Ce lien n'est plus valable</h1>
+    <h1 th:text="#{mot-de-passe.invalide.titre}">Lien invalide</h1>
     <div class="message message-erreur" role="alert">
-        <p th:text="#{${motif}}">Le lien est invalide ou a expiré.</p>
+        <p th:text="#{lien-courriel.invalide}">Ce lien ne peut pas être utilisé.</p>
     </div>
     <a class="btn-cta" th:href="@{/mot-de-passe/oublie}" th:text="#{mot-de-passe.invalide.nouveau-lien}">Demander un nouveau lien</a>
 </main>

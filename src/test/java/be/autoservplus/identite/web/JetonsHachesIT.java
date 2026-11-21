@@ -232,9 +232,9 @@ class JetonsHachesIT extends SocleIntegration {
         @DisplayName("lien de vérification inconnu : message traduit en FR, NL et EN")
         void verificationInconnue() throws Exception {
             Map<Locale, String> attendus = Map.of(
-                    Locale.FRENCH, "Ce lien n'est pas valable.",
-                    Locale.forLanguageTag("nl"), "Deze link is niet geldig.",
-                    Locale.ENGLISH, "This link is not valid.");
+                    Locale.FRENCH, "Ce lien ne peut pas être utilisé.",
+                    Locale.forLanguageTag("nl"), "Deze link kan niet worden gebruikt.",
+                    Locale.ENGLISH, "This link cannot be used.");
             for (Map.Entry<Locale, String> cas : attendus.entrySet()) {
                 mvc.perform(get("/inscription/verification").param("jeton", "inconnu")
                                 .locale(cas.getKey()))
@@ -249,9 +249,9 @@ class JetonsHachesIT extends SocleIntegration {
         @DisplayName("lien de réinitialisation inconnu : message traduit en FR, NL et EN")
         void reinitialisationInconnue() throws Exception {
             Map<Locale, String> attendus = Map.of(
-                    Locale.FRENCH, "Ce lien n'est pas valable.",
-                    Locale.forLanguageTag("nl"), "Deze link is niet geldig.",
-                    Locale.ENGLISH, "This link is not valid.");
+                    Locale.FRENCH, "Ce lien ne peut pas être utilisé.",
+                    Locale.forLanguageTag("nl"), "Deze link kan niet worden gebruikt.",
+                    Locale.ENGLISH, "This link cannot be used.");
             for (Map.Entry<Locale, String> cas : attendus.entrySet()) {
                 mvc.perform(get("/mot-de-passe/nouveau").param("jeton", "inconnu")
                                 .locale(cas.getKey()))
@@ -265,7 +265,7 @@ class JetonsHachesIT extends SocleIntegration {
         }
 
         @Test
-        @DisplayName("lien de réinitialisation expiré : message d'expiration traduit, même 404 qu'un lien inconnu")
+        @DisplayName("lien de réinitialisation expiré : même 404 et même message qu'un lien inconnu, rien sur l'expiration")
         void reinitialisationExpiree() throws Exception {
             String email = adresse();
             Utilisateur membre = membreVerifie(email);
@@ -277,8 +277,8 @@ class JetonsHachesIT extends SocleIntegration {
                             .locale(Locale.ENGLISH))
                     .andExpect(status().isNotFound())
                     .andExpect(content().string(allOf(
-                            containsString("This link has expired. Request a new one."),
-                            not(containsString("expire. Demandez")))));
+                            containsString("This link cannot be used."),
+                            not(containsString("expired")))));
         }
     }
 

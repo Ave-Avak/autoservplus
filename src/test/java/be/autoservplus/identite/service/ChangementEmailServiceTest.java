@@ -280,7 +280,7 @@ class ChangementEmailServiceTest {
             assertThatThrownBy(() -> service.confirmer(jeton))
                     .isInstanceOf(ChangementEmailRefuseException.class)
                     .extracting(e -> ((ChangementEmailRefuseException) e).getCleMessage())
-                    .isEqualTo("changement-email.erreur.prise");
+                    .isEqualTo("lien-courriel.invalide");
 
             assertThat(membre.getEmail()).isEqualTo(ACTUELLE);
             // La demande est abandonnee : la laisser vivante ferait echouer chaque
@@ -302,7 +302,7 @@ class ChangementEmailServiceTest {
             assertThatThrownBy(() -> tardif.confirmer(jeton))
                     .isInstanceOf(ChangementEmailRefuseException.class)
                     .extracting(e -> ((ChangementEmailRefuseException) e).getCleMessage())
-                    .isEqualTo("changement-email.erreur.expire");
+                    .isEqualTo("lien-courriel.invalide");
 
             assertThat(membre.getEmail()).isEqualTo(ACTUELLE);
             assertThat(membre.changementEmailEnCours()).isFalse();

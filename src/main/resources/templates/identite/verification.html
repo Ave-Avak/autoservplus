@@ -21,7 +21,7 @@
     <div th:unless="${succes}">
         <h1 th:text="#{verification.echec.titre}">Vérification impossible</h1>
         <div class="message message-erreur" role="alert">
-            <p th:text="#{${motif}}">Le lien est invalide ou a expiré.</p>
+            <p th:text="#{lien-courriel.invalide}">Ce lien ne peut pas être utilisé.</p>
         </div>
         <!--/* Cas de loin le plus fréquent : le jeton a expiré (24 h). L'écran offre donc
              le renvoi, pas seulement un retour à l'accueil. */-->

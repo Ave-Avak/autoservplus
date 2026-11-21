@@ -100,14 +100,15 @@ public class MotDePasseController {
 
     /**
      * Un lien expiré, déjà servi ou inconnu répond 404 avec la page « lien invalide » :
-     * le même statut dans les trois cas, pour qu'il ne dise pas qu'un jeton a existé.
+     * le même statut et le même message dans les trois cas, pour qu'il ne dise pas qu'un
+     * jeton a existé.
      */
     @GetMapping("/nouveau")
     public String afficherFormulaire(@RequestParam String jeton, Model modele, HttpServletResponse reponse) {
         try {
             service.verifierJeton(jeton);
         } catch (RessourceIntrouvableException | RegleMetierException e) {
-            return lienInvalide(e, modele, reponse);
+            return lienInvalide(modele, reponse);
         }
         NouveauMotDePasseForm formulaire = new NouveauMotDePasseForm();
         formulaire.setJeton(jeton);
@@ -130,25 +131,14 @@ public class MotDePasseController {
         try {
             service.reinitialiser(formulaire.getJeton(), formulaire.getMotDePasse());
         } catch (RessourceIntrouvableException | RegleMetierException e) {
-            return lienInvalide(e, modele, reponse);
+            return lienInvalide(modele, reponse);
         }
 
         return "identite/mot-de-passe-modifie";
     }
 
-    private static String lienInvalide(RuntimeException refus, Model modele, HttpServletResponse reponse) {
+    private static String lienInvalide(Model modele, HttpServletResponse reponse) {
         reponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
-        modele.addAttribute("motif", motifRefus(refus));
         return "identite/mot-de-passe-lien-invalide";
-    }
-
-    /**
-     * Clé i18n du refus. Le message de l'exception reste au journal : c'est un texte
-     * technique, en français, qui nommait jusqu'au jeton refusé.
-     */
-    private static String motifRefus(RuntimeException refus) {
-        return refus instanceof RegleMetierException regle && "RM-05".equals(regle.getCodeRegle())
-                ? "lien-courriel.reinitialisation-expire"
-                : "lien-courriel.inconnu";
     }
 }

@@ -35,8 +35,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 @Controller
 public class ChangementEmailController {
 
-    /** Message des liens à jeton inconnu, commun aux liens reçus par courriel. */
-    private static final String CLE_LIEN_INCONNU = "lien-courriel.inconnu";
+    /** Message unique des liens reçus par courriel refusés, quel que soit le motif. */
+    private static final String CLE_LIEN_INVALIDE = "lien-courriel.invalide";
 
     private final ChangementEmailService service;
     private final MessageSource messages;
@@ -97,10 +97,8 @@ public class ChangementEmailController {
                             Model modele) {
         try {
             service.confirmer(jeton);
-        } catch (RessourceIntrouvableException inconnu) {
-            return lienInutilisable(modele, reponse, CLE_LIEN_INCONNU);
-        } catch (ChangementEmailRefuseException refus) {
-            return lienInutilisable(modele, reponse, refus.getCleMessage());
+        } catch (RessourceIntrouvableException | ChangementEmailRefuseException refus) {
+            return lienInutilisable(modele, reponse);
         }
 
         Authentication session = SecurityContextHolder.getContext().getAuthentication();
@@ -112,14 +110,13 @@ public class ChangementEmailController {
     }
 
     /**
-     * Lien inconnu, expiré ou devenu inutilisable : la page du résultat, en 404, comme
-     * les trois autres liens reçus par courriel. Un statut par cas dirait qu'un jeton a
-     * existé. Le refus porte sa clé i18n : aucun refus nouveau ne s'affiche en français
-     * faute d'avoir été inscrit dans une table.
+     * Lien inconnu, expiré ou devenu inutilisable : la page du résultat, en 404, avec un
+     * seul message, comme les trois autres liens reçus par courriel. Un statut ou un
+     * message par cas dirait qu'un jeton a existé. Le motif exact reste aux journaux.
      */
-    private String lienInutilisable(Model modele, HttpServletResponse reponse, String cleMessage) {
+    private String lienInutilisable(Model modele, HttpServletResponse reponse) {
         reponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
-        modele.addAttribute("echec", messages.getMessage(cleMessage, null, LocaleContextHolder.getLocale()));
+        modele.addAttribute("echec", messages.getMessage(CLE_LIEN_INVALIDE, null, LocaleContextHolder.getLocale()));
         return "identite/changement-email-resultat";
     }
 

@@ -228,7 +228,7 @@ class ChangementEmailIT extends SocleIntegration {
             // Le formulaire de nouveau mot de passe n est meme pas propose.
             mvc.perform(get("/mot-de-passe/nouveau").param("jeton", jeton).locale(Locale.FRENCH))
                     .andExpect(status().isNotFound())
-                    .andExpect(content().string(containsString("est plus valable")));
+                    .andExpect(content().string(containsString("Ce lien ne peut pas être utilisé.")));
 
             // Et le forçage direct ne change rien : l'empreinte est intacte.
             String empreinteAvant = relire(email).getMotDePasseHache();
@@ -236,7 +236,7 @@ class ChangementEmailIT extends SocleIntegration {
                             .param("jeton", jeton)
                             .param("motDePasse", "phrase de passe de l attaquant")
                             .param("confirmation", "phrase de passe de l attaquant"))
-                    .andExpect(content().string(containsString("est plus valable")));
+                    .andExpect(content().string(containsString("Ce lien ne peut pas être utilisé.")));
 
             assertThat(relire(email).getMotDePasseHache()).isEqualTo(empreinteAvant);
             assertThat(relire(email).getEmail()).isEqualTo(email);
@@ -248,7 +248,7 @@ class ChangementEmailIT extends SocleIntegration {
             mvc.perform(get("/changement-adresse/confirmation").param("jeton", "inexistant").locale(Locale.FRENCH))
                     .andExpect(status().isNotFound())
                     .andExpect(content().string(containsString("Lien inutilisable")))
-                    .andExpect(content().string(containsString("pas valable")));
+                    .andExpect(content().string(containsString("Ce lien ne peut pas être utilisé.")));
 
             assertThat(relire(email).getEmail()).isEqualTo(email);
         }
