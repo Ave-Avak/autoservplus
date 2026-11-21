@@ -3,6 +3,7 @@ package be.autoservplus.cookies.web;
 import be.autoservplus.common.web.PageCourante;
 import be.autoservplus.cookies.domain.PreferencesCookies;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -41,6 +42,24 @@ public class BandeauCookiesAdvice {
         // Protection des Donnees refuse expressement.
         modele.addAttribute(ATTRIBUT_PREFERENCES, choix.orElseGet(PreferencesCookies::refusTotal));
         modele.addAttribute(ATTRIBUT_RETOUR, uriCourante(requete));
+        if (choix.isEmpty()) {
+            chargerLeJetonCsrf(requete);
+        }
+    }
+
+    /**
+     * Le bandeau est un formulaire, rendu en fin de page, et son jeton CSRF n'est
+     * calculé qu'à sa première lecture. Pour un visiteur sans session, cette lecture en
+     * crée une, ce que le conteneur refuse dès que la réponse a commencé à partir : une
+     * page de plus de 8 ko avant le bandeau sortait tronquée, sans bandeau ni fin de
+     * document. Le jeton est donc lu ici, avant le rendu, tant que la session peut
+     * encore naître. Seulement quand le bandeau va s'afficher : un visiteur qui a déjà
+     * choisi ne reçoit pas de session pour autant.
+     */
+    private static void chargerLeJetonCsrf(HttpServletRequest requete) {
+        if (requete.getAttribute(CsrfToken.class.getName()) instanceof CsrfToken jeton) {
+            jeton.getToken();
+        }
     }
 
     private Optional<PreferencesCookies> choixExprime(HttpServletRequest requete) {

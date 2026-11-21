@@ -139,7 +139,9 @@ class PagesErreurIT extends SocleIntegration {
             HttpResponse<String> fr = visiteur.lire("/pieces/inconnue/sous-page");
             assertThat(fr.statusCode()).isEqualTo(404);
             assertThat(fr.body()).contains("<h1>Page introuvable</h1>", "<a href=\"/\">Retour à l&#39;accueil</a>")
-                    .doesNotContain(WHITELABEL);
+                    .doesNotContain(WHITELABEL)
+                    // Première page d'une session neuve : aucun lien ne porte son identifiant.
+                    .doesNotContain("jsessionid");
 
             HttpResponse<String> nl = visiteur.lire("/pieces/inconnue/sous-page", "nl");
             assertThat(nl.body()).contains("<h1>Pagina niet gevonden</h1>").doesNotContain(WHITELABEL);

@@ -75,6 +75,12 @@ server:
 
   servlet:
     session:
+      # La session ne se suit que par son cookie. Sans ce réglage, le conteneur ajoute
+      # l'identifiant de session, jsessionid, dans les liens tant que le navigateur n'a
+      # pas renvoyé le cookie, donc sur la première page d'une session neuve. Spring Security l'empêche sur une
+      # requête ordinaire, pas sur le passage par /error : une page d'erreur en première
+      # visite portait l'identifiant de session dans chacun de ses liens.
+      tracking-modes: cookie
       cookie:
         http-only: true
         # false par defaut pour le poste de developpement, qui sert en HTTP clair : un
