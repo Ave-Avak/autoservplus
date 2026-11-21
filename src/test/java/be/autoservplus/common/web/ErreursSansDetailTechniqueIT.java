@@ -140,7 +140,7 @@ class ErreursSansDetailTechniqueIT extends SocleIntegration {
     @Test
     @DisplayName("paramètre de requête malformé : 400 traduite")
     void parametreMalforme() throws Exception {
-        verifier("/recherche?q=filtre&page=pas-un-nombre", 400, "fr", "Demande impossible");
-        verifier("/recherche?q=filtre&page=pas-un-nombre", 400, "nl", "Verzoek niet mogelijk");
+        verifier("/recherche?q=filtre&pagePieces=pas-un-nombre", 400, "fr", "Demande impossible");
+        verifier("/recherche?q=filtre&pagePieces=pas-un-nombre", 400, "nl", "Verzoek niet mogelijk");
     }
 }

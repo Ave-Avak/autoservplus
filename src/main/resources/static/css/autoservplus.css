@@ -308,6 +308,8 @@ main code { overflow-wrap: anywhere; }
     border-radius: var(--rayon);
     font: inherit;
 }
+/* Le message d'un terme trop court passe sous le champ et le bouton. */
+.recherche-erreur { flex-basis: 100%; margin: 0; }
 
 /* Masque visuellement sans retirer du flux des lecteurs d ecran (WCAG 1.3.1) */
 .visuellement-cache {

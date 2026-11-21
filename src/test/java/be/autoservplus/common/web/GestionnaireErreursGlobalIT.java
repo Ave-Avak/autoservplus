@@ -69,6 +69,6 @@ class GestionnaireErreursGlobalIT extends SocleIntegration {
     @Test
     @DisplayName("un paramètre de requête mal formé reste une demande mal formée : 400")
     void parametreMalForme() throws Exception {
-        mvc.perform(get("/recherche").param("q", "filtre").param("page", "pas-un-nombre")).andExpect(status().isBadRequest());
+        mvc.perform(get("/recherche").param("q", "filtre").param("pagePieces", "pas-un-nombre")).andExpect(status().isBadRequest());
     }
 }
