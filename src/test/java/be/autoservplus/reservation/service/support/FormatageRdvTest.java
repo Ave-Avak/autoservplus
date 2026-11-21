@@ -92,14 +92,34 @@ class FormatageRdvTest {
         @Test
         @DisplayName("à l'écran, la langue vient du contexte de la requête")
         void langueDeLaRequete() {
-            Locale avant = LocaleContextHolder.getLocale();
             try {
                 LocaleContextHolder.setLocale(Locale.ENGLISH);
                 assertThat(FormatageRdv.eurosEcran(new BigDecimal("49"))).isEqualTo("49.00" + NBSP + "€");
                 LocaleContextHolder.setLocale(Locale.FRENCH);
                 assertThat(FormatageRdv.eurosEcran(new BigDecimal("49"))).isEqualTo("49,00" + NBSP + "€");
             } finally {
-                LocaleContextHolder.setLocale(avant);
+                // Le contexte est remis à vide, et non à sa valeur lue : la lire l'aurait
+                // déjà remplacée par la langue de la machine.
+                LocaleContextHolder.resetLocaleContext();
+            }
+        }
+
+        /**
+         * Les tests de service appellent les vues sans requête. La CI tourne sur une
+         * machine en anglais : cinq d'entre eux y recevaient « 80.21 € » là où le poste
+         * de développement, en français, rendait « 80,21 € ».
+         */
+        @Test
+        @DisplayName("sans contexte de requête, le français du site, quelle que soit la langue de la machine")
+        void sansRequeteLeFrancaisDuSite() {
+            Locale machine = Locale.getDefault();
+            try {
+                Locale.setDefault(Locale.US);
+                LocaleContextHolder.resetLocaleContext();
+                assertThat(FormatageRdv.eurosEcran(new BigDecimal("80.21"))).isEqualTo("80,21" + NBSP + "€");
+            } finally {
+                Locale.setDefault(machine);
+                LocaleContextHolder.resetLocaleContext();
             }
         }
     }

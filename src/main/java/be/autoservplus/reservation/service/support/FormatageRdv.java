@@ -1,5 +1,7 @@
 package be.autoservplus.reservation.service.support;
 
+import be.autoservplus.i18n.LanguesSupportees;
+import org.springframework.context.i18n.LocaleContext;
 import org.springframework.context.i18n.LocaleContextHolder;
 
 import java.math.BigDecimal;
@@ -62,8 +64,15 @@ public final class FormatageRdv {
      * Montant dans la langue de l'écran qui se rend, lue dans le contexte de la requête.
      * Réservé aux vues construites pendant la requête : un courriel part dans la langue
      * de son destinataire, et non dans celle de l'écran qui l'a déclenché.
+     *
+     * <p>Sans contexte de requête, la langue est celle du site par défaut, le français.
+     * {@code LocaleContextHolder.getLocale()} retomberait sur la langue de la machine :
+     * le même montant sortait « 80,21 € » sur un poste en français et « 80.21 € » sur
+     * un serveur en anglais.</p>
      */
     public static String eurosEcran(BigDecimal montant) {
-        return euros(montant, LocaleContextHolder.getLocale());
+        LocaleContext contexte = LocaleContextHolder.getLocaleContext();
+        Locale langue = contexte == null ? null : contexte.getLocale();
+        return euros(montant, langue == null ? LanguesSupportees.DEFAUT : langue);
     }
 }
