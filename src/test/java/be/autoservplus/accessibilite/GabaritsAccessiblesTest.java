@@ -44,6 +44,38 @@ class GabaritsAccessiblesTest {
     private static final Pattern CELLULE_ENTETE = Pattern.compile("<th\\b[^>]*>");
     private static final Pattern ERREUR_DE_CHAMP = Pattern.compile("<[a-z]+\\b[^>]*\\bth:errors=[^>]*>");
     private static final Pattern TITRE = Pattern.compile("<title\\b[^>]*>");
+    private static final Pattern TEXTE_DU_TITRE = Pattern.compile("th:text=\"([^\"]*)\"");
+    /** Un littéral comparé ({@code == 'service'}) est une valeur de code, pas un texte. */
+    private static final Pattern LITTERAL = Pattern.compile("(?<![=!]= ?)'([^']*)'");
+    private static final Pattern LETTRES = Pattern.compile("\\p{L}{3,}");
+
+    /** Fin de titre commune, la marque : le seul littéral admis dans un titre. */
+    private static final String SUFFIXE_DU_TITRE = "' | AutoServ+'";
+
+    private static final Pattern COMMENTAIRE = Pattern.compile("<!--.*?-->", Pattern.DOTALL);
+    private static final Pattern SCRIPT_OU_STYLE =
+            Pattern.compile("<(script|style)\\b.*?</\\1>", Pattern.DOTALL);
+
+    /**
+     * Une balise ouvrante suivie d'un texte. Les valeurs d'attribut sont lues entre
+     * guillemets, pour qu'un « > » écrit dans une expression ne ferme pas la balise.
+     */
+    private static final Pattern BALISE_PUIS_TEXTE = Pattern.compile(
+            "<([a-zA-Z][\\w:-]*)((?:[^>\"']|\"[^\"]*\"|'[^']*')*)>([^<]+)");
+
+    /** Attributs qui remplacent le texte écrit dans le gabarit au moment du rendu. */
+    private static final Pattern TEXTE_REMPLACE =
+            Pattern.compile("\\bth:(?:text|utext|errors|replace|insert)=");
+
+    /** Textes qui ne se traduisent pas : la marque, et le nom d'une langue dans sa langue. */
+    private static final List<String> TEXTES_INVARIABLES =
+            List.of("AutoServ+", "Français", "Nederlands", "English");
+
+    /**
+     * Libellé du champ leurre des formulaires anonymes : masqué à l'écran et retiré du
+     * parcours d'accessibilité, il n'est lu que par un robot.
+     */
+    private static final String LEURRE = "fragments/antibot.html : <label> Société";
 
     private static final Pattern RETOUR_FLASH =
             Pattern.compile("<[a-z]+\\b[^>]*th:if=\"\\$\\{(?:erreur|message)\\}\"[^>]*>");
@@ -214,9 +246,71 @@ class GabaritsAccessiblesTest {
                     .isEmpty();
         }
 
+        /**
+         * Un titre suit la locale quand son {@code th:text} ne contient aucun mot écrit
+         * en dur, la marque mise à part.
+         *
+         * <p>La présence de {@code th:text} ne suffisait pas : la page de recherche
+         * portait {@code th:text="... 'Recherche : ' + terme ..."}, un titre calculé mais
+         * français dans les trois langues, et le balayage l'acceptait.</p>
+         */
         private static boolean titreLocalise(Path gabarit) {
             Matcher titre = TITRE.matcher(lire(gabarit));
-            return titre.find() && titre.group().contains("th:text=");
+            if (!titre.find()) {
+                return false;
+            }
+            Matcher texte = TEXTE_DU_TITRE.matcher(titre.group());
+            if (!texte.find()) {
+                return false;
+            }
+            Matcher litteral = LITTERAL.matcher(texte.group(1).replace(SUFFIXE_DU_TITRE, ""));
+            while (litteral.find()) {
+                if (LETTRES.matcher(litteral.group(1)).find()) {
+                    return false;
+                }
+            }
+            return true;
+        }
+    }
+
+    @Nested
+    @DisplayName("Textes des pages (F6)")
+    class Textes {
+
+        /**
+         * Un texte écrit dans une page sans {@code th:text} est servi tel quel, donc en
+         * français, quelle que soit la langue choisie. Le texte de repli d'une balise
+         * qui porte {@code th:text} n'est pas concerné : il n'est jamais rendu.
+         *
+         * <p>La page de recherche est restée ainsi, corps compris, après la traduction
+         * des vingt pages relevées à la main : aucun test ne lisait le corps des pages.
+         * Les fragments sont balayés aussi, ils se rendent dans toutes les pages.</p>
+         */
+        @Test
+        @DisplayName("aucun texte n'est écrit en dur dans un gabarit")
+        void aucunTexteEnDur() {
+            List<String> figes = new ArrayList<>();
+            for (Path gabarit : gabarits()) {
+                String contenu = COMMENTAIRE.matcher(lire(gabarit)).replaceAll("");
+                contenu = SCRIPT_OU_STYLE.matcher(contenu).replaceAll("");
+                Matcher balise = BALISE_PUIS_TEXTE.matcher(contenu);
+                while (balise.find()) {
+                    String texte = balise.group(3).strip();
+                    if (balise.group(1).equals("title") && nom(gabarit).contains("fragments/")) {
+                        continue;
+                    }
+                    if (TEXTE_REMPLACE.matcher(balise.group(2)).find()
+                            || !LETTRES.matcher(texte).find()
+                            || TEXTES_INVARIABLES.contains(texte)) {
+                        continue;
+                    }
+                    figes.add(nom(gabarit) + " : <" + balise.group(1) + "> " + texte);
+                }
+            }
+            assertThat(figes).as("le champ leurre est toujours relevé, sinon l'exception est périmée")
+                    .contains(LEURRE);
+            figes.remove(LEURRE);
+            assertThat(figes).as("textes servis en français dans les trois langues").isEmpty();
         }
     }
 
