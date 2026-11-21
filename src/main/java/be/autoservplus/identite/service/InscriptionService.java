@@ -182,7 +182,7 @@ public class InscriptionService {
                     "Le lien de verification a expire. Demandez un nouvel envoi.");
         }
 
-        membre.confirmerAdresseEmail();
+        membre.confirmerAdresseEmail(Instant.now(horloge));
         return membre;
     }
 
