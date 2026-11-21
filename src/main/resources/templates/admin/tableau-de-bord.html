@@ -1,5 +1,6 @@
 <!DOCTYPE html>
-<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -10,37 +11,174 @@
 <body>
 <a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 <header th:replace="~{fragments/back-office :: entete}"></header>
-<main id="contenu">
+<main id="contenu" th:with="periode=${bord.periode()},
+        du=${#temporals.format(bord.periode().du(), 'dd/MM/yyyy')},
+        au=${#temporals.format(bord.periode().au(), 'dd/MM/yyyy')}">
     <h1 th:text="#{admin.tableau.titre}">Tableau de bord</h1>
-    <p class="carte-meta" th:text="#{admin.tableau.mois(${bord.mois()})}">Mois d'août 2026</p>
+
+    <!--/* La période voyage dans l'adresse : une vue se garde en favori, et l'export
+         reprend celle de l'écran. Les dates sont rendues au format ISO, jamais par
+         th:field, qui appliquerait le format belge. */-->
+    <section class="tableau-periode">
+        <h2 th:text="#{admin.tableau.periode}">Période</h2>
+        <nav class="filtres" th:attr="aria-label=#{admin.tableau.periode.aria}">
+            <a class="filtre" th:href="@{/admin(periode='jour')}" th:text="#{admin.tableau.periode.jour}"
+               th:classappend="${periode.code() == 'jour'} ? 'filtre-actif'"
+               th:attr="aria-current=${periode.code() == 'jour'} ? 'true' : null">Aujourd'hui</a>
+            <a class="filtre" th:href="@{/admin(periode='semaine')}" th:text="#{admin.tableau.periode.semaine}"
+               th:classappend="${periode.code() == 'semaine'} ? 'filtre-actif'"
+               th:attr="aria-current=${periode.code() == 'semaine'} ? 'true' : null">Cette semaine</a>
+            <a class="filtre" th:href="@{/admin}" th:text="#{admin.tableau.periode.mois}"
+               th:classappend="${periode.code() == 'mois'} ? 'filtre-actif'"
+               th:attr="aria-current=${periode.code() == 'mois'} ? 'true' : null">Ce mois</a>
+        </nav>
+        <form class="filtre-periode" th:action="@{/admin}" method="get">
+            <div class="champ">
+                <label for="du" th:text="#{admin.ventes.filtre.du}">Du</label>
+                <input type="date" id="du" name="du" th:value="${periode.duSaisi()}" aria-describedby="aide-periode">
+            </div>
+            <div class="champ">
+                <label for="au" th:text="#{admin.ventes.filtre.au}">Au</label>
+                <input type="date" id="au" name="au" th:value="${periode.auSaisi()}" aria-describedby="aide-periode">
+            </div>
+            <button type="submit" class="btn-cta" th:text="#{admin.tableau.periode.appliquer}">Afficher</button>
+            <p class="texte-info" id="aide-periode" th:text="#{admin.tableau.periode.aide}">
+                Une date saisie remplace le raccourci.</p>
+        </form>
+        <p class="carte-meta" id="periode-affichee" th:text="#{admin.tableau.periode.intervalle(${du}, ${au})}">Du 01/11/2026 au 30/11/2026</p>
+        <p class="texte-erreur" role="alert" th:if="${periode.inversee()}" th:text="#{admin.tableau.periode.inversee}">
+            La date de début est postérieure à la date de fin.</p>
+    </section>
 
     <section>
-        <h2 th:text="#{admin.tableau.finances}">Chiffre d'affaires</h2>
-        <dl>
-            <dt th:text="#{admin.tableau.ca-htva}">CA facturé HTVA</dt>
-            <dd th:text="${bord.chiffreAffaire().htva()} + ' €'">4 200,00 €</dd>
-            <dt th:text="#{admin.tableau.ca-tvac}">CA facturé TVAC</dt>
-            <dd th:text="${bord.chiffreAffaire().tvac()} + ' €'">5 082,00 €</dd>
-            <dt th:text="#{admin.tableau.factures}">Factures émises</dt>
-            <dd th:text="${bord.chiffreAffaire().nombre()}">12</dd>
-            <dt th:text="#{admin.tableau.avoirs}">Avoirs émis (en déduction)</dt>
-            <dd th:text="${bord.avoirs().htva()} + ' € (' + ${bord.avoirs().nombre()} + ')'">0,00 € (0)</dd>
-            <dt th:text="#{admin.tableau.ca-net}">CA net HTVA</dt>
-            <dd th:text="${bord.chiffreAffaireNetHtva()} + ' €'">4 200,00 €</dd>
+        <h2 th:text="#{admin.tableau.indicateurs}">Indicateurs de la période</h2>
+        <dl class="indicateurs">
+            <div class="indicateur">
+                <dt th:text="#{admin.tableau.ca-htva}">CA facturé HTVA</dt>
+                <dd th:text="${#numbers.formatDecimal(bord.chiffreAffaire().htva(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">4 200,00 €</dd>
+            </div>
+            <div class="indicateur">
+                <dt th:text="#{admin.tableau.ca-tvac}">CA facturé TVAC</dt>
+                <dd th:text="${#numbers.formatDecimal(bord.chiffreAffaire().tvac(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">5 082,00 €</dd>
+            </div>
+            <div class="indicateur">
+                <dt th:text="#{admin.tableau.factures}">Factures émises</dt>
+                <dd th:text="${bord.chiffreAffaire().nombre()}">12</dd>
+            </div>
+            <div class="indicateur">
+                <dt th:text="#{admin.tableau.avoirs}">Avoirs émis (en déduction)</dt>
+                <dd th:text="${#numbers.formatDecimal(bord.avoirs().htva(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' € (' + ${bord.avoirs().nombre()} + ')'">0,00 € (0)</dd>
+            </div>
+            <div class="indicateur">
+                <dt th:text="#{admin.tableau.ca-net}">CA net HTVA</dt>
+                <dd th:text="${#numbers.formatDecimal(bord.chiffreAffaireNetHtva(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">4 200,00 €</dd>
+            </div>
+            <div class="indicateur">
+                <dt th:text="#{admin.tableau.rdv.total}">Rendez-vous</dt>
+                <dd id="indicateur-rendez-vous" th:text="${bord.annulations().total()}">18</dd>
+            </div>
+            <div class="indicateur">
+                <dt th:text="#{admin.tableau.annulations.taux}">Taux d'annulation</dt>
+                <dd id="indicateur-annulation" th:if="${bord.annulations().taux() != null}"
+                    th:text="#{admin.tableau.pourcentage(${bord.annulations().taux()})}">11 %</dd>
+                <!--/* Pas de « 0 % » sans rendez-vous : ce serait annoncer une période sans
+                     annulation alors qu'elle est sans rendez-vous. */-->
+                <dd id="indicateur-annulation" th:if="${bord.annulations().taux() == null}"
+                    th:text="#{admin.tableau.annulations.taux.inconnu}">Non calculable</dd>
+            </div>
+            <div class="indicateur">
+                <dt th:text="#{admin.tableau.nouveaux-clients}">Nouveaux clients</dt>
+                <dd id="indicateur-clients" th:text="${bord.nouveauxClients()}">4</dd>
+            </div>
+            <div class="indicateur">
+                <dt th:text="#{admin.tableau.panier-moyen}">Panier moyen HTVA, hors avoirs</dt>
+                <dd id="indicateur-panier" th:if="${bord.panierMoyenHtva() != null}"
+                    th:text="${#numbers.formatDecimal(bord.panierMoyenHtva(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">84,10 €</dd>
+                <dd id="indicateur-panier" th:if="${bord.panierMoyenHtva() == null}"
+                    th:text="#{admin.tableau.panier-moyen.aucun}">Aucune commande payée</dd>
+            </div>
         </dl>
+        <p class="carte-meta" th:text="#{admin.tableau.nouveaux-clients.aide}">
+            Nouveaux clients : comptes dont l'adresse a été vérifiée pendant la période.</p>
+    </section>
 
-        <!-- Volontairement « commandes à encaisser » et non « factures impayées » :
-             en V1 une facture n'est émise qu'au paiement, un compteur d'impayés
-             vaudrait donc toujours zéro. Ce qui reste à encaisser, ce sont les
-             commandes en attente de paiement. -->
-        <h3 th:text="#{admin.tableau.a-encaisser}">Commandes à encaisser</h3>
-        <p th:if="${bord.aEncaisser().estVide()}" th:text="#{admin.tableau.rien-a-encaisser}">
-            Aucune commande en attente de paiement.
-        </p>
-        <p th:unless="${bord.aEncaisser().estVide()}"
-           th:text="#{admin.tableau.a-encaisser.detail(${bord.aEncaisser().nombre()}, ${bord.aEncaisser().tvac()})}">
-            3 commandes, 210,00 € TVAC
-        </p>
+    <section>
+        <h2 th:text="#{admin.tableau.courbe}">Chiffre d'affaires des trente derniers jours</h2>
+        <p th:if="${courbe.vide()}" th:text="#{admin.tableau.courbe.vide}">Aucune facture émise sur les trente derniers jours.</p>
+        <figure class="graphique" th:unless="${courbe.vide()}">
+            <svg th:attr="viewBox='0 0 ' + ${courbe.largeur()} + ' ' + ${courbe.hauteur()},
+                          aria-label=#{admin.tableau.courbe.aria(${#temporals.format(bord.trenteJours()[0].jour(), 'dd/MM/yyyy')}, ${#temporals.format(bord.trenteJours()[bord.trenteJours().size() - 1].jour(), 'dd/MM/yyyy')})}"
+                 viewBox="0 0 640 240" role="img" id="courbe-chiffre">
+                <g th:each="graduation : ${courbe.ordonnees()}">
+                    <line class="graphique-grille" th:attr="x1=${courbe.gauche()},x2=${courbe.droite()},y1=${graduation.y()},y2=${graduation.y()}"/>
+                    <text class="graphique-texte" text-anchor="end"
+                          th:attr="x=${courbe.gauche() - 8},y=${graduation.y() + 4}"
+                          th:text="${#numbers.formatDecimal(graduation.valeur(), 1, 'DEFAULT', 2, 'DEFAULT')}">500,00</text>
+                </g>
+                <text class="graphique-texte" text-anchor="middle" th:each="repere : ${courbe.abscisses()}"
+                      th:attr="x=${repere.x()},y=${courbe.bas() + 18}"
+                      th:text="${#temporals.format(repere.jour(), 'dd/MM')}">21/11</text>
+                <polyline class="graphique-ligne" th:attr="points=${courbe.points()}"/>
+            </svg>
+            <figcaption th:text="#{admin.tableau.courbe.legende}">
+                Chiffre d'affaires facturé hors TVA, par jour. La courbe ne suit pas la période choisie.</figcaption>
+        </figure>
+        <!--/* Tableau des mêmes valeurs : la courbe est une image pour un lecteur d'écran,
+             et elle ne donne à personne le chiffre exact d'un jour. */-->
+        <details>
+            <summary th:text="#{admin.tableau.donnees}">Voir les valeurs</summary>
+            <table class="tableau" id="valeurs-quotidiennes">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{admin.tableau.colonne.jour}">Jour</th>
+                    <th scope="col" th:text="#{admin.tableau.ca-htva}">CA facturé HTVA</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="jour : ${bord.trenteJours()}">
+                    <td th:text="${#temporals.format(jour.jour(), 'dd/MM/yyyy')}">21/11/2026</td>
+                    <td th:text="${#numbers.formatDecimal(jour.htva(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">0,00 €</td>
+                </tr>
+                </tbody>
+            </table>
+        </details>
+    </section>
+
+    <section>
+        <h2 th:text="#{admin.tableau.categories}">Chiffre d'affaires par catégorie</h2>
+        <p th:if="${barres.vide()}" th:text="#{admin.tableau.categories.vide}">Aucune vente facturée sur la période.</p>
+        <th:block th:unless="${barres.vide()}">
+            <figure class="graphique">
+                <svg th:attr="viewBox='0 0 ' + ${barres.largeur()} + ' ' + ${barres.hauteur()},
+                              aria-label=#{admin.tableau.categories.aria(${du}, ${au})}"
+                     viewBox="0 0 640 88" role="img" id="histogramme-categories">
+                    <g th:each="barre : ${barres.barres()}">
+                        <text class="graphique-texte" x="0" th:attr="y=${barre.yLibelle()}"
+                              th:text="${barre.libelle()} + ' : ' + ${#numbers.formatDecimal(barre.valeur(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">Freinage : 240,00 €</text>
+                        <rect class="graphique-barre" x="0" th:attr="y=${barre.yBarre()},width=${barre.largeur()},height=${epaisseur}"/>
+                    </g>
+                </svg>
+                <figcaption th:text="#{admin.tableau.categories.legende}">
+                    Lignes des commandes facturées sur la période, hors TVA, par catégorie du catalogue.</figcaption>
+            </figure>
+            <details>
+                <summary th:text="#{admin.tableau.donnees}">Voir les valeurs</summary>
+                <table class="tableau" id="valeurs-categories">
+                    <thead>
+                    <tr>
+                        <th scope="col" th:text="#{admin.tableau.colonne.categorie}">Catégorie</th>
+                        <th scope="col" th:text="#{admin.tableau.ca-htva}">CA facturé HTVA</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    <tr th:each="categorie : ${bord.parCategorie()}">
+                        <td th:text="${categorie.categorie()}">Freinage</td>
+                        <td th:text="${#numbers.formatDecimal(categorie.htva(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">240,00 €</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </details>
+        </th:block>
     </section>
 
     <section>
@@ -49,8 +187,8 @@
            th:text="#{admin.tableau.occupation(${bord.tauxOccupation()}, ${bord.postesActifs()})}">
             42 % d'occupation sur 3 postes
         </p>
-        <!-- Pas de « 0 % » quand la capacité est inconnue : ce serait annoncer un
-             atelier vide alors que la question n'a pas de réponse. -->
+        <!--/* Pas de « 0 % » quand la capacité est inconnue : ce serait annoncer un
+             atelier vide alors que la question n'a pas de réponse. */-->
         <p th:if="${bord.tauxOccupation() == null}" th:text="#{admin.tableau.occupation-inconnue}">
             Occupation non calculable : aucun poste actif ou aucune plage d'ouverture définie.
         </p>
@@ -58,42 +196,64 @@
             Capacité théorique : les congés et jours fériés ne sont pas déduits, le taux est donc minorant.
         </p>
 
-        <h3 th:text="#{admin.tableau.rdv}">Rendez-vous du mois</h3>
+        <h3 th:text="#{admin.tableau.rdv}">Rendez-vous</h3>
         <p th:if="${#lists.isEmpty(bord.rendezVous())}" th:text="#{admin.tableau.aucun-rdv}">
-            Aucun rendez-vous ce mois-ci.
+            Aucun rendez-vous sur la période.
         </p>
-        <ul th:unless="${#lists.isEmpty(bord.rendezVous())}">
-            <li th:each="r : ${bord.rendezVous()}">
-                <span th:text="#{'rdv.statut.' + ${r.statut()}}">Confirmé</span> :
-                <span th:text="${r.nombre()}">7</span>
-            </li>
-        </ul>
+        <th:block th:unless="${#lists.isEmpty(bord.rendezVous())}">
+            <ul>
+                <li th:each="r : ${bord.rendezVous()}"
+                    th:text="#{admin.tableau.rdv.statut(#{'rdv.statut.' + ${r.statut()}}, ${r.nombre()})}">Confirmé : 7</li>
+            </ul>
+            <p id="detail-annulations"
+               th:text="#{admin.tableau.annulations.detail(${bord.annulations().annules()}, ${bord.annulations().total()}, ${bord.annulations().parLeMembre()}, ${bord.annulations().parLeGarage()})}">
+                2 annulé(s) sur 18 rendez-vous : 1 par le membre, 1 par le garage.</p>
+            <p class="carte-meta" id="a-part"
+               th:text="#{admin.tableau.annulations.a-part(${bord.annulations().absents()}, ${bord.annulations().refuses()})}">
+                Comptés à part : 1 absence(s), 0 demande(s) refusée(s) par le garage.</p>
+        </th:block>
     </section>
 
     <section>
-        <h2 th:text="#{admin.tableau.ventes}">Meilleures ventes du mois</h2>
+        <h2 th:text="#{admin.tableau.ventes}">Meilleures ventes</h2>
 
-        <h3 th:text="#{admin.tableau.top-prestations}">Prestations</h3>
+        <!--/* Lues sur les interventions terminées : en V1 une prestation n'est ni
+               vendue en ligne ni facturée, le montant est celui du devis. */-->
+        <h3 th:text="#{admin.tableau.top-prestations.titre}">Prestations les plus réalisées</h3>
         <p th:if="${#lists.isEmpty(bord.topPrestations())}" th:text="#{admin.tableau.aucune-vente}">Aucune vente.</p>
         <ol th:unless="${#lists.isEmpty(bord.topPrestations())}">
             <li th:each="l : ${bord.topPrestations()}"
-                th:text="#{admin.tableau.vente.ligne(${l.libelle()}, ${l.quantite()}, ${#numbers.formatDecimal(l.montantHtva(), 1, 2)})}">
-                Vidange : 4 vendu(s), 240,00 € HTVA
+                th:text="#{admin.tableau.realise.ligne(${l.libelle()}, ${l.quantite()}, ${#numbers.formatDecimal(l.montantHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">
+                Vidange : 4 réalisées, 240,00 € HTVA au devis
             </li>
         </ol>
 
-        <h3 th:text="#{admin.tableau.top-pieces}">Pièces</h3>
+        <h3 th:text="#{admin.tableau.top-pieces.titre}">Pièces les plus vendues</h3>
         <p th:if="${#lists.isEmpty(bord.topPieces())}" th:text="#{admin.tableau.aucune-vente}">Aucune vente.</p>
         <ol th:unless="${#lists.isEmpty(bord.topPieces())}">
             <li th:each="l : ${bord.topPieces()}"
-                th:text="#{admin.tableau.vente.ligne(${l.libelle()}, ${l.quantite()}, ${#numbers.formatDecimal(l.montantHtva(), 1, 2)})}">
-                Filtre à huile : 6 vendu(s), 54,00 € HTVA
+                th:text="#{admin.tableau.vente.ligne(${l.libelle()}, ${l.quantite()}, ${#numbers.formatDecimal(l.montantHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">
+                Filtre à huile : 6 vendues, 54,00 € HTVA
             </li>
         </ol>
     </section>
 
     <section>
-        <h2 th:text="#{admin.tableau.stock}">Stock à surveiller</h2>
+        <h2 th:text="#{admin.tableau.etat}">État du moment</h2>
+        <p class="carte-meta" th:text="#{admin.tableau.etat.aide}">Ces deux rubriques ne suivent pas la période.</p>
+
+        <!--/* « Commandes à encaisser » et non « factures impayées » : une facture n'est
+             émise qu'au paiement, un compteur d'impayés vaudrait toujours zéro. */-->
+        <h3 th:text="#{admin.tableau.a-encaisser}">Commandes à encaisser</h3>
+        <p th:if="${bord.aEncaisser().estVide()}" th:text="#{admin.tableau.rien-a-encaisser}">
+            Aucune commande en attente de paiement.
+        </p>
+        <p th:unless="${bord.aEncaisser().estVide()}"
+           th:text="#{admin.tableau.a-encaisser.detail(${bord.aEncaisser().nombre()}, ${#numbers.formatDecimal(bord.aEncaisser().tvac(), 1, 'DEFAULT', 2, 'DEFAULT')})}">
+            3 commandes, 210,00 € TVAC
+        </p>
+
+        <h3 th:text="#{admin.tableau.stock}">Stock à surveiller</h3>
         <p th:if="${#lists.isEmpty(bord.piecesEnAlerte())}" th:text="#{admin.tableau.stock-ok}">
             Aucune pièce sous son seuil d'alerte.
         </p>
@@ -103,6 +263,18 @@
                 <span th:text="#{admin.tableau.stock.detail(${p.stock()}, ${p.seuil()})}">2 en stock, seuil 5</span>
                 <span th:if="${p.enRupture()}" class="badge" th:text="#{admin.tableau.rupture}">Rupture</span>
             </li>
+        </ul>
+    </section>
+
+    <section>
+        <h2 th:text="#{admin.tableau.export}">Exporter</h2>
+        <ul>
+            <li><a id="export-indicateurs" th:text="#{admin.tableau.export.indicateurs}"
+                   th:href="${periode.code() != null}
+                        ? @{/admin/tableau-de-bord/indicateurs.csv(periode=${periode.code()})}
+                        : @{/admin/tableau-de-bord/indicateurs.csv(du=${periode.du()},au=${periode.au()})}">Indicateurs de la période (CSV)</a></li>
+            <li><a id="export-quotidien" th:href="@{/admin/tableau-de-bord/chiffre-quotidien.csv}"
+                   th:text="#{admin.tableau.export.quotidien}">Chiffre d'affaires des trente derniers jours (CSV)</a></li>
         </ul>
     </section>
 

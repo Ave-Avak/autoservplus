@@ -1,6 +1,7 @@
 package be.autoservplus.pilotage.repository;
 
 import be.autoservplus.pilotage.service.dto.LigneClassement;
+import be.autoservplus.pilotage.service.dto.MontantCategorie;
 import be.autoservplus.pilotage.service.dto.MontantPeriode;
 import be.autoservplus.pilotage.service.dto.RepartitionStatut;
 import jakarta.persistence.EntityManager;
@@ -9,7 +10,11 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Agregations du tableau de bord (BL-1).
@@ -63,7 +68,7 @@ public class IndicateursRepository {
         return new MontantPeriode((BigDecimal) ligne[0], (BigDecimal) ligne[1], (Long) ligne[2]);
     }
 
-    /** Rendez-vous du mois, par statut. */
+    /** Rendez-vous de la période, par statut. Un rendez-vous compte au jour de son créneau. */
     @SuppressWarnings("unchecked")
     public List<RepartitionStatut> rendezVousParStatut(Instant debut, Instant fin) {
         return em.createQuery("""
@@ -144,6 +149,11 @@ public class IndicateursRepository {
      * {@code ligne_intervention} et ne sont pas comptees ici. Melanger les deux sources
      * dans un meme classement additionnerait des chiffres qui ne se facturent pas de la
      * meme facon : le garage lit ici ce que sa boutique a vendu.</p>
+     *
+     * <p>Même assiette que {@link #chiffreAffaireParCategorie} : les lignes des commandes
+     * facturées pendant la période. Comptées à la date de commande, une commande annulée
+     * ou jamais payée entrait au classement, et son total dépassait le chiffre
+     * d'affaires de sa catégorie.</p>
      */
     @SuppressWarnings("unchecked")
     public List<LigneClassement> topPieces(Instant debut, Instant fin, int limite) {
@@ -153,7 +163,9 @@ public class IndicateursRepository {
                         FROM LignePanier l
                         JOIN l.commande c
                         WHERE l.piece IS NOT NULL
-                          AND c.dateCommande >= :debut AND c.dateCommande < :fin
+                          AND EXISTS (SELECT 1 FROM Facture f
+                                      WHERE f.commande = c
+                                        AND f.dateEmission >= :debut AND f.dateEmission < :fin)
                         GROUP BY l.libelleFige
                         ORDER BY SUM(l.quantite) DESC
                         """)
@@ -180,5 +192,133 @@ public class IndicateursRepository {
                         """)
                 .getSingleResult();
         return new MontantPeriode((BigDecimal) ligne[0], (BigDecimal) ligne[1], (Long) ligne[2]);
+    }
+
+    /**
+     * Rendez-vous annulés de la période, partagés entre le membre et le garage.
+     *
+     * <p>Le garage ne peut annuler qu'avec un motif, que {@code Rdv.annulerParLeGarage}
+     * écrit dans {@code motifRefus}. Le membre annule sans motif. Le motif présent ou
+     * absent sur un rendez-vous annulé dit donc qui a annulé, sans colonne de plus.</p>
+     *
+     * @return deux nombres : annulations par le membre, puis par le garage
+     */
+    public long[] annulationsMembreEtGarage(Instant debut, Instant fin) {
+        Object[] ligne = (Object[]) em.createQuery("""
+                        SELECT COALESCE(SUM(CASE WHEN r.motifRefus IS NULL THEN 1 ELSE 0 END), 0),
+                               COALESCE(SUM(CASE WHEN r.motifRefus IS NULL THEN 0 ELSE 1 END), 0)
+                        FROM Rdv r
+                        WHERE r.statut = be.autoservplus.reservation.domain.StatutRdv.ANNULE
+                          AND r.debut >= :debut AND r.debut < :fin
+                        """)
+                .setParameter("debut", debut)
+                .setParameter("fin", fin)
+                .getSingleResult();
+        return new long[]{((Number) ligne[0]).longValue(), ((Number) ligne[1]).longValue()};
+    }
+
+    /**
+     * Nouveaux clients : comptes de membre dont l'adresse a été vérifiée pendant la
+     * période.
+     *
+     * <p>Une inscription jamais confirmée n'est pas un client. La date est celle de la
+     * vérification (V63). Un compte vérifié avant V63, ou inséré vérifié par une graine,
+     * n'en porte pas : il est daté de sa création, seule date connue. Un compte supprimé
+     * depuis n'est plus compté, son adresse n'étant plus vérifiée après l'anonymisation.</p>
+     */
+    public long nouveauxClients(Instant debut, Instant fin) {
+        // Requête native : COALESCE mêle une colonne de l'entité et une colonne d'audit
+        // héritée, et le filtre deleted_at reproduit le @SQLRestriction que le natif
+        // court-circuite.
+        Number nombre = (Number) em.createNativeQuery("""
+                        SELECT COUNT(*)
+                        FROM utilisateur
+                        WHERE type_utilisateur = 'MEMBRE'
+                          AND email_verifie
+                          AND deleted_at IS NULL
+                          AND COALESCE(email_verifie_le, created_at) >= :debut
+                          AND COALESCE(email_verifie_le, created_at) < :fin
+                        """)
+                .setParameter("debut", debut)
+                .setParameter("fin", fin)
+                .getSingleResult();
+        return nombre.longValue();
+    }
+
+    /**
+     * Commandes payées pendant la période, assiette du panier moyen.
+     *
+     * <p>Bornée sur la date de paiement : une commande remboursée depuis la garde, elle a
+     * bien été passée et payée à ce montant. Une commande jamais payée n'en a pas.</p>
+     */
+    public MontantPeriode commandesPayees(Instant debut, Instant fin) {
+        Object[] ligne = (Object[]) em.createQuery("""
+                        SELECT COALESCE(SUM(c.montantHtva), 0), COALESCE(SUM(c.montantTvac), 0), COUNT(c)
+                        FROM Commande c
+                        WHERE c.datePaiement >= :debut AND c.datePaiement < :fin
+                        """)
+                .setParameter("debut", debut)
+                .setParameter("fin", fin)
+                .getSingleResult();
+        return new MontantPeriode((BigDecimal) ligne[0], (BigDecimal) ligne[1], (Long) ligne[2]);
+    }
+
+    /**
+     * Chiffre d'affaires facturé hors TVA par catégorie du catalogue, du plus fort au
+     * plus faible.
+     *
+     * <p>Les lignes des commandes facturées pendant la période, rangées par la catégorie
+     * de leur pièce ou de leur prestation. Requête native : une ligne porte l'une ou
+     * l'autre, et la catégorie se lit par un COALESCE sur deux jointures externes. Un
+     * article retiré du catalogue garde sa catégorie, le natif ne filtrant pas
+     * {@code deleted_at}.</p>
+     */
+    @SuppressWarnings("unchecked")
+    public List<MontantCategorie> chiffreAffaireParCategorie(Instant debut, Instant fin) {
+        List<Object[]> lignes = em.createNativeQuery("""
+                        SELECT cat.libelle, SUM(l.prix_unitaire_htva * l.quantite) AS htva
+                        FROM facture f
+                        JOIN ligne_panier l ON l.commande_id = f.commande_id
+                        LEFT JOIN piece p ON p.id = l.piece_id
+                        LEFT JOIN service s ON s.id = l.service_id
+                        JOIN categorie cat ON cat.id = COALESCE(p.categorie_id, s.categorie_id)
+                        WHERE f.date_emission >= :debut AND f.date_emission < :fin
+                        GROUP BY cat.libelle
+                        ORDER BY htva DESC, cat.libelle
+                        """)
+                .setParameter("debut", debut)
+                .setParameter("fin", fin)
+                .getResultList();
+        return lignes.stream()
+                .map(ligne -> new MontantCategorie((String) ligne[0], (BigDecimal) ligne[1]))
+                .toList();
+    }
+
+    /**
+     * Chiffre d'affaires facturé hors TVA par jour de l'atelier. Seuls les jours qui ont
+     * une facture y figurent, l'appelant complète les autres.
+     *
+     * <p>Le jour se calcule en base, dans le fuseau de l'atelier : une facture émise à
+     * 23 h 30 à Bruxelles appartient à ce jour-là, pas au lendemain du serveur en UTC.</p>
+     */
+    @SuppressWarnings("unchecked")
+    public Map<LocalDate, BigDecimal> chiffreAffaireParJour(Instant debut, Instant fin, ZoneId zone) {
+        List<Object[]> lignes = em.createNativeQuery("""
+                        SELECT CAST(date_emission AT TIME ZONE :zone AS date) AS jour, SUM(montant_htva)
+                        FROM facture
+                        WHERE date_emission >= :debut AND date_emission < :fin
+                        GROUP BY jour
+                        ORDER BY jour
+                        """)
+                .setParameter("zone", zone.getId())
+                .setParameter("debut", debut)
+                .setParameter("fin", fin)
+                .getResultList();
+        Map<LocalDate, BigDecimal> parJour = new LinkedHashMap<>();
+        for (Object[] ligne : lignes) {
+            LocalDate jour = ligne[0] instanceof LocalDate date ? date : ((java.sql.Date) ligne[0]).toLocalDate();
+            parJour.put(jour, (BigDecimal) ligne[1]);
+        }
+        return parJour;
     }
 }

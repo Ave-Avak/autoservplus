@@ -14,7 +14,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
-import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -59,6 +58,11 @@ class TableauDeBordIT extends SocleIntegration {
                 indicateurs.topPrestations(DEBUT, FIN, 5);
                 indicateurs.topPieces(DEBUT, FIN, 5);
                 indicateurs.commandesAEncaisser();
+                indicateurs.annulationsMembreEtGarage(DEBUT, FIN);
+                indicateurs.nouveauxClients(DEBUT, FIN);
+                indicateurs.commandesPayees(DEBUT, FIN);
+                indicateurs.chiffreAffaireParCategorie(DEBUT, FIN);
+                indicateurs.chiffreAffaireParJour(DEBUT, FIN, java.time.ZoneId.of("Europe/Brussels"));
             }).doesNotThrowAnyException();
         }
 
@@ -86,9 +90,10 @@ class TableauDeBordIT extends SocleIntegration {
         @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
         @DisplayName("le service assemble un tableau complet sur la base de demo")
         void assemblageComplet() {
-            var bord = service.duMois(Locale.FRENCH);
+            var bord = service.pour(service.periode(null, null, null));
 
-            assertThat(bord.mois()).isNotBlank();
+            assertThat(bord.periode().code()).isEqualTo("mois");
+            assertThat(bord.trenteJours()).hasSize(30);
             assertThat(bord.chiffreAffaire()).isNotNull();
             assertThat(bord.aEncaisser()).isNotNull();
             assertThat(bord.piecesEnAlerte()).isNotNull();
@@ -117,7 +122,7 @@ class TableauDeBordIT extends SocleIntegration {
         @WithMockUser(username = "membre@exemple.be", roles = "MEMBRE")
         @DisplayName("niveau methode : le service refuse meme sans passer par l URL")
         void serviceRedouble() {
-            assertThatThrownBy(() -> service.duMois(Locale.FRENCH))
+            assertThatThrownBy(() -> service.pour(service.periode(null, null, null)))
                     .as("le chiffre d affaires du garage n a rien a faire devant un membre")
                     .isInstanceOf(AccessDeniedException.class);
         }

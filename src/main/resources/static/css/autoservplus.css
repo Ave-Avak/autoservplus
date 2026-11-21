@@ -466,6 +466,35 @@ main code { overflow-wrap: anywhere; }
 .fiche-actions { margin-top: var(--espace-l); }
 
 
+/* --- Tableau de bord ------------------------------------------------------------ */
+
+/* Cartes d'indicateurs : une grille qui se replie seule, sans rupture écrite. */
+.indicateurs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+    gap: var(--espace-m);
+    margin: 0 0 var(--espace-m);
+}
+.indicateur {
+    padding: var(--espace-m);
+    border: 1px solid var(--gris-200);
+    border-radius: var(--rayon);
+    background: var(--blanc);
+}
+.indicateur dt { color: var(--gris-700); font-size: 0.875rem; }
+.indicateur dd { margin: var(--espace-xs) 0 0; font-size: 1.375rem; font-weight: 700; color: var(--bleu-marine); }
+
+/* Graphiques rendus en SVG par le serveur. Les couleurs sont ici et non dans les
+   balises : la politique de sécurité du contenu refuse les styles en ligne. Marine sur
+   blanc, 11.62:1. La grille est décorative, le tableau des valeurs porte l'information. */
+.graphique { margin: 0 0 var(--espace-m); max-width: 44rem; }
+.graphique svg { display: block; width: 100%; height: auto; }
+.graphique figcaption { color: var(--gris-700); font-size: 0.875rem; margin-top: var(--espace-xs); }
+.graphique-ligne { fill: none; stroke: var(--bleu-marine); stroke-width: 2; stroke-linejoin: round; }
+.graphique-grille { stroke: var(--gris-200); stroke-width: 1; }
+.graphique-barre { fill: var(--bleu-marine); }
+.graphique-texte { fill: var(--gris-700); font-size: 12px; }
+
 /* --- Page de recherche ---------------------------------------------------------- */
 
 .resultats-compte {
