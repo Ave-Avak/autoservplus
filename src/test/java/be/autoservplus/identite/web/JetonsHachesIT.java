@@ -33,6 +33,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -261,6 +262,28 @@ class JetonsHachesIT extends SocleIntegration {
                                 // Thymeleaf échappe l'apostrophe à l'affichage.
                                 containsString(cas.getValue().replace("'", "&#39;")),
                                 not(containsString(INTROUVABLE)))));
+            }
+        }
+
+        /**
+         * Le balayage des titres vérifie qu'un titre suit la langue, pas qu'il dit la
+         * même chose que la page : le changement d'adresse annonçait « Adresse
+         * confirmée » dans l'onglet au-dessus de « Lien inutilisable ».
+         */
+        @Test
+        @DisplayName("lien refusé : le titre de l'onglet dit le refus, sur les quatre liens, en FR et en NL")
+        void titreDuRefus() throws Exception {
+            Map<String, List<String>> attendus = Map.of(
+                    "/inscription/verification", List.of("Vérification de votre adresse", "Verificatie van uw e-mailadres"),
+                    "/mot-de-passe/nouveau", List.of("Lien invalide", "Ongeldige link"),
+                    "/compte/definition", List.of("Lien invalide", "Ongeldige link"),
+                    "/changement-adresse/confirmation", List.of("Lien inutilisable", "Link onbruikbaar"));
+            for (Map.Entry<String, List<String>> cas : attendus.entrySet()) {
+                mvc.perform(get(cas.getKey()).param("jeton", "inconnu").locale(Locale.FRENCH))
+                        .andExpect(status().isNotFound())
+                        .andExpect(content().string(containsString("<title>" + cas.getValue().get(0) + " | AutoServ+</title>")));
+                mvc.perform(get(cas.getKey()).param("jeton", "inconnu").locale(Locale.forLanguageTag("nl")))
+                        .andExpect(content().string(containsString("<title>" + cas.getValue().get(1) + " | AutoServ+</title>")));
             }
         }
 
