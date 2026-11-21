@@ -1,16 +1,16 @@
 package be.autoservplus.reservation.service.support;
 
-import be.autoservplus.reservation.domain.StatutRdv;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.CsvSource;
+
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -79,24 +79,48 @@ class FormatageRdvTest {
             assertThat(FormatageRdv.euros(new BigDecimal("9.5")))
                     .isEqualTo("9,50" + NBSP + "€");
         }
-    }
 
-    @Nested
-    @DisplayName("statut lisible")
-    class StatutLisible {
+        @Test
+        @DisplayName("dans la langue de l'écran, comme les prix du catalogue")
+        void selonLaLangue() {
+            BigDecimal montant = new BigDecimal("1234.5");
+            assertThat(FormatageRdv.euros(montant, Locale.ENGLISH)).isEqualTo("1,234.50" + NBSP + "€");
+            assertThat(FormatageRdv.euros(montant, Locale.forLanguageTag("nl"))).isEqualTo("1.234,50" + NBSP + "€");
+            assertThat(FormatageRdv.euros(new BigDecimal("49"), Locale.FRENCH)).isEqualTo("49,00" + NBSP + "€");
+        }
 
-        @ParameterizedTest(name = "{0} -> {1}")
-        @CsvSource({
-                "EN_ATTENTE, En attente de confirmation",
-                "CONFIRME,   Confirmé",
-                "REFUSE,     Refusé par le garage",
-                "ANNULE,     Annulé",
-                "HONORE,     Effectué",
-                "ABSENT,     Non présenté"
-        })
-        @DisplayName("chaque statut a un libelle stable")
-        void libelleParStatut(StatutRdv statut, String attendu) {
-            assertThat(FormatageRdv.statutLisible(statut)).isEqualTo(attendu);
+        @Test
+        @DisplayName("à l'écran, la langue vient du contexte de la requête")
+        void langueDeLaRequete() {
+            try {
+                LocaleContextHolder.setLocale(Locale.ENGLISH);
+                assertThat(FormatageRdv.eurosEcran(new BigDecimal("49"))).isEqualTo("49.00" + NBSP + "€");
+                LocaleContextHolder.setLocale(Locale.FRENCH);
+                assertThat(FormatageRdv.eurosEcran(new BigDecimal("49"))).isEqualTo("49,00" + NBSP + "€");
+            } finally {
+                // Le contexte est remis à vide, et non à sa valeur lue : la lire l'aurait
+                // déjà remplacée par la langue de la machine.
+                LocaleContextHolder.resetLocaleContext();
+            }
+        }
+
+        /**
+         * Les tests de service appellent les vues sans requête. La CI tourne sur une
+         * machine en anglais : cinq d'entre eux y recevaient « 80.21 € » là où le poste
+         * de développement, en français, rendait « 80,21 € ».
+         */
+        @Test
+        @DisplayName("sans contexte de requête, le français du site, quelle que soit la langue de la machine")
+        void sansRequeteLeFrancaisDuSite() {
+            Locale machine = Locale.getDefault();
+            try {
+                Locale.setDefault(Locale.US);
+                LocaleContextHolder.resetLocaleContext();
+                assertThat(FormatageRdv.eurosEcran(new BigDecimal("80.21"))).isEqualTo("80,21" + NBSP + "€");
+            } finally {
+                Locale.setDefault(machine);
+                LocaleContextHolder.resetLocaleContext();
+            }
         }
     }
 }

@@ -250,7 +250,7 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
 
         assertThat(session.isInvalid()).isTrue();
         assertThat(relire(admin).getMfaEchecs()).isEqualTo((short) 1);
-        mvc.perform(get("/connexion").param("delai", ""))
+        mvc.perform(get("/connexion").param("delai", "").locale(Locale.FRENCH))
                 .andExpect(content().string(containsString(
                         "Le délai de saisie du code est dépassé. Reconnectez-vous.")));
     }
@@ -283,7 +283,7 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
         vieillir(session, Duration.ofMinutes(2));
         mvc.perform(get(EtapeConnexion.CHANGEMENT_MOT_DE_PASSE.chemin()).session(session))
                 .andExpect(redirectedUrl("/connexion?delai-mot-de-passe"));
-        mvc.perform(get("/connexion").param("delai-mot-de-passe", ""))
+        mvc.perform(get("/connexion").param("delai-mot-de-passe", "").locale(Locale.FRENCH))
                 .andExpect(content().string(containsString(
                         "Le délai de saisie du nouveau mot de passe est dépassé. Reconnectez-vous.")));
     }

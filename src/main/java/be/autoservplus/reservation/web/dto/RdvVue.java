@@ -1,14 +1,19 @@
 package be.autoservplus.reservation.web.dto;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
+/**
+ * Rendez-vous vu par son membre. Le jour reste une date et le statut un code : le
+ * gabarit les rend dans la langue de l'écran, ce qu'une chaîne formatée par le service
+ * empêchait.
+ */
 public record RdvVue(
         UUID reference,
         String numero,
         String statut,
-        String statutLisible,
-        String jourLisible,
+        LocalDate jour,
         String heureDebut,
         String heureFin,
         String vehicule,

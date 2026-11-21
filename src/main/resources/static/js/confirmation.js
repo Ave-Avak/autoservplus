@@ -1,21 +1,20 @@
 /*
  * Confirmation avant une action destructive.
  *
- * Le message affiche est lu depuis data-message si present, sinon compose a partir de
- * data-designation pour le message historique de suppression de vehicule. Les chaines
- * transitent par des attributs data-* plutot que d etre insere directement dans un
- * gestionnaire d evenement : une chaine issue de la base et injectee dans du
- * JavaScript ouvrirait une faille d injection de code.
+ * Le message est lu dans data-message, rédigé par le gabarit dans la langue de la page.
+ * Le script n'en compose aucun : une phrase écrite ici resterait en français. Les
+ * chaînes transitent par des attributs data-* plutôt que d'être insérées dans un
+ * gestionnaire d'événement : une chaîne issue de la base et injectée dans du
+ * JavaScript ouvrirait une faille d'injection de code.
  *
- * Cette confirmation est un confort d interface, pas une protection : l action est en
- * POST et le service verifie les autorisations et la coherence metier.
+ * Cette confirmation est un confort d'interface, pas une protection : l'action est en
+ * POST et le service vérifie les autorisations et la cohérence métier.
  */
 document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('.formulaire-suppression').forEach(function (formulaire) {
         formulaire.addEventListener('submit', function (evenement) {
-            const designation = formulaire.dataset.designation || 'cet élément';
-            const message = formulaire.dataset.message || ('Retirer ' + designation + ' de votre parc ?');
-            if (!window.confirm(message)) {
+            const message = formulaire.dataset.message;
+            if (message && !window.confirm(message)) {
                 evenement.preventDefault();
             }
         });

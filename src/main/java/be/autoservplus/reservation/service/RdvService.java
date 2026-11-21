@@ -122,11 +122,12 @@ public class RdvService {
         Instant fin = debut.plus(Rdv.dureeArrondie(dureeMinutes, p.pas()));
 
         if (!disponibilites.estReservable(debut, fin)) {
-            throw new CreneauIndisponibleException("Ce creneau n est pas ouvert a la reservation.");
+            throw new CreneauIndisponibleException(CreneauIndisponibleException.NON_OUVERT,
+                    "Ce créneau n'est pas ouvert à la réservation.");
         }
         PosteAtelier poste = disponibilites.premierPosteLibre(debut, fin)
-                .orElseThrow(() -> new CreneauIndisponibleException(
-                        "Ce creneau vient d etre pris. Choisissez-en un autre."));
+                .orElseThrow(() -> new CreneauIndisponibleException(CreneauIndisponibleException.PRIS,
+                        "Ce créneau vient d'être pris. Choisissez-en un autre."));
 
         Rdv rdv = new Rdv(numeros.prochain(), membre, vehicule, poste, debut, p.pas(), choisies, commentaire);
         if (p.isConfirmationAutomatique()) {
@@ -165,8 +166,8 @@ public class RdvService {
                 throw e;
             }
             log.info("Collision de reservation sur {} a {} : {}", poste.getLibelle(), debut, e.getMostSpecificCause().getMessage());
-            throw new CreneauIndisponibleException(
-                    "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.", e);
+            throw new CreneauIndisponibleException(CreneauIndisponibleException.PRIS_PAR_UN_AUTRE,
+                    "Ce créneau vient d'être pris par un autre membre. Choisissez-en un autre.", e);
         } catch (DataAccessException e) {
             // Deux insertions simultanées sur le même intervalle placent chacune sa ligne
             // dans l'index de la contrainte d'exclusion, puis vérifient l'autre. Chacune y
@@ -179,8 +180,8 @@ public class RdvService {
                 throw e;
             }
             log.info("Interblocage entre deux reservations sur {} a {} : {}", poste.getLibelle(), debut, e.getMostSpecificCause().getMessage());
-            throw new CreneauIndisponibleException(
-                    "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.", e);
+            throw new CreneauIndisponibleException(CreneauIndisponibleException.PRIS_PAR_UN_AUTRE,
+                    "Ce créneau vient d'être pris par un autre membre. Choisissez-en un autre.", e);
         }
     }
 
@@ -286,13 +287,12 @@ public class RdvService {
                 rdv.getReference(),
                 rdv.getNumero(),
                 rdv.getStatut().name(),
-                FormatageRdv.statutLisible(rdv.getStatut()),
-                FormatageRdv.jourLisible(rdv.getDebut(), zone),
+                rdv.getDebut().atZone(zone).toLocalDate(),
                 FormatageRdv.heureLisible(rdv.getDebut(), zone),
                 FormatageRdv.heureLisible(rdv.getFin(), zone),
                 rdv.getVehicule().getMarque() + " " + rdv.getVehicule().getModele() + " (" + rdv.getVehicule().getPlaque() + ")",
                 rdv.getLignes().stream().map(l -> l.getPrestation().getLibelle()).toList(),
-                FormatageRdv.euros(rdv.montantTvac()),
+                FormatageRdv.eurosEcran(rdv.montantTvac()),
                 rdv.getCommentaire(),
                 rdv.getMotifRefus(),
                 peutEtreAnnule(rdv),
@@ -318,7 +318,8 @@ public class RdvService {
         try {
             rdv.annulerParLeMembre(horloge.instant(), delai);
         } catch (IllegalStateException e) {
-            throw new RegleMetierException("RM-11", e.getMessage());
+            throw new RefusTraduit("RM-11", "rdv.annulation.delai",
+                    new Object[]{delai.toHours()}, e.getMessage());
         }
         log.info("Rendez-vous {} annule par le membre", rdv.getNumero());
         avis.annulationParLeMembre(rdv);
@@ -353,17 +354,19 @@ public class RdvService {
         Instant maintenant = horloge.instant();
         if (!rdv.peutEtreModifieParLeMembre(maintenant, p.delaiAnnulation())) {
             throw new RefusTraduit("RM-11", "rdv.modification.delai",
+                    new Object[]{p.delaiAnnulation().toHours()},
                     "Le déplacement en ligne n'est plus possible à moins de %d heures du rendez-vous."
                             .formatted(p.delaiAnnulation().toHours()));
         }
 
         Instant fin = nouveauDebut.plus(rdv.duree());
         if (!disponibilites.estReservable(nouveauDebut, fin)) {
-            throw new CreneauIndisponibleException("Ce creneau n est pas ouvert a la reservation.");
+            throw new CreneauIndisponibleException(CreneauIndisponibleException.NON_OUVERT,
+                    "Ce créneau n'est pas ouvert à la réservation.");
         }
         PosteAtelier poste = disponibilites.premierPosteLibre(nouveauDebut, fin, rdv)
-                .orElseThrow(() -> new CreneauIndisponibleException(
-                        "Ce creneau vient d etre pris. Choisissez-en un autre."));
+                .orElseThrow(() -> new CreneauIndisponibleException(CreneauIndisponibleException.PRIS,
+                        "Ce créneau vient d'être pris. Choisissez-en un autre."));
 
         Instant ancienDebut = rdv.getDebut();
         Instant echeance = p.isConfirmationAutomatique() ? null
@@ -398,15 +401,15 @@ public class RdvService {
             if (!EtatSql.estUneExclusion(e)) {
                 throw e;
             }
-            throw new CreneauIndisponibleException(
-                    "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.", e);
+            throw new CreneauIndisponibleException(CreneauIndisponibleException.PRIS_PAR_UN_AUTRE,
+                    "Ce créneau vient d'être pris par un autre membre. Choisissez-en un autre.", e);
         } catch (DataAccessException e) {
             if (!EtatSql.estUnInterblocage(e)) {
                 throw e;
             }
             log.info("Interblocage au deplacement de {} sur {} a {}", rdv.getNumero(), poste.getLibelle(), debut);
-            throw new CreneauIndisponibleException(
-                    "Ce creneau vient d etre pris par un autre membre. Choisissez-en un autre.", e);
+            throw new CreneauIndisponibleException(CreneauIndisponibleException.PRIS_PAR_UN_AUTRE,
+                    "Ce créneau vient d'être pris par un autre membre. Choisissez-en un autre.", e);
         }
     }
 
@@ -421,6 +424,7 @@ public class RdvService {
         Rdv rdv = rdvDuMembre(reference, email);
         if (!rdv.peutEtreModifieParLeMembre(horloge.instant(), p.delaiAnnulation())) {
             throw new RefusTraduit("RM-11", "rdv.modification.delai",
+                    new Object[]{p.delaiAnnulation().toHours()},
                     "Le déplacement en ligne n'est plus possible.");
         }
         ZoneId zone = p.zone();
@@ -444,9 +448,5 @@ public class RdvService {
                         FormatageRdv.heureLisible(c.debut(), zone) + " - " + FormatageRdv.heureLisible(c.fin(), zone),
                         c.postesLibres()))
                 .toList();
-    }
-
-    public long delaiAnnulationHeures() {
-        return parametres.courants().delaiAnnulation().toHours();
     }
 }

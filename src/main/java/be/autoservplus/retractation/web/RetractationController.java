@@ -1,6 +1,5 @@
 package be.autoservplus.retractation.web;
 
-import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.retractation.service.RetractationImpossibleException;
 import be.autoservplus.retractation.service.RetractationService;
 import be.autoservplus.retractation.service.dto.DeclarationRetractationVue;
@@ -38,17 +37,15 @@ import java.util.UUID;
  * seconde étape, elle, est rendue en réponse au POST de la première : elle n'écrit
  * rien, et la reposter ne fait que la rendre de nouveau.</p>
  *
- * <p>{@code RessourceIntrouvableException} est <b>catchee</b> et traduite en page
- * dediee plutot que laissee remonter en 500 : c est l asymetrie relevee sur
- * {@code RdvController} et il n y a pas de raison de la reproduire dans du code
- * neuf.</p>
+ * <p>{@code RessourceIntrouvableException} n'est pas rattrapée : une commande inconnue
+ * ou celle d'un autre membre répond 404 par la page d'erreur commune, sans rien
+ * confirmer de son existence.</p>
  */
 @Controller
 @RequestMapping("/commandes/{reference}/annulation")
 public class RetractationController {
 
     private static final String LISTE = "redirect:/commandes";
-    private static final String INTROUVABLE = "retractation/commande-introuvable";
 
     private final RetractationService retractations;
     private final MessageSource messages;
@@ -102,8 +99,6 @@ public class RetractationController {
             // destinee a l utilisateur, et ajouter un motif oblige a ajouter sa cle.
             redirection.addFlashAttribute("erreur",
                     msg("retractation.refus." + e.getMotif().name()));
-        } catch (RessourceIntrouvableException e) {
-            return INTROUVABLE;
         }
         return LISTE;
     }
@@ -118,8 +113,6 @@ public class RetractationController {
             redirection.addFlashAttribute("erreur",
                     msg("retractation.refus." + e.getMotif().name()));
             return LISTE;
-        } catch (RessourceIntrouvableException e) {
-            return INTROUVABLE;
         }
         modele.addAttribute("titre", msg(cleTitre));
         modele.addAttribute("declaration", declaration);

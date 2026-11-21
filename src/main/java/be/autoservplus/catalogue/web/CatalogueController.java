@@ -1,6 +1,7 @@
 package be.autoservplus.catalogue.web;
 
 import be.autoservplus.avis.service.AvisService;
+import be.autoservplus.common.web.FormulairePublic;
 import be.autoservplus.galerie.service.GalerieService;
 import be.autoservplus.catalogue.service.CatalogueService;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
@@ -39,7 +40,6 @@ public class CatalogueController {
 
     @GetMapping("/services")
     public String listerPrestations(@RequestParam(required = false) String categorie, Model modele) {
-        modele.addAttribute("titre", "Nos prestations");
         modele.addAttribute("articles", (categorie == null || categorie.isBlank())
                 ? service.prestationsActives()
                 : service.prestationsDeCategorie(categorie));
@@ -51,7 +51,6 @@ public class CatalogueController {
 
     @GetMapping("/pieces")
     public String listerPieces(@RequestParam(required = false) String categorie, Model modele) {
-        modele.addAttribute("titre", "Pièces détachées");
         modele.addAttribute("articles", (categorie == null || categorie.isBlank())
                 ? service.piecesActives()
                 : service.piecesDeCategorie(categorie));
@@ -77,6 +76,7 @@ public class CatalogueController {
         return "catalogue/detail";
     }
 
+    @FormulairePublic
     @GetMapping("/pieces/{reference}")
     public String detailPiece(@PathVariable UUID reference, Model modele) {
         ArticleVue article = service.vuePiece(reference);

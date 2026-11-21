@@ -16,7 +16,6 @@ import be.autoservplus.intervention.repository.InterventionRepository;
 import be.autoservplus.notification.domain.TypeNotification;
 import be.autoservplus.notification.service.NotificationService;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
-import be.autoservplus.reservation.service.support.FormatageRdv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -83,7 +82,7 @@ public class AvisService {
     public List<AvisVue> publiesPour(UUID referencePrestation) {
         ZoneId zone = parametres.courants().zone();
         return avis.publiesPourPrestation(referencePrestation).stream()
-                .map(a -> AvisVue.de(a, FormatageRdv.jourLisible(a.getDateDepot(), zone)))
+                .map(a -> AvisVue.de(a, a.getDateDepot().atZone(zone).toLocalDate()))
                 .toList();
     }
 

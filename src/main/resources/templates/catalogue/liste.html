@@ -4,34 +4,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${titre} + ' | AutoServ+'">Catalogue | AutoServ+</title>
+    <title th:text="(${typeArticle == 'service'} ? #{catalogue.titre.services} : #{catalogue.titre.pieces}) + ' | AutoServ+'">Catalogue | AutoServ+</title>
     <meta name="description"
-          th:content="${typeArticle == 'service'}
-              ? 'Découvrez les prestations proposées par notre garage : entretien, freinage, pneumatiques, diagnostic. Prix affichés TVA comprise.'
-              : 'Pièces détachées de marques reconnues, disponibles en stock. Prix affichés TVA comprise.'">
+          th:content="${typeArticle == 'service'} ? #{catalogue.meta.services} : #{catalogue.meta.pieces}">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <h1 th:text="${titre}">Nos prestations</h1>
+    <h1 th:text="${typeArticle == 'service'} ? #{catalogue.titre.services} : #{catalogue.titre.pieces}">Nos prestations</h1>
 
     <p th:if="${typeArticle == 'piece'}"><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
 
     <form class="recherche" th:action="@{/recherche}" method="get" role="search">
-        <label for="q" class="visuellement-cache">Rechercher dans le catalogue</label>
-        <input type="search" id="q" name="q" placeholder="Rechercher une prestation ou une pièce">
-        <button type="submit" class="btn-cta">Rechercher</button>
+        <label for="q" class="visuellement-cache" th:text="#{catalogue.recherche.libelle}">Rechercher dans le catalogue</label>
+        <input type="search" id="q" name="q" th:placeholder="#{catalogue.recherche.exemple}">
+        <button type="submit" class="btn-cta" th:text="#{catalogue.recherche.bouton}">Rechercher</button>
     </form>
 
-    <nav class="filtres" aria-label="Filtrer par catégorie">
+    <nav class="filtres" th:aria-label="#{catalogue.filtres.aria}">
         <a th:href="${typeArticle == 'service'} ? @{/services} : @{/pieces}"
            th:classappend="${categorieActive == null} ? 'filtre-actif' : ''"
-           class="filtre">Toutes</a>
+           class="filtre" th:text="#{catalogue.filtres.toutes}">Toutes</a>
         <a th:each="cat : ${categories}"
            th:href="${typeArticle == 'service'} ? @{/services(categorie=${cat.code})} : @{/pieces(categorie=${cat.code})}"
            th:classappend="${categorieActive == cat.code} ? 'filtre-actif' : ''"
@@ -39,7 +37,7 @@
            class="filtre">Catégorie</a>
     </nav>
 
-    <p th:if="${articles.isEmpty()}" class="message">
+    <p th:if="${articles.isEmpty()}" class="message" th:text="#{catalogue.vide}">
         Aucun élément dans cette catégorie pour le moment.
     </p>
 
@@ -55,29 +53,24 @@
             <p class="carte-description" th:text="${article.description}">Description</p>
 
             <p class="carte-meta" th:if="${article.dureeMinutes != null}">
-                Durée : <span th:text="${article.dureeLisible()}">1 h</span>
+                <span th:text="#{catalogue.duree}">Durée :</span> <span th:text="${article.dureeLisible()}">1 h</span>
             </p>
             <p class="carte-meta" th:if="${article.marque != null}" th:text="${article.marque}">Marque</p>
 
             <p class="carte-prix">
-                <strong th:text="${#numbers.formatDecimal(article.prixTvac, 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</strong>
+                <strong th:text="${#numbers.formatDecimal(article.prixTvac, 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">0,00 €</strong>
                 <span class="carte-htva"
-                      th:text="'(' + ${#numbers.formatDecimal(article.prixHtva, 1, 'POINT', 2, 'COMMA')} + ' € HTVA)'">
+                      th:text="#{catalogue.prix.htva(${#numbers.formatDecimal(article.prixHtva, 1, 'DEFAULT', 2, 'DEFAULT')})}">
                     (0,00 € HTVA)</span>
             </p>
 
-            <p class="texte-erreur" th:if="${!article.disponible}">Momentanément indisponible</p>
+            <p class="texte-erreur" th:if="${!article.disponible}" th:text="#{catalogue.indisponible}">Momentanément indisponible</p>
         </li>
     </ul>
 </main>
 
 <footer class="pied">
-    <ul>
-        <li><a th:href="@{/cgv}">CGV</a></li>
-        <li><a th:href="@{/mentions-legales}">Mentions légales</a></li>
-        <li><a th:href="@{/confidentialite}">Confidentialité</a></li>
-    </ul>
-    <p>&copy; 2026 AutoServ+</p>
+    <p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p>
 </footer>
 
 <div th:replace="~{fragments/cookies :: bandeau}"></div>

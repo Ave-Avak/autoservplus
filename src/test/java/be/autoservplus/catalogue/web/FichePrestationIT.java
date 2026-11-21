@@ -14,6 +14,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.UUID;
+import java.util.Locale;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -56,7 +57,7 @@ class FichePrestationIT extends SocleIntegration {
         utilisateurs.saveAndFlush(membre);
 
         String fiche = mvc.perform(get("/services/{ref}", prestation)
-                        .with(user(membre.getEmail()).roles("MEMBRE")))
+                        .with(user(membre.getEmail()).roles("MEMBRE")).locale(Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         Matcher bouton = BOUTON_RENDEZ_VOUS.matcher(fiche);

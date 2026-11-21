@@ -1,5 +1,6 @@
 package be.autoservplus.cookies.web;
 
+import be.autoservplus.common.web.FormulairePublic;
 import be.autoservplus.cookies.domain.PreferencesCookies;
 import be.autoservplus.cookies.service.PreferencesCookiesService;
 import jakarta.servlet.http.HttpServletRequest;
@@ -63,6 +64,7 @@ public class PreferencesCookiesController {
      * Une page plutot qu une boite reouverte par script : elle reste accessible sans
      * JavaScript, se met en favori et se cite dans la politique de confidentialite.
      */
+    @FormulairePublic
     @GetMapping("/cookies")
     public String preferences(@RequestParam(name = "enregistre", required = false) String enregistre,
                               Model modele) {

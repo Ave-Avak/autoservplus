@@ -33,6 +33,7 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -50,6 +51,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.model;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.view;
 
 /**
@@ -231,12 +233,13 @@ class JetonsHachesIT extends SocleIntegration {
         @DisplayName("lien de vérification inconnu : message traduit en FR, NL et EN")
         void verificationInconnue() throws Exception {
             Map<Locale, String> attendus = Map.of(
-                    Locale.FRENCH, "Ce lien n'est pas valable.",
-                    Locale.forLanguageTag("nl"), "Deze link is niet geldig.",
-                    Locale.ENGLISH, "This link is not valid.");
+                    Locale.FRENCH, "Ce lien ne peut pas être utilisé.",
+                    Locale.forLanguageTag("nl"), "Deze link kan niet worden gebruikt.",
+                    Locale.ENGLISH, "This link cannot be used.");
             for (Map.Entry<Locale, String> cas : attendus.entrySet()) {
                 mvc.perform(get("/inscription/verification").param("jeton", "inconnu")
                                 .locale(cas.getKey()))
+                        .andExpect(status().isNotFound())
                         .andExpect(content().string(allOf(
                                 containsString(cas.getValue().replace("'", "&#39;")),
                                 not(containsString(INTROUVABLE)))));
@@ -247,12 +250,13 @@ class JetonsHachesIT extends SocleIntegration {
         @DisplayName("lien de réinitialisation inconnu : message traduit en FR, NL et EN")
         void reinitialisationInconnue() throws Exception {
             Map<Locale, String> attendus = Map.of(
-                    Locale.FRENCH, "Ce lien n'est pas valable.",
-                    Locale.forLanguageTag("nl"), "Deze link is niet geldig.",
-                    Locale.ENGLISH, "This link is not valid.");
+                    Locale.FRENCH, "Ce lien ne peut pas être utilisé.",
+                    Locale.forLanguageTag("nl"), "Deze link kan niet worden gebruikt.",
+                    Locale.ENGLISH, "This link cannot be used.");
             for (Map.Entry<Locale, String> cas : attendus.entrySet()) {
                 mvc.perform(get("/mot-de-passe/nouveau").param("jeton", "inconnu")
                                 .locale(cas.getKey()))
+                        .andExpect(status().isNotFound())
                         .andExpect(view().name("identite/mot-de-passe-lien-invalide"))
                         .andExpect(content().string(allOf(
                                 // Thymeleaf échappe l'apostrophe à l'affichage.
@@ -261,8 +265,30 @@ class JetonsHachesIT extends SocleIntegration {
             }
         }
 
+        /**
+         * Le balayage des titres vérifie qu'un titre suit la langue, pas qu'il dit la
+         * même chose que la page : le changement d'adresse annonçait « Adresse
+         * confirmée » dans l'onglet au-dessus de « Lien inutilisable ».
+         */
         @Test
-        @DisplayName("lien de réinitialisation expiré : message d'expiration traduit")
+        @DisplayName("lien refusé : le titre de l'onglet dit le refus, sur les quatre liens, en FR et en NL")
+        void titreDuRefus() throws Exception {
+            Map<String, List<String>> attendus = Map.of(
+                    "/inscription/verification", List.of("Vérification de votre adresse", "Verificatie van uw e-mailadres"),
+                    "/mot-de-passe/nouveau", List.of("Lien invalide", "Ongeldige link"),
+                    "/compte/definition", List.of("Lien invalide", "Ongeldige link"),
+                    "/changement-adresse/confirmation", List.of("Lien inutilisable", "Link onbruikbaar"));
+            for (Map.Entry<String, List<String>> cas : attendus.entrySet()) {
+                mvc.perform(get(cas.getKey()).param("jeton", "inconnu").locale(Locale.FRENCH))
+                        .andExpect(status().isNotFound())
+                        .andExpect(content().string(containsString("<title>" + cas.getValue().get(0) + " | AutoServ+</title>")));
+                mvc.perform(get(cas.getKey()).param("jeton", "inconnu").locale(Locale.forLanguageTag("nl")))
+                        .andExpect(content().string(containsString("<title>" + cas.getValue().get(1) + " | AutoServ+</title>")));
+            }
+        }
+
+        @Test
+        @DisplayName("lien de réinitialisation expiré : même 404 et même message qu'un lien inconnu, rien sur l'expiration")
         void reinitialisationExpiree() throws Exception {
             String email = adresse();
             Utilisateur membre = membreVerifie(email);
@@ -272,9 +298,10 @@ class JetonsHachesIT extends SocleIntegration {
 
             mvc.perform(get("/mot-de-passe/nouveau").param("jeton", jeton.clair())
                             .locale(Locale.ENGLISH))
+                    .andExpect(status().isNotFound())
                     .andExpect(content().string(allOf(
-                            containsString("This link has expired. Request a new one."),
-                            not(containsString("expire. Demandez")))));
+                            containsString("This link cannot be used."),
+                            not(containsString("expired")))));
         }
     }
 

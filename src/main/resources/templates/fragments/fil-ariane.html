@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Fragment fil d'Ariane</title></head>
+<body>
+
+<!--/*
+  Fil d'Ariane (Charte graphique §6.1), inséré par les deux en-têtes communs. Le modèle
+  porte filAriane quand la route figure dans TableFilAriane. Sans lui, racine, étape de
+  connexion ou page d'erreur, rien n'est rendu. La page courante n'est pas un lien et
+  porte aria-current, les niveaux précédents en sont un.
+*/-->
+<th:block th:fragment="fil">
+    <nav class="fil-ariane fil-ariane-page" th:if="${filAriane != null}"
+         th:attr="aria-label=#{fil-ariane.aria}" aria-label="Fil d'Ariane">
+        <ol>
+            <li th:each="niveau : ${filAriane.niveaux()}">
+                <a th:if="${niveau.adresse() != null}" th:href="@{${niveau.adresse()}}"
+                   th:text="${niveau.libelle()}">Accueil</a>
+                <span th:unless="${niveau.adresse() != null}" aria-current="page"
+                      th:text="${niveau.libelle()}">Page</span>
+            </li>
+        </ol>
+    </nav>
+</th:block>
+
+</body>
+</html>

@@ -2,6 +2,7 @@ package be.autoservplus.galerie.web;
 
 import be.autoservplus.galerie.service.AdminGalerieService;
 import be.autoservplus.galerie.service.GalerieService;
+import be.autoservplus.galerie.service.TypeGalerie;
 import be.autoservplus.stockage.service.FichierTropVolumineuxException;
 import be.autoservplus.stockage.service.TypeFichierRefuseException;
 import be.autoservplus.stockage.service.TypeMedia;
@@ -51,10 +52,12 @@ public class AdminGalerieController {
 
     @GetMapping("/{type}/{reference}")
     public String gerer(@PathVariable String type, @PathVariable UUID reference, Model modele) {
+        TypeGalerie fiche = TypeGalerie.depuisChemin(type);
+        admin.verifierFiche(fiche, reference);
         modele.addAttribute("titre", msg("admin.galerie.titre"));
         modele.addAttribute("type", type);
         modele.addAttribute("reference", reference);
-        modele.addAttribute("photos", photosDe(type, reference));
+        modele.addAttribute("photos", photosDe(fiche, reference));
         modele.addAttribute("typesAdmis", TypeMedia.typesMimeAdmis());
         modele.addAttribute("libelleTypesAdmis", TypeMedia.libelleDesTypesAdmis());
         return "admin/galerie";
@@ -66,12 +69,12 @@ public class AdminGalerieController {
                           @RequestParam("fichiers") List<MultipartFile> fichiers,
                           @RequestParam("texteAlt") String texteAlt,
                           RedirectAttributes redirection) {
+        TypeGalerie fiche = TypeGalerie.depuisChemin(type);
         try {
-            int ajoutees = switch (type) {
-                case "prestations" -> admin.ajouterAPrestation(reference, fichiers, texteAlt);
-                case "pieces" -> admin.ajouterAPiece(reference, fichiers, texteAlt);
-                case "interventions" -> admin.ajouterAIntervention(reference, fichiers, texteAlt);
-                default -> throw new IllegalArgumentException("Type de galerie inconnu : " + type);
+            int ajoutees = switch (fiche) {
+                case PRESTATIONS -> admin.ajouterAPrestation(reference, fichiers, texteAlt);
+                case PIECES -> admin.ajouterAPiece(reference, fichiers, texteAlt);
+                case INTERVENTIONS -> admin.ajouterAIntervention(reference, fichiers, texteAlt);
             };
             redirection.addFlashAttribute("message", msg("admin.galerie.ajoutees", ajoutees));
         } catch (TypeFichierRefuseException | FichierTropVolumineuxException
@@ -86,17 +89,17 @@ public class AdminGalerieController {
                             @PathVariable UUID reference,
                             @PathVariable Long id,
                             RedirectAttributes redirection) {
+        TypeGalerie.depuisChemin(type);
         admin.supprimer(id);
         redirection.addFlashAttribute("message", msg("admin.galerie.supprimee"));
         return "redirect:/admin/galerie/" + type + "/" + reference;
     }
 
-    private List<?> photosDe(String type, UUID reference) {
+    private List<?> photosDe(TypeGalerie type, UUID reference) {
         return switch (type) {
-            case "prestations" -> galerie.dePrestation(reference);
-            case "pieces" -> galerie.dePiece(reference);
-            case "interventions" -> galerie.dIntervention(reference);
-            default -> List.of();
+            case PRESTATIONS -> galerie.dePrestation(reference);
+            case PIECES -> galerie.dePiece(reference);
+            case INTERVENTIONS -> galerie.dIntervention(reference);
         };
     }
 

@@ -161,7 +161,7 @@ class RdvServiceIT extends SocleIntegration {
         assertThatThrownBy(() -> service.reserver("paul@exemple.be", clio.getReference(),
                 List.of(vidange.getReference()), dimanche10h, null))
                 .isInstanceOf(CreneauIndisponibleException.class)
-                .hasMessageContaining("vient d etre pris")
+                .hasMessageContaining("vient d'être pris")
                 // Le membre recoit le message nu : le code RM-08 vit en Javadoc, pas ici.
                 .hasMessageNotContaining("[RM-");
     }
@@ -249,7 +249,7 @@ class RdvServiceIT extends SocleIntegration {
         assertThatThrownBy(() -> service.reserver("marie@exemple.be", golf.getReference(),
                 List.of(vidange.getReference()), apresFermeture, null))
                 .isInstanceOf(CreneauIndisponibleException.class)
-                .hasMessageContaining("pas ouvert a la reservation");
+                .hasMessageContaining("pas ouvert à la réservation");
     }
 
     @Test

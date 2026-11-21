@@ -6,6 +6,8 @@ import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.service.InterventionService;
 import be.autoservplus.intervention.web.dto.DemandeValidationVue;
 import be.autoservplus.intervention.web.dto.InterventionVueMembre;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -33,10 +35,12 @@ public class InterventionController {
 
     private final InterventionService service;
     private final AvisService avis;
+    private final MessageSource messages;
 
-    public InterventionController(InterventionService service, AvisService avis) {
+    public InterventionController(InterventionService service, AvisService avis, MessageSource messages) {
         this.service = service;
         this.avis = avis;
+        this.messages = messages;
     }
 
     @GetMapping("/{reference}")
@@ -44,7 +48,6 @@ public class InterventionController {
                         @PathVariable UUID reference,
                         Model modele) {
         InterventionVueMembre vue = service.interventionDuMembre(reference, membre.getUsername());
-        modele.addAttribute("titre", "Suivi de l'intervention " + vue.numero());
         // BL-4 : le lien de depot n apparait que si le depot aboutirait, travaux
         // termines et aucun avis deja depose. Le controle reel reste fait au depot,
         // un lien absent n etant pas une securite.
@@ -90,7 +93,6 @@ public class InterventionController {
                              @PathVariable UUID reference,
                              Model modele) {
         DemandeValidationVue vue = service.demandeValidation(reference, membre.getUsername());
-        modele.addAttribute("titre", "Validation des travaux " + vue.numero());
         modele.addAttribute("demande", vue);
         return "intervention/validation";
     }
@@ -101,7 +103,7 @@ public class InterventionController {
                           RedirectAttributes redirection) {
         return repondre(reference, redirection,
                 () -> service.validerDepassement(reference, membre.getUsername()),
-                "Merci, le garage a été prévenu de votre accord. Les travaux se poursuivent.");
+                "intervention.validation.acceptee");
     }
 
     @PostMapping("/{reference}/refuser")
@@ -110,7 +112,7 @@ public class InterventionController {
                           RedirectAttributes redirection) {
         return repondre(reference, redirection,
                 () -> service.refuserDepassement(reference, membre.getUsername()),
-                "Votre refus a été enregistré. Seuls les travaux prévus au devis initial seront réalisés.");
+                "intervention.validation.refusee");
     }
 
     /**
@@ -124,15 +126,19 @@ public class InterventionController {
      * « reference inexistante » de « reference existante mais pas a vous ».</p>
      */
     private String repondre(UUID reference, RedirectAttributes redirection,
-                            Supplier<Intervention> action, String succes) {
+                            Supplier<Intervention> action, String cleSucces) {
         try {
             action.get();
-            redirection.addFlashAttribute("message", succes);
+            redirection.addFlashAttribute("message", msg(cleSucces));
         } catch (ConflitConcurrenceException e) {
-            redirection.addFlashAttribute("erreur", e.getMessage());
+            redirection.addFlashAttribute("erreur", msg("erreur.409.message"));
         } catch (IllegalStateException e) {
-            redirection.addFlashAttribute("erreur", "Cette demande a déjà été traitée.");
+            redirection.addFlashAttribute("erreur", msg("intervention.validation.deja-traitee"));
         }
         return "redirect:/mes-interventions/" + reference;
+    }
+
+    private String msg(String cle) {
+        return messages.getMessage(cle, null, LocaleContextHolder.getLocale());
     }
 }

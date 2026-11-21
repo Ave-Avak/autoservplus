@@ -2,9 +2,11 @@ package be.autoservplus.config;
 
 import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.i18n.ResolveurLangueSession;
+import jakarta.annotation.PostConstruct;
 import org.springframework.context.MessageSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
@@ -41,6 +43,21 @@ public class InternationalisationConfig implements WebMvcConfigurer {
 
     /** Nom du parametre de changement de langue, aussi employe par le selecteur. */
     public static final String PARAMETRE_LANGUE = "lang";
+
+    /**
+     * Fixe au français la langue lue hors de toute requête.
+     *
+     * <p>Dans une requête, la langue vient de {@link #localeResolver()}. En dehors, tâche
+     * planifiée ou fil d'arrière-plan, {@code LocaleContextHolder.getLocale()} retombe
+     * sur la langue de la machine : un conteneur sans réglage de langue tourne en
+     * anglais, et un texte rédigé là sortirait en anglais sans que personne l'ait
+     * choisi. Le repli devient celui du site, {@link LanguesSupportees#DEFAUT}. Seul le
+     * repli de Spring change, pas la langue de la machine virtuelle.</p>
+     */
+    @PostConstruct
+    void fixerLaLangueHorsRequete() {
+        LocaleContextHolder.setDefaultLocale(LanguesSupportees.DEFAUT);
+    }
 
     /**
      * Remplace le resolveur par defaut de Spring Boot, qui lit l en-tete du

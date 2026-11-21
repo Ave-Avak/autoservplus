@@ -87,7 +87,7 @@ class InterventionTemplatesIT extends SocleIntegration {
     @Test
     @DisplayName("GET /mes-interventions/{ref} rend la page complete de suivi")
     void pageComplete() throws Exception {
-        mvc.perform(get("/mes-interventions/{ref}", reference))
+        mvc.perform(get("/mes-interventions/{ref}", reference).locale(java.util.Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Travaux prévus")))
                 .andExpect(content().string(containsString("Vidange")))
@@ -97,7 +97,7 @@ class InterventionTemplatesIT extends SocleIntegration {
     @Test
     @DisplayName("GET /mes-interventions/{ref}/statut rend le fragment isole (pas de <html>)")
     void fragmentStatutIsole() throws Exception {
-        mvc.perform(get("/mes-interventions/{ref}/statut", reference))
+        mvc.perform(get("/mes-interventions/{ref}/statut", reference).locale(java.util.Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("badge")))
                 // Le fragment n est pas une page complete : pas de <html> ni de <header>.
@@ -115,7 +115,7 @@ class InterventionTemplatesIT extends SocleIntegration {
         it.terminer(java.time.Instant.parse("2026-12-01T10:00:00Z"));
         interventions.saveAndFlush(it);
 
-        mvc.perform(get("/mes-interventions/{ref}/statut", reference))
+        mvc.perform(get("/mes-interventions/{ref}/statut", reference).locale(java.util.Locale.FRENCH))
                 .andExpect(status().isOk())
                 // Statut affiche mais pas de trigger de polling : Thymeleaf omet
                 // les attributs a valeur null.
@@ -146,7 +146,7 @@ class InterventionTemplatesIT extends SocleIntegration {
     void encartValidationDansLeFragment() throws Exception {
         provoquerDepassement();
 
-        mvc.perform(get("/mes-interventions/{ref}/statut", reference))
+        mvc.perform(get("/mes-interventions/{ref}/statut", reference).locale(java.util.Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Validation requise")))
                 .andExpect(content().string(containsString("/validation")))
@@ -160,21 +160,21 @@ class InterventionTemplatesIT extends SocleIntegration {
     void ecranValidation() throws Exception {
         provoquerDepassement();
 
-        mvc.perform(get("/mes-interventions/{ref}/validation", reference))
+        mvc.perform(get("/mes-interventions/{ref}/validation", reference).locale(java.util.Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Travaux supplémentaires à valider")))
                 .andExpect(content().string(containsString("Plaquettes avant")))
                 // C'est la seule vue membre qui expose un prix a la ligne : sans lui,
                 // l'accord ne serait pas eclaire.
                 .andExpect(content().string(containsString("89,00")))
-                .andExpect(content().string(containsString("J'accepte ces travaux")))
+                .andExpect(content().string(containsString("J&#39;accepte ces travaux")))
                 .andExpect(content().string(containsString("Je refuse")));
     }
 
     @Test
     @DisplayName("GET /validation hors depassement : 404, pas d'ecran de decision vide")
     void ecranValidationHorsDepassement() throws Exception {
-        mvc.perform(get("/mes-interventions/{ref}/validation", reference))
+        mvc.perform(get("/mes-interventions/{ref}/validation", reference).locale(java.util.Locale.FRENCH))
                 .andExpect(status().isNotFound());
     }
 
@@ -183,7 +183,7 @@ class InterventionTemplatesIT extends SocleIntegration {
     void ligneEnAttenteHorsSuivi() throws Exception {
         provoquerDepassement();
 
-        mvc.perform(get("/mes-interventions/{ref}", reference))
+        mvc.perform(get("/mes-interventions/{ref}", reference).locale(java.util.Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Vidange")))
                 // Tant que le membre n'a pas repondu, la ligne n'est ni due ni prevue :
@@ -229,7 +229,7 @@ class InterventionTemplatesIT extends SocleIntegration {
         it.suspendre();
         interventions.saveAndFlush(it);
 
-        mvc.perform(get("/mes-interventions/{ref}/statut", reference))
+        mvc.perform(get("/mes-interventions/{ref}/statut", reference).locale(java.util.Locale.FRENCH))
                 .andExpect(status().isOk())
                 // Le texte affiche est le percu, pas le libelle technique.
                 .andExpect(content().string(containsString(">En cours<")))

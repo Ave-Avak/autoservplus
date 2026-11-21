@@ -3,35 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Vérifiez votre courriel | AutoServ+</title>
+    <title th:text="#{mot-de-passe.demande.titre} + ' | AutoServ+'">Vérifiez votre courriel | AutoServ+</title>
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 <header th:replace="~{fragments/entete :: entete}"></header>
 <main id="contenu">
-    <h1>Vérifiez votre courriel</h1>
-    <!-- L'adresse saisie n'est PAS reaffichee, alignement sur le parcours de renvoi de
-         verification. La reafficher permettrait de faire porter a cette page une
-         adresse arbitraire : un lien forge menant ici donnerait a n'importe quelle
-         adresse l'apparence d'une confirmation legitime emise par le site. Le message
-         est par ailleurs identique que le compte existe ou non : c'est le courriel,
-         et lui seul, qui renseigne le titulaire. -->
+    <h1 th:text="#{mot-de-passe.demande.titre}">Vérifiez votre courriel</h1>
+    <!--/* L'adresse saisie n'est pas réaffichée, comme au parcours de renvoi de
+         vérification. La réafficher permettrait de faire porter à cette page une
+         adresse arbitraire : un lien forgé menant ici donnerait à n'importe quelle
+         adresse l'apparence d'une confirmation émise par le site. Le message est le
+         même que le compte existe ou non : seul le courriel renseigne le titulaire. */-->
     <div class="message message-succes" role="status">
-        <p>Si un compte est associé à cette adresse, vous recevrez un message dans
-            quelques instants.</p>
-        <p>Le lien qu'il contient reste valable une heure.</p>
-        <!-- Meme ligne de plafond qu'au parcours de renvoi, et meme motif : elle parle
-             du demandeur, pas du compte. Seul texte i18n de cet ecran encore en
-             francais en dur : une chaine ajoutee aujourd'hui n'a pas de raison de
-             naitre non traduite, la traduction de l'ecran entier restant un chantier
-             a part. -->
+        <p th:text="#{mot-de-passe.demande.neutre}">Si un compte est associé à cette adresse, vous recevrez un message dans quelques instants.</p>
+        <p th:text="#{mot-de-passe.demande.validite}">Le lien qu'il contient reste valable une heure.</p>
+        <!--/* Même ligne de plafond qu'au parcours de renvoi, et même motif : elle parle
+             du demandeur, pas du compte. */-->
         <p th:if="${debitDepasse}" th:text="#{securite.debit.trop-de-demandes}">Trop de demandes ont été envoyées depuis peu. Réessayez dans quelques minutes.</p>
     </div>
-    <p>Vous ne recevez rien ? Vérifiez le dossier des indésirables, et assurez-vous
-        que l'adresse saisie est bien celle de votre compte.</p>
-    <p><a th:href="@{/mot-de-passe/oublie}">Essayer avec une autre adresse</a></p>
+    <p th:text="#{verification.renvoi.envoye.indesirables}">Vous ne recevez rien ? Vérifiez le dossier des indésirables, et assurez-vous que l'adresse saisie est bien celle de votre compte.</p>
+    <p><a th:href="@{/mot-de-passe/oublie}" th:text="#{verification.renvoi.envoye.autre}">Essayer avec une autre adresse</a></p>
 </main>
-<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 <div th:replace="~{fragments/cookies :: bandeau}"></div>
 </body>
 </html>

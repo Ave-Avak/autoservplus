@@ -1,10 +1,15 @@
 package be.autoservplus.cookies.web;
 
+import be.autoservplus.common.web.FormulairePublic;
+import be.autoservplus.common.web.PageCourante;
 import be.autoservplus.cookies.domain.PreferencesCookies;
 import jakarta.servlet.http.HttpServletRequest;
+import org.springframework.security.web.csrf.CsrfToken;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.method.HandlerMethod;
+import org.springframework.web.servlet.HandlerMapping;
 import org.springframework.web.util.WebUtils;
 
 import java.util.Optional;
@@ -40,6 +45,31 @@ public class BandeauCookiesAdvice {
         // Protection des Donnees refuse expressement.
         modele.addAttribute(ATTRIBUT_PREFERENCES, choix.orElseGet(PreferencesCookies::refusTotal));
         modele.addAttribute(ATTRIBUT_RETOUR, uriCourante(requete));
+        if (choix.isEmpty() || porteUnFormulairePublic(requete)) {
+            chargerLeJetonCsrf(requete);
+        }
+    }
+
+    /** La méthode de contrôleur retenue pour la requête est marquée {@link FormulairePublic}. */
+    private static boolean porteUnFormulairePublic(HttpServletRequest requete) {
+        return requete.getAttribute(HandlerMapping.BEST_MATCHING_HANDLER_ATTRIBUTE) instanceof HandlerMethod methode
+                && methode.hasMethodAnnotation(FormulairePublic.class);
+    }
+
+    /**
+     * Le jeton CSRF d'un formulaire n'est calculé qu'à sa première lecture. Pour un
+     * visiteur sans session, cette lecture en crée une, ce que le conteneur refuse dès
+     * que la réponse a commencé à partir : une page dont le premier formulaire venait
+     * après 8 ko sortait tronquée, sans fin de document. Le jeton est donc lu ici, avant
+     * le rendu, tant que la session peut encore naître. Seulement quand la page va
+     * rendre un formulaire à ce visiteur : le bandeau, pour qui n'a pas encore choisi,
+     * ou le formulaire d'une page marquée {@link FormulairePublic}. Une page de simple
+     * lecture ne donne pas de session à qui a déjà choisi.
+     */
+    private static void chargerLeJetonCsrf(HttpServletRequest requete) {
+        if (requete.getAttribute(CsrfToken.class.getName()) instanceof CsrfToken jeton) {
+            jeton.getToken();
+        }
     }
 
     private Optional<PreferencesCookies> choixExprime(HttpServletRequest requete) {
@@ -54,8 +84,8 @@ public class BandeauCookiesAdvice {
      * resultats filtres renverrait sur la liste non filtree.
      */
     private String uriCourante(HttpServletRequest requete) {
-        String chemin = requete.getRequestURI();
-        String parametres = requete.getQueryString();
+        String chemin = PageCourante.chemin(requete);
+        String parametres = PageCourante.parametres(requete);
         return parametres == null ? chemin : chemin + "?" + parametres;
     }
 }

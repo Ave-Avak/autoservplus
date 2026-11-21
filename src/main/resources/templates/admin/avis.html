@@ -40,7 +40,7 @@
                 <td th:text="${a.prenomAuteur()}">Marie</td>
                 <td th:text="#{avis.note(${a.note()})}">4 sur 5</td>
                 <td th:text="${a.aUnCommentaire()} ? ${a.commentaire()} : ''">Travail soigné.</td>
-                <td th:text="${a.date()}">23 août 2026</td>
+                <td th:text="${#temporals.format(a.date(), 'd MMMM yyyy')}">23 août 2026</td>
                 <td>
                     <span th:text="${a.publie()} ? #{admin.avis.etat.publie} : #{admin.avis.etat.masque}">Publié</span>
                     <span th:if="${a.signale()}" class="badge" th:text="#{admin.avis.etat.signale}">Signalé</span>

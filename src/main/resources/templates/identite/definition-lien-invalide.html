@@ -14,11 +14,11 @@
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <h1 th:text="#{definition.invalide.titre}">Ce lien n'est plus valable</h1>
+    <h1 th:text="#{definition.invalide.titre}">Lien invalide</h1>
     <!--/* Un seul message pour l'expiré, le consommé et l'inconnu : la page n'a pas à
          dire qu'un lien a existé. */-->
     <p th:text="#{definition.invalide.aide}">
-        Il a expiré ou a déjà servi. Demandez à un super-administrateur de vous en renvoyer un.</p>
+        Demandez à un super-administrateur de vous envoyer un nouveau lien.</p>
 </main>
 
 <footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>

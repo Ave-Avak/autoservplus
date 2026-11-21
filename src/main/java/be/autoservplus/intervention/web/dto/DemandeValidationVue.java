@@ -38,9 +38,9 @@ public record DemandeValidationVue(
                 it.getReference(),
                 it.getNumero(),
                 vehicule.getMarque() + " " + vehicule.getModele() + " (" + vehicule.getPlaque() + ")",
-                FormatageRdv.euros(initial),
-                FormatageRdv.euros(propose),
-                FormatageRdv.euros(propose.subtract(initial)),
+                FormatageRdv.eurosEcran(initial),
+                FormatageRdv.eurosEcran(propose),
+                FormatageRdv.eurosEcran(propose.subtract(initial)),
                 it.getCommentaireAdmin(),
                 it.lignesEnAttente().stream().map(LigneProposeeVue::de).toList());
     }
@@ -49,7 +49,7 @@ public record DemandeValidationVue(
     public record LigneProposeeVue(String libelle, short quantite, String totalHtva) {
         public static LigneProposeeVue de(LigneIntervention l) {
             return new LigneProposeeVue(l.getLibelleFige(), l.getQuantite(),
-                    FormatageRdv.euros(l.totalHtva()));
+                    FormatageRdv.eurosEcran(l.totalHtva()));
         }
     }
 }

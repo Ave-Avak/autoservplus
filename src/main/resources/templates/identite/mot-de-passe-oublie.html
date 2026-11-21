@@ -3,29 +3,29 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Mot de passe oublié | AutoServ+</title>
+    <title th:text="#{mot-de-passe.oublie.titre} + ' | AutoServ+'">Mot de passe oublié | AutoServ+</title>
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 <header th:replace="~{fragments/entete :: entete}"></header>
 <main id="contenu">
-    <h1>Mot de passe oublié</h1>
-    <p>Indiquez l'adresse associée à votre compte. Nous vous enverrons la marche à suivre.</p>
+    <h1 th:text="#{mot-de-passe.oublie.titre}">Mot de passe oublié</h1>
+    <p th:text="#{mot-de-passe.oublie.intro}">Indiquez l'adresse associée à votre compte. Nous vous enverrons la marche à suivre.</p>
 
     <form class="formulaire" th:action="@{/mot-de-passe/oublie}" method="post">
         <div class="champ">
-            <label for="email">Adresse de courriel</label>
+            <label for="email" th:text="#{connexion.email}">Adresse de courriel</label>
             <input type="email" id="email" name="email" autocomplete="email" required autofocus>
         </div>
-        <button type="submit" class="btn-cta">Envoyer</button>
+        <button type="submit" class="btn-cta" th:text="#{mot-de-passe.oublie.envoyer}">Envoyer</button>
         <div th:replace="~{fragments/antibot :: pieges(${horodatageAntiBot})}"></div>
-    <div th:replace="~{fragments/antibot :: turnstile(${cleTurnstile})}"></div>
-</form>
+        <div th:replace="~{fragments/antibot :: turnstile(${cleTurnstile})}"></div>
+    </form>
 
-    <p><a th:href="@{/connexion}">Retour à la connexion</a></p>
+    <p><a th:href="@{/connexion}" th:text="#{mot-de-passe.oublie.retour}">Retour à la connexion</a></p>
 </main>
-<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 <div th:replace="~{fragments/cookies :: bandeau}"></div>
 </body>
 </html>

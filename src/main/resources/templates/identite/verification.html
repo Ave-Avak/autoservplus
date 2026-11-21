@@ -3,32 +3,34 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Vérification | AutoServ+</title>
+    <title th:text="#{verification.titre} + ' | AutoServ+'">Vérification de votre adresse | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 <header th:replace="~{fragments/entete :: entete}"></header>
 <main id="contenu">
     <div th:if="${succes}">
-        <h1>Votre adresse est vérifiée</h1>
+        <h1 th:text="#{verification.succes.titre}">Votre adresse est vérifiée</h1>
         <div class="message message-succes" role="status">
-            <p>Votre compte est actif. Vous pouvez maintenant vous connecter.</p>
+            <p th:text="#{verification.succes.message}">Votre compte est actif. Vous pouvez maintenant vous connecter.</p>
         </div>
-        <a class="btn-cta" th:href="@{/connexion}">Se connecter</a>
+        <a class="btn-cta" th:href="@{/connexion}" th:text="#{connexion.envoyer}">Se connecter</a>
     </div>
     <div th:unless="${succes}">
-        <h1>Vérification impossible</h1>
+        <h1 th:text="#{verification.echec.titre}">Vérification impossible</h1>
         <div class="message message-erreur" role="alert">
-            <p th:text="#{${motif}}">Le lien est invalide ou a expiré.</p>
+            <p th:text="#{lien-courriel.invalide}">Ce lien ne peut pas être utilisé.</p>
         </div>
-        <!-- Cas de loin le plus frequent : le jeton a expire (24 h). L'ecran doit
-             donc offrir le renvoi, pas seulement un retour a l'accueil. -->
+        <!--/* Cas de loin le plus fréquent : le jeton a expiré (24 h). L'écran offre donc
+             le renvoi, pas seulement un retour à l'accueil. */-->
         <p><a th:href="@{/inscription/renvoyer-verification}"
               th:text="#{verification.renvoi.titre}">Renvoyer l'e-mail de vérification</a></p>
-        <p><a th:href="@{/}">Retour à l'accueil</a></p>
+        <p><a th:href="@{/}" th:text="#{erreur.retour-accueil}">Retour à l'accueil</a></p>
     </div>
 </main>
-<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 <div th:replace="~{fragments/cookies :: bandeau}"></div>
 </body>
 </html>

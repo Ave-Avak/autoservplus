@@ -5,7 +5,6 @@ import be.autoservplus.avis.repository.AvisRepository;
 import be.autoservplus.avis.service.dto.AvisVue;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
-import be.autoservplus.reservation.service.support.FormatageRdv;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -54,7 +53,7 @@ public class AdminAvisService {
     public List<AvisVue> tous() {
         ZoneId zone = parametres.courants().zone();
         return avis.tousPourModeration().stream()
-                .map(a -> AvisVue.de(a, FormatageRdv.jourLisible(a.getDateDepot(), zone)))
+                .map(a -> AvisVue.de(a, a.getDateDepot().atZone(zone).toLocalDate()))
                 .toList();
     }
 
