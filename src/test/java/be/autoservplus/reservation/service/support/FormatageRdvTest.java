@@ -4,10 +4,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import org.springframework.context.i18n.LocaleContextHolder;
+
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -75,6 +78,29 @@ class FormatageRdvTest {
                     .isEqualTo("0,00" + NBSP + "€");
             assertThat(FormatageRdv.euros(new BigDecimal("9.5")))
                     .isEqualTo("9,50" + NBSP + "€");
+        }
+
+        @Test
+        @DisplayName("dans la langue de l'écran, comme les prix du catalogue")
+        void selonLaLangue() {
+            BigDecimal montant = new BigDecimal("1234.5");
+            assertThat(FormatageRdv.euros(montant, Locale.ENGLISH)).isEqualTo("1,234.50" + NBSP + "€");
+            assertThat(FormatageRdv.euros(montant, Locale.forLanguageTag("nl"))).isEqualTo("1.234,50" + NBSP + "€");
+            assertThat(FormatageRdv.euros(new BigDecimal("49"), Locale.FRENCH)).isEqualTo("49,00" + NBSP + "€");
+        }
+
+        @Test
+        @DisplayName("à l'écran, la langue vient du contexte de la requête")
+        void langueDeLaRequete() {
+            Locale avant = LocaleContextHolder.getLocale();
+            try {
+                LocaleContextHolder.setLocale(Locale.ENGLISH);
+                assertThat(FormatageRdv.eurosEcran(new BigDecimal("49"))).isEqualTo("49.00" + NBSP + "€");
+                LocaleContextHolder.setLocale(Locale.FRENCH);
+                assertThat(FormatageRdv.eurosEcran(new BigDecimal("49"))).isEqualTo("49,00" + NBSP + "€");
+            } finally {
+                LocaleContextHolder.setLocale(avant);
+            }
         }
     }
 }

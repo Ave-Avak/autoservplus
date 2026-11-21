@@ -24,6 +24,6 @@ public record CommandeAdminLigne(UUID reference, String numero, LocalDateTime da
                 commande.getMembre().nomComplet(),
                 commande.getMembre().getEmail(),
                 commande.getStatut(),
-                FormatageRdv.euros(commande.getMontantTvac()));
+                FormatageRdv.eurosEcran(commande.getMontantTvac()));
     }
 }

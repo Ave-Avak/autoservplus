@@ -39,7 +39,7 @@ public record CommandeHistoriqueVue(
                 commande.getReference(),
                 commande.getNumero(),
                 FormatageRdv.jourLisible(commande.getDateCommande(), zone),
-                FormatageRdv.euros(commande.getMontantTvac()),
+                FormatageRdv.eurosEcran(commande.getMontantTvac()),
                 commande.getStatut(),
                 situation,
                 null,

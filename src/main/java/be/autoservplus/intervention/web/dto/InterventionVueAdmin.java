@@ -68,8 +68,8 @@ public record InterventionVueAdmin(
                 it.getDebutReel() == null ? null : LocalDateTime.ofInstant(it.getDebutReel(), zone),
                 it.getFinReelle() == null ? null : LocalDateTime.ofInstant(it.getFinReelle(), zone),
                 it.getLignes().stream().map(LigneInterventionVue::de).toList(),
-                FormatageRdv.euros(it.totalFacturableHtva()),
-                FormatageRdv.euros(it.totalFacturableTvac()),
+                FormatageRdv.eurosEcran(it.totalFacturableHtva()),
+                FormatageRdv.eurosEcran(it.totalFacturableTvac()),
                 s == StatutIntervention.PLANIFIEE,
                 s.peutPasserA(StatutIntervention.SUSPENDUE),
                 // Reprendre reste possible depuis SUSPENDUE, jamais tant qu une ligne
@@ -81,8 +81,8 @@ public record InterventionVueAdmin(
                 s.estEditable(),
                 s.accepteAjoutDeLigne(),
                 s == StatutIntervention.ATTENTE_VALIDATION_MEMBRE,
-                FormatageRdv.euros(it.devisReferenceHtva()),
-                FormatageRdv.euros(it.totalProposeHtva()),
+                FormatageRdv.eurosEcran(it.devisReferenceHtva()),
+                FormatageRdv.eurosEcran(it.totalProposeHtva()),
                 vehicule.getReference(),
                 it.getNoteInterne());
     }
@@ -104,8 +104,8 @@ public record InterventionVueAdmin(
                     l.getType().name(),
                     l.getLibelleFige(),
                     l.getQuantite(),
-                    FormatageRdv.euros(l.getPrixUnitaireHtva()),
-                    FormatageRdv.euros(l.totalHtva()),
+                    FormatageRdv.eurosEcran(l.getPrixUnitaireHtva()),
+                    FormatageRdv.eurosEcran(l.totalHtva()),
                     cleEtat(l),
                     l.estFacturable());
         }

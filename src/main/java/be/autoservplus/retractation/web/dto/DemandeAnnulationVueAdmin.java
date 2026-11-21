@@ -47,7 +47,7 @@ public record DemandeAnnulationVueAdmin(
                 demande.getReference(),
                 demande.getStatut(),
                 demande.getCommande().getNumero(),
-                FormatageRdv.euros(demande.getCommande().getMontantTvac()),
+                FormatageRdv.eurosEcran(demande.getCommande().getMontantTvac()),
                 FormatageRdv.jourLisible(demande.getCommande().getDateCommande(), zone),
                 FormatageRdv.jourLisible(demande.getDateDemande(), zone),
                 jours,

@@ -292,7 +292,7 @@ public class RdvService {
                 FormatageRdv.heureLisible(rdv.getFin(), zone),
                 rdv.getVehicule().getMarque() + " " + rdv.getVehicule().getModele() + " (" + rdv.getVehicule().getPlaque() + ")",
                 rdv.getLignes().stream().map(l -> l.getPrestation().getLibelle()).toList(),
-                FormatageRdv.euros(rdv.montantTvac()),
+                FormatageRdv.eurosEcran(rdv.montantTvac()),
                 rdv.getCommentaire(),
                 rdv.getMotifRefus(),
                 peutEtreAnnule(rdv),

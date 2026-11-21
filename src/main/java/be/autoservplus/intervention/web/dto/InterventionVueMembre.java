@@ -71,7 +71,7 @@ public record InterventionVueMembre(
                 it.getLignes().stream()
                         .filter(LigneIntervention::estFacturable)
                         .map(LigneVue::de).toList(),
-                FormatageRdv.euros(it.totalFacturableTvac()),
+                FormatageRdv.eurosEcran(it.totalFacturableTvac()),
                 chronologiePercue(historique, zone),
                 s == StatutIntervention.TERMINEE || s == StatutIntervention.ANNULEE,
                 s == StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
