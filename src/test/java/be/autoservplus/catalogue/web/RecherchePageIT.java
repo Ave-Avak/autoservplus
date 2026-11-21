@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -96,6 +97,21 @@ class RecherchePageIT extends SocleIntegration {
     }
 
     @Test
+    @DisplayName("terme limité à cent caractères, dans les deux champs et au serveur")
+    void termeBorne() throws Exception {
+        String trop = "zqx" + "a".repeat(147);
+        String page = ouvrir("/recherche?q=" + trop, Locale.FRENCH);
+
+        assertThat(ouvrir("/services", Locale.FRENCH))
+                .contains("id=\"recherche-entete\" name=\"q\" maxlength=\"100\"");
+        assertThat(page).contains("id=\"q\" name=\"q\" maxlength=\"100\"");
+        assertThat(page).contains("value=\"" + trop.substring(0, 100) + "\"");
+        // L'adresse d'origine reste dans les liens du sélecteur de langue : le terme
+        // coupé se lit là où la recherche l'emploie.
+        assertThat(page).contains("Aucun résultat pour « " + trop.substring(0, 100) + " ».");
+    }
+
+    @Test
     @DisplayName("sous deux caractères : message relié au champ, aucun résultat ni compte")
     void termeTropCourt() throws Exception {
         String page = ouvrir("/recherche?q=z", Locale.FRENCH);
@@ -133,6 +149,26 @@ class RecherchePageIT extends SocleIntegration {
         String page = ouvrir("/recherche?q=<script>zqx", Locale.FRENCH);
 
         assertThat(page).doesNotContain("<script>zqx").contains("&lt;script&gt;zqx");
+    }
+
+    @Test
+    @DisplayName("l'en-tête public porte la recherche, sauf sur la page de recherche et au back-office")
+    void barreDeLEnTete() throws Exception {
+        String barre = "id=\"recherche-entete\"";
+
+        assertThat(ouvrir("/services", Locale.FRENCH)).contains(barre)
+                .contains("<form class=\"recherche-entete\" action=\"/recherche\" method=\"get\" role=\"search\"");
+        assertThat(ouvrir("/services", new Locale("nl"))).contains("placeholder=\"Een dienst of onderdeel zoeken\"");
+        assertThat(ouvrir("/recherche?q=zqx", Locale.FRENCH)).doesNotContain(barre);
+
+        String membre = mvc.perform(get("/pieces").with(user("membre@exemple.be").roles("MEMBRE")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(membre).contains(barre);
+
+        String backOffice = mvc.perform(get("/admin/catalogue/pieces")
+                        .with(user("admin@exemple.be").roles("ADMINISTRATEUR")))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        assertThat(backOffice).doesNotContain(barre);
     }
 
     private String ouvrir(String adresse, Locale langue) throws Exception {

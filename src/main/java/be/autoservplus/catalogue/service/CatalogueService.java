@@ -32,6 +32,8 @@ public class CatalogueService {
 
     private static final int TAILLE_PAGE_PAR_DEFAUT = 12;
     public static final int LONGUEUR_MINIMALE_RECHERCHE = 2;
+    /** Longueur maximale d'un terme de recherche, celle des deux champs de saisie. */
+    public static final int LONGUEUR_MAXIMALE_RECHERCHE = 100;
 
     private final CategorieRepository categories;
     private final PrestationRepository prestations;
@@ -113,6 +115,20 @@ public class CatalogueService {
             page = pieces.rechercher(motif, pagination(page.getTotalPages() - 1));
         }
         return page.map(ArticleVue::de);
+    }
+
+    /**
+     * Terme nettoyé et coupé à {@link #LONGUEUR_MAXIMALE_RECHERCHE} caractères. Le champ
+     * porte la même limite, mais une adresse écrite à la main ne passe pas par lui. Le
+     * terme est coupé plutôt que refusé : la recherche répond sur ce qu'elle a gardé, et
+     * le champ le montre.
+     */
+    public static String termeBorne(String saisie) {
+        String terme = saisie.trim();
+        if (terme.codePointCount(0, terme.length()) <= LONGUEUR_MAXIMALE_RECHERCHE) {
+            return terme;
+        }
+        return terme.substring(0, terme.offsetByCodePoints(0, LONGUEUR_MAXIMALE_RECHERCHE)).trim();
     }
 
     /** Vrai pour un terme absent ou plus court que {@link #LONGUEUR_MINIMALE_RECHERCHE}. */

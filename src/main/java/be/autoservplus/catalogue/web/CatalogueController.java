@@ -101,7 +101,7 @@ public class CatalogueController {
                              @RequestParam(defaultValue = "1") int pagePieces,
                              Model modele) {
 
-        String terme = (q == null || q.isBlank()) ? null : q.trim();
+        String terme = (q == null || q.isBlank()) ? null : CatalogueService.termeBorne(q);
         var prestations = service.rechercherPrestations(terme, pagePrestations - 1);
         var pieces = service.rechercherPieces(terme, pagePieces - 1);
 

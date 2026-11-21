@@ -21,7 +21,7 @@
 
     <form class="recherche" th:action="@{/recherche}" method="get" role="search">
         <label for="q" class="visuellement-cache" th:text="#{catalogue.recherche.libelle}">Rechercher dans le catalogue</label>
-        <input type="search" id="q" name="q" th:value="${terme}" th:placeholder="#{catalogue.recherche.exemple}"
+        <input type="search" id="q" name="q" maxlength="100" th:value="${terme}" th:placeholder="#{catalogue.recherche.exemple}"
                th:attr="aria-invalid=${tropCourt} ? 'true' : null, aria-describedby=${tropCourt} ? 'recherche-erreur' : null">
         <button type="submit" class="btn-cta" th:text="#{catalogue.recherche.bouton}">Rechercher</button>
         <p class="texte-erreur recherche-erreur" id="recherche-erreur" role="alert" th:if="${tropCourt}"

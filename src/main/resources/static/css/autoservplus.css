@@ -291,6 +291,32 @@ main code { overflow-wrap: anywhere; }
     .menu-compte { margin-left: 0; }
     .menu a, .menu .lien-bouton, .menu-back-office a { white-space: normal; }
 }
+/* Recherche de l'en-tête. Champ blanc, texte par défaut du navigateur. Bouton blanc sur
+   marine (11.62:1), comme le bouton du menu. Sous 40em, le champ prend la largeur du
+   panneau replié. */
+.recherche-entete { display: flex; align-items: center; gap: var(--espace-xs); }
+.recherche-entete input {
+    width: 12rem;
+    min-width: 0;
+    padding: 0.25rem var(--espace-s);
+    border: 1px solid var(--blanc);
+    border-radius: var(--rayon);
+    font: inherit;
+}
+.recherche-entete button {
+    padding: 0.25rem var(--espace-s);
+    background: transparent;
+    color: var(--blanc);
+    border: 1px solid var(--blanc);
+    border-radius: var(--rayon);
+    font: inherit;
+    cursor: pointer;
+}
+.recherche-entete button:hover { background: var(--blanc); color: var(--bleu-marine); }
+@media (max-width: 40em) {
+    .recherche-entete input { flex: 1 1 auto; width: auto; }
+}
+
 /* --- Catalogue ------------------------------------------------------------------ */
 
 .recherche {
