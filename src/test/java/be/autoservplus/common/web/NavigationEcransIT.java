@@ -311,6 +311,14 @@ class NavigationEcransIT extends SocleIntegration {
             Map.entry("/panier/vider", "bouton du panier, affiché seulement s'il contient une ligne"),
             Map.entry("/commande", "bouton du panier, affiché seulement s'il contient une ligne"));
 
+    /**
+     * Les écrans ouverts à tous, tels que classés ici. {@code PremiereVisiteSansSessionIT}
+     * les ouvre sur un vrai serveur : la liste n'est écrite qu'à un endroit.
+     */
+    static List<Route> ecransPublics() {
+        return ROUTES.stream().filter(route -> route.ecran() && route.acces() == Acces.PUBLIC).toList();
+    }
+
     private static Route ecran(String patron, Acces acces) {
         return new Route(patron, patron, acces, true, acces == Acces.ETAPE ? 302 : 200);
     }

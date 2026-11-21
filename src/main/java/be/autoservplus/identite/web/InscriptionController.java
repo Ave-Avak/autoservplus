@@ -3,6 +3,7 @@ package be.autoservplus.identite.web;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.FormulairePublic;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.service.InscriptionService;
 import be.autoservplus.identite.service.LimiteurDemandesCourriel;
@@ -85,6 +86,7 @@ public class InscriptionController {
         modele.addAttribute("cleTurnstile", cleTurnstile);
     }
 
+    @FormulairePublic
     @GetMapping("/inscription")
     public String afficherFormulaire(Model modele) {
         InscriptionForm formulaire = new InscriptionForm();
@@ -210,6 +212,7 @@ public class InscriptionController {
      * SecuriteConfig : c est la suite du parcours d inscription, et la placer ailleurs
      * obligerait a elargir la surface publique pour un ecran qui n en a pas besoin.</p>
      */
+    @FormulairePublic
     @GetMapping("/inscription/renvoyer-verification")
     public String afficherRenvoiVerification(Model modele) {
         armerFormulaire(modele);

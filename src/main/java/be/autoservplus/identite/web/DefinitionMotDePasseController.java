@@ -2,6 +2,7 @@ package be.autoservplus.identite.web;
 
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.FormulairePublic;
 import be.autoservplus.identite.service.PremierMotDePasseService;
 import be.autoservplus.identite.web.dto.NouveauMotDePasseForm;
 import jakarta.servlet.http.HttpServletResponse;
@@ -50,6 +51,7 @@ public class DefinitionMotDePasseController {
         this.messages = messages;
     }
 
+    @FormulairePublic
     @GetMapping
     public String afficher(@RequestParam(required = false) String jeton, Model modele,
                            HttpServletResponse reponse) {

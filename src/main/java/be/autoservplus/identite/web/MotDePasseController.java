@@ -2,6 +2,7 @@ package be.autoservplus.identite.web;
 
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.FormulairePublic;
 import be.autoservplus.identite.service.LimiteurDemandesCourriel;
 import be.autoservplus.identite.service.MotDePasseService;
 import be.autoservplus.identite.service.PiegeAntiBot;
@@ -52,6 +53,7 @@ public class MotDePasseController {
                 && !turnstile.get().jetonValide(jeton, requete.getRemoteAddr());
     }
 
+    @FormulairePublic
     @GetMapping("/oublie")
     public String afficherDemande(Model modele) {
         modele.addAttribute("horodatageAntiBot", pieges.horodatageActuel());
@@ -103,6 +105,7 @@ public class MotDePasseController {
      * le même statut et le même message dans les trois cas, pour qu'il ne dise pas qu'un
      * jeton a existé.
      */
+    @FormulairePublic
     @GetMapping("/nouveau")
     public String afficherFormulaire(@RequestParam String jeton, Model modele, HttpServletResponse reponse) {
         try {

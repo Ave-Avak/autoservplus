@@ -1,6 +1,7 @@
 package be.autoservplus.catalogue.web;
 
 import be.autoservplus.avis.service.AvisService;
+import be.autoservplus.common.web.FormulairePublic;
 import be.autoservplus.galerie.service.GalerieService;
 import be.autoservplus.catalogue.service.CatalogueService;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
@@ -75,6 +76,7 @@ public class CatalogueController {
         return "catalogue/detail";
     }
 
+    @FormulairePublic
     @GetMapping("/pieces/{reference}")
     public String detailPiece(@PathVariable UUID reference, Model modele) {
         ArticleVue article = service.vuePiece(reference);
