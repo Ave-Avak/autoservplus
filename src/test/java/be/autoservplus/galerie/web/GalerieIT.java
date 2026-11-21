@@ -222,6 +222,33 @@ class GalerieIT extends SocleIntegration {
     }
 
     @Nested
+    @DisplayName("Fiche inconnue")
+    class FicheInconnue {
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("la galerie d'une fiche existante s'ouvre, celle d'une fiche inconnue répond 404")
+        void ficheInconnue() throws Exception {
+            mvc.perform(get("/admin/galerie/prestations/{r}", premierePrestation()))
+                    .andExpect(status().isOk());
+            mvc.perform(get("/admin/galerie/prestations/{r}", UUID.randomUUID()))
+                    .andExpect(status().isNotFound());
+            mvc.perform(get("/admin/galerie/pieces/{r}", UUID.randomUUID()))
+                    .andExpect(status().isNotFound());
+            mvc.perform(get("/admin/galerie/interventions/{r}", UUID.randomUUID()))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("un type de galerie inconnu répond 404, même pour une fiche qui existe")
+        void typeInconnu() throws Exception {
+            mvc.perform(get("/admin/galerie/vehicules/{r}", premierePrestation()))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
     @DisplayName("Gardes")
     class Gardes {
 

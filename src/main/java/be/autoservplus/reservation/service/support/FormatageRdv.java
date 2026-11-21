@@ -1,6 +1,8 @@
 package be.autoservplus.reservation.service.support;
 
-import be.autoservplus.reservation.domain.StatutRdv;
+import be.autoservplus.i18n.LanguesSupportees;
+import org.springframework.context.i18n.LocaleContext;
+import org.springframework.context.i18n.LocaleContextHolder;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
@@ -37,24 +39,40 @@ public final class FormatageRdv {
     }
 
     /**
-     * Formate un montant en euros au format belge (« 49,00 € »). Une nouvelle
-     * instance de {@link NumberFormat} est creee a chaque appel car le type n est
-     * pas thread-safe : le partager en constante statique introduirait un bug
-     * latent en concurrence.
+     * Montant au format belge francophone (« 49,00 € »), pour ce qui ne dépend pas de la
+     * langue d'un écran : courriels, export comptable. Une nouvelle instance de
+     * {@link NumberFormat} est créée à chaque appel : le type n'est pas thread-safe, et
+     * le partager en constante introduirait un défaut latent en concurrence.
      */
     public static String euros(BigDecimal montant) {
         return NumberFormat.getCurrencyInstance(Locale.forLanguageTag("fr-BE")).format(montant);
     }
 
-    public static String statutLisible(StatutRdv statut) {
-        return switch (statut) {
-            case EN_ATTENTE -> "En attente de confirmation";
-            case CONFIRME -> "Confirmé";
-            case REFUSE -> "Refusé par le garage";
-            case ANNULE -> "Annulé";
-            case HONORE -> "Effectué";
-            case ABSENT -> "Non présenté";
-            case EXPIRE -> "Expiré sans réponse du garage";
-        };
+    /**
+     * Montant dans la langue donnée, deux décimales et le symbole après une espace
+     * insécable, comme les prix du catalogue : « 49,00 € » en français et en néerlandais,
+     * « 49.00 € » en anglais.
+     */
+    public static String euros(BigDecimal montant, Locale langue) {
+        NumberFormat format = NumberFormat.getNumberInstance(langue);
+        format.setMinimumFractionDigits(2);
+        format.setMaximumFractionDigits(2);
+        return format.format(montant) + "\u00A0€";
+    }
+
+    /**
+     * Montant dans la langue de l'écran qui se rend, lue dans le contexte de la requête.
+     * Réservé aux vues construites pendant la requête : un courriel part dans la langue
+     * de son destinataire, et non dans celle de l'écran qui l'a déclenché.
+     *
+     * <p>Sans contexte de requête, la langue est celle du site par défaut, le français.
+     * {@code LocaleContextHolder.getLocale()} retomberait sur la langue de la machine :
+     * le même montant sortait « 80,21 € » sur un poste en français et « 80.21 € » sur
+     * un serveur en anglais.</p>
+     */
+    public static String eurosEcran(BigDecimal montant) {
+        LocaleContext contexte = LocaleContextHolder.getLocaleContext();
+        Locale langue = contexte == null ? null : contexte.getLocale();
+        return euros(montant, langue == null ? LanguesSupportees.DEFAUT : langue);
     }
 }

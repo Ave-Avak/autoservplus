@@ -20,7 +20,8 @@
   Menu repliable sous 40em, motif « Disclosure Navigation » (WAI-ARIA APG) : le bouton
   naît caché et menu.js le révèle. Sans script, les liens restent tous affichés.
 */-->
-<header class="entete" th:fragment="entete">
+<th:block th:fragment="entete">
+<header class="entete">
     <nav th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
         <a class="marque" th:href="@{/}">AutoServ+</a>
         <button type="button" class="bouton-menu" aria-expanded="false" aria-controls="menu-principal" hidden
@@ -72,6 +73,8 @@
     <div th:replace="~{fragments/langue :: selecteur}"></div>
     <script th:src="@{/js/menu.js}" defer></script>
 </header>
+<div th:replace="~{fragments/fil-ariane :: fil}"></div>
+</th:block>
 
 </body>
 </html>

@@ -24,6 +24,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -50,7 +51,7 @@ class ErreursSansDetailTechniqueIT extends SocleIntegration {
 
     private static final Pattern JETON_CSRF = Pattern.compile("name=\"_csrf\" value=\"([^\"]+)\"");
     private static final String MOT_DE_PASSE = "phrase de passe du test des erreurs techniques";
-    private static final String[] INTERDITS = {"Whitelabel", "Exception", "at org."};
+    private static final String[] INTERDITS = {"Whitelabel", "Exception", "at org.", "introuvable :"};
 
     /** Les valeurs que devtools pose en developpement, au rang le plus faible. */
     static class CommeDevtools implements ApplicationContextInitializer<ConfigurableApplicationContext> {
@@ -124,9 +125,22 @@ class ErreursSansDetailTechniqueIT extends SocleIntegration {
     }
 
     @Test
-    @DisplayName("identifiant malformé : 400 traduite, en français et en néerlandais")
+    @DisplayName("identifiant malformé dans le chemin : 404 traduite, comme une référence inconnue")
     void identifiantMalforme() throws Exception {
-        verifier("/pieces/pas-un-identifiant", 400, "fr", "Demande impossible");
-        verifier("/pieces/pas-un-identifiant", 400, "nl", "Verzoek niet mogelijk");
+        verifier("/pieces/pas-un-identifiant", 404, "fr", "Page introuvable");
+        verifier("/pieces/pas-un-identifiant", 404, "nl", "Pagina niet gevonden");
+    }
+
+    @Test
+    @DisplayName("référence bien formée mais inconnue : 404 traduite, sans le message de l'exception")
+    void referenceInconnue() throws Exception {
+        verifier("/pieces/" + UUID.randomUUID(), 404, "fr", "Page introuvable");
+    }
+
+    @Test
+    @DisplayName("paramètre de requête malformé : 400 traduite")
+    void parametreMalforme() throws Exception {
+        verifier("/recherche?q=filtre&page=pas-un-nombre", 400, "fr", "Demande impossible");
+        verifier("/recherche?q=filtre&page=pas-un-nombre", 400, "nl", "Verzoek niet mogelijk");
     }
 }

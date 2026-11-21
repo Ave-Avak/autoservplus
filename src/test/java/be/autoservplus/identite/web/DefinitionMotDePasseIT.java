@@ -169,7 +169,7 @@ class DefinitionMotDePasseIT extends SocleIntegration {
         mvc.perform(post("/compte/definition").with(csrf()).locale(Locale.FRENCH)
                         .param("jeton", jeton).param("motDePasse", "autre phrase encore plus longue")
                         .param("confirmation", "autre phrase encore plus longue"))
-                .andExpect(status().isOk())
+                .andExpect(status().isNotFound())
                 .andExpect(content().string(not(containsString("name=\"motDePasse\""))));
         assertThat(encodeur.matches(CHOISI, parEmail(email).getMotDePasseHache())).isTrue();
 
@@ -189,7 +189,7 @@ class DefinitionMotDePasseIT extends SocleIntegration {
         utilisateurs.saveAndFlush(cree);
 
         mvc.perform(get("/compte/definition").param("jeton", jeton).locale(Locale.FRENCH))
-                .andExpect(status().isOk())
+                .andExpect(status().isNotFound())
                 .andExpect(content().string(not(containsString("name=\"motDePasse\""))));
     }
 

@@ -1,5 +1,6 @@
 package be.autoservplus.identite.web;
 
+import be.autoservplus.common.web.FormulairePublic;
 import be.autoservplus.config.EchecAuthentificationHandler;
 import be.autoservplus.identite.service.GardeConnexion;
 import jakarta.servlet.http.HttpServletRequest;
@@ -34,6 +35,7 @@ public class ConnexionController {
         this.cleTurnstile = cleTurnstile;
     }
 
+    @FormulairePublic
     @GetMapping("/connexion")
     public String afficherFormulaire(@RequestParam(required = false) String erreur,
                                      @RequestParam(required = false) String deconnecte,
@@ -43,7 +45,6 @@ public class ConnexionController {
                                      @RequestParam(name = "session-fermee", required = false)
                                      String sessionFermee,
                                      HttpServletRequest requete, Model modele) {
-        modele.addAttribute("titre", "Connexion");
         modele.addAttribute("erreur", erreur != null);
         modele.addAttribute("deconnecte", deconnecte != null);
         modele.addAttribute("delaiCode", delai != null);

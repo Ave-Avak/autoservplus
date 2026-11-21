@@ -2,7 +2,6 @@ package be.autoservplus.retractation.web;
 
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RegleMetierException;
-import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.retractation.domain.DemandeAnnulation;
 import be.autoservplus.retractation.service.AdminRetractationService;
 import be.autoservplus.retractation.web.dto.MotifDecisionForm;
@@ -71,8 +70,7 @@ public class AdminRetractationController {
             DemandeAnnulation demande = retractations.valider(reference, administrateur.getUsername());
             redirection.addFlashAttribute("message", msg("admin.retractations.validee",
                     demande.getCommande().getNumero(), demande.getAvoir().getNumero()));
-        } catch (RessourceIntrouvableException | ConflitConcurrenceException
-                 | RegleMetierException e) {
+        } catch (ConflitConcurrenceException | RegleMetierException e) {
             redirection.addFlashAttribute("erreur", e.getMessage());
         } catch (PrestataireIndisponibleException e) {
             // Le remboursement est appele DANS la transaction de validation : un refus
@@ -110,7 +108,7 @@ public class AdminRetractationController {
                     reference, formulaire.getMotif(), administrateur.getUsername());
             redirection.addFlashAttribute("message", msg("admin.retractations.refusee",
                     demande.getCommande().getNumero()));
-        } catch (RessourceIntrouvableException | ConflitConcurrenceException e) {
+        } catch (ConflitConcurrenceException e) {
             redirection.addFlashAttribute("erreur", e.getMessage());
         } catch (IllegalStateException | IllegalArgumentException e) {
             redirection.addFlashAttribute("erreur", e.getMessage());
@@ -118,16 +116,12 @@ public class AdminRetractationController {
         return LISTE;
     }
 
+    /** Une demande inconnue lève {@code RessourceIntrouvableException} : 404, page d'erreur commune. */
     private String preparerRefus(UUID reference, MotifDecisionForm formulaire, Model modele) {
-        try {
-            modele.addAttribute("titre", msg("admin.retractations.refus.titre"));
-            modele.addAttribute("demande", retractations.vue(reference));
-            modele.addAttribute("formulaire", formulaire);
-            return "admin/retractation-refuser";
-        } catch (RessourceIntrouvableException e) {
-            modele.addAttribute("erreur", e.getMessage());
-            return "admin/retractation-introuvable";
-        }
+        modele.addAttribute("titre", msg("admin.retractations.refus.titre"));
+        modele.addAttribute("demande", retractations.vue(reference));
+        modele.addAttribute("formulaire", formulaire);
+        return "admin/retractation-refuser";
     }
 
     private String msg(String cle, Object... arguments) {

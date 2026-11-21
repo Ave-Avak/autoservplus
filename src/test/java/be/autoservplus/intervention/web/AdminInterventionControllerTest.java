@@ -85,7 +85,7 @@ class AdminInterventionControllerTest {
     void setUp() {
         org.mockito.Mockito.reset(service);
         vueDemo = new InterventionVueAdmin(REF, "INT-2026-0001",
-                "PLANIFIEE", "Planifiée",
+                "PLANIFIEE",
                 "RDV-2026-0001",
                 "VW Golf (1-ABC-123)",
                 "Marie Dupont", "marie@exemple.be",

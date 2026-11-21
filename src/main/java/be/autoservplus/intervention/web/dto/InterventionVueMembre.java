@@ -6,6 +6,8 @@ import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 
+import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
@@ -15,9 +17,11 @@ import java.util.UUID;
  * Vue d une intervention destinee au membre proprietaire.
  *
  * <p><b>Regle metier RM-16</b> : le membre ne voit pas la mecanique interne du
- * garage. La chaine {@link #statutPercu()} projette les six statuts techniques
- * sur les quatre statuts percus du CdC (« En attente », « En cours »,
- * « Terminee », « Annulee ») et c est ce que le template affiche. Le champ
+ * garage. La clé {@link #cleStatutPercu()} projette les six statuts techniques
+ * sur les quatre statuts perçus du CdC (« En attente », « En cours »,
+ * « Terminée », « Annulée ») et c'est ce que le gabarit affiche, dans la langue de
+ * l'écran. Les dates sont des {@code LocalDateTime} à l'heure de l'atelier : le
+ * gabarit les formate, le DTO connaît le fuseau. Le champ
  * {@link #statut()} conserve la valeur technique brute (« SUSPENDUE »,
  * « ATTENTE_VALIDATION_MEMBRE »...) uniquement pour la logique interne du
  * template (branchement de messages sur TERMINEE vs ANNULEE). Il ne doit
@@ -29,13 +33,12 @@ public record InterventionVueMembre(
         /** Statut technique brut (SUSPENDUE, ATTENTE_VALIDATION_MEMBRE...).
          *  Usage interne du template UNIQUEMENT (branchement) : ne jamais afficher. */
         String statut,
-        /** Statut percu par le membre (RM-16) : « En attente », « En cours »,
-         *  « Terminee », « Annulee ». C est ce qui doit s afficher a l ecran. */
-        String statutPercu,
+        /** Clé i18n du statut perçu par le membre (RM-16). C'est ce qui s'affiche. */
+        String cleStatutPercu,
         String vehicule,
         String commentaireAdmin,
-        String debutReel,
-        String finReelle,
+        LocalDateTime debutReel,
+        LocalDateTime finReelle,
         List<LigneVue> lignes,
         String totalTvac,
         /** Chronologie des changements de statut (F17), deja projetee sur les statuts
@@ -57,25 +60,25 @@ public record InterventionVueMembre(
                 it.getReference(),
                 it.getNumero(),
                 s.name(),
-                s.percuLabel(),
+                s.clePercue(),
                 vehicule.getMarque() + " " + vehicule.getModele() + " (" + vehicule.getPlaque() + ")",
                 it.getCommentaireAdmin(),
-                it.getDebutReel() != null
-                        ? FormatageRdv.jourLisible(it.getDebutReel(), zone) + " " + FormatageRdv.heureLisible(it.getDebutReel(), zone)
-                        : null,
-                it.getFinReelle() != null
-                        ? FormatageRdv.jourLisible(it.getFinReelle(), zone) + " " + FormatageRdv.heureLisible(it.getFinReelle(), zone)
-                        : null,
+                heureLocale(it.getDebutReel(), zone),
+                heureLocale(it.getFinReelle(), zone),
                 // Seules les lignes acquises figurent dans « Travaux prevus » : une ligne
                 // en attente n est pas encore due (elle s affiche sur l ecran de
                 // validation, avec son prix), une ligne refusee ne sera pas executee.
                 it.getLignes().stream()
                         .filter(LigneIntervention::estFacturable)
                         .map(LigneVue::de).toList(),
-                FormatageRdv.euros(it.totalFacturableTvac()),
+                FormatageRdv.eurosEcran(it.totalFacturableTvac()),
                 chronologiePercue(historique, zone),
                 s == StatutIntervention.TERMINEE || s == StatutIntervention.ANNULEE,
                 s == StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+    }
+
+    private static LocalDateTime heureLocale(Instant instant, ZoneId zone) {
+        return instant == null ? null : LocalDateTime.ofInstant(instant, zone);
     }
 
     /**
@@ -119,22 +122,21 @@ public record InterventionVueMembre(
      * Une etape de la chronologie vue par le membre (F17). Les statuts restent les
      * enums techniques : le template affiche leur cle i18n percue via
      * {@link StatutIntervention#clePercue()}, jamais leur nom brut (RM-16). La date
-     * arrive pre-formatee, comme {@code debutReel} et {@code finReelle} : le DTO
-     * connait le fuseau, le template non. L auteur n est volontairement pas expose
-     * cote membre.
+     * est à l'heure de l'atelier, comme {@code debutReel} et {@code finReelle} : le DTO
+     * connaît le fuseau, le gabarit la formate dans la langue de l'écran. L'auteur
+     * n'est volontairement pas exposé côté membre.
      */
     public record EntreeChronologieVue(
             StatutIntervention statutAvant,
             StatutIntervention statutApres,
-            String horodatage,
+            LocalDateTime horodatage,
             String motif) {
 
         public static EntreeChronologieVue de(HistoriqueStatutIntervention h, ZoneId zone) {
             return new EntreeChronologieVue(
                     h.getStatutAvant(),
                     h.getStatutApres(),
-                    FormatageRdv.jourLisible(h.getHorodatage(), zone)
-                            + " " + FormatageRdv.heureLisible(h.getHorodatage(), zone),
+                    LocalDateTime.ofInstant(h.getHorodatage(), zone),
                     h.getMotif());
         }
     }

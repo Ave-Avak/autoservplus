@@ -3,35 +3,35 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="'Suivi ' + ${intervention.numero()} + ' | AutoServ+'">Suivi | AutoServ+</title>
+    <title th:text="#{intervention.suivi.titre(${intervention.numero()})} + ' | AutoServ+'">Suivi | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
-    <!-- HTMX injecte par defaut une feuille de style en ligne pour ses indicateurs,
-         ce que la CSP interdit. On la desactive et on stylise nous-memes. -->
+    <!--/* HTMX injecte par défaut une feuille de style en ligne pour ses indicateurs, ce
+         que la politique de sécurité du contenu interdit. Elle est désactivée, et le
+         style vient de la feuille du site. */-->
     <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <p><a th:href="@{/mes-rendez-vous}">Retour à mes rendez-vous</a></p>
+    <p><a th:href="@{/mes-rendez-vous}" th:text="#{rdv.detail.retour}">Retour à mes rendez-vous</a></p>
 
-    <h1 th:text="'Intervention ' + ${intervention.numero()}">Intervention INT-2026-0001</h1>
+    <h1 th:text="#{intervention.suivi.intervention(${intervention.numero()})}">Intervention INT-2026-0001</h1>
     <p th:text="${intervention.vehicule()}">VW Golf (1-ABC-123)</p>
 
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
 
-    <!-- Fragment statut : rafraichi par polling HTMX toutes les 10 secondes.
-         Le meme fragment est rendu par GET /mes-interventions/{ref}/statut. Le
-         hx-swap="outerHTML" remplace tout le bloc (y compris son propre attribut
-         hx-get), donc le prochain polling reprend depuis la nouvelle version.
-         Quand l intervention est terminale (TERMINEE ou ANNULEE), les attributs
-         hx-* sont omis (Thymeleaf ne rend pas les attributs a valeur null) : plus
-         de polling, pas de trafic inutile. -->
+    <!--/* Fragment du statut, rafraîchi par HTMX toutes les 10 secondes. Le même fragment
+         est rendu par GET /mes-interventions/{ref}/statut. hx-swap="outerHTML" remplace
+         tout le bloc, y compris son propre hx-get : le rafraîchissement suivant repart
+         de la nouvelle version. Quand l'intervention est terminée ou annulée, les
+         attributs hx-* sont omis (Thymeleaf ne rend pas un attribut de valeur nulle) :
+         plus de rafraîchissement, plus de trafic inutile. */-->
     <div th:fragment="blocStatut"
          id="statut-intervention"
          aria-live="polite"
@@ -39,62 +39,65 @@
          th:hx-trigger="${intervention.estTerminale()} ? null : 'every 10s'"
          th:hx-swap="${intervention.estTerminale()} ? null : 'outerHTML'">
 
-        <!-- Badge : le TEXTE affiche est le statut percu (RM-16, projection sur
-             4 valeurs pour le membre). La classe CSS reste derivee du statut
-             technique (invisible au membre, sert uniquement au styling). -->
+        <!--/* Le texte du badge est le statut perçu (RM-16, quatre valeurs pour le
+             membre). La classe CSS reste dérivée du statut technique, qui n'est jamais
+             affiché. */-->
         <p>
             <span th:class="'badge badge-' + ${#strings.toLowerCase(intervention.statut())}"
-                  th:text="${intervention.statutPercu()}">En attente</span>
+                  th:text="#{${intervention.cleStatutPercu()}}">En attente</span>
         </p>
 
-        <!-- RM-15 : l encart vit DANS le fragment rafraichi. Le membre reste sur son
-             suivi, le garage chiffre un depassement, l appel a validation apparait au
-             polling suivant sans qu il ait a recharger. Le statut affiche reste « En
-             cours » (RM-16) : c est l encart, pas le badge, qui porte la demande. -->
+        <!--/* RM-15 : l'encart vit dans le fragment rafraîchi. Le membre reste sur son
+             suivi, le garage chiffre un dépassement, l'appel à validation apparaît au
+             rafraîchissement suivant. Le statut affiché reste « En cours » (RM-16) :
+             c'est l'encart, et non le badge, qui porte la demande. */-->
         <div th:if="${intervention.validationRequise()}" class="message message-erreur" role="alert">
-            <strong>Validation requise</strong>
-            <p>
+            <strong th:text="#{intervention.validation.requise}">Validation requise</strong>
+            <p th:text="#{intervention.validation.requise.texte}">
                 Le garage a constaté des travaux supplémentaires qui dépassent votre devis
                 de plus de 10 %. Ils ne seront pas réalisés sans votre accord.
             </p>
             <a class="btn-cta"
-               th:href="@{/mes-interventions/{ref}/validation(ref=${intervention.reference()})}">
+               th:href="@{/mes-interventions/{ref}/validation(ref=${intervention.reference()})}"
+               th:text="#{intervention.validation.repondre}">
                 Voir le détail et répondre
             </a>
         </div>
 
         <dl class="vehicule-details">
             <div th:if="${intervention.debutReel() != null}">
-                <dt>Démarrée le</dt>
-                <dd th:text="${#strings.capitalize(intervention.debutReel())}">Lundi 14 septembre 2026 09:00</dd>
+                <dt th:text="#{intervention.suivi.demarree}">Démarrée le</dt>
+                <dd th:text="${#strings.capitalize(#temporals.format(intervention.debutReel(), 'EEEE d MMMM yyyy HH:mm'))}">Lundi 14 septembre 2026 09:00</dd>
             </div>
             <div th:if="${intervention.finReelle() != null}">
-                <dt>Terminée le</dt>
-                <dd th:text="${#strings.capitalize(intervention.finReelle())}">Lundi 14 septembre 2026 10:00</dd>
+                <dt th:text="#{intervention.suivi.terminee}">Terminée le</dt>
+                <dd th:text="${#strings.capitalize(#temporals.format(intervention.finReelle(), 'EEEE d MMMM yyyy HH:mm'))}">Lundi 14 septembre 2026 10:00</dd>
             </div>
         </dl>
 
         <div th:if="${intervention.commentaireAdmin() != null}" class="message" role="note">
-            <strong>Message du garage :</strong>
+            <strong th:text="#{intervention.suivi.message-garage}">Message du garage :</strong>
             <span th:text="${intervention.commentaireAdmin()}">...</span>
         </div>
 
-        <p th:if="${intervention.statut() == 'TERMINEE'}" class="message message-succes" role="status">
+        <p th:if="${intervention.statut() == 'TERMINEE'}" class="message message-succes" role="status"
+           th:text="#{intervention.suivi.pret}">
             Votre véhicule est prêt. Le garage vous contactera pour la reprise.
         </p>
-        <p th:if="${intervention.statut() == 'ANNULEE'}" class="message message-erreur" role="status">
+        <p th:if="${intervention.statut() == 'ANNULEE'}" class="message message-erreur" role="status"
+           th:text="#{intervention.suivi.annulee}">
             Cette intervention a été annulée.
         </p>
 
-        <!-- F17 : chronologie horodatee des changements de statut. Dans le fragment
-             polle, donc mise a jour en direct comme le badge. Les libelles affiches
-             sont les statuts percus (RM-16) resolus par cle i18n : le DTO a deja
-             ecarte les transitions internes qui ne changent pas le percu. -->
+        <!--/* F17 : chronologie horodatée des changements de statut, dans le fragment
+             rafraîchi. Les libellés sont les statuts perçus (RM-16), résolus par clé :
+             le DTO a déjà écarté les transitions internes qui ne changent pas le
+             statut perçu. */-->
         <section th:if="${not #lists.isEmpty(intervention.chronologie())}">
             <h2 th:text="#{intervention.chronologie.titre}">Chronologie</h2>
             <ol class="chronologie">
                 <li th:each="e : ${intervention.chronologie()}">
-                    <span th:text="${#strings.capitalize(e.horodatage())}">Lundi 14 septembre 2026 09:00</span>
+                    <span th:text="${#strings.capitalize(#temporals.format(e.horodatage(), 'EEEE d MMMM yyyy HH:mm'))}">Lundi 14 septembre 2026 09:00</span>
                     <strong th:text="#{${e.statutApres().clePercue()}}">En cours</strong>
                     <span th:if="${e.motif() != null}" th:text="${e.motif()}">Motif</span>
                 </li>
@@ -102,11 +105,12 @@
         </section>
     </div>
 
-    <h2>Travaux prévus</h2>
+    <h2 th:text="#{intervention.suivi.travaux}">Travaux prévus</h2>
     <div class="defilement">
         <table class="tableau">
             <thead>
-                <tr><th scope="col">Prestation</th><th scope="col">Quantité</th></tr>
+                <tr><th scope="col" th:text="#{intervention.suivi.prestation}">Prestation</th>
+                    <th scope="col" th:text="#{intervention.suivi.quantite}">Quantité</th></tr>
             </thead>
             <tbody>
                 <tr th:each="l : ${intervention.lignes()}">
@@ -116,22 +120,22 @@
             </tbody>
             <tfoot>
                 <tr>
-                    <td><strong>Total TVAC estimé</strong></td>
+                    <td><strong th:text="#{intervention.suivi.total}">Total TVAC estimé</strong></td>
                     <td th:text="${intervention.totalTvac()}">59,29 €</td>
                 </tr>
             </tfoot>
         </table>
     </div>
 
-    <!-- BL-4 : proposé seulement si le dépôt aboutirait, travaux terminés et
-         aucun avis déjà déposé (l'unicité en base refuserait le second). -->
+    <!--/* BL-4 : proposé seulement si le dépôt aboutirait, travaux terminés et aucun avis
+         déjà déposé (l'unicité en base refuserait le second). */-->
     <p class="actions-page" th:if="${peutDeposerAvis}">
         <a th:href="@{/mes-avis/{ref}/nouveau(ref=${intervention.reference()})}"
            th:text="#{avis.formulaire.titre}">Déposer un avis</a>
     </p>
 </main>
 
-<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 
 <script th:src="@{/js/htmx.min.js}"></script>
 <div th:replace="~{fragments/cookies :: bandeau}"></div>

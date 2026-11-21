@@ -12,20 +12,20 @@ import java.util.UUID;
 
 public class RdvForm {
 
-    @NotNull(message = "Choisissez un véhicule.")
+    @NotNull(message = "{rdv.formulaire.vehicule.obligatoire}")
     private UUID vehicule;
 
-    @NotEmpty(message = "Choisissez au moins une prestation.")
+    @NotEmpty(message = "{rdv.formulaire.prestations.obligatoire}")
     private List<UUID> prestations = new ArrayList<>();
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
-    @NotNull(message = "Choisissez une date.")
+    @NotNull(message = "{rdv.formulaire.date.obligatoire}")
     private LocalDate date;
 
-    @NotNull(message = "Choisissez une heure.")
+    @NotNull(message = "{rdv.formulaire.heure.obligatoire}")
     private String debut;
 
-    @Size(max = 2000, message = "Le commentaire ne peut pas dépasser 2000 caractères.")
+    @Size(max = 2000, message = "{rdv.formulaire.commentaire.longueur}")
     private String commentaire;
 
     public UUID getVehicule() { return vehicule; }

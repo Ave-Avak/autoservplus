@@ -20,7 +20,8 @@
   Menu repliable sous 40em, comme l'en-tête public (fragments/entete) : un seul
   panneau porte les liens du compte et les sections.
 */-->
-<header class="entete" th:fragment="entete">
+<th:block th:fragment="entete">
+<header class="entete">
     <nav th:attr="aria-label=#{admin.nav.principale}" aria-label="Navigation du back-office">
         <a class="marque" th:href="@{/admin}">AutoServ+ <span class="marque-espace" th:text="#{admin.nav.marque}">Back-office</span></a>
         <button type="button" class="bouton-menu" aria-expanded="false" aria-controls="panneau-back-office" hidden
@@ -119,6 +120,8 @@
     <div th:replace="~{fragments/langue :: selecteur}"></div>
     <script th:src="@{/js/menu.js}" defer></script>
 </header>
+<div th:replace="~{fragments/fil-ariane :: fil}"></div>
+</th:block>
 
 </body>
 </html>

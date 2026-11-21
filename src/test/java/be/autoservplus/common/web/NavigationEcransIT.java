@@ -4,6 +4,7 @@ import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.navigation.TableFilAriane;
 import be.autoservplus.support.SocleIntegration;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -114,15 +115,14 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/inscription/confirmee", Acces.PUBLIC),
             ecran("/mot-de-passe/oublie", Acces.PUBLIC),
             ecran("/compte-supprime", Acces.PUBLIC),
+            // Liens reçus par courriel : un jeton inconnu rend la page « lien invalide » en 404.
             new Route("/inscription/verification", "/inscription/verification?jeton=inconnu",
-                    Acces.PUBLIC, true, 200),
+                    Acces.PUBLIC, true, 404),
             new Route("/mot-de-passe/nouveau", "/mot-de-passe/nouveau?jeton=inconnu",
-                    Acces.PUBLIC, true, 200),
-            // Jeton inconnu : 404, la ou les trois autres liens de courriel rendent une page
-            // « lien invalide ». Ecart releve, non traite ici.
+                    Acces.PUBLIC, true, 404),
             new Route("/changement-adresse/confirmation", "/changement-adresse/confirmation?jeton=inconnu",
                     Acces.PUBLIC, true, 404),
-            new Route("/compte/definition", "/compte/definition?jeton=inconnu", Acces.PUBLIC, true, 200),
+            new Route("/compte/definition", "/compte/definition?jeton=inconnu", Acces.PUBLIC, true, 404),
             variable("/services/{reference}", Acces.PUBLIC),
             variable("/pieces/{reference}", Acces.PUBLIC),
             new Route("/documents/{type}/{version}", "/documents/CGV/inconnue", Acces.PUBLIC, true, 404),
@@ -175,9 +175,7 @@ class NavigationEcransIT extends SocleIntegration {
             variable("/commande/{reference}/confirmation", Acces.CONNECTE),
             ecran("/commandes", Acces.CONNECTE),
             variable("/commandes/{reference}", Acces.CONNECTE),
-            // Reference inconnue : page « commande introuvable », rendue en 200.
-            new Route("/commandes/{reference}/annulation", "/commandes/" + REF + "/annulation",
-                    Acces.CONNECTE, true, 200),
+            variable("/commandes/{reference}/annulation", Acces.CONNECTE),
             new Route("/factures/{reference}/pdf", "/factures/" + REF + "/pdf", Acces.CONNECTE, false, 404),
             new Route("/avoirs/{reference}/pdf", "/avoirs/" + REF + "/pdf", Acces.CONNECTE, false, 404),
             new Route("/paiement-fictif/{referencePrestataire}", "/paiement-fictif/inconnue",
@@ -193,9 +191,7 @@ class NavigationEcransIT extends SocleIntegration {
             new Route("/admin/rendez-vous/{reference}/modifier/creneaux",
                     "/admin/rendez-vous/" + REF + "/modifier/creneaux?date=2026-01-05", Acces.BACK_OFFICE, false, 404),
             ecran("/admin/interventions", Acces.BACK_OFFICE),
-            // Reference inconnue : retour a la liste, avec message.
-            new Route("/admin/interventions/{reference}", "/admin/interventions/" + REF,
-                    Acces.BACK_OFFICE, true, 302),
+            variable("/admin/interventions/{reference}", Acces.BACK_OFFICE),
             variable("/admin/vehicules/{reference}/historique", Acces.BACK_OFFICE),
             ecran("/admin/commandes-a-planifier", Acces.BACK_OFFICE),
             variable("/admin/commandes-a-planifier/{reference}", Acces.BACK_OFFICE),
@@ -223,10 +219,8 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/admin/planning/indisponibilites/nouvelle", Acces.BACK_OFFICE),
             variable("/admin/planning/indisponibilites/{reference}/modifier", Acces.BACK_OFFICE),
             variable("/admin/planning/indisponibilites/{reference}/retirer", Acces.BACK_OFFICE),
-            // Reference inconnue : galerie vide, rendue en 200. L ecran ne verifie pas que
-            // la fiche existe. Ecart releve, non traite ici.
             new Route("/admin/galerie/{type}/{reference}", "/admin/galerie/interventions/" + REF,
-                    Acces.BACK_OFFICE, true, 200),
+                    Acces.BACK_OFFICE, true, 404),
             ecran("/admin/import", Acces.BACK_OFFICE),
             ecran("/admin/export", Acces.BACK_OFFICE),
             new Route("/admin/export/factures.csv", "/admin/export/factures.csv" + PERIODE,
@@ -234,9 +228,7 @@ class NavigationEcransIT extends SocleIntegration {
             new Route("/admin/export/commandes.csv", "/admin/export/commandes.csv" + PERIODE,
                     Acces.BACK_OFFICE, false, 200),
             ecran("/admin/retractations", Acces.BACK_OFFICE),
-            // Reference inconnue : page « demande introuvable », rendue en 200.
-            new Route("/admin/retractations/{reference}/refuser", "/admin/retractations/" + REF + "/refuser",
-                    Acces.BACK_OFFICE, true, 200),
+            variable("/admin/retractations/{reference}/refuser", Acces.BACK_OFFICE),
             ecran("/admin/messages", Acces.BACK_OFFICE),
             variable("/admin/messages/{reference}", Acces.BACK_OFFICE),
             ecran("/admin/avis", Acces.BACK_OFFICE),
@@ -319,6 +311,14 @@ class NavigationEcransIT extends SocleIntegration {
             Map.entry("/panier/vider", "bouton du panier, affiché seulement s'il contient une ligne"),
             Map.entry("/commande", "bouton du panier, affiché seulement s'il contient une ligne"));
 
+    /**
+     * Les écrans ouverts à tous, tels que classés ici. {@code PremiereVisiteSansSessionIT}
+     * les ouvre sur un vrai serveur : la liste n'est écrite qu'à un endroit.
+     */
+    static List<Route> ecransPublics() {
+        return ROUTES.stream().filter(route -> route.ecran() && route.acces() == Acces.PUBLIC).toList();
+    }
+
     private static Route ecran(String patron, Acces acces) {
         return new Route(patron, patron, acces, true, acces == Acces.ETAPE ? 302 : 200);
     }
@@ -336,6 +336,7 @@ class NavigationEcransIT extends SocleIntegration {
     @Autowired private MockMvc mvc;
     @Autowired private UtilisateurRepository utilisateurs;
     @Autowired @Qualifier("requestMappingHandlerMapping") private RequestMappingHandlerMapping mapping;
+    private final TableFilAriane filAriane = new TableFilAriane();
 
     private final Map<Role, Utilisateur> comptes = new LinkedHashMap<>();
 
@@ -407,6 +408,20 @@ class NavigationEcransIT extends SocleIntegration {
             }
         }
         return liens;
+    }
+
+    /**
+     * Le fil d'Ariane (Charte graphique §6.1) couvre chaque écran : une route d'écran neuve
+     * doit y recevoir un parent et un libellé, ou figurer parmi les écrans sans fil avec
+     * son motif. Une entrée sans route casse la build aussi, comme une route sans
+     * classement ici.
+     */
+    @Test
+    @DisplayName("chaque écran figure au fil d'Ariane ou parmi les écrans sans fil, et réciproquement")
+    void filArianeCouvreLesEcrans() {
+        Set<String> ecrans = ROUTES.stream().filter(Route::ecran).map(Route::patron)
+                .collect(Collectors.toCollection(TreeSet::new));
+        assertThat(filAriane.patronsClasses()).as("classement du fil d'Ariane").isEqualTo(ecrans);
     }
 
     @Nested

@@ -200,7 +200,7 @@ public class ChangementEmailService {
 
         if (membre.jetonChangementExpire(Instant.now(horloge))) {
             membre.annulerChangementEmail();
-            throw new ChangementEmailRefuseException("changement-email.erreur.expire",
+            throw new ChangementEmailRefuseException("lien-courriel.invalide",
                     "Ce lien a expire. Refaites la demande depuis votre profil.");
         }
 
@@ -210,7 +210,7 @@ public class ChangementEmailService {
         // erreur technique, au pire moment et sans message exploitable.
         if (repository.existsByEmail(membre.getEmailEnAttente())) {
             membre.annulerChangementEmail();
-            throw new ChangementEmailRefuseException("changement-email.erreur.prise",
+            throw new ChangementEmailRefuseException("lien-courriel.invalide",
                     "Cette adresse n est plus disponible.");
         }
 

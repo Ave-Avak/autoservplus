@@ -2,18 +2,19 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <body>
 
-<!-- Fragment renvoye par GET /mes-rendez-vous/nouveau/creneaux et insere dans #creneaux.
-     Le modele fournit : creneaux (List<CreneauVue>), aucunePrestation (boolean),
-     erreurCreneaux (String, facultatif). -->
+<!--/* Fragment renvoyé par GET /mes-rendez-vous/nouveau/creneaux et inséré dans #creneaux.
+     Le modèle fournit : creneaux (List<CreneauVue>), aucunePrestation (boolean),
+     erreurCreneaux (String, facultatif). */-->
 <div th:fragment="liste">
 
-    <p class="aide" th:if="${aucunePrestation == true}">
+    <p class="aide" th:if="${aucunePrestation == true}" th:text="#{rdv.creneaux.aucune-prestation}">
         Cochez au moins une prestation pour voir les heures disponibles.
     </p>
 
     <p class="erreur" th:if="${erreurCreneaux != null}" th:text="${erreurCreneaux}">Erreur</p>
 
-    <p class="message" th:if="${aucunePrestation != true and creneaux.isEmpty() and erreurCreneaux == null}">
+    <p class="message" th:if="${aucunePrestation != true and creneaux.isEmpty() and erreurCreneaux == null}"
+       th:text="#{rdv.creneaux.aucun}">
         Aucune heure disponible ce jour-là pour cette durée. Essayez un autre jour.
     </p>
 
@@ -24,7 +25,7 @@
                        th:checked="${formulaire != null and formulaire.debut == c.valeur()}" required>
                 <span th:text="${c.libelle()}">10:00 - 11:00</span>
                 <small th:if="${c.postesLibres() > 1}"
-                       th:text="${c.postesLibres()} + ' places'">2 places</small>
+                       th:text="#{rdv.creneaux.places(${c.postesLibres()})}">2 places</small>
             </label>
         </li>
     </ul>

@@ -51,7 +51,7 @@ public record HistoriqueVehiculeAdmin(
                     it.getRdv() == null ? null : it.getRdv().getNumero(),
                     it.getLignes().stream().map(Ligne::de).toList(),
                     it.getStatut() == StatutIntervention.ANNULEE
-                            ? null : FormatageRdv.euros(it.totalFacturableTvac()),
+                            ? null : FormatageRdv.eurosEcran(it.totalFacturableTvac()),
                     it.getNoteInterne());
         }
     }
@@ -62,7 +62,7 @@ public record HistoriqueVehiculeAdmin(
 
         static Ligne de(LigneIntervention l) {
             return new Ligne(l.getType().name(), l.getLibelleFige(), l.getQuantite(),
-                    FormatageRdv.euros(l.totalHtva()), etat(l), l.estFacturable());
+                    FormatageRdv.eurosEcran(l.totalHtva()), etat(l), l.estFacturable());
         }
 
         private static String etat(LigneIntervention l) {

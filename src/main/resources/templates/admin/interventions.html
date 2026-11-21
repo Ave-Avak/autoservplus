@@ -10,17 +10,17 @@
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <header th:replace="~{fragments/back-office :: entete}"></header>
 
 <main id="contenu">
-    <h1>Interventions en cours</h1>
+    <h1 th:text="#{admin.interventions.en-cours}">Interventions en cours</h1>
 
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
 
-    <p th:if="${interventions.isEmpty()}" class="message">
+    <p th:if="${interventions.isEmpty()}" class="message" th:text="#{admin.interventions.vide}">
         Aucune intervention en cours.
     </p>
 
@@ -28,34 +28,34 @@
         <li class="carte" th:each="i : ${interventions}">
             <p class="carte-categorie">
                 <span th:class="'badge badge-' + ${#strings.toLowerCase(i.statut())}"
-                      th:text="${i.statutLisible()}">Planifiée</span>
+                      th:text="#{'admin.historique.statut.' + ${i.statut()}}">Planifiée</span>
             </p>
             <h2 th:text="${i.numero()}">INT-2026-0001</h2>
             <p>
                 <strong th:if="${i.membreNom() != null}" th:text="${i.membreNom()}">Marie Dupont</strong>
-                <span th:if="${i.membreNom() == null}"><em>Entrée directe</em></span>
+                <span th:if="${i.membreNom() == null}"><em th:text="#{admin.interventions.entree-directe}">Entrée directe</em></span>
                 <br>
                 <a th:if="${i.membreEmail() != null}"
                    th:href="'mailto:' + ${i.membreEmail()}"
                    th:text="${i.membreEmail()}">marie@exemple.be</a>
             </p>
             <p th:text="${i.vehicule()}">VW Golf (1-ABC-123)</p>
-            <p th:if="${i.rdvNumero() != null}">
-                RDV : <span th:text="${i.rdvNumero()}">RDV-2026-0001</span>
+            <p th:if="${i.rdvNumero() != null}" th:text="#{admin.interventions.rdv(${i.rdvNumero()})}">
+                RDV : RDV-2026-0001
             </p>
-            <p>Total : <span th:text="${i.totalTvac()}">49,00 €</span></p>
+            <p th:text="#{admin.interventions.total(${i.totalTvac()})}">Total : 49,00 €</p>
 
             <div class="carte-actions">
                 <a th:href="@{/admin/interventions/{ref}(ref=${i.reference()})}"
-                   class="lien-bouton">Détail</a>
+                   class="lien-bouton" th:text="#{admin.interventions.detail}">Détail</a>
             </div>
         </li>
     </ul>
 
-    <p><a th:href="@{/mon-compte}">Retour à mon compte</a></p>
+    <p><a th:href="@{/mon-compte}" th:text="#{erreur.retour-compte}">Retour à mon compte</a></p>
 </main>
 
-<footer class="pied"><p>&copy; 2026 AutoServ+</p></footer>
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
 <div th:replace="~{fragments/cookies :: bandeau}"></div>
 </body>
 </html>

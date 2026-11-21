@@ -106,7 +106,7 @@ public class RetractationService {
         }
         Utilisateur membre = commande.getMembre();
         return new DeclarationRetractationVue(commande.getReference(), commande.getNumero(),
-                FormatageRdv.euros(commande.getMontantTvac()), membre.nomComplet(),
+                FormatageRdv.eurosEcran(commande.getMontantTvac()), membre.nomComplet(),
                 membre.getEmail());
     }
 

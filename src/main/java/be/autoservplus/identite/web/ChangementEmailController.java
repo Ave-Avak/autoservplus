@@ -1,5 +1,6 @@
 package be.autoservplus.identite.web;
 
+import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.service.ChangementEmailRefuseException;
 import be.autoservplus.identite.service.ChangementEmailService;
 import be.autoservplus.identite.web.dto.ChangementEmailForm;
@@ -33,6 +34,9 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
  */
 @Controller
 public class ChangementEmailController {
+
+    /** Message unique des liens reçus par courriel refusés, quel que soit le motif. */
+    private static final String CLE_LIEN_INVALIDE = "lien-courriel.invalide";
 
     private final ChangementEmailService service;
     private final MessageSource messages;
@@ -93,9 +97,8 @@ public class ChangementEmailController {
                             Model modele) {
         try {
             service.confirmer(jeton);
-        } catch (ChangementEmailRefuseException refus) {
-            modele.addAttribute("echec", traduire(refus));
-            return "identite/changement-email-resultat";
+        } catch (RessourceIntrouvableException | ChangementEmailRefuseException refus) {
+            return lienInutilisable(modele, reponse);
         }
 
         Authentication session = SecurityContextHolder.getContext().getAuthentication();
@@ -107,11 +110,17 @@ public class ChangementEmailController {
     }
 
     /**
-     * Le refus PORTE sa cle i18n : il n y a plus de table a tenir a jour, donc plus
-     * de refus nouveau qui s afficherait en francais faute d y avoir ete inscrit.
+     * Lien inconnu, expiré ou devenu inutilisable : la page du résultat, en 404, avec un
+     * seul message, comme les trois autres liens reçus par courriel. Un statut ou un
+     * message par cas dirait qu'un jeton a existé. Le motif exact reste aux journaux.
      */
+    private String lienInutilisable(Model modele, HttpServletResponse reponse) {
+        reponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        modele.addAttribute("echec", messages.getMessage(CLE_LIEN_INVALIDE, null, LocaleContextHolder.getLocale()));
+        return "identite/changement-email-resultat";
+    }
+
     private String traduire(ChangementEmailRefuseException refus) {
-        return messages.getMessage(refus.getCleMessage(), null,
-                LocaleContextHolder.getLocale());
+        return messages.getMessage(refus.getCleMessage(), null, LocaleContextHolder.getLocale());
     }
 }

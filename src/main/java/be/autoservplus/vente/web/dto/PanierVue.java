@@ -41,9 +41,9 @@ public record PanierVue(
         return new PanierVue(
                 panier.getLignes().stream().map(LignePanierVue::de).toList(),
                 panier.nombreArticles(),
-                FormatageRdv.euros(panier.totalHtva()),
-                FormatageRdv.euros(panier.totalTva()),
-                FormatageRdv.euros(panier.totalTvac()),
+                FormatageRdv.eurosEcran(panier.totalHtva()),
+                FormatageRdv.eurosEcran(panier.totalTva()),
+                FormatageRdv.eurosEcran(panier.totalTvac()),
                 panier.estVide(),
                 // Ne porte que sur les pieces : une ligne de service n a pas de piece,
                 // et l interroger levait une NPE.
@@ -56,7 +56,7 @@ public record PanierVue(
 
     /** Panier jamais cree : la lecture ne provoque aucune ecriture, elle rend du vide. */
     public static PanierVue vide() {
-        String zero = FormatageRdv.euros(BigDecimal.ZERO);
+        String zero = FormatageRdv.eurosEcran(BigDecimal.ZERO);
         return new PanierVue(List.of(), 0, zero, zero, zero, true, false, false, false);
     }
 
@@ -81,11 +81,11 @@ public record PanierVue(
                             : ligne.getPiece().getReference(),
                     ligne.getLibelleFige(),
                     ligne.getQuantite(),
-                    FormatageRdv.euros(ligne.getPrixUnitaireHtva()),
+                    FormatageRdv.eurosEcran(ligne.getPrixUnitaireHtva()),
                     ligne.getTauxTva().stripTrailingZeros().toPlainString(),
-                    FormatageRdv.euros(ligne.totalHtva()),
-                    FormatageRdv.euros(ligne.totalTva()),
-                    FormatageRdv.euros(ligne.totalTvac()),
+                    FormatageRdv.eurosEcran(ligne.totalHtva()),
+                    FormatageRdv.eurosEcran(ligne.totalTva()),
+                    FormatageRdv.eurosEcran(ligne.totalTvac()),
                     // Un service inactif se signale comme une piece inactive : meme
                     // colonne a l ecran, meme sens pour le membre.
                     ligne.estService()

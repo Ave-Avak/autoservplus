@@ -2,6 +2,7 @@ package be.autoservplus.identite.web;
 
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.FormulairePublic;
 import be.autoservplus.identite.service.LimiteurDemandesCourriel;
 import be.autoservplus.identite.service.MotDePasseService;
 import be.autoservplus.identite.service.PiegeAntiBot;
@@ -11,6 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import java.util.Optional;
 import be.autoservplus.identite.web.dto.NouveauMotDePasseForm;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -51,9 +53,9 @@ public class MotDePasseController {
                 && !turnstile.get().jetonValide(jeton, requete.getRemoteAddr());
     }
 
+    @FormulairePublic
     @GetMapping("/oublie")
     public String afficherDemande(Model modele) {
-        modele.addAttribute("titre", "Mot de passe oublié");
         modele.addAttribute("horodatageAntiBot", pieges.horodatageActuel());
         modele.addAttribute("cleTurnstile", cleTurnstile);
         return "identite/mot-de-passe-oublie";
@@ -85,7 +87,6 @@ public class MotDePasseController {
         // Meme page que le cas nominal, pour la meme raison qu au renvoi.
         if (pieges.soumissionAutomatique(piege, horodatage)
                 || turnstileRefuse(jetonTurnstile, requete)) {
-            modele.addAttribute("titre", "Vérifiez votre courriel");
             return "identite/mot-de-passe-demande";
         }
         // Le decompte precede l appel au service, donc tout acces a la base : c est ce
@@ -96,18 +97,21 @@ public class MotDePasseController {
         } else {
             modele.addAttribute("debitDepasse", true);
         }
-        modele.addAttribute("titre", "Vérifiez votre courriel");
         return "identite/mot-de-passe-demande";
     }
 
+    /**
+     * Un lien expiré, déjà servi ou inconnu répond 404 avec la page « lien invalide » :
+     * le même statut et le même message dans les trois cas, pour qu'il ne dise pas qu'un
+     * jeton a existé.
+     */
+    @FormulairePublic
     @GetMapping("/nouveau")
-    public String afficherFormulaire(@RequestParam String jeton, Model modele) {
-        modele.addAttribute("titre", "Nouveau mot de passe");
+    public String afficherFormulaire(@RequestParam String jeton, Model modele, HttpServletResponse reponse) {
         try {
             service.verifierJeton(jeton);
         } catch (RessourceIntrouvableException | RegleMetierException e) {
-            modele.addAttribute("motif", motifRefus(e));
-            return "identite/mot-de-passe-lien-invalide";
+            return lienInvalide(modele, reponse);
         }
         NouveauMotDePasseForm formulaire = new NouveauMotDePasseForm();
         formulaire.setJeton(jeton);
@@ -117,13 +121,11 @@ public class MotDePasseController {
 
     @PostMapping("/nouveau")
     public String appliquer(@Valid @ModelAttribute("formulaire") NouveauMotDePasseForm formulaire,
-                            BindingResult erreurs, Model modele) {
-
-        modele.addAttribute("titre", "Nouveau mot de passe");
+                            BindingResult erreurs, Model modele, HttpServletResponse reponse) {
 
         if (!formulaire.concordent()) {
-            erreurs.rejectValue("confirmation", "motsDePasse.differents",
-                    "Les deux mots de passe ne correspondent pas.");
+            // Code résolu par la source de messages au rendu, dans la langue de l'écran.
+            erreurs.rejectValue("confirmation", "mot-de-passe-a-definir.erreur.differents");
         }
         if (erreurs.hasErrors()) {
             return "identite/mot-de-passe-nouveau";
@@ -132,21 +134,14 @@ public class MotDePasseController {
         try {
             service.reinitialiser(formulaire.getJeton(), formulaire.getMotDePasse());
         } catch (RessourceIntrouvableException | RegleMetierException e) {
-            modele.addAttribute("motif", motifRefus(e));
-            return "identite/mot-de-passe-lien-invalide";
+            return lienInvalide(modele, reponse);
         }
 
-        modele.addAttribute("titre", "Mot de passe modifié");
         return "identite/mot-de-passe-modifie";
     }
 
-    /**
-     * Clé i18n du refus. Le message de l'exception reste au journal : c'est un texte
-     * technique, en français, qui nommait jusqu'au jeton refusé.
-     */
-    private static String motifRefus(RuntimeException refus) {
-        return refus instanceof RegleMetierException regle && "RM-05".equals(regle.getCodeRegle())
-                ? "lien-courriel.reinitialisation-expire"
-                : "lien-courriel.inconnu";
+    private static String lienInvalide(Model modele, HttpServletResponse reponse) {
+        reponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
+        return "identite/mot-de-passe-lien-invalide";
     }
 }

@@ -103,8 +103,7 @@ class AdminRdvControllerTest {
         // when() a laisse une invocation « phantom ».
         org.mockito.Mockito.reset(adminRdvs);
         vueEnAttente = new RdvVueAdmin(REF, "RDV-2026-0001",
-                "EN_ATTENTE", "En attente de confirmation",
-                "dimanche 13 septembre 2026", "10:00", "10:30",
+                "EN_ATTENTE", "10:00", "10:30",
                 java.time.LocalDateTime.of(2026, 9, 13, 10, 0),
                 java.time.LocalDateTime.of(2026, 9, 13, 10, 30),
                 "Pont 1",

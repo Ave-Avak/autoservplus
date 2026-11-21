@@ -5,6 +5,7 @@ import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
@@ -18,14 +19,13 @@ public record InterventionVueAdmin(
         UUID reference,
         String numero,
         String statut,
-        String statutLisible,
         String rdvNumero,
         String vehicule,
         String membreNom,
         String membreEmail,
         String commentaireAdmin,
-        String debutReel,
-        String finReelle,
+        LocalDateTime debutReel,
+        LocalDateTime finReelle,
         List<LigneInterventionVue> lignes,
         /** Total reellement facturable : hors lignes refusees et hors lignes en attente. */
         String totalHtva,
@@ -60,21 +60,16 @@ public record InterventionVueAdmin(
                 it.getReference(),
                 it.getNumero(),
                 s.name(),
-                statutLisible(s),
                 rdv != null ? rdv.getNumero() : null,
                 vehicule.getMarque() + " " + vehicule.getModele() + " (" + vehicule.getPlaque() + ")",
                 rdv != null ? rdv.getMembre().nomComplet() : null,
                 rdv != null ? rdv.getMembre().getEmail() : null,
                 it.getCommentaireAdmin(),
-                it.getDebutReel() != null
-                        ? FormatageRdv.jourLisible(it.getDebutReel(), zone) + " " + FormatageRdv.heureLisible(it.getDebutReel(), zone)
-                        : null,
-                it.getFinReelle() != null
-                        ? FormatageRdv.jourLisible(it.getFinReelle(), zone) + " " + FormatageRdv.heureLisible(it.getFinReelle(), zone)
-                        : null,
+                it.getDebutReel() == null ? null : LocalDateTime.ofInstant(it.getDebutReel(), zone),
+                it.getFinReelle() == null ? null : LocalDateTime.ofInstant(it.getFinReelle(), zone),
                 it.getLignes().stream().map(LigneInterventionVue::de).toList(),
-                FormatageRdv.euros(it.totalFacturableHtva()),
-                FormatageRdv.euros(it.totalFacturableTvac()),
+                FormatageRdv.eurosEcran(it.totalFacturableHtva()),
+                FormatageRdv.eurosEcran(it.totalFacturableTvac()),
                 s == StatutIntervention.PLANIFIEE,
                 s.peutPasserA(StatutIntervention.SUSPENDUE),
                 // Reprendre reste possible depuis SUSPENDUE, jamais tant qu une ligne
@@ -86,32 +81,22 @@ public record InterventionVueAdmin(
                 s.estEditable(),
                 s.accepteAjoutDeLigne(),
                 s == StatutIntervention.ATTENTE_VALIDATION_MEMBRE,
-                FormatageRdv.euros(it.devisReferenceHtva()),
-                FormatageRdv.euros(it.totalProposeHtva()),
+                FormatageRdv.eurosEcran(it.devisReferenceHtva()),
+                FormatageRdv.eurosEcran(it.totalProposeHtva()),
                 vehicule.getReference(),
                 it.getNoteInterne());
     }
 
-    private static String statutLisible(StatutIntervention s) {
-        return switch (s) {
-            case PLANIFIEE -> "Planifiée";
-            case EN_COURS -> "En cours";
-            case SUSPENDUE -> "Suspendue";
-            case ATTENTE_VALIDATION_MEMBRE -> "En attente de validation du membre";
-            case TERMINEE -> "Terminée";
-            case ANNULEE -> "Annulée";
-        };
-    }
-
     /**
      * Le garage voit TOUTES les lignes, y compris celles en attente et celles que le
-     * membre a refusees : c est son dossier de travail. {@code etat} porte la mention
-     * a afficher, {@code compteDansLeTotal} permet de griser celles qui n y entrent pas.
+     * membre a refusees : c est son dossier de travail. {@code cleEtat} porte la clé de
+     * la mention à afficher, {@code compteDansLeTotal} permet de griser celles qui n'y
+     * entrent pas. Le type reste le nom de l'énumération, traduit par le gabarit.
      */
     public record LigneInterventionVue(
             Long id, String type, String libelle, short quantite,
             String prixUnitaireHtva, String totalHtva,
-            String etat, boolean compteDansLeTotal) {
+            String cleEtat, boolean compteDansLeTotal) {
 
         public static LigneInterventionVue de(LigneIntervention l) {
             return new LigneInterventionVue(
@@ -119,16 +104,18 @@ public record InterventionVueAdmin(
                     l.getType().name(),
                     l.getLibelleFige(),
                     l.getQuantite(),
-                    FormatageRdv.euros(l.getPrixUnitaireHtva()),
-                    FormatageRdv.euros(l.totalHtva()),
-                    etatLisible(l),
+                    FormatageRdv.eurosEcran(l.getPrixUnitaireHtva()),
+                    FormatageRdv.eurosEcran(l.totalHtva()),
+                    cleEtat(l),
                     l.estFacturable());
         }
 
-        private static String etatLisible(LigneIntervention l) {
-            if (l.estRefusee()) return "Refusée par le membre";
-            if (l.estEnAttenteValidation()) return "En attente d'accord";
-            return l.estDuDevisInitial() ? "Devis initial" : "Ajoutée en cours";
+        private static String cleEtat(LigneIntervention l) {
+            if (l.estRefusee()) return "admin.historique.etat.refusee";
+            if (l.estEnAttenteValidation()) return "admin.historique.etat.attente";
+            return l.estDuDevisInitial()
+                    ? "admin.historique.etat.initiale"
+                    : "admin.historique.etat.ajoutee";
         }
     }
 }

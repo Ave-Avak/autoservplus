@@ -64,10 +64,10 @@ public record CommandeDetailVue(
             return new LigneVue(
                     ligne.getLibelleFige(),
                     ligne.getQuantite(),
-                    FormatageRdv.euros(ligne.getPrixUnitaireHtva()),
+                    FormatageRdv.eurosEcran(ligne.getPrixUnitaireHtva()),
                     pourcentage(ligne.getTauxTva()),
-                    FormatageRdv.euros(ligne.totalHtva()),
-                    FormatageRdv.euros(ligne.totalTvac()));
+                    FormatageRdv.eurosEcran(ligne.totalHtva()),
+                    FormatageRdv.eurosEcran(ligne.totalTvac()));
         }
 
         /** 21.00 s affiche « 21 % » : les decimales nulles d un taux belge sont du bruit. */
@@ -93,9 +93,9 @@ public record CommandeDetailVue(
                 FormatageRdv.jourLisible(commande.getDateCommande(), zone),
                 commande.getStatut(),
                 lignes.stream().map(LigneVue::de).toList(),
-                FormatageRdv.euros(commande.getMontantHtva()),
-                FormatageRdv.euros(commande.getMontantTva()),
-                FormatageRdv.euros(commande.getMontantTvac()),
+                FormatageRdv.eurosEcran(commande.getMontantHtva()),
+                FormatageRdv.eurosEcran(commande.getMontantTva()),
+                FormatageRdv.eurosEcran(commande.getMontantTvac()),
                 paiement == null ? null : paiement.getMethode(),
                 paiement == null || paiement.getDateFinalisation() == null
                         ? null

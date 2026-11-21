@@ -558,8 +558,8 @@ class InterventionServiceTest {
                     .containsExactly(StatutIntervention.PLANIFIEE, StatutIntervention.EN_COURS,
                             StatutIntervention.TERMINEE);
             assertThat(vue.chronologie().get(0).horodatage())
-                    .as("La date arrive pre-formatee, fuseau applique")
-                    .contains("septembre 2026");
+                    .as("La date arrive à l'heure de l'atelier, fuseau appliqué")
+                    .isEqualTo(java.time.LocalDateTime.of(2026, 9, 14, 11, 0));
         }
 
         @Test

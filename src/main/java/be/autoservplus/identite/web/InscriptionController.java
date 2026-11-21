@@ -3,6 +3,7 @@ package be.autoservplus.identite.web;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.FormulairePublic;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.service.InscriptionService;
 import be.autoservplus.identite.service.LimiteurDemandesCourriel;
@@ -18,6 +19,7 @@ import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import be.autoservplus.identite.web.dto.InscriptionForm;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -84,6 +86,7 @@ public class InscriptionController {
         modele.addAttribute("cleTurnstile", cleTurnstile);
     }
 
+    @FormulairePublic
     @GetMapping("/inscription")
     public String afficherFormulaire(Model modele) {
         InscriptionForm formulaire = new InscriptionForm();
@@ -209,6 +212,7 @@ public class InscriptionController {
      * SecuriteConfig : c est la suite du parcours d inscription, et la placer ailleurs
      * obligerait a elargir la surface publique pour un ecran qui n en a pas besoin.</p>
      */
+    @FormulairePublic
     @GetMapping("/inscription/renvoyer-verification")
     public String afficherRenvoiVerification(Model modele) {
         armerFormulaire(modele);
@@ -248,26 +252,20 @@ public class InscriptionController {
         return "identite/renvoyer-verification-envoye";
     }
 
+    /**
+     * Un lien refusé, expiré, déjà servi ou inconnu, répond 404 avec sa page : le même
+     * statut et le même message dans les trois cas, pour qu'il ne dise pas qu'un jeton a
+     * existé. Le motif exact reste aux journaux.
+     */
     @GetMapping("/inscription/verification")
-    public String verifierAdresse(@RequestParam String jeton, Model modele) {
-        modele.addAttribute("titre", "Vérification de votre adresse");
+    public String verifierAdresse(@RequestParam String jeton, Model modele, HttpServletResponse reponse) {
         try {
             service.confirmerAdresse(jeton);
             modele.addAttribute("succes", true);
         } catch (RessourceIntrouvableException | RegleMetierException e) {
+            reponse.setStatus(HttpServletResponse.SC_NOT_FOUND);
             modele.addAttribute("succes", false);
-            modele.addAttribute("motif", motifRefus(e));
         }
         return "identite/verification";
-    }
-
-    /**
-     * Clé i18n du refus. Le message de l'exception reste au journal : c'est un texte
-     * technique, en français, qui nommait jusqu'au jeton refusé.
-     */
-    private static String motifRefus(RuntimeException refus) {
-        return refus instanceof RegleMetierException regle && "RM-03".equals(regle.getCodeRegle())
-                ? "lien-courriel.verification-expire"
-                : "lien-courriel.inconnu";
     }
 }

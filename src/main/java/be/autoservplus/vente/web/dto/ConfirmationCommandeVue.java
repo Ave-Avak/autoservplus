@@ -30,7 +30,7 @@ public record ConfirmationCommandeVue(
         return new ConfirmationCommandeVue(
                 commande.getReference(),
                 commande.getNumero(),
-                FormatageRdv.euros(commande.getMontantTvac()),
+                FormatageRdv.eurosEcran(commande.getMontantTvac()),
                 situation,
                 contientDesPieces);
     }

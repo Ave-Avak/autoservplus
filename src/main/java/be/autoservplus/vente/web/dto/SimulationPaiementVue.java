@@ -29,6 +29,6 @@ public record SimulationPaiementVue(
                 paiement.getReferenceMollie(),
                 paiement.getCommande().getReference(),
                 paiement.getCommande().getNumero(),
-                FormatageRdv.euros(paiement.getMontant()));
+                FormatageRdv.eurosEcran(paiement.getMontant()));
     }
 }

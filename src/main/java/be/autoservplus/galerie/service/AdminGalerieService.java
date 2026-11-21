@@ -102,6 +102,22 @@ public class AdminGalerieService {
         return ajoutees;
     }
 
+    /**
+     * Refuse la galerie d'une fiche qui n'existe pas. Sans ce contrôle, l'écran affichait
+     * une galerie vide pour n'importe quelle référence, et un dépôt n'échouait qu'à l'envoi.
+     */
+    @Transactional(readOnly = true)
+    public void verifierFiche(TypeGalerie type, UUID reference) {
+        boolean existe = switch (type) {
+            case PRESTATIONS -> prestations.findByReference(reference).isPresent();
+            case PIECES -> pieces.findByReference(reference).isPresent();
+            case INTERVENTIONS -> interventions.findByReference(reference).isPresent();
+        };
+        if (!existe) {
+            throw new RessourceIntrouvableException(type.chemin(), reference);
+        }
+    }
+
     /** Retire une image de la galerie et efface son fichier. */
     public void supprimer(Long id) {
         Photo photo = photos.findById(id)

@@ -2,6 +2,7 @@ package be.autoservplus.reservation.domain;
 
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.common.entity.BaseEntity;
+import be.autoservplus.common.exception.TransitionRefusee;
 import be.autoservplus.identite.domain.Utilisateur;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -157,7 +158,7 @@ public class Rdv extends BaseEntity {
      */
     public void confirmer(Instant maintenant) {
         if (!debut.isAfter(maintenant)) {
-            throw new IllegalStateException(
+            throw new TransitionRefusee("admin.rdv.erreur.confirmation-passee",
                     "Un rendez-vous dont le début est passé ne peut plus être confirmé, seulement refusé.");
         }
         transitionVers(StatutRdv.CONFIRME);
@@ -276,7 +277,7 @@ public class Rdv extends BaseEntity {
         if (!debut.isAfter(maintenant)) {
             // Le client est attendu ou présent : l'issue est honoré ou absent, et un
             // créneau entamé ne se libère plus.
-            throw new IllegalStateException(
+            throw new TransitionRefusee("admin.rdv.erreur.annulation-passee",
                     "Un rendez-vous dont le début est passé ne peut plus être annulé, seulement marqué honoré ou absent.");
         }
         transitionVers(StatutRdv.ANNULE);
@@ -295,9 +296,9 @@ public class Rdv extends BaseEntity {
     public void annulerParLeMembre(Instant maintenant, Duration delaiAnnulation) {
         if (!peutEtreAnnuleParLeMembre(maintenant, delaiAnnulation)) {
             throw new IllegalStateException(
-                    // Message affiche tel quel au membre (RdvController.annuler) : le code RM
-                    // reste porte par le RegleMetierException qui enveloppe, jamais par la phrase.
-                    "L annulation n est plus possible a moins de %d heures du rendez-vous."
+                    // Phrase des journaux. L'écran affiche la clé que porte le refus du
+                    // service qui enveloppe, avec le code RM-11.
+                    "L'annulation n'est plus possible à moins de %d heures du rendez-vous."
                             .formatted(delaiAnnulation.toHours()));
         }
         transitionVers(StatutRdv.ANNULE);
