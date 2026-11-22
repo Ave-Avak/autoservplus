@@ -38,7 +38,7 @@ jobs:
 
       - name: Cache de Chromium
         id: chromium
-        uses: actions/cache@v6
+        uses: actions/cache/restore@v6
         with:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
@@ -51,7 +51,20 @@ jobs:
         if: steps.chromium.outputs.cache-hit == 'true'
         run: ./mvnw -B --no-transfer-progress exec:java -e -D exec.classpathScope=test -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install-deps chromium"
 
+      # Enregistré ici, avant les tests, et non en fin de job : un test en échec
+      # n'empêche plus de garder le navigateur pour l'exécution suivante.
+      - name: Enregistrement du cache de Chromium
+        if: always() && steps.chromium.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      # Sans cette variable, Playwright télécharge à son premier lancement les
+      # navigateurs qui lui manquent, Firefox et WebKit compris, en plein test.
       - name: Tests unitaires, integration et couverture
+        env:
+          PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD: "1"
         run: ./mvnw -B --no-transfer-progress verify
 
       # La sortie des tests n'est plus dans la console (redirectTestOutputToFile) :
