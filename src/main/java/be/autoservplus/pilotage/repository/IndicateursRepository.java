@@ -229,7 +229,8 @@ public class IndicateursRepository {
     public long nouveauxClients(Instant debut, Instant fin) {
         // Requête native : COALESCE mêle une colonne de l'entité et une colonne d'audit
         // héritée, et le filtre deleted_at reproduit le @SQLRestriction que le natif
-        // court-circuite.
+        // court-circuite. Repli sur created_at : un compte vérifié avant V63, ou inséré
+        // vérifié par une graine, n'a pas de date de vérification.
         Number nombre = (Number) em.createNativeQuery("""
                         SELECT COUNT(*)
                         FROM utilisateur
