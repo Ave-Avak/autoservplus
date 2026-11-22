@@ -28,11 +28,36 @@ jobs:
       - name: Compilation
         run: ./mvnw -B --no-transfer-progress compile
 
+      # Les tests d'intégration ouvrent les écrans dans Chromium (Playwright). Le
+      # navigateur est mis en cache sous la version de Playwright du pom.xml : une
+      # autre version appelle un autre Chromium. Les bibliothèques système dont il
+      # dépend ne se mettent pas en cache, elles sont installées à chaque exécution.
+      - name: Version de Playwright
+        id: playwright
+        run: echo "version=$(./mvnw -q help:evaluate -Dexpression=playwright.version -DforceStdout)" >> "$GITHUB_OUTPUT"
+
+      - name: Cache de Chromium
+        id: chromium
+        uses: actions/cache@v6
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: Installation de Chromium et de ses bibliothèques
+        if: steps.chromium.outputs.cache-hit != 'true'
+        run: ./mvnw -B --no-transfer-progress exec:java -e -D exec.classpathScope=test -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install --with-deps chromium"
+
+      - name: Installation des bibliothèques de Chromium
+        if: steps.chromium.outputs.cache-hit == 'true'
+        run: ./mvnw -B --no-transfer-progress exec:java -e -D exec.classpathScope=test -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install-deps chromium"
+
       - name: Tests unitaires, integration et couverture
         run: ./mvnw -B --no-transfer-progress verify
 
       # La sortie des tests n'est plus dans la console (redirectTestOutputToFile) :
       # sans ces rapports, un échec en CI ne laisserait rien à lire.
+      # target/navigateur porte la capture d'écran et la trace Playwright d'un test
+      # de navigateur en échec, et le rapport d'accessibilité.
       - name: Rapports de tests en cas d'échec
         if: failure()
         uses: actions/upload-artifact@v7
@@ -41,6 +66,7 @@ jobs:
           path: |
             target/surefire-reports/
             target/failsafe-reports/
+            target/navigateur/
           retention-days: 7
 
   docker-build:
