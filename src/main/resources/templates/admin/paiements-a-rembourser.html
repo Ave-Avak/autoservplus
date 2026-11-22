@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.paiements-tardifs.titre} + ' | AutoServ+'">Paiements à rembourser | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.paiements-tardifs.titre}">Paiements à rembourser</h1>
+
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+
+    <p th:text="#{admin.paiements-tardifs.intro}">
+        Paiements arrivés sur une commande déjà annulée pour délai de paiement dépassé.
+    </p>
+
+    <p th:if="${paiements.isEmpty()}" class="message" th:text="#{admin.paiements-tardifs.aucun}">
+        Aucun paiement reçu sur une commande annulée.
+    </p>
+
+    <div class="defilement" th:unless="${paiements.isEmpty()}">
+        <table class="tableau">
+            <caption th:text="#{admin.paiements-tardifs.legende}">Paiements reçus après annulation, ceux à rembourser d'abord.</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.paiements-tardifs.colonne.commande}">Commande</th>
+                <th scope="col" th:text="#{admin.ventes.colonne.client}">Client</th>
+                <th scope="col" th:text="#{commandes.colonne.montant}">Montant TVAC</th>
+                <th scope="col" th:text="#{admin.paiements-tardifs.colonne.moyen}">Moyen de paiement</th>
+                <th scope="col" th:text="#{admin.paiements-tardifs.colonne.recu}">Reçu le</th>
+                <th scope="col" th:text="#{admin.paiements-tardifs.colonne.remboursement}">Remboursement</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="p : ${paiements}">
+                <td><a th:href="@{/admin/commandes/{ref}(ref=${p.referenceCommande()})}" th:text="${p.numeroCommande()}">CMD-2026-0001</a></td>
+                <td><span th:text="${p.client()}">Marie Dupont</span><br><span th:text="${p.email()}">marie@exemple.be</span></td>
+                <td th:text="${p.montant()}">48,38 €</td>
+                <td>
+                    <span th:if="${p.moyen() != null}" th:text="${p.moyen()}">bancontact</span>
+                    <span th:if="${p.moyen() == null}" th:text="#{admin.paiements-tardifs.moyen.inconnu}">Non communiqué</span>
+                </td>
+                <td th:text="${#temporals.format(p.recuLe(), 'dd/MM/yyyy HH:mm')}">22/11/2026 10:12</td>
+                <td>
+                    <!--/* Un lien vers la page de confirmation, pas un formulaire : rien
+                           ne part chez le prestataire depuis cette liste. */-->
+                    <a th:if="${p.aRembourser()}"
+                       th:href="@{/admin/paiements-a-rembourser/{ref}(ref=${p.reference()})}"
+                       th:aria-label="#{admin.paiements-tardifs.rembourser.aria(${p.montant()}, ${p.numeroCommande()})}"
+                       th:text="#{admin.paiements-tardifs.rembourser(${p.montant()})}">Rembourser 48,38 €</a>
+                    <span th:unless="${p.aRembourser()}"
+                          th:text="#{admin.paiements-tardifs.rembourse-le(${#temporals.format(p.rembourseLe(), 'dd/MM/yyyy HH:mm')}, ${p.remboursePar()})}">
+                        Remboursé le 22/11/2026 10:30 par admin@exemple.be</span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>

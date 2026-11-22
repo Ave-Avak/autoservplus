@@ -116,7 +116,14 @@
                           th:text="#{commandes.paiement.en-cours}">Paiement en cours de traitement</span>
                     <span th:if="${commande.delaiDepasse()}" class="carte-meta"
                           th:text="#{commandes.paiement.delai-depasse}">Délai de paiement dépassé</span>
-                    <span th:unless="${commande.peutEtrePayee() or commande.paiementEnCours() or commande.delaiDepasse()}"
+                    <!--/* Paiement arrivé après l'annulation : « aucun paiement attendu »
+                           laisserait croire au membre que le sien est perdu. */-->
+                    <span th:if="${commande.remboursementEnCours()}" class="carte-meta"
+                          th:text="#{commandes.paiement.remboursement-en-cours}">Remboursement en cours</span>
+                    <span th:if="${commande.rembourseApresAnnulation()}" class="carte-meta"
+                          th:text="#{commandes.paiement.rembourse}">Remboursé</span>
+                    <span th:unless="${commande.peutEtrePayee() or commande.paiementEnCours() or commande.delaiDepasse()
+                                       or commande.remboursementEnCours() or commande.rembourseApresAnnulation()}"
                           class="carte-meta"
                           th:text="#{commandes.paiement.aucun}">Aucun paiement attendu</span>
                 </td>

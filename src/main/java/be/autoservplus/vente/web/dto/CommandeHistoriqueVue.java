@@ -2,6 +2,7 @@ package be.autoservplus.vente.web.dto;
 
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.vente.domain.Commande;
+import be.autoservplus.vente.domain.Paiement;
 import be.autoservplus.vente.domain.SituationPaiement;
 import be.autoservplus.vente.domain.StatutCommande;
 
@@ -31,10 +32,23 @@ public record CommandeHistoriqueVue(
         StatutCommande statut,
         SituationPaiement situation,
         UUID referenceFacture,
-        String numeroFacture) {
+        String numeroFacture,
+        /** Un paiement est arrivé après l'annulation et attend son remboursement. */
+        boolean remboursementEnCours,
+        /** Ce paiement est remboursé. */
+        boolean rembourseApresAnnulation) {
 
+    /** Ligne sans paiement reçu après annulation. */
+    public CommandeHistoriqueVue(UUID reference, String numero, String date, String totalTvac,
+                                 StatutCommande statut, SituationPaiement situation,
+                                 UUID referenceFacture, String numeroFacture) {
+        this(reference, numero, date, totalTvac, statut, situation, referenceFacture, numeroFacture,
+                false, false);
+    }
+
+    /** @param tardif paiement reçu après l'annulation de la commande, ou {@code null} */
     public static CommandeHistoriqueVue de(Commande commande, SituationPaiement situation,
-                                           ZoneId zone) {
+                                           Paiement tardif, ZoneId zone) {
         return new CommandeHistoriqueVue(
                 commande.getReference(),
                 commande.getNumero(),
@@ -43,13 +57,15 @@ public record CommandeHistoriqueVue(
                 commande.getStatut(),
                 situation,
                 null,
-                null);
+                null,
+                tardif != null && tardif.getRembourseLe() == null,
+                tardif != null && tardif.getRembourseLe() != null);
     }
 
     /** La meme ligne, augmentee du lien vers sa facture. */
     public CommandeHistoriqueVue avecFacture(UUID referenceFacture, String numeroFacture) {
         return new CommandeHistoriqueVue(reference, numero, date, totalTvac, statut, situation,
-                referenceFacture, numeroFacture);
+                referenceFacture, numeroFacture, remboursementEnCours, rembourseApresAnnulation);
     }
 
     public boolean paiementEnCours() {

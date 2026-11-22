@@ -47,7 +47,7 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
      */
     private final Set<String> nonAnnulables = ConcurrentHashMap.newKeySet();
 
-    /** Paiements dont la lecture et l'annulation échouent, comme une panne du prestataire. */
+    /** Paiements dont tout appel échoue, comme pendant une panne du prestataire. */
     private final Set<String> enPanne = ConcurrentHashMap.newKeySet();
 
     /** Remboursements deja accordes, indexes par cle d idempotence. */
@@ -136,6 +136,7 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
      */
     @Override
     public RemboursementCree rembourser(DemandeRemboursement demande) {
+        exigerDisponible(demande.referencePrestataire());
         StatutPaiement statut = statuts.get(demande.referencePrestataire());
         if (statut == null) {
             throw new IllegalStateException(

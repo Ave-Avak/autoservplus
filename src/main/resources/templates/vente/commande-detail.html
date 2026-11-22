@@ -30,7 +30,15 @@
         <!-- Paiement : la section n'apparait que si un paiement a abouti. Une commande
              en attente n'a pas de mode de paiement, et laisser une case vide donnerait
              a croire a une information perdue. -->
-        <th:block th:if="${commande.estPayee()}">
+        <th:block th:if="${commande.paiementRecuApresAnnulation()}">
+            <dt th:text="#{commande.detail.paiement-tardif.recu}">Paiement reçu après l'annulation</dt>
+            <dd th:text="${#temporals.format(commande.recuApresAnnulationLe(), 'dd/MM/yyyy')}">21/11/2026</dd>
+            <th:block th:if="${commande.paiementApresAnnulationRembourse()}">
+                <dt th:text="#{commande.detail.paiement-tardif.rembourse-le}">Remboursé le</dt>
+                <dd th:text="${#temporals.format(commande.rembourseApresAnnulationLe(), 'dd/MM/yyyy')}">21/11/2026</dd>
+            </th:block>
+        </th:block>
+        <th:block th:if="${commande.estPayee() and !commande.paiementRecuApresAnnulation()}">
             <dt th:text="#{commande.detail.mode-paiement}">Mode de paiement</dt>
             <dd th:if="${commande.methodePaiementConnue()}" th:text="${commande.methodePaiement()}">Bancontact</dd>
             <!-- Le moyen employe est constate chez le prestataire. Le bouchon de
@@ -45,6 +53,18 @@
             </th:block>
         </th:block>
     </dl>
+
+    <!--/* La commande reste annulée : le membre doit lire que son paiement est
+           arrivé, qu'il ne vaut pas commande, et ce qu'il devient. */-->
+    <p class="message" role="status"
+       th:if="${commande.paiementRecuApresAnnulation() and !commande.paiementApresAnnulationRembourse()}"
+       th:text="#{commande.detail.paiement-tardif.a-rembourser(${commande.totalTvac()})}">
+        Votre paiement nous est parvenu après l'annulation de cette commande. Il vous sera remboursé.
+    </p>
+    <p class="message" role="status" th:if="${commande.paiementApresAnnulationRembourse()}"
+       th:text="#{commande.detail.paiement-tardif.rembourse(${commande.totalTvac()})}">
+        Votre paiement, reçu après l'annulation de cette commande, a été remboursé.
+    </p>
 
     <h2 th:text="#{commande.detail.lignes}">Articles commandés</h2>
 

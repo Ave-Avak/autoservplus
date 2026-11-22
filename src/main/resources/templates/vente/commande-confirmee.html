@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{commande.confirmation.titre} + ' | AutoServ+'">Commande enregistrée | AutoServ+</title>
+    <title th:text="(${commande.annulee()} ? #{commande.confirmation.annulee.titre} : #{commande.confirmation.titre}) + ' | AutoServ+'">Commande enregistrée | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
@@ -14,19 +14,42 @@
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <h1 th:text="#{commande.confirmation.titre}">Commande enregistrée</h1>
+    <h1 th:text="${commande.annulee()} ? #{commande.confirmation.annulee.titre} : #{commande.confirmation.titre}">Commande enregistrée</h1>
 
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
     <div class="message message-succes" th:if="${succes}" role="status" th:text="${succes}">Succès</div>
 
-    <div class="message message-succes" role="status"
+    <div class="message message-succes" role="status" th:unless="${commande.annulee()}"
          th:text="#{commande.confirmation.numero(${commande.numero()})}">
         Votre commande CMD-2026-0001 est enregistrée.
     </div>
 
-    <p th:text="#{commande.confirmation.total(${commande.totalTvac()})}">Montant à régler : 80,21 €</p>
+    <p th:unless="${commande.annulee()}"
+       th:text="#{commande.confirmation.total(${commande.totalTvac()})}">Montant à régler : 80,21 €</p>
 
-    <p th:if="${commande.contientDesPieces()}"><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
+    <!--/* Commande annulée : plus rien n'est à régler. Le retour d'un paiement arrivé
+           après l'annulation aboutit ici, la page reprend ce que dit le détail. */-->
+    <th:block th:if="${commande.annulee()}">
+        <div class="message" role="status"
+             th:text="${commande.annuleePourDelai()} ? #{commande.confirmation.annulee.delai(${commande.numero()})} : #{commande.confirmation.annulee(${commande.numero()})}">
+            Votre commande CMD-2026-0001 est annulée : son délai de paiement est dépassé.
+        </div>
+        <p th:if="${commande.paiementRecuApresAnnulation() and !commande.paiementApresAnnulationRembourse()}"
+           th:text="#{commande.detail.paiement-tardif.a-rembourser(${commande.totalTvac()})}">
+            Votre paiement nous est parvenu après l'annulation de cette commande. Il vous sera remboursé.
+        </p>
+        <th:block th:if="${commande.paiementApresAnnulationRembourse()}">
+            <p th:text="#{commande.detail.paiement-tardif.rembourse(${commande.totalTvac()})}">
+                Votre paiement, reçu après l'annulation de cette commande, a été remboursé.
+            </p>
+            <p>
+                <span th:text="#{commande.detail.paiement-tardif.rembourse-le}">Remboursé le</span>
+                <span th:text="${#temporals.format(commande.rembourseApresAnnulationLe(), 'dd/MM/yyyy')}">21/11/2026</span>
+            </p>
+        </th:block>
+    </th:block>
+
+    <p th:if="${commande.contientDesPieces() and !commande.annulee()}"><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
 
     <!--/* Sans objet une fois la commande payee : ce texte annonce l'attente. */-->
     <p th:if="${commande.aPayer()}" th:text="#{commande.confirmation.paiement}">

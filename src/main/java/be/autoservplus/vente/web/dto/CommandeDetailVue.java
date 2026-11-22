@@ -46,7 +46,11 @@ public record CommandeDetailVue(
         StatutPaiement statutPaiement,
         SituationPaiement situation,
         UUID referenceFacture,
-        String numeroFacture) {
+        String numeroFacture,
+        /** Paiement reçu après l'annulation de la commande (V64), ou {@code null}. */
+        java.time.LocalDateTime recuApresAnnulationLe,
+        /** Remboursement de ce paiement, ou {@code null} tant qu'il est à venir. */
+        java.time.LocalDateTime rembourseApresAnnulationLe) {
 
     /**
      * Une ligne commandee. {@code quantite} est un {@code int} et non le {@code short}
@@ -101,22 +105,33 @@ public record CommandeDetailVue(
                         ? null
                         : FormatageRdv.jourLisible(paiement.getDateFinalisation(), zone),
                 paiement == null ? null : paiement.getStatut(),
-                situation);
+                situation, null, null,
+                paiement == null ? null : local(paiement.getRecuApresAnnulationLe(), zone),
+                paiement == null ? null : local(paiement.getRembourseLe(), zone));
     }
 
-    private CommandeDetailVue(UUID reference, String numero, String date, StatutCommande statut,
-                              List<LigneVue> lignes, String totalHtva, String totalTva,
-                              String totalTvac, String methodePaiement, String datePaiement,
-                              StatutPaiement statutPaiement, SituationPaiement situation) {
-        this(reference, numero, date, statut, lignes, totalHtva, totalTva, totalTvac,
-                methodePaiement, datePaiement, statutPaiement, situation, null, null);
+    private static java.time.LocalDateTime local(java.time.Instant instant, ZoneId zone) {
+        return instant == null ? null : java.time.LocalDateTime.ofInstant(instant, zone);
+    }
+
+    /**
+     * Un paiement est arrivé après l'annulation de la commande. Elle n'est pas payée
+     * pour autant : l'écran le signale à part, et dit s'il est remboursé.
+     */
+    public boolean paiementRecuApresAnnulation() {
+        return recuApresAnnulationLe != null;
+    }
+
+    public boolean paiementApresAnnulationRembourse() {
+        return rembourseApresAnnulationLe != null;
     }
 
     /** Le meme detail, augmente du lien vers sa facture. */
     public CommandeDetailVue avecFacture(UUID referenceFacture, String numeroFacture) {
         return new CommandeDetailVue(reference, numero, date, statut, lignes,
                 totalHtva, totalTva, totalTvac, methodePaiement, datePaiement,
-                statutPaiement, situation, referenceFacture, numeroFacture);
+                statutPaiement, situation, referenceFacture, numeroFacture,
+                recuApresAnnulationLe, rembourseApresAnnulationLe);
     }
 
     /**

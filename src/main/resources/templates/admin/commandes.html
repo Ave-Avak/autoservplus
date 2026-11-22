@@ -20,6 +20,8 @@
         <a th:href="@{/admin/factures}" th:text="#{admin.ventes.factures.titre}">Factures</a>
         <span aria-hidden="true">|</span>
         <a th:href="@{/admin/avoirs}" th:text="#{admin.ventes.avoirs.titre}">Avoirs</a>
+        <span aria-hidden="true">|</span>
+        <a th:href="@{/admin/paiements-a-rembourser}" th:text="#{admin.paiements-tardifs.titre}">Paiements à rembourser</a>
     </p>
 
     <form class="formulaire" th:action="@{/admin/commandes}" method="get" role="search">

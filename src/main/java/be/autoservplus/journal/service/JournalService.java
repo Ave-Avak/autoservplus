@@ -130,6 +130,10 @@ public class JournalService {
                 avant == null || avant.isBlank() ? vide : avant,
                 apres == null || apres.isBlank() ? vide : apres}, langue);
 
+        if (EntreeJournal.TYPE_REMBOURSEMENT.equals(type)) {
+            return messages.getMessage("admin.journal.remboursement", new Object[]{
+                    FormatageRdv.eurosEcran(new java.math.BigDecimal(avant)), apres}, langue);
+        }
         if (EntreeJournal.TYPE_CATALOGUE.equals(type)) {
             return "%s : %s".formatted(champ, transition);
         }

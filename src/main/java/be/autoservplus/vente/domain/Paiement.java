@@ -98,6 +98,22 @@ public class Paiement {
     @Column(name = "date_finalisation")
     private Instant dateFinalisation;
 
+    /**
+     * Instant où l'encaissement a été constaté sur une commande déjà annulée (V64), nul
+     * pour un paiement ordinaire. Un tel paiement n'a ni commande à honorer ni facture :
+     * il attend qu'un administrateur le rembourse.
+     */
+    @Column(name = "recu_apres_annulation_le")
+    private Instant recuApresAnnulationLe;
+
+    /** Date du remboursement d'un paiement reçu après annulation (V64). */
+    @Column(name = "rembourse_le")
+    private Instant rembourseLe;
+
+    /** Administrateur qui a remboursé un paiement reçu après annulation (V64). */
+    @Column(name = "rembourse_par", length = 120)
+    private String remboursePar;
+
     @Version
     @Column(name = "version", nullable = false)
     private long version;
@@ -153,6 +169,49 @@ public class Paiement {
     public void confirmer(Instant maintenant) {
         transitionVers(StatutPaiement.REUSSI);
         this.dateFinalisation = Objects.requireNonNull(maintenant, "maintenant");
+    }
+
+    /**
+     * Le prestataire rapporte un encaissement alors que la commande est déjà annulée.
+     *
+     * <p>Seule transition qui rouvre une tentative close : ECHOUE et EXPIRE sont
+     * terminaux partout ailleurs. Une tentative que le job RM-21 a expirée de notre
+     * côté, avant de lire le statut chez le prestataire, a pu aboutir chez lui. Refuser
+     * la transition laisserait un encaissement réel sans aucune trace en base. La
+     * commande, elle, ne ressuscite pas.</p>
+     */
+    public void constaterEncaissementApresAnnulation(Instant maintenant) {
+        if (statut == StatutPaiement.REUSSI || statut == StatutPaiement.REMBOURSE) {
+            throw new IllegalStateException(
+                    "Encaissement déjà constaté pour le paiement %s.".formatted(reference));
+        }
+        this.statut = StatutPaiement.REUSSI;
+        this.dateFinalisation = Objects.requireNonNull(maintenant, "maintenant");
+        this.recuApresAnnulationLe = maintenant;
+    }
+
+    /**
+     * Un administrateur rembourse un paiement reçu après annulation. Sans facture, donc
+     * sans note de crédit : l'auteur et la date posés ici sont la trace du geste.
+     */
+    public void rembourserApresAnnulation(String referencePrestataire, Instant maintenant,
+                                          String auteur) {
+        if (recuApresAnnulationLe == null) {
+            throw new IllegalStateException(
+                    "Le paiement %s n'a pas été reçu après une annulation.".formatted(reference));
+        }
+        rembourser(referencePrestataire);
+        this.rembourseLe = Objects.requireNonNull(maintenant, "maintenant");
+        this.remboursePar = Objects.requireNonNull(auteur, "auteur");
+    }
+
+    public boolean estRecuApresAnnulation() {
+        return recuApresAnnulationLe != null;
+    }
+
+    /** Reçu après annulation et pas encore remboursé. */
+    public boolean estARembourser() {
+        return recuApresAnnulationLe != null && statut == StatutPaiement.REUSSI;
     }
 
     public void echouer(Instant maintenant) {
@@ -234,6 +293,9 @@ public class Paiement {
     public Instant getDateInitiation() { return dateInitiation; }
     public Instant getDateFinalisation() { return dateFinalisation; }
     public long getVersion() { return version; }
+    public Instant getRecuApresAnnulationLe() { return recuApresAnnulationLe; }
+    public Instant getRembourseLe() { return rembourseLe; }
+    public String getRemboursePar() { return remboursePar; }
 
     @Override
     public boolean equals(Object autre) {

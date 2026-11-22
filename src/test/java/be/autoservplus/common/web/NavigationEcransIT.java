@@ -241,6 +241,8 @@ class NavigationEcransIT extends SocleIntegration {
             variable("/admin/comptes/{reference}/modification", Acces.BACK_OFFICE),
             ecran("/admin/commandes", Acces.BACK_OFFICE),
             variable("/admin/commandes/{reference}", Acces.BACK_OFFICE),
+            ecran("/admin/paiements-a-rembourser", Acces.BACK_OFFICE),
+            variable("/admin/paiements-a-rembourser/{reference}", Acces.BACK_OFFICE),
             ecran("/admin/factures", Acces.BACK_OFFICE),
             ecran("/admin/avoirs", Acces.BACK_OFFICE),
             new Route("/admin/factures/{reference}/pdf", "/admin/factures/" + REF + "/pdf", Acces.BACK_OFFICE, false, 404),
@@ -294,6 +296,8 @@ class NavigationEcransIT extends SocleIntegration {
         ATTEINTS_DEPUIS.put("/admin/planning/indisponibilites/nouvelle",
                 new Atteinte("/admin/planning/indisponibilites", Role.ADMINISTRATEUR));
         ATTEINTS_DEPUIS.put("/admin/avoirs", new Atteinte("/admin/factures", Role.ADMINISTRATEUR));
+        ATTEINTS_DEPUIS.put("/admin/paiements-a-rembourser",
+                new Atteinte("/admin/commandes", Role.ADMINISTRATEUR));
         ATTEINTS_DEPUIS.put("/admin/comptes/administrateurs/nouveau",
                 new Atteinte("/admin/comptes/administrateurs", Role.SUPER_ADMINISTRATEUR));
     }

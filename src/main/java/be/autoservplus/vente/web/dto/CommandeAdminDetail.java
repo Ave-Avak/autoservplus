@@ -41,6 +41,10 @@ public record CommandeAdminDetail(
         String methodePaiement,
         LocalDateTime datePaiement,
         StatutPaiement statutPaiement,
+        /** Encaissement constaté après l'annulation de la commande (V64), ou {@code null}. */
+        LocalDateTime encaisseApresAnnulationLe,
+        /** Remboursement de cet encaissement, ou {@code null} tant qu'il est à faire. */
+        LocalDateTime rembourseApresAnnulationLe,
         MotifAnnulationCommande motifAnnulation,
         LocalDateTime dateAnnulation,
         boolean renonciationVi53,
@@ -78,6 +82,8 @@ public record CommandeAdminDetail(
                 paiement == null ? null : paiement.getMethode(),
                 paiement == null ? null : local(paiement.getDateFinalisation(), zone),
                 paiement == null ? null : paiement.getStatut(),
+                paiement == null ? null : local(paiement.getRecuApresAnnulationLe(), zone),
+                paiement == null ? null : local(paiement.getRembourseLe(), zone),
                 commande.getMotifAnnulation(),
                 local(commande.getDateAnnulation(), zone),
                 commande.isRenonciationVi53(),

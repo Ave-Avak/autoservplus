@@ -179,7 +179,19 @@ public class CommandeService {
     public ConfirmationCommandeVue confirmation(UUID reference, String email) {
         Commande commande = commandeDuMembre(reference, email);
         return ConfirmationCommandeVue.de(commande, situation(commande),
-                !commandes.lignesDe(commande).isEmpty());
+                !commandes.lignesDe(commande).isEmpty(), recuApresAnnulation(commande),
+                ZoneId.of(horloge.getZone().getId()));
+    }
+
+    /**
+     * Paiement arrivé après l'annulation de la commande, ou {@code null}. Seule une
+     * commande annulée peut en porter un : les autres ne coûtent aucune lecture.
+     */
+    private Paiement recuApresAnnulation(Commande commande) {
+        if (commande.getStatut() != StatutCommande.ANNULEE) {
+            return null;
+        }
+        return paiements.findFirstByCommandeAndRecuApresAnnulationLeIsNotNull(commande).orElse(null);
     }
 
     /**
@@ -257,7 +269,8 @@ public class CommandeService {
     public List<CommandeHistoriqueVue> historiqueDuMembre(String email) {
         ZoneId zone = ZoneId.of(horloge.getZone().getId());
         return commandes.historiqueDuMembre(email).stream()
-                .map(commande -> CommandeHistoriqueVue.de(commande, situation(commande), zone))
+                .map(commande -> CommandeHistoriqueVue.de(commande, situation(commande),
+                        recuApresAnnulation(commande), zone))
                 .toList();
     }
 }

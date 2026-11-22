@@ -11,6 +11,7 @@ import be.autoservplus.reservation.web.dto.RdvVue;
 import be.autoservplus.reservation.web.dto.RdvVueAdmin;
 import be.autoservplus.vente.web.dto.CommandeAdminDetail;
 import be.autoservplus.vente.web.dto.CommandeDetailVue;
+import be.autoservplus.vente.web.dto.ConfirmationCommandeVue;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
@@ -149,7 +150,9 @@ public class TableFilAriane {
         dynamique("/commandes/{reference}", "commande.detail.titre", "/commandes",
                 attribut("commande", CommandeDetailVue.class, CommandeDetailVue::numero));
         fixe("/commandes/{reference}/annulation", "retractation.titre", "/commandes");
-        fixe("/commande/{reference}/confirmation", "commande.confirmation.titre", "/commandes");
+        // Le numéro, et non « Commande enregistrée » : la page sert aussi une commande annulée.
+        dynamique("/commande/{reference}/confirmation", "commande.detail.titre", "/commandes",
+                attribut("commande", ConfirmationCommandeVue.class, ConfirmationCommandeVue::numero));
 
         // Back-office
         fixe("/admin/rendez-vous", "admin.rdv.titre", BACK_OFFICE);
@@ -217,6 +220,9 @@ public class TableFilAriane {
         fixe("/admin/commandes", "admin.ventes.commandes.titre", BACK_OFFICE);
         dynamique("/admin/commandes/{reference}", "admin.ventes.detail.titre", "/admin/commandes",
                 attribut("commande", CommandeAdminDetail.class, CommandeAdminDetail::numero));
+        fixe("/admin/paiements-a-rembourser", "admin.paiements-tardifs.titre", "/admin/commandes");
+        fixe("/admin/paiements-a-rembourser/{reference}", "admin.paiements-tardifs.confirmer.titre",
+                "/admin/paiements-a-rembourser");
         fixe("/admin/factures", "admin.ventes.factures.titre", BACK_OFFICE);
         fixe("/admin/avoirs", "admin.ventes.avoirs.titre", BACK_OFFICE);
         fixe("/admin/journal", "admin.journal.titre", BACK_OFFICE);

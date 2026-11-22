@@ -213,7 +213,8 @@ public class CommandeController {
                                @PathVariable UUID reference,
                                Model modele) {
         ConfirmationCommandeVue vue = service.confirmation(reference, membre.getUsername());
-        modele.addAttribute("titre", msg("commande.confirmation.titre"));
+        modele.addAttribute("titre", msg(vue.annulee()
+                ? "commande.confirmation.annulee.titre" : "commande.confirmation.titre"));
         modele.addAttribute("commande", vue);
         return "vente/commande-confirmee";
     }

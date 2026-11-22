@@ -403,16 +403,7 @@ public class PaiementService {
             return IssueRelecture.Effet.DEJA_TRAITE;
         }
         if (commande.getStatut() == StatutCommande.ANNULEE) {
-            // Course perdue contre le job RM-21 : l encaissement est reel mais la
-            // commande ne ressuscite pas (garde d entite). Le trop-percu se traite
-            // hors ligne : le Refund est le bloc retractation.
-            confirmerLePaiementSeul(paiement);
-            log.warn("Paiement {} encaisse sur la commande {} deja annulee : "
-                            + "remboursement a traiter hors ligne.",
-                    paiement.getReference(), commande.getNumero());
-            // Rien n a ete ecrit sur la commande. L avertissement ci-dessus porte le
-            // detail de ce cas rare. La ligne du declencheur n a pas a le repeter.
-            return IssueRelecture.Effet.DEJA_TRAITE;
+            return encaisserApresAnnulation(paiement, commande);
         }
 
         paiement.confirmer(horloge.instant());
@@ -424,6 +415,30 @@ public class PaiementService {
         // la facture (RM-22, bloc suivant) et du courriel de confirmation.
         evenements.publishEvent(new CommandePayeeEvent(commande.getReference()));
         return IssueRelecture.Effet.FACTURE_EMISE;
+    }
+
+    /**
+     * L'encaissement est réel mais la commande est annulée, et ne ressuscite pas : le
+     * stock et les prix ont pu changer depuis. Le paiement est enregistré comme reçu
+     * après annulation, le garage et le membre sont prévenus une fois, et un
+     * administrateur le rembourse depuis le back-office. Le job RM-21 lit le statut
+     * chez le prestataire avant d'annuler : ce cas reste celui d'une course entre sa
+     * lecture et la notification, ou d'une tentative close avant ce changement.
+     */
+    private IssueRelecture.Effet encaisserApresAnnulation(Paiement paiement, Commande commande) {
+        if (paiement.getStatut() == StatutPaiement.REUSSI
+                || paiement.getStatut() == StatutPaiement.REMBOURSE) {
+            // Notification rejouée : déjà enregistré, déjà signalé.
+            return IssueRelecture.Effet.DEJA_TRAITE;
+        }
+        paiement.constaterEncaissementApresAnnulation(horloge.instant());
+        paiements.saveAndFlush(paiement);
+        log.warn("Paiement {} encaissé sur la commande {} déjà annulée : à rembourser "
+                        + "depuis le back-office.",
+                paiement.getReference(), commande.getNumero());
+        evenements.publishEvent(new PaiementApresAnnulationEvent(
+                paiement.getReference(), commande.getReference()));
+        return IssueRelecture.Effet.ENCAISSE_APRES_ANNULATION;
     }
 
     private void confirmerLePaiementSeul(Paiement paiement) {

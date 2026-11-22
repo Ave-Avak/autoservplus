@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.paiements-tardifs.confirmer.titre} + ' | AutoServ+'">Confirmer le remboursement | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.paiements-tardifs.confirmer.titre}">Confirmer le remboursement</h1>
+
+    <dl class="vehicule-details">
+        <div>
+            <dt th:text="#{admin.paiements-tardifs.colonne.commande}">Commande</dt>
+            <dd><a th:href="@{/admin/commandes/{ref}(ref=${paiement.referenceCommande()})}" th:text="${paiement.numeroCommande()}">CMD-2026-0001</a></dd>
+        </div>
+        <div>
+            <dt th:text="#{admin.ventes.colonne.client}">Client</dt>
+            <dd><span th:text="${paiement.client()}">Marie Dupont</span>, <span th:text="${paiement.email()}">marie@exemple.be</span></dd>
+        </div>
+        <div>
+            <dt th:text="#{commandes.colonne.montant}">Montant TVAC</dt>
+            <dd th:text="${paiement.montant()}">48,38 €</dd>
+        </div>
+        <div>
+            <dt th:text="#{admin.paiements-tardifs.colonne.recu}">Reçu le</dt>
+            <dd th:text="${#temporals.format(paiement.recuLe(), 'dd/MM/yyyy HH:mm')}">22/11/2026 10:12</dd>
+        </div>
+    </dl>
+
+    <p th:text="#{admin.paiements-tardifs.confirmation}">
+        Rembourser ce paiement ? Le montant sera rendu au client par le prestataire de paiement.
+    </p>
+
+    <form th:action="@{/admin/paiements-a-rembourser/{ref}/rembourser(ref=${paiement.reference()})}" method="post">
+        <p class="actions-page">
+            <button type="submit" class="btn-cta"
+                    th:text="#{admin.paiements-tardifs.confirmer(${paiement.montant()})}">Confirmer le remboursement de 48,38 €</button>
+            <a th:href="@{/admin/paiements-a-rembourser}" th:text="#{admin.paiements-tardifs.confirmer.annuler}">Ne pas rembourser maintenant</a>
+        </p>
+    </form>
+</main>
+
+<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</body>
+</html>
