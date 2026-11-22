@@ -886,6 +886,9 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     letter-spacing: 0.05em;
     white-space: nowrap;
 }
+/* La clé compte huit groupes de quatre caractères : sur une ligne, elle élargissait la
+   page à 421 px dans une fenêtre de 320 px. Elle se coupe entre deux groupes. */
+.cle-totp { white-space: normal; }
 
 .liste-codes {
     list-style: none;
