@@ -108,9 +108,9 @@
     <section th:if="${compte.membre()}">
         <h2 th:text="#{admin.compte.commandes.titre}">Commandes</h2>
         <p th:if="${#lists.isEmpty(commandes)}" th:text="#{admin.compte.commandes.aucune}">Aucune commande.</p>
-        <div class="defilement" th:unless="${#lists.isEmpty(commandes)}">
+        <div class="defilement" th:unless="${#lists.isEmpty(commandes)}" tabindex="0" role="region" aria-labelledby="legende-admin-compte-detail-1">
             <table class="tableau">
-                <caption th:text="#{admin.compte.commandes.legende}">Commandes du membre, de la plus récente à la plus ancienne.</caption>
+                <caption id="legende-admin-compte-detail-1" th:text="#{admin.compte.commandes.legende}">Commandes du membre, de la plus récente à la plus ancienne.</caption>
                 <thead>
                 <tr>
                     <th scope="col" th:text="#{admin.ventes.colonne.numero}">Numéro</th>
@@ -135,9 +135,9 @@
     <p th:if="${#lists.isEmpty(journal)}" th:text="#{admin.compte.journal.aucun}">
         Aucun changement de statut enregistré.</p>
 
-    <div class="defilement" th:unless="${#lists.isEmpty(journal)}">
+    <div class="defilement" th:unless="${#lists.isEmpty(journal)}" tabindex="0" role="region" aria-labelledby="legende-admin-compte-detail-2">
         <table class="tableau">
-            <caption th:text="#{admin.compte.journal.legende}">Du plus récent au plus ancien.</caption>
+            <caption id="legende-admin-compte-detail-2" th:text="#{admin.compte.journal.legende}">Du plus récent au plus ancien.</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{admin.compte.journal.date}">Date</th>
@@ -164,9 +164,9 @@
     <p th:if="${#lists.isEmpty(journalSecurite)}" th:text="#{admin.compte.securite.aucun}">
         Aucun événement de sécurité enregistré.</p>
 
-    <div class="defilement" th:unless="${#lists.isEmpty(journalSecurite)}">
+    <div class="defilement" th:unless="${#lists.isEmpty(journalSecurite)}" tabindex="0" role="region" aria-labelledby="legende-admin-compte-detail-3">
         <table class="tableau">
-            <caption th:text="#{admin.compte.securite.legende}">Du plus récent au plus ancien.</caption>
+            <caption id="legende-admin-compte-detail-3" th:text="#{admin.compte.securite.legende}">Du plus récent au plus ancien.</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{admin.compte.journal.date}">Date</th>
@@ -190,9 +190,9 @@
     <p th:if="${#lists.isEmpty(modifications)}" th:text="#{admin.compte.modifications.aucune}">
         Aucune modification enregistrée.</p>
 
-    <div class="defilement" th:unless="${#lists.isEmpty(modifications)}">
+    <div class="defilement" th:unless="${#lists.isEmpty(modifications)}" tabindex="0" role="region" aria-labelledby="legende-admin-compte-detail-4">
         <table class="tableau">
-            <caption th:text="#{admin.compte.modifications.legende}">Du plus récent au plus ancien.</caption>
+            <caption id="legende-admin-compte-detail-4" th:text="#{admin.compte.modifications.legende}">Du plus récent au plus ancien.</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{admin.compte.journal.date}">Date</th>

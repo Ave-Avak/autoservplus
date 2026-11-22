@@ -27,8 +27,8 @@
     <p th:if="${historique.interventions().isEmpty()}" class="message"
        th:text="#{admin.historique.vide}">Aucune intervention sur ce véhicule.</p>
 
-    <section th:each="i : ${historique.interventions()}" class="carte">
-        <h2>
+    <section th:each="i, etat : ${historique.interventions()}" class="carte">
+        <h2 th:id="|titre-intervention-${etat.index}|">
             <a th:href="@{/admin/interventions/{ref}(ref=${i.reference()})}" th:text="${i.numero()}">INT-2026-0001</a>
         </h2>
         <dl class="vehicule-details">
@@ -50,7 +50,7 @@
             </div>
         </dl>
 
-        <div class="defilement" th:unless="${i.lignes().isEmpty()}">
+        <div class="defilement" th:unless="${i.lignes().isEmpty()}" tabindex="0" role="region" th:aria-labelledby="|titre-intervention-${etat.index}|">
             <table class="tableau">
                 <thead>
                 <tr>

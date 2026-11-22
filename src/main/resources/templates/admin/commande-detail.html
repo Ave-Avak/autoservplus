@@ -88,9 +88,9 @@
             <button type="submit" class="btn-cta" th:text="#{admin.ventes.remise.enregistrer}">Enregistrer la date</button>
         </form>
 
-        <div class="defilement" th:unless="${#lists.isEmpty(modifications)}">
+        <div class="defilement" th:unless="${#lists.isEmpty(modifications)}" tabindex="0" role="region" aria-labelledby="legende-admin-commande-detail-1">
             <table class="tableau">
-                <caption th:text="#{admin.ventes.remise.historique}">Saisies de la date de remise, de la plus récente à la plus ancienne.</caption>
+                <caption id="legende-admin-commande-detail-1" th:text="#{admin.ventes.remise.historique}">Saisies de la date de remise, de la plus récente à la plus ancienne.</caption>
                 <thead>
                 <tr>
                     <th scope="col" th:text="#{admin.compte.journal.date}">Date</th>
@@ -112,9 +112,9 @@
     </section>
 
     <h2 th:text="#{commande.detail.lignes}">Articles</h2>
-    <div class="defilement">
+    <div class="defilement" tabindex="0" role="region" aria-labelledby="legende-admin-commande-detail-2">
         <table class="tableau">
-            <caption th:text="#{commande.detail.lignes.legende}">Articles commandés</caption>
+            <caption id="legende-admin-commande-detail-2" th:text="#{commande.detail.lignes.legende}">Articles commandés</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{commande.detail.colonne.article}">Article</th>
@@ -157,9 +157,9 @@
 
     <h2 th:text="#{admin.ventes.detail.retractations}">Demandes d'annulation</h2>
     <p th:if="${#lists.isEmpty(retractations)}" th:text="#{admin.ventes.detail.retractations.aucune}">Aucune demande d'annulation.</p>
-    <div class="defilement" th:unless="${#lists.isEmpty(retractations)}">
+    <div class="defilement" th:unless="${#lists.isEmpty(retractations)}" tabindex="0" role="region" aria-labelledby="legende-admin-commande-detail-3">
         <table class="tableau">
-            <caption th:text="#{admin.ventes.detail.retractations.legende}">Demandes, de la plus récente à la plus ancienne.</caption>
+            <caption id="legende-admin-commande-detail-3" th:text="#{admin.ventes.detail.retractations.legende}">Demandes, de la plus récente à la plus ancienne.</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{admin.retractations.date-demande}">Demandé le</th>

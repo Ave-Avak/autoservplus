@@ -16,9 +16,9 @@
 
     <p th:if="${#lists.isEmpty(fils)}" th:text="#{admin.messagerie.aucun}">Aucun message client.</p>
 
-    <div class="defilement" th:unless="${#lists.isEmpty(fils)}">
+    <div class="defilement" th:unless="${#lists.isEmpty(fils)}" tabindex="0" role="region" aria-labelledby="legende-admin-messages">
         <table class="tableau">
-            <caption th:text="#{admin.messagerie.legende}">Fils ouverts d'abord, puis les fils clôturés.</caption>
+            <caption id="legende-admin-messages" th:text="#{admin.messagerie.legende}">Fils ouverts d'abord, puis les fils clôturés.</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{admin.messagerie.colonne.sujet}">Sujet</th>

@@ -22,9 +22,9 @@
         Aucune prestation vendue en ligne pour l'instant.
     </p>
 
-    <div class="defilement" th:unless="${#lists.isEmpty(commandes)}">
+    <div class="defilement" th:unless="${#lists.isEmpty(commandes)}" tabindex="0" role="region" aria-labelledby="legende-admin-commandes-a-planifier">
         <table class="tableau">
-            <caption th:text="#{admin.planification.legende}">Commandes de prestations payées, de la plus récente à la plus ancienne.</caption>
+            <caption id="legende-admin-commandes-a-planifier" th:text="#{admin.planification.legende}">Commandes de prestations payées, de la plus récente à la plus ancienne.</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{admin.planification.colonne.commande}">Commande</th>

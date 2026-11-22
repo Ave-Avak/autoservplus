@@ -123,9 +123,9 @@
          Affiche uniquement en edition : un article qu'on cree n'a pas de passe. -->
     <section th:if="${edition and historique != null and !#lists.isEmpty(historique)}">
         <h2 th:text="#{admin.journal.article.titre}">Historique des modifications</h2>
-        <div class="defilement">
+        <div class="defilement" tabindex="0" role="region" aria-labelledby="legende-admin-catalogue-piece-formulaire">
             <table class="tableau">
-                <caption th:text="#{admin.journal.article.legende}">Modifications de cet article, de la plus recente a la plus ancienne.</caption>
+                <caption id="legende-admin-catalogue-piece-formulaire" th:text="#{admin.journal.article.legende}">Modifications de cet article, de la plus recente a la plus ancienne.</caption>
                 <thead>
                 <tr>
                     <th scope="col" th:text="#{admin.journal.colonne.date}">Date</th>

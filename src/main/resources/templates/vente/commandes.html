@@ -22,9 +22,9 @@
         Vous n'avez encore passé aucune commande.
     </p>
 
-    <div class="defilement" th:unless="${#lists.isEmpty(commandes)}">
+    <div class="defilement" th:unless="${#lists.isEmpty(commandes)}" tabindex="0" role="region" aria-labelledby="legende-vente-commandes">
         <table class="tableau">
-            <caption th:text="#{commandes.legende}">Historique de vos commandes, de la plus récente à la plus ancienne</caption>
+            <caption id="legende-vente-commandes" th:text="#{commandes.legende}">Historique de vos commandes, de la plus récente à la plus ancienne</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{commandes.colonne.numero}">Numéro</th>

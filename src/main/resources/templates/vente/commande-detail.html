@@ -68,9 +68,9 @@
 
     <h2 th:text="#{commande.detail.lignes}">Articles commandés</h2>
 
-    <div class="defilement">
+    <div class="defilement" tabindex="0" role="region" aria-labelledby="legende-vente-commande-detail">
         <table class="tableau">
-            <caption th:text="#{commande.detail.lignes.legende}">
+            <caption id="legende-vente-commande-detail" th:text="#{commande.detail.lignes.legende}">
                 Articles de cette commande, aux prix appliqués le jour de l'achat
             </caption>
             <thead>

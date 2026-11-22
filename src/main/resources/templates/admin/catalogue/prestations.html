@@ -20,7 +20,7 @@
         <a th:href="@{/admin/catalogue/pieces}" th:text="#{admin.catalogue.nav.pieces}">Gérer les pièces</a>
     </p>
 
-    <h1 th:text="#{admin.catalogue.prestations.titre}">Catalogue des prestations</h1>
+    <h1 id="titre-admin-catalogue-prestations" th:text="#{admin.catalogue.prestations.titre}">Catalogue des prestations</h1>
 
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
@@ -34,7 +34,7 @@
         Aucun élément dans le catalogue.
     </p>
 
-    <div class="defilement" th:unless="${prestations.isEmpty()}">
+    <div class="defilement" th:unless="${prestations.isEmpty()}" tabindex="0" role="region" aria-labelledby="titre-admin-catalogue-prestations">
         <table class="tableau">
             <thead>
             <tr>

@@ -14,7 +14,7 @@
 <header th:replace="~{fragments/back-office :: entete}"></header>
 
 <main id="contenu">
-    <h1 th:text="#{admin.planning.plages.titre}">Plages d'ouverture</h1>
+    <h1 id="titre-admin-planning-plages" th:text="#{admin.planning.plages.titre}">Plages d'ouverture</h1>
     <p class="texte-info" th:text="#{admin.planning.plages.intro}">Heures locales du garage.</p>
 
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
@@ -27,7 +27,7 @@
 
     <p th:if="${plages.isEmpty()}" class="message" th:text="#{admin.planning.plages.vide}">Aucune plage.</p>
 
-    <div class="defilement" th:unless="${plages.isEmpty()}">
+    <div class="defilement" th:unless="${plages.isEmpty()}" tabindex="0" role="region" aria-labelledby="titre-admin-planning-plages">
         <table class="tableau">
             <thead>
             <tr>

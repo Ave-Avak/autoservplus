@@ -60,11 +60,15 @@ class FeuilleDeStyleTest {
     @Test
     @DisplayName("focus à deux couleurs : au moins 3:1 sur fond blanc comme sur le bleu de l'en-tête")
     void focusLisibleSurLesDeuxFonds() {
-        String bloc = bloc(":focus-visible");
-        List<String> anneaux = List.of(couleur(propriete(bloc, "outline")), couleur(propriete(bloc, "box-shadow")));
-        for (String fond : List.of("#FFFFFF", variables.get("--bleu-marine"))) {
-            assertThat(anneaux.stream().mapToDouble(a -> contraste(a, fond)).max().orElseThrow())
-                    .as("meilleur anneau sur " + fond).isGreaterThanOrEqualTo(3.0);
+        // Le focus commun, puis celui des conteneurs défilants, tracé vers l'intérieur.
+        for (String selecteur : List.of(":focus-visible", ".defilement:focus-visible")) {
+            String bloc = bloc(selecteur);
+            List<String> anneaux = List.of(couleur(propriete(bloc, "outline")),
+                    couleur(propriete(bloc, "box-shadow")));
+            for (String fond : List.of("#FFFFFF", variables.get("--bleu-marine"))) {
+                assertThat(anneaux.stream().mapToDouble(a -> contraste(a, fond)).max().orElseThrow())
+                        .as(selecteur + ", meilleur anneau sur " + fond).isGreaterThanOrEqualTo(3.0);
+            }
         }
     }
 

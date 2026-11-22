@@ -20,9 +20,9 @@
 
     <p th:if="${#lists.isEmpty(avis)}" th:text="#{admin.avis.aucun}">Aucun avis déposé.</p>
 
-    <div class="defilement" th:unless="${#lists.isEmpty(avis)}">
+    <div class="defilement" th:unless="${#lists.isEmpty(avis)}" tabindex="0" role="region" aria-labelledby="legende-admin-avis">
         <table class="tableau">
-            <caption th:text="#{admin.avis.legende}">Tous les avis, masqués compris, du plus récent au plus ancien.</caption>
+            <caption id="legende-admin-avis" th:text="#{admin.avis.legende}">Tous les avis, masqués compris, du plus récent au plus ancien.</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{admin.avis.colonne.intervention}">Intervention</th>
