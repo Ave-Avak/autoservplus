@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
+import be.autoservplus.common.web.NumeroPage;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -111,7 +112,7 @@ public class ApiPubliqueController {
      */
     private <T> PagePublique<T> paginer(List<T> tous, int page, int taille) {
         int tailleReelle = Math.clamp(taille, 1, TAILLE_MAX);
-        int pageReelle = Math.max(page, 0);
+        int pageReelle = NumeroPage.borne(page, tailleReelle);
         long total = tous.size();
         int nombreDePages = (int) Math.ceil((double) total / tailleReelle);
 

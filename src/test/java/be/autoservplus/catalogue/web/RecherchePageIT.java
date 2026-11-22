@@ -97,6 +97,17 @@ class RecherchePageIT extends SocleIntegration {
     }
 
     @Test
+    @DisplayName("numéro de page démesuré ou négatif : la dernière ou la première page, pas une erreur")
+    void pageDemesuree() throws Exception {
+        String derniere = ouvrir("/recherche?q=zqx&pagePrestations=2147483647&pagePieces=2147483647", Locale.FRENCH);
+        assertThat(derniere).contains("Page 2 sur 2").contains("Écrou zqx 14");
+        assertThat(derniere).contains("Serrage zqx au couple");
+
+        String premiere = ouvrir("/recherche?q=zqx&pagePieces=-2147483648&pagePrestations=0", Locale.FRENCH);
+        assertThat(premiere).contains("Serrage zqx au couple");
+    }
+
+    @Test
     @DisplayName("terme limité à cent caractères, dans les deux champs et au serveur")
     void termeBorne() throws Exception {
         String trop = "zqx" + "a".repeat(147);

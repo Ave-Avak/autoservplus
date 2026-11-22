@@ -9,6 +9,7 @@ import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.NumeroPage;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -151,6 +152,6 @@ public class CatalogueService {
     // --- utilitaires -------------------------------------------------------------------
 
     private Pageable pagination(int numeroPage) {
-        return PageRequest.of(Math.max(0, numeroPage), TAILLE_PAGE_PAR_DEFAUT);
+        return PageRequest.of(NumeroPage.borne(numeroPage, TAILLE_PAGE_PAR_DEFAUT), TAILLE_PAGE_PAR_DEFAUT);
     }
 }

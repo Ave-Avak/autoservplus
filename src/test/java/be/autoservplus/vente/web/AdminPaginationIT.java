@@ -80,4 +80,17 @@ class AdminPaginationIT extends SocleIntegration {
                 .andExpect(content().string(containsString("rel=\"prev\"")))
                 .andExpect(content().string(not(containsString("rel=\"next\""))));
     }
+
+    @Test
+    @DisplayName("numéro de page démesuré : les trois listes répondent, sans erreur")
+    void pageDemesuree() throws Exception {
+        for (String liste : new String[]{"/admin/commandes", "/admin/factures", "/admin/avoirs"}) {
+            for (String page : new String[]{"2147483647", "-2147483648", "0"}) {
+                mvc.perform(get(liste).param("page", page)
+                                .with(user("pagination-admin@exemple.be").roles("ADMINISTRATEUR"))
+                                .locale(Locale.FRENCH))
+                        .andExpect(status().isOk());
+            }
+        }
+    }
 }

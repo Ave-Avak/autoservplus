@@ -2,6 +2,7 @@ package be.autoservplus.vente.service;
 
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.NumeroPage;
 import be.autoservplus.common.web.PeriodeFiltre;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.service.AuteurCourant;
@@ -79,7 +80,7 @@ public class AdminCommandeService {
      */
     public Page<CommandeAdminLigne> rechercher(PeriodeFiltre periode, StatutCommande statut,
                                                String recherche, int page) {
-        PageRequest demande = PageRequest.of(Math.max(page, 0), taillePage);
+        PageRequest demande = PageRequest.of(NumeroPage.borne(page, taillePage), taillePage);
         if (periode.inversee()) {
             return Page.empty(demande);
         }
