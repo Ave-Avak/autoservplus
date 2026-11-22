@@ -327,14 +327,57 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
      */
     private static String debordement(Page page) {
         @SuppressWarnings("unchecked")
-        Map<String, Object> mesure = (Map<String, Object>) page.evaluate("() => ({"
-                + "page: document.documentElement.scrollWidth, fenetre: document.documentElement.clientWidth})");
+        Map<String, Object> mesure = (Map<String, Object>) page.evaluate(MESURE_DU_DEBORDEMENT);
         int largeurPage = ((Number) mesure.get("page")).intValue();
         int largeurFenetre = ((Number) mesure.get("fenetre")).intValue();
         return largeurPage > largeurFenetre
-                ? "débordement horizontal, page de " + largeurPage + " px pour " + largeurFenetre + " px de fenêtre"
+                ? "débordement horizontal, page de " + largeurPage + " px pour " + largeurFenetre
+                        + " px de fenêtre, élément le plus à droite : " + mesure.get("coupable")
                 : null;
     }
+
+    /**
+     * La mesure, et l'élément dont le bord droit va le plus loin : un échec doit se lire
+     * dans le journal de l'intégration continue, où les polices ne sont pas celles du
+     * poste et où personne n'a la page sous les yeux. Un élément logé dans un conteneur
+     * qui coupe ou fait défiler son contenu n'élargit pas le document : il est écarté.
+     * Parmi les éléments de même bord droit, le plus profond est le plus précis.
+     */
+    private static final String MESURE_DU_DEBORDEMENT = """
+            () => {
+                const racine = document.documentElement;
+                const contenu = element => {
+                    for (let parent = element.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+                        if (getComputedStyle(parent).overflowX !== 'visible') {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+                let coupable = null;
+                let bord = racine.clientWidth;
+                for (const element of document.body.querySelectorAll('*')) {
+                    const cadre = element.getBoundingClientRect();
+                    if (cadre.width > 0 && cadre.right >= bord + (coupable ? 0 : 0.5) && !contenu(element)) {
+                        coupable = element;
+                        bord = cadre.right;
+                    }
+                }
+                const nom = element => element.tagName.toLowerCase()
+                    + (element.id ? '#' + element.id : '')
+                    + [...element.classList].map(classe => '.' + classe).join('');
+                return {
+                    page: racine.scrollWidth,
+                    fenetre: racine.clientWidth,
+                    coupable: coupable
+                        ? nom(coupable) + ' dans ' + nom(coupable.parentElement)
+                            + ', large de ' + Math.round(coupable.getBoundingClientRect().width)
+                            + ' px, bord droit à ' + Math.round(bord) + ' px, texte « '
+                            + coupable.textContent.trim().replace(/\\s+/g, ' ').slice(0, 40) + ' »'
+                        : 'aucun élément ne dépasse, marge ou défilement du document',
+                };
+            }
+            """;
 
     private static String cibles(Rule violation) {
         return violation.getNodes().stream().map(CheckedNode::getTarget).map(String::valueOf).limit(3).toList()
