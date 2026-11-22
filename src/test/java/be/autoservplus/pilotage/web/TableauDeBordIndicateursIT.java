@@ -2,6 +2,7 @@ package be.autoservplus.pilotage.web;
 
 import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.Piece;
+import be.autoservplus.catalogue.domain.Traductions;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
@@ -100,12 +101,18 @@ class TableauDeBordIndicateursIT extends SocleIntegration {
             return utilisateurs.saveAndFlush(nouveau);
         });
         Piece piece = transactions.execute(statut -> {
-            Categorie categorie = categories.save(new Categorie("IT-PIL-CAT", "Filtration du test", TypeCategorie.PIECE));
+            Categorie filtration = new Categorie("IT-PIL-CAT", "Filtration du test", TypeCategorie.PIECE);
+            filtration.traduire("Testfiltratie", null);
+            Categorie categorie = categories.save(filtration);
             Piece nouvelle = new Piece(categorie, "IT-PIL-1", "Filtre du test", new BigDecimal("19.99"));
             nouvelle.setQuantiteStock(50);
+            nouvelle.traduire(new Traductions("Testfilter", null, null, null));
             return pieces.save(nouvelle);
         });
         commandePayee(acheteur, piece);
+        // La seconde commande est conclue en néerlandais : ses lignes se figent sous un
+        // autre libellé que celles de la première.
+        jdbc.update("UPDATE utilisateur SET langue = 'nl' WHERE email = ?", acheteur.getEmail());
         commandePayee(acheteur, piece);
         // Ni l'une ni l'autre n'est facturée : elles n'entrent dans aucune vente.
         commander(acheteur, piece);
@@ -212,6 +219,32 @@ class TableauDeBordIndicateursIT extends SocleIntegration {
         assertThat(page).contains("1 commande en attente, soit 48,38 € TVAC");
         assertThat(page).contains("Prestations les plus réalisées");
         assertThat(page).doesNotContain("(s)");
+    }
+
+    @Test
+    @DisplayName("une pièce vendue en français et en néerlandais tient un seul rang, nommée dans la langue de l'écran")
+    void classementParArticle() throws Exception {
+        assertThat(jdbc.queryForList("""
+                SELECT DISTINCT l.libelle_fige FROM ligne_panier l
+                JOIN facture f ON f.commande_id = l.commande_id
+                JOIN piece p ON p.id = l.piece_id WHERE p.reference_fabricant = 'IT-PIL-1'
+                ORDER BY 1""", String.class))
+                .as("deux libellés figés pour la même pièce")
+                .containsExactly("Filtre du test", "Testfilter");
+
+        String neerlandais = ecran("/admin", new Locale("nl"));
+        assertThat(neerlandais).contains("Testfilter").doesNotContain("Filtre du test");
+        assertThat(neerlandais).contains("Testfiltratie").doesNotContain("Filtration du test");
+
+        // Sans traduction anglaise, le libellé français.
+        String anglais = ecran("/admin", Locale.ENGLISH);
+        assertThat(anglais).contains("Filtre du test").doesNotContain("Testfilter");
+        assertThat(anglais).contains("Filtration du test");
+
+        String csv = new String(mvc.perform(get("/admin/tableau-de-bord/indicateurs.csv").param("periode", "mois")
+                        .with(user(ADMIN).roles("ADMINISTRATEUR")).locale(new Locale("nl")))
+                .andReturn().getResponse().getContentAsByteArray(), StandardCharsets.UTF_8);
+        assertThat(csv).contains(";Testfilter;4\r\n").contains(";Testfiltratie;79,96\r\n");
     }
 
     @Test

@@ -55,13 +55,13 @@ class TableauDeBordIT extends SocleIntegration {
                 indicateurs.avoirsEmis(DEBUT, FIN);
                 indicateurs.rendezVousParStatut(DEBUT, FIN);
                 indicateurs.minutesReservees(DEBUT, FIN);
-                indicateurs.topPrestations(DEBUT, FIN, 5);
-                indicateurs.topPieces(DEBUT, FIN, 5);
+                indicateurs.topPrestations(DEBUT, FIN, "fr", 5);
+                indicateurs.topPieces(DEBUT, FIN, "nl", 5);
                 indicateurs.commandesAEncaisser();
                 indicateurs.annulationsMembreEtGarage(DEBUT, FIN);
                 indicateurs.nouveauxClients(DEBUT, FIN);
                 indicateurs.commandesPayees(DEBUT, FIN);
-                indicateurs.chiffreAffaireParCategorie(DEBUT, FIN);
+                indicateurs.chiffreAffaireParCategorie(DEBUT, FIN, "en");
                 indicateurs.chiffreAffaireParJour(DEBUT, FIN, java.time.ZoneId.of("Europe/Brussels"));
             }).doesNotThrowAnyException();
         }
