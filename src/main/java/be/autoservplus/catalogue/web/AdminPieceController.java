@@ -181,7 +181,7 @@ public class AdminPieceController {
     private DonneesPiece versDonnees(PieceForm f) {
         return new DonneesPiece(f.getCodeCategorie(), f.getReferenceFabricant(), f.getLibelle(),
                 f.getMarque(), f.getDescription(), f.getPrixHtva(), f.getTauxTva(),
-                f.getQuantiteStock(), f.getSeuilAlerte(), f.isActif());
+                f.getQuantiteStock(), f.getSeuilAlerte(), f.isActif(), f.traductions());
     }
 
     private PieceForm versFormulaire(ArticleVueAdmin vue) {
@@ -196,6 +196,7 @@ public class AdminPieceController {
         f.setQuantiteStock(vue.quantiteStock());
         f.setSeuilAlerte(vue.seuilAlerte());
         f.setActif(vue.actif());
+        f.reprendre(vue.traductions());
         return f;
     }
 

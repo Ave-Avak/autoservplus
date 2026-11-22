@@ -2,11 +2,13 @@ package be.autoservplus.catalogue.domain;
 
 import be.autoservplus.common.entity.BaseEntity;
 import jakarta.persistence.*;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -45,6 +47,10 @@ public class Prestation extends BaseEntity {
 
     @Column(name = "description", columnDefinition = "text")
     private String description;
+
+    @Valid
+    @Embedded
+    private Traductions traductions = Traductions.aucune();
 
     @NotNull
     @DecimalMin("0.00")
@@ -130,6 +136,26 @@ public class Prestation extends BaseEntity {
     public String getLibelle() { return libelle; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+
+    /** Libellé dans la langue demandée, ou en français s'il n'y est pas traduit. */
+    public TexteLocalise libelle(Locale langue) {
+        return TexteLocalise.choisir(langue, libelle, getTraductions().getLibelleNl(), getTraductions().getLibelleEn());
+    }
+
+    /** Description dans la langue demandée, ou en français si elle n'y est pas traduite. */
+    public TexteLocalise description(Locale langue) {
+        return TexteLocalise.choisir(langue, description,
+                getTraductions().getDescriptionNl(), getTraductions().getDescriptionEn());
+    }
+
+    /** Jamais {@code null} : Hibernate rend un composant nul quand toutes ses colonnes le sont. */
+    public Traductions getTraductions() {
+        return traductions == null ? Traductions.aucune() : traductions;
+    }
+
+    public void traduire(Traductions nouvelles) {
+        this.traductions = Objects.requireNonNull(nouvelles, "traductions");
+    }
     public BigDecimal getPrixHtva() { return prixHtva; }
     public BigDecimal getTauxTva() { return tauxTva; }
     public void setTauxTva(BigDecimal tauxTva) { this.tauxTva = TauxTvaBelge.verifier(tauxTva); }

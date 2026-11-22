@@ -151,6 +151,9 @@ public class AdminCatalogueService {
         Prestation prestation = new Prestation(categorie, donnees.code(), donnees.libelle(),
                 donnees.prixHtva(), donnees.dureeMinutes());
         prestation.setDescription(donnees.description());
+        if (donnees.traductions() != null) {
+            prestation.traduire(donnees.traductions());
+        }
         prestation.setTauxTva(donnees.tauxTva());
         if (!donnees.actif()) {
             prestation.desactiver();
@@ -177,6 +180,9 @@ public class AdminCatalogueService {
                 donnees.prixHtva());
         piece.setMarque(donnees.marque());
         piece.setDescription(donnees.description());
+        if (donnees.traductions() != null) {
+            piece.traduire(donnees.traductions());
+        }
         piece.setTauxTva(donnees.tauxTva());
         piece.setQuantiteStock(donnees.quantiteStock());
         piece.setSeuilAlerte(donnees.seuilAlerte());
@@ -211,6 +217,9 @@ public class AdminCatalogueService {
         prestation.changerCategorie(categorieDeType(donnees.codeCategorie(), TypeCategorie.SERVICE));
         prestation.renommer(donnees.libelle());
         prestation.setDescription(donnees.description());
+        if (donnees.traductions() != null) {
+            prestation.traduire(donnees.traductions());
+        }
         prestation.modifierPrix(donnees.prixHtva());
         prestation.setTauxTva(donnees.tauxTva());
         prestation.setDureeMinutes(donnees.dureeMinutes());
@@ -237,6 +246,9 @@ public class AdminCatalogueService {
         piece.renommer(donnees.libelle());
         piece.setMarque(donnees.marque());
         piece.setDescription(donnees.description());
+        if (donnees.traductions() != null) {
+            piece.traduire(donnees.traductions());
+        }
         piece.modifierPrix(donnees.prixHtva());
         piece.setTauxTva(donnees.tauxTva());
         piece.setQuantiteStock(donnees.quantiteStock());

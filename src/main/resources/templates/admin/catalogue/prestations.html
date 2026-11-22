@@ -51,7 +51,10 @@
             <tbody>
             <tr th:each="p : ${prestations}">
                 <td th:text="${p.identifiant()}">VID</td>
-                <td th:text="${p.libelle()}">Vidange</td>
+                <td><span th:text="${p.libelle()}">Vidange</span>
+                    <span th:unless="${p.traduit()}" class="badge badge-en_attente"
+                          th:text="#{admin.catalogue.non-traduit}">Non traduit</span>
+                </td>
                 <td th:text="${p.categorieLibelle()}">Entretien</td>
                 <td th:text="${p.prixHtva()} + ' €'">75,00 €</td>
                 <td th:text="${p.tauxTva()} + ' %'">21 %</td>

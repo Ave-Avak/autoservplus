@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -33,6 +34,14 @@ public class Categorie extends BaseEntity {
     @Size(max = 120)
     @Column(name = "libelle", nullable = false, length = 120)
     private String libelle;
+
+    @Size(max = 120)
+    @Column(name = "libelle_nl", length = 120)
+    private String libelleNl;
+
+    @Size(max = 120)
+    @Column(name = "libelle_en", length = 120)
+    private String libelleEn;
 
     @NotNull
     @Enumerated(EnumType.STRING)
@@ -68,6 +77,20 @@ public class Categorie extends BaseEntity {
     public Long getId() { return id; }
     public String getCode() { return code; }
     public String getLibelle() { return libelle; }
+
+    /** Libellé dans la langue demandée, ou en français s'il n'y est pas traduit. */
+    public TexteLocalise libelle(Locale langue) {
+        return TexteLocalise.choisir(langue, libelle, libelleNl, libelleEn);
+    }
+
+    /** Traductions du libellé. Une saisie vide vaut « non traduit ». */
+    public void traduire(String neerlandais, String anglais) {
+        this.libelleNl = TexteLocalise.present(neerlandais) ? neerlandais.trim() : null;
+        this.libelleEn = TexteLocalise.present(anglais) ? anglais.trim() : null;
+    }
+
+    public String getLibelleNl() { return libelleNl; }
+    public String getLibelleEn() { return libelleEn; }
     public TypeCategorie getType() { return type; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }

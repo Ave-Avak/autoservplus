@@ -1,11 +1,13 @@
 package be.autoservplus.catalogue.service;
 
 import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.catalogue.service.dto.CategorieVue;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -64,11 +67,17 @@ class CatalogueServiceTest {
         @Test
         @DisplayName("interroge le dépôt avec un motif en minuscules, encadré de jokers")
         void nettoieLeTerme() {
-            when(prestations.rechercher(eq("%vidange%"), any())).thenReturn(org.springframework.data.domain.Page.empty());
+            when(prestations.rechercher(eq("%vidange%"), eq("nl"), any())).thenReturn(org.springframework.data.domain.Page.empty());
+            // Sans contexte Spring, la langue hors requête serait celle de la machine : le
+            // test fixe celle de la requête, que le service transmet pour le tri.
+            LocaleContextHolder.setLocale(Locale.forLanguageTag("nl-BE"));
+            try {
+                service.rechercherPrestations("  Vidange  ", 0);
+            } finally {
+                LocaleContextHolder.resetLocaleContext();
+            }
 
-            service.rechercherPrestations("  Vidange  ", 0);
-
-            verify(prestations).rechercher(eq("%vidange%"), any());
+            verify(prestations).rechercher(eq("%vidange%"), eq("nl"), any());
         }
     }
 
@@ -86,7 +95,7 @@ class CatalogueServiceTest {
             assertThat(service.categoriesDePrestations())
                     .hasSize(1)
                     .first()
-                    .extracting(Categorie::getCode)
+                    .extracting(CategorieVue::code)
                     .isEqualTo("ENTRETIEN");
         }
 

@@ -84,25 +84,48 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
      * « ! » ({@code MotifRecherche}). {@code unaccent} est l'extension installée par V62.
      * La requête de comptage est écrite à la main : un {@code JOIN FETCH} n'a pas sa
      * place dans un comptage.</p>
+     *
+     * <p>Les textes traduits sont cherchés dans les trois langues à la fois, quelle que
+     * soit celle de l'écran : un visiteur néerlandophone qui tape « huile » trouve le
+     * filtre comme s'il avait tapé « olie ». Une traduction absente vaut {@code NULL} et
+     * ne correspond à rien. Le tri suit le libellé affiché, donc la langue de l'écran,
+     * avec le français pour un libellé non traduit.</p>
+     *
+     * @param langue code de la langue de l'écran, pour le tri seulement
      */
     @Query(value = """
             SELECT p FROM Piece p JOIN FETCH p.categorie c
             WHERE p.actif = true
               AND ( cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.traductions.libelleNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.traductions.libelleEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
                  OR cast(function('unaccent', LOWER(p.description)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.traductions.descriptionNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.traductions.descriptionEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
                  OR cast(function('unaccent', LOWER(p.marque)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
                  OR cast(function('unaccent', LOWER(p.referenceFabricant)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(c.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!')
-            ORDER BY p.libelle, p.id
+                 OR cast(function('unaccent', LOWER(c.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(c.libelleNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(c.libelleEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!')
+            ORDER BY CASE WHEN :langue = 'nl' THEN COALESCE(p.traductions.libelleNl, p.libelle)
+                          WHEN :langue = 'en' THEN COALESCE(p.traductions.libelleEn, p.libelle)
+                          ELSE p.libelle END, p.id
             """,
             countQuery = """
             SELECT COUNT(p) FROM Piece p JOIN p.categorie c
             WHERE p.actif = true
               AND ( cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.traductions.libelleNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.traductions.libelleEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
                  OR cast(function('unaccent', LOWER(p.description)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.traductions.descriptionNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(p.traductions.descriptionEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
                  OR cast(function('unaccent', LOWER(p.marque)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
                  OR cast(function('unaccent', LOWER(p.referenceFabricant)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(c.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!')
+                 OR cast(function('unaccent', LOWER(c.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(c.libelleNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                 OR cast(function('unaccent', LOWER(c.libelleEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!')
             """)
-    Page<Piece> rechercher(@Param("motif") String motif, Pageable pagination);
+    Page<Piece> rechercher(@Param("motif") String motif, @Param("langue") String langue,
+                           Pageable pagination);
 }

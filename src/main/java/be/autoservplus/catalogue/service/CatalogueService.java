@@ -1,6 +1,5 @@
 package be.autoservplus.catalogue.service;
 
-import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
@@ -8,16 +7,23 @@ import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
+import be.autoservplus.catalogue.service.dto.CategorieVue;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.common.web.NumeroPage;
+import be.autoservplus.i18n.LanguesSupportees;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.text.Collator;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 /**
  * Consultation publique du catalogue.
@@ -50,38 +56,51 @@ public class CatalogueService {
 
     // --- consultation publique --------------------------------------------------------
 
-    public List<Categorie> categoriesDePrestations() {
-        return categories.findByTypeAndActifTrueOrderByOrdreAsc(TypeCategorie.SERVICE);
+    // Les textes sont rendus dans la langue de la requête en cours, le français hors de
+    // toute requête. Une traduction absente retombe sur le français, et la vue le dit.
+
+    public List<CategorieVue> categoriesDePrestations() {
+        Locale langue = langue();
+        return categories.findByTypeAndActifTrueOrderByOrdreAsc(TypeCategorie.SERVICE).stream()
+                .map(categorie -> CategorieVue.de(categorie, langue)).toList();
     }
 
-    public List<Categorie> categoriesDePieces() {
-        return categories.findByTypeAndActifTrueOrderByOrdreAsc(TypeCategorie.PIECE);
+    public List<CategorieVue> categoriesDePieces() {
+        Locale langue = langue();
+        return categories.findByTypeAndActifTrueOrderByOrdreAsc(TypeCategorie.PIECE).stream()
+                .map(categorie -> CategorieVue.de(categorie, langue)).toList();
     }
 
     public List<ArticleVue> prestationsActives() {
-        return prestations.findByActifTrueOrderByLibelleAsc().stream().map(ArticleVue::de).toList();
+        Locale langue = langue();
+        return triees(prestations.findByActifTrueOrderByLibelleAsc().stream()
+                .map(prestation -> ArticleVue.de(prestation, langue)), langue);
     }
 
     public List<ArticleVue> prestationsDeCategorie(String codeCategorie) {
-        return prestations.findByCategorieCodeAndActifTrueOrderByLibelleAsc(codeCategorie)
-                .stream().map(ArticleVue::de).toList();
+        Locale langue = langue();
+        return triees(prestations.findByCategorieCodeAndActifTrueOrderByLibelleAsc(codeCategorie).stream()
+                .map(prestation -> ArticleVue.de(prestation, langue)), langue);
     }
 
     public List<ArticleVue> piecesActives() {
-        return pieces.findByActifTrueOrderByLibelleAsc().stream().map(ArticleVue::de).toList();
+        Locale langue = langue();
+        return triees(pieces.findByActifTrueOrderByLibelleAsc().stream()
+                .map(piece -> ArticleVue.de(piece, langue)), langue);
     }
 
     public List<ArticleVue> piecesDeCategorie(String codeCategorie) {
-        return pieces.findByCategorieCodeAndActifTrueOrderByLibelleAsc(codeCategorie)
-                .stream().map(ArticleVue::de).toList();
+        Locale langue = langue();
+        return triees(pieces.findByCategorieCodeAndActifTrueOrderByLibelleAsc(codeCategorie).stream()
+                .map(piece -> ArticleVue.de(piece, langue)), langue);
     }
 
     public ArticleVue vuePrestation(UUID reference) {
-        return ArticleVue.de(prestationParReference(reference));
+        return ArticleVue.de(prestationParReference(reference), langue());
     }
 
     public ArticleVue vuePiece(UUID reference) {
-        return ArticleVue.de(pieceParReference(reference));
+        return ArticleVue.de(pieceParReference(reference), langue());
     }
 
     /**
@@ -98,11 +117,12 @@ public class CatalogueService {
             return Page.empty();
         }
         String motif = MotifRecherche.de(terme);
-        Page<Prestation> page = prestations.rechercher(motif, pagination(numeroPage));
+        Locale langue = langue();
+        Page<Prestation> page = prestations.rechercher(motif, langue.getLanguage(), pagination(numeroPage));
         if (page.isEmpty() && page.getTotalElements() > 0) {
-            page = prestations.rechercher(motif, pagination(page.getTotalPages() - 1));
+            page = prestations.rechercher(motif, langue.getLanguage(), pagination(page.getTotalPages() - 1));
         }
-        return page.map(ArticleVue::de);
+        return page.map(prestation -> ArticleVue.de(prestation, langue));
     }
 
     /** Recherche dans les pièces, aux mêmes règles que {@link #rechercherPrestations}. */
@@ -111,11 +131,12 @@ public class CatalogueService {
             return Page.empty();
         }
         String motif = MotifRecherche.de(terme);
-        Page<Piece> page = pieces.rechercher(motif, pagination(numeroPage));
+        Locale langue = langue();
+        Page<Piece> page = pieces.rechercher(motif, langue.getLanguage(), pagination(numeroPage));
         if (page.isEmpty() && page.getTotalElements() > 0) {
-            page = pieces.rechercher(motif, pagination(page.getTotalPages() - 1));
+            page = pieces.rechercher(motif, langue.getLanguage(), pagination(page.getTotalPages() - 1));
         }
-        return page.map(ArticleVue::de);
+        return page.map(piece -> ArticleVue.de(piece, langue));
     }
 
     /**
@@ -150,6 +171,21 @@ public class CatalogueService {
     }
 
     // --- utilitaires -------------------------------------------------------------------
+
+    /** Langue de la requête en cours, ramenée à l'une des trois du site. */
+    private static Locale langue() {
+        return LanguesSupportees.plusProche(LocaleContextHolder.getLocale());
+    }
+
+    /**
+     * Les articles dans l'ordre alphabétique de la langue affichée. La base les rend
+     * triés sur le libellé français : une liste néerlandaise serait dans le désordre.
+     * Le catalogue d'un garage tient en mémoire, le tri s'y fait donc ici.
+     */
+    private static List<ArticleVue> triees(Stream<ArticleVue> articles, Locale langue) {
+        Collator ordre = Collator.getInstance(langue);
+        return articles.sorted(Comparator.comparing(ArticleVue::libelle, ordre)).toList();
+    }
 
     private Pageable pagination(int numeroPage) {
         return PageRequest.of(NumeroPage.borne(numeroPage, TAILLE_PAGE_PAR_DEFAUT), TAILLE_PAGE_PAR_DEFAUT);

@@ -48,10 +48,10 @@
             <li class="carte" th:each="article : ${prestations.content}">
                 <h3>
                     <a th:href="@{/services/{ref}(ref=${article.reference()})}"
-                       th:text="${article.libelle()}">Libellé</a>
+                       th:text="${article.libelle()}" th:lang="${article.langueLibelle()}">Libellé</a>
                 </h3>
-                <p class="carte-categorie" th:text="${article.categorie()}">Catégorie</p>
-                <p class="carte-description" th:text="${article.description()}">Description</p>
+                <p class="carte-categorie" th:text="${article.categorie()}" th:lang="${article.langueCategorie()}">Catégorie</p>
+                <p class="carte-description" th:text="${article.description()}" th:lang="${article.langueDescription()}">Description</p>
                 <p class="carte-meta" th:if="${article.dureeMinutes() != null}">
                     <span th:text="#{catalogue.duree}">Durée :</span> <span th:text="${article.dureeLisible()}">1 h</span>
                 </p>
@@ -78,10 +78,10 @@
             <li class="carte" th:each="article : ${pieces.content}">
                 <h3>
                     <a th:href="@{/pieces/{ref}(ref=${article.reference()})}"
-                       th:text="${article.libelle()}">Libellé</a>
+                       th:text="${article.libelle()}" th:lang="${article.langueLibelle()}">Libellé</a>
                 </h3>
-                <p class="carte-categorie" th:text="${article.categorie()}">Catégorie</p>
-                <p class="carte-description" th:text="${article.description()}">Description</p>
+                <p class="carte-categorie" th:text="${article.categorie()}" th:lang="${article.langueCategorie()}">Catégorie</p>
+                <p class="carte-description" th:text="${article.description()}" th:lang="${article.langueDescription()}">Description</p>
                 <p class="carte-meta" th:if="${article.marque() != null}" th:text="${article.marque()}">Marque</p>
                 <p class="carte-prix">
                     <strong th:text="${#numbers.formatDecimal(article.prixTvac(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">0,00 €</strong>
