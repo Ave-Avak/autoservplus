@@ -539,7 +539,11 @@ main section h2 {
     text-transform: uppercase;
     letter-spacing: 0.03em;
 }
-.vehicule-details dd { margin: 0; font-weight: 600; font-size: 0.9375rem; }
+/* Une valeur sans espace, une adresse de courriel par exemple, se coupe au lieu de
+   sortir de sa colonne : selon la police, elle élargissait la page de quelques pixels
+   à 320 px. min-width laisse la colonne rétrécir sous la largeur de son contenu. */
+.vehicule-details > div { min-width: 0; }
+.vehicule-details dd { margin: 0; font-weight: 600; font-size: 0.9375rem; overflow-wrap: anywhere; }
 
 .carte-actions {
     display: flex;
