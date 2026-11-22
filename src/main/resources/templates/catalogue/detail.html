@@ -7,56 +7,11 @@
     <title th:text="${article.libelle()} + ' | AutoServ+'">Article | AutoServ+</title>
     <meta name="description" th:content="${article.description()}">
 
-    <!--/* Données structurées schema.org en JSON-LD : elles disent aux moteurs de
-         recherche la nature de la page, son prix et sa disponibilité, qu'ils peuvent
-         afficher dans leurs résultats. Le prix exposé est le prix TVAC (RM-30). */-->
-    <script type="application/ld+json" th:if="${typeArticle == 'service'}" th:inline="text">
-        {
-            "@context": "https://schema.org",
-            "@type": "Service",
-            "name": "[(${article.libelle()})]",
-            "description": "[(${article.description()})]",
-            "serviceType": "[(${article.categorie()})]",
-            "provider": {
-                "@type": "AutoRepair",
-                "name": "AutoServ+",
-                "address": {
-                    "@type": "PostalAddress",
-                    "addressCountry": "BE"
-                }
-            },
-            "offers": {
-                "@type": "Offer",
-                "price": "[(${article.prixTvac()})]",
-                "priceCurrency": "EUR",
-                "availability": "https://schema.org/InStock"
-            }
-        }
-    </script>
-
-    <script type="application/ld+json" th:if="${typeArticle == 'piece'}" th:inline="text">
-        {
-            "@context": "https://schema.org",
-            "@type": "Product",
-            "name": "[(${article.libelle()})]",
-            "description": "[(${article.description()})]",
-            "sku": "[(${article.code()})]",
-            "brand": {
-                "@type": "Brand",
-                "name": "[(${article.marque()})]"
-            },
-            "offers": {
-                "@type": "Offer",
-                "price": "[(${article.prixTvac()})]",
-                "priceCurrency": "EUR",
-                "availability": "[(${article.disponible()} ? 'https://schema.org/InStock' : 'https://schema.org/OutOfStock')]",
-                "seller": {
-                    "@type": "AutoRepair",
-                    "name": "AutoServ+"
-                }
-            }
-        }
-    </script>
+    <!--/* Données structurées schema.org en JSON-LD, sérialisées par DonneesStructurees.
+         th:utext et non th:text : le bloc est déjà du JSON, et ses chevrons y sont
+         écrits en \uXXXX. L'échapper une seconde fois en HTML le rendrait illisible
+         pour un moteur de recherche. */-->
+    <script type="application/ld+json" th:utext="${donneesStructurees}"></script>
 
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>

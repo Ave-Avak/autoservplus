@@ -66,6 +66,7 @@ public class CatalogueController {
         modele.addAttribute("titre", article.libelle());
         modele.addAttribute("article", article);
         modele.addAttribute("typeArticle", "service");
+        modele.addAttribute("donneesStructurees", DonneesStructurees.dePrestation(article));
         // BL-4 : la note moyenne et les avis publies font partie de la fiche.
         // Les pieces n en ont pas : un avis porte sur un travail effectue, pas sur
         // un article de stock.
@@ -83,6 +84,7 @@ public class CatalogueController {
         modele.addAttribute("titre", article.libelle());
         modele.addAttribute("article", article);
         modele.addAttribute("typeArticle", "piece");
+        modele.addAttribute("donneesStructurees", DonneesStructurees.dePiece(article));
         // BL-9 : illustrations de la piece.
         modele.addAttribute("photos", galerie.dePiece(reference));
         return "catalogue/detail";
