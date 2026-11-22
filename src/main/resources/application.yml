@@ -188,6 +188,10 @@ autoservplus:
     iban: ${GARAGE_IBAN:}
     telephone: ${GARAGE_TELEPHONE:}
     courriel: ${GARAGE_COURRIEL:}
+    # Langues des factures et des avoirs, la première par défaut. Elles suivent la
+    # région du siège : nl en Flandre, fr en Wallonie, fr,nl ou nl,fr à Bruxelles.
+    # Toute autre valeur fait refuser le démarrage.
+    langues-documents: ${GARAGE_LANGUES_DOCUMENTS:fr}
 
   stockage:
     # Racine des fichiers deposes par le back-office (fondation upload).
@@ -340,6 +344,8 @@ autoservplus:
     iban: ${GARAGE_IBAN:BE68 5390 0754 7034}
     telephone: ${GARAGE_TELEPHONE:+32 2 000 00 00}
     courriel: ${GARAGE_COURRIEL:garage@demo.test}
+    # Siège de démonstration à Bruxelles : les deux langues, le français par défaut.
+    langues-documents: ${GARAGE_LANGUES_DOCUMENTS:fr,nl}
   # Expéditeur des courriels de démonstration, sur un domaine réservé (RFC 2606). Mailpit
   # et Mailtrap l'acceptent, aucun vrai relais ne le délivrerait.
   courriel:

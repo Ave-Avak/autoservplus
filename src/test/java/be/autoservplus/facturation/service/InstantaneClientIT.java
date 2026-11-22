@@ -154,7 +154,7 @@ class InstantaneClientIT extends SocleIntegration {
     }
 
     @Test
-    @DisplayName("figé à l'émission : une adresse et une langue changées ensuite ne touchent pas la facture")
+    @DisplayName("figé : une adresse et une langue changées après l'émission ne touchent pas la facture")
     void figeALEmission() throws Exception {
         Utilisateur marie = creer(true);
         panier(marie);

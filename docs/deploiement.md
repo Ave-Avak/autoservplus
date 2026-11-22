@@ -71,6 +71,7 @@ GARAGE_TVA=<BE suivi des dix chiffres du BCE>
 GARAGE_IBAN=<IBAN du garage>
 GARAGE_TELEPHONE=<téléphone>
 GARAGE_COURRIEL=<courriel>
+GARAGE_LANGUES_DOCUMENTS=<nl en Flandre, fr en Wallonie, fr,nl ou nl,fr à Bruxelles>
 SMTP_HOTE=host.docker.internal
 SMTP_PORT=1025
 SMTP_STARTTLS=false

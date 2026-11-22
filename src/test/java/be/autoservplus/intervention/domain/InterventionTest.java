@@ -1,6 +1,8 @@
 package be.autoservplus.intervention.domain;
 
 import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.identite.domain.Langue;
+import be.autoservplus.catalogue.domain.Traductions;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.identite.domain.TypeUtilisateur;
@@ -61,6 +63,20 @@ class InterventionTest {
             assertThat(it.getNumero()).isEqualTo("INT-2026-0001");
             assertThat(it.getVehicule()).isEqualTo(golf);
             assertThat(it.getRdv().getReference()).isNotNull();
+        }
+
+        @Test
+        @DisplayName("les lignes se figent dans la langue de l'intervention, en français sans traduction")
+        void lignesDansLaLangueDeLIntervention() {
+            vidange.traduire(new Traductions("Olie verversen", "Oil change", null, null));
+
+            Intervention neerlandaise = new Intervention("INT-2026-0002", rdvAvec(vidange, freins), Langue.nl);
+
+            assertThat(neerlandaise.getLangueDocument()).isEqualTo(Langue.nl);
+            assertThat(neerlandaise.getLignes()).extracting(LigneIntervention::getLibelleFige)
+                    .containsExactly("Olie verversen", "Plaquettes");
+            assertThat(new Intervention("INT-2026-0003", rdvAvec(vidange)).getLignes().get(0).getLibelleFige())
+                    .as("sans langue donnée : le français").isEqualTo("Vidange");
         }
 
         @Test

@@ -1,6 +1,7 @@
 package be.autoservplus.intervention.service;
 
 import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.support.GaragesDeTest;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.PrestationRepository;
@@ -85,7 +86,7 @@ class InterventionServiceTest {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
         service = new InterventionService(interventions, historiques, prestations,
                 commandes, vehicules, parametres,
-                auteurCourant, numeros, courriel, evenements, horloge);
+                auteurCourant, numeros, courriel, evenements, GaragesDeTest.bruxellois(), horloge);
 
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         golf = new Vehicule(marie, "1-ABC-123", "VW", "Golf", Motorisation.DIESEL);

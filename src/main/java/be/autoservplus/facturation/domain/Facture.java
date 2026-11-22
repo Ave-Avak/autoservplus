@@ -176,7 +176,9 @@ public class Facture {
         facture.clientCodePostal = client.getCodePostal();
         facture.clientLocalite = client.getLocalite();
         facture.clientPays = client.getPays();
-        facture.langueDocument = client.getLangue();
+        // Langue décidée à la conclusion de la commande, celle de ses lignes : celle du
+        // membre si le siège du garage l'admet, sinon la langue par défaut du siège.
+        facture.langueDocument = commande.getLangueDocument();
         facture.montantHtva = Objects.requireNonNull(commande.getMontantHtva(), "montantHtva");
         facture.montantTva = Objects.requireNonNull(commande.getMontantTva(), "montantTva");
         facture.montantTvac = Objects.requireNonNull(commande.getMontantTvac(), "montantTvac");

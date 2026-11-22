@@ -123,7 +123,7 @@ public class LigneIntervention {
         this.intervention = Objects.requireNonNull(intervention, "intervention");
         this.prestation = Objects.requireNonNull(prestation, "prestation");
         exigerQuantitePositive(quantite);
-        this.libelleFige = prestation.getLibelle();
+        this.libelleFige = prestation.libelle(intervention.langueDesLibelles()).texte();
         this.quantite = quantite;
         this.prixUnitaireHtva = Objects.requireNonNull(prixUnitaireHtva, "prixUnitaireHtva");
         this.tauxTva = Objects.requireNonNull(tauxTva, "tauxTva");
@@ -136,7 +136,7 @@ public class LigneIntervention {
         this.intervention = Objects.requireNonNull(intervention, "intervention");
         this.piece = Objects.requireNonNull(piece, "piece");
         exigerQuantitePositive(quantite);
-        this.libelleFige = piece.getLibelle();
+        this.libelleFige = piece.libelle(intervention.langueDesLibelles()).texte();
         this.quantite = quantite;
         this.prixUnitaireHtva = piece.getPrixHtva();
         this.tauxTva = piece.getTauxTva();

@@ -1,6 +1,7 @@
 package be.autoservplus.vente.service;
 
 import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.support.GaragesDeTest;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
@@ -73,7 +74,7 @@ class CommandeServiceTest {
     @BeforeEach
     void setUp() {
         service = new CommandeService(commandes, paiements, paniers, consentements, numeros,
-                versionsDocuments, Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
+                versionsDocuments, GaragesDeTest.bruxellois(), Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
 
         marie = MembresDeTest.membre(EMAIL, "$2a$12$h", "Dupont", "Marie");
         Categorie freinage = new Categorie("FRE", "Freinage", TypeCategorie.PIECE);

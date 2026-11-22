@@ -303,7 +303,9 @@ class SuppressionCompteIT extends SocleIntegration {
      * Depuis l'instantané client (V61), la facture garde le nom et l'adresse figés à son
      * émission, même régénérée après la suppression du compte : elle doit porter
      * l'identité du client pendant toute sa conservation (art. 17.3.b RGPD, Code TVA
-     * art. 60). La langue du document est elle aussi celle de l'émission.
+     * art. 60). La langue du document est elle aussi celle de l'émission : celle du
+     * membre à la conclusion de la commande, bornée par le siège du garage, ici
+     * Bruxelles, qui admet le néerlandais.
      */
     @Test
     @DisplayName("la facture régénérée après anonymisation garde l'identité figée, dans la langue d'émission")

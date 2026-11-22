@@ -65,6 +65,24 @@ class SchemaIT extends SocleIntegration {
     }
 
     @Test
+    @DisplayName("V66 : la langue des documents d'une commande et d'une intervention est le français ou le néerlandais")
+    void langueDesDocumentsBornee() {
+        assertThat(jdbc.queryForList(
+                "SELECT conname FROM pg_constraint WHERE conname IN "
+                        + "('ck_commande_langue_document', 'ck_intervention_langue_document') ORDER BY conname",
+                String.class))
+                .containsExactly("ck_commande_langue_document", "ck_intervention_langue_document");
+        assertThat(definition("ck_commande_langue_document")).contains("'fr'", "'nl'").doesNotContain("'en'");
+        // La facture garde sa contrainte de V61 : une facture déjà émise en anglais ne se réécrit pas.
+        assertThat(definition("ck_facture_langue_document")).contains("'en'");
+    }
+
+    private String definition(String contrainte) {
+        return jdbc.queryForObject(
+                "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = ?", String.class, contrainte);
+    }
+
+    @Test
     @DisplayName("pose la contrainte d exclusion sur les rendez-vous")
     void poseLaContrainteDExclusion() {
         String type = jdbc.queryForObject(

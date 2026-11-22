@@ -2,7 +2,9 @@ package be.autoservplus.config;
 
 import be.autoservplus.common.validation.Iban;
 import be.autoservplus.common.validation.NumeroEntrepriseBelge;
+import be.autoservplus.identite.domain.Langue;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.boot.context.properties.bind.ConstructorBinding;
 
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -66,7 +68,60 @@ public record IdentiteGarage(
         String numeroTva,
         String iban,
         String telephone,
-        String courriel) {
+        String courriel,
+        /**
+         * Langues dans lesquelles le garage émet ses documents, la première étant celle
+         * par défaut ({@code GARAGE_LANGUES_DOCUMENTS}). Elles suivent la région du siège
+         * d'exploitation et non le client : néerlandais en Flandre, français en
+         * Wallonie, l'une et l'autre à Bruxelles (lois coordonnées du 18 juillet 1966,
+         * art. 52 § 1er, décret flamand du 19 juillet 1973, art. 2, décret de la
+         * Communauté française du 30 juin 1982). L'anglais n'est admis nulle part,
+         * l'allemand n'est pas géré. Règle non validée par un juriste.
+         */
+        List<Langue> languesDocuments) {
+
+    private static final List<Langue> LANGUES_ADMISES = List.of(Langue.fr, Langue.nl);
+
+    /**
+     * Refuse au démarrage, sous tout profil, une langue de document que la loi n'admet
+     * pas. Une valeur inconnue n'arrive pas jusqu'ici : la liaison de la configuration
+     * l'a déjà rejetée. Sans réglage, le français.
+     */
+    @ConstructorBinding
+    public IdentiteGarage {
+        if (languesDocuments == null || languesDocuments.isEmpty()) {
+            languesDocuments = List.of(Langue.fr);
+        }
+        if (!LANGUES_ADMISES.containsAll(languesDocuments)
+                || languesDocuments.stream().distinct().count() != languesDocuments.size()) {
+            throw new IllegalArgumentException(
+                    "GARAGE_LANGUES_DOCUMENTS refusée : une ou deux langues parmi fr et nl, sans répétition, "
+                            + "la première étant la langue par défaut. Reçu : " + languesDocuments);
+        }
+        languesDocuments = List.copyOf(languesDocuments);
+    }
+
+    /** Un garage qui émet ses documents en français, valeur par défaut du réglage. */
+    public IdentiteGarage(String nomCommercial, String raisonSociale, String formeJuridique, String rue,
+                          String numeroRue, String codePostal, String localite, String pays, String numeroBce,
+                          String rpm, String numeroTva, String iban, String telephone, String courriel) {
+        this(nomCommercial, raisonSociale, formeJuridique, rue, numeroRue, codePostal, localite, pays, numeroBce,
+                rpm, numeroTva, iban, telephone, courriel, List.of(Langue.fr));
+    }
+
+    /** Langue des documents quand celle du destinataire n'est pas admise, et langue de l'export comptable. */
+    public Langue langueParDefaut() {
+        return languesDocuments.get(0);
+    }
+
+    /**
+     * Langue d'un document destiné à ce membre : la sienne si le siège l'admet, sinon la
+     * langue par défaut. Un membre anglophone reçoit donc sa facture dans la langue par
+     * défaut, et un membre francophone d'un garage flamand la reçoit en néerlandais.
+     */
+    public Langue langueDuDocument(Langue duMembre) {
+        return languesDocuments.contains(duMembre) ? duMembre : langueParDefaut();
+    }
 
     /** Adresse du siege sur une ligne, pour l en-tete du document. */
     public String adresseLisible() {

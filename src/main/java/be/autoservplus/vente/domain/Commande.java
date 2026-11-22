@@ -2,6 +2,7 @@ package be.autoservplus.vente.domain;
 
 import be.autoservplus.common.entity.BaseEntity;
 import be.autoservplus.common.exception.RefusTraduit;
+import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.Utilisateur;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -113,6 +114,12 @@ public class Commande extends BaseEntity {
     @Column(name = "date_remise")
     private LocalDate dateRemise;
 
+    /** Langue des documents de la commande et des libellés de ses lignes, fixée à sa création. */
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "langue_document", nullable = false, updatable = false, length = 2)
+    private Langue langueDocument = Langue.fr;
+
     protected Commande() {
         // requis par JPA
     }
@@ -141,7 +148,22 @@ public class Commande extends BaseEntity {
     public Commande(String numero, Utilisateur membre,
                     BigDecimal montantHtva, BigDecimal montantTva, BigDecimal montantTvac,
                     Instant dateCommande, boolean renonciationVi53) {
+        this(numero, membre, montantHtva, montantTva, montantTvac, dateCommande, renonciationVi53, Langue.fr);
+    }
+
+    /**
+     * @param langueDocument langue de la facture et de l'avoir de cette commande, et des
+     *                       libellés figés sur ses lignes. Décidée ici, une fois, par
+     *                       l'appelant qui connaît le siège du garage
+     *                       ({@code IdentiteGarage.langueDuDocument}) : les lignes d'une
+     *                       facture doivent être dans la langue de la facture, et la
+     *                       facture ne naît qu'au paiement.
+     */
+    public Commande(String numero, Utilisateur membre,
+                    BigDecimal montantHtva, BigDecimal montantTva, BigDecimal montantTvac,
+                    Instant dateCommande, boolean renonciationVi53, Langue langueDocument) {
         this.renonciationVi53 = renonciationVi53;
+        this.langueDocument = Objects.requireNonNull(langueDocument, "langueDocument");
         this.reference = UUID.randomUUID();
         this.numero = Objects.requireNonNull(numero, "numero");
         this.membre = Objects.requireNonNull(membre, "membre");
@@ -162,6 +184,7 @@ public class Commande extends BaseEntity {
      * inexistant.
      */
     public void reprendreLignes(List<LignePanier> lignes) {
+        // Chaque ligne refige son libellé dans la langue de cette commande : voir rattacherA.
         Objects.requireNonNull(lignes, "lignes");
         for (LignePanier ligne : lignes) {
             ligne.rattacherA(this);
@@ -238,6 +261,7 @@ public class Commande extends BaseEntity {
     public Instant getDateAnnulation() { return dateAnnulation; }
     /** Voir le champ : ETAT lu par F30, la preuve est dans consentement. */
     public boolean isRenonciationVi53() { return renonciationVi53; }
+    public Langue getLangueDocument() { return langueDocument; }
     public LocalDate getDateRemise() { return dateRemise; }
 
     /**

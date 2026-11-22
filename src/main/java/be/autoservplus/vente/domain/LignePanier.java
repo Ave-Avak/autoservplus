@@ -13,6 +13,7 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.Locale;
 import java.util.Objects;
 
 /**
@@ -118,6 +119,11 @@ public class LignePanier {
      * piece (RM-30) : libelle, prix et taux sont recopies au moment ou le membre
      * ajoute, pas relus au passage en commande. Un tarif revu entre-temps ne change
      * pas ce que le membre a vu quand il a decide.
+     *
+     * <p>Le libellé recopié ici est celui du français, langue d'origine. Il n'est que
+     * provisoire : la conclusion de la commande le refige dans la langue de ses
+     * documents ({@link #rattacherA}), et le panier affiche d'ici là celui de la langue
+     * de l'écran ({@link #libelleAffiche}).</p>
      */
     LignePanier(Panier panier, Prestation prestation, int quantite) {
         this.panier = Objects.requireNonNull(panier, "panier");
@@ -177,6 +183,25 @@ public class LignePanier {
         exigerHorsCommande(); // definitif : une ligne ne change jamais de commande
         this.commande = Objects.requireNonNull(commande, "commande");
         this.panier = null;
+        // Écart à RM-30, qui fige tout à l'ajout au panier : le libellé est figé ici, à la
+        // conclusion de la commande, dans la langue de ses documents. Les lignes d'une
+        // facture doivent être dans la langue de la facture, que rien ne fixe avant ce
+        // moment. Le prix et le taux, eux, restent ceux de l'ajout : c'est ce que le
+        // membre a vu en décidant. Un article non traduit se fige en français.
+        this.libelleFige = libelleDans(Locale.forLanguageTag(commande.getLangueDocument().name()));
+    }
+
+    /**
+     * Libellé à montrer : celui de la commande une fois la ligne rattachée, sinon celui
+     * du catalogue dans la langue de l'écran. Tant que la ligne est au panier, aucun
+     * document n'existe et rien n'impose une langue.
+     */
+    public String libelleAffiche(Locale ecran) {
+        return commande != null ? libelleFige : libelleDans(ecran);
+    }
+
+    private String libelleDans(Locale langue) {
+        return (estService() ? prestation.libelle(langue) : piece.libelle(langue)).texte();
     }
 
     private static void exigerQuantiteValide(int quantite) {

@@ -78,7 +78,7 @@ class PdfFactureServiceTest {
 
         Commande commande = new Commande("CMD-2026-0001", marie,
                 new BigDecimal("39.98"), new BigDecimal("8.40"), new BigDecimal("48.38"),
-                MAINTENANT.minusSeconds(600));
+                MAINTENANT.minusSeconds(600), false, Langue.nl);
         commande.confirmerPaiement(MAINTENANT.minusSeconds(60));
         facture = Facture.pourCommande("2026-0042", (short) 2026, 42, commande,
                 new BigDecimal("21.00"), MAINTENANT);
@@ -130,8 +130,8 @@ class PdfFactureServiceTest {
     }
 
     @Test
-    @DisplayName("le document imprime est constitue dans la langue du MEMBRE")
-    void documentDansLaLangueDuMembre() {
+    @DisplayName("le document imprimé est constitué dans la langue de la COMMANDE")
+    void documentDansLaLangueDeLaCommande() {
         generationAboutit();
 
         service.pdfDe(facture);
@@ -139,8 +139,8 @@ class PdfFactureServiceTest {
         ArgumentCaptor<DocumentFacture> capture = ArgumentCaptor.forClass(DocumentFacture.class);
         verify(generateur).engendrer(capture.capture());
         DocumentFacture document = capture.getValue();
-        // Marie est neerlandophone : sa facture l est aussi, quelle que soit la
-        // langue de la session qui la telecharge.
+        // La commande a été conclue en néerlandais, langue de Marie admise par le siège :
+        // sa facture l'est aussi, quelle que soit la langue de la session qui la télécharge.
         assertThat(document.locale()).isEqualTo(Locale.forLanguageTag("nl"));
         assertThat(document.numero()).isEqualTo("2026-0042");
         assertThat(document.numeroCommande()).isEqualTo("CMD-2026-0001");

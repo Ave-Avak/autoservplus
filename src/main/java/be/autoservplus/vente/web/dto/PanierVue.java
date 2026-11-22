@@ -1,6 +1,8 @@
 package be.autoservplus.vente.web.dto;
 
 import be.autoservplus.reservation.service.support.FormatageRdv;
+import be.autoservplus.i18n.LanguesSupportees;
+import org.springframework.context.i18n.LocaleContextHolder;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Panier;
 
@@ -79,7 +81,8 @@ public record PanierVue(
                     ligne.estService()
                             ? ligne.getPrestation().getReference()
                             : ligne.getPiece().getReference(),
-                    ligne.getLibelleFige(),
+                    // Dans la langue de l'écran tant que la commande n'est pas conclue.
+                    ligne.libelleAffiche(LanguesSupportees.plusProche(LocaleContextHolder.getLocale())),
                     ligne.getQuantite(),
                     FormatageRdv.eurosEcran(ligne.getPrixUnitaireHtva()),
                     ligne.getTauxTva().stripTrailingZeros().toPlainString(),
