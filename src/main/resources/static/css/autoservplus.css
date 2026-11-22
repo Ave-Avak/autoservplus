@@ -544,6 +544,9 @@ main section h2 {
 .carte-actions a { color: var(--bleu-secondaire); font-size: 0.9375rem; }
 
 .actions-page { margin-top: var(--espace-xl); }
+/* Un bouton d'action sur la ligne des liens voisins. En classe : un attribut style est
+   bloqué par la politique de sécurité du contenu. */
+.formulaire-en-ligne { display: inline; }
 .champ-facultatif { font-weight: 400; color: var(--gris-500); font-size: 0.875rem; }
 input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 

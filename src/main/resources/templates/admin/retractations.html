@@ -67,9 +67,9 @@
                 Vérifiez l'état de la pièce avant de valider.
             </p>
 
-            <p class="actions-page">
+            <div class="actions-page">
                 <form th:action="@{/admin/retractations/{ref}/valider(ref=${d.reference()})}"
-                      method="post" style="display:inline">
+                      method="post" class="formulaire-en-ligne">
                     <button type="submit" class="btn-cta"
                             th:text="#{admin.retractations.valider(${d.montantTvac()})}">
                         Valider et rembourser 48,38 €
@@ -77,7 +77,7 @@
                 </form>
                 <a th:href="@{/admin/retractations/{ref}/refuser(ref=${d.reference()})}"
                    th:text="#{admin.retractations.refuser}">Refuser</a>
-            </p>
+            </div>
         </li>
     </ul>
 </main>
