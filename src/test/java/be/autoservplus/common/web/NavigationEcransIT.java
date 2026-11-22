@@ -327,6 +327,19 @@ class NavigationEcransIT extends SocleIntegration {
         return ROUTES.stream().filter(route -> route.ecran() && route.acces() == Acces.PUBLIC).toList();
     }
 
+    /**
+     * Les écrans sans variable qu'un rôle ouvre en 200, tels que classés ici.
+     * {@code EcransDansLeNavigateurIT} les ouvre dans un navigateur : un écran ajouté à la
+     * table est balayé sans rien écrire de plus.
+     */
+    static List<String> ecransOuvertsA(Role role) {
+        return ROUTES.stream()
+                .filter(route -> route.ecran() && !route.aVariable() && route.statutAutorise() == 200)
+                .filter(route -> autorise(route, role) && attendu(route, role) == 200)
+                .map(Route::appel)
+                .toList();
+    }
+
     private static Route ecran(String patron, Acces acces) {
         return new Route(patron, patron, acces, true, acces == Acces.ETAPE ? 302 : 200);
     }
