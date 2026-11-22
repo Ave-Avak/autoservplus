@@ -458,6 +458,45 @@ class RdvTest {
     }
 
     @Nested
+    @DisplayName("qui a annulé se lit au motif (tableau de bord, A25)")
+    class AuteurDeLAnnulation {
+
+        @Test
+        @DisplayName("annulé par le membre : aucun motif, en attente comme confirmé")
+        void membreSansMotif() {
+            Rdv enAttente = rdvDe(vidange);
+            enAttente.annulerParLeMembre(DEBUT.minus(Duration.ofDays(2)), Duration.ofHours(24));
+
+            Rdv confirme = rdvDe(vidange);
+            confirme.confirmer(AVANT_LE_DEBUT);
+            confirme.annulerParLeMembre(DEBUT.minus(Duration.ofDays(2)), Duration.ofHours(24));
+
+            assertThat(enAttente.getStatut()).isEqualTo(StatutRdv.ANNULE);
+            assertThat(enAttente.getMotifRefus()).isNull();
+            assertThat(confirme.getStatut()).isEqualTo(StatutRdv.ANNULE);
+            assertThat(confirme.getMotifRefus()).isNull();
+        }
+
+        @Test
+        @DisplayName("annulé par le garage : toujours un motif, sans quoi rien n'est annulé")
+        void garageAvecMotif() {
+            Rdv rdv = rdvDe(vidange);
+            Instant maintenant = DEBUT.minus(Duration.ofDays(2));
+
+            assertThatThrownBy(() -> rdv.annulerParLeGarage(null, maintenant))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> rdv.annulerParLeGarage(" ", maintenant))
+                    .isInstanceOf(IllegalArgumentException.class);
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.EN_ATTENTE);
+
+            rdv.annulerParLeGarage("Panne du pont", maintenant);
+
+            assertThat(rdv.getStatut()).isEqualTo(StatutRdv.ANNULE);
+            assertThat(rdv.getMotifRefus()).isNotBlank();
+        }
+    }
+
+    @Nested
     @DisplayName("annulation par le garage")
     class AnnulationGarage {
 

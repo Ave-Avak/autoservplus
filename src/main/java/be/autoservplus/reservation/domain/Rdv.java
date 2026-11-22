@@ -281,6 +281,8 @@ public class Rdv extends BaseEntity {
                     "Un rendez-vous dont le début est passé ne peut plus être annulé, seulement marqué honoré ou absent.");
         }
         transitionVers(StatutRdv.ANNULE);
+        // Le motif dit aussi qui a annulé : le tableau de bord compte au garage tout
+        // rendez-vous annulé qui en porte un (IndicateursRepository.annulationsMembreEtGarage).
         this.motifRefus = motif.trim();
         this.dateAnnulation = maintenant;
     }
@@ -302,6 +304,9 @@ public class Rdv extends BaseEntity {
                             .formatted(delaiAnnulation.toHours()));
         }
         transitionVers(StatutRdv.ANNULE);
+        // Aucun motif, et il ne faut pas en écrire un ici : le tableau de bord compte au
+        // membre tout rendez-vous annulé sans motif. Le jour où le membre pourra en
+        // donner un, il lui faudra sa propre colonne, ou une colonne qui nomme l'auteur.
         this.dateAnnulation = maintenant;
     }
 
