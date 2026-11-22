@@ -15,6 +15,7 @@ import java.math.RoundingMode;
 import java.net.URI;
 import java.time.Duration;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -30,10 +31,10 @@ import java.util.Set;
  * demarrer en demonstration avec un identifiant valide l ignorait. Voir
  * {@link ConditionPrestataire}.</p>
  *
- * <p><b>Ecrite sur {@code RestClient}, sans SDK.</b> Trois appels REST sur des
+ * <p><b>Ecrite sur {@code RestClient}, sans SDK.</b> Quatre appels REST sur des
  * documents JSON plats ne justifient pas une dependance : le SDK Mollie aurait
  * ajoute un cycle de vie a suivre, ses propres exceptions a retraduire, et une
- * surface bien plus large que les trois routes employees. {@code RestClient} est
+ * surface bien plus large que les quatre routes employees. {@code RestClient} est
  * deja la, apporte par {@code spring-boot-starter-web}.</p>
  *
  * <p><b>Le vocabulaire Mollie ne sort pas d ici.</b> Les records de dialogue sont
@@ -59,6 +60,16 @@ public class MollieGateway implements PrestatairePaiement {
      */
     private static final Set<String> HOTES_NON_JOIGNABLES =
             Set.of("localhost", "127.0.0.1", "0.0.0.0", "::1", "[::1]");
+
+    /**
+     * Moyens proposés sur la page de paiement, quel que soit le réglage du profil
+     * Mollie. Le job RM-21 attend le statut définitif d'un paiement qu'il ne peut pas
+     * annuler, et son plafond d'attente vient de l'expiration de ces deux moyens
+     * (carte 15 minutes, Bancontact une heure, documentation Mollie, « Handling payment
+     * status »). Un virement expirerait après douze jours : ajouter un moyen ici
+     * suppose de revoir {@code ExpirationCommandesJob.ATTENTE_MAXIMALE}.
+     */
+    static final List<String> MOYENS_PROPOSES = List.of("bancontact", "creditcard");
 
     private final RestClient client;
     private final MollieProprietes proprietes;
@@ -93,6 +104,7 @@ public class MollieGateway implements PrestatairePaiement {
         // est ce qui lui permet de rapprocher une ligne de compte d un achat.
         corps.put("description", "Commande " + demande.numeroCommande());
         corps.put("redirectUrl", demande.urlRetour());
+        corps.put("method", MOYENS_PROPOSES);
         ajouterNotification(corps, demande.urlNotification());
         ajouterContexteOrganisation(corps);
 
@@ -203,8 +215,39 @@ public class MollieGateway implements PrestatairePaiement {
         }
         // Mollie ne rend la page de paiement que pour un paiement « open » : c'est elle
         // que la reprise d'une tentative ouverte renvoie au membre.
+        return etat(reponse);
+    }
+
+    private EtatPaiement etat(PaiementMollie reponse) {
+        // isCancelable est omis d'un paiement clos : absent vaut non.
         return new EtatPaiement(projeter(reponse.status()), reponse.method(),
-                reponse.urlDePaiement());
+                reponse.urlDePaiement(), Boolean.TRUE.equals(reponse.annulable()));
+    }
+
+    // --- annulation -------------------------------------------------------------------
+
+    /**
+     * {@code DELETE /payments/{id}}. Mollie répond par le paiement annulé, ou par une
+     * erreur quand le paiement ne peut plus l'être : elle remonte comme toute autre,
+     * et l'appelant relit au passage suivant.
+     */
+    @Override
+    public EtatPaiement annuler(String referencePrestataire) {
+        PaiementMollie reponse = appeler(() -> {
+            var requete = client.method(org.springframework.http.HttpMethod.DELETE)
+                    .uri("/payments/{id}", referencePrestataire);
+            if (proprietes.exigeContexteOrganisation()) {
+                // Pour cet appel, Mollie lit le mode test dans le corps, pas dans l'URL.
+                requete.body(Map.of("testmode", proprietes.modeTest()));
+            }
+            return requete.retrieve().body(PaiementMollie.class);
+        }, "annulation du paiement");
+
+        if (reponse == null || reponse.status() == null) {
+            throw new PrestataireIndisponibleException(
+                    "Reponse d annulation sans statut pour " + referencePrestataire + ".");
+        }
+        return etat(reponse);
     }
 
     private java.util.Optional<Boolean> modeTestEventuel() {
@@ -334,6 +377,7 @@ public class MollieGateway implements PrestatairePaiement {
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     record PaiementMollie(String id, String status, String method, MontantMollie amount,
+                          @JsonProperty("isCancelable") Boolean annulable,
                           @JsonProperty("_links") LiensMollie links) {
 
         /** URL de la page de paiement, absente des paiements deja aboutis. */

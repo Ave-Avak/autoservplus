@@ -88,6 +88,11 @@ class MollieGatewayTest {
                     .andExpect(jsonPath("$.amount.value").value("80.21"))
                     .andExpect(jsonPath("$.amount.currency").value("EUR"))
                     .andExpect(jsonPath("$.description").value("Commande CMD-2026-0001"))
+                    // Deux moyens, quel que soit le réglage du profil : le plafond
+                    // d'attente du job RM-21 vient de leurs expirations.
+                    .andExpect(jsonPath("$.method.length()").value(2))
+                    .andExpect(jsonPath("$.method[0]").value("bancontact"))
+                    .andExpect(jsonPath("$.method[1]").value("creditcard"))
                     .andExpect(jsonPath("$.redirectUrl")
                             .value("https://garage.example/commande/abc/retour"))
                     // La cle d idempotence empeche un rejeu de debiter deux fois.
@@ -318,6 +323,76 @@ class MollieGatewayTest {
             assertThatThrownBy(() -> passerelleAvecJetonOrganisation().lireEtat("tr_reel1").statut())
                     .isInstanceOf(PrestataireIndisponibleException.class)
                     .hasMessageContaining("chargeback_pending");
+        }
+    }
+
+    @Nested
+    @DisplayName("Annulation d'un paiement ouvert")
+    class Annulation {
+
+        @Test
+        @DisplayName("isCancelable est rapporté à la relecture, et son absence vaut non")
+        void annulableALaRelecture() {
+            serveur.expect(requestTo(API + "/payments/tr_reel1?testmode=true"))
+                    .andRespond(withSuccess("""
+                            {"id":"tr_reel1","status":"open","isCancelable":true,
+                             "amount":{"currency":"EUR","value":"80.21"}}
+                            """, MediaType.APPLICATION_JSON));
+            serveur.expect(requestTo(API + "/payments/tr_reel2?testmode=true"))
+                    .andRespond(withSuccess("""
+                            {"id":"tr_reel2","status":"open","isCancelable":false,
+                             "amount":{"currency":"EUR","value":"80.21"}}
+                            """, MediaType.APPLICATION_JSON));
+            serveur.expect(requestTo(API + "/payments/tr_reel3?testmode=true"))
+                    .andRespond(withSuccess(paiementJson("expired"), MediaType.APPLICATION_JSON));
+
+            MollieGateway passerelle = passerelleAvecJetonOrganisation();
+            assertThat(passerelle.lireEtat("tr_reel1").annulable()).isTrue();
+            assertThat(passerelle.lireEtat("tr_reel2").annulable()).isFalse();
+            assertThat(passerelle.lireEtat("tr_reel3").annulable()).isFalse();
+        }
+
+        @Test
+        @DisplayName("un jeton d'organisation annule par DELETE, le mode test dans le corps")
+        void annulationJetonOrganisation() {
+            serveur.expect(requestTo(API + "/payments/tr_reel1"))
+                    .andExpect(method(org.springframework.http.HttpMethod.DELETE))
+                    .andExpect(jsonPath("$.testmode").value(true))
+                    .andRespond(withSuccess(paiementJson("canceled"), MediaType.APPLICATION_JSON));
+
+            EtatPaiement etat = passerelleAvecJetonOrganisation().annuler("tr_reel1");
+
+            assertThat(etat.statut()).isEqualTo(StatutPaiement.ECHOUE);
+            assertThat(etat.annulable()).isFalse();
+            serveur.verify();
+        }
+
+        @Test
+        @DisplayName("une clé API annule par DELETE sans corps")
+        void annulationCleApi() {
+            serveur.expect(requestTo(API + "/payments/tr_reel1"))
+                    .andExpect(method(org.springframework.http.HttpMethod.DELETE))
+                    .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers
+                            .content().string(""))
+                    .andRespond(withSuccess(paiementJson("canceled"), MediaType.APPLICATION_JSON));
+
+            assertThat(passerelleAvecCleApi().annuler("tr_reel1").statut())
+                    .isEqualTo(StatutPaiement.ECHOUE);
+            serveur.verify();
+        }
+
+        @Test
+        @DisplayName("un paiement qui ne peut plus être annulé remonte comme une panne")
+        void annulationRefusee() {
+            serveur.expect(requestTo(API + "/payments/tr_reel1"))
+                    .andRespond(withStatus(HttpStatus.UNPROCESSABLE_ENTITY)
+                            .body("{\"detail\":\"The payment cannot be cancelled.\"}")
+                            .contentType(MediaType.APPLICATION_JSON));
+
+            assertThatThrownBy(() -> passerelleAvecJetonOrganisation().annuler("tr_reel1"))
+                    .isInstanceOf(PrestataireIndisponibleException.class)
+                    .hasMessageContaining("annulation du paiement")
+                    .hasMessageNotContaining("cannot be cancelled");
         }
     }
 

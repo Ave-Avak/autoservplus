@@ -26,16 +26,26 @@ import be.autoservplus.vente.domain.StatutPaiement;
  *                    ne la rend que pour un paiement qui attend le client. C'est elle
  *                    qui permet de reprendre une tentative au lieu d'en créer une
  *                    seconde.
+ * @param annulable   le prestataire accepte encore d'annuler ce paiement. Le job RM-21
+ *                    n'annule que sur cette foi : la plupart des moyens ne le
+ *                    permettent pas une fois le client parti chez sa banque, et le
+ *                    prestataire ne rapporte rien pour un paiement clos.
  */
-public record EtatPaiement(StatutPaiement statut, String methode, String urlPaiement) {
+public record EtatPaiement(StatutPaiement statut, String methode, String urlPaiement,
+                           boolean annulable) {
+
+    /** Etat d'un paiement que le prestataire ne dit pas annulable. */
+    public EtatPaiement(StatutPaiement statut, String methode, String urlPaiement) {
+        this(statut, methode, urlPaiement, false);
+    }
 
     /** Etat sans page de paiement ouverte. */
     public EtatPaiement(StatutPaiement statut, String methode) {
-        this(statut, methode, null);
+        this(statut, methode, null, false);
     }
 
     /** Etat sans moyen connu ni page ouverte. */
     public static EtatPaiement de(StatutPaiement statut) {
-        return new EtatPaiement(statut, null, null);
+        return new EtatPaiement(statut, null, null, false);
     }
 }

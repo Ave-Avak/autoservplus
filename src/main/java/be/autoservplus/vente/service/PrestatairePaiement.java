@@ -39,6 +39,19 @@ public interface PrestatairePaiement {
     EtatPaiement lireEtat(String referencePrestataire);
 
     /**
+     * Annule chez le prestataire un paiement que personne n'a encore réglé, et rend
+     * l'état qu'il en rapporte.
+     *
+     * <p>N'a de sens que pour un paiement lu {@link EtatPaiement#annulable()} : le job
+     * RM-21 ferme ainsi la page de paiement d'une commande qu'il annule, pour qu'un
+     * règlement ne puisse plus y arriver. Un paiement réglé entre la lecture et l'appel
+     * est refusé par le prestataire, et ce refus remonte comme une panne
+     * ({@link PrestataireIndisponibleException}) : rien n'est annulé de notre côté, et
+     * la lecture suivante constate l'encaissement.</p>
+     */
+    EtatPaiement annuler(String referencePrestataire);
+
+    /**
      * Rembourse un paiement encaisse (F30, RM-23) et retourne l identifiant du
      * mouvement chez le prestataire.
      *

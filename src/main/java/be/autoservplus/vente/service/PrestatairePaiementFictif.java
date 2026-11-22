@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.util.HexFormat;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -37,6 +38,17 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
     private static final SecureRandom ALEA = new SecureRandom();
 
     private final Map<String, StatutPaiement> statuts = new ConcurrentHashMap<>();
+
+    /**
+     * Paiements que le bouchon refuse d'annuler, comme le prestataire réel le fait de la
+     * plupart des moyens une fois le client parti chez sa banque. Annulable par défaut :
+     * une commande abandonnée s'annule alors à l'échéance RM-21, sans attendre une
+     * expiration que le bouchon ne simule pas.
+     */
+    private final Set<String> nonAnnulables = ConcurrentHashMap.newKeySet();
+
+    /** Paiements dont la lecture et l'annulation échouent, comme une panne du prestataire. */
+    private final Set<String> enPanne = ConcurrentHashMap.newKeySet();
 
     /** Remboursements deja accordes, indexes par cle d idempotence. */
     private final Map<String, String> remboursements = new ConcurrentHashMap<>();
@@ -73,14 +85,38 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
      */
     @Override
     public EtatPaiement lireEtat(String referencePrestataire) {
+        exigerDisponible(referencePrestataire);
         StatutPaiement statut = statuts.get(referencePrestataire);
         if (statut == null) {
             return EtatPaiement.de(StatutPaiement.EXPIRE);
         }
-        String page = statut == StatutPaiement.INITIE
-                ? "/paiement-fictif/" + referencePrestataire
-                : null;
-        return new EtatPaiement(statut, null, page);
+        boolean ouvert = statut == StatutPaiement.INITIE;
+        String page = ouvert ? "/paiement-fictif/" + referencePrestataire : null;
+        return new EtatPaiement(statut, null, page,
+                ouvert && !nonAnnulables.contains(referencePrestataire));
+    }
+
+    /**
+     * Annule un paiement ouvert et annulable, qui devient ECHOUE comme un paiement
+     * « canceled » du prestataire réel. Tout autre paiement est refusé par une panne,
+     * comme le fait le prestataire d'un paiement déjà réglé ou non annulable.
+     */
+    @Override
+    public EtatPaiement annuler(String referencePrestataire) {
+        exigerDisponible(referencePrestataire);
+        if (!lireEtat(referencePrestataire).annulable()) {
+            throw new PrestataireIndisponibleException(
+                    "Le paiement " + referencePrestataire + " ne peut pas etre annule.");
+        }
+        statuts.put(referencePrestataire, StatutPaiement.ECHOUE);
+        return EtatPaiement.de(StatutPaiement.ECHOUE);
+    }
+
+    private void exigerDisponible(String referencePrestataire) {
+        if (enPanne.contains(referencePrestataire)) {
+            throw new PrestataireIndisponibleException(
+                    "Panne simulee du prestataire pour " + referencePrestataire + ".");
+        }
     }
 
     /**
@@ -125,6 +161,24 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
         JOURNAL.warn("Aucun identifiant de prestataire de paiement configure "
                 + "(autoservplus.paiement.mollie.cle-api / MOLLIE_API_KEY) : les "
                 + "paiements sont SIMULES et aucun encaissement reel n a lieu.");
+    }
+
+    /** Dit si le prestataire accepte d'annuler ce paiement tant qu'il est ouvert. */
+    public void programmerAnnulable(String referencePrestataire, boolean annulable) {
+        if (annulable) {
+            nonAnnulables.remove(referencePrestataire);
+        } else {
+            nonAnnulables.add(referencePrestataire);
+        }
+    }
+
+    /** Fait échouer, ou non, tout appel qui porte sur ce paiement (tests). */
+    public void programmerPanne(String referencePrestataire, boolean panne) {
+        if (panne) {
+            enPanne.add(referencePrestataire);
+        } else {
+            enPanne.remove(referencePrestataire);
+        }
     }
 
     /** Programme le statut que la prochaine relecture restituera (tests, demo). */

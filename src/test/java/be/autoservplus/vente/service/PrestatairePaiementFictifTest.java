@@ -145,6 +145,64 @@ class PrestatairePaiementFictifTest {
         }
     }
 
+    @Test
+    @DisplayName("un paiement ouvert est annulable par défaut, et son annulation le clôt")
+    void annulationParDefaut() {
+        PrestatairePaiementFictif fictif = new PrestatairePaiementFictif();
+        String reference = fictif.creerPaiement(demande).referencePrestataire();
+        assertThat(fictif.lireEtat(reference).annulable()).isTrue();
+
+        assertThat(fictif.annuler(reference).statut()).isEqualTo(StatutPaiement.ECHOUE);
+
+        assertThat(fictif.lireEtat(reference).statut()).isEqualTo(StatutPaiement.ECHOUE);
+        assertThat(fictif.lireEtat(reference).annulable()).isFalse();
+        assertThat(fictif.lireEtat(reference).urlPaiement()).isNull();
+    }
+
+    @Test
+    @DisplayName("un paiement programmé non annulable refuse l'annulation et reste ouvert")
+    void nonAnnulable() {
+        PrestatairePaiementFictif fictif = new PrestatairePaiementFictif();
+        String reference = fictif.creerPaiement(demande).referencePrestataire();
+        fictif.programmerAnnulable(reference, false);
+
+        assertThat(fictif.lireEtat(reference).annulable()).isFalse();
+        assertThatThrownBy(() -> fictif.annuler(reference))
+                .isInstanceOf(PrestataireIndisponibleException.class);
+        assertThat(fictif.lireEtat(reference).statut()).isEqualTo(StatutPaiement.INITIE);
+    }
+
+    @Test
+    @DisplayName("un paiement réglé ou en cours n'est plus annulable")
+    void closNonAnnulable() {
+        PrestatairePaiementFictif fictif = new PrestatairePaiementFictif();
+        String reference = fictif.creerPaiement(demande).referencePrestataire();
+
+        fictif.programmerStatut(reference, StatutPaiement.EN_COURS);
+        assertThat(fictif.lireEtat(reference).annulable()).isFalse();
+
+        fictif.programmerStatut(reference, StatutPaiement.REUSSI);
+        assertThatThrownBy(() -> fictif.annuler(reference))
+                .isInstanceOf(PrestataireIndisponibleException.class);
+        assertThat(fictif.lireEtat(reference).statut()).isEqualTo(StatutPaiement.REUSSI);
+    }
+
+    @Test
+    @DisplayName("une panne programmée fait échouer la lecture et l'annulation, puis se lève")
+    void panneProgrammee() {
+        PrestatairePaiementFictif fictif = new PrestatairePaiementFictif();
+        String reference = fictif.creerPaiement(demande).referencePrestataire();
+        fictif.programmerPanne(reference, true);
+
+        assertThatThrownBy(() -> fictif.lireEtat(reference))
+                .isInstanceOf(PrestataireIndisponibleException.class);
+        assertThatThrownBy(() -> fictif.annuler(reference))
+                .isInstanceOf(PrestataireIndisponibleException.class);
+
+        fictif.programmerPanne(reference, false);
+        assertThat(fictif.lireEtat(reference).statut()).isEqualTo(StatutPaiement.INITIE);
+    }
+
     private static DemandeRemboursement remboursement(PaiementCree cree, String cle) {
         return new DemandeRemboursement(cree.referencePrestataire(),
                 new BigDecimal("80.21"), "EUR", cle);
