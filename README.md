@@ -141,6 +141,16 @@ toutes les classes d'intégration. Docker doit donc être disponible et démarr�
 classe reçoit sa propre base de données dans ce conteneur, avec l'isolation d'un serveur
 par classe pour le prix d'un seul.
 
+Une classe d'intégration ouvre les écrans dans Chromium, piloté par Playwright. Au premier
+`verify`, Playwright télécharge ses navigateurs hors du dépôt, Firefox et WebKit compris :
+un peu plus d'un gigaoctet dans `~/.cache/ms-playwright` (`%LOCALAPPDATA%\ms-playwright`
+sous Windows). Pour n'installer que Chromium, environ 750 Mo, lancer d'abord la commande
+ci-dessous, puis définir `PLAYWRIGHT_SKIP_BROWSER_DOWNLOAD=1` avant le `verify`.
+
+```bash
+./mvnw exec:java -e -D exec.classpathScope=test -D exec.mainClass=com.microsoft.playwright.CLI -D exec.args="install chromium"
+```
+
 La planification est désactivée en test. L'ordonnanceur n'y rend aucun service, et chaque
 contexte gardait le sien vivant jusqu'à la fin de la machine virtuelle. Le job concerné
 (expiration des commandes impayées) est couvert par un test unitaire qui l'appelle
