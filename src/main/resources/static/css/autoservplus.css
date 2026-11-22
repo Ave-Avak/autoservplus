@@ -165,6 +165,14 @@ h1 { color: var(--bleu-marine); margin-top: 0; }
    position: relative retient les libelles .visuellement-cache des cellules, places en
    absolu : sans elle, ils debordaient de la page malgre le conteneur. */
 .defilement { position: relative; max-width: 100%; overflow-x: auto; }
+/* Le conteneur reçoit le focus pour défiler au clavier (WCAG 2.1.1). Ses anneaux sont
+   tracés vers l'intérieur : il occupe toute la largeur de la page, et un anneau
+   extérieur serait coupé par le bord de la fenêtre. Mêmes couleurs que le focus commun. */
+.defilement:focus-visible {
+    outline: 2px solid var(--gris-900);
+    outline-offset: -2px;
+    box-shadow: inset 0 0 0 4px var(--blanc);
+}
 
 /* Un exemple de format (en-tete CSV de l'import) se coupe plutot que d'elargir la page. */
 main code { overflow-wrap: anywhere; }
@@ -531,7 +539,11 @@ main section h2 {
     text-transform: uppercase;
     letter-spacing: 0.03em;
 }
-.vehicule-details dd { margin: 0; font-weight: 600; font-size: 0.9375rem; }
+/* Une valeur sans espace, une adresse de courriel par exemple, se coupe au lieu de
+   sortir de sa colonne : selon la police, elle élargissait la page de quelques pixels
+   à 320 px. min-width laisse la colonne rétrécir sous la largeur de son contenu. */
+.vehicule-details > div { min-width: 0; }
+.vehicule-details dd { margin: 0; font-weight: 600; font-size: 0.9375rem; overflow-wrap: anywhere; }
 
 .carte-actions {
     display: flex;
@@ -544,6 +556,9 @@ main section h2 {
 .carte-actions a { color: var(--bleu-secondaire); font-size: 0.9375rem; }
 
 .actions-page { margin-top: var(--espace-xl); }
+/* Un bouton d'action sur la ligne des liens voisins. En classe : un attribut style est
+   bloqué par la politique de sécurité du contenu. */
+.formulaire-en-ligne { display: inline; }
 .champ-facultatif { font-weight: 400; color: var(--gris-500); font-size: 0.875rem; }
 input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 
@@ -883,6 +898,9 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     letter-spacing: 0.05em;
     white-space: nowrap;
 }
+/* La clé compte huit groupes de quatre caractères : sur une ligne, elle élargissait la
+   page à 421 px dans une fenêtre de 320 px. Elle se coupe entre deux groupes. */
+.cle-totp { white-space: normal; }
 
 .liste-codes {
     list-style: none;

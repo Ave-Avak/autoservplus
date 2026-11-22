@@ -41,9 +41,9 @@
        th:text="#{admin.ventes.avoirs.aucun(${#temporals.format(periode.du(), 'dd/MM/yyyy')}, ${#temporals.format(periode.au(), 'dd/MM/yyyy')})}">
         Aucun avoir du 22/10/2026 au 20/11/2026.</p>
 
-    <div class="defilement" th:if="${resultats.totalElements > 0}">
+    <div class="defilement" th:if="${resultats.totalElements > 0}" tabindex="0" role="region" aria-labelledby="legende-admin-avoirs">
         <table class="tableau">
-            <caption th:text="#{admin.ventes.avoirs.legende(${resultats.totalElements})}">1 avoir, du plus récent au plus ancien.</caption>
+            <caption id="legende-admin-avoirs" th:text="#{admin.ventes.avoirs.legende(${resultats.totalElements})}">1 avoir, du plus récent au plus ancien.</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{admin.ventes.colonne.numero}">Numéro</th>

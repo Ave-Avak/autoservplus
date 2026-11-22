@@ -22,9 +22,9 @@
     <p th:if="${historique.interventions().isEmpty()}" class="message"
        th:text="#{historique.vide}">Aucune intervention n'a encore été réalisée sur ce véhicule.</p>
 
-    <div class="defilement" th:unless="${historique.interventions().isEmpty()}">
+    <div class="defilement" th:unless="${historique.interventions().isEmpty()}" tabindex="0" role="region" aria-labelledby="legende-reservation-vehicule-historique">
         <table class="tableau">
-            <caption th:text="#{historique.legende}">Interventions sur ce véhicule, de la plus récente à la plus ancienne</caption>
+            <caption id="legende-reservation-vehicule-historique" th:text="#{historique.legende}">Interventions sur ce véhicule, de la plus récente à la plus ancienne</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{historique.colonne.date}">Date</th>

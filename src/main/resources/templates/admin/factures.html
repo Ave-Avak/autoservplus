@@ -41,9 +41,9 @@
        th:text="#{admin.ventes.factures.aucune(${#temporals.format(periode.du(), 'dd/MM/yyyy')}, ${#temporals.format(periode.au(), 'dd/MM/yyyy')})}">
         Aucune facture du 22/10/2026 au 20/11/2026.</p>
 
-    <div class="defilement" th:if="${resultats.totalElements > 0}">
+    <div class="defilement" th:if="${resultats.totalElements > 0}" tabindex="0" role="region" aria-labelledby="legende-admin-factures">
         <table class="tableau">
-            <caption th:text="#{admin.ventes.factures.legende(${resultats.totalElements})}">2 factures, de la plus récente à la plus ancienne.</caption>
+            <caption id="legende-admin-factures" th:text="#{admin.ventes.factures.legende(${resultats.totalElements})}">2 factures, de la plus récente à la plus ancienne.</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{admin.ventes.colonne.numero}">Numéro</th>

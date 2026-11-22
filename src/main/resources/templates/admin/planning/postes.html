@@ -14,7 +14,7 @@
 <header th:replace="~{fragments/back-office :: entete}"></header>
 
 <main id="contenu">
-    <h1 th:text="#{admin.planning.postes.titre}">Postes d'atelier</h1>
+    <h1 id="titre-admin-planning-postes" th:text="#{admin.planning.postes.titre}">Postes d'atelier</h1>
     <p class="texte-info" th:text="#{admin.planning.postes.intro}">La capacité de l'atelier est le nombre de postes actifs.</p>
 
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
@@ -28,7 +28,7 @@
 
     <p th:if="${postes.isEmpty()}" class="message" th:text="#{admin.planning.postes.vide}">Aucun poste.</p>
 
-    <div class="defilement" th:unless="${postes.isEmpty()}">
+    <div class="defilement" th:unless="${postes.isEmpty()}" tabindex="0" role="region" aria-labelledby="titre-admin-planning-postes">
         <table class="tableau">
             <thead>
             <tr>

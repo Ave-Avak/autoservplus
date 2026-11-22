@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="#{rdv.modification.titre(${vue.numero()})} + ' | AutoServ+'">Déplacer le rendez-vous | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
+    <!--/* HTMX insère sinon une balise de style pour son indicateur de chargement, que
+         la politique de sécurité du contenu (style-src 'self') bloque. */-->
+    <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>

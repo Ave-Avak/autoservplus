@@ -25,9 +25,9 @@
         <p th:text="#{admin.import.bilan(${rapport.crees()}, ${rapport.misAJour()}, ${rapport.erreurs().size()})}">
             3 créées, 2 mises à jour, 0 erreur
         </p>
-        <div class="defilement" th:unless="${rapport.sansErreur()}">
+        <div class="defilement" th:unless="${rapport.sansErreur()}" tabindex="0" role="region" aria-labelledby="legende-admin-import">
             <table class="tableau">
-                <caption th:text="#{admin.import.erreurs}">Lignes à corriger dans votre fichier</caption>
+                <caption id="legende-admin-import" th:text="#{admin.import.erreurs}">Lignes à corriger dans votre fichier</caption>
                 <thead>
                 <tr>
                     <th scope="col" th:text="#{admin.import.colonne.ligne}">Ligne</th>

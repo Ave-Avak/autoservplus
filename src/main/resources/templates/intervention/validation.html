@@ -32,9 +32,9 @@
     </div>
 
     <h2 th:text="#{intervention.validation.soumis}">Travaux soumis à votre accord</h2>
-    <div class="defilement">
+    <div class="defilement" tabindex="0" role="region" aria-labelledby="legende-intervention-validation">
         <table class="tableau">
-            <caption class="texte-info" th:text="#{intervention.validation.legende}">Montants hors TVA, comme votre devis initial.</caption>
+            <caption id="legende-intervention-validation" class="texte-info" th:text="#{intervention.validation.legende}">Montants hors TVA, comme votre devis initial.</caption>
             <thead>
                 <tr><th scope="col" th:text="#{intervention.validation.designation}">Désignation</th>
                     <th scope="col" th:text="#{intervention.suivi.quantite}">Quantité</th>

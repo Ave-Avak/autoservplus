@@ -41,9 +41,9 @@
     <p th:if="${!agenda.periodeInversee() and agenda.rendezVous().isEmpty()}" class="message"
        th:text="#{admin.rdv.agenda.vide}">Aucun rendez-vous sur cette période.</p>
 
-    <div class="defilement" th:unless="${agenda.rendezVous().isEmpty()}">
+    <div class="defilement" th:unless="${agenda.rendezVous().isEmpty()}" tabindex="0" role="region" aria-labelledby="legende-admin-rendez-vous-agenda">
         <table class="tableau">
-            <caption th:text="#{admin.rdv.agenda.legende(${#temporals.format(agenda.du(), 'dd/MM/yyyy')}, ${#temporals.format(agenda.au(), 'dd/MM/yyyy')})}">
+            <caption id="legende-admin-rendez-vous-agenda" th:text="#{admin.rdv.agenda.legende(${#temporals.format(agenda.du(), 'dd/MM/yyyy')}, ${#temporals.format(agenda.au(), 'dd/MM/yyyy')})}">
                 Rendez-vous du 10/11/2026 au 24/11/2026</caption>
             <thead>
             <tr>

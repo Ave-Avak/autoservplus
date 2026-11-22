@@ -27,9 +27,9 @@
         Aucun paiement reçu sur une commande annulée.
     </p>
 
-    <div class="defilement" th:unless="${paiements.isEmpty()}">
+    <div class="defilement" th:unless="${paiements.isEmpty()}" tabindex="0" role="region" aria-labelledby="legende-admin-paiements-a-rembourser">
         <table class="tableau">
-            <caption th:text="#{admin.paiements-tardifs.legende}">Paiements reçus après annulation, ceux à rembourser d'abord.</caption>
+            <caption id="legende-admin-paiements-a-rembourser" th:text="#{admin.paiements-tardifs.legende}">Paiements reçus après annulation, ceux à rembourser d'abord.</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{admin.paiements-tardifs.colonne.commande}">Commande</th>

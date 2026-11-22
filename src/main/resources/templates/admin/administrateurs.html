@@ -21,9 +21,9 @@
     <p class="texte-info" th:text="#{admin.administrateurs.aide}">
         Seul un super-administrateur peut suspendre ou réactiver ces comptes.</p>
 
-    <div class="defilement">
+    <div class="defilement" tabindex="0" role="region" aria-labelledby="legende-admin-administrateurs">
         <table class="tableau">
-            <caption th:text="#{admin.administrateurs.legende}">Comptes privilégiés, par ordre alphabétique.</caption>
+            <caption id="legende-admin-administrateurs" th:text="#{admin.administrateurs.legende}">Comptes privilégiés, par ordre alphabétique.</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{admin.comptes.colonne.nom}">Nom</th>

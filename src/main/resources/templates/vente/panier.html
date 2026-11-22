@@ -16,7 +16,7 @@
 <main id="contenu">
     <p><a th:href="@{/pieces}" th:text="#{panier.continuer}">Continuer mes achats</a></p>
 
-    <h1 th:text="#{panier.titre}">Mon panier</h1>
+    <h1 id="titre-vente-panier" th:text="#{panier.titre}">Mon panier</h1>
 
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
@@ -33,7 +33,7 @@
 
         <!-- RM-30 : detail HTVA / TVA / TVAC par ligne et en totaux, sur les valeurs
              FIGEES a l'ajout, le catalogue du jour n'a pas voix au chapitre ici. -->
-        <div class="defilement">
+        <div class="defilement" tabindex="0" role="region" aria-labelledby="titre-vente-panier">
             <table class="tableau">
                 <thead>
                 <tr>

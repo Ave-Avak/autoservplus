@@ -26,9 +26,9 @@
 
     <p th:if="${#lists.isEmpty(comptes)}" th:text="#{admin.comptes.aucun}">Aucun compte ne correspond.</p>
 
-    <div class="defilement" th:unless="${#lists.isEmpty(comptes)}">
+    <div class="defilement" th:unless="${#lists.isEmpty(comptes)}" tabindex="0" role="region" aria-labelledby="legende-admin-comptes">
         <table class="tableau">
-            <caption th:text="#{admin.comptes.legende}">Comptes membres, par ordre alphabétique.</caption>
+            <caption id="legende-admin-comptes" th:text="#{admin.comptes.legende}">Comptes membres, par ordre alphabétique.</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{admin.comptes.colonne.nom}">Nom</th>

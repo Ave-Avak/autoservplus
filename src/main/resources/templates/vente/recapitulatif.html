@@ -16,7 +16,7 @@
 <main id="contenu">
     <p><a th:href="@{/panier}" th:text="#{commande.recap.retour}">Retour au panier</a></p>
 
-    <h1 th:text="#{commande.recap.titre}">Récapitulatif de commande</h1>
+    <h1 id="titre-vente-recapitulatif" th:text="#{commande.recap.titre}">Récapitulatif de commande</h1>
 
     <!-- Refus de conversion lies aux lignes (stock, piece inactive) : le message
          actionnable s affiche au-dessus du tableau concerne. -->
@@ -34,7 +34,7 @@
          th:text="#{panier.avertissement.piece-inactive}">Certains articles ne sont plus vendus.</div>
 
     <!-- RM-30 : detail HTVA / TVA / TVAC par ligne et en totaux, valeurs figees. -->
-    <div class="defilement">
+    <div class="defilement" tabindex="0" role="region" aria-labelledby="titre-vente-recapitulatif">
         <table class="tableau">
             <thead>
             <tr>

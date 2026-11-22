@@ -60,9 +60,9 @@
         Aucune entrée ne correspond à ces critères.
     </p>
 
-    <div class="defilement" th:unless="${#lists.isEmpty(entrees)}">
+    <div class="defilement" th:unless="${#lists.isEmpty(entrees)}" tabindex="0" role="region" aria-labelledby="legende-admin-journal">
         <table class="tableau">
-            <caption th:text="#{admin.journal.legende}">Traces d'audit, de la plus récente à la plus ancienne.</caption>
+            <caption id="legende-admin-journal" th:text="#{admin.journal.legende}">Traces d'audit, de la plus récente à la plus ancienne.</caption>
             <thead>
             <tr>
                 <th scope="col" th:text="#{admin.journal.colonne.date}">Date</th>

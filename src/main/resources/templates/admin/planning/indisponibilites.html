@@ -14,7 +14,7 @@
 <header th:replace="~{fragments/back-office :: entete}"></header>
 
 <main id="contenu">
-    <h1 th:text="#{admin.planning.indisponibilites.titre}">Indisponibilités</h1>
+    <h1 id="titre-admin-planning-indisponibilites" th:text="#{admin.planning.indisponibilites.titre}">Indisponibilités</h1>
     <p class="texte-info" th:text="#{admin.planning.indisponibilites.intro}">Fermetures en cours et à venir.</p>
 
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
@@ -27,7 +27,7 @@
 
     <p th:if="${indisponibilites.isEmpty()}" class="message" th:text="#{admin.planning.indisponibilites.vide}">Aucune indisponibilité.</p>
 
-    <div class="defilement" th:unless="${indisponibilites.isEmpty()}">
+    <div class="defilement" th:unless="${indisponibilites.isEmpty()}" tabindex="0" role="region" aria-labelledby="titre-admin-planning-indisponibilites">
         <table class="tableau">
             <thead>
             <tr>

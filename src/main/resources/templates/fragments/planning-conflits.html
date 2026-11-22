@@ -12,7 +12,7 @@
          class="message message-erreur" role="alert" aria-labelledby="titre-conflits">
     <h2 id="titre-conflits" th:text="#{admin.planning.conflits.titre(${conflits.size()})}">Rendez-vous en conflit</h2>
     <p th:text="#{admin.planning.conflits.explication}">Ces rendez-vous sont maintenus.</p>
-    <div class="defilement">
+    <div class="defilement" tabindex="0" role="region" aria-labelledby="titre-conflits">
         <table class="tableau">
             <thead>
             <tr>
