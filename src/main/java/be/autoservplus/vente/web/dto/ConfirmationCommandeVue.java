@@ -48,6 +48,11 @@ public record ConfirmationCommandeVue(
         return situation == SituationPaiement.ECHOUE;
     }
 
+    /** Échéance de paiement passée, plus rien à payer : un message remplace le bouton. */
+    public boolean delaiDepasse() {
+        return situation == SituationPaiement.DELAI_DEPASSE;
+    }
+
     public boolean peutEtrePayee() {
         return situation.peutEtrePayee();
     }

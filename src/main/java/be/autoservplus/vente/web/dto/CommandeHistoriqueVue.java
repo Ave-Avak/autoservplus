@@ -60,6 +60,11 @@ public record CommandeHistoriqueVue(
         return situation == SituationPaiement.ECHOUE;
     }
 
+    /** Échéance de paiement passée, plus rien à payer : un message remplace le bouton. */
+    public boolean delaiDepasse() {
+        return situation == SituationPaiement.DELAI_DEPASSE;
+    }
+
     /** Le bouton de telechargement n apparait que si la facture existe. */
     public boolean estFacturee() {
         return referenceFacture != null;

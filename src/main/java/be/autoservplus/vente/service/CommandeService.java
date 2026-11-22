@@ -192,7 +192,9 @@ public class CommandeService {
                 ? paiements.findFirstByCommandeOrderByDateInitiationDescIdDesc(commande)
                         .map(Paiement::getStatut).orElse(null)
                 : null;
-        return SituationPaiement.de(commande.getStatut(), derniere);
+        return SituationPaiement.de(commande.getStatut(), derniere,
+                commande.delaiDePaiementDepasse(horloge.instant(),
+                        ExpirationCommandesJob.DELAI_PAIEMENT));
     }
 
     /**

@@ -207,6 +207,12 @@ public class PaiementService {
                 // Ouverte entre la relecture et le verrou, par un autre geste du membre.
                 return DepartPaiement.sans(DepartPaiement.Issue.TENTATIVE_CONCURRENTE);
             }
+            if (commande.delaiDePaiementDepasse(horloge.instant(),
+                    ExpirationCommandesJob.DELAI_PAIEMENT)) {
+                // Passé l'échéance RM-21, le job n'attend plus que les tentatives déjà
+                // ouvertes. En créer une à chaque échec ferait vivre la commande sans fin.
+                return DepartPaiement.sans(DepartPaiement.Issue.DELAI_DEPASSE);
+            }
             return DepartPaiement.vers(creerTentative(commande));
         });
     }
@@ -289,7 +295,9 @@ public class PaiementService {
         // La commande et la tentative sont les entités gérées que la relecture vient de
         // faire évoluer : leurs statuts sont ceux qu'elle a constatés.
         return SituationPaiement.de(commande.getStatut(),
-                derniere.map(Paiement::getStatut).orElse(null));
+                derniere.map(Paiement::getStatut).orElse(null),
+                commande.delaiDePaiementDepasse(horloge.instant(),
+                        ExpirationCommandesJob.DELAI_PAIEMENT));
     }
 
     /**
@@ -327,6 +335,16 @@ public class PaiementService {
         Paiement paiement = paiementPrestataire(referencePrestataire);
         // Strategie securite §11 : seul l etat relu chez le prestataire fait foi.
         return appliquer(paiement, prestataire.lireEtat(referencePrestataire));
+    }
+
+    /**
+     * Applique un état que l'appelant vient de lire chez le prestataire, par le chemin
+     * de la notification. Le job RM-21 lit hors transaction, pour ne pas tenir une
+     * connexion pendant l'aller-retour, puis rend ici ce qu'il a lu.
+     */
+    @Transactional
+    public IssueRelecture constater(String referencePrestataire, EtatPaiement etat) {
+        return appliquer(paiementPrestataire(referencePrestataire), etat);
     }
 
     private Paiement paiementPrestataire(String referencePrestataire) {

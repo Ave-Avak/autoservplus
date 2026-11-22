@@ -40,6 +40,9 @@
     <p th:if="${commande.paiementEchoue()}" role="status" th:text="#{commande.paiement.echec}">
         Votre paiement a échoué. Vous pouvez réessayer.
     </p>
+    <p th:if="${commande.delaiDepasse()}" role="status" th:text="#{commande.paiement.delai-depasse}">
+        Le délai de paiement de cette commande est dépassé.
+    </p>
 
     <!--/*
       Le bouton de paiement ne s'affiche QUE tant que la commande en attend un et

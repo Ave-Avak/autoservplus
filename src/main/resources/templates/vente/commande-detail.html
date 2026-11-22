@@ -104,6 +104,9 @@
         <li th:if="${commande.paiementEnCours()}" role="status" th:text="#{commande.paiement.en-cours}">
             Un paiement de cette commande est en cours de traitement chez le prestataire.
         </li>
+        <li th:if="${commande.delaiDepasse()}" role="status" th:text="#{commande.paiement.delai-depasse}">
+            Le délai de paiement de cette commande est dépassé.
+        </li>
         <li th:if="${commande.peutEtrePayee()}">
             <p th:if="${commande.paiementEchoue()}" role="status" th:text="#{commande.paiement.echec}">
                 Votre paiement a échoué. Vous pouvez réessayer.

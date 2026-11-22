@@ -114,7 +114,9 @@
                     </form>
                     <span th:if="${commande.paiementEnCours()}" class="carte-meta"
                           th:text="#{commandes.paiement.en-cours}">Paiement en cours de traitement</span>
-                    <span th:unless="${commande.peutEtrePayee() or commande.paiementEnCours()}"
+                    <span th:if="${commande.delaiDepasse()}" class="carte-meta"
+                          th:text="#{commandes.paiement.delai-depasse}">Délai de paiement dépassé</span>
+                    <span th:unless="${commande.peutEtrePayee() or commande.paiementEnCours() or commande.delaiDepasse()}"
                           class="carte-meta"
                           th:text="#{commandes.paiement.aucun}">Aucun paiement attendu</span>
                 </td>

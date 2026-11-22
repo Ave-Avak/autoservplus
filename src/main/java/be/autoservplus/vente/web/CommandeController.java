@@ -135,6 +135,9 @@ public class CommandeController {
                 case EN_COURS -> redirection.addFlashAttribute("erreur", msg("commande.paiement.en-cours"));
                 case TENTATIVE_CONCURRENTE -> redirection.addFlashAttribute("erreur",
                         msg("commande.paiement.tentative-concurrente"));
+                case DELAI_DEPASSE -> {
+                    // La page de la commande porte déjà le message, à la place du bouton.
+                }
             }
             return "redirect:/commande/" + reference + "/confirmation";
         } catch (PaiementImpossibleException e) {
@@ -198,7 +201,8 @@ public class CommandeController {
             case A_PAYER -> redirection.addFlashAttribute("erreur", msg("commande.retour.en-attente"));
             // Paiement en cours de traitement ou échoué : la page de confirmation le dit
             // elle-même. Un message de plus inviterait à reprendre un paiement en cours.
-            case EN_COURS, ECHOUE, CLOSE -> {
+            // Échéance passée : la page porte le message, à la place du bouton.
+            case EN_COURS, ECHOUE, DELAI_DEPASSE, CLOSE -> {
             }
         }
         return "redirect:/commande/" + reference + "/confirmation";

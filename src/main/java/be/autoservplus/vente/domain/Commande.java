@@ -176,6 +176,14 @@ public class Commande extends BaseEntity {
         this.datePaiement = Objects.requireNonNull(maintenant, "maintenant");
     }
 
+    /**
+     * L'échéance de paiement est passée (RM-21). La commande peut encore attendre le
+     * statut définitif d'une tentative ouverte, mais plus en recevoir une nouvelle.
+     */
+    public boolean delaiDePaiementDepasse(Instant maintenant, java.time.Duration delai) {
+        return !maintenant.isBefore(dateCommande.plus(delai));
+    }
+
     /** Annulation avec motif obligatoire (CHECK ck_commande_annulation en base). */
     public void annuler(MotifAnnulationCommande motif, Instant maintenant) {
         transitionVers(StatutCommande.ANNULEE);

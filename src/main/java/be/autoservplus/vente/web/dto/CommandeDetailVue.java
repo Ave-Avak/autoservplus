@@ -151,6 +151,11 @@ public record CommandeDetailVue(
         return situation == SituationPaiement.ECHOUE;
     }
 
+    /** Échéance de paiement passée, plus rien à payer : un message remplace le bouton. */
+    public boolean delaiDepasse() {
+        return situation == SituationPaiement.DELAI_DEPASSE;
+    }
+
     /** Un paiement abouti existe : de quoi afficher une section « paiement ». */
     public boolean estPayee() {
         return statutPaiement != null;
