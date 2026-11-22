@@ -24,7 +24,6 @@
         <springdoc.version>2.8.6</springdoc.version>
         <zxing.version>3.5.3</zxing.version>
         <jacoco.version>0.8.12</jacoco.version>
-        <jacoco.version>0.8.12</jacoco.version>
         <mockito.agent>
             ${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
         </mockito.agent>
