@@ -33,6 +33,8 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.context.annotation.Primary;
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -41,11 +43,13 @@ import org.springframework.transaction.support.TransactionTemplate;
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.DayOfWeek;
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.Callable;
@@ -67,6 +71,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * est arrêtée par la contrainte d'exclusion {@code ex_rdv_poste_intervalle} : un
  * verrou de version ne protège pas une insertion, faute de ligne à comparer. Les
  * transitions concurrentes sont départagées par {@code @Version} sur {@link Rdv}.</p>
+ *
+ * <p>Un départ commun ne garantit pas que deux transactions se croisent. Chaque
+ * mécanisme a donc aussi un test dont l'ordre est forcé par des loquets, et les tests
+ * au départ commun admettent l'issue où le perdant arrive après la validation.</p>
  *
  * <p>La classe n'est pas transactionnelle : les écritures sont validées pour de bon,
  * dans la base propre à la classe. Chaque test prend un jour différent pour ne pas
@@ -103,6 +111,7 @@ class RdvConcurrenceIT extends SocleIntegration {
     @Autowired private PlageOuvertureRepository plages;
     @Autowired private ParametreAtelierRepository parametres;
     @Autowired private TransactionTemplate transaction;
+    @Autowired private JdbcTemplate jdbc;
 
     private Utilisateur marie;
     private Utilisateur paul;
@@ -158,15 +167,53 @@ class RdvConcurrenceIT extends SocleIntegration {
 
         // PostgreSQL écarte le perdant par une violation d'exclusion (23P01) ou, si les deux
         // insertions se sont vues avant validation, par un interblocage (40P01) : constaté
-        // en CI. Les deux issues sont traduites en créneau pris.
+        // en CI. Les deux issues sont traduites en créneau pris. Troisième issue, constatée
+        // en CI elle aussi : le départ commun ne garantit pas que les deux transactions se
+        // croisent. Si le perdant ne commence qu'après la validation du gagnant, il lit le
+        // poste occupé et le service refuse avant toute insertion, sans état SQL. C'est le
+        // refus ordinaire d'un créneau pris, et non un défaut. La contrainte, elle, est
+        // prouvée sans hasard par insertionsCroiseesSurLeMemePoste.
         assertThat(issues).filteredOn(Rdv.class::isInstance).hasSize(1);
         assertThat(issues).filteredOn(CreneauIndisponibleException.class::isInstance).singleElement()
                 .extracting(perdant -> EtatSql.de((Throwable) perdant))
-                .isIn("23P01", "40P01");
+                .isIn(Arrays.asList(EtatSql.EXCLUSION, EtatSql.INTERBLOCAGE, null));
         assertThat(rdvs.actifsChevauchant(dimanche10h, dimanche10h.plusSeconds(3600),
                 List.of(StatutRdv.EN_ATTENTE, StatutRdv.CONFIRME)))
                 .as("un seul rendez-vous occupe le poste à cette heure")
                 .hasSize(1);
+    }
+
+    @Test
+    @DisplayName("deux transactions insèrent sur le même poste : la seconde attend la première, puis la base la refuse")
+    void insertionsCroiseesSurLeMemePoste() throws Exception {
+        Instant mercredi10h = LocalDate.of(2026, 9, 16).atTime(10, 0).atZone(BRUXELLES).toInstant();
+
+        List<Object> issues = insertionsCroisees(mercredi10h, pont);
+
+        assertThat(issues.get(0)).isInstanceOf(Rdv.class);
+        assertThat(issues.get(1)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThat(EtatSql.de((Throwable) issues.get(1))).isIn(EtatSql.EXCLUSION, EtatSql.INTERBLOCAGE);
+        assertThat(rdvs.actifsChevauchant(mercredi10h, mercredi10h.plusSeconds(3600),
+                List.of(StatutRdv.EN_ATTENTE, StatutRdv.CONFIRME)))
+                .as("un seul rendez-vous occupe le poste à cette heure")
+                .hasSize(1);
+    }
+
+    @Test
+    @DisplayName("deux transactions insèrent à la même heure sur deux postes : les deux passent")
+    void insertionsCroiseesSurDeuxPostes() throws Exception {
+        Instant jeudi10h = LocalDate.of(2026, 9, 17).atTime(10, 0).atZone(BRUXELLES).toInstant();
+        // Poste inactif : le service ne le propose pas, les autres tests gardent leur poste
+        // unique. La contrainte ne lit pas ce drapeau.
+        PosteAtelier temoin = new PosteAtelier("Pont témoin");
+        temoin.desactiver();
+        postes.save(temoin);
+
+        List<Object> issues = insertionsCroisees(jeudi10h, temoin);
+
+        // Témoin du test précédent : le même scénario passe dès que le poste diffère. Le
+        // refus vient donc de la contrainte, et non du montage à deux transactions.
+        assertThat(issues).allSatisfy(issue -> assertThat(issue).isInstanceOf(Rdv.class));
     }
 
     @Test
@@ -231,6 +278,67 @@ class RdvConcurrenceIT extends SocleIntegration {
         Instant debut = debutLocal.atZone(BRUXELLES).toInstant();
         return reservations.reserver(marie.getEmail(), golf.getReference(),
                 List.of(vidange.getReference()), debut, null).getReference();
+    }
+
+    /**
+     * Deux insertions de rendez-vous qui se chevauchent, écrites sans passer par le
+     * service, dont le calcul des disponibilités aurait écarté la seconde. La première
+     * transaction insère sur le pont puis retient sa validation. La seconde insère alors
+     * sur le poste donné : sur le même poste, PostgreSQL la fait attendre le sort de la
+     * première. La première n'est libérée qu'une fois cette attente vue dans
+     * {@code pg_locks}, ou la seconde terminée : l'ordre ne dépend d'aucun délai.
+     *
+     * @return l'issue de la première transaction, puis celle de la seconde
+     */
+    private List<Object> insertionsCroisees(Instant debut, PosteAtelier posteDuSecond) throws Exception {
+        Duration pas = Duration.ofMinutes(30);
+        CountDownLatch insere = new CountDownLatch(1);
+        CountDownLatch valider = new CountDownLatch(1);
+        String suffixe = UUID.randomUUID().toString().substring(0, 8);
+        ExecutorService fils = Executors.newFixedThreadPool(2);
+        try {
+            Future<Object> premiere = fils.submit(() -> transaction.execute(statut -> {
+                Rdv rdv = rdvs.saveAndFlush(new Rdv("RDV-CON-A-" + suffixe, marie, golf, pont, debut, pas,
+                        List.of(vidange), null));
+                insere.countDown();
+                attendre(valider);
+                return rdv;
+            }));
+            Future<Object> seconde = fils.submit(() -> {
+                attendre(insere);
+                return transaction.execute(statut -> rdvs.saveAndFlush(new Rdv("RDV-CON-B-" + suffixe, paul, clio,
+                        posteDuSecond, debut.plus(pas), pas, List.of(vidange), null)));
+            });
+            try {
+                attendre(insere);
+                Instant limite = Instant.now().plusSeconds(30);
+                while (!seconde.isDone() && !uneRequeteAttendUnVerrou()) {
+                    if (Instant.now().isAfter(limite)) {
+                        throw new IllegalStateException("La seconde insertion n'a ni fini ni attendu en trente secondes");
+                    }
+                    Thread.sleep(20);
+                }
+            } finally {
+                valider.countDown();
+            }
+            return List.of(issue(premiere), issue(seconde));
+        } finally {
+            fils.shutdownNow();
+        }
+    }
+
+    /** La base n'appartient qu'à cette classe : une attente de verrou ne peut venir que du test. */
+    private boolean uneRequeteAttendUnVerrou() {
+        Integer enAttente = jdbc.queryForObject("SELECT count(*) FROM pg_locks WHERE NOT granted", Integer.class);
+        return enAttente != null && enAttente > 0;
+    }
+
+    private static Object issue(Future<?> futur) throws Exception {
+        try {
+            return futur.get(30, TimeUnit.SECONDS);
+        } catch (ExecutionException e) {
+            return e.getCause();
+        }
     }
 
     /** Les deux actions partent au même signal. */
