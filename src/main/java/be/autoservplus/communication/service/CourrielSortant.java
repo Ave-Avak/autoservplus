@@ -434,6 +434,25 @@ public class CourrielSortant implements ServiceCourriel {
                 details.adresseEmail(), details.prenom(), details.prenom(), langue, corps, null);
     }
 
+    @Override
+    public void envoyerAvisPaiementApresAnnulation(Utilisateur destinataire, String numeroCommande,
+                                                   String montantTvac) {
+        auCompte("paiement-apres-annulation", destinataire, null, numeroCommande, montantTvac);
+    }
+
+    @Override
+    public void envoyerAvisRemboursementApresAnnulation(Utilisateur destinataire,
+                                                        String numeroCommande, String montantTvac) {
+        auCompte("remboursement-apres-annulation", destinataire, null, numeroCommande, montantTvac);
+    }
+
+    @Override
+    public void envoyerAvisPaiementARembourserAuGarage(String numeroCommande, String montantTvac,
+                                                       String membre) {
+        auGarage("paiement-a-rembourser", numeroCommande, Locale.FRENCH,
+                numeroCommande, montantTvac, membre);
+    }
+
     // --- rédaction ------------------------------------------------------------------
 
     /** Courriel adressé au compte lui-même : adresse, nom et langue viennent de la ligne. */

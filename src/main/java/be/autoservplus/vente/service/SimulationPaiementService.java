@@ -78,6 +78,12 @@ public class SimulationPaiementService {
         // L ordre est celui du monde reel : le statut change CHEZ le prestataire,
         // puis la notification survient. L inverse ferait relire un statut qui n a
         // pas encore bouge, et la notification ne constaterait rien.
+        if (issue == IssueSimulee.OUVERT_NON_ANNULABLE) {
+            // Rien ne change chez le prestataire, donc aucune notification : le
+            // paiement reste ouvert, et le job RM-21 ne pourra pas l'annuler.
+            prestataire.programmerAnnulable(referencePrestataire, false);
+            return referenceCommande;
+        }
         prestataire.programmerStatut(referencePrestataire, issue.statut());
         paiementService.traiterNotification(referencePrestataire);
         return referenceCommande;
@@ -91,7 +97,13 @@ public class SimulationPaiementService {
     public enum IssueSimulee {
         REUSSITE(StatutPaiement.REUSSI),
         ECHEC(StatutPaiement.ECHOUE),
-        ATTENTE(StatutPaiement.EN_COURS);
+        ATTENTE(StatutPaiement.EN_COURS),
+        /**
+         * Le client est parti chez sa banque sans avoir fini : le paiement reste ouvert
+         * et le prestataire refuse de l'annuler. À l'échéance RM-21, la commande attend
+         * alors le statut définitif au lieu d'être annulée.
+         */
+        OUVERT_NON_ANNULABLE(StatutPaiement.INITIE);
 
         private final StatutPaiement statut;
 

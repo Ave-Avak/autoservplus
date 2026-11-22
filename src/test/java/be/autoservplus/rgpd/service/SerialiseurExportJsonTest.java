@@ -52,7 +52,8 @@ class SerialiseurExportJsonTest {
                                         "Bruxelles", "Belgique"))),
                         List.of(), List.of(), List.of(),
                         new ExportDonnees.ConnexionExport(
-                                Instant.parse("2026-08-20T06:00:00Z"), true, null, (short) 0, null,
+                                Instant.parse("2026-08-20T06:00:00Z"), true,
+                                Instant.parse("2026-08-19T10:00:00Z"), null, (short) 0, null,
                                 null, false, null, List.of()),
                         List.of()),
                 new InformationsTraitement("Responsable", List.of(), List.of(), List.of(),

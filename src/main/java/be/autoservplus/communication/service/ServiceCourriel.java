@@ -246,4 +246,20 @@ public interface ServiceCourriel {
      * nouvelle adresse ni le nouveau numéro. Rédigé dans la langue du compte.
      */
     void envoyerAvisModificationCompte(Utilisateur destinataire, List<ChampCompte> champs);
+
+    /**
+     * Un paiement du membre est arrivé alors que sa commande était déjà annulée. L'avis
+     * dit que la commande reste annulée et que le montant sera remboursé. Rédigé dans
+     * la langue du compte.
+     */
+    void envoyerAvisPaiementApresAnnulation(Utilisateur destinataire, String numeroCommande,
+                                            String montantTvac);
+
+    /** Le paiement reçu après annulation vient d'être remboursé. Langue du compte. */
+    void envoyerAvisRemboursementApresAnnulation(Utilisateur destinataire, String numeroCommande,
+                                                 String montantTvac);
+
+    /** Prévient l'atelier qu'un paiement reçu sur une commande annulée attend son remboursement. */
+    void envoyerAvisPaiementARembourserAuGarage(String numeroCommande, String montantTvac,
+                                                String membre);
 }

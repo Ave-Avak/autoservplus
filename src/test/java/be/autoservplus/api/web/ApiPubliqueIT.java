@@ -89,6 +89,14 @@ class ApiPubliqueIT extends SocleIntegration {
         }
 
         @Test
+        @DisplayName("le plus grand numéro de page rend une liste vide, pas une erreur")
+        void pageDemesuree() throws Exception {
+            mvc.perform(get("/api/v1/prestations").param("page", "2147483647").param("taille", "100"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.contenu").isEmpty());
+        }
+
+        @Test
         @DisplayName("la premiere page ne porte pas de lien prev")
         void pasDePrevSurLaPremiere() throws Exception {
             mvc.perform(get("/api/v1/prestations"))

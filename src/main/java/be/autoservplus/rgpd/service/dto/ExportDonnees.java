@@ -542,10 +542,15 @@ public record ExportDonnees(
      * journal des evenements de securite du compte : ce sont des donnees sur la personne.
      * Le secret TOTP et les codes de secours n y figurent pas, pour la raison deja dite
      * des jetons.</p>
+     *
+     * <p>La date de vérification de l'adresse (V63) est nulle pour un compte vérifié
+     * avant cette migration : la base ne l'a jamais connue, et l'export n'en invente
+     * pas une.</p>
      */
     public record ConnexionExport(
             Instant derniereConnexion,
             boolean emailVerifie,
+            Instant emailVerifieLe,
             String adresseEnAttenteDeConfirmation,
             short tentativesEchoueesEnCours,
             Instant premierEchecEnCoursLe,
@@ -559,6 +564,7 @@ public record ExportDonnees(
             return new ConnexionExport(
                     membre.getDerniereConnexion(),
                     membre.isEmailVerifie(),
+                    membre.getEmailVerifieLe(),
                     membre.getEmailEnAttente(),
                     membre.getTentativesEchouees(),
                     membre.getPremierEchecLe(),

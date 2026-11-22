@@ -32,11 +32,16 @@ public record IssueRelecture(StatutPaiement statutRelu, Effet effet) {
         FACTURE_EMISE("commande passee PAYEE, facture emise"),
 
         /**
-         * Constat deja fait. Couvre le rejeu d une notification sur une commande deja
-         * payee, et la course perdue contre le job d expiration RM-21 : cette
-         * derniere ecrit par ailleurs son propre avertissement, qui porte le detail.
+         * Constat deja fait : rejeu d une notification sur une commande deja payee,
+         * ou sur un encaissement deja enregistre apres l annulation de sa commande.
          */
         DEJA_TRAITE("deja traite, aucune ecriture"),
+
+        /**
+         * Encaissement constaté sur une commande déjà annulée : enregistré, signalé au
+         * garage, à rembourser depuis le back-office.
+         */
+        ENCAISSE_APRES_ANNULATION("encaisse sur une commande annulee, a rembourser"),
 
         /** Echec ou expiration de CETTE tentative. La commande reste payable. */
         TENTATIVE_CLOSE("tentative close, la commande reste payable"),

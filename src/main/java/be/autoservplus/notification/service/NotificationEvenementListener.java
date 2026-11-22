@@ -12,6 +12,7 @@ import be.autoservplus.retractation.repository.DemandeAnnulationRepository;
 import be.autoservplus.retractation.service.DecisionRetractationEvent;
 import be.autoservplus.vente.repository.CommandeRepository;
 import be.autoservplus.vente.service.CommandePayeeEvent;
+import be.autoservplus.vente.service.PaiementApresAnnulationEvent;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -121,6 +122,24 @@ public class NotificationEvenementListener {
                     commande.getNumero()) == 0) {
                 log.warn("Commande {} payée : aucun administrateur actif à notifier.",
                         commande.getNumero());
+            }
+            return true;
+        });
+    }
+
+    /** Paiement reçu sur une commande annulée : chaque administrateur actif est prévenu. */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void surPaiementApresAnnulation(PaiementApresAnnulationEvent evenement) {
+        deposer("paiement a rembourser", evenement.referenceCommande(), () -> {
+            var commande = commandes.findByReference(evenement.referenceCommande()).orElse(null);
+            if (commande == null) {
+                return false;
+            }
+            if (notifications.deposerAuxAdministrateurs(TypeNotification.PAIEMENT_A_REMBOURSER,
+                    commande.getNumero()) == 0) {
+                log.warn("Paiement à rembourser sur la commande {} : aucun administrateur "
+                        + "actif à notifier.", commande.getNumero());
             }
             return true;
         });

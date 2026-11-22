@@ -20,11 +20,27 @@ public enum SituationPaiement {
     EN_COURS,
     /** En attente, dernière tentative échouée : réessayer. */
     ECHOUE,
+    /**
+     * En attente, échéance RM-21 passée et aucune tentative à finir : plus rien à
+     * payer, la commande va être annulée. Une tentative échouée ne se dit plus
+     * « échouée » ici : celle que le job RM-21 a annulée chez le prestataire l'est
+     * aussi, et le membre n'a rien raté.
+     */
+    DELAI_DEPASSE,
     PAYEE,
     /** Annulée ou remboursée : aucun paiement attendu. */
     CLOSE;
 
     public static SituationPaiement de(StatutCommande commande, StatutPaiement derniereTentative) {
+        return de(commande, derniereTentative, false);
+    }
+
+    /**
+     * @param delaiDepasse l'échéance de paiement de la commande est passée : seule une
+     *                     tentative encore ouverte peut être finie
+     */
+    public static SituationPaiement de(StatutCommande commande, StatutPaiement derniereTentative,
+                                       boolean delaiDepasse) {
         Objects.requireNonNull(commande, "commande");
         return switch (commande) {
             case PAYEE -> PAYEE;
@@ -32,6 +48,9 @@ public enum SituationPaiement {
             case EN_ATTENTE_PAIEMENT -> {
                 if (derniereTentative == StatutPaiement.EN_COURS) {
                     yield EN_COURS;
+                }
+                if (delaiDepasse && derniereTentative != StatutPaiement.INITIE) {
+                    yield DELAI_DEPASSE;
                 }
                 yield derniereTentative == StatutPaiement.ECHOUE ? ECHOUE : A_PAYER;
             }

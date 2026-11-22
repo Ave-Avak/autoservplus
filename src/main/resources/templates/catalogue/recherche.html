@@ -4,53 +4,48 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${terme != null ? 'Recherche : ' + terme : 'Recherche'} + ' | AutoServ+'">
-        Recherche | AutoServ+</title>
-    <!-- Une page de resultats n a pas vocation a etre indexee : son contenu depend
-         du terme saisi et n apporte rien aux moteurs de recherche. -->
+    <title th:text="(${terme != null} ? #{recherche.titre.terme(${terme})} : #{recherche.titre}) + ' | AutoServ+'">Recherche | AutoServ+</title>
+    <!--/* Une page de résultats n'a pas vocation à être indexée : son contenu dépend du
+         terme saisi et n'apporte rien aux moteurs de recherche. */-->
     <meta name="robots" content="noindex, follow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu">Aller au contenu principal</a>
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <h1>Recherche</h1>
+    <h1 th:text="#{recherche.titre}">Recherche</h1>
 
     <form class="recherche" th:action="@{/recherche}" method="get" role="search">
-        <label for="q" class="visuellement-cache">Rechercher dans le catalogue</label>
-        <input type="search" id="q" name="q" th:value="${terme}"
-               placeholder="Vidange, plaquettes, filtre..." autofocus>
-        <button type="submit" class="btn-cta">Rechercher</button>
+        <label for="q" class="visuellement-cache" th:text="#{catalogue.recherche.libelle}">Rechercher dans le catalogue</label>
+        <input type="search" id="q" name="q" maxlength="100" th:value="${terme}" th:placeholder="#{catalogue.recherche.exemple}"
+               th:attr="aria-invalid=${tropCourt} ? 'true' : null, aria-describedby=${tropCourt} ? 'recherche-erreur' : null">
+        <button type="submit" class="btn-cta" th:text="#{catalogue.recherche.bouton}">Rechercher</button>
+        <p class="texte-erreur recherche-erreur" id="recherche-erreur" role="alert" th:if="${tropCourt}"
+           th:text="#{recherche.minimum(${minimum})}">Saisissez au moins 2 caractères.</p>
     </form>
 
-    <p class="resultats-compte" th:if="${terme != null and !terme.isBlank()}"
-       role="status" aria-live="polite">
-        <span th:if="${total == 0}">
-            Aucun résultat pour « <strong th:text="${terme}">terme</strong> ».
-        </span>
-        <span th:if="${total == 1}">
-            1 résultat pour « <strong th:text="${terme}">terme</strong> ».
-        </span>
-        <span th:if="${total > 1}">
-            <strong th:text="${total}">0</strong> résultats pour
-            « <strong th:text="${terme}">terme</strong> ».
-        </span>
-    </p>
+    <th:block th:if="${terme != null and !tropCourt}">
+        <p class="resultats-compte" role="status"
+           th:text="${total == 0} ? #{recherche.resultats.aucun(${terme})}
+                    : (${total == 1} ? #{recherche.resultats.un(${terme})} : #{recherche.resultats.plusieurs(${total}, ${terme})})">
+            3 résultats pour « terme ».</p>
 
-    <p th:if="${total == 0 and terme != null and !terme.isBlank()}" class="message">
-        Vérifiez l'orthographe, ou essayez un terme plus général.
-        Vous pouvez aussi parcourir <a th:href="@{/services}">nos prestations</a>
-        ou <a th:href="@{/pieces}">nos pièces</a>.
-    </p>
+        <p th:if="${total == 0}" class="message">
+            <span th:text="#{recherche.aucun.conseil}">Vérifiez l'orthographe, ou essayez un terme plus général. Vous pouvez aussi parcourir</span>
+            <a th:href="@{/services}" th:text="#{recherche.aucun.prestations}">nos prestations</a>
+            <span th:text="#{recherche.aucun.ou}">ou</span>
+            <a th:href="@{/pieces}" th:text="#{recherche.aucun.pieces}">nos pièces</a>.
+        </p>
+    </th:block>
 
-    <section th:if="${!prestations.isEmpty()}">
-        <h2>Prestations</h2>
+    <section id="prestations" th:if="${prestations.totalElements > 0}">
+        <h2 th:text="#{recherche.section.prestations(${prestations.totalElements})}">Prestations (3)</h2>
         <ul class="grille-articles">
-            <li class="carte" th:each="article : ${prestations}">
+            <li class="carte" th:each="article : ${prestations.content}">
                 <h3>
                     <a th:href="@{/services/{ref}(ref=${article.reference()})}"
                        th:text="${article.libelle()}">Libellé</a>
@@ -58,22 +53,29 @@
                 <p class="carte-categorie" th:text="${article.categorie()}">Catégorie</p>
                 <p class="carte-description" th:text="${article.description()}">Description</p>
                 <p class="carte-meta" th:if="${article.dureeMinutes() != null}">
-                    Durée : <span th:text="${article.dureeLisible()}">1 h</span>
+                    <span th:text="#{catalogue.duree}">Durée :</span> <span th:text="${article.dureeLisible()}">1 h</span>
                 </p>
                 <p class="carte-prix">
-                    <strong th:text="${#numbers.formatDecimal(article.prixTvac(), 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</strong>
+                    <strong th:text="${#numbers.formatDecimal(article.prixTvac(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">0,00 €</strong>
                     <span class="carte-htva"
-                          th:text="'(' + ${#numbers.formatDecimal(article.prixHtva(), 1, 'POINT', 2, 'COMMA')} + ' € HTVA)'">
+                          th:text="#{catalogue.prix.htva(${#numbers.formatDecimal(article.prixHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">
                         (0,00 € HTVA)</span>
                 </p>
             </li>
         </ul>
+        <nav class="pagination" th:if="${prestations.totalPages > 1}" th:attr="aria-label=#{recherche.pagination.prestations}">
+            <a th:if="${prestations.hasPrevious()}" rel="prev" th:text="#{pagination.precedente}"
+               th:href="@{/recherche#prestations(q=${terme},pagePrestations=${prestations.number},pagePieces=${pieces.number + 1})}">Page précédente</a>
+            <span th:text="#{pagination.position(${prestations.number + 1}, ${prestations.totalPages})}">Page 1 sur 3</span>
+            <a th:if="${prestations.hasNext()}" rel="next" th:text="#{pagination.suivante}"
+               th:href="@{/recherche#prestations(q=${terme},pagePrestations=${prestations.number + 2},pagePieces=${pieces.number + 1})}">Page suivante</a>
+        </nav>
     </section>
 
-    <section th:if="${!pieces.isEmpty()}">
-        <h2>Pièces détachées</h2>
+    <section id="pieces" th:if="${pieces.totalElements > 0}">
+        <h2 th:text="#{recherche.section.pieces(${pieces.totalElements})}">Pièces détachées (3)</h2>
         <ul class="grille-articles">
-            <li class="carte" th:each="article : ${pieces}">
+            <li class="carte" th:each="article : ${pieces.content}">
                 <h3>
                     <a th:href="@{/pieces/{ref}(ref=${article.reference()})}"
                        th:text="${article.libelle()}">Libellé</a>
@@ -82,24 +84,26 @@
                 <p class="carte-description" th:text="${article.description()}">Description</p>
                 <p class="carte-meta" th:if="${article.marque() != null}" th:text="${article.marque()}">Marque</p>
                 <p class="carte-prix">
-                    <strong th:text="${#numbers.formatDecimal(article.prixTvac(), 1, 'POINT', 2, 'COMMA')} + ' €'">0,00 €</strong>
+                    <strong th:text="${#numbers.formatDecimal(article.prixTvac(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">0,00 €</strong>
                     <span class="carte-htva"
-                          th:text="'(' + ${#numbers.formatDecimal(article.prixHtva(), 1, 'POINT', 2, 'COMMA')} + ' € HTVA)'">
+                          th:text="#{catalogue.prix.htva(${#numbers.formatDecimal(article.prixHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">
                         (0,00 € HTVA)</span>
                 </p>
-                <p class="texte-erreur" th:unless="${article.disponible()}">Momentanément indisponible</p>
+                <p class="texte-erreur" th:unless="${article.disponible()}" th:text="#{catalogue.indisponible}">Momentanément indisponible</p>
             </li>
         </ul>
+        <nav class="pagination" th:if="${pieces.totalPages > 1}" th:attr="aria-label=#{recherche.pagination.pieces}">
+            <a th:if="${pieces.hasPrevious()}" rel="prev" th:text="#{pagination.precedente}"
+               th:href="@{/recherche#pieces(q=${terme},pagePrestations=${prestations.number + 1},pagePieces=${pieces.number})}">Page précédente</a>
+            <span th:text="#{pagination.position(${pieces.number + 1}, ${pieces.totalPages})}">Page 1 sur 3</span>
+            <a th:if="${pieces.hasNext()}" rel="next" th:text="#{pagination.suivante}"
+               th:href="@{/recherche#pieces(q=${terme},pagePrestations=${prestations.number + 1},pagePieces=${pieces.number + 2})}">Page suivante</a>
+        </nav>
     </section>
 </main>
 
 <footer class="pied">
-    <ul>
-        <li><a th:href="@{/cgv}">CGV</a></li>
-        <li><a th:href="@{/mentions-legales}">Mentions légales</a></li>
-        <li><a th:href="@{/confidentialite}">Confidentialité</a></li>
-    </ul>
-    <p>&copy; 2026 AutoServ+</p>
+    <p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p>
 </footer>
 
 <div th:replace="~{fragments/cookies :: bandeau}"></div>

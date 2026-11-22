@@ -368,6 +368,7 @@ class InscriptionServiceTest {
             Utilisateur resultat = service.confirmerAdresse("jeton-valide");
 
             assertThat(resultat.isEmailVerifie()).isTrue();
+            assertThat(resultat.getEmailVerifieLe()).as("la vérification est datée").isEqualTo(MAINTENANT);
             assertThat(resultat.getStatut()).isEqualTo(StatutUtilisateur.ACTIF);
             assertThat(resultat.getJetonVerificationHache()).isNull();
             assertThat(resultat.getJetonExpiration()).isNull();

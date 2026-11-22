@@ -20,12 +20,6 @@
 
     <p th:if="${typeArticle == 'piece'}"><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
 
-    <form class="recherche" th:action="@{/recherche}" method="get" role="search">
-        <label for="q" class="visuellement-cache" th:text="#{catalogue.recherche.libelle}">Rechercher dans le catalogue</label>
-        <input type="search" id="q" name="q" th:placeholder="#{catalogue.recherche.exemple}">
-        <button type="submit" class="btn-cta" th:text="#{catalogue.recherche.bouton}">Rechercher</button>
-    </form>
-
     <nav class="filtres" th:aria-label="#{catalogue.filtres.aria}">
         <a th:href="${typeArticle == 'service'} ? @{/services} : @{/pieces}"
            th:classappend="${categorieActive == null} ? 'filtre-actif' : ''"

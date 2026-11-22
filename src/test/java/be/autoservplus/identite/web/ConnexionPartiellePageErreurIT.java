@@ -123,7 +123,7 @@ class ConnexionPartiellePageErreurIT extends SocleIntegration {
 
         // Paramètre mal formé : même chemin, sous le même contexte anonyme, avec un autre
         // statut. La session partielle survit : l'étape aboutit ensuite.
-        HttpResponse<String> conteneur = lire("/recherche?q=filtre&page=pas-un-nombre");
+        HttpResponse<String> conteneur = lire("/recherche?q=filtre&pagePieces=pas-un-nombre");
         assertThat(conteneur.statusCode()).isEqualTo(400);
         assertThat(conteneur.body()).contains("<main id=\"contenu\">");
         sansTraceDeConnexion(conteneur);

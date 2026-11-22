@@ -6,7 +6,7 @@ import java.util.Objects;
  * Ce que produit le geste « payer » d'un membre (F14) : une page de paiement où
  * l'envoyer, ou la raison pour laquelle il n'y en a pas.
  *
- * <p>Seule {@link Issue#REDIRECTION} porte une adresse. Les trois autres issues
+ * <p>Seule {@link Issue#REDIRECTION} porte une adresse. Les autres issues
  * ramènent le membre à sa commande avec un message : aucune ne crée de paiement.</p>
  *
  * @param issue          ce que le contrôleur doit faire du membre
@@ -27,7 +27,12 @@ public record DepartPaiement(Issue issue, String urlRedirection) {
          */
         EN_COURS,
         /** Un autre geste du membre vient d'ouvrir une tentative pour la même commande. */
-        TENTATIVE_CONCURRENTE
+        TENTATIVE_CONCURRENTE,
+        /**
+         * L'échéance de paiement est passée et aucune tentative n'est à finir : la
+         * commande va être annulée, aucune tentative n'est plus créée (RM-21).
+         */
+        DELAI_DEPASSE
     }
 
     public DepartPaiement {

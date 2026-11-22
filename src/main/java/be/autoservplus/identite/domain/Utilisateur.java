@@ -97,6 +97,14 @@ public class Utilisateur extends BaseEntity {
     @Column(name = "email_verifie", nullable = false)
     private boolean emailVerifie = false;
 
+    /**
+     * Instant où le titulaire a confirmé son adresse par le lien reçu. Nul pour un compte
+     * créé déjà vérifié : le tableau de bord, qui compte les nouveaux clients d'une
+     * période, retombe alors sur la date de création.
+     */
+    @Column(name = "email_verifie_le")
+    private Instant emailVerifieLe;
+
     /** Empreinte SHA-256 du jeton de vérification d'adresse, jamais le jeton lui-même. */
     @Column(name = "jeton_verification_hache", length = 64)
     private String jetonVerificationHache;
@@ -212,7 +220,20 @@ public class Utilisateur extends BaseEntity {
 
     // --- comportements metier -------------------------------------------------------
 
-    /** Active le compte apres verification de l adresse de courriel. */
+    /**
+     * Active le compte après la vérification de l'adresse par le lien reçu, et date
+     * cette vérification.
+     */
+    public void confirmerAdresseEmail(Instant maintenant) {
+        confirmerAdresseEmail();
+        this.emailVerifieLe = Objects.requireNonNull(maintenant, "maintenant");
+    }
+
+    /**
+     * Active un compte créé déjà vérifié, sans lien reçu : le compte de l'exploitant au
+     * démarrage, et les comptes des jeux d'essai. Aucune vérification n'a eu lieu, aucune
+     * date n'est donc posée.
+     */
     public void confirmerAdresseEmail() {
         this.emailVerifie = true;
         this.statut = StatutUtilisateur.ACTIF;
@@ -826,6 +847,7 @@ public class Utilisateur extends BaseEntity {
     public String getLocalite() { return localite; }
     public String getPays() { return pays; }
     public Langue getLangue() { return langue; }
+    public Instant getEmailVerifieLe() { return emailVerifieLe; }
     public StatutUtilisateur getStatut() { return statut; }
     public boolean isEmailVerifie() { return emailVerifie; }
     public String getEmailEnAttente() { return emailEnAttente; }

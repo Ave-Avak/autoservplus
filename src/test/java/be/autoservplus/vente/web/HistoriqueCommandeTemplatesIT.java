@@ -170,13 +170,36 @@ class HistoriqueCommandeTemplatesIT extends SocleIntegration {
     }
 
     @Test
+    @DisplayName("échéance de paiement passée sans tentative ouverte : un message, plus de bouton")
+    void delaiDePaiementDepasse() throws Exception {
+        Commande echue = commandes.saveAndFlush(new Commande("CMD-IT-HIST-0007", marie,
+                new BigDecimal("10.00"), new BigDecimal("2.10"), new BigDecimal("12.10"),
+                horloge.instant().minus(Duration.ofMinutes(31))));
+
+        mvc.perform(get("/commandes").locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Délai de paiement dépassé")))
+                .andExpect(content().string(not(containsString(
+                        "/commande/" + echue.getReference() + "/payer"))));
+        mvc.perform(get("/commandes/" + echue.getReference()).locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString(
+                        "Le délai de paiement de cette commande est dépassé")))
+                .andExpect(content().string(not(containsString("/payer"))));
+        mvc.perform(get("/commande/" + echue.getReference() + "/confirmation").locale(new Locale("nl")))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("De betalingstermijn van deze bestelling is verstreken")))
+                .andExpect(content().string(not(containsString("/payer"))));
+    }
+
+    @Test
     @DisplayName("une commande en attente propose de reprendre son paiement")
     void proposeLaRepriseDuPaiement() throws Exception {
         // Le bouton de la page de confirmation ne sert qu une fois : sans celui-ci,
         // un membre qui a ferme l onglet ne pouvait plus payer nulle part.
         Commande enAttente = commandes.saveAndFlush(new Commande("CMD-IT-HIST-0006", marie,
                 new BigDecimal("10.00"), new BigDecimal("2.10"), new BigDecimal("12.10"),
-                hier()));
+                horloge.instant().minus(Duration.ofMinutes(5))));
 
         mvc.perform(get("/commandes").locale(Locale.FRENCH))
                 .andExpect(status().isOk())

@@ -30,10 +30,29 @@
             <br><span th:text="${commande.email()}">marie@exemple.be</span>
         </dd>
         <dt th:text="#{commande.detail.mode-paiement}">Moyen de paiement</dt>
-        <dd th:text="${commande.methodePaiement()} ?: #{admin.ventes.detail.aucun-paiement}">creditcard</dd>
-        <th:block th:if="${commande.datePaiement() != null}">
+        <dd th:if="${commande.encaisseApresAnnulationLe() == null}"
+            th:text="${commande.methodePaiement()} ?: #{admin.ventes.detail.aucun-paiement}">creditcard</dd>
+        <!--/* Un paiement a bien abouti, après l'annulation : seul son moyen peut manquer. */-->
+        <dd th:if="${commande.encaisseApresAnnulationLe() != null}"
+            th:text="${commande.methodePaiement()} ?: #{admin.paiements-tardifs.moyen.inconnu}">bancontact</dd>
+        <th:block th:if="${commande.datePaiement() != null and commande.encaisseApresAnnulationLe() == null}">
             <dt th:text="#{commande.detail.date-paiement}">Payée le</dt>
             <dd th:text="${#temporals.format(commande.datePaiement(), 'dd/MM/yyyy HH:mm')}">20/11/2026 10:13</dd>
+        </th:block>
+        <!--/* Paiement arrivé sur une commande déjà annulée : elle n'a jamais été payée
+               au sens de la vente, et ne doit pas se lire ainsi. */-->
+        <th:block th:if="${commande.encaisseApresAnnulationLe() != null}">
+            <dt th:text="#{admin.ventes.detail.encaisse-apres-annulation}">Encaissé après annulation le</dt>
+            <dd>
+                <span th:text="${#temporals.format(commande.encaisseApresAnnulationLe(), 'dd/MM/yyyy HH:mm')}">21/11/2026 10:40</span>
+                <th:block th:if="${commande.rembourseApresAnnulationLe() == null}">
+                    <br><a th:href="@{/admin/paiements-a-rembourser}" th:text="#{admin.paiements-tardifs.titre}">Paiements à rembourser</a>
+                </th:block>
+            </dd>
+            <th:block th:if="${commande.rembourseApresAnnulationLe() != null}">
+                <dt th:text="#{admin.ventes.detail.rembourse-le}">Remboursé le</dt>
+                <dd th:text="${#temporals.format(commande.rembourseApresAnnulationLe(), 'dd/MM/yyyy HH:mm')}">21/11/2026 11:02</dd>
+            </th:block>
         </th:block>
         <th:block th:if="${commande.motifAnnulation() != null}">
             <dt th:text="#{admin.ventes.detail.annulation}">Annulation</dt>

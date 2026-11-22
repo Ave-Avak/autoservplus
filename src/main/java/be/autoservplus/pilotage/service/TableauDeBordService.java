@@ -2,7 +2,11 @@ package be.autoservplus.pilotage.service;
 
 import be.autoservplus.catalogue.service.AdminCatalogueService;
 import be.autoservplus.pilotage.repository.IndicateursRepository;
+import be.autoservplus.pilotage.service.dto.Annulations;
+import be.autoservplus.pilotage.service.dto.JourChiffre;
+import be.autoservplus.pilotage.service.dto.PeriodeTableau;
 import be.autoservplus.pilotage.service.dto.PieceEnAlerte;
+import be.autoservplus.pilotage.service.dto.RepartitionStatut;
 import be.autoservplus.pilotage.service.dto.TableauDeBord;
 import be.autoservplus.reservation.domain.PlageOuverture;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
@@ -12,38 +16,40 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.YearMonth;
 import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.time.format.TextStyle;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
+import java.util.Map;
 
 /**
- * Tableau de bord du gerant (BL-1), en lecture seule.
+ * Tableau de bord du gérant (A25), en lecture seule.
  *
- * <p><b>Toute la logique d assemblage vit ici</b>, pas dans le controleur : le calcul
- * des bornes du mois, la capacite theorique de l atelier et la composition des
- * indicateurs sont des decisions metier, meme si aucune n ecrit en base.</p>
+ * <p><b>Toute la logique d'assemblage vit ici</b>, pas dans le contrôleur : le calcul
+ * des bornes de la période, la capacité théorique de l'atelier et la composition des
+ * indicateurs sont des décisions métier, même si aucune n'écrit en base.</p>
  *
- * <p>{@code @PreAuthorize} de classe en defense en profondeur : la protection d URL
- * {@code /admin/**} filtre deja le role, le service refuse en second. Les chiffres
- * d affaires d un garage n ont rien a faire devant un membre.</p>
+ * <p>{@code @PreAuthorize} de classe en défense en profondeur : la protection d'URL
+ * {@code /admin/**} filtre déjà le rôle, le service refuse en second. Les chiffres
+ * d'affaires d'un garage n'ont rien à faire devant un membre.</p>
  *
- * <p>Bornes calculees a partir de l horloge injectee et du fuseau de l atelier, jamais
- * de {@code LocalDate.now()} : un tableau de bord teste doit pouvoir se placer dans un
- * mois choisi.</p>
+ * <p>Bornes calculées à partir de l'horloge injectée et du fuseau de l'atelier, jamais
+ * de {@code LocalDate.now()} : un tableau de bord testé doit pouvoir se placer un jour
+ * choisi.</p>
  */
 @Service
 @Transactional(readOnly = true)
 @PreAuthorize("hasRole('ADMINISTRATEUR')")
 public class TableauDeBordService {
 
-    /** Longueur des classements. Au-dela, un tableau de bord cesse d etre lisible. */
+    /** Longueur des classements. Au-delà, un tableau de bord cesse d'être lisible. */
     private static final int TAILLE_CLASSEMENT = 5;
+
+    /** Longueur de la courbe d'évolution, fixée par le cahier des charges. */
+    public static final int JOURS_DE_LA_COURBE = 30;
 
     private final IndicateursRepository indicateurs;
     private final PlageOuvertureRepository plages;
@@ -66,62 +72,108 @@ public class TableauDeBordService {
         this.horloge = horloge;
     }
 
-    /** Instantane du mois en cours. */
-    public TableauDeBord duMois(Locale langue) {
+    /**
+     * Période demandée par l'écran : un raccourci, un intervalle saisi, ou le mois en
+     * cours par défaut. « Aujourd'hui » est le jour de l'atelier, pas celui du serveur.
+     */
+    public PeriodeTableau periode(String raccourci, LocalDate du, LocalDate au) {
+        return PeriodeTableau.de(raccourci, du, au, aujourdhui());
+    }
+
+    /** Indicateurs de la période. */
+    public TableauDeBord pour(PeriodeTableau periode) {
         ZoneId zone = parametres.courants().zone();
-        YearMonth mois = YearMonth.from(LocalDate.ofInstant(horloge.instant(), zone));
-        Instant debut = mois.atDay(1).atStartOfDay(zone).toInstant();
-        Instant fin = mois.plusMonths(1).atDay(1).atStartOfDay(zone).toInstant();
+        Instant debut = periode.debut(zone);
+        Instant fin = periode.finExclue(zone);
 
         int postesActifs = postes.findByActifTrueOrderByOrdreAscLibelleAsc().size();
+        List<RepartitionStatut> rendezVous = indicateurs.rendezVousParStatut(debut, fin);
 
         return new TableauDeBord(
-                libelleMois(mois, langue),
+                periode,
                 indicateurs.chiffreAffaireFacture(debut, fin),
                 indicateurs.avoirsEmis(debut, fin),
                 indicateurs.commandesAEncaisser(),
-                indicateurs.rendezVousParStatut(debut, fin),
+                rendezVous,
+                annulations(rendezVous, debut, fin),
+                indicateurs.nouveauxClients(debut, fin),
+                indicateurs.commandesPayees(debut, fin),
                 indicateurs.minutesReservees(debut, fin),
-                capaciteEnMinutes(mois, postesActifs),
+                capaciteEnMinutes(periode, postesActifs),
                 postesActifs,
                 indicateurs.topPrestations(debut, fin, TAILLE_CLASSEMENT),
                 indicateurs.topPieces(debut, fin, TAILLE_CLASSEMENT),
-                // Methode ecrite lors du back-office catalogue et restee sans appelant
-                // de production jusqu ici : c est son ecran.
+                indicateurs.chiffreAffaireParCategorie(debut, fin),
+                chiffreDesTrenteDerniersJours(),
+                // Méthode écrite lors du back-office catalogue et restée sans appelant
+                // de production jusqu'ici : c'est son écran.
                 catalogue.piecesEnAlerteDeStock().stream().map(PieceEnAlerte::de).toList());
     }
 
     /**
-     * Capacite theorique du mois : pour chaque jour, la duree des plages actives de son
-     * jour de semaine, multipliee par le nombre de postes.
-     *
-     * <p><b>Approximation assumee</b> : les indisponibilites ponctuelles (conges,
-     * panne d un pont) ne sont pas deduites, faute d etre bornees a un poste dans le
-     * modele actuel. Le taux affiche est donc <b>minorant</b> : la capacite reelle est
-     * inferieure ou egale a celle-ci, jamais superieure. Un taux qui se tromperait dans
-     * l autre sens ferait croire a de la marge inexistante. Les jours feries belges ne
-     * sont pas exclus non plus, meme limite que {@code dernierJourReservable}.</p>
+     * Chiffre d'affaires facturé hors TVA de chacun des trente derniers jours, aujourd'hui
+     * compris. Un jour sans facture vaut zéro : la courbe doit montrer les creux, pas
+     * relier deux jours de vente par-dessus une semaine vide.
      */
-    private long capaciteEnMinutes(YearMonth mois, int postesActifs) {
+    public List<JourChiffre> chiffreDesTrenteDerniersJours() {
+        ZoneId zone = parametres.courants().zone();
+        LocalDate dernier = aujourdhui();
+        LocalDate premier = dernier.minusDays(JOURS_DE_LA_COURBE - 1L);
+        Map<LocalDate, BigDecimal> factures = indicateurs.chiffreAffaireParJour(
+                premier.atStartOfDay(zone).toInstant(),
+                dernier.plusDays(1).atStartOfDay(zone).toInstant(), zone);
+        List<JourChiffre> serie = new ArrayList<>(JOURS_DE_LA_COURBE);
+        for (LocalDate jour = premier; !jour.isAfter(dernier); jour = jour.plusDays(1)) {
+            serie.add(new JourChiffre(jour, factures.getOrDefault(jour, BigDecimal.ZERO)));
+        }
+        return serie;
+    }
+
+    private LocalDate aujourdhui() {
+        return LocalDate.ofInstant(horloge.instant(), parametres.courants().zone());
+    }
+
+    /**
+     * Le total et les statuts viennent de la répartition déjà lue. Seul le partage des
+     * annulations entre le membre et le garage demande une requête de plus.
+     */
+    private Annulations annulations(List<RepartitionStatut> rendezVous, Instant debut, Instant fin) {
+        long total = rendezVous.stream().mapToLong(RepartitionStatut::nombre).sum();
+        long[] partage = indicateurs.annulationsMembreEtGarage(debut, fin);
+        return new Annulations(total, partage[0], partage[1],
+                nombre(rendezVous, "ABSENT"), nombre(rendezVous, "REFUSE"));
+    }
+
+    private static long nombre(List<RepartitionStatut> rendezVous, String statut) {
+        return rendezVous.stream().filter(r -> r.statut().equals(statut))
+                .mapToLong(RepartitionStatut::nombre).sum();
+    }
+
+    /**
+     * Capacité théorique de la période : pour chaque jour, la durée des plages actives de
+     * son jour de semaine, multipliée par le nombre de postes.
+     *
+     * <p><b>Approximation assumée</b> : les indisponibilités ponctuelles (congés,
+     * panne d'un pont) ne sont pas déduites, faute d'être bornées à un poste dans le
+     * modèle actuel. Le taux affiché est donc <b>minorant</b> : la capacité réelle est
+     * inférieure ou égale à celle-ci, jamais supérieure. Un taux qui se tromperait dans
+     * l'autre sens ferait croire à de la marge inexistante. Les jours fériés belges ne
+     * sont pas exclus non plus.</p>
+     */
+    private long capaciteEnMinutes(PeriodeTableau periode, int postesActifs) {
         if (postesActifs == 0) {
             return 0L;
         }
         List<PlageOuverture> toutes = plages.findAllByOrderByJourSemaineAscHeureDebutAsc();
-        long minutesParJour = 0L;
-        for (int jour = 1; jour <= mois.lengthOfMonth(); jour++) {
-            LocalDate date = mois.atDay(jour);
+        long minutes = 0L;
+        for (LocalDate date : periode.jours()) {
             for (PlageOuverture plage : toutes) {
                 if (plage.isActif() && plage.jour() == date.getDayOfWeek()) {
-                    minutesParJour += Duration.between(plage.getHeureDebut(), plage.getHeureFin())
+                    minutes += Duration.between(plage.getHeureDebut(), plage.getHeureFin())
                             .toMinutes();
                 }
             }
         }
-        return minutesParJour * postesActifs;
-    }
-
-    private static String libelleMois(YearMonth mois, Locale langue) {
-        return mois.getMonth().getDisplayName(TextStyle.FULL, langue) + " "
-                + mois.format(DateTimeFormatter.ofPattern("yyyy"));
+        return minutes * postesActifs;
     }
 }

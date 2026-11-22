@@ -38,13 +38,14 @@ class NotificationPaiementListenerTest {
     @Mock private CommandeRepository commandes;
     @Mock private ServiceCourriel courriel;
     @Mock private ConfirmationCommande confirmation;
+    @Mock private be.autoservplus.vente.repository.PaiementRepository paiements;
 
     private NotificationPaiementListener listener;
     private Commande commande;
 
     @BeforeEach
     void setUp() {
-        listener = new NotificationPaiementListener(commandes, courriel, confirmation);
+        listener = new NotificationPaiementListener(commandes, courriel, confirmation, paiements);
         Utilisateur marie = new Utilisateur(
                 "marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         commande = new Commande("CMD-2026-0001", marie,
@@ -76,6 +77,45 @@ class NotificationPaiementListenerTest {
                 new CommandePayeeEvent(commande.getReference())))
                 .doesNotThrowAnyException();
         verify(courriel).envoyerAvisCommandeAuGarage(any());
+    }
+
+    @Test
+    @DisplayName("paiement reçu après annulation : un avis au membre, un avis au garage")
+    void avisDuPaiementApresAnnulation() {
+        be.autoservplus.vente.domain.Paiement paiement = new be.autoservplus.vente.domain.Paiement(
+                commande, commande.getMontantTvac(), Instant.parse("2026-09-14T09:00:00Z"));
+        when(paiements.findByReference(paiement.getReference())).thenReturn(Optional.of(paiement));
+        doThrow(new RuntimeException("SMTP indisponible"))
+                .when(courriel).envoyerAvisPaiementApresAnnulation(any(), any(), any());
+
+        assertThatCode(() -> listener.surPaiementApresAnnulation(new PaiementApresAnnulationEvent(
+                paiement.getReference(), commande.getReference()))).doesNotThrowAnyException();
+
+        verify(courriel).envoyerAvisPaiementApresAnnulation(commande.getMembre(),
+                "CMD-2026-0001", be.autoservplus.reservation.service.support.FormatageRdv.euros(commande.getMontantTvac()));
+        // L'échec du premier envoi n'empêche pas le second.
+        verify(courriel).envoyerAvisPaiementARembourserAuGarage("CMD-2026-0001", be.autoservplus.reservation.service.support.FormatageRdv.euros(commande.getMontantTvac()),
+                commande.getMembre().nomComplet());
+    }
+
+    @Test
+    @DisplayName("remboursement après annulation : le membre est prévenu, un paiement introuvable est avalé")
+    void avisDuRemboursement() {
+        be.autoservplus.vente.domain.Paiement paiement = new be.autoservplus.vente.domain.Paiement(
+                commande, commande.getMontantTvac(), Instant.parse("2026-09-14T09:00:00Z"));
+        when(paiements.findByReference(paiement.getReference())).thenReturn(Optional.of(paiement));
+
+        listener.surRemboursementApresAnnulation(
+                new RemboursementApresAnnulationEvent(paiement.getReference()));
+        verify(courriel).envoyerAvisRemboursementApresAnnulation(commande.getMembre(),
+                "CMD-2026-0001", be.autoservplus.reservation.service.support.FormatageRdv.euros(commande.getMontantTvac()));
+
+        UUID inconnu = UUID.randomUUID();
+        when(paiements.findByReference(inconnu)).thenReturn(Optional.empty());
+        assertThatCode(() -> {
+            listener.surRemboursementApresAnnulation(new RemboursementApresAnnulationEvent(inconnu));
+            listener.surPaiementApresAnnulation(new PaiementApresAnnulationEvent(inconnu, inconnu));
+        }).doesNotThrowAnyException();
     }
 
     @Test

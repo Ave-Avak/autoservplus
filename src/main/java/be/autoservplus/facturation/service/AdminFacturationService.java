@@ -1,6 +1,7 @@
 package be.autoservplus.facturation.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.NumeroPage;
 import be.autoservplus.common.web.PeriodeFiltre;
 import be.autoservplus.facturation.domain.Avoir;
 import be.autoservplus.facturation.domain.Facture;
@@ -61,7 +62,7 @@ public class AdminFacturationService {
     }
 
     public Page<PieceComptableLigne> factures(PeriodeFiltre periode, String recherche, int page) {
-        PageRequest demande = PageRequest.of(Math.max(page, 0), taillePage);
+        PageRequest demande = PageRequest.of(NumeroPage.borne(page, taillePage), taillePage);
         if (periode.inversee()) {
             return Page.empty(demande);
         }
@@ -72,7 +73,7 @@ public class AdminFacturationService {
     }
 
     public Page<PieceComptableLigne> avoirs(PeriodeFiltre periode, String recherche, int page) {
-        PageRequest demande = PageRequest.of(Math.max(page, 0), taillePage);
+        PageRequest demande = PageRequest.of(NumeroPage.borne(page, taillePage), taillePage);
         if (periode.inversee()) {
             return Page.empty(demande);
         }

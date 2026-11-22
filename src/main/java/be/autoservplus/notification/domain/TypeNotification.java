@@ -46,7 +46,12 @@ public enum TypeNotification {
      * Commande payée qui attend le garage, adressée à chaque administrateur actif (F14).
      * Distincte de COMMANDE_PAYEE, qui annonce au membre que son paiement est reçu.
      */
-    COMMANDE_A_PREPARER;
+    COMMANDE_A_PREPARER,
+    /**
+     * Paiement encaissé sur une commande déjà annulée, à rembourser depuis le
+     * back-office. Adressée à chaque administrateur actif.
+     */
+    PAIEMENT_A_REMBOURSER;
 
     /** Cle i18n du titre affiche. */
     public String cleTitre() {

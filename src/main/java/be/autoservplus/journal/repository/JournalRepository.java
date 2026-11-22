@@ -41,7 +41,8 @@ public class JournalRepository {
      * (« could not determine data type of parameter »). Le cast rend le filtre
      * facultatif sans avoir a construire une variante de requete par combinaison.</p>
      *
-     * @param type   {@code CATALOGUE}, {@code INTERVENTION}, ou {@code null} pour tout
+     * @param type   {@code CATALOGUE}, {@code INTERVENTION}, {@code REMBOURSEMENT}, ou
+     *               {@code null} pour tout
      * @param limite plafond de lignes rendues
      */
     public List<Object[]> rechercher(String type, String acteur, Instant depuis, Instant jusqua,
@@ -85,6 +86,31 @@ public class JournalRepository {
                     LEFT JOIN utilisateur u ON u.id = h.auteur_id
                     WHERE (CAST(:depuis AS timestamptz) IS NULL OR h.horodatage >= CAST(:depuis AS timestamptz))
                       AND (CAST(:jusqua AS timestamptz) IS NULL OR h.horodatage < CAST(:jusqua AS timestamptz))
+                      AND (CAST(:acteur AS text) IS NULL
+                           OR u.nom ILIKE CAST(:motif AS text)
+                           OR u.prenom ILIKE CAST(:motif AS text))
+                    """);
+        }
+        if (tousTypes || EntreeJournal.TYPE_REMBOURSEMENT.equals(type)) {
+            // Le remboursement d'un paiement reçu sur une commande annulée n'a pas de
+            // table d'historique : son auteur et sa date sont sur le paiement (V64).
+            // Le montant voyage dans « avant », la référence du remboursement chez le
+            // prestataire dans « apres ».
+            morceaux.add("""
+                    SELECT p.rembourse_le AS horodatage,
+                           'REMBOURSEMENT' AS type,
+                           u.prenom AS prenom, u.nom AS nom,
+                           c.numero AS cible,
+                           NULL AS champ,
+                           CAST(p.montant AS text) AS avant,
+                           p.reference_remboursement AS apres,
+                           NULL AS motif
+                    FROM paiement p
+                    JOIN commande c ON c.id = p.commande_id
+                    LEFT JOIN utilisateur u ON u.email = p.rembourse_par
+                    WHERE p.rembourse_le IS NOT NULL
+                      AND (CAST(:depuis AS timestamptz) IS NULL OR p.rembourse_le >= CAST(:depuis AS timestamptz))
+                      AND (CAST(:jusqua AS timestamptz) IS NULL OR p.rembourse_le < CAST(:jusqua AS timestamptz))
                       AND (CAST(:acteur AS text) IS NULL
                            OR u.nom ILIKE CAST(:motif AS text)
                            OR u.prenom ILIKE CAST(:motif AS text))

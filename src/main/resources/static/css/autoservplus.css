@@ -291,6 +291,32 @@ main code { overflow-wrap: anywhere; }
     .menu-compte { margin-left: 0; }
     .menu a, .menu .lien-bouton, .menu-back-office a { white-space: normal; }
 }
+/* Recherche de l'en-tête. Champ blanc, texte par défaut du navigateur. Bouton blanc sur
+   marine (11.62:1), comme le bouton du menu. Sous 40em, le champ prend la largeur du
+   panneau replié. */
+.recherche-entete { display: flex; align-items: center; gap: var(--espace-xs); }
+.recherche-entete input {
+    width: 12rem;
+    min-width: 0;
+    padding: 0.25rem var(--espace-s);
+    border: 1px solid var(--blanc);
+    border-radius: var(--rayon);
+    font: inherit;
+}
+.recherche-entete button {
+    padding: 0.25rem var(--espace-s);
+    background: transparent;
+    color: var(--blanc);
+    border: 1px solid var(--blanc);
+    border-radius: var(--rayon);
+    font: inherit;
+    cursor: pointer;
+}
+.recherche-entete button:hover { background: var(--blanc); color: var(--bleu-marine); }
+@media (max-width: 40em) {
+    .recherche-entete input { flex: 1 1 auto; width: auto; }
+}
+
 /* --- Catalogue ------------------------------------------------------------------ */
 
 .recherche {
@@ -308,6 +334,8 @@ main code { overflow-wrap: anywhere; }
     border-radius: var(--rayon);
     font: inherit;
 }
+/* Le message d'un terme trop court passe sous le champ et le bouton. */
+.recherche-erreur { flex-basis: 100%; margin: 0; }
 
 /* Masque visuellement sans retirer du flux des lecteurs d ecran (WCAG 1.3.1) */
 .visuellement-cache {
@@ -437,6 +465,35 @@ main code { overflow-wrap: anywhere; }
 
 .fiche-actions { margin-top: var(--espace-l); }
 
+
+/* --- Tableau de bord ------------------------------------------------------------ */
+
+/* Cartes d'indicateurs : une grille qui se replie seule, sans rupture écrite. */
+.indicateurs {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(13rem, 1fr));
+    gap: var(--espace-m);
+    margin: 0 0 var(--espace-m);
+}
+.indicateur {
+    padding: var(--espace-m);
+    border: 1px solid var(--gris-200);
+    border-radius: var(--rayon);
+    background: var(--blanc);
+}
+.indicateur dt { color: var(--gris-700); font-size: 0.875rem; }
+.indicateur dd { margin: var(--espace-xs) 0 0; font-size: 1.375rem; font-weight: 700; color: var(--bleu-marine); }
+
+/* Graphiques rendus en SVG par le serveur. Les couleurs sont ici et non dans les
+   balises : la politique de sécurité du contenu refuse les styles en ligne. Marine sur
+   blanc, 11.62:1. La grille est décorative, le tableau des valeurs porte l'information. */
+.graphique { margin: 0 0 var(--espace-m); max-width: 44rem; }
+.graphique svg { display: block; width: 100%; height: auto; }
+.graphique figcaption { color: var(--gris-700); font-size: 0.875rem; margin-top: var(--espace-xs); }
+.graphique-ligne { fill: none; stroke: var(--bleu-marine); stroke-width: 2; stroke-linejoin: round; }
+.graphique-grille { stroke: var(--gris-200); stroke-width: 1; }
+.graphique-barre { fill: var(--bleu-marine); }
+.graphique-texte { fill: var(--gris-700); font-size: 12px; }
 
 /* --- Page de recherche ---------------------------------------------------------- */
 

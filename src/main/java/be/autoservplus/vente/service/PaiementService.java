@@ -207,6 +207,12 @@ public class PaiementService {
                 // Ouverte entre la relecture et le verrou, par un autre geste du membre.
                 return DepartPaiement.sans(DepartPaiement.Issue.TENTATIVE_CONCURRENTE);
             }
+            if (commande.delaiDePaiementDepasse(horloge.instant(),
+                    ExpirationCommandesJob.DELAI_PAIEMENT)) {
+                // Passé l'échéance RM-21, le job n'attend plus que les tentatives déjà
+                // ouvertes. En créer une à chaque échec ferait vivre la commande sans fin.
+                return DepartPaiement.sans(DepartPaiement.Issue.DELAI_DEPASSE);
+            }
             return DepartPaiement.vers(creerTentative(commande));
         });
     }
@@ -289,7 +295,9 @@ public class PaiementService {
         // La commande et la tentative sont les entités gérées que la relecture vient de
         // faire évoluer : leurs statuts sont ceux qu'elle a constatés.
         return SituationPaiement.de(commande.getStatut(),
-                derniere.map(Paiement::getStatut).orElse(null));
+                derniere.map(Paiement::getStatut).orElse(null),
+                commande.delaiDePaiementDepasse(horloge.instant(),
+                        ExpirationCommandesJob.DELAI_PAIEMENT));
     }
 
     /**
@@ -327,6 +335,16 @@ public class PaiementService {
         Paiement paiement = paiementPrestataire(referencePrestataire);
         // Strategie securite §11 : seul l etat relu chez le prestataire fait foi.
         return appliquer(paiement, prestataire.lireEtat(referencePrestataire));
+    }
+
+    /**
+     * Applique un état que l'appelant vient de lire chez le prestataire, par le chemin
+     * de la notification. Le job RM-21 lit hors transaction, pour ne pas tenir une
+     * connexion pendant l'aller-retour, puis rend ici ce qu'il a lu.
+     */
+    @Transactional
+    public IssueRelecture constater(String referencePrestataire, EtatPaiement etat) {
+        return appliquer(paiementPrestataire(referencePrestataire), etat);
     }
 
     private Paiement paiementPrestataire(String referencePrestataire) {
@@ -385,16 +403,7 @@ public class PaiementService {
             return IssueRelecture.Effet.DEJA_TRAITE;
         }
         if (commande.getStatut() == StatutCommande.ANNULEE) {
-            // Course perdue contre le job RM-21 : l encaissement est reel mais la
-            // commande ne ressuscite pas (garde d entite). Le trop-percu se traite
-            // hors ligne : le Refund est le bloc retractation.
-            confirmerLePaiementSeul(paiement);
-            log.warn("Paiement {} encaisse sur la commande {} deja annulee : "
-                            + "remboursement a traiter hors ligne.",
-                    paiement.getReference(), commande.getNumero());
-            // Rien n a ete ecrit sur la commande. L avertissement ci-dessus porte le
-            // detail de ce cas rare. La ligne du declencheur n a pas a le repeter.
-            return IssueRelecture.Effet.DEJA_TRAITE;
+            return encaisserApresAnnulation(paiement, commande);
         }
 
         paiement.confirmer(horloge.instant());
@@ -406,6 +415,30 @@ public class PaiementService {
         // la facture (RM-22, bloc suivant) et du courriel de confirmation.
         evenements.publishEvent(new CommandePayeeEvent(commande.getReference()));
         return IssueRelecture.Effet.FACTURE_EMISE;
+    }
+
+    /**
+     * L'encaissement est réel mais la commande est annulée, et ne ressuscite pas : le
+     * stock et les prix ont pu changer depuis. Le paiement est enregistré comme reçu
+     * après annulation, le garage et le membre sont prévenus une fois, et un
+     * administrateur le rembourse depuis le back-office. Le job RM-21 lit le statut
+     * chez le prestataire avant d'annuler : ce cas reste celui d'une course entre sa
+     * lecture et la notification, ou d'une tentative close avant ce changement.
+     */
+    private IssueRelecture.Effet encaisserApresAnnulation(Paiement paiement, Commande commande) {
+        if (paiement.getStatut() == StatutPaiement.REUSSI
+                || paiement.getStatut() == StatutPaiement.REMBOURSE) {
+            // Notification rejouée : déjà enregistré, déjà signalé.
+            return IssueRelecture.Effet.DEJA_TRAITE;
+        }
+        paiement.constaterEncaissementApresAnnulation(horloge.instant());
+        paiements.saveAndFlush(paiement);
+        log.warn("Paiement {} encaissé sur la commande {} déjà annulée : à rembourser "
+                        + "depuis le back-office.",
+                paiement.getReference(), commande.getNumero());
+        evenements.publishEvent(new PaiementApresAnnulationEvent(
+                paiement.getReference(), commande.getReference()));
+        return IssueRelecture.Effet.ENCAISSE_APRES_ANNULATION;
     }
 
     private void confirmerLePaiementSeul(Paiement paiement) {

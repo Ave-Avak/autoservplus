@@ -88,20 +88,29 @@ public class CatalogueController {
         return "catalogue/detail";
     }
 
+    /**
+     * Résultats de la recherche, prestations et pièces dans deux sections.
+     *
+     * <p>Chaque section a son numéro de page, compté à partir de 1 dans l'adresse. Un
+     * seul numéro pour les deux aurait fait avancer les prestations chaque fois que le
+     * visiteur tourne la page des pièces.</p>
+     */
     @GetMapping("/recherche")
     public String rechercher(@RequestParam(required = false) String q,
-                             @RequestParam(defaultValue = "0") int page,
+                             @RequestParam(defaultValue = "1") int pagePrestations,
+                             @RequestParam(defaultValue = "1") int pagePieces,
                              Model modele) {
 
-        var resultatsPrestations = service.rechercherPrestations(q, page);
-        var resultatsPieces = service.rechercherPieces(q, page);
+        String terme = (q == null || q.isBlank()) ? null : CatalogueService.termeBorne(q);
+        var prestations = service.rechercherPrestations(terme, pagePrestations - 1);
+        var pieces = service.rechercherPieces(terme, pagePieces - 1);
 
-        modele.addAttribute("titre", "Recherche");
-        modele.addAttribute("terme", q);
-        modele.addAttribute("prestations", resultatsPrestations.getContent());
-        modele.addAttribute("pieces", resultatsPieces.getContent());
-        modele.addAttribute("total",
-                resultatsPrestations.getTotalElements() + resultatsPieces.getTotalElements());
+        modele.addAttribute("terme", terme);
+        modele.addAttribute("tropCourt", terme != null && service.termeTropCourt(terme));
+        modele.addAttribute("minimum", CatalogueService.LONGUEUR_MINIMALE_RECHERCHE);
+        modele.addAttribute("prestations", prestations);
+        modele.addAttribute("pieces", pieces);
+        modele.addAttribute("total", prestations.getTotalElements() + pieces.getTotalElements());
         return "catalogue/recherche";
     }
 }

@@ -17,6 +17,11 @@
   Les compteurs sont fournis par des advices. Absents (page d'erreur), le lien reste
   sans nombre plutôt que d'afficher un zéro faux.
 
+  La recherche du catalogue (F5) est dans le panneau du menu : sous 40em elle se replie
+  avec lui au lieu d'occuper une ligne de l'en-tête. La page de recherche ne la répète
+  pas, elle porte déjà son formulaire, et deux champs de même rôle se gêneraient au
+  lecteur d'écran. Le back-office a son propre en-tête, sans recherche du catalogue.
+
   Menu repliable sous 40em, motif « Disclosure Navigation » (WAI-ARIA APG) : le bouton
   naît caché et menu.js le révèle. Sans script, les liens restent tous affichés.
 */-->
@@ -37,6 +42,13 @@
                 <li><a th:href="@{/contact}" th:text="#{nav.contact}"
                        th:attr="aria-current=${cheminCourant == '/contact'} ? 'page' : null">Contact</a></li>
             </ul>
+            <form class="recherche-entete" th:action="@{/recherche}" method="get" role="search"
+                  th:if="${cheminCourant != '/recherche'}"
+                  sec:authorize="!isAuthenticated() or !authentication.authorities.isEmpty()">
+                <label for="recherche-entete" class="visuellement-cache" th:text="#{catalogue.recherche.libelle}">Rechercher dans le catalogue</label>
+                <input type="search" id="recherche-entete" name="q" maxlength="100" th:placeholder="#{catalogue.recherche.exemple}">
+                <button type="submit" th:text="#{catalogue.recherche.bouton}">Rechercher</button>
+            </form>
             <ul class="menu menu-compte" sec:authorize="!isAuthenticated()">
                 <li><a th:href="@{/connexion}" th:text="#{nav.connexion}"
                        th:attr="aria-current=${cheminCourant == '/connexion'} ? 'page' : null">Connexion</a></li>

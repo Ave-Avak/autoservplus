@@ -29,6 +29,12 @@ public record EntreeJournal(
     /** Type des transitions d intervention (table {@code historique_statut_intervention}). */
     public static final String TYPE_INTERVENTION = "INTERVENTION";
 
+    /**
+     * Type des remboursements d'un paiement reçu sur une commande annulée, lus sur la
+     * ligne du paiement (colonnes de V64).
+     */
+    public static final String TYPE_REMBOURSEMENT = "REMBOURSEMENT";
+
     public boolean acteurConnu() {
         return acteur != null && !acteur.isBlank();
     }

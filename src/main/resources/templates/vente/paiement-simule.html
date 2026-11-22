@@ -53,7 +53,7 @@
     <p th:text="#{paiement.simule.choix}">Choisissez l'issue à simuler :</p>
 
     <!--/*
-      Trois issues, et pas seulement le succès : l'échec d'encaissement et le paiement
+      Quatre issues, et pas seulement le succès : l'échec d'encaissement et le paiement
       en attente de confirmation font partie du parcours à démontrer, et rien d'autre
       dans l'application ne permet de les provoquer depuis l'interface.
     */-->
@@ -66,6 +66,8 @@
                     th:text="#{paiement.simule.echouer}">Simuler un échec de paiement</button>
             <button type="submit" name="issue" value="ATTENTE" class="lien-bouton"
                     th:text="#{paiement.simule.attente}">Simuler un paiement en attente de confirmation</button>
+            <button type="submit" name="issue" value="OUVERT_NON_ANNULABLE" class="lien-bouton"
+                    th:text="#{paiement.simule.ouvert}">Laisser le paiement ouvert, sans annulation possible</button>
         </p>
     </form>
 </main>

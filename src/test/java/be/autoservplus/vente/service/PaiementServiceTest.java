@@ -441,10 +441,49 @@ class PaiementServiceTest {
                     .as("Une ANNULEE ne devient jamais PAYEE")
                     .isEqualTo(StatutCommande.ANNULEE);
             assertThat(paiement.getStatut())
-                    .as("La realite comptable est actee : encaisse, a rembourser hors ligne")
+                    .as("L'encaissement est enregistré, à rembourser depuis le back-office")
                     .isEqualTo(StatutPaiement.REUSSI);
+            assertThat(paiement.estARembourser()).isTrue();
+            assertThat(paiement.getRecuApresAnnulationLe()).isEqualTo(MAINTENANT);
             assertThat(plaquettes.getQuantiteStock()).isEqualTo(10);
-            verifyNoInteractions(evenements);
+            verify(evenements).publishEvent(new PaiementApresAnnulationEvent(
+                    paiement.getReference(), commande.getReference()));
+            verify(evenements, org.mockito.Mockito.never()).publishEvent(any(CommandePayeeEvent.class));
+        }
+
+        @Test
+        @DisplayName("payé sur une commande ANNULEE dont la tentative était close : enregistré quand même")
+        void payeSurTentativeClose() {
+            commande.annuler(MotifAnnulationCommande.TIMEOUT_PAIEMENT, MAINTENANT);
+            Paiement paiement = paiementInitie();
+            // Expirée de notre côté par l'ancien job, sans lecture chez le prestataire.
+            paiement.expirer(MAINTENANT);
+            statutAuthentique(StatutPaiement.REUSSI);
+            when(commandes.verrouillerParId(10L)).thenReturn(Optional.of(commande));
+            when(paiements.saveAndFlush(any(Paiement.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            IssueRelecture issue = service.traiterNotification("tr_fictif_0001");
+
+            assertThat(issue.effet()).isEqualTo(IssueRelecture.Effet.ENCAISSE_APRES_ANNULATION);
+            assertThat(paiement.getStatut()).isEqualTo(StatutPaiement.REUSSI);
+            assertThat(paiement.estARembourser()).isTrue();
+        }
+
+        @Test
+        @DisplayName("notification rejouée d'un paiement reçu après annulation : un seul signalement")
+        void payeSurCommandeAnnuleeRejoue() {
+            commande.annuler(MotifAnnulationCommande.TIMEOUT_PAIEMENT, MAINTENANT);
+            paiementInitie();
+            statutAuthentique(StatutPaiement.REUSSI);
+            when(commandes.verrouillerParId(10L)).thenReturn(Optional.of(commande));
+            when(paiements.saveAndFlush(any(Paiement.class))).thenAnswer(inv -> inv.getArgument(0));
+
+            service.traiterNotification("tr_fictif_0001");
+            IssueRelecture rejeu = service.traiterNotification("tr_fictif_0001");
+
+            assertThat(rejeu.effet()).isEqualTo(IssueRelecture.Effet.DEJA_TRAITE);
+            verify(evenements, org.mockito.Mockito.times(1))
+                    .publishEvent(any(PaiementApresAnnulationEvent.class));
         }
 
         @Test

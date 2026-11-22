@@ -5,7 +5,9 @@ import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.vente.domain.Commande;
+import be.autoservplus.vente.domain.Paiement;
 import be.autoservplus.vente.repository.CommandeRepository;
+import be.autoservplus.vente.repository.PaiementRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -33,9 +35,12 @@ public class NotificationPaiementListener {
     private final CommandeRepository commandes;
     private final ServiceCourriel courriel;
     private final ConfirmationCommande confirmation;
+    private final PaiementRepository paiements;
 
     public NotificationPaiementListener(CommandeRepository commandes, ServiceCourriel courriel,
-                                        ConfirmationCommande confirmation) {
+                                        ConfirmationCommande confirmation,
+                                        PaiementRepository paiements) {
+        this.paiements = paiements;
         this.commandes = commandes;
         this.courriel = courriel;
         this.confirmation = confirmation;
@@ -69,5 +74,57 @@ public class NotificationPaiementListener {
         log.info("Commande {} payee ({}) : a preparer par le garage{}.",
                 commande.getNumero(), montant,
                 commande.isRuptureAHonorer() ? ", RUPTURE A HONORER" : "");
+    }
+
+    /**
+     * Paiement encaissé sur une commande déjà annulée : le membre apprend que sa
+     * commande reste annulée et qu'il sera remboursé, l'atelier qu'un remboursement
+     * l'attend. Deux envois indépendants, dans la langue du membre pour le premier.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public void surPaiementApresAnnulation(PaiementApresAnnulationEvent evenement) {
+        Paiement paiement = paiements.findByReference(evenement.referencePaiement()).orElse(null);
+        if (paiement == null) {
+            log.warn("Paiement {} introuvable après commit : avis de paiement reçu après "
+                    + "annulation non envoyés.", evenement.referencePaiement());
+            return;
+        }
+        Commande commande = paiement.getCommande();
+        String montant = FormatageRdv.euros(paiement.getMontant());
+        try {
+            courriel.envoyerAvisPaiementApresAnnulation(commande.getMembre(),
+                    commande.getNumero(), montant);
+        } catch (RuntimeException e) {
+            log.warn("Avis au membre impossible pour le paiement reçu après l'annulation de "
+                    + "la commande {} : {}", commande.getNumero(), e.getMessage());
+        }
+        try {
+            courriel.envoyerAvisPaiementARembourserAuGarage(commande.getNumero(), montant,
+                    commande.getMembre().nomComplet());
+        } catch (RuntimeException e) {
+            log.warn("Avis au garage impossible pour le paiement reçu après l'annulation de "
+                    + "la commande {} : {}", commande.getNumero(), e.getMessage());
+        }
+    }
+
+    /** Le remboursement est demandé au prestataire : le membre en est prévenu. */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW, readOnly = true)
+    public void surRemboursementApresAnnulation(RemboursementApresAnnulationEvent evenement) {
+        Paiement paiement = paiements.findByReference(evenement.referencePaiement()).orElse(null);
+        if (paiement == null) {
+            log.warn("Paiement {} introuvable après commit : avis de remboursement non envoyé.",
+                    evenement.referencePaiement());
+            return;
+        }
+        Commande commande = paiement.getCommande();
+        try {
+            courriel.envoyerAvisRemboursementApresAnnulation(commande.getMembre(),
+                    commande.getNumero(), FormatageRdv.euros(paiement.getMontant()));
+        } catch (RuntimeException e) {
+            log.warn("Avis de remboursement impossible pour la commande {} : {}",
+                    commande.getNumero(), e.getMessage());
+        }
     }
 }

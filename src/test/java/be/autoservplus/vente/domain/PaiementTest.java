@@ -6,6 +6,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -196,6 +198,82 @@ class PaiementTest {
             assertThatThrownBy(() -> commande.confirmerPaiement(MAINTENANT))
                     .isInstanceOf(IllegalStateException.class);
             assertThat(commande.getStatut()).isEqualTo(StatutCommande.ANNULEE);
+        }
+    }
+
+    @Nested
+    @DisplayName("paiement reçu sur une commande annulée (V64)")
+    class RecuApresAnnulation {
+
+        private Paiement tentative() {
+            Utilisateur marie = new Utilisateur(
+                    "marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
+            Commande annulee = new Commande("CMD-2026-0009", marie, new BigDecimal("70.01"),
+                    new BigDecimal("10.20"), new BigDecimal("80.21"), MAINTENANT);
+            return new Paiement(annulee, new BigDecimal("80.21"), MAINTENANT);
+        }
+
+        @ParameterizedTest(name = "depuis {0}")
+        @EnumSource(value = StatutPaiement.class, names = {"INITIE", "EN_COURS", "ECHOUE", "EXPIRE"})
+        @DisplayName("l'encaissement se constate depuis toute tentative non aboutie, close comprise")
+        void encaissementConstate(StatutPaiement depart) {
+            Paiement paiement = tentative();
+            switch (depart) {
+                case EN_COURS -> paiement.mettreEnCours();
+                case ECHOUE -> paiement.echouer(MAINTENANT);
+                case EXPIRE -> paiement.expirer(MAINTENANT);
+                default -> {
+                }
+            }
+            Instant constat = MAINTENANT.plusSeconds(3600);
+
+            paiement.constaterEncaissementApresAnnulation(constat);
+
+            assertThat(paiement.getStatut()).isEqualTo(StatutPaiement.REUSSI);
+            assertThat(paiement.getRecuApresAnnulationLe()).isEqualTo(constat);
+            assertThat(paiement.getDateFinalisation()).isEqualTo(constat);
+            assertThat(paiement.estARembourser()).isTrue();
+        }
+
+        @Test
+        @DisplayName("un encaissement déjà constaté ne se constate pas deux fois")
+        void pasDeuxFois() {
+            Paiement paiement = tentative();
+            paiement.constaterEncaissementApresAnnulation(MAINTENANT);
+
+            assertThatThrownBy(() -> paiement.constaterEncaissementApresAnnulation(MAINTENANT))
+                    .isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("le remboursement porte sa référence, sa date et son auteur, une seule fois")
+        void remboursementTrace() {
+            Paiement paiement = tentative();
+            paiement.constaterEncaissementApresAnnulation(MAINTENANT);
+            Instant geste = MAINTENANT.plusSeconds(600);
+
+            paiement.rembourserApresAnnulation("re_1", geste, "admin@exemple.be");
+
+            assertThat(paiement.getStatut()).isEqualTo(StatutPaiement.REMBOURSE);
+            assertThat(paiement.getReferenceRemboursement()).isEqualTo("re_1");
+            assertThat(paiement.getRembourseLe()).isEqualTo(geste);
+            assertThat(paiement.getRemboursePar()).isEqualTo("admin@exemple.be");
+            assertThat(paiement.estARembourser()).isFalse();
+            assertThat(paiement.estRecuApresAnnulation()).isTrue();
+            assertThatThrownBy(() -> paiement.rembourserApresAnnulation("re_2", geste, "admin@exemple.be"))
+                    .isInstanceOf(IllegalStateException.class);
+        }
+
+        @Test
+        @DisplayName("un paiement ordinaire ne se rembourse pas par ce chemin")
+        void paiementOrdinaire() {
+            Paiement paiement = tentative();
+            paiement.confirmer(MAINTENANT);
+
+            assertThat(paiement.estARembourser()).isFalse();
+            assertThatThrownBy(() -> paiement.rembourserApresAnnulation("re_1", MAINTENANT, "admin@exemple.be"))
+                    .isInstanceOf(IllegalStateException.class);
+            assertThat(paiement.getStatut()).isEqualTo(StatutPaiement.REUSSI);
         }
     }
 }
