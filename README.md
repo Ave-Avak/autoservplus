@@ -194,7 +194,7 @@ src/main/java/be/autoservplus/
 
 src/main/resources/db/
 ├── migration/       schéma et données de référence, toujours appliqués (V1 à V67, sans V34)
-└── demo/            jeu de démonstration, appliqué sous le profil `demo` seulement (V899 à V905)
+└── demo/            jeu de démonstration, appliqué sous le profil `demo` seulement (V899 à V906)
 ```
 
 La séparation entre `migration` et `demo` a une raison. Les tests d'intégration partent
