@@ -163,7 +163,10 @@ class InterventionTemplatesIT extends SocleIntegration {
                 .andExpect(content().string(containsString("Travaux supplémentaires à valider")))
                 // 49,00 et 89,00 hors TVA, soit 166,98 à payer, TVA comprise.
                 .andExpect(content().string(containsString("138,00")))
-                .andExpect(content().string(containsString("166,98")));
+                .andExpect(content().string(containsString("166,98")))
+                // Aucune réservation derrière une entrée directe : le libellé n'en parle pas.
+                .andExpect(content().string(containsString("Devis initial")))
+                .andExpect(content().string(not(containsString("réservation"))));
     }
 
     @Test
