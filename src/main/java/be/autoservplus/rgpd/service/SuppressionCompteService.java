@@ -27,33 +27,33 @@ import java.util.List;
 /**
  * Suppression de compte par anonymisation (F23, RM-05 : article 17 RGPD).
  *
- * <p><b>Le droit a l effacement n est pas absolu.</b> L article 17.3.b ecarte
- * l obligation d effacer quand le traitement sert une obligation legale : le Code de
+ * <p><b>Le droit à l'effacement n'est pas absolu.</b> L'article 17.3.b écarte
+ * l'obligation d'effacer quand le traitement sert une obligation légale : le Code de
  * la TVA (art. 60) impose dix ans de conservation des factures, et une facture doit
- * porter l identite du client. Les deux exigences ne s opposent pas, elles ne portent
- * pas sur le meme objet. Le document comptable reste intact, ni regenere, ni
- * modifie. La ligne applicative qui designe la personne est videe.</p>
+ * porter l'identité du client. Les deux exigences ne s'opposent pas, elles ne portent
+ * pas sur le même objet. Le document comptable reste intact, ni régénéré, ni
+ * modifié. La ligne applicative qui désigne la personne est vidée.</p>
  *
- * <p><b>Ce service n ecrit donc jamais une donnee comptable.</b> Les tables facture,
+ * <p><b>Ce service n'écrit donc jamais une donnée comptable.</b> Les tables facture,
  * avoir et paiement ne stockent aucun nom : elles pointent {@code commande} puis
- * {@code utilisateur}. Le « Client supprime » du CdC n est pas un champ a reecrire
- * document par document, c est l effet automatique de l anonymisation d une seule
+ * {@code utilisateur}. Le « Client supprimé » du CdC n'est pas un champ à réécrire
+ * document par document, c'est l'effet automatique de l'anonymisation d'une seule
  * ligne, lue par relation.</p>
  *
  * <p><b>Deux gardes avant tout effet de bord</b>, et dans cet ordre : le mot de passe
- * prouve l identite, le mot recopie prouve l intention. Un echec de l une ou l autre
- * ne laisse aucune trace d ecriture. Les verifications precedent la premiere
+ * prouve l'identité, le mot recopié prouve l'intention. Un échec de l'une ou l'autre
+ * ne laisse aucune trace d'écriture. Les vérifications précédent la première
  * mutation, elles ne la rattrapent pas.</p>
  *
- * <p><b>Ordre transactionnel</b> : capture de l adresse, vehicules, compte, flush,
- * puis balayage des traces d audit. Le flush n est pas cosmetique. Sans lui, l audit
- * JPA reecrirait {@code updated_by} avec l adresse du membre <i>apres</i> le passage
- * du balayage, et l adresse reapparaitrait sur la ligne qu on vient de vider.</p>
+ * <p><b>Ordre transactionnel</b> : capture de l'adresse, véhicules, compte, flush,
+ * puis balayage des traces d'audit. Le flush n'est pas cosmétique. Sans lui, l'audit
+ * JPA réécrirait {@code updated_by} avec l'adresse du membre <i>après</i> le passage
+ * du balayage, et l'adresse réapparaîtrait sur la ligne qu'on vient de vider.</p>
  *
- * <p>Vit dans le module rgpd, aux cotes de l export F22 : les deux servent des droits
- * de la meme personne sur les memes donnees, partagent la re-authentification, et
- * dependent deja des modules identite et reservation sans qu aucun ne depende
- * d eux.</p>
+ * <p>Vit dans le module rgpd, aux côtés de l'export F22 : les deux servent des droits
+ * de la même personne sur les mêmes données, partagent la re-authentification, et
+ * dépendent déjà des modules identité et réservation sans qu'aucun ne dépende
+ * d'eux.</p>
  */
 @Service
 @Transactional(readOnly = true)
@@ -63,18 +63,18 @@ public class SuppressionCompteService {
     private static final Logger JOURNAL = LoggerFactory.getLogger(SuppressionCompteService.class);
 
     /**
-     * Mot a recopier pour confirmer. <b>Constante, identique dans les trois langues</b>
-     * et affichee telle quelle par l ecran. Le traduire ferait dependre une garde de
-     * securite d une chaine d interface : le service devrait alors connaitre la locale
-     * de la session, et un test ne pourrait plus l exercer sans contexte web. C est
-     * l usage courant des confirmations destructrices, ou l on recopie un jeton exact
-     * plutot qu un mot traduit.
+     * Mot à recopier pour confirmer. <b>Constante, identique dans les trois langues</b>
+     * et affichée telle quelle par l'écran. Le traduire ferait dépendre une garde de
+     * sécurité d'une chaîne d'interface : le service devrait alors connaître la locale
+     * de la session, et un test ne pourrait plus l'exercer sans contexte web. C'est
+     * l'usage courant des confirmations destructrices, où l'on recopie un jeton exact
+     * plutôt qu'un mot traduit.
      */
     public static final String MOT_DE_CONFIRMATION = "SUPPRIMER";
 
     /**
-     * Domaine reserve par la RFC 2606 : aucun serveur de messagerie ne peut l heberger,
-     * aucun envoi accidentel ne partira vers un compte anonymise.
+     * Domaine réservé par la RFC 2606 : aucun serveur de messagerie ne peut l'héberger,
+     * aucun envoi accidentel ne partira vers un compte anonymisé.
      */
     private static final String DOMAINE_ANONYME = "@supprime.invalid";
 
@@ -111,19 +111,19 @@ public class SuppressionCompteService {
     }
 
     /**
-     * Anonymise le compte du membre connecte et son parc, puis publie l evenement de
+     * Anonymise le compte du membre connecté et son parc, puis publie l'événement de
      * notification.
      *
-     * <p>L identite vient du contexte de securite, transmise par le controleur : il
-     * n existe aucun parametre permettant de designer un autre titulaire, donc aucune
-     * URL par laquelle un membre viserait le compte d autrui.</p>
+     * <p>L'identité vient du contexte de sécurité, transmise par le contrôleur : il
+     * n'existe aucun paramètre permettant de désigner un autre titulaire, donc aucune
+     * URL par laquelle un membre viserait le compte d'autrui.</p>
      *
      * @param motDePasse   mot de passe du compte, re-authentification
-     * @param confirmation mot recopie par le membre, doit valoir {@value #MOT_DE_CONFIRMATION}
+     * @param confirmation mot recopié par le membre, doit valoir {@value #MOT_DE_CONFIRMATION}
      * @throws RessourceIntrouvableException             adresse inconnue
      * @throws ReauthentificationEchoueeException        mot de passe incorrect
      * @throws ConfirmationSuppressionInvalideException  mot de confirmation absent ou faux
-     * @throws IllegalStateException                     compte deja anonymise, ou administrateur
+     * @throws IllegalStateException                     compte déjà anonymisé, ou administrateur
      */
     @Transactional
     public void supprimer(String email, String motDePasse, String confirmation) {
@@ -133,8 +133,8 @@ public class SuppressionCompteService {
         exigerMotDePasse(membre, motDePasse);
         exigerConfirmation(membre, confirmation);
 
-        // Capture AVANT tout ecrasement : apres l anonymisation, l adresse reelle
-        // n existe plus nulle part et le courriel de confirmation n aurait plus de
+        // Capture AVANT tout écrasement : après l'anonymisation, l'adresse réelle
+        // n'existe plus nulle part et le courriel de confirmation n'aurait plus de
         // destinataire.
         String adresseReelle = membre.getEmail();
         CompteSupprimeEvent evenement =
@@ -148,15 +148,15 @@ public class SuppressionCompteService {
         int modifications = historiqueCompte.effacerValeurs(membre);
         membre.anonymiser(jetonEmail(membre), hachageInerte(), horloge.instant());
         // Le secret TOTP part avec anonymiser(). Les codes de secours encore valables
-        // sont invalides, et non supprimes : leur date reste la trace de leur fin.
+        // sont invalidés, et non supprimés : leur date reste la trace de leur fin.
         codesSecours.invaliderUtilisables(membre.getId(), horloge.instant());
-        // Flush avant le balayage : voir TracesAuditRepository, l ordre est impose.
+        // Flush avant le balayage : voir TracesAuditRepository, l'ordre est imposé.
         utilisateurs.saveAndFlush(membre);
         int traces = nettoyerLesTracesDAudit(adresseReelle, membre.getEmail());
 
-        // Journal sans donnee personnelle : la reference identifie la ligne, jamais
-        // la personne. Une trace de suppression qui contiendrait le nom ou l adresse
-        // recreerait ce que la suppression vient d effacer.
+        // Journal sans donnée personnelle : la référence identifie la ligne, jamais
+        // la personne. Une trace de suppression qui contiendrait le nom ou l'adresse
+        // recréerait ce que la suppression vient d'effacer.
         JOURNAL.info("Compte {} anonymise : {} vehicule(s) supprime(s), {} avis neutralise(s), "
                         + "{} modification(s) de compte videe(s), {} trace(s) d audit nettoyee(s).",
                 membre.getReference(), supprimes, avisNeutralises, modifications, traces);
@@ -167,9 +167,9 @@ public class SuppressionCompteService {
     // --- gardes -------------------------------------------------------------------------
 
     /**
-     * Refus si le mot de passe fourni ne correspond pas a l empreinte du compte.
-     * Meme mecanique que l export F22 : la comparaison passe par l encodeur du projet
-     * (BCrypt, cout 12), le {@code null} vaut echec et non exception technique.
+     * Refus si le mot de passe fourni ne correspond pas à l'empreinte du compte.
+     * Même mécanique que l'export F22 : la comparaison passe par l'encodeur du projet
+     * (BCrypt, coût 12), le {@code null} vaut échec et non exception technique.
      */
     private void exigerMotDePasse(Utilisateur membre, String motDePasse) {
         if (motDePasse == null || motDePasse.isEmpty()
@@ -181,9 +181,9 @@ public class SuppressionCompteService {
     }
 
     /**
-     * Refus si le mot de confirmation n est pas recopie exactement. Comparaison
-     * sensible a la casse et sur la valeur nettoyee de ses espaces : un
-     * « supprimer » minuscule signale une saisie machinale plutot qu une intention.
+     * Refus si le mot de confirmation n'est pas recopié exactement. Comparaison
+     * sensible à la casse et sur la valeur nettoyée de ses espaces : un
+     * « supprimer » minuscule signale une saisie machinale plutôt qu'une intention.
      */
     private void exigerConfirmation(Utilisateur membre, String confirmation) {
         if (confirmation == null || !MOT_DE_CONFIRMATION.equals(confirmation.strip())) {
@@ -196,22 +196,22 @@ public class SuppressionCompteService {
     // --- anonymisation ------------------------------------------------------------------
 
     /**
-     * Traite le parc du membre, vehicules supprimes logiquement compris : ils portent
+     * Traite le parc du membre, véhicules supprimés logiquement compris : ils portent
      * encore leur plaque.
      *
-     * <p><b>Ecart assume avec la lettre du CdC</b>, qui dit « suppression des
-     * vehicules ». {@code vehicule.membre_id} et les trois FK entrantes sont en
-     * {@code ON DELETE RESTRICT} : un vehicule qu un rendez-vous, une intervention ou
-     * une reservation de parking reference ne peut pas disparaitre sans emporter
-     * l historique que la loi et le garage conservent. Le patron est celui de RM-29
-     * pour les prestations et pieces : suppression physique si rien ne reference,
-     * anonymisation sinon. L esprit du CdC (plus aucune donnee identifiante) est
+     * <p><b>Écart assumé avec la lettre du CdC</b>, qui dit « suppression des
+     * véhicules ». {@code vehicule.membre_id} et les trois FK entrantes sont en
+     * {@code ON DELETE RESTRICT} : un véhicule qu'un rendez-vous, une intervention ou
+     * une réservation de parking référence ne peut pas disparaître sans emporter
+     * l'historique que la loi et le garage conservent. Le patron est celui de RM-29
+     * pour les prestations et pièces : suppression physique si rien ne référence,
+     * anonymisation sinon. L'esprit du CdC (plus aucune donnée identifiante) est
      * tenu dans les deux cas.</p>
      *
      * <p>Les interventions conservées perdent leur note interne (A16), seul champ libre
      * de l'atelier qui porte sur la personne.</p>
      *
-     * @return le nombre de vehicules reellement supprimes physiquement
+     * @return le nombre de véhicules réellement supprimés physiquement
      */
     private int anonymiserLeParc(Utilisateur membre) {
         // Avant le parc : un véhicule sans historique disparaît physiquement, et la
@@ -232,20 +232,20 @@ public class SuppressionCompteService {
     }
 
     /**
-     * Neutralise les commentaires d avis de l auteur (BL-4, extension F23).
+     * Neutralise les commentaires d'avis de l'auteur (BL-4, extension F23).
      *
-     * <p><b>Le texte disparait, la note reste.</b> Le commentaire est du champ libre :
-     * le membre a pu y ecrire son nom, sa plaque, le nom de son garagiste. La note est
-     * un chiffre de 1 a 5, qui ne designe personne : rattachee a une ligne dont
-     * l auteur porte desormais le jeton anonyme, elle n est pas plus identifiante
-     * apres qu avant. L effacer fausserait des moyennes publiques deja affichees, sans
-     * rien ajouter au droit a l effacement.</p>
+     * <p><b>Le texte disparaît, la note reste.</b> Le commentaire est du champ libre :
+     * le membre a pu y écrire son nom, sa plaque, le nom de son garagiste. La note est
+     * un chiffre de 1 à 5, qui ne désigne personne : rattachée à une ligne dont
+     * l'auteur porte désormais le jeton anonyme, elle n'est pas plus identifiante
+     * après qu'avant. L'effacer fausserait des moyennes publiques déjà affichées, sans
+     * rien ajouter au droit à l'effacement.</p>
      *
-     * <p>L avis reste <b>publie</b> : le depublier ferait disparaitre une mauvaise note
-     * a la faveur d une suppression de compte, ce qui serait une decision commerciale
-     * deguisee en mesure de protection des donnees.</p>
+     * <p>L'avis reste <b>publié</b> : le dépublier ferait disparaître une mauvaise note
+     * à la faveur d'une suppression de compte, ce qui serait une décision commerciale
+     * déguisée en mesure de protection des données.</p>
      *
-     * @return le nombre de commentaires reellement effaces
+     * @return le nombre de commentaires réellement effacés
      */
     private int anonymiserLesAvis(Utilisateur membre) {
         List<Avis> aNeutraliser = avis.avecCommentaireDuMembre(membre.getId());
@@ -260,32 +260,32 @@ public class SuppressionCompteService {
     }
 
     /**
-     * Adresse de substitution, unique et non routable. L identifiant technique la rend
+     * Adresse de substitution, unique et non routable. L'identifiant technique la rend
      * unique : {@code uq_utilisateur_email} porte sur toute la table, sans exception
-     * pour les lignes supprimees logiquement. Consequence <b>voulue</b> : l adresse
-     * reelle redevient libre, la personne peut se reinscrire.
+     * pour les lignes supprimées logiquement. Conséquence <b>voulue</b> : l'adresse
+     * réelle redevient libre, la personne peut se réinscrire.
      */
     private static String jetonEmail(Utilisateur membre) {
         return "anonyme-" + membre.getId() + DOMAINE_ANONYME;
     }
 
     /**
-     * Plaque de substitution, unique parmi les vehicules non supprimes logiquement
-     * ({@code uq_vehicule_plaque_active}). Quinze caracteres au plus, la colonne ne
-     * va pas au-dela.
+     * Plaque de substitution, unique parmi les véhicules non supprimés logiquement
+     * ({@code uq_vehicule_plaque_active}). Quinze caractères au plus, la colonne ne
+     * va pas au-delà.
      */
     private static String plaqueAnonyme(Vehicule vehicule) {
         return "ANON-" + vehicule.getId();
     }
 
     /**
-     * Empreinte BCrypt d un secret aleatoire immediatement perdu.
+     * Empreinte BCrypt d'un secret aléatoire immédiatement perdu.
      *
-     * <p>Un vrai hachage et non une constante : la colonne fait soixante caracteres et
-     * l encodeur compare des empreintes au format attendu. Une chaine hors format
-     * ferait echouer la verification sur une exception technique au lieu d un refus
-     * propre. Le secret n est stocke nulle part et n est jamais retourne : plus
-     * personne, y compris le garage, ne peut se connecter a ce compte.</p>
+     * <p>Un vrai hachage et non une constante : la colonne fait soixante caractères et
+     * l'encodeur compare des empreintes au format attendu. Une chaîne hors format
+     * ferait échouer la vérification sur une exception technique au lieu d'un refus
+     * propre. Le secret n'est stocké nulle part et n'est jamais retourné : plus
+     * personne, y compris le garage, ne peut se connecter à ce compte.</p>
      */
     private String hachageInerte() {
         byte[] secret = new byte[32];

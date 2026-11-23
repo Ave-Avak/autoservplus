@@ -19,29 +19,29 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
 /**
- * Rubrique « Supprimer mon compte » (F23, RM-05 : droit a l effacement, article 17
+ * Rubrique « Supprimer mon compte » (F23, RM-05 : droit à l'effacement, article 17
  * RGPD).
  *
- * <p>Self-service strict : le membre supprime <b>son</b> compte. L identite vient de
- * {@code @AuthenticationPrincipal}, jamais d un parametre : il n existe aucune URL
- * permettant de designer un autre titulaire, et donc aucun ecran administrateur a
- * proteger.</p>
+ * <p>Self-service strict : le membre supprime <b>son</b> compte. L'identité vient de
+ * {@code @AuthenticationPrincipal}, jamais d'un paramètre : il n'existe aucune URL
+ * permettant de désigner un autre titulaire, et donc aucun écran administrateur à
+ * protéger.</p>
  *
  * <p><b>Deux gardes, deux natures.</b> Le mot de passe prouve qui agit. Le mot
- * recopie prouve que l action est voulue. L operation est irreversible : elle ne se
- * declenche pas sur un clic depuis un poste laisse sans surveillance.</p>
+ * recopié prouve que l'action est voulue. L'opération est irréversible : elle ne se
+ * déclenche pas sur un clic depuis un poste laissé sans surveillance.</p>
  *
- * <p><b>Revocation de l acces apres commit.</b> La session courante est invalidee par
- * {@link SecurityContextLogoutHandler}, le mecanisme meme du {@code /deconnexion}
- * configure. Verification faite sur {@code SecuriteConfig} : pas de
+ * <p><b>Révocation de l'accès après commit.</b> La session courante est invalidée par
+ * {@link SecurityContextLogoutHandler}, le mécanisme même du {@code /deconnexion}
+ * configuré. Vérification faite sur {@code SecuriteConfig} : pas de
  * {@code rememberMe}, pas de {@code SessionRegistry}, pas de {@code spring-session},
- * pas de table {@code persistent_logins}, il n existe donc pas d autre porte a
- * fermer. Une revocation qui oublierait un jeton persistant laisserait un acces
- * ouvert sur un compte suppose efface. Ce n est pas le cas ici, et le jour ou un
- * remember-me sera ajoute, ce point devra etre repris.</p>
+ * pas de table {@code persistent_logins}, il n'existe donc pas d'autre porte à
+ * fermer. Une révocation qui oublierait un jeton persistant laisserait un accès
+ * ouvert sur un compte supposé effacé. Ce n'est pas le cas ici, et le jour où un
+ * remember-me sera ajouté, ce point devra être repris.</p>
  *
- * <p>Le refus voyage en <b>code</b> dans l URL et le GET le retraduit en message
- * i18n, patron deja retenu par {@code DonneesPersonnellesController} de la meme
+ * <p>Le refus voyage en <b>code</b> dans l'URL et le GET le retraduit en message
+ * i18n, patron déjà retenu par {@code DonneesPersonnellesController} de la même
  * rubrique. Aucun code ne divulgue quoi que ce soit.</p>
  */
 @Controller
@@ -64,8 +64,8 @@ public class SuppressionCompteController {
     public String page(@RequestParam(name = "erreur", required = false) String codeErreur,
                        Model modele) {
         modele.addAttribute("titre", msg("suppression.titre"));
-        // Le mot a recopier vient du service : l ecran affiche exactement ce que la
-        // garde attend, il n en tient pas une copie qui pourrait diverger.
+        // Le mot à recopier vient du service : l'écran affiche exactement ce que la
+        // garde attend, il n'en tient pas une copie qui pourrait diverger.
         modele.addAttribute("motDeConfirmation", SuppressionCompteService.MOT_DE_CONFIRMATION);
         messageErreur(codeErreur).ifPresent(erreur -> modele.addAttribute("erreur", erreur));
         return "rgpd/supprimer-mon-compte";
@@ -74,9 +74,9 @@ public class SuppressionCompteController {
     /**
      * Supprime le compte puis ferme la session.
      *
-     * <p>La deconnexion suit le commit du service : invalider la session avant
-     * laisserait, si la transaction echouait, un membre deconnecte d un compte
-     * toujours actif, l inverse exact de ce qu on veut.</p>
+     * <p>La déconnexion suit le commit du service : invalider la session avant
+     * laisserait, si la transaction échouait, un membre déconnecté d'un compte
+     * toujours actif, l'inverse exact de ce qu'on veut.</p>
      */
     @PostMapping("/supprimer-mon-compte")
     public String supprimer(@AuthenticationPrincipal UserDetails membre,
@@ -92,8 +92,8 @@ public class SuppressionCompteController {
         } catch (ConfirmationSuppressionInvalideException e) {
             return ECRAN + "?erreur=" + ERREUR_CONFIRMATION;
         } catch (RessourceIntrouvableException | IllegalStateException e) {
-            // Compte introuvable, deja anonymise, ou compte administrateur : aucun 500
-            // brut, l ecran le dit. Meme choix que les controleurs recents du projet.
+            // Compte introuvable, déjà anonymisé, ou compte administrateur : aucun 500
+            // brut, l'écran le dit. Même choix que les contrôleurs récents du projet.
             return ECRAN + "?erreur=" + ERREUR_IMPOSSIBLE;
         }
         new SecurityContextLogoutHandler().logout(requete, reponse, authentification);
@@ -101,9 +101,9 @@ public class SuppressionCompteController {
     }
 
     /**
-     * Page publique de confirmation. Publique par necessite : a l instant ou elle
-     * s affiche, la session vient d etre invalidee et le compte n existe plus. Une
-     * page authentifiee renverrait vers la connexion, avec un formulaire que plus
+     * Page publique de confirmation. Publique par nécessité : à l'instant où elle
+     * s'affiche, la session vient d'être invalidée et le compte n'existe plus. Une
+     * page authentifiée renverrait vers la connexion, avec un formulaire que plus
      * aucun identifiant ne satisfait.
      */
     @GetMapping("/compte-supprime")
@@ -117,8 +117,8 @@ public class SuppressionCompteController {
             case ERREUR_MOT_DE_PASSE -> java.util.Optional.of(msg("suppression.erreur.mot-de-passe"));
             case ERREUR_CONFIRMATION -> java.util.Optional.of(msg("suppression.erreur.confirmation"));
             case ERREUR_IMPOSSIBLE -> java.util.Optional.of(msg("suppression.erreur.impossible"));
-            // Un code inconnu (l URL est modifiable a la main) ne produit aucun
-            // message plutot qu une page en erreur.
+            // Un code inconnu (l'URL est modifiable à la main) ne produit aucun
+            // message plutôt qu'une page en erreur.
             default -> java.util.Optional.empty();
         };
     }
