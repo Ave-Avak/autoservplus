@@ -174,6 +174,24 @@ h1 { color: var(--bleu-marine); margin-top: 0; }
     box-shadow: inset 0 0 0 4px var(--blanc);
 }
 
+/* Tableau de données : toute la largeur de son conteneur, cellules alignées à gauche et
+   séparées par un filet. Sans cette règle, le navigateur rendait ces tableaux sans
+   marge ni alignement. Le filet --gris-200 est décoratif, l'information tient aux
+   en-têtes de colonne. */
+.tableau { width: 100%; border-collapse: collapse; margin-bottom: var(--espace-l); }
+.tableau caption { text-align: left; font-weight: 600; padding-bottom: var(--espace-s); }
+.tableau th, .tableau td {
+    padding: var(--espace-s);
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--gris-200);
+}
+.tableau thead th { background: var(--gris-50); color: var(--bleu-marine); }
+
+/* Texte d'aide sous un champ ou un titre. --gris-700 tient 10.31:1 sur blanc et
+   9.86:1 sur --gris-50. */
+.aide { color: var(--gris-700); font-size: 0.9rem; margin-top: 0.25rem; }
+
 /* Un exemple de format (en-tete CSV de l'import) se coupe plutot que d'elargir la page. */
 main code { overflow-wrap: anywhere; }
 

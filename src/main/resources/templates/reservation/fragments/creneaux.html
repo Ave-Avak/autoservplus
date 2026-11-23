@@ -11,7 +11,7 @@
         Cochez au moins une prestation pour voir les heures disponibles.
     </p>
 
-    <p class="erreur" th:if="${erreurCreneaux != null}" th:text="${erreurCreneaux}">Erreur</p>
+    <p class="message message-erreur" th:if="${erreurCreneaux != null}" th:text="${erreurCreneaux}">Erreur</p>
 
     <p class="message" th:if="${aucunePrestation != true and creneaux.isEmpty() and erreurCreneaux == null}"
        th:text="#{rdv.creneaux.aucun}">
