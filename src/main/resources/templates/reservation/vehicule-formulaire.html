@@ -26,7 +26,7 @@
             <label for="plaque" th:text="#{vehicule.formulaire.plaque}">Plaque d'immatriculation</label>
             <input type="text" id="plaque" th:field="*{plaque}"
                    th:readonly="${!modeAjout}"
-                   placeholder="1-ABC-123" required
+                   required
                    aria-describedby="aide-plaque">
             <!--/* Une seule aide porte l'identifiant visé par aria-describedby, selon le mode :
                  la plaque se saisit à l'ajout et ne se modifie plus ensuite. */-->

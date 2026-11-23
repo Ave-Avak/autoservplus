@@ -91,11 +91,31 @@ class InscriptionCgvIT extends SocleIntegration {
         assertThat(page)
                 .contains("(version " + versionsDocuments.versionCourante(TypeDocumentVersionne.CGV) + ").")
                 .contains("href=\"/cgv\"")
-                .contains("href=\"/confidentialite\"");
+                // Un lien suivi dans le même onglet ferait perdre la saisie.
+                .contains("href=\"/cgv\" target=\"_blank\" rel=\"noopener\"")
+                .contains("href=\"/confidentialite\" target=\"_blank\" rel=\"noopener\"");
         // Le bandeau des cookies porte ses propres cases : seul le formulaire compte.
         int debut = page.indexOf("action=\"/inscription\"");
         String formulaire = page.substring(debut, page.indexOf("</form>", debut));
         assertThat(formulaire.split("type=\"checkbox\"", -1)).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("prénom, nom et adresse en erreur : chaque message est relié à son champ")
+    void erreursRelieesAuxChamps() throws Exception {
+        String page = rendu(post("/inscription").with(anonymous()).with(csrf())
+                .header("Accept-Language", "fr")
+                .param(PiegeAntiBot.CHAMP_HORODATAGE, String.valueOf(System.currentTimeMillis()
+                        - PiegeAntiBot.DELAI_MINIMAL.plusSeconds(7).toMillis()))
+                .param("email", "pas-une-adresse").param("motDePasse", MOT_DE_PASSE)
+                .param("confirmationMotDePasse", MOT_DE_PASSE)
+                .param("nom", "").param("prenom", "").param("langue", "fr").param("cgv", "true"));
+
+        for (String champ : List.of("prenom", "nom", "email")) {
+            assertThat(page).as(champ)
+                    .contains("aria-describedby=\"erreur-" + champ + "\"")
+                    .contains("id=\"erreur-" + champ + "\"");
+        }
     }
 
     @Test

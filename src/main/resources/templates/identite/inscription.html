@@ -23,20 +23,23 @@
 
     <div class="champ">
       <label for="prenom" th:text="#{inscription.prenom}">Prénom</label>
-      <input type="text" id="prenom" th:field="*{prenom}" th:aria-invalid="${#fields.hasErrors('prenom')} ? 'true'" autocomplete="given-name" required>
-      <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('prenom')}" th:errors="*{prenom}"></p>
+      <input type="text" id="prenom" th:field="*{prenom}" th:aria-invalid="${#fields.hasErrors('prenom')} ? 'true'" autocomplete="given-name" required
+             th:aria-describedby="${#fields.hasErrors('prenom')} ? 'erreur-prenom'">
+      <p id="erreur-prenom" role="alert" class="texte-erreur" th:if="${#fields.hasErrors('prenom')}" th:errors="*{prenom}"></p>
     </div>
 
     <div class="champ">
       <label for="nom" th:text="#{inscription.nom}">Nom</label>
-      <input type="text" id="nom" th:field="*{nom}" th:aria-invalid="${#fields.hasErrors('nom')} ? 'true'" autocomplete="family-name" required>
-      <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('nom')}" th:errors="*{nom}"></p>
+      <input type="text" id="nom" th:field="*{nom}" th:aria-invalid="${#fields.hasErrors('nom')} ? 'true'" autocomplete="family-name" required
+             th:aria-describedby="${#fields.hasErrors('nom')} ? 'erreur-nom'">
+      <p id="erreur-nom" role="alert" class="texte-erreur" th:if="${#fields.hasErrors('nom')}" th:errors="*{nom}"></p>
     </div>
 
     <div class="champ">
       <label for="email" th:text="#{inscription.email}">Adresse de courriel</label>
-      <input type="email" id="email" th:field="*{email}" th:aria-invalid="${#fields.hasErrors('email')} ? 'true'" autocomplete="email" required>
-      <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+      <input type="email" id="email" th:field="*{email}" th:aria-invalid="${#fields.hasErrors('email')} ? 'true'" autocomplete="email" required
+             th:aria-describedby="${#fields.hasErrors('email')} ? 'erreur-email'">
+      <p id="erreur-email" role="alert" class="texte-erreur" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
     </div>
 
     <div class="champ">
@@ -81,7 +84,8 @@
 
     <p class="texte-info">
       <span th:text="#{inscription.confidentialite.prefixe}">Vos données sont traitées selon notre</span>
-      <a th:href="@{/confidentialite}" th:text="#{inscription.confidentialite.lien}">politique de confidentialité</a>.
+      <a th:href="@{/confidentialite}" target="_blank" rel="noopener"><span th:text="#{inscription.confidentialite.lien}">politique de confidentialité</span>
+        <span class="visuellement-cache" th:text="#{accessibilite.nouvel-onglet}">(nouvel onglet)</span></a>.
     </p>
 
     <button type="submit" class="btn-cta" th:text="#{inscription.envoyer}">Créer mon compte</button>
