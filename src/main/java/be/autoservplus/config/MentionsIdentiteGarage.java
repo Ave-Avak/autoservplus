@@ -30,6 +30,7 @@ public class MentionsIdentiteGarage {
 
     public List<String> lignes(Locale langue) {
         List<String> lignes = new ArrayList<>();
+        IdentiteGarage garage = this.garage.pour(langue);
         ajouter(lignes, "legal.garage.raison-sociale", garage.raisonSociale(), langue);
         if (garage.aUneFormeJuridique()) {
             ajouter(lignes, "legal.garage.forme-juridique", garage.formeJuridique(), langue);

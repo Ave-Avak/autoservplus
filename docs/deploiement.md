@@ -98,6 +98,17 @@ une fois. Restent facultatives `GARAGE_NOM_COMMERCIAL`, que remplace alors la ra
 sociale, ainsi que `GARAGE_FORME_JURIDIQUE` et `GARAGE_RPM`, pour un garage tenu par une
 personne physique.
 
+Cinq mentions s'écrivent autrement en néerlandais : la forme juridique, la rue, la
+localité, le pays et la mention du registre des personnes morales. Un siège bruxellois,
+qui émet ses documents dans les deux langues, en saisit la variante dans
+`GARAGE_FORME_JURIDIQUE_NL`, `GARAGE_RUE_NL`, `GARAGE_LOCALITE_NL`, `GARAGE_PAYS_NL` et
+`GARAGE_RPM_NL` (« BV », « Brussel », « België », « RPR Brussel »). Ces cinq variables sont
+facultatives. Elles servent à toute facture, note de crédit, formulaire de rétractation
+ou version des conditions générales rédigée en néerlandais, quel que soit l'ordre donné
+à `GARAGE_LANGUES_DOCUMENTS`, et une variable absente laisse la valeur de base. Un siège
+flamand n'en a pas besoin : ses valeurs de base sont déjà en néerlandais. Le pays du
+client, lui, s'imprime tel qu'il l'a saisi.
+
 `COOKIE_SECURE=true` alors que Caddy sert en clair n'est pas une erreur : ce que voit
 le navigateur, c'est le tunnel, et le tunnel est en HTTPS.
 

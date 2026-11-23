@@ -96,12 +96,12 @@ public class GenerateurPdfAvoir {
         entete.setSpacingAfter(24);
 
         Paragraph emetteur = new Paragraph();
-        emetteur.add(new Phrase(garage.denomination() + "\n", police(15, Font.BOLD, BLEU_MARINE)));
-        emetteur.add(new Phrase(garage.adresseLisible() + "\n" + garage.pays() + "\n",
+        emetteur.add(new Phrase(garage(document).denomination() + "\n", police(15, Font.BOLD, BLEU_MARINE)));
+        emetteur.add(new Phrase(garage(document).adresseLisible() + "\n" + garage(document).pays() + "\n",
                 police(9, Font.NORMAL, GRIS_TEXTE)));
         emetteur.add(new Phrase("%s %s%s\n%s %s".formatted(
                         libelle(document, "facture.emetteur.bce"), garage.numeroBce(),
-                        garage.aUnRpm() ? "\n" + garage.rpm() : "",
+                        garage(document).aUnRpm() ? "\n" + garage(document).rpm() : "",
                         libelle(document, "facture.emetteur.tva"), garage.numeroTva()),
                 police(9, Font.NORMAL, GRIS_TEXTE)));
         entete.addCell(celluleInvisible(emetteur, Element.ALIGN_LEFT));
@@ -221,13 +221,18 @@ public class GenerateurPdfAvoir {
         mentions.add(new Phrase(libelle(document, "facture.mention.conservation") + "\n\n",
                 police(8, Font.NORMAL, GRIS_TEXTE)));
         mentions.add(new Phrase("%s, %s %s%s, %s %s, %s %s".formatted(
-                        garage.denomination(),
+                        garage(document).denomination(),
                         libelle(document, "facture.emetteur.bce"), garage.numeroBce(),
-                        garage.aUnRpm() ? ", " + garage.rpm() : "",
+                        garage(document).aUnRpm() ? ", " + garage(document).rpm() : "",
                         libelle(document, "facture.emetteur.tva"), garage.numeroTva(),
                         libelle(document, "facture.emetteur.iban"), garage.iban()),
                 police(8, Font.NORMAL, GRIS_TEXTE)));
         return mentions;
+    }
+
+    /** L'émetteur tel qu'il s'écrit dans la langue du document. */
+    private IdentiteGarage garage(DocumentAvoir document) {
+        return garage.pour(document.locale());
     }
 
     private String libelle(DocumentAvoir document, String cle, Object... arguments) {

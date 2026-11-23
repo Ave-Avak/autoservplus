@@ -50,9 +50,7 @@ class CourrielSortantTest {
         messages.setBasename("i18n/messages");
         messages.setDefaultEncoding("UTF-8");
         messages.setFallbackToSystemLocale(false);
-        IdentiteGarage garage = mock(IdentiteGarage.class);
-        when(garage.enseigne()).thenReturn("Garage Test");
-        when(garage.courriel()).thenReturn("atelier@exemple.be");
+        IdentiteGarage garage = identiteDeTest();
         ParametreAtelierRepository parametres = mock(ParametreAtelierRepository.class);
         when(parametres.courants()).thenReturn(new ParametreAtelier());
         courriel = new CourrielSortant(messages, new EnvoiApresCommit(partis::add), garage,
@@ -164,9 +162,7 @@ class CourrielSortantTest {
     @DisplayName("seuls les courriels qui trahiraient un compte partent hors de la requête")
     void envoisHorsDeLaRequete() {
         List<Courriel> horsRequete = new ArrayList<>();
-        IdentiteGarage garage = mock(IdentiteGarage.class);
-        when(garage.enseigne()).thenReturn("Garage Test");
-        when(garage.courriel()).thenReturn("atelier@exemple.be");
+        IdentiteGarage garage = identiteDeTest();
         ParametreAtelierRepository parametres = mock(ParametreAtelierRepository.class);
         when(parametres.courants()).thenReturn(new ParametreAtelier());
         courriel = new CourrielSortant(messages, new EnvoiApresCommit(partis::add, horsRequete::add),
@@ -233,12 +229,20 @@ class CourrielSortantTest {
         return jointes;
     }
 
-    /** Identité réelle plutôt que simulée : la confirmation l'imprime rubrique par rubrique. */
-    private void avecIdentiteComplete() {
-        IdentiteGarage identite = new IdentiteGarage("Garage Test", "Garage de démonstration", "SRL",
+    /**
+     * Identité réelle, jamais simulée : c'est un record de configuration, et les courriels en
+     * tirent une variante par langue que seul le vrai type sait rendre.
+     */
+    private static IdentiteGarage identiteDeTest() {
+        return new IdentiteGarage("Garage Test", "Garage de démonstration", "SRL",
                 "Rue de l'Atelier", "12", "1000", "Bruxelles", "Belgique", "0123.456.789",
                 "RPM Bruxelles", "BE0123456789", "BE68 5390 0754 7034", "+32 2 000 00 00",
                 "atelier@exemple.be");
+    }
+
+    /** La confirmation imprime l'identité rubrique par rubrique. */
+    private void avecIdentiteComplete() {
+        IdentiteGarage identite = identiteDeTest();
         ParametreAtelierRepository parametres = mock(ParametreAtelierRepository.class);
         when(parametres.courants()).thenReturn(new ParametreAtelier());
         courriel = new CourrielSortant(messages, new EnvoiApresCommit(partis::add), identite,
