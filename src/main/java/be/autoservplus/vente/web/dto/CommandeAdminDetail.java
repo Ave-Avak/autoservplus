@@ -2,7 +2,7 @@ package be.autoservplus.vente.web.dto;
 
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.vente.domain.Commande;
-import be.autoservplus.vente.domain.DelaiRetractationBien;
+import be.autoservplus.vente.domain.DelaiRetractation;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.MotifAnnulationCommande;
 import be.autoservplus.vente.domain.Paiement;
@@ -97,7 +97,7 @@ public record CommandeAdminDetail(
                 commande.isRenonciationVi53(),
                 commande.getDateRemise(),
                 commande.getDateRemise() == null ? null
-                        : DelaiRetractationBien.dernierJour(commande.getDateRemise()),
+                        : DelaiRetractation.dernierJour(commande.getDateRemise()),
                 demandeDeRetractation);
     }
 

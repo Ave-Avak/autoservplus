@@ -8,13 +8,13 @@ import java.time.LocalDate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DisplayName("Délai de rétractation d'un bien, depuis sa remise")
-class DelaiRetractationBienTest {
+class DelaiRetractationTest {
 
     @Test
     @DisplayName("quatorzième jour ouvrable : le délai y expire, le jour de remise ne compte pas")
     void quatorziemeJourOuvrable() {
         // Remise le lundi 2 novembre 2026 : le délai court du 3 au lundi 16.
-        assertThat(DelaiRetractationBien.dernierJour(LocalDate.of(2026, 11, 2)))
+        assertThat(DelaiRetractation.dernierJour(LocalDate.of(2026, 11, 2)))
                 .isEqualTo(LocalDate.of(2026, 11, 16));
     }
 
@@ -23,28 +23,28 @@ class DelaiRetractationBienTest {
     void memeJourDeLaSemaine() {
         // Le quatorzième jour tombe toujours le même jour de la semaine que la remise :
         // seul un samedi de remise donne un dernier jour un samedi.
-        assertThat(DelaiRetractationBien.dernierJour(LocalDate.of(2026, 11, 5)))
+        assertThat(DelaiRetractation.dernierJour(LocalDate.of(2026, 11, 5)))
                 .isEqualTo(LocalDate.of(2026, 11, 19));
     }
 
     @Test
     @DisplayName("quatorzième jour un samedi : prolongé au lundi")
     void samedi() {
-        assertThat(DelaiRetractationBien.dernierJour(LocalDate.of(2026, 10, 31)))
+        assertThat(DelaiRetractation.dernierJour(LocalDate.of(2026, 10, 31)))
                 .isEqualTo(LocalDate.of(2026, 11, 16));
     }
 
     @Test
     @DisplayName("quatorzième jour férié (11 novembre) : prolongé au lendemain ouvrable")
     void jourFerie() {
-        assertThat(DelaiRetractationBien.dernierJour(LocalDate.of(2026, 10, 28)))
+        assertThat(DelaiRetractation.dernierJour(LocalDate.of(2026, 10, 28)))
                 .isEqualTo(LocalDate.of(2026, 11, 12));
     }
 
     @Test
     @DisplayName("Noël un vendredi puis le week-end : prolongé au lundi 28 décembre")
     void ferieSuiviDuWeekEnd() {
-        assertThat(DelaiRetractationBien.dernierJour(LocalDate.of(2026, 12, 11)))
+        assertThat(DelaiRetractation.dernierJour(LocalDate.of(2026, 12, 11)))
                 .isEqualTo(LocalDate.of(2026, 12, 28));
     }
 
@@ -53,7 +53,7 @@ class DelaiRetractationBienTest {
     void echeance() {
         LocalDate remise = LocalDate.of(2026, 11, 2);
 
-        assertThat(DelaiRetractationBien.expire(remise, LocalDate.of(2026, 11, 16))).isFalse();
-        assertThat(DelaiRetractationBien.expire(remise, LocalDate.of(2026, 11, 17))).isTrue();
+        assertThat(DelaiRetractation.expire(remise, LocalDate.of(2026, 11, 16))).isFalse();
+        assertThat(DelaiRetractation.expire(remise, LocalDate.of(2026, 11, 17))).isTrue();
     }
 }

@@ -1,7 +1,7 @@
 package be.autoservplus.legal.web;
 
-import be.autoservplus.retractation.service.RetractationService;
 import be.autoservplus.support.SocleIntegration;
+import be.autoservplus.vente.domain.DelaiRetractation;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -134,7 +134,7 @@ class DocumentsLegauxIT extends SocleIntegration {
         void delaiAlignesSurLaRegle() throws Exception {
             mvc.perform(get("/cgv").with(anonymous()).header("Accept-Language", "fr"))
                     .andExpect(content().string(org.hamcrest.Matchers.containsString(
-                            "expire " + RetractationService.DELAI_LEGAL.toDays() + " jours après le jour")));
+                            "expire " + DelaiRetractation.JOURS + " jours après le jour")));
         }
 
         /**

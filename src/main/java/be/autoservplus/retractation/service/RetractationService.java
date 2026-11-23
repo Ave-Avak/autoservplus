@@ -14,7 +14,7 @@ import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.retractation.service.dto.DeclarationRetractationVue;
 import be.autoservplus.retractation.service.dto.RetractationVue;
 import be.autoservplus.vente.domain.Commande;
-import be.autoservplus.vente.domain.DelaiRetractationBien;
+import be.autoservplus.vente.domain.DelaiRetractation;
 import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.vente.repository.CommandeRepository;
 import org.slf4j.Logger;
@@ -24,9 +24,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -47,16 +47,17 @@ import java.util.UUID;
  * <p>Point de départ du délai de quatorze jours, selon la nature de la commande
  * (CDE, art. VI.47 §2). Pour une prestation, la conclusion du contrat : le délai se
  * calcule et une demande tardive est refusée ici. Pour des pièces, la prise de
- * possession du bien, que le garage saisit au back-office comme date de remise (V59) :
- * le délai se calcule alors en jours par {@link DelaiRetractationBien}. Tant que la date
+ * possession du bien, que le garage saisit au back-office comme date de remise (V59).
+ * Dans les deux cas le délai se compte en jours par {@link DelaiRetractation}. Tant que la date
  * n'est pas saisie, la demande est toujours enregistrée et le garage la refuse au besoin,
  * motif à l'appui. Compter depuis la conclusion pour des pièces refuserait une
  * rétractation que la loi admet encore : la fenêtre serait plus courte que la fenêtre
  * légale, au détriment du consommateur.</p>
  *
- * <p>Arithmetique en {@link Duration} de 14 x 24 h, et non en jours calendaires
- * arretes a minuit. L horloge est injectee ({@link Clock}), jamais
- * {@code Instant.now()} : c est ce qui rend la fenetre testable a date gelee.</p>
+ * <p>Le délai se compte en jours du garage, jusqu'à la dernière heure du dernier jour,
+ * et non en durée de 14 fois 24 heures, qui le fermerait à l'heure de la commande.
+ * L'horloge est injectée ({@link Clock}), jamais {@code Instant.now()} : c'est ce qui
+ * rend la fenêtre testable à date gelée.</p>
  */
 @Service
 @Transactional(readOnly = true)
@@ -64,9 +65,6 @@ import java.util.UUID;
 public class RetractationService {
 
     private static final Logger log = LoggerFactory.getLogger(RetractationService.class);
-
-    /** Delai legal de retractation du consommateur (CDE, art. VI.47 §1er). */
-    public static final Duration DELAI_LEGAL = Duration.ofDays(14);
 
     private final CommandeRepository commandes;
     private final DemandeAnnulationRepository demandes;
@@ -258,11 +256,15 @@ public class RetractationService {
     private boolean delaiCalculableEtExpire(Commande commande, Instant maintenant) {
         if (!commandes.lignesDe(commande).isEmpty()) {
             return commande.getDateRemise() != null
-                    && DelaiRetractationBien.expire(commande.getDateRemise(),
+                    && DelaiRetractation.expire(commande.getDateRemise(),
                             LocalDate.ofInstant(maintenant, parametres.courants().zone()));
         }
-        return !maintenant.isBefore(commande.getDateCommande().plus(DELAI_LEGAL))
-                && !commandes.lignesServiceDe(commande).isEmpty();
+        if (commandes.lignesServiceDe(commande).isEmpty()) {
+            return false;
+        }
+        ZoneId zone = parametres.courants().zone();
+        return DelaiRetractation.expire(LocalDate.ofInstant(commande.getDateCommande(), zone),
+                LocalDate.ofInstant(maintenant, zone));
     }
 
     private MotifRefusRetractation refusEventuel(Commande commande, Instant maintenant) {
