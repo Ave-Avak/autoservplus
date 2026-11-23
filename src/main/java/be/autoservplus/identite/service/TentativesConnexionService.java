@@ -73,7 +73,9 @@ public class TentativesConnexionService {
             if (membre.enregistrerEchecConnexion(tentativesMax, fenetre, dureeVerrouillage,
                     maintenant)) {
                 journal.consigner(membre, TypeEvenementSecurite.CONNEXION_VERROUILLAGE, null);
-                JOURNAL.warn("Compte verrouille apres {} echecs : {}", tentativesMax, email);
+                // La référence du compte suffit au diagnostic : l'adresse est une donnée
+                // personnelle, et un journal se lit plus largement que la base (RGPD art. 5.1.c).
+                JOURNAL.warn("Compte verrouillé après {} échecs : {}", tentativesMax, membre.getReference());
                 notifierVerrouillage(membre, membre.getVerrouilleJusquA());
             }
         });
@@ -85,8 +87,9 @@ public class TentativesConnexionService {
      */
     @EventListener
     public void surTentativeVerrouillee(AuthenticationFailureLockedEvent evenement) {
-        JOURNAL.info("Connexion refusee, compte verrouille : {}",
-                evenement.getAuthentication().getName());
+        String email = AdresseCourriel.normaliser(String.valueOf(evenement.getAuthentication().getName()));
+        repository.findByEmail(email).ifPresent(membre ->
+                JOURNAL.info("Connexion refusée, compte verrouillé : {}", membre.getReference()));
     }
 
     /**
