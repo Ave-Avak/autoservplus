@@ -12,21 +12,21 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Cle maitre des secrets TOTP.
+ * Clé maître des secrets TOTP.
  *
- * <p><b>Demarrage refuse sans cle, sous tout profil.</b> Une application qui demarrerait
- * sans cle devrait soit refuser tout enrolement (et les administrateurs, pour qui le
+ * <p><b>Démarrage refusé sans clé, sous tout profil.</b> Une application qui démarrerait
+ * sans clé devrait soit refuser tout enrôlement (et les administrateurs, pour qui le
  * second facteur est obligatoire, ne pourraient plus se connecter), soit en inventer une
- * a chaque demarrage, et chaque redemarrage rendrait indechiffrables tous les secrets deja
- * enroles. Les deux echouent au pire moment. Un refus au demarrage echoue au bon, devant
- * l exploitant.</p>
+ * à chaque démarrage, et chaque redémarrage rendrait indéchiffrables tous les secrets déjà
+ * enrôlés. Les deux échouent au pire moment. Un refus au démarrage échoue au bon, devant
+ * l'exploitant.</p>
  *
- * <p><b>Aucune exception de profil, developpement compris.</b> Une cle tiree au hasard
- * sous {@code dev} se perdait a chaque redemarrage (devtools compris), et un poste qui
- * tourne sous une regle differente de la production ne revele pas les defauts de
- * celle-ci. Les tests recoivent une cle fixe par leur propre configuration
+ * <p><b>Aucune exception de profil, développement compris.</b> Une clé tirée au hasard
+ * sous {@code dev} se perdait à chaque redémarrage (devtools compris), et un poste qui
+ * tourne sous une règle différente de la production ne révèle pas les défauts de
+ * celle-ci. Les tests reçoivent une clé fixe par leur propre configuration
  * ({@code src/test/resources/config/application.properties}) : le code de production ne
- * contient aucune cle, et n en invente aucune.</p>
+ * contient aucune clé, et n'en invente aucune.</p>
  */
 @Configuration
 public class MfaConfig {
@@ -52,7 +52,7 @@ public class MfaConfig {
         return new ChiffrementSecretMfa(cles, version);
     }
 
-    /** Format {@code version:base64}, separe par des virgules. */
+    /** Format {@code version:base64}, séparé par des virgules. */
     private static Map<Short, SecretKey> lirePrecedentes(String texte) {
         Map<Short, SecretKey> cles = new HashMap<>();
         if (texte == null || texte.isBlank()) {
@@ -78,8 +78,8 @@ public class MfaConfig {
             throw new IllegalStateException(variable + " n est pas en base 64.", illisible);
         }
         if (octets.length != OCTETS_AES_256) {
-            // Une cle plus courte ferait silencieusement de l AES-128 ou echouerait au
-            // premier chiffrement : le defaut se signale ici, pas au premier enrolement.
+            // Une clé plus courte ferait silencieusement de l'AES-128 ou échouerait au
+            // premier chiffrement : le défaut se signale ici, pas au premier enrôlement.
             throw new IllegalStateException(variable + " doit faire 32 octets (AES-256), "
                     + "et non " + octets.length + ".");
         }

@@ -32,16 +32,16 @@ import java.util.Optional;
 import java.util.OptionalLong;
 
 /**
- * Second facteur TOTP : enrolement, verification, codes de secours, desactivation.
+ * Second facteur TOTP : enrôlement, vérification, codes de secours, désactivation.
  *
- * <p><b>Le secret ne sort de ce service qu une fois</b>, a l enrolement, pour etre
- * affiche au titulaire. Ensuite, aucune methode ne le rend : la verification se fait
- * ici, et le reste de l application n apprend que le verdict.</p>
+ * <p><b>Le secret ne sort de ce service qu'une fois</b>, à l'enrôlement, pour être
+ * affiché au titulaire. Ensuite, aucune méthode ne le rend : la vérification se fait
+ * ici, et le reste de l'application n'apprend que le verdict.</p>
  *
- * <p><b>Les echecs se comptent meme quand le geste est refuse.</b> Les methodes qui
- * levent un refus apres avoir verifie un code portent {@code noRollbackFor} : sans
- * cela, le refus annulerait la transaction et l echec qu il signale ne serait jamais
- * compte, essayer des codes depuis l ecran de desactivation deviendrait gratuit.</p>
+ * <p><b>Les échecs se comptent même quand le geste est refusé.</b> Les méthodes qui
+ * lèvent un refus après avoir vérifié un code portent {@code noRollbackFor} : sans
+ * cela, le refus annulerait la transaction et l'échec qu'il signale ne serait jamais
+ * compte, essayer des codes depuis l'écran de désactivation deviendrait gratuit.</p>
  */
 @Service
 @Transactional(readOnly = true)
@@ -54,14 +54,14 @@ public class SecondFacteurService {
     public static final Duration VERROUILLAGE_PLAFOND = Duration.ofHours(24);
     public static final int NOMBRE_CODES_SECOURS = 8;
 
-    /** 160 bits : la taille recommandee par la RFC 4226 §4, celle d une sortie HMAC-SHA1. */
+    /** 160 bits : la taille recommandée par la RFC 4226 §4, celle d'une sortie HMAC-SHA1. */
     private static final int OCTETS_SECRET = 20;
     private static final String EMETTEUR = "AutoServ+";
 
     /**
-     * Trente et un caracteres, sans les confusions de lecture (0/O, 1/I/L) : un code de
-     * secours se recopie souvent depuis une feuille imprimee. Huit tirages donnent
-     * 31^8, soit pres de 40 bits par code.
+     * Trente et un caractères, sans les confusions de lecture (0/O, 1/I/L) : un code de
+     * secours se recopie souvent depuis une feuille imprimée. Huit tirages donnent
+     * 31^8, soit près de 40 bits par code.
      */
     private static final String ALPHABET_CODES = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
     private static final int LONGUEUR_CODE = 8;
@@ -92,19 +92,19 @@ public class SecondFacteurService {
         this.horloge = horloge;
     }
 
-    /** Ce que l ecran d enrolement affiche : la cle en clair et l URI du QR code. */
+    /** Ce que l'écran d'enrôlement affiche : la clé en clair et l'URI du QR code. */
     public record Enrolement(String cleBase32, String uriOtpauth) {
 
-        /** Par groupes de quatre : une cle de trente-deux caracteres se recopie mal d un bloc. */
+        /** Par groupes de quatre : une clé de trente-deux caractères se recopie mal d'un bloc. */
         public String cleLisible() {
             return cleBase32.replaceAll("(.{4})(?!$)", "$1 ");
         }
     }
 
     /**
-     * {@code INDISPONIBLE} : le secret ne se dechiffre plus (cle maitre perdue ou
-     * alteree). Ce n est pas un echec du titulaire : rien n est compte, et seule une
-     * reinitialisation par un super-administrateur le resout.
+     * {@code INDISPONIBLE} : le secret ne se déchiffre plus (clé maître perdue ou
+     * altérée). Ce n'est pas un échec du titulaire : rien n'est compté, et seule une
+     * réinitialisation par un super-administrateur le résout.
      */
     public enum Resultat { ACCEPTE, REFUSE, VERROUILLE, INDISPONIBLE }
 
@@ -119,11 +119,11 @@ public class SecondFacteurService {
     }
 
     /**
-     * Commence l enrolement, ou reprend celui qui est en cours.
+     * Commence l'enrôlement, ou reprend celui qui est en cours.
      *
-     * <p><b>Reprendre plutot que retirer un secret neuf</b> : un rafraichissement de la page
-     * apres avoir scanne le QR code ne doit pas invalider ce que l application vient
-     * d enregistrer.</p>
+     * <p><b>Reprendre plutôt que retirer un secret neuf</b> : un rafraîchissement de la page
+     * après avoir scanné le QR code ne doit pas invalider ce que l'application vient
+     * d'enregistrer.</p>
      */
     @Transactional
     public Enrolement preparerEnrolement(String email) {
@@ -145,10 +145,10 @@ public class SecondFacteurService {
     }
 
     /**
-     * Confirme l enrolement par un premier code, emet les codes de secours et ferme les
+     * Confirme l'enrôlement par un premier code, émet les codes de secours et ferme les
      * autres sessions du compte.
      *
-     * @return les codes de secours EN CLAIR : la seule fois ou ils existent ainsi
+     * @return les codes de secours EN CLAIR : la seule fois où ils existent ainsi
      */
     @Transactional
     public List<String> confirmerEnrolement(String email, String code, String idSessionCourante) {
@@ -170,10 +170,10 @@ public class SecondFacteurService {
     }
 
     /**
-     * Verifie le second facteur a la connexion : code TOTP, ou a defaut code de secours.
+     * Vérifie le second facteur à la connexion : code TOTP, ou à défaut code de secours.
      *
-     * <p>Ne leve rien : un echec doit etre COMMITE pour etre compte, et un verrouillage
-     * ecrit pour valoir a la connexion suivante.</p>
+     * <p>Ne lève rien : un échec doit être COMMITE pour être compté, et un verrouillage
+     * écrit pour valoir à la connexion suivante.</p>
      */
     @Transactional
     public Resultat verifier(String email, String saisie) {
@@ -181,8 +181,8 @@ public class SecondFacteurService {
     }
 
     /**
-     * Retire le second facteur d un membre. Refuse au back-office, pour qui il est
-     * obligatoire. Mot de passe ET code valide : une session volee seule ne suffit pas.
+     * Retire le second facteur d'un membre. Refusé au back-office, pour qui il est
+     * obligatoire. Mot de passe ET code valide : une session volée seule ne suffit pas.
      */
     @Transactional(noRollbackFor = RefusTraduit.class)
     public void desactiver(String email, String motDePasse, String code, String idSessionCourante) {
@@ -204,7 +204,7 @@ public class SecondFacteurService {
         JOURNAL.info("Second facteur desactive par le titulaire du compte {}", compte.getReference());
     }
 
-    /** Remplace les codes de secours, apres reauthentification par mot de passe et code. */
+    /** Remplace les codes de secours, après réauthentification par mot de passe et code. */
     @Transactional(noRollbackFor = RefusTraduit.class)
     public List<String> regenererCodes(String email, String motDePasse, String code) {
         Utilisateur compte = chargerPourVerification(email);
@@ -220,9 +220,9 @@ public class SecondFacteurService {
     }
 
     /**
-     * Retire le second facteur sur decision d un tiers : reinitialisation par le
-     * super-administrateur. Ni journal ni notification ici : c est l appelant qui sait
-     * qui agit et a qui l annoncer.
+     * Retire le second facteur sur décision d'un tiers : réinitialisation par le
+     * super-administrateur. Ni journal ni notification ici : c'est l'appelant qui sait
+     * qui agit et à qui l'annoncer.
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public void retirer(Utilisateur compte) {
@@ -230,13 +230,13 @@ public class SecondFacteurService {
         codes.invaliderUtilisables(compte.getId(), horloge.instant());
     }
 
-    // --- verification -----------------------------------------------------------------
+    // --- vérification -----------------------------------------------------------------
 
     private Resultat verifierSaisie(Utilisateur compte, String saisie) {
         Instant maintenant = horloge.instant();
-        // Verrouille : on ne regarde meme pas le code. Le verifier quand meme laisserait
-        // un attaquant continuer a tester pendant le verrouillage, et apprendre lequel
-        // etait juste a la premiere connexion qui suit.
+        // Verrouille : on ne regarde même pas le code. Le vérifier quand même laisserait
+        // un attaquant continuer à tester pendant le verrouillage, et apprendre lequel
+        // était juste à la première connexion qui suit.
         if (compte.estVerrouille(maintenant)) {
             return Resultat.VERROUILLE;
         }
@@ -247,8 +247,8 @@ public class SecondFacteurService {
                     return Resultat.ACCEPTE;
                 }
             } catch (ChiffrementSecretMfa.SecretIndechiffrableException indechiffrable) {
-                // Ni echec compte ni code de secours essaye : le titulaire n y est pour
-                // rien, et des essais non comptes ouvriraient une recherche illimitee des
+                // Ni échec compté ni code de secours essayé : le titulaire n'y est pour
+                // rien, et des essais non comptés ouvriraient une recherche illimitée des
                 // codes de secours.
                 JOURNAL.error("Secret TOTP indechiffrable pour le compte {} (version de cle {}) : {}",
                         compte.getReference(), compte.getMfaCleVersion(), indechiffrable.getMessage());
@@ -274,14 +274,14 @@ public class SecondFacteurService {
         if (pas.isEmpty()) {
             return false;
         }
-        // L UPDATE conditionnel tranche entre deux verifications simultanees du meme code.
-        // Le compte en memoire est ensuite aligne, pour ne pas reecrire un pas perime.
+        // L'UPDATE conditionnel tranche entre deux vérifications simultanées du même code.
+        // Le compte en mémoire est ensuite aligné, pour ne pas réécrire un pas périmé.
         if (utilisateurs.accepterPasSiNouveau(compte.getId(), pas.getAsLong()) == 0) {
             return false;
         }
         compte.accepterPas(pas.getAsLong());
-        // Rotation de cle resorbee a l usage : chaque connexion reussie remet le secret
-        // sous la cle active, sans procedure de migration a part.
+        // Rotation de clé résorbée à l'usage : chaque connexion réussie remet le secret
+        // sous la clé active, sans procédure de migration à part.
         if (compte.getMfaCleVersion() != chiffrement.versionActive()) {
             ChiffrementSecretMfa.SecretChiffre neuf = chiffrement.chiffrer(secret, compte.getId());
             compte.rechiffrerSecret(neuf.donnees(), neuf.version());
@@ -351,7 +351,7 @@ public class SecondFacteurService {
         return code.toString();
     }
 
-    /** Tiret, espaces et casse indifferents : le code se recopie a la main. */
+    /** Tiret, espaces et casse indifférents : le code se recopie à la main. */
     static String normaliserCode(String saisie) {
         return saisie == null ? "" : saisie.replaceAll("[\\s-]", "").toUpperCase(Locale.ROOT);
     }
@@ -364,9 +364,9 @@ public class SecondFacteurService {
     }
 
     /**
-     * Format de Google Authenticator, reconnu par toutes les applications : l emetteur
-     * figure dans le libelle ET en parametre, pour les applications qui ne lisent que
-     * l un des deux.
+     * Format de Google Authenticator, reconnu par toutes les applications : l'émetteur
+     * figure dans le libellé ET en paramètre, pour les applications qui ne lisent que
+     * l'un des deux.
      */
     private static String uriOtpauth(String email, String cleBase32) {
         String emetteur = URLEncoder.encode(EMETTEUR, StandardCharsets.UTF_8);
@@ -376,8 +376,8 @@ public class SecondFacteurService {
     }
 
     /**
-     * Le verrouillage est deja ecrit : une panne du fournisseur de courriel ne doit pas
-     * l annuler. Meme arbitrage que l avis de rendez-vous d {@code AdminRdvService}.
+     * Le verrouillage est déjà écrit : une panne du fournisseur de courriel ne doit pas
+     * l'annuler. Même arbitrage que l'avis de rendez-vous d {@code AdminRdvService}.
      */
     private void notifierVerrouillage(Utilisateur compte, Instant jusqua) {
         try {

@@ -12,17 +12,17 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Code de secours du second facteur, a usage unique.
+ * Code de secours du second facteur, à usage unique.
  *
- * <p><b>Jamais supprime</b> : un code consomme garde sa date de consommation, un code
- * remplace par une regeneration garde sa date d invalidation. La ligne est la trace de son
- * usage, supprimer un code consomme effacerait la preuve qu il a servi, et donc la
- * reponse a la question « qui s est connecte sans telephone, et quand ».</p>
+ * <p><b>Jamais supprimé</b> : un code consommé garde sa date de consommation, un code
+ * remplacé par une régénération garde sa date d'invalidation. La ligne est la trace de son
+ * usage, supprimer un code consommé effacerait la preuve qu'il a servi, et donc la
+ * réponse à la question « qui s'est connecté sans téléphone, et quand ».</p>
  *
- * <p>Empreinte BCrypt de cout 10 et non 12 comme les mots de passe : une connexion par
- * code de secours compare la saisie a jusqu a huit empreintes, soit deux secondes au cout
- * 12. Le code porte pres de 40 bits d entropie tires au hasard, et le verrouillage
- * progressif borne les essais : le cout de l empreinte n est pas ce qui le protege.</p>
+ * <p>Empreinte BCrypt de coût 10 et non 12 comme les mots de passe : une connexion par
+ * code de secours compare la saisie à jusqu'à huit empreintes, soit deux secondes au coût
+ * 12. Le code porte près de 40 bits d'entropie tirés au hasard, et le verrouillage
+ * progressif borne les essais : le coût de l'empreinte n'est pas ce qui le protège.</p>
  */
 @Entity
 @Table(name = "code_secours")
@@ -76,7 +76,7 @@ public class CodeSecours {
         return consommeLe == null && invalideLe == null;
     }
 
-    /** Un code ne sert qu une fois : le consommer deux fois est un defaut, pas un cas. */
+    /** Un code ne sert qu'une fois : le consommer deux fois est un défaut, pas un cas. */
     public void consommer(Instant maintenant) {
         exigerUtilisable();
         this.consommeLe = Objects.requireNonNull(maintenant, "maintenant");

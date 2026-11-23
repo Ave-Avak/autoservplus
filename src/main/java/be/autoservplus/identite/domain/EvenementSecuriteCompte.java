@@ -12,16 +12,16 @@ import java.time.Instant;
 import java.util.Objects;
 
 /**
- * Un evenement de securite d un compte : second facteur active ou retire, echec,
- * verrouillage, code de secours consomme, mot de passe defini ou change.
+ * Un événement de sécurité d'un compte : second facteur activé ou retiré, échec,
+ * verrouillage, code de secours consommé, mot de passe défini ou changé.
  *
  * <p>Journal append-only, sur le patron de {@link HistoriqueStatutUtilisateur}, mais dans
- * une table a part : celle-ci consigne des <b>transitions</b> d etat, dont le CHECK exige
- * un avant et un apres differents. Un evenement de securite n a ni l un ni l autre.</p>
+ * une table à part : celle-ci consigne des <b>transitions</b> d'état, dont le CHECK exige
+ * un avant et un après différents. Un événement de sécurité n'a ni l'un ni l'autre.</p>
  *
  * <p><b>Ce que la ligne ne porte jamais</b> : secret, code saisi, adresse IP. Le fait et
- * sa date suffisent a l enquete, et un journal qui porterait un code deviendrait lui-meme
- * un moyen de s authentifier.</p>
+ * sa date suffisent à l'enquête, et un journal qui porterait un code deviendrait lui-même
+ * un moyen de s'authentifier.</p>
  */
 @Entity
 @Table(name = "evenement_securite_compte")
@@ -46,9 +46,9 @@ public class EvenementSecuriteCompte {
     private Instant horodatage;
 
     /**
-     * Qui a agi. Le titulaire lui-meme pour ses propres gestes. Un autre compte pour une
-     * creation ou une reinitialisation. Nul quand le systeme constate (echec, verrouillage),
-     * l auteur de la saisie restant inconnu. Distinguer les deux premiers cas du troisieme
+     * Qui a agi. Le titulaire lui-même pour ses propres gestes. Un autre compte pour une
+     * création ou une réinitialisation. Nul quand le système constate (échec, verrouillage),
+     * l'auteur de la saisie restant inconnu. Distinguer les deux premiers cas du troisième
      * est ce que la fiche affiche : un nul unique les confondait.
      */
     @ManyToOne(fetch = FetchType.LAZY)

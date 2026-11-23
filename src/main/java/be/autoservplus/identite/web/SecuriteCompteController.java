@@ -19,16 +19,16 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
 
 /**
- * Securite du compte depuis le profil : activer, retirer le second facteur, regenerer les
+ * Sécurité du compte depuis le profil : activer, retirer le second facteur, régénérer les
  * codes de secours.
  *
  * <p>Facultatif pour un membre, obligatoire au back-office. Un administrateur y vient
- * pour regenerer ses codes, jamais pour retirer son second facteur, que le service lui
+ * pour régénérer ses codes, jamais pour retirer son second facteur, que le service lui
  * refuse.</p>
  *
- * <p><b>Les codes de secours ne transitent que par un attribut flash</b> : affiches une
- * fois, sur la page qui suit leur emission, puis perdus. Les rendre a nouveau supposerait
- * de les garder en clair quelque part. Ils ne sont gardes qu en BCrypt.</p>
+ * <p><b>Les codes de secours ne transitent que par un attribut flash</b> : affichés une
+ * fois, sur la page qui suit leur émission, puis perdus. Les rendre à nouveau supposerait
+ * de les garder en clair quelque part. Ils ne sont gardes qu'en BCrypt.</p>
  */
 @Controller
 @RequestMapping(SecuriteCompteController.CHEMIN)
@@ -80,8 +80,8 @@ public class SecuriteCompteController {
     }
 
     /**
-     * Ecran d affichage des codes qui viennent d etre emis. Sans attribut flash (acces
-     * direct, rafraichissement), il n y a rien a montrer : retour a l ecran de securite,
+     * Écran d'affichage des codes qui viennent d'être émis. Sans attribut flash (accès
+     * direct, rafraîchissement), il n'y a rien à montrer : retour à l'écran de sécurité,
      * et non une page vide qui laisserait croire les codes perdus.
      */
     @GetMapping("/codes")
@@ -126,8 +126,8 @@ public class SecuriteCompteController {
     }
 
     /**
-     * Le refus est celui du service, quel que soit le champ employe. Seul l affichage
-     * suit : un refus venu d un champ de secours rouvre ce champ-la, et pas l autre.
+     * Le refus est celui du service, quel que soit le champ employé. Seul l'affichage
+     * suit : un refus venu d'un champ de secours rouvre ce champ-la, et pas l'autre.
      */
     private void refuser(RedirectAttributes redirection, RefusTraduit refus, String mode,
                          String formulaire) {
