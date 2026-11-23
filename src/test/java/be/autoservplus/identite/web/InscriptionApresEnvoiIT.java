@@ -78,7 +78,7 @@ class InscriptionApresEnvoiIT extends SocleIntegration {
                 .andReturn();
 
         String page = confirmation(envoi);
-        assertThat(page).contains(email).contains("Vérifiez votre courriel");
+        assertThat(page).contains(email).contains("Votre compte est presque prêt");
         sansFormulaire(page);
     }
 

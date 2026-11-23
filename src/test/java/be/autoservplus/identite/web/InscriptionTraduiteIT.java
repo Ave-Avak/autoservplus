@@ -97,8 +97,8 @@ class InscriptionTraduiteIT extends SocleIntegration {
 
     @ParameterizedTest(name = "{0}")
     @CsvSource({
-            "nl, Controleer uw e-mail, Er is een verificatiemail verzonden naar",
-            "en, Check your email, A verification email has been sent to"})
+            "nl, Uw account is bijna klaar, Er is een verificatiemail verzonden naar",
+            "en, Your account is almost ready, A verification email has been sent to"})
     @DisplayName("la page de confirmation est traduite")
     void confirmationTraduite(String langue, String titre, String envoye) throws Exception {
         var envoiFait = mvc.perform(envoi(langue, MOT_DE_PASSE)).andReturn();
@@ -109,6 +109,6 @@ class InscriptionTraduiteIT extends SocleIntegration {
                 .andExpect(content().string(allOf(
                         containsString("<title>" + titre + " | AutoServ+</title>"),
                         containsString(envoye),
-                        not(containsString("Vérifiez votre courriel")))));
+                        not(containsString("Votre compte est presque prêt")))));
     }
 }
