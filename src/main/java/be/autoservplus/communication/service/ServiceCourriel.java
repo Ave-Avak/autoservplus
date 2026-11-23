@@ -123,7 +123,6 @@ public interface ServiceCourriel {
      * la demande passe par ce courriel et par l ecran de validation.
      */
     void envoyerDemandeValidationDepassement(Utilisateur destinataire,
-                                             DetailsRdvCourriel rdv,
                                              DetailsDepassementCourriel depassement);
 
     /**

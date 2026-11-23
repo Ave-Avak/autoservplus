@@ -91,8 +91,9 @@ class CourrielSortantTest {
                         rdv, deplace, "Marie Dupont", true, "/admin/rendez-vous/r")),
                 Map.entry("rdv-relance-garage", l -> courriel.envoyerRelanceAuGarage(
                         rdv, "Marie Dupont", DIMANCHE.minusDays(1).withHour(12), "/admin/rendez-vous/r")),
-                Map.entry("depassement", l -> courriel.envoyerDemandeValidationDepassement(marie, rdv,
-                        new DetailsDepassementCourriel("INT-2026-0001", "100,00 €", "150,00 €",
+                Map.entry("depassement", l -> courriel.envoyerDemandeValidationDepassement(marie,
+                        new DetailsDepassementCourriel("INT-2026-0001", "VW Golf (1-ABC-123)",
+                                "100,00 €", "150,00 €", "181,50 €",
                                 List.of("- Filtre x1 : 50,00 €"), "/mes-interventions/r/validation"))),
                 Map.entry("intervention-terminee", l -> courriel.envoyerInterventionTerminee(
                         new DetailsInterventionTerminee("marie@exemple.be", "Marie", l,
@@ -441,12 +442,32 @@ class CourrielSortantTest {
     @DisplayName("les chemins internes deviennent des liens absolus")
     void cheminsAbsolus() {
         courriel.envoyerDemandeValidationDepassement(marie,
-                new DetailsRdvCourriel("RDV-1", DIMANCHE),
-                new DetailsDepassementCourriel("INT-1", "1 €", "2 €", List.of("- x"),
+                new DetailsDepassementCourriel("INT-1", "VW Golf (1-ABC-123)", "1 €", "2 €", "3 €", List.of("- x"),
                         "/mes-interventions/r/validation"));
 
         assertThat(partis.get(0).corps())
                 .contains("http://localhost:8080/mes-interventions/r/validation");
+    }
+
+    @Test
+    @DisplayName("la demande d'accord (RM-15) nomme l'intervention et le véhicule, sans rendez-vous")
+    void depassementAutourDeLIntervention() {
+        courriel.envoyerDemandeValidationDepassement(marie,
+                new DetailsDepassementCourriel("INT-2026-0005", "VW Golf (1-ABC-123)", "120,00 €",
+                        "166,50 €", "201,47 €", List.of("- Jeu de plaquettes avant x1 : 46,50 €"),
+                        "/mes-interventions/r/validation"));
+
+        Courriel parti = partis.get(0);
+        assertThat(parti.sujet()).isEqualTo("Votre accord est demandé pour des travaux supplémentaires");
+        assertThat(parti.corps())
+                .contains("Pendant l'intervention INT-2026-0005 sur votre VW Golf (1-ABC-123), le garage propose")
+                .contains("Devis initial, hors TVA : 120,00 €")
+                .contains("Total proposé, hors TVA : 166,50 €")
+                // Le membre accepte un montant à payer : il le lit TVA comprise, comme à l'écran.
+                .contains("Montant à payer, TVA comprise, si vous acceptez : 201,47 €")
+                .contains("- Jeu de plaquettes avant x1 : 46,50 €")
+                .contains("http://localhost:8080/mes-interventions/r/validation")
+                .doesNotContain("rendez-vous");
     }
 
     @Test

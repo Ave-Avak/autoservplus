@@ -26,6 +26,8 @@ public enum TypeNotification {
     RDV_ABSENT,
     COMMANDE_PAYEE,
     INTERVENTION_TERMINEE,
+    /** Travaux supplémentaires soumis à l'accord du titulaire de l'intervention (RM-15). */
+    DEPASSEMENT_A_VALIDER,
     AVOIR_EMIS,
     RETRACTATION_REFUSEE,
     /** Nouveau message dans un fil de discussion (BL-5) : vise le membre ou le garage. */

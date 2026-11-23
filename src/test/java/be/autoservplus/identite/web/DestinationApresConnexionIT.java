@@ -93,6 +93,16 @@ class DestinationApresConnexionIT extends SocleIntegration {
     }
 
     @Test
+    @DisplayName("le lien de validation reçu par courriel (RM-15) est la destination après la connexion")
+    void lienDeValidationDUnDepassement() throws Exception {
+        Utilisateur membre = creer(false, false);
+        String lien = "/mes-interventions/" + UUID.randomUUID() + "/validation";
+        MockHttpSession session = demander(lien);
+
+        assertThat(connecter(membre, session)).isEqualTo(lien);
+    }
+
+    @Test
     @DisplayName("sans page demandée, la page d'arrivée du rôle")
     void sansPageDemandee() throws Exception {
         assertThat(connecter(creer(false, false), new MockHttpSession())).isEqualTo("/mon-compte");
