@@ -162,6 +162,8 @@ class GarantieLegaleIT extends SocleIntegration {
             assertThat(reponse.getContentType()).startsWith("image/svg+xml");
             assertThat(reponse.getHeader("X-Content-Type-Options")).isEqualTo("nosniff");
             assertThat(reponse.getHeader("Content-Security-Policy")).contains("img-src 'self' data:");
+            // Hors du profil prod, aucune ressource statique ne se met en cache.
+            assertThat(reponse.getHeader("Cache-Control")).contains("no-store");
         }
     }
 
