@@ -4,6 +4,7 @@ import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.legal.domain.TypeDocumentVersionne;
 import be.autoservplus.legal.domain.VersionDocument;
 import be.autoservplus.legal.repository.VersionDocumentRepository;
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -24,7 +25,6 @@ import java.util.Set;
 import java.util.TreeSet;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Garde de non-derive du texte gele (F24).

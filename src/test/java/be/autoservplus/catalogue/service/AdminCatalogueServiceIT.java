@@ -24,6 +24,7 @@ import be.autoservplus.reservation.repository.PosteAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
 import be.autoservplus.reservation.repository.VehiculeRepository;
 import be.autoservplus.support.MembresDeTest;
+import be.autoservplus.support.SocleIntegration;
 import be.autoservplus.vente.service.CommandeService;
 import be.autoservplus.vente.service.PanierService;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +45,6 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * RM-29 et RM-28 contre un vrai PostgreSQL 16 : les references d historique sont

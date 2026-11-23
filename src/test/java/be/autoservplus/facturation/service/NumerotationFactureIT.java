@@ -1,6 +1,7 @@
 package be.autoservplus.facturation.service;
 
 import be.autoservplus.facturation.repository.CompteurFactureRepository;
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -25,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Le coeur legal de F31 : la numerotation des factures est CONTINUE, sans trou.

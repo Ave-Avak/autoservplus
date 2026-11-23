@@ -10,6 +10,7 @@ import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.reservation.domain.*;
 import be.autoservplus.reservation.repository.*;
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.flash;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Rendu Thymeleaf des trois templates admin contre le contexte Spring Boot complet.

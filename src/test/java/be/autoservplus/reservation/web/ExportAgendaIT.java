@@ -18,6 +18,7 @@ import be.autoservplus.reservation.repository.RdvRepository;
 import be.autoservplus.reservation.repository.VehiculeRepository;
 import be.autoservplus.reservation.service.ExportAgendaService;
 import be.autoservplus.reservation.service.dto.FichierAgenda;
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -44,7 +45,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Export iCalendar d un rendez-vous (F38), de l ecran au fichier servi.

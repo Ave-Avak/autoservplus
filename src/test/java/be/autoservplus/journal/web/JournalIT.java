@@ -2,6 +2,7 @@ package be.autoservplus.journal.web;
 
 import be.autoservplus.journal.service.JournalService;
 import be.autoservplus.journal.service.dto.EntreeJournal;
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Journal d audit de bout en bout (BL-7), sur un PostgreSQL reel.

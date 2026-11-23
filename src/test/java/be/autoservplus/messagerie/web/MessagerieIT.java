@@ -9,6 +9,7 @@ import be.autoservplus.messagerie.service.AdminMessagerieService;
 import be.autoservplus.messagerie.service.MessagerieService;
 import be.autoservplus.notification.domain.StatutNotification;
 import be.autoservplus.notification.repository.NotificationRepository;
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -34,7 +35,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Messagerie de bout en bout (BL-5), sur un PostgreSQL reel.

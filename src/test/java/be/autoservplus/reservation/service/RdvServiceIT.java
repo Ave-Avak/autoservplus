@@ -10,6 +10,7 @@ import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.reservation.domain.*;
 import be.autoservplus.reservation.repository.*;
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,6 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Reservation de rendez-vous sur un PostgreSQL reel.

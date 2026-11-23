@@ -2,6 +2,7 @@ package be.autoservplus.pilotage.web;
 
 import be.autoservplus.pilotage.repository.IndicateursRepository;
 import be.autoservplus.pilotage.service.TableauDeBordService;
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -20,7 +21,6 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Tableau de bord de bout en bout (BL-1), sur un PostgreSQL reel.

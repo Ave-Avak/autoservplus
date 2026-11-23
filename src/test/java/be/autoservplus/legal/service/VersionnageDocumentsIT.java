@@ -4,6 +4,7 @@ import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.legal.domain.TypeDocumentVersionne;
 import be.autoservplus.legal.repository.VersionDocumentRepository;
 import be.autoservplus.legal.service.dto.TexteArchiveVue;
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,7 +18,6 @@ import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Resolution des versions de documents sur la base reellement migree (F24).

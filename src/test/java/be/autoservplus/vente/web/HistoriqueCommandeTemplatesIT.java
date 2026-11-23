@@ -5,6 +5,7 @@ import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.support.SocleIntegration;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.repository.CommandeRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -28,7 +29,6 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Rendu reel de l ecran d historique contre le contexte Spring complet : c est ici

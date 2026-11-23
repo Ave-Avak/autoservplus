@@ -13,6 +13,7 @@ import be.autoservplus.intervention.repository.InterventionRepository;
 import be.autoservplus.intervention.service.GenerateurNumeroIntervention;
 import be.autoservplus.reservation.domain.*;
 import be.autoservplus.reservation.repository.*;
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,6 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Rendu Thymeleaf des templates admin/interventions.html et

@@ -5,6 +5,7 @@ import be.autoservplus.galerie.repository.PhotoRepository;
 import be.autoservplus.galerie.service.AdminGalerieService;
 import be.autoservplus.galerie.service.GalerieService;
 import be.autoservplus.stockage.service.TypeFichierRefuseException;
+import be.autoservplus.support.SocleIntegration;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.DisplayName;
@@ -30,7 +31,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Galerie de bout en bout (BL-9), sur un PostgreSQL reel.
