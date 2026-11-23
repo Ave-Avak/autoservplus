@@ -1,5 +1,8 @@
 package be.autoservplus.reservation.service;
 
+import be.autoservplus.catalogue.service.dto.CategorieVue;
+import be.autoservplus.catalogue.service.dto.ArticleVue;
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.RefusTraduit;
@@ -18,13 +21,13 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.reservation.service.dto.ConditionsReservation;
 import be.autoservplus.reservation.service.dto.CreneauDisponible;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.reservation.web.dto.CreneauVue;
 import be.autoservplus.reservation.web.dto.ModificationRdvVue;
 import be.autoservplus.reservation.web.dto.RdvVue;
+import java.text.Collator;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.LinkedHashMap;
@@ -34,7 +37,9 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -194,7 +199,7 @@ public class RdvService {
             Prestation prestation = prestations.findByReference(reference)
                     .orElseThrow(() -> new RessourceIntrouvableException("Prestation", reference));
             if (!prestation.isActif()) {
-                throw new PrestationIndisponibleException(prestation.getLibelle());
+                throw new PrestationIndisponibleException(prestation.libelle(LanguesSupportees.deLEcran()).texte());
             }
             resultat.add(prestation);
         }
@@ -203,11 +208,21 @@ public class RdvService {
 
     // --- vues pour l interface -------------------------------------------------------
 
-    /** Prestations reservables, groupees par categorie dans l ordre du catalogue. */
-    public Map<Categorie, List<Prestation>> prestationsProposees() {
-        Map<Categorie, List<Prestation>> parCategorie = new LinkedHashMap<>();
-        for (Prestation p : prestations.findByActifTrueOrderByLibelleAsc()) {
-            parCategorie.computeIfAbsent(p.getCategorie(), c -> new ArrayList<>()).add(p);
+    /**
+     * Prestations réservables, groupées par catégorie, dans la langue de l'écran et
+     * triées sur le libellé affiché. Une prestation sans traduction garde son libellé
+     * français, que la vue signale au gabarit.
+     */
+    public Map<CategorieVue, List<ArticleVue>> prestationsProposees() {
+        Locale langue = LanguesSupportees.deLEcran();
+        Collator ordre = Collator.getInstance(langue);
+        List<Prestation> triees = prestations.findByActifTrueOrderByLibelleAsc().stream()
+                .sorted(Comparator.comparing(p -> p.libelle(langue).texte(), ordre))
+                .toList();
+        Map<CategorieVue, List<ArticleVue>> parCategorie = new LinkedHashMap<>();
+        for (Prestation p : triees) {
+            parCategorie.computeIfAbsent(CategorieVue.de(p.getCategorie(), langue), c -> new ArrayList<>())
+                    .add(ArticleVue.de(p, langue));
         }
         return parCategorie;
     }
@@ -283,6 +298,7 @@ public class RdvService {
 
     private RdvVue versVue(Rdv rdv) {
         ZoneId zone = parametres.courants().zone();
+        Locale langue = LanguesSupportees.deLEcran();
         return new RdvVue(
                 rdv.getReference(),
                 rdv.getNumero(),
@@ -291,7 +307,7 @@ public class RdvService {
                 FormatageRdv.heureLisible(rdv.getDebut(), zone),
                 FormatageRdv.heureLisible(rdv.getFin(), zone),
                 rdv.getVehicule().getMarque() + " " + rdv.getVehicule().getModele() + " (" + rdv.getVehicule().getPlaque() + ")",
-                rdv.getLignes().stream().map(l -> l.getPrestation().getLibelle()).toList(),
+                rdv.getLignes().stream().map(l -> l.getPrestation().libelle(langue).texte()).toList(),
                 FormatageRdv.eurosEcran(rdv.montantTvac()),
                 rdv.getCommentaire(),
                 rdv.getMotifRefus(),

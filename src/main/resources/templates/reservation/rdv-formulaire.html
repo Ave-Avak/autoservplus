@@ -70,15 +70,15 @@
                th:errors="*{prestations}">Erreur</p>
 
             <div th:each="entree : ${prestationsParCategorie}" class="groupe-prestations">
-                <h2 th:text="${entree.key.libelle}">Entretien</h2>
+                <h2 th:text="${entree.key.libelle()}" th:lang="${entree.key.langueLibelle()}">Entretien</h2>
                 <ul class="liste-cases">
                     <li th:each="p : ${entree.value}">
                         <input type="checkbox" name="prestations"
-                               th:id="'p-' + ${p.reference}" th:value="${p.reference}"
-                               th:checked="${formulaire.prestations.contains(p.reference)}">
-                        <label th:for="'p-' + ${p.reference}">
-                            <span th:text="${p.libelle}">Vidange</span>
-                            <small th:text="#{rdv.formulaire.prestation.detail(${p.dureeMinutes}, ${#numbers.formatDecimal(p.prixHtva, 1, 'DEFAULT', 2, 'DEFAULT')})}">30 min, 49,00 € HTVA</small>
+                               th:id="'p-' + ${p.reference()}" th:value="${p.reference()}"
+                               th:checked="${formulaire.prestations.contains(p.reference())}">
+                        <label th:for="'p-' + ${p.reference()}">
+                            <span th:text="${p.libelle()}" th:lang="${p.langueLibelle()}">Vidange</span>
+                            <small th:text="#{rdv.formulaire.prestation.detail(${p.dureeMinutes()}, ${#numbers.formatDecimal(p.prixHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">30 min, 49,00 € HTVA</small>
                         </label>
                     </li>
                 </ul>

@@ -2,6 +2,8 @@ package be.autoservplus.i18n;
 
 import be.autoservplus.identite.domain.Langue;
 
+import org.springframework.context.i18n.LocaleContextHolder;
+
 import java.util.List;
 import java.util.Locale;
 
@@ -60,6 +62,14 @@ public final class LanguesSupportees {
                 .filter(admise -> admise.getLanguage().equals(demandee.getLanguage()))
                 .findFirst()
                 .orElse(DEFAUT);
+    }
+
+    /**
+     * Langue de l'écran en cours : celle de la requête, ramenée aux langues admises. Hors
+     * de toute requête, le français du site.
+     */
+    public static Locale deLEcran() {
+        return plusProche(LocaleContextHolder.getLocale());
     }
 
     /** Vraie si la locale active correspond a la langue donnee. */

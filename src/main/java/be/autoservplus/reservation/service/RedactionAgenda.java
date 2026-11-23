@@ -69,7 +69,7 @@ public class RedactionAgenda {
         String lien = urlPublique + "/mes-rendez-vous/" + rdv.getReference();
 
         String description = String.join("\n",
-                message("rdv.agenda.prestations", langue, prestations(rdv)),
+                message("rdv.agenda.prestations", langue, prestations(rdv, langue)),
                 message("rdv.agenda.vehicule", langue, vehicule(rdv)),
                 message("rdv.agenda.lien", langue, lien));
 
@@ -94,9 +94,10 @@ public class RedactionAgenda {
         return new FichierAgenda(nomFichier(rdv, langue), RedacteurIcal.calendrier(evenement));
     }
 
-    private String prestations(Rdv rdv) {
+    /** Les prestations dans la langue du fichier, en français pour celles qui ne sont pas traduites. */
+    private String prestations(Rdv rdv, Locale langue) {
         List<String> libelles = rdv.getLignes().stream()
-                .map(ligne -> ligne.getPrestation().getLibelle())
+                .map(ligne -> ligne.getPrestation().libelle(langue).texte())
                 .toList();
         return String.join(", ", libelles);
     }

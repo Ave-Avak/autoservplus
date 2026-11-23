@@ -1,6 +1,6 @@
 package be.autoservplus.reservation.service;
 
-import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.reservation.domain.HorairePlage;
 import be.autoservplus.reservation.domain.Indisponibilite;
@@ -34,6 +34,7 @@ import java.time.ZonedDateTime;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -309,6 +310,7 @@ public class AdminPlanningService {
 
     private List<ConflitRdv> conflits(List<Rdv> rendezVous) {
         ZoneId zone = zone();
+        Locale langue = LanguesSupportees.deLEcran();
         return rendezVous.stream().map(r -> new ConflitRdv(
                 r.getReference(),
                 r.getNumero(),
@@ -317,7 +319,7 @@ public class AdminPlanningService {
                 r.getMembre().nomComplet(),
                 r.getPoste().getLibelle(),
                 r.getLignes().stream().map(LigneRdv::getPrestation)
-                        .map(Prestation::getLibelle).collect(Collectors.joining(", ")),
+                        .map(prestation -> prestation.libelle(langue).texte()).collect(Collectors.joining(", ")),
                 r.getStatut())).toList();
     }
 
