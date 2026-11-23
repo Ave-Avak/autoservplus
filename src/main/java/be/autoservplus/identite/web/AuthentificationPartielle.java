@@ -9,17 +9,17 @@ import java.util.List;
 import java.util.Objects;
 
 /**
- * Connexion commencee mais pas aboutie : le mot de passe est verifie, une etape reste
- * (second facteur, changement impose, enrolement).
+ * Connexion commencée mais pas aboutie : le mot de passe est vérifié, une étape reste
+ * (second facteur, changement imposé, enrôlement).
  *
- * <p><b>Aucune autorite.</b> Ni {@code ROLE_ADMINISTRATEUR} ni {@code ROLE_MEMBRE} : les
- * gardes {@code hasRole} de l URL comme des methodes refusent d elles-memes, sans qu il
- * faille les reecrire. Reste {@code authenticated()}, que ce jeton satisferait, d ou
+ * <p><b>Aucune autorité.</b> Ni {@code ROLE_ADMINISTRATEUR} ni {@code ROLE_MEMBRE} : les
+ * gardes {@code hasRole} de l'URL comme des méthodes refusent d'elles-mêmes, sans qu'il
+ * faille les réécrire. Reste {@code authenticated()}, que ce jeton satisferait, d'où
  * {@code AuthentificationAboutie}, qui remplace {@code anyRequest().authenticated()}.</p>
  *
- * <p>L authentification complete est conservee ici, et non reconstruite a la fin : c est
- * elle qui porte les autorites que Spring Security a calculees au mot de passe, et la
- * restaurer telle quelle evite de dupliquer {@code UtilisateurDetailsService}.</p>
+ * <p>L'authentification complète est conservée ici, et non reconstruite à la fin : c'est
+ * elle qui porte les autorités que Spring Security a calculées au mot de passe, et la
+ * restaurer telle quelle évite de dupliquer {@code UtilisateurDetailsService}.</p>
  *
  * <p><b>Spring Security 6.5 n'a pas de MFA natif</b>. La version 7 en apporte un : chaque
  * facteur y devient une autorité {@code FactorGrantedAuthority}, et l'autorisation exige
@@ -45,16 +45,16 @@ public class AuthentificationPartielle extends AbstractAuthenticationToken {
         this.complete = Objects.requireNonNull(complete, "complete");
         this.secondFacteurValide = secondFacteurValide;
         this.etapeOuverteLe = Objects.requireNonNull(etapeOuverteLe, "etapeOuverteLe");
-        // Authentifie au sens du filtre d exception : un refus d acces mene alors au
-        // gestionnaire de refus, qui renvoie vers l etape, et non a la page de connexion,
-        // ce qui ferait recommencer le mot de passe a chaque clic.
+        // Authentifié au sens du filtre d'exception : un refus d'accès mène alors au
+        // gestionnaire de refus, qui renvoie vers l'étape, et non à la page de connexion,
+        // ce qui ferait recommencer le mot de passe à chaque clic.
         setAuthenticated(true);
     }
 
     /**
      * Vrai pour une connexion aboutie : ni absente, ni anonyme, ni partielle. Les
-     * compteurs de l en-tete s y tiennent : un jeton partiel satisfait
-     * {@code isAuthenticated()}, et ses comptages s afficheraient avant la fin de la
+     * compteurs de l'en-tête s'y tiennent : un jeton partiel satisfait
+     * {@code isAuthenticated()}, et ses comptages s'afficheraient avant la fin de la
      * connexion.
      */
     public static boolean aboutie(Authentication authentification) {

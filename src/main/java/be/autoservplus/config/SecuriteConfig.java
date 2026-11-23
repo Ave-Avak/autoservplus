@@ -40,11 +40,11 @@ import org.springframework.security.web.util.matcher.RequestMatcher;
 import java.util.Optional;
 
 /**
- * Configuration de securite : chaine de filtres, en-tetes HTTP, encodage des mots de passe.
+ * Configuration de sécurité : chaîne de filtres, en-têtes HTTP, encodage des mots de passe.
  *
- * <p>Le facteur de cout BCrypt est fixe a 12 : chaque verification demande environ
- * 250 millisecondes, ce qui rend une attaque par force brute couteuse sans degrader
- * l experience de connexion. La protection CSRF reste active sur toutes les requetes
+ * <p>Le facteur de coût BCrypt est fixé à 12 : chaque vérification demande environ
+ * 250 millisecondes, ce qui rend une attaque par force brute coûteuse sans dégrader
+ * l'expérience de connexion. La protection CSRF reste active sur toutes les requêtes
  * mutantes.</p>
  */
 @Configuration
@@ -103,31 +103,31 @@ public class SecuriteConfig {
      * {@code ROLE_SUPER_ADMINISTRATEUR} implique {@code ROLE_ADMINISTRATEUR}
      * (CdC 5.2.3).
      *
-     * <p><b>Pourquoi une hierarchie plutot que treize annotations doublees.</b> Un
-     * compte ne porte qu une autorite : {@code UtilisateurDetailsService} fait
+     * <p><b>Pourquoi une hiérarchie plutôt que treize annotations doublées.</b> Un
+     * compte ne porte qu'une autorité : {@code UtilisateurDetailsService} fait
      * {@code .roles(typeUtilisateur.name())}. Sans ce bean, le super-administrateur
-     * serait refuse partout ou l administrateur est admis, et il faudrait reecrire les
+     * serait refusé partout où l'administrateur est admis, et il faudrait réécrire les
      * <b>treize</b> {@code @PreAuthorize("hasRole('ADMINISTRATEUR')")} du projet plus
-     * le matcher {@code /admin/**}. Chaque oubli serait un ecran inaccessible, et
-     * chaque service ajoute plus tard une occasion de recommencer.</p>
+     * le matcher {@code /admin/**}. Chaque oubli serait un écran inaccessible, et
+     * chaque service ajouté plus tard une occasion de recommencer.</p>
      *
-     * <p><b>Deux niveaux seulement, et c est une decision.</b> {@code ROLE_MEMBRE} n y
-     * figure pas parce qu il n est <b>garde nulle part</b> : aucun
-     * {@code hasRole('MEMBRE')} n existe dans le projet, et les ecrans personnels
+     * <p><b>Deux niveaux seulement, et c'est une décision.</b> {@code ROLE_MEMBRE} n'y
+     * figure pas parce qu'il n'est <b>garde nulle part</b> : aucun
+     * {@code hasRole('MEMBRE')} n'existe dans le projet, et les écrans personnels
      * ({@code /mes-vehicules}, {@code /panier}, {@code /commandes}) sont couverts par
      * {@code anyRequest().authenticated()} seul. Leur cloisonnement vient de
-     * l <i>ownership</i>, chacun projetant les donnees du principal. L inscrire dans la
-     * hierarchie ne changerait donc rien du tout : ce serait du bruit dans une
-     * declaration dont toute la valeur est d etre lisible d un coup d oeil.
+     * l'<i>ownership</i>, chacun projetant les données du principal. L'inscrire dans la
+     * hiérarchie ne changerait donc rien du tout : ce serait du bruit dans une
+     * déclaration dont toute la valeur est d'être lisible d'un coup d'oeil.
      * {@code RoleMembreNestPasUneGardeTest} casse la build si une telle garde
      * apparaissait, auquel cas la question se reposerait.</p>
      *
      * <p><b>Ce bean suffit-il vraiment aux deux surfaces ?</b> Depuis Spring Security
-     * 6.3, un {@code RoleHierarchy} unique est repris par l autorisation web ET par la
-     * securite de methode. Le projet ne s en remet pas a cette lecture :
-     * {@code HierarchieRolesIT} verifie les deux surfaces separement, parce qu un
-     * comportement de framework suppose a deja coute trois formulaires publics au
-     * projet (la propriete declaree vide jugee presente).</p>
+     * 6.3, un {@code RoleHierarchy} unique est repris par l'autorisation web ET par la
+     * sécurité de méthode. Le projet ne s'en remet pas à cette lecture :
+     * {@code HierarchieRolesIT} vérifie les deux surfaces séparément, parce qu'un
+     * comportement de framework supposé a déjà coûté trois formulaires publics au
+     * projet (la propriété déclarée vide jugée présente).</p>
      */
     @Bean
     public RoleHierarchy hierarchieDesRoles() {
@@ -138,10 +138,10 @@ public class SecuriteConfig {
 
     /**
      * Remplace {@code anyRequest().authenticated()} : une connexion PARTIELLE (mot de
-     * passe verifie, second facteur ou changement impose en attente) satisferait
+     * passe vérifié, second facteur ou changement imposé en attente) satisferait
      * {@code authenticated()}, et ouvrirait {@code /panier}, {@code /mon-compte} et tout
-     * ecran garde par la seule authentification. Les gardes {@code hasRole}, elles,
-     * refusent deja : le jeton partiel ne porte aucune autorite.
+     * écran garde par la seule authentification. Les gardes {@code hasRole}, elles,
+     * refusent déjà : le jeton partiel ne porte aucune autorité.
      */
     static AuthorizationManager<RequestAuthorizationContext> authentificationAboutie() {
         AuthenticationTrustResolver confiance = new AuthenticationTrustResolverImpl();
@@ -162,101 +162,101 @@ public class SecuriteConfig {
             throws Exception {
         http
                 .authorizeHttpRequests(acces -> acces
-                        // Dispatch d erreur du conteneur vers /error : la page d erreur
-                        // elle-meme. La requete d origine a deja ete autorisee ou
-                        // refusee. Refuser aussi le rendu de son echec renvoyait un
-                        // visiteur anonyme a la connexion sur une simple adresse
+                        // Dispatch d'erreur du conteneur vers /error : la page d'erreur
+                        // elle-même. La requête d'origine a déjà été autorisée ou
+                        // refusée. Refuser aussi le rendu de son échec renvoyait un
+                        // visiteur anonyme à la connexion sur une simple adresse
                         // inconnue, et laissait la page Whitelabel aux autres cas.
                         // Une connexion partielle y est vue comme anonyme
                         // (ConnexionPartielleHorsEtapes filtre aussi ce dispatch).
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         // /recherche : le formulaire de recherche est sur les pages du
-                        // catalogue, publiques. La recherche l est donc aussi (F5).
+                        // catalogue, publiques. La recherche l'est donc aussi (F5).
                         .requestMatchers("/", "/accueil", "/services/**", "/pieces/**", "/recherche",
                                 "/inscription/**", "/connexion", "/mot-de-passe/**",
                                 "/cgv", "/mentions-legales", "/confidentialite", "/garantie-legale",
-                                // Texte gele d une version de document (F24). Public
-                                // pour la meme raison que les CGV elles-memes : exiger
-                                // une connexion pour relire les conditions qu on a
-                                // acceptees serait une entrave sans motif, et le
-                                // document n est le secret de personne. Enumere par
-                                // prefixe et non par joker ouvert sur tout : la route
-                                // ne sert que des textes contractuels generaux.
+                                // Texte gelé d'une version de document (F24). Public
+                                // pour la même raison que les CGV elles-mêmes : exiger
+                                // une connexion pour relire les conditions qu'on a
+                                // acceptées serait une entrave sans motif, et le
+                                // document n'est le secret de personne. Énuméré par
+                                // préfixe et non par joker ouvert sur tout : la route
+                                // ne sert que des textes contractuels généraux.
                                 "/documents/*/*",
                                 // Modèle de formulaire de rétractation (annexe 2 du
                                 // livre VI CDE), public comme les CGV qui l'annoncent :
                                 // il doit rester utilisable sans compte actif.
                                 "/retractation/formulaire", "/retractation/formulaire/pdf",
-                                // Page de contact : l article VI.45 CDE veut que
-                                // l identite du professionnel, son adresse, son
-                                // telephone et son courriel soient accessibles AVANT
+                                // Page de contact : l'article VI.45 CDE veut que
+                                // l'identité du professionnel, son adresse, son
+                                // téléphone et son courriel soient accessibles AVANT
                                 // que le consommateur ne soit lie, donc avant toute
-                                // creation de compte. Derriere une authentification,
-                                // l information arriverait apres le moment ou elle
-                                // doit eclairer la decision.
+                                // création de compte. Derrière une authentification,
+                                // l'information arriverait après le moment où elle
+                                // doit éclairer la décision.
                                 "/contact",
                                 // Bandeau et gestion des cookies (F25) : la question du
-                                // consentement se pose des la premiere visite, donc avant
+                                // consentement se pose dès la première visite, donc avant
                                 // toute connexion. Exiger une authentification pour y
-                                // repondre rendrait le refus impossible au visiteur, qui
-                                // est justement celui a qui l on demande.
+                                // répondre rendrait le refus impossible au visiteur, qui
+                                // est justement celui à qui l'on demande.
                                 "/cookies", "/cookies/**",
-                                // Confirmation de suppression de compte (F23) : a
-                                // l instant ou elle s affiche, la session vient d etre
-                                // invalidee et le compte n existe plus. Une page
-                                // authentifiee renverrait vers un formulaire de
+                                // Confirmation de suppression de compte (F23) : à
+                                // l'instant où elle s'affiche, la session vient d'être
+                                // invalidée et le compte n'existe plus. Une page
+                                // authentifiée renverrait vers un formulaire de
                                 // connexion que plus aucun identifiant ne satisfait.
                                 "/compte-supprime",
-                                // Confirmation d un changement d adresse (CdC 5.2.2).
-                                // Le lien arrive dans la NOUVELLE boite, souvent
+                                // Confirmation d'un changement d'adresse (CdC 5.2.2).
+                                // Le lien arrive dans la NOUVELLE boîte, souvent
                                 // ouverte ailleurs que dans la session du membre.
                                 // Exiger une authentification y renverrait vers un
                                 // formulaire de connexion portant l ANCIENNE adresse,
-                                // et la bascule deviendrait impossible a conclure. Le
-                                // jeton porte l autorisation, comme pour l activation
-                                // de compte. Route ENUMEREE et non ouverte par joker :
+                                // et la bascule deviendrait impossible à conclure. Le
+                                // jeton porte l'autorisation, comme pour l'activation
+                                // de compte. Route ÉNUMÉRÉE et non ouverte par joker :
                                 // elle ne sert que cette confirmation.
                                 "/changement-adresse/confirmation",
-                                // Definition du premier mot de passe d un administrateur
-                                // cree au back-office. Le compte n a encore AUCUN mot de
-                                // passe utilisable : il ne peut pas s authentifier pour
+                                // Définition du premier mot de passe d'un administrateur
+                                // créé au back-office. Le compte n'a encore AUCUN mot de
+                                // passe utilisable : il ne peut pas s'authentifier pour
                                 // atteindre cette page. Le jeton du lien porte
-                                // l autorisation : 256 bits, a usage unique, 24 h.
+                                // l'autorisation : 256 bits, à usage unique, 24 h.
                                 "/compte/definition")
                         .permitAll()
-                        // Etapes d une connexion commencee : seule surface ouverte a une
+                        // Étapes d'une connexion commencée : seule surface ouverte à une
                         // connexion partielle, avec la deconnexion et les ressources
-                        // statiques. authenticated() l admet, la ou AuthentificationAboutie
+                        // statiques. authenticated() l'admet, là où AuthentificationAboutie
                         // la refuse partout ailleurs.
                         .requestMatchers(EtapeConnexion.PREFIXE, EtapeConnexion.PREFIXE + "/**")
                         .authenticated()
                         .requestMatchers("/css/**", "/js/**", "/images/**", "/favicon.ico").permitAll()
                         .requestMatchers("/actuator/health").permitAll()
                         // API publique en LECTURE SEULE (BL-8) et sa documentation.
-                        // Anonyme par construction : elle n expose que ce qui figure
-                        // deja sur le site public, a savoir le catalogue des prestations et
-                        // identite commerciale du garage. Aucun verbe d ecriture n y
-                        // est declare, donc aucune authentification a exiger. La table
-                        // clef_api du socle reste volontairement inexploitee : y
-                        // adosser des jetons supposerait quotas et revocation, hors
-                        // perimetre V1.
+                        // Anonyme par construction : elle n'expose que ce qui figure
+                        // déjà sur le site public, à savoir le catalogue des prestations et
+                        // identité commerciale du garage. Aucun verbe d'écriture n'y
+                        // est déclaré, donc aucune authentification à exiger. La table
+                        // clef_api du socle reste volontairement inexploitée : y
+                        // adosser des jetons supposerait quotas et révocation, hors
+                        // périmètre V1.
                         //
-                        // Les deux routes sont ENUMEREES, et non couvertes par un joker
-                        // /api/v1/**. Le joker est fail-open : le troisieme endpoint,
-                        // quel qu il soit, naitrait public sans que personne ne l ait
-                        // decide, y compris un endpoint qui exposerait des donnees de
-                        // membre. L enumeration est fail-closed : ajouter une route
-                        // publique devient un geste explicite, verifiable en revue.
-                        // ApiPubliqueIT.surfaceFermeeParDefaut verrouille l ecart entre
-                        // les deux ecritures (302 attendu, 404 avec le joker).
+                        // Les deux routes sont ÉNUMÉRÉES, et non couvertes par un joker
+                        // /api/v1/**. Le joker est fail-open : le troisième endpoint,
+                        // quel qu'il soit, naîtrait public sans que personne ne l'ait
+                        // décidé, y compris un endpoint qui exposerait des données de
+                        // membre. L'énumération est fail-closed : ajouter une route
+                        // publique devient un geste explicite, vérifiable en revue.
+                        // ApiPubliqueIT.surfaceFermeeParDefaut verrouille l'écart entre
+                        // les deux écritures (302 attendu, 404 avec le joker).
                         .requestMatchers(HttpMethod.GET,
                                 "/api/v1/prestations/**", "/api/v1/garages/**").permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
                         .permitAll()
-                        // Webhook du prestataire de paiement : appel serveur a serveur,
-                        // sans session. L authenticite ne vient pas d un jeton mais de
-                        // la strategie securite §11 : le payload n est jamais cru, le
-                        // statut est relu aupres du prestataire via la passerelle.
+                        // Webhook du prestataire de paiement : appel serveur à serveur,
+                        // sans session. L'authenticité ne vient pas d'un jeton mais de
+                        // la stratégie sécurité §11 : le payload n'est jamais cru, le
+                        // statut est relu auprès du prestataire via la passerelle.
                         .requestMatchers("/webhooks/**").permitAll()
                         .requestMatchers("/admin/**").hasRole("ADMINISTRATEUR")
                         // Toute adresse non déclarée publique exige la connexion, y
@@ -268,7 +268,7 @@ public class SecuriteConfig {
                 )
                 .exceptionHandling(exceptions -> exceptions
                         .accessDeniedHandler(new RefusAccesEnEtapes()))
-                // Apres l autorisation : ce qui est public voit une connexion partielle
+                // Après l'autorisation : ce qui est public voit une connexion partielle
                 // comme anonyme. Voir ConnexionPartielleHorsEtapes.
                 .addFilterAfter(new ConnexionPartielleHorsEtapes(), AuthorizationFilter.class)
                 // Avant l'authentification : voir GardeConnexionFiltre. Le garde et le
@@ -298,13 +298,13 @@ public class SecuriteConfig {
                             }
                         })
                 )
-                // Les sessions authentifiees sont inscrites au registre, pour que la
-                // suspension d un compte puisse couper celles deja ouvertes. Sans
+                // Les sessions authentifiées sont inscrites au registre, pour que la
+                // suspension d'un compte puisse couper celles déjà ouvertes. Sans
                 // cette ligne, le bean SessionRegistry existerait sans jamais rien
-                // apprendre : la revocation ne trouverait aucune session a fermer, et
+                // apprendre : la révocation ne trouverait aucune session à fermer, et
                 // rien ne le signalerait.
-                // expiredUrl : sans lui, une session coupee (suspension, activation du
-                // second facteur ailleurs) recevait la page texte brute par defaut de
+                // expiredUrl : sans lui, une session coupée (suspension, activation du
+                // second facteur ailleurs) recevait la page texte brute par défaut de
                 // Spring Security, en anglais. La connexion est la suite logique.
                 .sessionManagement(sessions -> sessions
                         .maximumSessions(-1)
@@ -318,26 +318,26 @@ public class SecuriteConfig {
                 )
                 .headers(entetes -> entetes
                         // form-action porte le seul assouplissement de cette politique, et il
-                        // conditionne le parcours de paiement : le depart vers le prestataire
-                        // est un POST dont la reponse redirige vers Mollie. Chrome et Edge
-                        // appliquent form-action a la CIBLE de la redirection qui suit l envoi
-                        // d un formulaire, et pas seulement a l action ecrite dans le gabarit :
+                        // conditionne le parcours de paiement : le départ vers le prestataire
+                        // est un POST dont la réponse redirige vers Mollie. Chrome et Edge
+                        // appliquent form-action à la CIBLE de la redirection qui suit l'envoi
+                        // d'un formulaire, et pas seulement à l'action écrite dans le gabarit :
                         // avec 'self' seul, ils refusent de suivre et le membre ne peut pas
-                        // payer. Firefox ne l applique pas, d ou un defaut invisible sur une
+                        // payer. Firefox ne l'applique pas, d'où un défaut invisible sur une
                         // partie des navigateurs.
-                        // Un seul hote, et aucun joker : la page Mollie renvoie ensuite vers
+                        // Un seul hôte, et aucun joker : la page Mollie renvoie ensuite vers
                         // les banques depuis SON domaine, hors de notre document et donc hors
-                        // de cette politique. Elargir davantage n aiderait a rien et ouvrirait
-                        // l envoi d un formulaire du site vers un tiers.
-                        // Turnstile : deux hotes ajoutes, un seul et le meme.
+                        // de cette politique. Élargir davantage n'aiderait à rien et ouvrirait
+                        // l'envoi d'un formulaire du site vers un tiers.
+                        // Turnstile : deux hôtes ajoutés, un seul et le même.
                         // script-src pour api.js, frame-src pour la trame du widget.
-                        // frame-src et connect-src etaient jusqu ici ABSENTES et
-                        // retombaient sur default-src 'self' : la trame aurait ete
-                        // bloquee sans que la politique le laisse voir. Les declarer
-                        // rend explicite ce qui n etait qu un repli.
-                        // frame-ancestors reste 'none' : autoriser un tiers a charger
-                        // NOS pages dans une trame n a rien a voir avec charger LA
-                        // SIENNE dans les notres.
+                        // frame-src et connect-src étaient jusqu'ici ABSENTES et
+                        // retombaient sur default-src 'self' : la trame aurait été
+                        // bloquée sans que la politique le laisse voir. Les déclarer
+                        // rend explicite ce qui n'était qu'un repli.
+                        // frame-ancestors reste 'none' : autoriser un tiers à charger
+                        // NOS pages dans une trame n'a rien à voir avec charger LA
+                        // SIENNE dans les nôtres.
                         .contentSecurityPolicy(csp -> csp.policyDirectives(
                                 "default-src 'self'; "
                                         + "script-src 'self' https://challenges.cloudflare.com; "

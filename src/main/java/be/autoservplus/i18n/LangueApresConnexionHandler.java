@@ -18,32 +18,32 @@ import java.io.IOException;
 import java.util.Locale;
 
 /**
- * Applique a la session la langue enregistree au profil, au moment de la
- * connexion et a ce moment-la seulement (F6).
+ * Applique à la session la langue enregistrée au profil, au moment de la
+ * connexion et à ce moment-là seulement (F6).
  *
- * <p>La restriction au seul evenement de connexion n est pas un detail
- * d implementation, c est la regle. Une premiere version appliquait la preference a
- * chaque requete authentifiee dont la session n avait pas de langue choisie : quatre
- * tests deja en place sont passes au rouge et ont montre pourquoi c etait faux.
- * {@code utilisateur.langue} vaut {@code fr} par defaut pour tout le monde et
- * aucun ecran ne l ecrit. La generalisation revenait donc a servir du
- * francais a tout membre connecte, y compris celui dont le navigateur reclame du
- * neerlandais et qui n a jamais rien choisi. C etait une regression deguisee en
- * fonctionnalite. Applique a la connexion seule, le profil ne prend la main qu au
- * moment ou l on sait qui est la personne, et l en-tete du navigateur continue de
- * decider partout ailleurs.</p>
+ * <p>La restriction au seul événement de connexion n'est pas un détail
+ * d'implémentation, c'est la règle. Une première version appliquait la préférence à
+ * chaque requête authentifiée dont la session n'avait pas de langue choisie : quatre
+ * tests déjà en place sont passés au rouge et ont montré pourquoi c'était faux.
+ * {@code utilisateur.langue} vaut {@code fr} par défaut pour tout le monde et
+ * aucun écran ne l'écrit. La generalisation revenait donc à servir du
+ * français à tout membre connecté, y compris celui dont le navigateur réclame du
+ * néerlandais et qui n'a jamais rien choisi. C'était une régression déguisée en
+ * fonctionnalité. Appliqué à la connexion seule, le profil ne prend la main qu'au
+ * moment où l'on sait qui est la personne, et l'en-tête du navigateur continue de
+ * décider partout ailleurs.</p>
  *
- * <p>La garde reste l attribut de session du resolveur : il n est ecrit que lorsqu une
- * langue a ete explicitement choisie. Un visiteur qui bascule en neerlandais
- * puis se connecte garde donc son neerlandais : la protection contre la fixation de
- * session recopie les attributs, et celui-ci survit a la migration.</p>
+ * <p>La garde reste l'attribut de session du resolveur : il n'est écrit que lorsqu'une
+ * langue a été explicitement choisie. Un visiteur qui bascule en néerlandais
+ * puis se connecte garde donc son néerlandais : la protection contre la fixation de
+ * session recopie les attributs, et celui-ci survit à la migration.</p>
  *
- * <p>Le resolveur est injecte et non lu par {@code RequestContextUtils} : cet
- * utilitaire s appuie sur un attribut de requete pose par le {@code DispatcherServlet},
- * or un POST vers {@code /connexion} est traite par la chaine de filtres de securite et
- * n atteint jamais le servlet. La version qui l employait echouait sans bruit : la
- * langue n etait pas appliquee, et seul un test de bout en bout passant
- * par le vrai formulaire l a montre.</p>
+ * <p>Le resolveur est injecté et non lu par {@code RequestContextUtils} : cet
+ * utilitaire s'appuie sur un attribut de requête posé par le {@code DispatcherServlet},
+ * or un POST vers {@code /connexion} est traité par la chaîne de filtres de sécurité et
+ * n'atteint jamais le servlet. La version qui l'employait échouait sans bruit : la
+ * langue n'était pas appliquée, et seul un test de bout en bout passant
+ * par le vrai formulaire l'a montré.</p>
  *
  * <p>La redirection mène à la page demandée avant la connexion quand elle est une page
  * du site, sinon à la page d'arrivée du rôle : {@link DestinationApresConnexion} en
@@ -80,13 +80,13 @@ public class LangueApresConnexionHandler extends SimpleUrlAuthenticationSuccessH
     }
 
     /**
-     * L echec est avale apres journalisation : la connexion vient de reussir, et
-     * echouer ici renverrait l utilisateur a l ecran de connexion pour une question
-     * de langue. Meme arbitrage que le courriel informationnel d {@code AdminRdvService} :
-     * l accessoire ne fait pas tomber le principal.
+     * L'échec est avale après journalisation : la connexion vient de reussir, et
+     * échouer ici renverrait l'utilisateur à l'écran de connexion pour une question
+     * de langue. Même arbitrage que le courriel informationnel d {@code AdminRdvService} :
+     * l'accessoire ne fait pas tomber le principal.
      *
-     * <p>Publique pour la connexion en plusieurs etapes : la langue s applique quand la
-     * connexion ABOUTIT, apres le second facteur, et non des le mot de passe.</p>
+     * <p>Publique pour la connexion en plusieurs étapes : la langue s'applique quand la
+     * connexion ABOUTIT, après le second facteur, et non dès le mot de passe.</p>
      */
     public void appliquerLaPreference(HttpServletRequest requete, HttpServletResponse reponse,
                                        Authentication authentification) {
@@ -102,7 +102,7 @@ public class LangueApresConnexionHandler extends SimpleUrlAuthenticationSuccessH
         }
     }
 
-    /** Vrai des qu une langue a ete posee dans la session, quelle qu en soit l origine. */
+    /** Vrai dès qu'une langue a été posée dans la session, quelle qu'en soit l'origine. */
     private boolean choixDejaExprime(HttpServletRequest requete) {
         HttpSession session = requete.getSession(false);
         return session != null

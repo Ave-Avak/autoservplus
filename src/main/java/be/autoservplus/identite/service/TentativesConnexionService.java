@@ -18,7 +18,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * Verrouillage temporaire du compte apres des echecs repetes de connexion.
+ * Verrouillage temporaire du compte après des échecs repetes de connexion.
  *
  * <p>Réagit aux événements publiés par Spring Security. Le seuil vaut sur une fenêtre
  * ouverte par le premier échec (voir {@link Utilisateur#enregistrerEchecConnexion}), et
@@ -26,10 +26,10 @@ import java.time.Instant;
  * plutôt que définitif : un blocage permanent permettrait à un tiers de priver un membre de son
  * compte en saisissant volontairement de mauvais mots de passe.</p>
  *
- * <p><b>Seul le passage en verrouillage est consigne</b> au journal de securite du
- * compte, avec un avis au titulaire. Un mot de passe faux isole ne s ecrit pas : n importe
+ * <p><b>Seul le passage en verrouillage est consigné</b> au journal de sécurité du
+ * compte, avec un avis au titulaire. Un mot de passe faux isolé ne s'écrit pas : n'importe
  * qui peut saisir une adresse connue, et le journal du titulaire se remplirait des gestes
- * d un tiers sans rien lui apprendre.</p>
+ * d'un tiers sans rien lui apprendre.</p>
  */
 @Service
 public class TentativesConnexionService {
@@ -82,7 +82,7 @@ public class TentativesConnexionService {
     }
 
     /**
-     * Tentative refusee parce que le compte est deja verrouille. Spring la rejette avant
+     * Tentative refusée parce que le compte est déjà verrouillé. Spring la rejette avant
      * de lire le mot de passe : sans cette ligne, elle ne laissait aucune trace.
      */
     @EventListener
@@ -93,11 +93,11 @@ public class TentativesConnexionService {
     }
 
     /**
-     * Connexion ABOUTIE : appelee a la fin de la derniere etape, et non sur
-     * {@code AuthenticationSuccessEvent}, que Spring Security publie des que le mot de
-     * passe est verifie. Reagir a cet evenement remettait a zero les compteurs et datait
+     * Connexion ABOUTIE : appelée à la fin de la dernière étape, et non sur
+     * {@code AuthenticationSuccessEvent}, que Spring Security publie dès que le mot de
+     * passe est vérifié. Réagir à cet événement remettait à zéro les compteurs et datait
      * la connexion avant le second facteur : un mot de passe juste suivi de codes faux
-     * aurait ete enregistre comme une connexion reussie.
+     * aurait été enregistré comme une connexion réussie.
      */
     @Transactional
     public void connexionAboutie(String email) {
@@ -107,8 +107,8 @@ public class TentativesConnexionService {
     }
 
     /**
-     * Le verrouillage est deja ecrit : une panne du fournisseur de courriel ne doit pas
-     * l annuler. Meme arbitrage que {@code SecondFacteurService.notifierVerrouillage}.
+     * Le verrouillage est déjà écrit : une panne du fournisseur de courriel ne doit pas
+     * l'annuler. Même arbitrage que {@code SecondFacteurService.notifierVerrouillage}.
      */
     private void notifierVerrouillage(Utilisateur compte, Instant jusqua) {
         try {
