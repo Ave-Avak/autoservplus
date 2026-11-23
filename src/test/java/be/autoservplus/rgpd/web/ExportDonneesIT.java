@@ -24,6 +24,7 @@ import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.PosteAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
 import be.autoservplus.reservation.repository.VehiculeRepository;
+import be.autoservplus.support.SocleIntegration;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.Panier;
 import be.autoservplus.vente.repository.CommandeRepository;
@@ -60,7 +61,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Export du droit d acces de bout en bout (F22), sur un PostgreSQL reel.

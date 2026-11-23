@@ -5,7 +5,6 @@ import be.autoservplus.intervention.repository.InterventionRepository;
 import be.autoservplus.intervention.service.dto.CommandeAPlanifierVue;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.reservation.repository.VehiculeRepository;
-import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.StatutCommande;
@@ -14,6 +13,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
@@ -77,7 +77,7 @@ public class PlanificationCommandeService {
         return new CommandeAPlanifierVue(
                 commande.getReference(),
                 commande.getNumero(),
-                FormatageRdv.jourLisible(commande.getDateCommande(), zone),
+                LocalDateTime.ofInstant(commande.getDateCommande(), zone),
                 commande.getMembre().getPrenom() + " " + commande.getMembre().getNom(),
                 commandes.lignesServiceDe(commande).stream()
                         .map(LignePanier::getLibelleFige)

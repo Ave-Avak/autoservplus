@@ -88,7 +88,10 @@ public class AdminCommandeController {
             commandes.enregistrerRemise(reference, dateRemise);
             redirection.addFlashAttribute("message", msg("admin.ventes.remise.enregistree"));
         } catch (RefusTraduit refus) {
-            redirection.addFlashAttribute("erreur", msg(refus.getCleMessage()));
+            // Le refus s'affiche sous le champ, qui garde la date saisie : sans elle,
+            // l'administrateur devait la retaper sans savoir laquelle avait été refusée.
+            redirection.addFlashAttribute("erreurRemise", msg(refus.getCleMessage()));
+            redirection.addFlashAttribute("dateRemiseSaisie", dateRemise);
         }
         return "redirect:/admin/commandes/" + reference;
     }

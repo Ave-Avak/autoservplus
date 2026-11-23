@@ -192,6 +192,16 @@ autoservplus:
     # région du siège : nl en Flandre, fr en Wallonie, fr,nl ou nl,fr à Bruxelles.
     # Toute autre valeur fait refuser le démarrage.
     langues-documents: ${GARAGE_LANGUES_DOCUMENTS:fr}
+    # Variantes néerlandaises facultatives des mentions qui s'écrivent autrement dans
+    # cette langue. Elles servent à tout document en néerlandais et se replient une à
+    # une sur la valeur de base. Utiles à un siège bruxellois, qui émet dans les deux
+    # langues. Un siège flamand saisit déjà ses valeurs de base en néerlandais.
+    nl:
+      forme-juridique: ${GARAGE_FORME_JURIDIQUE_NL:}
+      rue: ${GARAGE_RUE_NL:}
+      localite: ${GARAGE_LOCALITE_NL:}
+      pays: ${GARAGE_PAYS_NL:}
+      rpm: ${GARAGE_RPM_NL:}
 
   stockage:
     # Racine des fichiers deposes par le back-office (fondation upload).
@@ -346,6 +356,12 @@ autoservplus:
     courriel: ${GARAGE_COURRIEL:garage@demo.test}
     # Siège de démonstration à Bruxelles : les deux langues, le français par défaut.
     langues-documents: ${GARAGE_LANGUES_DOCUMENTS:fr,nl}
+    nl:
+      forme-juridique: ${GARAGE_FORME_JURIDIQUE_NL:BV}
+      rue: ${GARAGE_RUE_NL:Werkplaatsstraat}
+      localite: ${GARAGE_LOCALITE_NL:Brussel}
+      pays: ${GARAGE_PAYS_NL:België}
+      rpm: ${GARAGE_RPM_NL:RPR Brussel}
   # Expéditeur des courriels de démonstration, sur un domaine réservé (RFC 2606). Mailpit
   # et Mailtrap l'acceptent, aucun vrai relais ne le délivrerait.
   courriel:
@@ -361,3 +377,19 @@ spring:
     # inferieur, que Flyway classerait « ignored » et refuserait a la validation sur une
     # base de demonstration persistante. Sous ce seul profil, elle s applique apres coup.
     out-of-order: true
+---
+# Cache des ressources statiques, sous prod seulement. Sans réglage, la chaîne de sécurité
+# pose « no-store » sur toute réponse : la feuille de style, les scripts et les notices de
+# garantie (600 Ko) étaient retéléchargés à chaque page. Une heure suffit à une visite et
+# borne le temps pendant lequel un navigateur garde une feuille de style périmée après un
+# déploiement. Rien n'est mis en cache sous dev ni sous demo : une modification s'y voit
+# au rechargement. Les pages, elles, restent en « no-store » sous tous les profils.
+spring:
+  config:
+    activate:
+      on-profile: prod
+  web:
+    resources:
+      cache:
+        cachecontrol:
+          max-age: 1h

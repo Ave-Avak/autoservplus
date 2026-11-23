@@ -25,15 +25,15 @@
         Vous pouvez modifier votre choix à tout moment. Il s'appliquera immédiatement.
     </p>
 
-    <!-- Même formulaire et mêmes catégories que le bandeau : un seul chemin d'écriture
+    <!--/* Même formulaire et mêmes catégories que le bandeau : un seul chemin d'écriture
          côté serveur, donc aucun risque que « gérer » et « accepter » n'enregistrent
-         pas la même chose. Les cases reflètent le choix courant, relu du cookie. -->
+         pas la même chose. Les cases reflètent le choix courant, relu du cookie. */-->
     <form method="post" th:action="@{/cookies/preferences}" class="formulaire-cookies">
         <input type="hidden" name="retour" value="/cookies?enregistre">
 
         <div th:replace="~{fragments/cookies :: categories}"></div>
 
-        <!-- Les trois mêmes actions qu'au bandeau, au même niveau visuel. -->
+        <!--/* Les trois mêmes actions qu'au bandeau, au même niveau visuel. */-->
         <div class="bandeau-cookies__actions">
             <button type="submit" name="action" value="accepter" class="btn-cookies"
                     th:text="#{cookies.action.accepter}">Tout accepter</button>
@@ -49,7 +49,6 @@
     </p>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

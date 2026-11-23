@@ -1,5 +1,7 @@
 package be.autoservplus.journal.service.dto;
 
+import java.time.LocalDateTime;
+
 /**
  * Une ligne du journal d audit (BL-7).
  *
@@ -17,7 +19,7 @@ package be.autoservplus.journal.service.dto;
  * @param detail ce qui a change, deja compose
  */
 public record EntreeJournal(
-        String date,
+        LocalDateTime date,
         String type,
         String acteur,
         String cible,

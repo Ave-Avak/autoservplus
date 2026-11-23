@@ -17,6 +17,7 @@ import be.autoservplus.vente.domain.Panier;
 import be.autoservplus.vente.domain.StatutCommande;
 import be.autoservplus.legal.domain.TypeDocumentVersionne;
 import be.autoservplus.legal.service.VersionsDocumentsService;
+import be.autoservplus.support.SocleIntegration;
 import be.autoservplus.vente.repository.CommandeRepository;
 import be.autoservplus.vente.repository.PanierRepository;
 import be.autoservplus.vente.service.PanierService;
@@ -46,7 +47,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Conversion du panier en commande de bout en bout (F14) : recapitulatif RM-30,

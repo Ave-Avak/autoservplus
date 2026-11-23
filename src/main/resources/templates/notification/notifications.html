@@ -22,8 +22,8 @@
         Vous n'avez aucune notification.
     </p>
 
-    <!-- Le bouton « tout marquer comme lu » n'a de sens que s'il reste des non-lues :
-         l'afficher en permanence proposerait une action sans effet. -->
+    <!--/* Le bouton « tout marquer comme lu » n'a de sens que s'il reste des non-lues :
+         l'afficher en permanence proposerait une action sans effet. */-->
     <form th:if="${nombreNotificationsNonLues > 0}"
           th:action="@{/mes-notifications/tout-lu}" method="post" class="actions-page">
         <button type="submit" th:text="#{notifications.tout-marquer}">Tout marquer comme lu</button>
@@ -33,13 +33,13 @@
         <li th:each="n : ${notifications}" th:classappend="${n.lue()} ? 'lue' : 'non-lue'">
             <p class="notification-titre">
                 <strong th:text="${n.titre()}">Rendez-vous confirmé</strong>
-                <!-- Marqueur textuel et non purement visuel : un lecteur d'écran doit
-                     percevoir la distinction lu/non-lu, qu'une seule couleur ne rend pas. -->
+                <!--/* Marqueur textuel et non purement visuel : un lecteur d'écran doit
+                     percevoir la distinction lu/non-lu, qu'une seule couleur ne rend pas. */-->
                 <span th:if="${!n.lue()}" class="badge"
                       th:text="#{notifications.non-lue}">Non lue</span>
             </p>
             <p th:text="${n.corps()}">Votre rendez-vous RDV-2026-0007 a été confirmé.</p>
-            <p class="carte-meta" th:text="${n.date()}">23 août 2026</p>
+            <p class="carte-meta" th:text="${#temporals.format(n.date(), 'EEEE d MMMM yyyy')}">23 août 2026</p>
             <form th:if="${!n.lue()}"
                   th:action="@{/mes-notifications/{id}/lue(id=${n.id()})}" method="post">
                 <button type="submit" class="lien-bouton"
@@ -53,7 +53,6 @@
     </p>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

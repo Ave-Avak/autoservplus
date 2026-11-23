@@ -3,6 +3,7 @@ package be.autoservplus.vente.service;
 import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.temps.FuseauGarage;
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.identite.repository.ConsentementRepository;
@@ -64,6 +65,7 @@ public class CommandeService {
     private final VersionsDocumentsService versionsDocuments;
     private final IdentiteGarage identite;
     private final Clock horloge;
+    private final FuseauGarage fuseau;
 
     public CommandeService(CommandeRepository commandes,
                            PaiementRepository paiements,
@@ -72,7 +74,9 @@ public class CommandeService {
                            GenerateurNumeroCommande numeros,
                            VersionsDocumentsService versionsDocuments,
                            IdentiteGarage identite,
-                           Clock horloge) {
+                           Clock horloge,
+                           FuseauGarage fuseau) {
+        this.fuseau = fuseau;
         this.commandes = commandes;
         this.paiements = paiements;
         this.paniers = paniers;
@@ -187,7 +191,7 @@ public class CommandeService {
         Commande commande = commandeDuMembre(reference, email);
         return ConfirmationCommandeVue.de(commande, situation(commande),
                 !commandes.lignesDe(commande).isEmpty(), recuApresAnnulation(commande),
-                ZoneId.of(horloge.getZone().getId()));
+                fuseau.zone());
     }
 
     /**
@@ -227,7 +231,7 @@ public class CommandeService {
     public CommandeDetailVue detail(UUID reference, String email) {
         Commande commande = commandeDuMembre(reference, email);
         return CommandeDetailVue.de(commande, commandes.lignesDe(commande),
-                paiementAbouti(commande), situation(commande), ZoneId.of(horloge.getZone().getId()));
+                paiementAbouti(commande), situation(commande), fuseau.zone());
     }
 
     /**
@@ -274,7 +278,7 @@ public class CommandeService {
     }
 
     public List<CommandeHistoriqueVue> historiqueDuMembre(String email) {
-        ZoneId zone = ZoneId.of(horloge.getZone().getId());
+        ZoneId zone = fuseau.zone();
         return commandes.historiqueDuMembre(email).stream()
                 .map(commande -> CommandeHistoriqueVue.de(commande, situation(commande),
                         recuApresAnnulation(commande), zone))

@@ -3,6 +3,7 @@ package be.autoservplus.importcsv.service;
 import be.autoservplus.catalogue.domain.Traductions;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.importcsv.service.dto.RapportImport;
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -22,7 +23,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Import CSV du catalogue de bout en bout (BL-2), sur un PostgreSQL reel.

@@ -1,5 +1,7 @@
 package be.autoservplus.notification.service.dto;
 
+import java.time.LocalDateTime;
+
 /**
  * Vue d une notification destinee a l ecran du membre (BL-6).
  *
@@ -16,5 +18,5 @@ public record NotificationVue(
         String titre,
         String corps,
         boolean lue,
-        String date) {
+        LocalDateTime date) {
 }

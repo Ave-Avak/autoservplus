@@ -71,13 +71,14 @@ public class FormulaireRetractation {
                 texte("retractation.formulaire.titre", langue),
                 texte("retractation.formulaire.entete", langue),
                 messages.getMessage("retractation.formulaire.destinataire",
-                        new Object[]{identiteDuGarage()}, langue),
+                        new Object[]{identiteDuGarage(langue)}, langue),
                 List.copyOf(rubriques),
                 texte("retractation.formulaire.note", langue));
     }
 
     /** Nom, adresse géographique et adresse électronique du garage, sur une ligne. */
-    String identiteDuGarage() {
+    String identiteDuGarage(Locale langue) {
+        IdentiteGarage garage = this.garage.pour(langue);
         String adresse = garage.adresseLisible();
         if (garage.pays() != null && !garage.pays().isBlank()) {
             adresse = adresse + ", " + garage.pays();

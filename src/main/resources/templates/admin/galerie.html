@@ -18,7 +18,7 @@
     <h1 th:text="#{admin.galerie.titre}">Galerie d'images</h1>
 
     <p role="status" class="message" th:if="${message}" th:text="${message}">2 image(s) ajoutée(s).</p>
-    <p role="alert" class="erreur" th:if="${erreur}" th:text="${erreur}">Format non accepté.</p>
+    <p role="alert" class="message message-erreur" th:if="${erreur}" th:text="${erreur}">Format non accepté.</p>
 
     <p th:if="${#lists.isEmpty(photos)}" th:text="#{admin.galerie.aucune}">
         Aucune image pour l'instant.
@@ -26,8 +26,8 @@
 
     <ul class="galerie" th:unless="${#lists.isEmpty(photos)}">
         <li th:each="p : ${photos}">
-            <!-- L'URL porte l'identifiant de la ligne, jamais le chemin du fichier :
-                 le chemin réel est résolu côté serveur. -->
+            <!--/* L'URL porte l'identifiant de la ligne, jamais le chemin du fichier :
+                 le chemin réel est résolu côté serveur. */-->
             <img th:src="@{/images/galerie/{id}(id=${p.id()})}" th:alt="${p.texteAlt()}"
                  width="200" alt="">
             <p class="carte-meta" th:text="${p.texteAlt()}">Vidange terminée</p>
@@ -45,8 +45,8 @@
           method="post" enctype="multipart/form-data">
         <p>
             <label for="fichiers" th:text="#{admin.galerie.fichiers}">Images</label>
-            <!-- accept ne fait que guider le sélecteur : le contrôle réel est fait sur
-                 les octets d'en-tête côté serveur, jamais sur ce que le client annonce. -->
+            <!--/* accept ne fait que guider le sélecteur : le contrôle réel est fait sur
+                 les octets d'en-tête côté serveur, jamais sur ce que le client annonce. */-->
             <input type="file" id="fichiers" name="fichiers" multiple required
                    th:accept="${typesAdmis}">
         </p>
@@ -54,15 +54,14 @@
             Formats admis : .jpg, .png, .webp
         </p>
         <p>
-            <!-- Obligatoire : une image sans alternative textuelle est invisible pour
-                 un lecteur d'écran (WCAG 2.1 AA, critère 1.1.1). -->
+            <!--/* Obligatoire : une image sans alternative textuelle est invisible pour
+                 un lecteur d'écran (WCAG 2.1 AA, critère 1.1.1). */-->
             <label for="texteAlt" th:text="#{admin.galerie.texte-alt}">Description de l'image</label>
             <input type="text" id="texteAlt" name="texteAlt" maxlength="200" required>
         </p>
         <p><button type="submit" class="btn-cta" th:text="#{admin.galerie.envoyer}">Envoyer</button></p>
     </form>
 </main>
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

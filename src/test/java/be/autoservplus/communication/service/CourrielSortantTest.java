@@ -6,8 +6,7 @@ import be.autoservplus.identite.domain.ChampCompte;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
-import be.autoservplus.reservation.domain.ParametreAtelier;
-import be.autoservplus.reservation.repository.ParametreAtelierRepository;
+import be.autoservplus.support.FuseauxDeTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,8 +23,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Rédaction des courriels : chaque type, dans chaque langue, sans transaction (le
@@ -50,13 +47,9 @@ class CourrielSortantTest {
         messages.setBasename("i18n/messages");
         messages.setDefaultEncoding("UTF-8");
         messages.setFallbackToSystemLocale(false);
-        IdentiteGarage garage = mock(IdentiteGarage.class);
-        when(garage.enseigne()).thenReturn("Garage Test");
-        when(garage.courriel()).thenReturn("atelier@exemple.be");
-        ParametreAtelierRepository parametres = mock(ParametreAtelierRepository.class);
-        when(parametres.courants()).thenReturn(new ParametreAtelier());
+        IdentiteGarage garage = identiteDeTest();
         courriel = new CourrielSortant(messages, new EnvoiApresCommit(partis::add), garage,
-                parametres, new LiensCourriel("http://localhost:8080/"),
+                FuseauxDeTest.bruxelles(), new LiensCourriel("http://localhost:8080/"),
                 new MentionsIdentiteGarage(garage, messages));
         this.messages = messages;
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie",
@@ -164,13 +157,9 @@ class CourrielSortantTest {
     @DisplayName("seuls les courriels qui trahiraient un compte partent hors de la requête")
     void envoisHorsDeLaRequete() {
         List<Courriel> horsRequete = new ArrayList<>();
-        IdentiteGarage garage = mock(IdentiteGarage.class);
-        when(garage.enseigne()).thenReturn("Garage Test");
-        when(garage.courriel()).thenReturn("atelier@exemple.be");
-        ParametreAtelierRepository parametres = mock(ParametreAtelierRepository.class);
-        when(parametres.courants()).thenReturn(new ParametreAtelier());
+        IdentiteGarage garage = identiteDeTest();
         courriel = new CourrielSortant(messages, new EnvoiApresCommit(partis::add, horsRequete::add),
-                garage, parametres, new LiensCourriel("http://localhost:8080/"),
+                garage, FuseauxDeTest.bruxelles(), new LiensCourriel("http://localhost:8080/"),
                 new MentionsIdentiteGarage(garage, messages));
 
         tousLesEnvois().forEach((type, envoi) -> envoi.accept(Langue.fr));
@@ -233,16 +222,22 @@ class CourrielSortantTest {
         return jointes;
     }
 
-    /** Identité réelle plutôt que simulée : la confirmation l'imprime rubrique par rubrique. */
-    private void avecIdentiteComplete() {
-        IdentiteGarage identite = new IdentiteGarage("Garage Test", "Garage de démonstration", "SRL",
+    /**
+     * Identité réelle, jamais simulée : c'est un record de configuration, et les courriels en
+     * tirent une variante par langue que seul le vrai type sait rendre.
+     */
+    private static IdentiteGarage identiteDeTest() {
+        return new IdentiteGarage("Garage Test", "Garage de démonstration", "SRL",
                 "Rue de l'Atelier", "12", "1000", "Bruxelles", "Belgique", "0123.456.789",
                 "RPM Bruxelles", "BE0123456789", "BE68 5390 0754 7034", "+32 2 000 00 00",
                 "atelier@exemple.be");
-        ParametreAtelierRepository parametres = mock(ParametreAtelierRepository.class);
-        when(parametres.courants()).thenReturn(new ParametreAtelier());
+    }
+
+    /** La confirmation imprime l'identité rubrique par rubrique. */
+    private void avecIdentiteComplete() {
+        IdentiteGarage identite = identiteDeTest();
         courriel = new CourrielSortant(messages, new EnvoiApresCommit(partis::add), identite,
-                parametres, new LiensCourriel("http://localhost:8080/"),
+                FuseauxDeTest.bruxelles(), new LiensCourriel("http://localhost:8080/"),
                 new MentionsIdentiteGarage(identite, messages));
     }
 
@@ -390,6 +385,31 @@ class CourrielSortantTest {
         assertThat(parti.sujet()).isEqualTo("Nouvelle demande de rendez-vous à traiter");
         assertThat(parti.corps()).contains("dimanche 13 septembre 2026")
                 .contains("Marie Dupont").contains("http://localhost:8080/admin/rendez-vous/abc");
+    }
+
+    @Test
+    @DisplayName("le pied d'un courriel au membre dit où joindre le garage, dans sa langue (F27)")
+    void coordonneesDuGarageEnPied() {
+        courriel.envoyerAvisMotDePasseModifie(marie, OrigineMotDePasse.REINITIALISATION);
+        assertThat(partis.get(0).corps()).endsWith("Pour joindre le garage :\nGarage Test\n"
+                + "Rue de l'Atelier 12, 1000 Bruxelles\nTéléphone : +32 2 000 00 00\n"
+                + "Courriel : atelier@exemple.be");
+
+        partis.clear();
+        marie.setLangue(Langue.nl);
+        courriel.envoyerAvisMotDePasseModifie(marie, OrigineMotDePasse.REINITIALISATION);
+        assertThat(partis.get(0).corps()).contains("De garage bereiken:\nGarage Test\n")
+                .endsWith("Telefoon: +32 2 000 00 00\nE-mail: atelier@exemple.be");
+    }
+
+    @Test
+    @DisplayName("un courriel adressé à l'atelier ne lui rappelle pas ses propres coordonnées")
+    void pasDeCoordonneesPourLAtelier() {
+        courriel.envoyerAvisNouvelleDemandeAuGarage(new DetailsRdvCourriel("RDV-1", DIMANCHE),
+                "Marie Dupont", false, "/admin/rendez-vous/abc");
+
+        assertThat(partis.get(0).corps()).doesNotContain("Pour joindre le garage")
+                .endsWith("Merci de ne pas y répondre.");
     }
 
     @Test

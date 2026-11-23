@@ -61,7 +61,9 @@
                 <li sec:authorize="!hasRole('ADMINISTRATEUR')"><a th:href="@{/mes-messages}"
                        th:text="${nombreFilsNonLus != null} ? #{messagerie.nav(${nombreFilsNonLus})} : #{nav.messages}"
                        th:attr="aria-current=${cheminCourant == '/mes-messages'} ? 'page' : null">Messages</a></li>
-                <li><a th:href="@{/mes-notifications}"
+                <!--/* L'exploitant n'est pas le garage : aucun avis ne lui est adressé, et le
+                     lien menait à une liste toujours vide. */-->
+                <li sec:authorize="!hasRole('SUPER_ADMINISTRATEUR')"><a th:href="@{/mes-notifications}"
                        th:text="${nombreNotificationsNonLues != null} ? #{notifications.nav(${nombreNotificationsNonLues})} : #{nav.notifications}"
                        th:attr="aria-current=${cheminCourant == '/mes-notifications'} ? 'page' : null">Notifications</a></li>
                 <li sec:authorize="hasRole('ADMINISTRATEUR')"><a th:href="@{/admin}" th:text="#{nav.back-office}">Back-office</a></li>

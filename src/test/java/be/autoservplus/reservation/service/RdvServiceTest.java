@@ -62,7 +62,11 @@ class RdvServiceTest {
     @Mock private GenerateurNumeroRdv numeros;
     @Mock private AvisRendezVous avis;
     @Mock private EcheanceReponse echeances;
-    @Mock private IdentiteGarage garage;
+    /** Identité réelle : un record de configuration ne se simule pas. */
+    private final IdentiteGarage garage = new IdentiteGarage("Garage Test", "Garage de démonstration",
+            "SRL", "Rue de l'Atelier", "12", "1000", "Bruxelles", "Belgique", "0123.456.789",
+            "RPM Bruxelles", "BE0123456789", "BE68 5390 0754 7034", "+32 2 000 00 00",
+            "atelier@exemple.be");
 
     private RdvService service;
     private UUID golfReference;

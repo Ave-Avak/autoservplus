@@ -1,5 +1,6 @@
 package be.autoservplus.facturation.service;
 
+import be.autoservplus.common.temps.FuseauGarage;
 import be.autoservplus.facturation.domain.CompteurAvoir;
 import be.autoservplus.facturation.repository.CompteurAvoirRepository;
 import org.springframework.stereotype.Component;
@@ -7,7 +8,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.time.Year;
 
 /**
  * Attribue le numero d une note de credit, format {@code AV-ANNEE-NNNN}, avec la
@@ -35,8 +35,11 @@ public class GenerateurNumeroAvoir {
 
     private final CompteurAvoirRepository compteurs;
     private final Clock horloge;
+    private final FuseauGarage fuseau;
 
-    public GenerateurNumeroAvoir(CompteurAvoirRepository compteurs, Clock horloge) {
+    public GenerateurNumeroAvoir(CompteurAvoirRepository compteurs, Clock horloge,
+                                 FuseauGarage fuseau) {
+        this.fuseau = fuseau;
         this.compteurs = compteurs;
         this.horloge = horloge;
     }
@@ -49,7 +52,8 @@ public class GenerateurNumeroAvoir {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public NumeroAvoir prochain() {
-        short exercice = (short) Year.now(horloge).getValue();
+        // Année au garage, comme la date imprimée sur le document : l'horloge est en UTC.
+        short exercice = (short) fuseau.annee(horloge.instant());
         // Creation avant verrouillage : on ne peut pas verrouiller une ligne absente.
         compteurs.creerSiAbsent(exercice);
         CompteurAvoir compteur = compteurs.verrouillerParExercice(exercice)

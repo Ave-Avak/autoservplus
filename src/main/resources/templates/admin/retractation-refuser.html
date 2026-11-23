@@ -48,8 +48,8 @@
             <label for="motif" th:text="#{admin.retractations.refus.motif}">Motif du refus</label>
             <textarea id="motif" th:field="*{motif}" rows="4" maxlength="1000" required
                       aria-describedby="aide-motif"></textarea>
-            <!-- Le refus prive le consommateur d'un droit : il doit savoir sur quel
-                 constat le garage s'appuie. -->
+            <!--/* Le refus prive le consommateur d'un droit : il doit savoir sur quel
+                 constat le garage s'appuie. */-->
             <p id="aide-motif" class="texte-info" th:text="#{admin.retractations.refus.aide}">
                 Le motif est communiqué au membre par courriel.
             </p>
@@ -63,7 +63,6 @@
     </form>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

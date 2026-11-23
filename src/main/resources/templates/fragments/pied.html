@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Fragment pied de page</title></head>
+<body>
+
+<!--/*
+  Pied de page commun à tous les écrans, publics, membres et back-office.
+
+  Un seul point d'insertion par page (<div th:replace="~{fragments/pied :: pied}">
+  juste avant </body>) porte les liens légaux, la mention de droits et le bandeau de
+  consentement aux cookies. Les documents légaux se consultent ainsi de n'importe quelle
+  page (F24), et le consentement se retire aussi facilement qu'il se donne (art. 7.3
+  RGPD) par « Gérer mes cookies ».
+
+  Les liens n'existent qu'ici : une page ne les répète pas dans son contenu.
+*/-->
+<th:block th:fragment="pied">
+    <footer class="pied">
+        <nav th:attr="aria-label=#{pied.liens.aria}" aria-label="Liens légaux">
+            <ul>
+                <li><a th:href="@{/cgv}" th:text="#{legal.lien.cgv}">Conditions générales de vente</a></li>
+                <li><a th:href="@{/mentions-legales}" th:text="#{legal.lien.mentions}">Mentions légales</a></li>
+                <li><a th:href="@{/confidentialite}" th:text="#{legal.lien.confidentialite}">Politique de confidentialité</a></li>
+                <li><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.titre}">Garantie légale</a></li>
+                <li><a th:href="@{/retractation/formulaire}" th:text="#{retractation.formulaire.lien}">Formulaire de rétractation</a></li>
+                <li><a th:href="@{/contact}" th:text="#{nav.contact}">Contact</a></li>
+                <li><a th:href="@{/cookies}" th:text="#{cookies.gerer}">Gérer mes cookies</a></li>
+            </ul>
+        </nav>
+        <p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p>
+    </footer>
+
+    <div th:replace="~{fragments/cookies :: bandeau}"></div>
+</th:block>
+
+</body>
+</html>

@@ -1,5 +1,6 @@
 package be.autoservplus.intervention.service.dto;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -14,7 +15,7 @@ import java.util.UUID;
 public record CommandeAPlanifierVue(
         UUID reference,
         String numero,
-        String date,
+        LocalDateTime date,
         String client,
         List<String> prestations,
         List<VehiculeChoisissable> vehicules,

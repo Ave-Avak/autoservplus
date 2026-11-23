@@ -11,24 +11,24 @@
 
 <a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
-<!--
+<!--/*
   En-tête RÉDUIT À LA MARQUE, et c'est délibéré : cette page tient la place de celle
   du prestataire de paiement, qui n'affiche jamais la navigation du marchand. Y
   laisser le menu et le compteur de panier inviterait à quitter un paiement en cours,
   et donnerait à voir un écran que le parcours réel ne montre pas. Le sélecteur de
   langue reste : une page de paiement multilingue est la norme, chez Mollie comme
   ailleurs.
--->
+*/-->
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
 
-    <!--
+    <!--/*
       Reprend .avis-brouillon plutôt que d'introduire une classe : même rôle
       sémantique (« ceci n'est pas la chose réelle ») et surtout un contraste déjà
       CALCULÉ (5.08:1). Une bannière d'avertissement dont le contraste serait choisi
       à l'œil manquerait sa cible auprès des lecteurs qu'elle vise en premier.
-    -->
+    */-->
     <aside class="avis-brouillon" role="note">
         <h2 th:text="#{paiement.simule.banniere}">Paiement simulé (démonstration)</h2>
         <p th:text="#{paiement.simule.explication}">
@@ -38,11 +38,11 @@
 
     <h1 th:text="#{paiement.simule.titre}">Paiement simulé</h1>
 
-    <!--
+    <!--/*
       Numéro et montant affichés parce que c'est ce que le membre doit confronter à
       son récapitulatif avant de payer : la seule vérification qui compte à cet
       instant, chez un prestataire réel comme ici.
-    -->
+    */-->
     <dl class="identite-garage">
         <dt th:text="#{paiement.simule.commande}">Commande</dt>
         <dd th:text="${paiement.numeroCommande()}">CMD-2026-0001</dd>
@@ -72,7 +72,6 @@
     </form>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

@@ -37,9 +37,9 @@
                th:errors="*{codeCategorie}"></p>
         </div>
 
-        <!-- Le code identifie techniquement la prestation : saisissable a la creation,
+        <!--/* Le code identifie techniquement la prestation : saisissable a la creation,
              affiche mais fige a l'edition (champ cache pour la validation, ignore par
-             le service). -->
+             le service). */-->
         <div class="champ" th:unless="${edition}">
             <label for="code" th:text="#{admin.catalogue.champ.code}">Code</label>
             <input type="text" id="code" th:field="*{code}" maxlength="40" required>
@@ -141,8 +141,8 @@
         </p>
     </form>
 
-    <!-- BL-7 : historique des modifications de cet article, en consultation seule.
-         Affiche uniquement en edition : un article qu'on cree n'a pas de passe. -->
+    <!--/* BL-7 : historique des modifications de cet article, en consultation seule.
+         Affiche uniquement en edition : un article qu'on cree n'a pas de passe. */-->
     <section th:if="${edition and historique != null and !#lists.isEmpty(historique)}">
         <h2 th:text="#{admin.journal.article.titre}">Historique des modifications</h2>
         <div class="defilement" tabindex="0" role="region" aria-labelledby="legende-admin-catalogue-prestation-formulaire">
@@ -167,7 +167,6 @@
     </section>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

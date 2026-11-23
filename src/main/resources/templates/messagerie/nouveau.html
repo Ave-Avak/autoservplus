@@ -18,17 +18,17 @@
             <label for="sujet" th:text="#{messagerie.sujet}">Sujet</label>
             <input type="text" id="sujet" th:field="*{sujet}" maxlength="150" required>
         </p>
-        <p role="alert" class="erreur" th:if="${#fields.hasErrors('sujet')}" th:errors="*{sujet}">Sujet obligatoire.</p>
+        <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('sujet')}" th:errors="*{sujet}">Sujet obligatoire.</p>
 
         <p>
             <label for="corps" th:text="#{messagerie.reponse}">Votre message</label>
             <textarea id="corps" th:field="*{corps}" rows="6" maxlength="4000" required></textarea>
         </p>
-        <p role="alert" class="erreur" th:if="${#fields.hasErrors('corps')}" th:errors="*{corps}">Message obligatoire.</p>
+        <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('corps')}" th:errors="*{corps}">Message obligatoire.</p>
 
-        <!-- Le socle ne prévoit qu'un rattachement à une intervention. Pour une
+        <!--/* Le socle ne prévoit qu'un rattachement à une intervention. Pour une
              question sur une commande, le membre ouvre un fil libre et cite la
-             référence dans son message. -->
+             référence dans son message. */-->
         <p class="carte-meta" th:text="#{messagerie.nouveau.aide}">
             Pour une question sur une commande, citez son numéro dans votre message.
         </p>
@@ -38,7 +38,6 @@
 
     <p><a th:href="@{/mes-messages}" th:text="#{messagerie.retour}">Retour à mes messages</a></p>
 </main>
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

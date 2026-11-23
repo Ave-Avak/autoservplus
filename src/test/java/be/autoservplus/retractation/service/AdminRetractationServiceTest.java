@@ -12,6 +12,7 @@ import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.retractation.domain.DemandeAnnulation;
 import be.autoservplus.retractation.domain.StatutDemandeAnnulation;
 import be.autoservplus.retractation.repository.DemandeAnnulationRepository;
+import be.autoservplus.support.FuseauxDeTest;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.MotifAnnulationCommande;
 import be.autoservplus.vente.domain.Paiement;
@@ -82,7 +83,7 @@ class AdminRetractationServiceTest {
     void setUp() {
         service = new AdminRetractationService(demandes, commandes, paiements, factures,
                 avoirs, prestataire, utilisateurs, evenements,
-                Clock.fixed(MAINTENANT, BRUXELLES));
+                Clock.fixed(MAINTENANT, BRUXELLES), FuseauxDeTest.bruxelles());
 
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie",
                 TypeUtilisateur.MEMBRE);

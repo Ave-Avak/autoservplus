@@ -38,7 +38,7 @@
             <tr th:each="c : ${commandes}">
                 <td><a th:href="@{/admin/commandes-a-planifier/{ref}(ref=${c.reference()})}"
                        th:text="${c.numero()}">CMD-2026-0007</a></td>
-                <td th:text="${c.date()}">23 août 2026</td>
+                <td th:text="${#temporals.format(c.date(), 'EEEE d MMMM yyyy')}">23 août 2026</td>
                 <td th:text="${c.client()}">Marie Dupont</td>
                 <td th:text="${#strings.listJoin(c.prestations(), ', ')}">Vidange</td>
                 <td>
@@ -52,7 +52,6 @@
         </table>
     </div>
 </main>
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

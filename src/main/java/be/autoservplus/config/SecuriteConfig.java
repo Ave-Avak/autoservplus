@@ -281,9 +281,9 @@ public class SecuriteConfig {
                 .formLogin(formulaire -> formulaire
                         .loginPage("/connexion")
                         .usernameParameter("email")
-                        // Remplace defaultSuccessUrl("/mon-compte", true) a comportement
-                        // strictement egal (meme classe, memes deux reglages) en y
-                        // ajoutant l application de la langue enregistree au profil (F6).
+                        // Conduit les étapes de la connexion, applique la langue du profil
+                        // (F6) et mène à la page demandée avant la connexion, à défaut à
+                        // la page d'arrivée du rôle.
                         .successHandler(succesHandler)
                         .failureHandler(echecHandler)
                         .permitAll()

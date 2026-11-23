@@ -3,6 +3,8 @@ package be.autoservplus.messagerie.service.dto;
 import be.autoservplus.messagerie.domain.Message;
 import be.autoservplus.messagerie.domain.RoleExpediteur;
 
+import java.time.LocalDateTime;
+
 /**
  * Un message tel qu il s affiche dans un fil (BL-5).
  *
@@ -15,9 +17,9 @@ public record MessageVue(
         boolean duGarage,
         String corps,
         boolean lu,
-        String date) {
+        LocalDateTime date) {
 
-    public static MessageVue de(Message message, String date, String libelleGarage) {
+    public static MessageVue de(Message message, LocalDateTime date, String libelleGarage) {
         boolean duGarage = message.getRole() == RoleExpediteur.ADMINISTRATEUR;
         return new MessageVue(
                 duGarage ? libelleGarage : message.getExpediteur().getPrenom(),

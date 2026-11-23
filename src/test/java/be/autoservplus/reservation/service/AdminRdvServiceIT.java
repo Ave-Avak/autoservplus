@@ -11,6 +11,7 @@ import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.reservation.domain.*;
 import be.autoservplus.reservation.repository.*;
 import be.autoservplus.reservation.web.dto.RdvVueAdmin;
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -34,7 +35,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Exerce les requetes JPQL du tableau de bord admin contre un vrai PostgreSQL 16.

@@ -18,9 +18,9 @@
 
     <div th:replace="~{fragments/legal :: brouillon}"></div>
 
-    <!-- Le lecteur doit pouvoir NOMMER le texte qu'il lit : c'est ce numero que sa
+    <!--/* Le lecteur doit pouvoir NOMMER le texte qu'il lit : c'est ce numero que sa
          preuve d'acceptation portera, et le lien mene au texte gele de cette version,
-         qui restera lisible quand la page publique aura changé. -->
+         qui restera lisible quand la page publique aura changé. */-->
     <p class="version-document" th:if="${versionEnVigueur != null}">
         <span th:text="#{legal.version.mention(${versionEnVigueur.version()}, ${#temporals.format(versionEnVigueur.dateEffet(), 'dd/MM/yyyy')})}">
             Version CGV-2026-03, en vigueur depuis le 27/10/2026
@@ -122,11 +122,9 @@
     </section>
 
     <nav th:attr="aria-label=#{legal.liens.aria}" aria-label="Documents légaux">
-        <div th:replace="~{fragments/legal :: liens}"></div>
     </nav>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

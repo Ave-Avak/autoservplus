@@ -59,6 +59,7 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
     private final TentativesConnexionService tentatives;
     private final LangueApresConnexionHandler langue;
     private final PageArrivee pageArrivee;
+    private final DestinationApresConnexion destination;
     private final Clock horloge;
     private final SecurityContextHolderStrategy strategie =
             SecurityContextHolder.getContextHolderStrategy();
@@ -75,7 +76,8 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
     public ParcoursConnexion(UtilisateurRepository utilisateurs,
                              TentativesConnexionService tentatives,
                              LangueApresConnexionHandler langue, PageArrivee pageArrivee,
-                             Clock horloge) {
+                             DestinationApresConnexion destination, Clock horloge) {
+        this.destination = destination;
         this.utilisateurs = utilisateurs;
         this.tentatives = tentatives;
         this.langue = langue;
@@ -102,14 +104,15 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
     }
 
     /**
-     * Une etape vient d etre franchie : redirige vers la suivante, ou fait aboutir la
-     * connexion sur la page d arrivee du role.
+     * Une étape vient d'être franchie : redirige vers la suivante, ou fait aboutir la
+     * connexion sur la page demandée avant elle, à défaut sur la page d'arrivée du rôle.
      *
      * @return la vue de redirection
      */
     public String avancer(HttpServletRequest requete, HttpServletResponse reponse,
                           AuthentificationPartielle partielle) {
-        return avancer(requete, reponse, partielle, pageArrivee::de);
+        return avancer(requete, reponse, partielle,
+                complete -> destination.de(requete, reponse, complete));
     }
 
     /**

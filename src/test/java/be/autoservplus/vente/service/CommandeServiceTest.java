@@ -13,6 +13,7 @@ import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.ConsentementRepository;
 import be.autoservplus.reservation.service.support.FormatageRdv;
+import be.autoservplus.support.FuseauxDeTest;
 import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
@@ -74,7 +75,8 @@ class CommandeServiceTest {
     @BeforeEach
     void setUp() {
         service = new CommandeService(commandes, paiements, paniers, consentements, numeros,
-                versionsDocuments, GaragesDeTest.bruxellois(), Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
+                versionsDocuments, GaragesDeTest.bruxellois(), Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")),
+                FuseauxDeTest.bruxelles());
 
         marie = MembresDeTest.membre(EMAIL, "$2a$12$h", "Dupont", "Marie");
         Categorie freinage = new Categorie("FRE", "Freinage", TypeCategorie.PIECE);

@@ -26,7 +26,6 @@
     <p th:text="#{verification.renvoi.envoye.indesirables}">Vous ne recevez rien ? Vérifiez le dossier des indésirables, et assurez-vous que l'adresse saisie est bien celle de votre compte.</p>
     <p><a th:href="@{/mot-de-passe/oublie}" th:text="#{verification.renvoi.envoye.autre}">Essayer avec une autre adresse</a></p>
 </main>
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

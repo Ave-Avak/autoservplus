@@ -89,7 +89,7 @@ référence (catalogue, postes d'atelier, horaires) et aucun compte membre.
 ## Restaurer la base de démonstration
 
 > Le dump publié date d'avant V36 et ne démarre plus selon la procédure ci-dessous.
-> Sans le profil `demo`, Flyway refuse les migrations V36 à V43, de numéro inférieur à
+> Sans le profil `demo`, Flyway refuse les migrations V36 et suivantes, de numéro inférieur à
 > la graine V900 qu'il porte déjà. Seul le profil `demo` les accepte hors ordre, si bien
 > qu'une base de démonstration persistante n'a pas à être remise à zéro quand une
 > migration s'ajoute. Le dump sera régénéré au gel du code par
@@ -193,8 +193,8 @@ src/main/java/be/autoservplus/
 └── config/          sécurité, horloge, propriétés
 
 src/main/resources/db/
-├── migration/       schéma et données de référence, toujours appliqués (V1 à V43, sans V34)
-└── demo/            jeu de démonstration, appliqué sous le profil `demo` seulement (V900, V901)
+├── migration/       schéma et données de référence, toujours appliqués (V1 à V67, sans V34)
+└── demo/            jeu de démonstration, appliqué sous le profil `demo` seulement (V899 à V906)
 ```
 
 La séparation entre `migration` et `demo` a une raison. Les tests d'intégration partent

@@ -108,7 +108,7 @@
 
         <div class="champ">
             <label for="motif" th:text="#{admin.compte.modification.motif}">Demande du membre</label>
-            <textarea id="motif" th:field="*{motif}" maxlength="500" rows="3" required
+            <textarea id="motif" th:field="*{motif}" th:aria-invalid="${#fields.hasErrors('motif')} ? 'true'" maxlength="500" rows="3" required
                       aria-describedby="aide-motif"></textarea>
             <p class="texte-info" id="aide-motif" th:text="#{admin.compte.modification.motif.aide}">
                 Notez comment et quand le membre l'a demandé.</p>
@@ -123,7 +123,6 @@
     </form>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

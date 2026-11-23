@@ -9,6 +9,7 @@ import org.springframework.boot.context.properties.bind.ConstructorBinding;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -78,7 +79,23 @@ public record IdentiteGarage(
          * Communauté française du 30 juin 1982). L'anglais n'est admis nulle part,
          * l'allemand n'est pas géré. Règle non validée par un juriste.
          */
-        List<Langue> languesDocuments) {
+        List<Langue> languesDocuments,
+        /**
+         * Mentions qui s'écrivent autrement en néerlandais ({@code GARAGE_*_NL}), toutes
+         * facultatives. Elles servent à tout document rédigé en néerlandais, quel que soit
+         * l'ordre des langues, et se replient une à une sur la valeur de base. Un siège
+         * bruxellois, qui émet dans les deux langues, y saisit « RPR Brussel » à côté de
+         * « RPM Bruxelles ». Un siège flamand n'en a pas besoin : ses valeurs de base sont
+         * déjà en néerlandais.
+         */
+        MentionsNeerlandaises nl) {
+
+    /** Les cinq mentions de l'identité dont le texte dépend de la langue. */
+    public record MentionsNeerlandaises(String formeJuridique, String rue, String localite, String pays,
+                                        String rpm) {
+
+        static final MentionsNeerlandaises AUCUNE = new MentionsNeerlandaises(null, null, null, null, null);
+    }
 
     private static final List<Langue> LANGUES_ADMISES = List.of(Langue.fr, Langue.nl);
 
@@ -99,6 +116,18 @@ public record IdentiteGarage(
                             + "la première étant la langue par défaut. Reçu : " + languesDocuments);
         }
         languesDocuments = List.copyOf(languesDocuments);
+        if (nl == null) {
+            nl = MentionsNeerlandaises.AUCUNE;
+        }
+    }
+
+    /** Un garage sans variante néerlandaise de ses mentions. */
+    public IdentiteGarage(String nomCommercial, String raisonSociale, String formeJuridique, String rue,
+                          String numeroRue, String codePostal, String localite, String pays, String numeroBce,
+                          String rpm, String numeroTva, String iban, String telephone, String courriel,
+                          List<Langue> languesDocuments) {
+        this(nomCommercial, raisonSociale, formeJuridique, rue, numeroRue, codePostal, localite, pays, numeroBce,
+                rpm, numeroTva, iban, telephone, courriel, languesDocuments, null);
     }
 
     /** Un garage qui émet ses documents en français, valeur par défaut du réglage. */
@@ -121,6 +150,24 @@ public record IdentiteGarage(
      */
     public Langue langueDuDocument(Langue duMembre) {
         return languesDocuments.contains(duMembre) ? duMembre : langueParDefaut();
+    }
+
+    /**
+     * L'identité telle qu'elle s'imprime dans un document de cette langue. En néerlandais,
+     * chaque variante saisie remplace la valeur de base. Dans toute autre langue, et
+     * pour une variante vide, la valeur de base reste.
+     */
+    public IdentiteGarage pour(Locale langue) {
+        if (langue == null || !Langue.nl.name().equals(langue.getLanguage())) {
+            return this;
+        }
+        return new IdentiteGarage(nomCommercial, raisonSociale, ou(nl.formeJuridique(), formeJuridique),
+                ou(nl.rue(), rue), numeroRue, codePostal, ou(nl.localite(), localite), ou(nl.pays(), pays),
+                numeroBce, ou(nl.rpm(), rpm), numeroTva, iban, telephone, courriel, languesDocuments, nl);
+    }
+
+    private static String ou(String variante, String base) {
+        return estRenseigne(variante) ? variante : base;
     }
 
     /** Adresse du siege sur une ligne, pour l en-tete du document. */

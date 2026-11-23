@@ -1,5 +1,6 @@
 package be.autoservplus.facturation.service;
 
+import be.autoservplus.common.temps.FuseauGarage;
 import be.autoservplus.facturation.domain.CompteurFacture;
 import be.autoservplus.facturation.repository.CompteurFactureRepository;
 import org.springframework.stereotype.Component;
@@ -7,7 +8,6 @@ import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
-import java.time.Year;
 
 /**
  * Attribue le numero d une facture, format {@code ANNEE-NNNN}, avec la garantie
@@ -27,17 +27,20 @@ import java.time.Year;
  * immediatement au lieu d ouvrir sa propre transaction, de committer l increment,
  * puis de laisser l emission echouer plus loin, exactement le trou qu on evite.</p>
  *
- * <p>Passage d annee : {@link Year#now(Clock)} lit l horloge injectee, la premiere
- * facture d une nouvelle annee cree sa ligne de compteur et repart a 0001. Aucun
- * traitement de bascule n est necessaire, il n y a rien a reinitialiser.</p>
+ * <p>Passage d'année : l'exercice est l'année au garage de l'instant d'émission. La
+ * première facture d'une nouvelle année crée sa ligne de compteur et repart à 0001.
+ * Aucun traitement de bascule n'est nécessaire, il n'y a rien à réinitialiser.</p>
  */
 @Component
 public class GenerateurNumeroFacture {
 
     private final CompteurFactureRepository compteurs;
     private final Clock horloge;
+    private final FuseauGarage fuseau;
 
-    public GenerateurNumeroFacture(CompteurFactureRepository compteurs, Clock horloge) {
+    public GenerateurNumeroFacture(CompteurFactureRepository compteurs, Clock horloge,
+                                   FuseauGarage fuseau) {
+        this.fuseau = fuseau;
         this.compteurs = compteurs;
         this.horloge = horloge;
     }
@@ -50,7 +53,8 @@ public class GenerateurNumeroFacture {
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public NumeroFacture prochain() {
-        short exercice = (short) Year.now(horloge).getValue();
+        // Année au garage, comme la date imprimée sur le document : l'horloge est en UTC.
+        short exercice = (short) fuseau.annee(horloge.instant());
         // Creation avant verrouillage : on ne peut pas verrouiller une ligne absente.
         compteurs.creerSiAbsent(exercice);
         CompteurFacture compteur = compteurs.verrouillerParExercice(exercice)

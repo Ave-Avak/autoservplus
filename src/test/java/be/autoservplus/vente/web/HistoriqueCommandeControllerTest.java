@@ -61,7 +61,7 @@ class HistoriqueCommandeControllerTest {
     @MockitoBean private RetractationService retractations;
 
     private static CommandeHistoriqueVue ligne(UUID reference, String numero, StatutCommande statut) {
-        return new CommandeHistoriqueVue(reference, numero, "22 août 2026", "48,38 €",
+        return new CommandeHistoriqueVue(reference, numero, java.time.LocalDateTime.of(2026, 8, 22, 10, 0), "48,38 €",
                 statut, SituationPaiement.de(statut, null), null, null);
     }
 

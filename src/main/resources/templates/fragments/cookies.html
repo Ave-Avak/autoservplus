@@ -3,27 +3,18 @@
 <head><meta charset="UTF-8"><title>Fragments cookies</title></head>
 <body>
 
-<!--
-  Bandeau de consentement aux cookies (F25) et ligne légale de toutes les pages.
-
-  Un seul point d'insertion par page (<div th:replace="~{fragments/cookies :: bandeau}">
-  juste avant </body>) porte les deux, parce que le pied de page n'a pas la même
-  structure d'un écran à l'autre : depuis la suppression de layout/base.html, chaque
-  template recopie son propre <footer>. Greffer le lien dans quarante-cinq pieds de
-  page différents multiplierait les variantes. Le rattacher au bandeau n'en demande
-  qu'une, visuellement rendue comme la continuation du pied par la classe .pied.
-  C'est pour la même raison que cette ligne porte aussi les liens légaux (F24) : CGV,
-  mentions légales, politique de confidentialité et garantie légale y sont atteints
-  de toutes les pages, ce que les pieds recopiés n'assuraient que sur une dizaine.
+<!--/*
+  Bandeau de consentement aux cookies (F25). Il est inséré par le pied de page commun
+  (fragments/pied.html), qui porte aussi le lien « Gérer mes cookies ».
 
   Aucun JavaScript : le bandeau est un formulaire, « Personnaliser » un <details>
   natif. La politique de sécurité du contenu n'a donc pas eu à être touchée.
--->
+*/-->
 <th:block th:fragment="bandeau">
 
-    <!-- Le bandeau ne s'affiche qu'en l'absence de choix connu. La condition est
+    <!--/* Le bandeau ne s'affiche qu'en l'absence de choix connu. La condition est
          évaluée au serveur : aucun bandeau n'est envoyé puis masqué, donc aucun
-         clignotement pour qui a déjà répondu. -->
+         clignotement pour qui a déjà répondu. */-->
     <section th:if="${!choixCookiesExprime}" class="bandeau-cookies"
              th:attr="aria-label=#{cookies.bandeau.aria}" aria-label="Consentement aux cookies">
         <form method="post" th:action="@{/cookies/preferences}" class="bandeau-cookies__corps">
@@ -36,10 +27,10 @@
                 </p>
             </div>
 
-            <!-- Les trois actions partagent la même classe, donc les mêmes dimensions,
+            <!--/* Les trois actions partagent la même classe, donc les mêmes dimensions,
                  le même contraste et le même niveau visuel : refuser doit être aussi
                  simple qu'accepter (recommandation de l'Autorité de Protection des
-                 Données). Ne pas différencier ces boutons par le style. -->
+                 Données). Ne pas différencier ces boutons par le style. */-->
             <div class="bandeau-cookies__actions">
                 <button type="submit" name="action" value="accepter" class="btn-cookies"
                         th:text="#{cookies.action.accepter}">Tout accepter</button>
@@ -57,31 +48,18 @@
             </div>
         </form>
     </section>
-
-    <!-- Liens permanents : le consentement se retire aussi facilement qu'il se donne
-         (art. 7.3 RGPD), et les documents légaux se consultent de n'importe quelle page
-         (F24). -->
-    <nav class="pied pied-cookies" th:attr="aria-label=#{pied.liens.aria}" aria-label="Liens légaux">
-        <ul>
-            <li><a th:href="@{/cgv}" th:text="#{legal.lien.cgv}">Conditions générales de vente</a></li>
-            <li><a th:href="@{/mentions-legales}" th:text="#{legal.lien.mentions}">Mentions légales</a></li>
-            <li><a th:href="@{/confidentialite}" th:text="#{legal.lien.confidentialite}">Politique de confidentialité</a></li>
-            <li><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.titre}">Garantie légale</a></li>
-            <li><a th:href="@{/cookies}" th:text="#{cookies.gerer}">Gérer mes cookies</a></li>
-        </ul>
-    </nav>
 </th:block>
 
 
-<!--
+<!--/*
   Catégories, partagées par le bandeau et l'écran /cookies pour qu'une finalité
   ajoutée ne puisse pas apparaître à un endroit et manquer à l'autre.
--->
+*/-->
 <th:block th:fragment="categories">
 
-    <!-- Strictement nécessaires : présentés, jamais négociables. La case est cochée
+    <!--/* Strictement nécessaires : présentés, jamais négociables. La case est cochée
          et désactivée, et le formulaire ne lit aucun paramètre pour eux : l'état
-         affiché ne peut donc pas diverger de l'état réel. -->
+         affiché ne peut donc pas diverger de l'état réel. */-->
     <fieldset class="cookies-categorie">
         <legend th:text="#{cookies.necessaires.nom}">Strictement nécessaires</legend>
         <label>
@@ -94,8 +72,8 @@
         <p class="cookies-categorie__duree" th:text="#{cookies.necessaires.duree}">Durée : la session.</p>
     </fieldset>
 
-    <!-- Optionnels : décochés tant qu'aucun choix n'a été exprimé. Aucune case n'est
-         pré-cochée : un consentement supposé n'est pas un consentement. -->
+    <!--/* Optionnels : décochés tant qu'aucun choix n'a été exprimé. Aucune case n'est
+         pré-cochée : un consentement supposé n'est pas un consentement. */-->
     <fieldset class="cookies-categorie">
         <legend th:text="#{cookies.analytique.nom}">Mesure d'audience</legend>
         <label>
@@ -122,9 +100,9 @@
         <p class="cookies-categorie__duree" th:text="#{cookies.marketing.duree}">Durée : 13 mois maximum.</p>
     </fieldset>
 
-    <!-- Dire l'état réel de la version 1 plutôt que de laisser croire à un suivi qui
+    <!--/* Dire l'état réel de la version 1 plutôt que de laisser croire à un suivi qui
          n'existe pas : le mécanisme de consentement est complet, les traceurs
-         optionnels ne sont pas encore installés. -->
+         optionnels ne sont pas encore installés. */-->
     <p class="cookies-note" th:text="#{cookies.note.aucun-traceur}">
         À ce jour, AutoServ+ n'installe aucun cookie de mesure d'audience ni de marketing.
     </p>

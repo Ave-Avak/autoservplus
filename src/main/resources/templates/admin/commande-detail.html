@@ -31,7 +31,7 @@
         </dd>
         <dt th:text="#{commande.detail.mode-paiement}">Moyen de paiement</dt>
         <dd th:if="${commande.encaisseApresAnnulationLe() == null}"
-            th:text="${commande.methodePaiement()} ?: #{admin.ventes.detail.aucun-paiement}">creditcard</dd>
+            th:text="${commande.methodePaiement()} ?: (${commande.datePaiement() != null} ? #{commande.detail.mode-paiement.inconnu} : #{admin.ventes.detail.aucun-paiement})">creditcard</dd>
         <!--/* Un paiement a bien abouti, après l'annulation : seul son moyen peut manquer. */-->
         <dd th:if="${commande.encaisseApresAnnulationLe() != null}"
             th:text="${commande.methodePaiement()} ?: #{admin.paiements-tardifs.moyen.inconnu}">bancontact</dd>
@@ -67,7 +67,9 @@
         </th:block>
     </dl>
 
-    <section th:if="${commande.contientDesPieces()}">
+    <!--/* Une commande annulée sans remise n'a rien à remettre. Si une date a été saisie avant
+           l'annulation, la section reste pour son historique. */-->
+    <section th:if="${commande.remiseAffichee()}">
         <h2 th:text="#{admin.ventes.remise.titre}">Remise des pièces</h2>
         <p th:if="${commande.dateRemise() == null}" th:text="#{admin.ventes.remise.aucune}">
             Date de remise non saisie : le délai de rétractation ne se calcule pas.</p>
@@ -81,7 +83,11 @@
             <div class="champ">
                 <label for="dateRemise" th:text="#{admin.ventes.remise.champ}">Date de remise au membre</label>
                 <input type="date" id="dateRemise" name="dateRemise" required
-                       th:value="${commande.dateRemise()}" aria-describedby="aide-remise">
+                       th:value="${dateRemiseSaisie != null} ? ${dateRemiseSaisie} : ${commande.dateRemise()}"
+                       th:aria-invalid="${erreurRemise != null} ? 'true'"
+                       th:aria-describedby="${erreurRemise != null} ? 'aide-remise erreur-remise' : 'aide-remise'">
+                <p id="erreur-remise" role="alert" class="texte-erreur" th:if="${erreurRemise}"
+                   th:text="${erreurRemise}">Date refusée.</p>
                 <p class="texte-info" id="aide-remise" th:text="#{admin.ventes.remise.aide}">
                     Le jour où le membre a reçu ses pièces, ni futur ni antérieur au paiement.</p>
             </div>
@@ -170,7 +176,7 @@
             </thead>
             <tbody>
             <tr th:each="d : ${retractations}">
-                <td th:text="${d.dateDemande()}">20 novembre 2026</td>
+                <td th:text="${#temporals.format(d.dateDemande(), 'dd/MM/yyyy HH:mm')}">20/11/2026 10:12</td>
                 <td th:text="#{'admin.ventes.demande.statut.' + ${d.statut()}}">En attente</td>
                 <td th:text="${d.motifMembre()} ?: #{admin.compte.journal.sans-motif}">Pièce inutile</td>
                 <td>
@@ -187,7 +193,6 @@
     </p>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

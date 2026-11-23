@@ -1,5 +1,6 @@
 package be.autoservplus.legal.service;
 
+import be.autoservplus.common.temps.FuseauGarage;
 import be.autoservplus.config.MentionsIdentiteGarage;
 import be.autoservplus.legal.domain.TypeDocumentVersionne;
 import be.autoservplus.legal.service.dto.TexteArchiveVue;
@@ -15,7 +16,6 @@ import org.springframework.stereotype.Service;
 
 import java.awt.Color;
 import java.io.ByteArrayOutputStream;
-import java.time.Clock;
 import java.time.Instant;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -43,14 +43,14 @@ public class ConditionsGeneralesPdf {
     private final VersionsDocumentsService versions;
     private final MentionsIdentiteGarage identite;
     private final MessageSource messages;
-    private final Clock horloge;
+    private final FuseauGarage fuseau;
 
     public ConditionsGeneralesPdf(VersionsDocumentsService versions, MentionsIdentiteGarage identite,
-                                  MessageSource messages, Clock horloge) {
+                                  MessageSource messages, FuseauGarage fuseau) {
         this.versions = versions;
         this.identite = identite;
         this.messages = messages;
-        this.horloge = horloge;
+        this.fuseau = fuseau;
     }
 
     /** Vide si la version est inconnue : aucun texte approchant n'est produit à sa place. */
@@ -76,10 +76,10 @@ public class ConditionsGeneralesPdf {
             Font mention = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 9);
             document.add(paragraphe(lignes[0], titre, 4));
             document.add(paragraphe(messages.getMessage("legal.version.mention", new Object[]{
-                    archive.version(), DATE.format(archive.dateEffet().atZone(horloge.getZone()))},
+                    archive.version(), DATE.format(archive.dateEffet().atZone(fuseau.zone()))},
                     langue), mention, 2));
             document.add(paragraphe(messages.getMessage("legal.pdf.acceptation", new Object[]{
-                    DATE.format(accepteesLe.atZone(horloge.getZone())), numeroCommande},
+                    DATE.format(accepteesLe.atZone(fuseau.zone())), numeroCommande},
                     langue), mention, 12));
             for (int i = 1; i < lignes.length; i++) {
                 boolean estTitre = TITRE_ARTICLE.matcher(lignes[i]).matches();

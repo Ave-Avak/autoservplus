@@ -26,8 +26,8 @@
     <ul class="grille-articles" th:unless="${demandes.isEmpty()}">
         <li class="carte" th:each="d : ${demandes}">
             <p class="carte-categorie">
-                <!-- Le compteur de jours est la mention utile : le garage doit
-                     rembourser dans les 14 jours de la demande. -->
+                <!--/* Le compteur de jours est la mention utile : le garage doit
+                     rembourser dans les 14 jours de la demande. */-->
                 <span th:class="${d.urgent()} ? 'badge badge-alerte' : 'badge badge-en_attente'"
                       th:text="#{admin.retractations.depuis(${d.joursDepuisLaDemande()})}">
                     Depuis 3 jour(s)
@@ -49,11 +49,11 @@
                 </div>
                 <div>
                     <dt th:text="#{admin.retractations.date-commande}">Commandé le</dt>
-                    <dd th:text="${d.dateCommande()}">22 août 2026</dd>
+                    <dd th:text="${#temporals.format(d.dateCommande(), 'EEEE d MMMM yyyy')}">22 août 2026</dd>
                 </div>
                 <div>
                     <dt th:text="#{admin.retractations.date-demande}">Demandé le</dt>
-                    <dd th:text="${d.dateDemande()}">25 août 2026</dd>
+                    <dd th:text="${#temporals.format(d.dateDemande(), 'EEEE d MMMM yyyy')}">25 août 2026</dd>
                 </div>
                 <div th:if="${d.aUnMotifMembre()}">
                     <dt th:text="#{admin.retractations.motif-membre}">Motif du membre</dt>
@@ -61,8 +61,8 @@
                 </div>
             </dl>
 
-            <!-- Le constat physique (pièce montée, déballée, abîmée) n'est pas
-                 automatisable : c'est ici que l'atelier tranche. -->
+            <!--/* Le constat physique (pièce montée, déballée, abîmée) n'est pas
+                 automatisable : c'est ici que l'atelier tranche. */-->
             <p class="texte-info" th:text="#{admin.retractations.consigne}">
                 Vérifiez l'état de la pièce avant de valider.
             </p>
@@ -82,7 +82,6 @@
     </ul>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

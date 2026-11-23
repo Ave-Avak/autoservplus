@@ -46,8 +46,8 @@
                     <span th:if="${a.signale()}" class="badge" th:text="#{admin.avis.etat.signale}">Signalé</span>
                 </td>
                 <td>
-                    <!-- Masquer et publier sont exclusifs : proposer les deux inviterait
-                         a cliquer sur celui qui ne change rien. -->
+                    <!--/* Masquer et publier sont exclusifs : proposer les deux inviterait
+                         a cliquer sur celui qui ne change rien. */-->
                     <form th:if="${a.publie()}" th:action="@{/admin/avis/{ref}/masquer(ref=${a.reference()})}"
                           method="post" class="en-ligne">
                         <button type="submit" class="lien-bouton" th:aria-label="#{admin.avis.action.masquer.aria(${a.prenomAuteur()})}"
@@ -77,7 +77,6 @@
     </div>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

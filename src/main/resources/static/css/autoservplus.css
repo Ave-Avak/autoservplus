@@ -158,6 +158,15 @@ main {
 
 h1 { color: var(--bleu-marine); margin-top: 0; }
 
+/* Lien déjà visité dans le contenu : #6B21A8 tient 8.72:1 sur blanc, 8.34:1 sur
+   --gris-50, et au moins 7.04:1 sur les fonds clairs des messages et des encadrés
+   (--gris-200, #FEE2E2, #E0E7FF, #FEF3C7, #DCFCE7), au lieu du violet par défaut du
+   navigateur, jamais calculé. La règle ne vise que les liens sans classe de <main> :
+   l'en-tête et le pied sont hors de <main>, un lien présenté en bouton porte une
+   classe. :where la laisse à la spécificité d'une pseudo-classe seule, si bien qu'un
+   lien stylé par son composant (carte, fil d'Ariane) garde sa couleur. */
+:where(main a:not([class])):visited { color: #6B21A8; }
+
 /* Un tableau de donnees defile dans son conteneur, la page jamais : exception de WCAG
    1.4.10 pour les contenus a deux dimensions. Pas de display:block sur le <table>,
    qui lui ferait perdre sa semantique de tableau dans certains navigateurs. Le
@@ -173,6 +182,24 @@ h1 { color: var(--bleu-marine); margin-top: 0; }
     outline-offset: -2px;
     box-shadow: inset 0 0 0 4px var(--blanc);
 }
+
+/* Tableau de données : toute la largeur de son conteneur, cellules alignées à gauche et
+   séparées par un filet. Sans cette règle, le navigateur rendait ces tableaux sans
+   marge ni alignement. Le filet --gris-200 est décoratif, l'information tient aux
+   en-têtes de colonne. */
+.tableau { width: 100%; border-collapse: collapse; margin-bottom: var(--espace-l); }
+.tableau caption { text-align: left; font-weight: 600; padding-bottom: var(--espace-s); }
+.tableau th, .tableau td {
+    padding: var(--espace-s);
+    text-align: left;
+    vertical-align: top;
+    border-bottom: 1px solid var(--gris-200);
+}
+.tableau thead th { background: var(--gris-50); color: var(--bleu-marine); }
+
+/* Texte d'aide sous un champ ou un titre. --gris-700 tient 10.31:1 sur blanc et
+   9.86:1 sur --gris-50. */
+.aide { color: var(--gris-700); font-size: 0.9rem; margin-top: 0.25rem; }
 
 /* Un exemple de format (en-tete CSV de l'import) se coupe plutot que d'elargir la page. */
 main code { overflow-wrap: anywhere; }
@@ -218,6 +245,9 @@ main code { overflow-wrap: anywhere; }
 /* Notice harmonisée de l'UE sur la garantie légale : à la largeur de l'écran, sans
    déformation (règlement (UE) 2025/1960, annexe I : rien ne s'étire ni ne se recadre). */
 .notice-garantie img { display: block; max-width: 100%; height: auto; }
+/* Une figure reçoit du navigateur 40 px de marge de chaque côté : au téléphone, la notice
+   y perdait un quart de sa largeur. */
+.notice-garantie { margin: var(--espace-l) 0; }
 
 .texte-succes { color: var(--succes-texte); }
 .texte-alerte { color: var(--alerte-texte); }
@@ -256,6 +286,7 @@ main code { overflow-wrap: anywhere; }
 }
 .pied ul {
     list-style: none;
+    margin: 0 0 var(--espace-m);
     padding: 0;
     display: flex;
     flex-wrap: wrap;
@@ -263,6 +294,7 @@ main code { overflow-wrap: anywhere; }
     justify-content: center;
 }
 .pied a { color: var(--gris-700); }
+.pied p { margin: 0; }
 
 /* Menu repliable. Sous 40em, la ligne du compte ne tient plus (588 px mesures pour le
    membre, 572 px pour la ligne du back-office) : les listes passent en colonne sur toute
@@ -555,7 +587,15 @@ main section h2 {
 }
 .carte-actions a { color: var(--bleu-secondaire); font-size: 0.9375rem; }
 
-.actions-page { margin-top: var(--espace-xl); }
+/* Le bouton et le lien voisin sur une ligne, alignés, et l'un sous l'autre quand la
+   largeur manque : le lien ne se coupe plus au milieu de son texte. */
+.actions-page {
+    margin-top: var(--espace-xl);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espace-m);
+}
 /* Un bouton d'action sur la ligne des liens voisins. En classe : un attribut style est
    bloqué par la politique de sécurité du contenu. */
 .formulaire-en-ligne { display: inline; }
@@ -710,15 +750,6 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     color: var(--gris-700);
 }
 
-/* Ligne légale et « Gérer mes cookies » : rendue comme la continuation du pied de page.
-   Elle est rattachée au fragment du bandeau plutôt qu'à chaque <footer>, dont la
-   structure varie d'un écran à l'autre depuis la suppression de layout/base.html. */
-.pied-cookies {
-    margin: 0;
-    border-top: none;
-    padding-top: 0;
-}
-
 .formulaire-cookies { max-width: 40rem; }
 
 @media (max-width: 640px) {
@@ -791,16 +822,6 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     .horaires { grid-template-columns: 1fr; gap: 0.125rem var(--espace-m); }
     .identite-garage dd,
     .horaires dd { margin-bottom: var(--espace-s); }
-}
-
-/* Renvois croises entre les trois documents. */
-.liens-legaux {
-    list-style: none;
-    padding: 0;
-    margin: var(--espace-l) 0 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--espace-m);
 }
 
 /* --- Selecteur de langue (F6) ------------------------------------------------------ */

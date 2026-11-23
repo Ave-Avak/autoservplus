@@ -164,6 +164,26 @@ class ConfirmationCommandeTest {
     }
 
     @Test
+    @DisplayName("les montants suivent la langue du membre : point décimal pour un compte anglophone")
+    void montantsDansLaLangueDuMembre() {
+        marie.setLangue(Langue.en);
+        Commande commande = commande(false);
+        LignePanier filtres = ligne("Filtre à huile", 2, "21.78");
+        when(commandes.lignesDe(commande)).thenReturn(List.of(filtres));
+        when(commandes.lignesServiceDe(commande)).thenReturn(List.of());
+        when(consentements.findFirstByCommandeIdAndTypeDocumentOrderByDateConsentementDesc(
+                42L, TypeDocumentConsentement.CGV)).thenReturn(Optional.empty());
+        when(formulaire.pdf(any())).thenReturn(FORMULAIRE);
+
+        DetailsConfirmationCommande details = confirmation.composer(commande);
+
+        assertThat(details.lignes().get(0).totalTvac()).startsWith("21.78");
+        assertThat(details.totalHtva()).startsWith("66.29");
+        assertThat(details.totalTva()).startsWith("13.92");
+        assertThat(details.totalTvac()).startsWith("80.21");
+    }
+
+    @Test
     @DisplayName("sans preuve CGV rattachée : aucun texte joint à sa place, le formulaire reste")
     void sansPreuveCgv() {
         Commande commande = commande(false);

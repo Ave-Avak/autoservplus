@@ -11,8 +11,8 @@
 
 <a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
-<!-- Navigation publique : la session vient d'être invalidée, il n'y a plus de
-     « Mon compte » ni de bouton de déconnexion à proposer. -->
+<!--/* Navigation publique : la session vient d'être invalidée, il n'y a plus de
+     « Mon compte » ni de bouton de déconnexion à proposer. */-->
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
@@ -28,8 +28,8 @@
     <p th:text="#{suppression.confirmee.courriel}">
         Une confirmation vous a été envoyée par courriel.
     </p>
-    <!-- Le jeton d'anonymisation libère l'adresse réelle : la réinscription est
-         possible, et le dire évite une question au garage. -->
+    <!--/* Le jeton d'anonymisation libère l'adresse réelle : la réinscription est
+         possible, et le dire évite une question au garage. */-->
     <p th:text="#{suppression.confirmee.reinscription}">
         Vous pouvez créer un nouveau compte avec la même adresse.
     </p>
@@ -39,7 +39,6 @@
     </p>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

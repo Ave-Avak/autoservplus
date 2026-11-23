@@ -2,6 +2,7 @@ package be.autoservplus.retractation.service;
 
 import be.autoservplus.communication.service.DetailsRetractationCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.retractation.domain.DemandeAnnulation;
@@ -69,7 +70,8 @@ public class NotificationRetractationListener {
                     membre.getPrenom(),
                     membre.getLangue(),
                     demande.getCommande().getNumero(),
-                    acceptee ? FormatageRdv.euros(demande.getCommande().getMontantTvac()) : null,
+                    acceptee ? FormatageRdv.euros(demande.getCommande().getMontantTvac(),
+                            LanguesSupportees.duCompte(membre.getLangue())) : null,
                     acceptee,
                     acceptee ? demande.getAvoir().getNumero() : null,
                     demande.getMotifDecision()));

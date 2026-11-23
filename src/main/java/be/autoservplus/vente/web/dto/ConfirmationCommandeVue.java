@@ -88,6 +88,11 @@ public record ConfirmationCommandeVue(
         return situation == SituationPaiement.A_PAYER;
     }
 
+    /** Commande réglée : la page annonce un montant réglé, plus un montant à régler. */
+    public boolean payee() {
+        return situation == SituationPaiement.PAYEE;
+    }
+
     public boolean paiementEnCours() {
         return situation == SituationPaiement.EN_COURS;
     }

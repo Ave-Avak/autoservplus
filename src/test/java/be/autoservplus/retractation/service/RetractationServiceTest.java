@@ -23,6 +23,7 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -152,6 +153,83 @@ class RetractationServiceTest {
     private void commandeDePrestations(Commande commande) {
         when(commandes.lignesServiceDe(commande)).thenReturn(List.of(
                 org.mockito.Mockito.mock(be.autoservplus.vente.domain.LignePanier.class)));
+        when(parametres.courants()).thenReturn(new be.autoservplus.reservation.domain.ParametreAtelier());
+    }
+
+    /** Prestation commandée à l'instant donné, payée dans la foulée. */
+    private Commande prestationCommandeeLe(String instant) {
+        Commande commande = new Commande("CMD-2026-0001", marie,
+                new BigDecimal("39.98"), new BigDecimal("8.40"), new BigDecimal("48.38"),
+                Instant.parse(instant));
+        commande.confirmerPaiement(Instant.parse(instant));
+        commandeExiste(commande);
+        commandeDePrestations(commande);
+        return commande;
+    }
+
+    /** Vrai si la demande est enregistrée à l'instant donné, faux si le délai la refuse. */
+    private boolean demandeAcceptee(Commande commande, String instant) {
+        RetractationService aLInstant = new RetractationService(commandes, demandes, interventionsRepo,
+                courriel, parametres, Clock.fixed(Instant.parse(instant), ZoneOffset.UTC));
+        org.mockito.Mockito.lenient()
+                .when(demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE))
+                .thenReturn(false);
+        org.mockito.Mockito.lenient().when(demandes.save(any(DemandeAnnulation.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+        try {
+            aLInstant.demander("marie@exemple.be", commande.getReference(), null);
+            return true;
+        } catch (RetractationImpossibleException refus) {
+            assertThat(refus.getMotif()).isEqualTo(MotifRefusRetractation.DELAI_EXPIRE);
+            return false;
+        }
+    }
+
+    @Nested
+    @DisplayName("prestation : délai en jours du garage (règlement 1182/71, art. 3)")
+    class DelaiDUnePrestation {
+
+        @Test
+        @DisplayName("commandée un lundi à 9 h : encore rétractable le quatorzième jour à 23 h 59")
+        void derniereHeureDuQuatorziemeJour() {
+            // Lundi 7 septembre 2026, 9 h à Bruxelles. Quatorzième jour : lundi 21.
+            Commande commande = prestationCommandeeLe("2026-09-07T07:00:00Z");
+
+            assertThat(demandeAcceptee(commande, "2026-09-21T07:01:00Z")).isTrue();
+            assertThat(demandeAcceptee(commande, "2026-09-21T21:59:00Z")).isTrue();
+            assertThat(demandeAcceptee(commande, "2026-09-21T22:01:00Z")).isFalse();
+        }
+
+        @Test
+        @DisplayName("quatorzième jour un samedi : le délai est reporté à la fin du lundi")
+        void quatorziemeJourUnSamedi() {
+            // Samedi 5 septembre 2026. Quatorzième jour : samedi 19, reporté au lundi 21.
+            Commande commande = prestationCommandeeLe("2026-09-05T10:00:00Z");
+
+            assertThat(demandeAcceptee(commande, "2026-09-20T12:00:00Z")).isTrue();
+            assertThat(demandeAcceptee(commande, "2026-09-21T21:59:00Z")).isTrue();
+            assertThat(demandeAcceptee(commande, "2026-09-21T22:01:00Z")).isFalse();
+        }
+
+        @Test
+        @DisplayName("quatorzième jour férié (11 novembre) : le délai est reporté à la fin du lendemain")
+        void quatorziemeJourFerie() {
+            // Mercredi 28 octobre 2026. Quatorzième jour : mercredi 11 novembre, férié.
+            Commande commande = prestationCommandeeLe("2026-10-28T10:00:00Z");
+
+            assertThat(demandeAcceptee(commande, "2026-11-12T22:59:00Z")).isTrue();
+            assertThat(demandeAcceptee(commande, "2026-11-12T23:01:00Z")).isFalse();
+        }
+
+        @Test
+        @DisplayName("le jour se lit au garage : une commande de 0 h 30 compte depuis ce jour-là, pas depuis la veille")
+        void jourDuGarage() {
+            // Mardi 8 septembre 2026 à 0 h 30 à Bruxelles, soit le lundi 7 à 22 h 30 en UTC.
+            Commande commande = prestationCommandeeLe("2026-09-07T22:30:00Z");
+
+            assertThat(demandeAcceptee(commande, "2026-09-22T21:59:00Z")).isTrue();
+            assertThat(demandeAcceptee(commande, "2026-09-22T22:01:00Z")).isFalse();
+        }
     }
 
     @Nested
@@ -192,16 +270,19 @@ class RetractationServiceTest {
         }
 
         @Test
-        @DisplayName("prestations à J-14 pile : la fenêtre est fermée, la borne est exclusive")
+        @DisplayName("prestations à J-14 pile : la fenêtre reste ouverte jusqu'à la fin du jour")
         void quatorzeJoursPile() {
-            // 14 x 24 h exactement : le délai est écoulé.
+            // 14 fois 24 heures exactement : le quatorzième jour n'est pas fini.
             Commande commande = commandePayeeIlYA(14);
             commandeExiste(commande);
             commandeDePrestations(commande);
+            when(demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE))
+                    .thenReturn(false);
+            when(demandes.save(any(DemandeAnnulation.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
 
-            assertThatThrownBy(() -> service.demander(
-                    "marie@exemple.be", commande.getReference(), null))
-                    .isInstanceOf(RetractationImpossibleException.class);
+            assertThat(service.demander("marie@exemple.be", commande.getReference(), null).getStatut())
+                    .isEqualTo(StatutDemandeAnnulation.EN_ATTENTE);
         }
 
         @Test

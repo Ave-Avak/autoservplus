@@ -1,5 +1,6 @@
 package be.autoservplus.messagerie.service.dto;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -20,7 +21,7 @@ public record ConversationVue(
         String numeroIntervention,
         boolean cloturee,
         long nombreNonLus,
-        String derniereActivite,
+        LocalDateTime derniereActivite,
         List<MessageVue> messages) {
 
     public boolean estRattachee() {

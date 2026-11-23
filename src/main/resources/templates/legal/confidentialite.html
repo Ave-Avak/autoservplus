@@ -18,14 +18,14 @@
 
     <div th:replace="~{fragments/legal :: brouillon}"></div>
 
-    <!--
+    <!--/*
       Tout ce qui suit est rendu depuis CatalogueTraitements, le composant qui produit
       déjà le registre joint à l'export RGPD de l'article 15. Ce n'est pas une
       commodité d'implémentation : la politique publiée et le rappel légal remis au
       membre doivent énoncer les MÊMES finalités, les mêmes destinataires et les mêmes
       durées. Deux rédactions séparées finiraient par se contredire, et c'est
       exactement la contradiction qu'une autorité de contrôle relève.
-    -->
+    */-->
     <p th:text="#{legal.confidentialite.intro}">
         Cette politique décrit les traitements réalisés par le garage.
     </p>
@@ -115,9 +115,9 @@
                 </tbody>
             </table>
         </div>
-        <!-- L'arbitrage entre l'article 17 et l'obligation comptable est énoncé plutôt
+        <!--/* L'arbitrage entre l'article 17 et l'obligation comptable est énoncé plutôt
              que laissé à déduire : c'est la question que pose tout membre qui demande
-             la suppression de son compte et voit ses factures survivre. -->
+             la suppression de son compte et voit ses factures survivre. */-->
         <p th:text="#{legal.confidentialite.durees.comptable}">
             Les pièces comptables déjà émises ne sont ni modifiées ni supprimées.
         </p>
@@ -169,11 +169,9 @@
     </section>
 
     <nav th:attr="aria-label=#{legal.liens.aria}" aria-label="Documents légaux">
-        <div th:replace="~{fragments/legal :: liens}"></div>
     </nav>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

@@ -1,10 +1,10 @@
 package be.autoservplus.intervention.service;
 
+import be.autoservplus.common.temps.FuseauGarage;
 import jakarta.persistence.EntityManager;
 import org.springframework.stereotype.Component;
 
 import java.time.Clock;
-import java.time.Year;
 
 /**
  * Attribue le numero fonctionnel d une intervention, format INT-AAAA-NNNN.
@@ -18,8 +18,11 @@ public class GenerateurNumeroIntervention {
 
     private final EntityManager entityManager;
     private final Clock horloge;
+    private final FuseauGarage fuseau;
 
-    public GenerateurNumeroIntervention(EntityManager entityManager, Clock horloge) {
+    public GenerateurNumeroIntervention(EntityManager entityManager, Clock horloge,
+                                        FuseauGarage fuseau) {
+        this.fuseau = fuseau;
         this.entityManager = entityManager;
         this.horloge = horloge;
     }
@@ -28,6 +31,6 @@ public class GenerateurNumeroIntervention {
         Number sequence = (Number) entityManager
                 .createNativeQuery("SELECT nextval('seq_numero_intervention')")
                 .getSingleResult();
-        return "INT-%d-%04d".formatted(Year.now(horloge).getValue(), sequence.longValue());
+        return "INT-%d-%04d".formatted(fuseau.annee(horloge.instant()), sequence.longValue());
     }
 }

@@ -24,8 +24,10 @@
         Votre commande CMD-2026-0001 est enregistrée.
     </div>
 
-    <p th:unless="${commande.annulee()}"
+    <p th:if="${!commande.annulee() and !commande.payee()}"
        th:text="#{commande.confirmation.total(${commande.totalTvac()})}">Montant à régler : 80,21 €</p>
+    <p th:if="${commande.payee()}"
+       th:text="#{commande.confirmation.total-regle(${commande.totalTvac()})}">Montant réglé : 80,21 €</p>
 
     <!--/* Commande annulée : plus rien n'est à régler. Le retour d'un paiement arrivé
            après l'annulation aboutit ici, la page reprend ce que dit le détail. */-->
@@ -94,7 +96,6 @@
     </p>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

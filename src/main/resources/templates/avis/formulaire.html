@@ -25,13 +25,13 @@
 
         <fieldset>
             <legend th:text="#{avis.formulaire.note}">Votre note</legend>
-            <!-- Boutons radio et non une liste deroulante : les cinq valeurs sont
-                 visibles d'un coup et atteignables au clavier sans ouvrir de menu. -->
+            <!--/* Boutons radio et non une liste deroulante : les cinq valeurs sont
+                 visibles d'un coup et atteignables au clavier sans ouvrir de menu. */-->
             <p th:each="valeur : ${#numbers.sequence(1, 5)}">
                 <input type="radio" th:id="'note-' + ${valeur}" th:field="*{note}" th:value="${valeur}">
                 <label th:for="'note-' + ${valeur}" th:text="#{avis.note(${valeur})}">1 sur 5</label>
             </p>
-            <p role="alert" class="erreur" th:if="${#fields.hasErrors('note')}"
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('note')}"
                th:errors="*{note}">Note obligatoire.</p>
         </fieldset>
 
@@ -39,7 +39,7 @@
             <label for="commentaire" th:text="#{avis.formulaire.commentaire}">Votre commentaire (facultatif)</label>
             <textarea id="commentaire" th:field="*{commentaire}" rows="6" maxlength="2000"></textarea>
         </p>
-        <p role="alert" class="erreur" th:if="${#fields.hasErrors('commentaire')}"
+        <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('commentaire')}"
            th:errors="*{commentaire}">Commentaire trop long.</p>
 
         <p class="carte-meta" th:text="#{avis.formulaire.avertissement}">
@@ -55,7 +55,6 @@
           th:text="#{avis.formulaire.retour}">Retour à l'intervention</a></p>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

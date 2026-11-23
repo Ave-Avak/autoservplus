@@ -8,6 +8,7 @@ import be.autoservplus.notification.domain.StatutNotification;
 import be.autoservplus.notification.domain.TypeNotification;
 import be.autoservplus.notification.repository.NotificationRepository;
 import be.autoservplus.notification.service.NotificationService;
+import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -34,7 +35,6 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import be.autoservplus.support.SocleIntegration;
 
 /**
  * Notifications in-app de bout en bout (BL-6), sur un PostgreSQL reel.

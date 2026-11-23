@@ -1,7 +1,7 @@
 package be.autoservplus.i18n;
 
 import be.autoservplus.identite.repository.UtilisateurRepository;
-import be.autoservplus.identite.web.PageArrivee;
+import be.autoservplus.identite.web.DestinationApresConnexion;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -9,7 +9,7 @@ import jakarta.servlet.http.HttpSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.web.authentication.SavedRequestAwareAuthenticationSuccessHandler;
+import org.springframework.security.web.authentication.SimpleUrlAuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.i18n.SessionLocaleResolver;
@@ -45,32 +45,30 @@ import java.util.Locale;
  * langue n etait pas appliquee, et seul un test de bout en bout passant
  * par le vrai formulaire l a montre.</p>
  *
- * <p>Le comportement de redirection reprend celui de
- * {@code defaultSuccessUrl(..., true)} qu il remplace (meme classe parente, requete
- * sauvegardee ignoree), a ceci pres que la destination depend du role
- * ({@link PageArrivee}).</p>
+ * <p>La redirection mène à la page demandée avant la connexion quand elle est une page
+ * du site, sinon à la page d'arrivée du rôle : {@link DestinationApresConnexion} en
+ * décide, ici comme à la fin d'une connexion en plusieurs étapes.</p>
  */
 @Component
-public class LangueApresConnexionHandler extends SavedRequestAwareAuthenticationSuccessHandler {
+public class LangueApresConnexionHandler extends SimpleUrlAuthenticationSuccessHandler {
 
     private static final Logger JOURNAL = LoggerFactory.getLogger(LangueApresConnexionHandler.class);
 
     private final UtilisateurRepository utilisateurs;
     private final LocaleResolver resolveur;
-    private final PageArrivee pageArrivee;
+    private final DestinationApresConnexion destination;
 
     public LangueApresConnexionHandler(UtilisateurRepository utilisateurs,
-                                       LocaleResolver resolveur, PageArrivee pageArrivee) {
+                                       LocaleResolver resolveur, DestinationApresConnexion destination) {
         this.utilisateurs = utilisateurs;
         this.resolveur = resolveur;
-        this.pageArrivee = pageArrivee;
-        setAlwaysUseDefaultTargetUrl(true);
+        this.destination = destination;
     }
 
     @Override
     protected String determineTargetUrl(HttpServletRequest requete, HttpServletResponse reponse,
                                         Authentication authentification) {
-        return pageArrivee.de(authentification);
+        return destination.de(requete, reponse, authentification);
     }
 
     @Override

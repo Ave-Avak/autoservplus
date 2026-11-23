@@ -18,9 +18,9 @@
 
     <h1 th:text="#{panier.vider.titre}">Vider le panier</h1>
 
-    <!-- Confirmation explicite : la CSP interdit les scripts en ligne (pas de
+    <!--/* Confirmation explicite : la CSP interdit les scripts en ligne (pas de
          confirm()), et un geste destructif ne se declenche pas d'un seul clic.
-         Meme patron que les ecrans admin d'annulation et de refus. -->
+         Meme patron que les ecrans admin d'annulation et de refus. */-->
     <p th:text="#{panier.vider.question}">Voulez-vous vraiment retirer tous les articles de votre panier ?</p>
 
     <form th:action="@{/panier/vider}" method="post">
@@ -31,7 +31,6 @@
     </form>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>
