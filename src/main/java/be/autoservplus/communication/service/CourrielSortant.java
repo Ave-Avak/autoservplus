@@ -474,8 +474,8 @@ public class CourrielSortant implements ServiceCourriel {
             log.warn("Courriel {} ({}) non envoyé : aucune adresse d'atelier.", type, numero);
             return;
         }
-        partir(type, adresse, garage.enseigne(), garage.enseigne(), langue,
-                corps(type, langue, arguments), null);
+        envoyer(type, adresse, garage.enseigne(), garage.enseigne(), langue,
+                corps(type, langue, arguments), List.of(), false);
     }
 
     private void partir(String type, String adresse, String nom, String prenom, Locale langue,
@@ -486,9 +486,20 @@ public class CourrielSortant implements ServiceCourriel {
 
     private void partirAvecPieces(String type, String adresse, String nom, String prenom,
                                   Locale langue, String corps, List<PieceJointeCourriel> pieces) {
+        envoyer(type, adresse, nom, prenom, langue, corps, pieces, true);
+    }
+
+    /**
+     * @param coordonnees vrai pour un courriel adressé à un membre : le message est envoyé
+     *                    d'une adresse qui ne se lit pas, son pied dit donc où joindre le
+     *                    garage (F27). L'atelier n'a pas besoin de ses propres coordonnées.
+     */
+    private void envoyer(String type, String adresse, String nom, String prenom, Locale langue,
+                         String corps, List<PieceJointeCourriel> pieces, boolean coordonnees) {
         String texte = messages.getMessage("courriel.salutation", new Object[]{prenom}, langue)
                 + "\n\n" + corps + "\n\n"
-                + messages.getMessage("courriel.signature", new Object[]{garage.enseigne()}, langue);
+                + messages.getMessage("courriel.signature", new Object[]{garage.enseigne()}, langue)
+                + (coordonnees ? "\n\n" + coordonneesDuGarage(langue) : "");
         Courriel courriel = new Courriel(type, adresse, nom,
                 texte("courriel." + type + ".sujet", langue), texte, pieces);
         if (HORS_DE_LA_REQUETE.contains(type)) {
@@ -496,6 +507,22 @@ public class CourrielSortant implements ServiceCourriel {
         } else {
             envoi.planifier(courriel);
         }
+    }
+
+    /** Enseigne, adresse, téléphone et adresse de courriel, une mention absente étant omise. */
+    private String coordonneesDuGarage(Locale langue) {
+        IdentiteGarage local = garage.pour(langue);
+        List<String> lignes = new ArrayList<>();
+        lignes.add(texte("courriel.pied.contact", langue));
+        lignes.add(local.enseigne());
+        lignes.add(local.adresseLisible());
+        if (local.telephone() != null && !local.telephone().isBlank()) {
+            lignes.add(messages.getMessage("courriel.pied.telephone", new Object[]{local.telephone()}, langue));
+        }
+        if (local.courriel() != null && !local.courriel().isBlank()) {
+            lignes.add(messages.getMessage("courriel.pied.courriel", new Object[]{local.courriel()}, langue));
+        }
+        return String.join("\n", lignes);
     }
 
     /**

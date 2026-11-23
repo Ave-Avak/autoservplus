@@ -39,6 +39,11 @@ public final class LanguesSupportees {
     }
 
     /** Les trois locales proposees au selecteur, dans l ordre de l enumeration. */
+    /** Langue d'un compte, pour ce qui lui est adressé hors de sa requête : un courriel. */
+    public static Locale duCompte(Langue langue) {
+        return langue == null ? DEFAUT : Locale.forLanguageTag(langue.name());
+    }
+
     public static List<Locale> admises() {
         return ADMISES;
     }

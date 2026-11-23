@@ -9,6 +9,7 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsDepassementCourriel;
 import be.autoservplus.communication.service.DetailsRdvCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.identite.service.AuteurCourant;
 import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
@@ -40,6 +41,7 @@ import java.time.Clock;
 import java.time.ZoneId;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -443,18 +445,19 @@ public class InterventionService {
         }
         ZoneId zone = parametres.courants().zone();
         Rdv rdv = it.getRdv();
+        Locale langue = LanguesSupportees.duCompte(rdv.getMembre().getLangue());
         try {
             courriel.envoyerDemandeValidationDepassement(
                     rdv.getMembre(),
                     new DetailsRdvCourriel(rdv.getNumero(), rdv.getDebut().atZone(zone)),
                     new DetailsDepassementCourriel(
                             it.getNumero(),
-                            FormatageRdv.euros(it.devisReferenceHtva()),
-                            FormatageRdv.euros(it.totalProposeHtva()),
+                            FormatageRdv.euros(it.devisReferenceHtva(), langue),
+                            FormatageRdv.euros(it.totalProposeHtva(), langue),
                             it.lignesEnAttente().stream()
                                     .map(l -> "- %s x%d : %s"
                                             .formatted(l.getLibelleFige(), l.getQuantite(),
-                                                    FormatageRdv.euros(l.totalHtva())))
+                                                    FormatageRdv.euros(l.totalHtva(), langue)))
                                     .toList(),
                             "/mes-interventions/" + it.getReference() + "/validation"));
         } catch (RuntimeException e) {

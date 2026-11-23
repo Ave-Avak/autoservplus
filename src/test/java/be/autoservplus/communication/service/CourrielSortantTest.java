@@ -388,6 +388,31 @@ class CourrielSortantTest {
     }
 
     @Test
+    @DisplayName("le pied d'un courriel au membre dit où joindre le garage, dans sa langue (F27)")
+    void coordonneesDuGarageEnPied() {
+        courriel.envoyerAvisMotDePasseModifie(marie, OrigineMotDePasse.REINITIALISATION);
+        assertThat(partis.get(0).corps()).endsWith("Pour joindre le garage :\nGarage Test\n"
+                + "Rue de l'Atelier 12, 1000 Bruxelles\nTéléphone : +32 2 000 00 00\n"
+                + "Courriel : atelier@exemple.be");
+
+        partis.clear();
+        marie.setLangue(Langue.nl);
+        courriel.envoyerAvisMotDePasseModifie(marie, OrigineMotDePasse.REINITIALISATION);
+        assertThat(partis.get(0).corps()).contains("De garage bereiken:\nGarage Test\n")
+                .endsWith("Telefoon: +32 2 000 00 00\nE-mail: atelier@exemple.be");
+    }
+
+    @Test
+    @DisplayName("un courriel adressé à l'atelier ne lui rappelle pas ses propres coordonnées")
+    void pasDeCoordonneesPourLAtelier() {
+        courriel.envoyerAvisNouvelleDemandeAuGarage(new DetailsRdvCourriel("RDV-1", DIMANCHE),
+                "Marie Dupont", false, "/admin/rendez-vous/abc");
+
+        assertThat(partis.get(0).corps()).doesNotContain("Pour joindre le garage")
+                .endsWith("Merci de ne pas y répondre.");
+    }
+
+    @Test
     @DisplayName("la langue du compte décide, jusqu'au nom du jour")
     void langueDuCompte() {
         marie.setLangue(Langue.nl);

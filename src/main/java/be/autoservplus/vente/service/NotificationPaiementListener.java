@@ -2,6 +2,7 @@ package be.autoservplus.vente.service;
 
 import be.autoservplus.communication.service.DetailsCommandeGarage;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.vente.domain.Commande;
@@ -91,10 +92,12 @@ public class NotificationPaiementListener {
             return;
         }
         Commande commande = paiement.getCommande();
+        // L'avis au garage reste au format du site, celui du membre suit sa langue.
         String montant = FormatageRdv.euros(paiement.getMontant());
         try {
             courriel.envoyerAvisPaiementApresAnnulation(commande.getMembre(),
-                    commande.getNumero(), montant);
+                    commande.getNumero(), FormatageRdv.euros(paiement.getMontant(),
+                            LanguesSupportees.duCompte(commande.getMembre().getLangue())));
         } catch (RuntimeException e) {
             log.warn("Avis au membre impossible pour le paiement reçu après l'annulation de "
                     + "la commande {} : {}", commande.getNumero(), e.getMessage());
@@ -121,7 +124,8 @@ public class NotificationPaiementListener {
         Commande commande = paiement.getCommande();
         try {
             courriel.envoyerAvisRemboursementApresAnnulation(commande.getMembre(),
-                    commande.getNumero(), FormatageRdv.euros(paiement.getMontant()));
+                    commande.getNumero(), FormatageRdv.euros(paiement.getMontant(),
+                            LanguesSupportees.duCompte(commande.getMembre().getLangue())));
         } catch (RuntimeException e) {
             log.warn("Avis de remboursement impossible pour la commande {} : {}",
                     commande.getNumero(), e.getMessage());

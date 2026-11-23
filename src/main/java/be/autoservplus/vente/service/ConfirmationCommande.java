@@ -77,10 +77,10 @@ public class ConfirmationCommande {
         List<LignePanier> prestations = commandes.lignesServiceDe(commande);
         List<LigneCommandee> lignes = new ArrayList<>();
         for (LignePanier ligne : pieces) {
-            lignes.add(ligneCommandee(ligne));
+            lignes.add(ligneCommandee(ligne, langue));
         }
         for (LignePanier ligne : prestations) {
-            lignes.add(ligneCommandee(ligne));
+            lignes.add(ligneCommandee(ligne, langue));
         }
 
         List<PieceJointeCourriel> jointes = new ArrayList<>();
@@ -115,8 +115,9 @@ public class ConfirmationCommande {
         return new DetailsConfirmationCommande(membre.getEmail(), membre.getPrenom(), membre.getLangue(),
                 commande.getNumero(), commande.getDateCommande(),
                 commande.getDatePaiement() != null ? commande.getDatePaiement() : commande.getDateCommande(),
-                lignes, FormatageRdv.euros(commande.getMontantHtva()),
-                FormatageRdv.euros(commande.getMontantTva()), FormatageRdv.euros(commande.getMontantTvac()),
+                lignes, FormatageRdv.euros(commande.getMontantHtva(), langue),
+                FormatageRdv.euros(commande.getMontantTva(), langue),
+                FormatageRdv.euros(commande.getMontantTvac(), langue),
                 !pieces.isEmpty(), !prestations.isEmpty(), versionCgv, renonciation(commande, langue),
                 jointes);
     }
@@ -147,8 +148,8 @@ public class ConfirmationCommande {
                 commande.getId(), type);
     }
 
-    private static LigneCommandee ligneCommandee(LignePanier ligne) {
+    private static LigneCommandee ligneCommandee(LignePanier ligne, Locale langue) {
         return new LigneCommandee(ligne.getLibelleFige(), ligne.getQuantite(),
-                FormatageRdv.euros(ligne.totalTvac()), ligne.getTauxTva().stripTrailingZeros().toPlainString());
+                FormatageRdv.euros(ligne.totalTvac(), langue), ligne.getTauxTva().stripTrailingZeros().toPlainString());
     }
 }
