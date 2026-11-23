@@ -32,21 +32,21 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Conversion du panier valide en commande (premiere moitie de F14, sans paiement).
+ * Conversion du panier validé en commande (première moitié de F14, sans paiement).
  *
- * <p><b>Atomicite</b> : gardes (CGV, panier non vide, pieces actives, stock),
- * creation de la commande, reaffectation des lignes et preuve d acceptation des
- * CGV vivent dans UNE transaction. Un refus n ecrit rien, ni commande partielle,
- * ni panier a moitie converti, ni preuve orpheline.</p>
+ * <p><b>Atomicité</b> : gardes (CGV, panier non vide, pièces actives, stock),
+ * création de la commande, réaffectation des lignes et preuve d'acceptation des
+ * CGV vivent dans UNE transaction. Un refus n'écrit rien, ni commande partielle,
+ * ni panier à moitié converti, ni preuve orpheline.</p>
  *
- * <p><b>Stock</b> : reverifie ligne a ligne au moment de convertir, car deux membres
- * ont pu paniériser la meme piece, aucun n a reserve (la reservation soft RM-21
- * est une evolution V2). Le stock n est PAS decremente ici : le dictionnaire le
- * decremente au paiement confirme. Fenetre de course residuelle assumee entre
- * conversion et paiement, a documenter.</p>
+ * <p><b>Stock</b> : revérifié ligne à ligne au moment de convertir, car deux membres
+ * ont pu paniériser la même pièce, aucun n'a réservé (la réservation soft RM-21
+ * est une évolution V2). Le stock n'est PAS décrémenté ici : le dictionnaire le
+ * décrémente au paiement confirmé. Fenêtre de course résiduelle assumée entre
+ * conversion et paiement, à documenter.</p>
  *
- * <p><b>Lignes deplacees, jamais recopiees</b> : la meme ligne passe de
- * {@code panier_id} a {@code commande_id}, valeurs figees intactes (RM-30). Le
+ * <p><b>Lignes déplacées, jamais recopiées</b> : la même ligne passe de
+ * {@code panier_id} à {@code commande_id}, valeurs figées intactes (RM-30). Le
  * panier-contenant survit et se recharge vide. Attention : ne PAS retirer les
  * lignes de la collection du panier dans cette transaction, car {@code orphanRemoval}
  * les supprimerait physiquement, commande comprise (voir
@@ -90,9 +90,9 @@ public class CommandeService {
     /**
      * Convertit le panier du membre en commande EN_ATTENTE_PAIEMENT (RM-19).
      *
-     * @param cgvAcceptees etat REEL de la case cote serveur : un POST forge sans
-     *                     le parametre est refuse ici, pas par le navigateur
-     * @param adresseIp    IP de la requete pour la preuve d acceptation. Peut etre
+     * @param cgvAcceptees état REEL de la case côté serveur : un POST forgé sans
+     *                     le paramètre est refusé ici, pas par le navigateur
+     * @param adresseIp    IP de la requête pour la preuve d'acceptation. Peut être
      *                     nulle, ne transite ni par les URL ni par les journaux
      */
     @Transactional
@@ -114,11 +114,11 @@ public class CommandeService {
         }
         List<LignePanier> lignes = panier.getLignes();
         for (LignePanier ligne : lignes) {
-            // Contrainte F13 prolongee a la conversion : on ne commande pas un article
-            // retire de la vente depuis son ajout. Vrai des deux natures.
+            // Contrainte F13 prolongée à la conversion : on ne commande pas un article
+            // retiré de la vente depuis son ajout. Vrai des deux natures.
             if (ligne.estService()) {
-                // Une prestation n a pas de stock : c est du temps d atelier, pas un
-                // article denombrable. Seule son activite se reverifie.
+                // Une prestation n'a pas de stock : c'est du temps d'atelier, pas un
+                // article dénombrable. Seule son activité se revérifie.
                 if (!ligne.getPrestation().isActif()) {
                     throw new PrestationInactiveException(ligne.getLibelleFige());
                 }
@@ -134,10 +134,10 @@ public class CommandeService {
             }
         }
 
-        // Montants figes (RM-30) : sommes ligne a ligne des valeurs figees du panier,
+        // Montants figés (RM-30) : sommés ligne à ligne des valeurs figées du panier,
         // TVA = TVAC - HTVA par construction, et le CHECK ck_commande_coherence passera.
-        // VI.53 (F12) : la renonciation n a de sens que pour un panier de services.
-        // Sur un panier de pieces, une case cochee par un client bricolant le
+        // VI.53 (F12) : la renonciation n'a de sens que pour un panier de services.
+        // Sur un panier de pièces, une case cochée par un client bricolant le
         // formulaire est IGNOREE : validation serveur, jamais confiance au client.
         boolean panierDeServices = panier.estPanierDeServices();
         boolean renonciationRetenue = panierDeServices && renonciationVi53;
@@ -164,13 +164,13 @@ public class CommandeService {
                 versionsDocuments.versionCourante(TypeDocumentVersionne.CGV),
                 adresseIp, horloge.instant()).pourLaCommande(commande.getId()));
 
-        // Preuve VI.53 (F12), ecrite UNIQUEMENT si la question a ete posee, donc si
-        // le panier contient des services. Le refus s enregistre autant que l accord :
-        // sans ligne, l absence serait ambigue entre « a refuse » et « jamais
-        // interroge », exactement le raisonnement tenu pour les cookies en V29.
+        // Preuve VI.53 (F12), écrite UNIQUEMENT si la question a été posée, donc si
+        // le panier contient des services. Le refus s'enregistre autant que l'accord :
+        // sans ligne, l'absence serait ambiguë entre « a refusé » et « jamais
+        // interrogé », exactement le raisonnement tenu pour les cookies en V29.
         //
-        // Meme transaction que la commande et que l etat : jamais d etat sans preuve,
-        // jamais de preuve sans etat. On DECIDE sur commande.renonciation_vi53, on
+        // Même transaction que la commande et que l'état : jamais d'état sans preuve,
+        // jamais de preuve sans état. On DECIDE sur commande.renonciation_vi53, on
         // PROUVE par cette ligne.
         if (panierDeServices) {
             consentements.save(Consentement.decision(panier.getMembre(),
@@ -184,8 +184,8 @@ public class CommandeService {
     }
 
     /**
-     * Page de confirmation. Une commande d autrui remonte comme introuvable (404,
-     * meme code qu une reference inconnue) : meme mecanisme que le reste.
+     * Page de confirmation. Une commande d'autrui remonte comme introuvable (404,
+     * même code qu'une référence inconnue) : même mécanisme que le reste.
      */
     public ConfirmationCommandeVue confirmation(UUID reference, String email) {
         Commande commande = commandeDuMembre(reference, email);
@@ -221,11 +221,11 @@ public class CommandeService {
     }
 
     /**
-     * Detail d une commande passee (F32) : ses lignes aux prix figes, ses totaux et
+     * Détail d'une commande passée (F32) : ses lignes aux prix figés, ses totaux et
      * son paiement.
      *
-     * <p>Les liens vers la facture et vers la retractation ne sont pas resolus ici :
-     * la vente ignore ces deux modules, c est le controleur qui assemble, meme
+     * <p>Les liens vers la facture et vers la rétractation ne sont pas résolus ici :
+     * la vente ignore ces deux modules, c'est le contrôleur qui assemble, même
      * partage que pour la liste.</p>
      */
     public CommandeDetailVue detail(UUID reference, String email) {
@@ -236,12 +236,12 @@ public class CommandeService {
 
     /**
      * Le paiement qui a effectivement abouti, ou {@code null}. REMBOURSE compte au
-     * meme titre que REUSSI : l encaissement a bien eu lieu, et c est un second
-     * mouvement qui le contre-passe, masquer le moyen de paiement d une commande
-     * remboursee reviendrait a nier qu elle a ete payee.
+     * même titre que REUSSI : l'encaissement a bien eu lieu, et c'est un second
+     * mouvement qui le contre-passe, masquer le moyen de paiement d'une commande
+     * remboursée reviendrait à nier qu'elle a été payée.
      *
-     * <p>Les tentatives echouees ou expirees sont ecartees : une commande peut en
-     * compter plusieurs, elles ne disent rien de la maniere dont elle a ete reglee.</p>
+     * <p>Les tentatives échouées ou expirées sont écartées : une commande peut en
+     * compter plusieurs, elles ne disent rien de la manière dont elle a été réglée.</p>
      */
     private Paiement paiementAbouti(Commande commande) {
         return paiements.findByCommandeAndStatutIn(commande,
@@ -252,9 +252,9 @@ public class CommandeService {
     }
 
     /**
-     * Charge une commande en verifiant qu elle appartient au membre. La commande
-     * d autrui remonte comme introuvable, 404, le meme code qu une reference
-     * inconnue : un 403 confirmerait a un tiers que cette commande existe.
+     * Charge une commande en vérifiant qu'elle appartient au membre. La commande
+     * d'autrui remonte comme introuvable, 404, le même code qu'une référence
+     * inconnue : un 403 confirmerait à un tiers que cette commande existe.
      */
     private Commande commandeDuMembre(UUID reference, String email) {
         Commande commande = commandes.findByReference(reference)
@@ -266,9 +266,9 @@ public class CommandeService {
     }
 
     /**
-     * Historique des commandes du membre connecte (F32), de la plus recente a la
+     * Historique des commandes du membre connecté (F32), de la plus récente à la
      * plus ancienne. Les champs de facture des vues restent nuls : le module vente
-     * ignore la facturation, c est le controleur qui les complete.
+     * ignore la facturation, c'est le contrôleur qui les complète.
      */
     /** L'adresse que la facture imprimera est-elle complète ? Le récapitulatif prévient. */
     public boolean adresseComplete(String email) {

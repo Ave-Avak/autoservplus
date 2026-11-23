@@ -22,24 +22,24 @@ import java.util.UUID;
 import java.util.function.Function;
 
 /**
- * Historique des commandes du membre connecte et detail de chacune d elles, point
- * d acces a ses factures (F31, F32).
+ * Historique des commandes du membre connecté et détail de chacune d'elles, point
+ * d'accès à ses factures (F31, F32).
  *
- * <p>Sans cet ecran, F31 ne serait atteignable que dans la minute suivant le
+ * <p>Sans cet écran, F31 ne serait atteignable que dans la minute suivant le
  * paiement, depuis la page de confirmation : une facture doit rester accessible des
- * annees apres l achat.</p>
+ * années après l'achat.</p>
  *
- * <p>Le rapprochement commande / facture / retractation se fait <b>ici</b> et non
- * dans un service : chaque module repond sur son propre domaine (la vente ignore la
- * facturation et la retractation, celles-ci connaissent la commande dont elles
- * decoulent) et le controleur assemble les vues. Faire descendre ce rapprochement
- * dans {@code CommandeService} inverserait la dependance entre les modules.</p>
+ * <p>Le rapprochement commande / facture / rétractation se fait <b>ici</b> et non
+ * dans un service : chaque module répond sur son propre domaine (la vente ignore la
+ * facturation et la rétractation, celles-ci connaissent la commande dont elles
+ * découlent) et le contrôleur assemble les vues. Faire descendre ce rapprochement
+ * dans {@code CommandeService} inverserait la dépendance entre les modules.</p>
  *
- * <p>L etat de retractation arrive dans une <b>carte a part</b>, indexee par
- * reference de commande, plutot qu en champs supplementaires de
- * {@code CommandeHistoriqueVue} : celle-ci devrait alors connaitre le statut d une
- * demande d annulation, c est-a-dire faire dependre la vente de la retractation pour
- * l affichage d un bouton. Le gabarit fait la jointure, le modele reste propre.</p>
+ * <p>L'état de rétractation arrive dans une <b>carte à part</b>, indexée par
+ * référence de commande, plutôt qu'en champs supplémentaires de
+ * {@code CommandeHistoriqueVue} : celle-ci devrait alors connaître le statut d'une
+ * demande d'annulation, c'est-à-dire faire dépendre la vente de la rétractation pour
+ * l'affichage d'un bouton. Le gabarit fait la jointure, le modèle reste propre.</p>
  */
 @Controller
 @RequestMapping("/commandes")
@@ -82,30 +82,30 @@ public class HistoriqueCommandeController {
     }
 
     /**
-     * Detail d une commande passee (F32, CdC P384).
+     * Détail d'une commande passée (F32, CdC P384).
      *
-     * <p>Meme assemblage que la liste, et pour les memes raisons : la vente fournit
-     * la commande et ses lignes, la facturation le lien de telechargement, la
-     * retractation l etat d annulation. Les trois vues se rejoignent ici, pas dans un
+     * <p>Même assemblage que la liste, et pour les mêmes raisons : la vente fournit
+     * la commande et ses lignes, la facturation le lien de téléchargement, la
+     * rétractation l'état d'annulation. Les trois vues se rejoignent ici, pas dans un
      * service, faire descendre ce rapprochement dans {@code CommandeService}
-     * inverserait la dependance entre les modules.</p>
+     * inverserait la dépendance entre les modules.</p>
      *
-     * <p>L eligibilite a la retractation vient de
+     * <p>L'éligibilité à la rétractation vient de
      * {@code RetractationService.etatDeLaCommande}, qui partage son calcul avec la
-     * liste : le bouton ne peut pas apparaitre ici et manquer la-bas.</p>
+     * liste : le bouton ne peut pas apparaître ici et manquer là-bas.</p>
      *
-     * <p>Aucun {@code try/catch} : {@code RessourceIntrouvableException} porte deja
-     * {@code @ResponseStatus(NOT_FOUND)}, donc une commande inconnue (ou celle d un
-     * autre membre) produit un 404 sans code supplementaire. En catcher une pour la
-     * retraduire en 404 n ajouterait qu une occasion de se tromper de code.</p>
+     * <p>Aucun {@code try/catch} : {@code RessourceIntrouvableException} porte déjà
+     * {@code @ResponseStatus(NOT_FOUND)}, donc une commande inconnue (ou celle d'un
+     * autre membre) produit un 404 sans code supplémentaire. En catcher une pour la
+     * retraduire en 404 n'ajouterait qu'une occasion de se tromper de code.</p>
      */
     @GetMapping("/{reference}")
     public String detail(@AuthenticationPrincipal UserDetails membre,
                          @PathVariable UUID reference,
                          Model modele) {
         String email = membre.getUsername();
-        // L appartenance est verifiee ici, avant tout le reste : les appels suivants
-        // ne doivent pas s executer pour une commande qui n est pas au membre.
+        // L'appartenance est vérifiée ici, avant tout le reste : les appels suivants
+        // ne doivent pas s'exécuter pour une commande qui n'est pas au membre.
         CommandeDetailVue commande = commandes.detail(reference, email);
 
         CommandeDetailVue vue = factures.factureDe(reference)

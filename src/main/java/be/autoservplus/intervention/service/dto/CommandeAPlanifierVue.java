@@ -5,12 +5,12 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Une commande de services payee en attente d ouverture de dossier d atelier (F12-b).
+ * Une commande de services payée en attente d'ouverture de dossier d'atelier (F12-b).
  *
- * @param vehicules parc du client au moment de l affichage : le garage doit dire sur
- *                  quel vehicule il travaille, la colonne {@code vehicule_id} de
- *                  l intervention etant {@code NOT NULL} et une prestation achetee en
- *                  ligne n etant rattachee a aucun vehicule
+ * @param vehicules parc du client au moment de l'affichage : le garage doit dire sur
+ *                  quel véhicule il travaille, la colonne {@code vehicule_id} de
+ *                  l'intervention étant {@code NOT NULL} et une prestation achetée en
+ *                  ligne n'étant rattachée à aucun véhicule
  */
 public record CommandeAPlanifierVue(
         UUID reference,
@@ -22,7 +22,7 @@ public record CommandeAPlanifierVue(
         boolean dejaPlanifiee,
         String numeroIntervention) {
 
-    /** Le client n a aucun vehicule enregistre : rien a proposer au garage. */
+    /** Le client n'a aucun véhicule enregistré : rien à proposer au garage. */
     public boolean sansVehicule() {
         return vehicules.isEmpty();
     }

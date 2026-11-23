@@ -19,17 +19,17 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.UUID;
 
 /**
- * Ouverture d un dossier d atelier depuis une commande de services payee (F12-b).
+ * Ouverture d'un dossier d'atelier depuis une commande de services payée (F12-b).
  *
- * <p>Ecran <b>minimal et volontairement separe</b> de {@code AdminInterventionController} :
- * celui-ci pilote le cycle de vie d une intervention existante, celui-ci en cree une
- * depuis une autre origine. Les melanger ferait grossir un controleur deja charge de
+ * <p>Écran <b>minimal et volontairement séparé</b> de {@code AdminInterventionController} :
+ * celui-ci pilote le cycle de vie d'une intervention existante, celui-ci en crée une
+ * depuis une autre origine. Les mélanger ferait grossir un contrôleur déjà chargé de
  * dix routes.</p>
  *
- * <p>La protection d URL {@code /admin/**} filtre le role ADMINISTRATEUR.
+ * <p>La protection d'URL {@code /admin/**} filtre le rôle ADMINISTRATEUR.
  * {@link InterventionService} redouble par {@code @PreAuthorize} de classe.
- * POST-redirect-flash : la creation est idempotente cote service, mais un
- * rafraichissement ne doit pas rejouer la requete.</p>
+ * POST-redirect-flash : la création est idempotente côté service, mais un
+ * rafraîchissement ne doit pas rejouer la requête.</p>
  */
 @Controller
 @RequestMapping("/admin/commandes-a-planifier")

@@ -15,23 +15,23 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Detail d une commande passee (F32, CdC P384) : date, lignes commandees avec
- * quantites et prix, les trois totaux, le paiement, le statut courant.
+ * Détail d'une commande passée (F32, CdC P384) : date, lignes commandées avec
+ * quantités et prix, les trois totaux, le paiement, le statut courant.
  *
- * <p><b>Les prix sont ceux figes a la commande</b> (RM-30), relus des lignes et
- * jamais du catalogue courant. Un tarif revise depuis l achat ne doit pas reecrire
- * ce que le membre a paye : l ecran doit continuer de concorder avec la facture
- * archivee, qui, elle, est immuable.</p>
+ * <p><b>Les prix sont ceux figés à la commande</b> (RM-30), relus des lignes et
+ * jamais du catalogue courant. Un tarif révisé depuis l'achat ne doit pas réécrire
+ * ce que le membre a payé : l'écran doit continuer de concorder avec la facture
+ * archivée, qui, elle, est immuable.</p>
  *
- * <p>Les totaux viennent de la <b>commande</b> et non d une somme recalculee sur les
- * lignes. Ce sont eux qui ont ete factures et encaisses. Les recalculer ferait de
- * cet ecran une seconde source de verite, susceptible de diverger de la facture au
+ * <p>Les totaux viennent de la <b>commande</b> et non d'une somme recalculée sur les
+ * lignes. Ce sont eux qui ont été facturés et encaissés. Les recalculer ferait de
+ * cet écran une seconde source de vérité, susceptible de diverger de la facture au
  * moindre arrondi.</p>
  *
- * <p>Les champs de facture sont nuls a la sortie du module vente, qui ignore la
- * facturation : le controleur les complete via {@link #avecFacture}, exactement
- * comme pour {@link CommandeHistoriqueVue}. L etat de retractation, lui, n entre pas
- * du tout dans cette vue : il voyage a part, pour la meme raison.</p>
+ * <p>Les champs de facture sont nuls à la sortie du module vente, qui ignore la
+ * facturation : le contrôleur les complète via {@link #avecFacture}, exactement
+ * comme pour {@link CommandeHistoriqueVue}. L'état de rétractation, lui, n'entre pas
+ * du tout dans cette vue : il voyage à part, pour la même raison.</p>
  */
 public record CommandeDetailVue(
         UUID reference,
@@ -59,8 +59,8 @@ public record CommandeDetailVue(
         java.time.LocalDateTime rembourseApresAnnulationLe) {
 
     /**
-     * Une ligne commandee. {@code quantite} est un {@code int} et non le {@code short}
-     * de l entite : le gabarit n a que faire de la contrainte de stockage.
+     * Une ligne commandée. {@code quantite} est un {@code int} et non le {@code short}
+     * de l'entité : le gabarit n'a que faire de la contrainte de stockage.
      */
     public record LigneVue(
             String libelle,
@@ -80,19 +80,19 @@ public record CommandeDetailVue(
                     FormatageRdv.eurosEcran(ligne.totalTvac()));
         }
 
-        /** 21.00 s affiche « 21 % » : les decimales nulles d un taux belge sont du bruit. */
+        /** 21.00 s'affiche « 21 % » : les décimales nulles d'un taux belge sont du bruit. */
         private static String pourcentage(BigDecimal taux) {
             return taux.stripTrailingZeros().toPlainString() + " %";
         }
     }
 
     /**
-     * @param paiement paiement abouti de la commande, ou {@code null} si elle n a
-     *                 jamais ete payee : l ecran affiche alors son statut, pas un
-     *                 moyen de paiement fabrique
-     * @param situation situation du paiement, qui decide de la demarche de paiement
-     *                  proposee : payer, reessayer apres un echec, ou rien tant
-     *                  qu une tentative est en cours de traitement
+     * @param paiement paiement abouti de la commande, ou {@code null} si elle n'a
+     *                 jamais été payée : l'écran affiche alors son statut, pas un
+     *                 moyen de paiement fabriqué
+     * @param situation situation du paiement, qui décide de la démarche de paiement
+     *                  proposée : payer, réessayer après un échec, ou rien tant
+     *                  qu'une tentative est en cours de traitement
      */
     public static CommandeDetailVue de(Commande commande, List<LignePanier> lignes,
                                        Paiement paiement, SituationPaiement situation,
@@ -138,7 +138,7 @@ public record CommandeDetailVue(
         return rembourseApresAnnulationLe != null;
     }
 
-    /** Le meme detail, augmente du lien vers sa facture. */
+    /** Le même détail, augmenté du lien vers sa facture. */
     public CommandeDetailVue avecFacture(UUID referenceFacture, String numeroFacture) {
         return new CommandeDetailVue(reference, numero, date, statut, lignes,
                 totalHtva, totalTva, tvaParTaux, totalTvac, methodePaiement, datePaiement,
@@ -155,7 +155,7 @@ public record CommandeDetailVue(
         return !lignes.isEmpty();
     }
 
-    /** Le lien de telechargement n apparait que si la facture existe : condition de la liste. */
+    /** Le lien de téléchargement n'apparaît que si la facture existe : condition de la liste. */
     public boolean estFacturee() {
         return referenceFacture != null;
     }
@@ -189,8 +189,8 @@ public record CommandeDetailVue(
     }
 
     /**
-     * Le moyen employe est connu. Faux en V1 tant que le prestataire reel n est pas
-     * cable : l ecran l annonce plutot que de laisser une case vide inexpliquee.
+     * Le moyen employé est connu. Faux en V1 tant que le prestataire réel n'est pas
+     * câblé : l'écran l'annonce plutôt que de laisser une case vide inexpliquée.
      */
     public boolean methodePaiementConnue() {
         return methodePaiement != null && !methodePaiement.isBlank();

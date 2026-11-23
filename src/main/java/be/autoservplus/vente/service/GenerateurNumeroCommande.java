@@ -7,11 +7,11 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 
 /**
- * Attribue le numero fonctionnel d une commande, format CMD-AAAA-NNNN.
+ * Attribue le numéro fonctionnel d'une commande, format CMD-AAAA-NNNN.
  *
- * <p>Meme patron que {@code GenerateurNumeroIntervention} : la sequence
- * {@code seq_numero_commande} (V9, deja presente au socle) garantit l unicite
- * entre demandes concurrentes, l horloge injectee rend l annee testable.</p>
+ * <p>Même patron que {@code GenerateurNumeroIntervention} : la séquence
+ * {@code seq_numero_commande} (V9, déjà présente au socle) garantit l'unicité
+ * entre demandes concurrentes, l'horloge injectée rend l'année testable.</p>
  */
 @Component
 public class GenerateurNumeroCommande {

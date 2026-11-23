@@ -11,19 +11,19 @@ import java.time.ZoneId;
 import java.util.UUID;
 
 /**
- * Une ligne de l historique des commandes du membre (F32). Montant et date
- * pre-formates, convention du module. Le detail complet d une commande est porte
- * par {@link CommandeDetailVue} : cette vue-ci ne montre que ce qu une liste doit
- * montrer, elle ne charge pas les lignes commandees.
+ * Une ligne de l'historique des commandes du membre (F32). Montant et date
+ * pré-formatés, convention du module. Le détail complet d'une commande est porté
+ * par {@link CommandeDetailVue} : cette vue-ci ne montre que ce qu'une liste doit
+ * montrer, elle ne charge pas les lignes commandées.
  *
- * <p>Les champs de facture sont nuls a la sortie du module vente, qui ne connait pas
- * la facturation : c est le controleur qui les complete depuis le module
- * {@code facturation}, via {@link #avecFacture}. Faire dependre la vente de la
- * facturation pour un simple lien de telechargement inverserait la dependance.
- * C est la facture qui nait de la commande, pas l inverse.</p>
+ * <p>Les champs de facture sont nuls à la sortie du module vente, qui ne connaît pas
+ * la facturation : c'est le contrôleur qui les complète depuis le module
+ * {@code facturation}, via {@link #avecFacture}. Faire dépendre la vente de la
+ * facturation pour un simple lien de téléchargement inverserait la dépendance.
+ * C'est la facture qui naît de la commande, pas l'inverse.</p>
  *
- * <p>{@code statut} est expose brut : le libelle affiche est une cle i18n construite
- * dans le gabarit, aucune chaine visible n est fabriquee ici.</p>
+ * <p>{@code statut} est exposé brut : le libellé affiché est une clé i18n construite
+ * dans le gabarit, aucune chaîne visible n'est fabriquée ici.</p>
  */
 public record CommandeHistoriqueVue(
         UUID reference,
@@ -64,7 +64,7 @@ public record CommandeHistoriqueVue(
                 tardif != null && tardif.getRembourseLe() != null);
     }
 
-    /** La meme ligne, augmentee du lien vers sa facture. */
+    /** La même ligne, augmentée du lien vers sa facture. */
     public CommandeHistoriqueVue avecFacture(UUID referenceFacture, String numeroFacture) {
         return new CommandeHistoriqueVue(reference, numero, date, totalTvac, statut, situation,
                 referenceFacture, numeroFacture, remboursementEnCours, rembourseApresAnnulation);
@@ -83,7 +83,7 @@ public record CommandeHistoriqueVue(
         return situation == SituationPaiement.DELAI_DEPASSE;
     }
 
-    /** Le bouton de telechargement n apparait que si la facture existe. */
+    /** Le bouton de téléchargement n'apparaît que si la facture existe. */
     public boolean estFacturee() {
         return referenceFacture != null;
     }

@@ -19,15 +19,15 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Lecture des commandes de services a planifier (F12-b).
+ * Lecture des commandes de services à planifier (F12-b).
  *
- * <p>Separee de {@link InterventionService}, qui porte le cycle de vie d une
- * intervention : ici on ne fait que preparer l ecran de creation. L ecriture, elle,
+ * <p>Séparée de {@link InterventionService}, qui porte le cycle de vie d'une
+ * intervention : ici on ne fait que préparer l'écran de création. L'écriture, elle,
  * reste dans {@code InterventionService.creerDepuisCommande} avec le reste des
  * invariants F17.</p>
  *
- * <p>{@code @PreAuthorize} de classe : ces ecrans montrent le nom des clients et le
- * detail de leurs achats.</p>
+ * <p>{@code @PreAuthorize} de classe : ces écrans montrent le nom des clients et le
+ * détail de leurs achats.</p>
  */
 @Service
 @Transactional(readOnly = true)
@@ -50,11 +50,11 @@ public class PlanificationCommandeService {
     }
 
     /**
-     * Commandes de services payees, dossier ouvert ou non.
+     * Commandes de services payées, dossier ouvert ou non.
      *
-     * <p>Celles deja planifiees restent affichees, marquees comme telles : les retirer
-     * ferait disparaitre l information au moment ou le garage cherche a verifier qu il
-     * n a rien oublie.</p>
+     * <p>Celles déjà planifiées restent affichées, marquées comme telles : les retirer
+     * ferait disparaître l'information au moment où le garage cherche à vérifier qu'il
+     * n'a rien oublié.</p>
      */
     public List<CommandeAPlanifierVue> commandesAPlanifier() {
         ZoneId zone = parametres.courants().zone();

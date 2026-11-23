@@ -12,15 +12,15 @@ import java.time.ZoneId;
 import java.util.UUID;
 
 /**
- * Vue de la page « commande enregistree » (F14). Le numero est la piece
- * d identite que le membre conserve. Le montant TVAC rappelle ce qui est du au
- * paiement. Montant pre-formate en euros, convention du module.
+ * Vue de la page « commande enregistrée » (F14). Le numéro est la pièce
+ * d'identité que le membre conserve. Le montant TVAC rappelle ce qui est dû au
+ * paiement. Montant pré-formaté en euros, convention du module.
  *
  * <p>La situation du paiement existe parce que cette page est le point de chute du
- * RETOUR de paiement : y proposer « Proceder au paiement » a un membre qui vient de
+ * RETOUR de paiement : y proposer « Procéder au paiement » à un membre qui vient de
  * payer, ou dont le paiement est en cours de traitement chez le prestataire, serait
- * une invitation a payer deux fois. Apres un echec, la page le dit avant de proposer
- * de reessayer.</p>
+ * une invitation à payer deux fois. Après un échec, la page le dit avant de proposer
+ * de réessayer.</p>
  */
 public record ConfirmationCommandeVue(
         UUID reference,

@@ -35,19 +35,19 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.UUID;
 
 /**
- * Recapitulatif et validation de commande (F14, sans paiement), sous /commande.
+ * Récapitulatif et validation de commande (F14, sans paiement), sous /commande.
  *
- * <p>Le POST porte l acceptation des CGV (revalidee cote serveur, l attribut
- * {@code required} de la case n est qu un confort) et capture l adresse IP de la
- * requete pour la preuve contractuelle : l IP ne transite ni par l URL ni par les
- * journaux, elle part au service et ne vit qu en colonne de preuve. Le bouton de
+ * <p>Le POST porte l'acceptation des CGV (revalidée côté serveur, l'attribut
+ * {@code required} de la case n'est qu'un confort) et capture l'adresse IP de la
+ * requête pour la preuve contractuelle : l'IP ne transite ni par l'URL ni par les
+ * journaux, elle part au service et ne vit qu'en colonne de preuve. Le bouton de
  * validation porte la mention « Commande avec obligation de paiement »
- * (art. VI.45 CDE, cle i18n {@code commande.bouton}).</p>
+ * (art. VI.45 CDE, clé i18n {@code commande.bouton}).</p>
  *
- * <p>Refus metier : le recapitulatif est reaffiche avec le message sous la zone
- * concernee (CGV ou lignes). Succes : PRG vers la page de confirmation, adressee
- * par la reference publique de la commande. {@code RessourceIntrouvableException}
- * n est pas catchee, commande d autrui ou inconnue : 404.</p>
+ * <p>Refus métier : le récapitulatif est réaffiché avec le message sous la zone
+ * concernée (CGV ou lignes). Succès : PRG vers la page de confirmation, adressée
+ * par la référence publique de la commande. {@code RessourceIntrouvableException}
+ * n'est pas catchée, commande d'autrui ou inconnue : 404.</p>
  */
 @Controller
 @RequestMapping("/commande")
@@ -116,10 +116,10 @@ public class CommandeController {
     }
 
     /**
-     * Depart vers la page de paiement du prestataire (F14). L URL de redirection
+     * Départ vers la page de paiement du prestataire (F14). L'URL de redirection
      * vient de la passerelle : factice hors production, Mollie en production. Sans
-     * page de paiement, le membre revient a sa commande avec ce que la relecture de
-     * la tentative ouverte a constate.
+     * page de paiement, le membre revient à sa commande avec ce que la relecture de
+     * la tentative ouverte a constaté.
      */
     @PostMapping("/{reference}/payer")
     public String payer(@AuthenticationPrincipal UserDetails membre,
@@ -144,14 +144,14 @@ public class CommandeController {
             redirection.addFlashAttribute("erreur", msg("commande.erreur.paiement-impossible"));
             return "redirect:/commande/" + reference + "/confirmation";
         } catch (PrestataireIndisponibleException e) {
-            // Le pire point de rupture d un parcours d achat est une page d erreur au
+            // Le pire point de rupture d'un parcours d'achat est une page d'erreur au
             // moment de payer. La commande, elle, reste valide et payable : le membre
-            // est ramene sur elle avec un message qui invite a reessayer, et non un 500.
-            // Le message de l exception n est PAS affiche : il peut porter des details
+            // est ramené sur elle avec un message qui invite à réessayer, et non un 500.
+            // Le message de l'exception n'est PAS affiché : il peut porter des détails
             // du prestataire.
-            // Il est en revanche JOURNALISE, avec sa cause. Sans cela l exploitant voit
-            // un parcours qui echoue et n a rien pour dire pourquoi : c est ce qui s est
-            // produit en repetition avec un jeton mal colle, ou seul l ecran parlait.
+            // Il est en revanche JOURNALISE, avec sa cause. Sans cela l'exploitant voit
+            // un parcours qui échoue et n'a rien pour dire pourquoi : c'est ce qui s'est
+            // produit en répétition avec un jeton mal collé, où seul l'écran parlait.
             JOURNAL.warn("Prestataire de paiement indisponible pour la commande {} : {}",
                     reference, e.getMessage(), e);
             redirection.addFlashAttribute("erreur",
@@ -163,16 +163,16 @@ public class CommandeController {
     /**
      * Retour du membre depuis la page du prestataire.
      *
-     * <p><b>Rien n est conclu de la seule visite de cette adresse.</b> Le prestataire
-     * y renvoie le membre quelle que soit l issue, abandon compris, et l URL est
-     * ouvrable par quiconque la connait : le service relit le statut chez le
-     * prestataire avant de repondre. Le message affiche decoule de l etat constate, pas
-     * du fait d etre revenu.</p>
+     * <p><b>Rien n'est conclu de la seule visite de cette adresse.</b> Le prestataire
+     * y renvoie le membre quelle que soit l'issue, abandon compris, et l'URL est
+     * ouvrable par quiconque la connaît : le service relit le statut chez le
+     * prestataire avant de répondre. Le message affiché découle de l'état constaté, pas
+     * du fait d'être revenu.</p>
      *
-     * <p>La session survit au detour : le prestataire ramene le navigateur par une
+     * <p>La session survit au détour : le prestataire ramène le navigateur par une
      * navigation GET de premier niveau, que le cookie {@code SameSite=Lax} accompagne.
-     * Elle ne survivrait pas a un POST de retour : raison de plus pour que la
-     * notification serveur a serveur reste le chemin nominal quand elle est
+     * Elle ne survivrait pas à un POST de retour : raison de plus pour que la
+     * notification serveur à serveur reste le chemin nominal quand elle est
      * possible.</p>
      */
     @GetMapping("/{reference}/retour")
@@ -183,12 +183,12 @@ public class CommandeController {
         try {
             situation = paiements.constaterRetour(reference, membre.getUsername());
         } catch (PrestataireIndisponibleException e) {
-            // Le prestataire est injoignable a cet instant : on ne sait pas si le
-            // paiement a abouti, et on se garde de trancher. La notification serveur a
-            // serveur, ou une prochaine visite, constatera. Affirmer un echec ici
-            // pousserait a payer une seconde fois un encaissement peut-etre deja passe.
-            // Une trace est d autant plus utile ici que rien d autre ne signale ce cas :
-            // l ecran reste volontairement muet sur la cause.
+            // Le prestataire est injoignable à cet instant : on ne sait pas si le
+            // paiement a abouti, et on se garde de trancher. La notification serveur à
+            // serveur, ou une prochaine visite, constatera. Affirmer un échec ici
+            // pousserait à payer une seconde fois un encaissement peut-être déjà passé.
+            // Une trace est d'autant plus utile ici que rien d'autre ne signale ce cas :
+            // l'écran reste volontairement muet sur la cause.
             JOURNAL.warn("Prestataire de paiement indisponible pour la commande {} : {}",
                     reference, e.getMessage(), e);
             redirection.addFlashAttribute("erreur", msg("commande.retour.indisponible"));
@@ -219,7 +219,7 @@ public class CommandeController {
         return "vente/commande-confirmee";
     }
 
-    /** Reaffiche le recapitulatif avec le message sous la zone concernee. */
+    /** Réaffiche le récapitulatif avec le message sous la zone concernée. */
     private String recapAvecErreur(UserDetails membre, Model modele,
                                    String attribut, String message) {
         modele.addAttribute("titre", msg("commande.recap.titre"));
