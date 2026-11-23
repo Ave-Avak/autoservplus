@@ -11,7 +11,6 @@ import be.autoservplus.notification.domain.TypeNotification;
 import be.autoservplus.notification.repository.NotificationRepository;
 import be.autoservplus.notification.service.dto.NotificationVue;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
-import be.autoservplus.reservation.service.support.FormatageRdv;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -19,6 +18,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
@@ -155,6 +155,6 @@ public class NotificationService {
                 messages.getMessage(type.cleTitre(), null, langue),
                 messages.getMessage(type.cleCorps(), new Object[]{notification.getCorps()}, langue),
                 !notification.estNonLue(),
-                FormatageRdv.jourLisible(notification.getDateEnvoi(), zone));
+                LocalDateTime.ofInstant(notification.getDateEnvoi(), zone));
     }
 }

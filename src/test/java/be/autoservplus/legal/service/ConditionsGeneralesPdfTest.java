@@ -4,6 +4,7 @@ import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.config.MentionsIdentiteGarage;
 import be.autoservplus.legal.domain.TypeDocumentVersionne;
 import be.autoservplus.legal.service.dto.TexteArchiveVue;
+import be.autoservplus.support.FuseauxDeTest;
 import com.lowagie.text.pdf.PdfReader;
 import com.lowagie.text.pdf.parser.PdfTextExtractor;
 import org.junit.jupiter.api.DisplayName;
@@ -11,9 +12,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.context.support.ResourceBundleMessageSource;
 
 import java.io.IOException;
-import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -49,7 +48,7 @@ class ConditionsGeneralesPdfTest {
         messages.setDefaultEncoding("UTF-8");
         messages.setFallbackToSystemLocale(false);
         pdf = new ConditionsGeneralesPdf(versions, new MentionsIdentiteGarage(GARAGE, messages), messages,
-                Clock.fixed(ACCEPTATION, ZoneId.of("Europe/Brussels")));
+                FuseauxDeTest.bruxelles());
     }
 
     private static String texte(byte[] document) throws IOException {

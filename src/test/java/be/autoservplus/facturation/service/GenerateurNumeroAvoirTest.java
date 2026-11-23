@@ -2,6 +2,7 @@ package be.autoservplus.facturation.service;
 
 import be.autoservplus.facturation.domain.CompteurAvoir;
 import be.autoservplus.facturation.repository.CompteurAvoirRepository;
+import be.autoservplus.support.FuseauxDeTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,7 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -28,13 +29,11 @@ import static org.mockito.Mockito.when;
 @DisplayName("GenerateurNumeroAvoir")
 class GenerateurNumeroAvoirTest {
 
-    private static final ZoneId BRUXELLES = ZoneId.of("Europe/Brussels");
-
     @Mock private CompteurAvoirRepository compteurs;
 
     private GenerateurNumeroAvoir generateur(String instant) {
         return new GenerateurNumeroAvoir(compteurs,
-                Clock.fixed(Instant.parse(instant), BRUXELLES));
+                Clock.fixed(Instant.parse(instant), ZoneOffset.UTC), FuseauxDeTest.bruxelles());
     }
 
     @Test

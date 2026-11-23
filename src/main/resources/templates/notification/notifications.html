@@ -39,7 +39,7 @@
                       th:text="#{notifications.non-lue}">Non lue</span>
             </p>
             <p th:text="${n.corps()}">Votre rendez-vous RDV-2026-0007 a été confirmé.</p>
-            <p class="carte-meta" th:text="${n.date()}">23 août 2026</p>
+            <p class="carte-meta" th:text="${#temporals.format(n.date(), 'EEEE d MMMM yyyy')}">23 août 2026</p>
             <form th:if="${!n.lue()}"
                   th:action="@{/mes-notifications/{id}/lue(id=${n.id()})}" method="post">
                 <button type="submit" class="lien-bouton"

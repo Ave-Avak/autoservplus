@@ -1,11 +1,11 @@
 package be.autoservplus.communication.service;
 
+import be.autoservplus.common.temps.FuseauGarage;
 import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.config.MentionsIdentiteGarage;
 import be.autoservplus.identite.domain.ChampCompte;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.Utilisateur;
-import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
@@ -54,19 +54,19 @@ public class CourrielSortant implements ServiceCourriel {
     private final MessageSource messages;
     private final EnvoiApresCommit envoi;
     private final IdentiteGarage garage;
-    private final ParametreAtelierRepository parametres;
+    private final FuseauGarage fuseau;
     private final LiensCourriel liens;
     private final MentionsIdentiteGarage identite;
 
     public CourrielSortant(MessageSource messages, EnvoiApresCommit envoi,
-                           IdentiteGarage garage, ParametreAtelierRepository parametres,
+                           IdentiteGarage garage, FuseauGarage fuseau,
                            LiensCourriel liens, MentionsIdentiteGarage identite) {
         this.liens = liens;
         this.identite = identite;
         this.messages = messages;
         this.envoi = envoi;
         this.garage = garage;
-        this.parametres = parametres;
+        this.fuseau = fuseau;
     }
 
     // --- compte ---------------------------------------------------------------------
@@ -100,7 +100,7 @@ public class CourrielSortant implements ServiceCourriel {
     @Override
     public void envoyerAvisVerrouillageSecondFacteur(Utilisateur destinataire, Instant jusqua) {
         Locale langue = langue(destinataire.getLangue());
-        ZonedDateTime fin = jusqua.atZone(parametres.courants().zone());
+        ZonedDateTime fin = jusqua.atZone(fuseau.zone());
         auCompte("verrouillage-second-facteur", destinataire, null,
                 jour(fin, langue, "d MMMM yyyy"), heure(fin));
     }
@@ -108,7 +108,7 @@ public class CourrielSortant implements ServiceCourriel {
     @Override
     public void envoyerAvisVerrouillageConnexion(Utilisateur destinataire, Instant jusqua) {
         Locale langue = langue(destinataire.getLangue());
-        ZonedDateTime fin = jusqua.atZone(parametres.courants().zone());
+        ZonedDateTime fin = jusqua.atZone(fuseau.zone());
         auCompte("verrouillage-connexion", destinataire, null,
                 jour(fin, langue, "d MMMM yyyy"), heure(fin));
     }
@@ -336,7 +336,7 @@ public class CourrielSortant implements ServiceCourriel {
     @Override
     public void envoyerConfirmationCommande(DetailsConfirmationCommande details) {
         Locale langue = langue(details.langue());
-        ZoneId zone = parametres.courants().zone();
+        ZoneId zone = fuseau.zone();
         String cle = "courriel.confirmation-commande.";
         List<String> blocs = new ArrayList<>();
         blocs.add(corps("confirmation-commande", langue, details.numeroCommande(),
@@ -412,7 +412,7 @@ public class CourrielSortant implements ServiceCourriel {
     @Override
     public void envoyerAccuseRetractation(DetailsAccuseRetractationCourriel details) {
         Locale langue = langue(details.langue());
-        ZonedDateTime soumission = details.soumiseLe().atZone(parametres.courants().zone());
+        ZonedDateTime soumission = details.soumiseLe().atZone(fuseau.zone());
         String motif = details.motif() == null || details.motif().isBlank()
                 ? texte("courriel.retractation-recue.sans-motif", langue)
                 : details.motif();

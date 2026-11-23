@@ -6,6 +6,7 @@ import be.autoservplus.retractation.domain.StatutDemandeAnnulation;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
 
@@ -27,8 +28,8 @@ public record DemandeAnnulationVueAdmin(
         StatutDemandeAnnulation statut,
         String numeroCommande,
         String montantTvac,
-        String dateCommande,
-        String dateDemande,
+        LocalDateTime dateCommande,
+        LocalDateTime dateDemande,
         long joursDepuisLaDemande,
         boolean urgent,
         String membreNom,
@@ -48,8 +49,8 @@ public record DemandeAnnulationVueAdmin(
                 demande.getStatut(),
                 demande.getCommande().getNumero(),
                 FormatageRdv.eurosEcran(demande.getCommande().getMontantTvac()),
-                FormatageRdv.jourLisible(demande.getCommande().getDateCommande(), zone),
-                FormatageRdv.jourLisible(demande.getDateDemande(), zone),
+                LocalDateTime.ofInstant(demande.getCommande().getDateCommande(), zone),
+                LocalDateTime.ofInstant(demande.getDateDemande(), zone),
                 jours,
                 demande.estEnAttente() && jours >= SEUIL_URGENCE_JOURS,
                 demande.getCommande().getMembre().nomComplet(),

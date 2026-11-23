@@ -45,7 +45,7 @@
                     <a th:href="@{/commandes/{ref}(ref=${commande.reference()})}"
                        th:text="${commande.numero()}">CMD-2026-0001</a>
                 </th>
-                <td th:text="${commande.date()}">22 août 2026</td>
+                <td th:text="${#temporals.format(commande.date(), 'EEEE d MMMM yyyy')}">22 août 2026</td>
                 <td th:text="${commande.totalTvac()}">48,38 €</td>
                 <td th:text="#{'commande.statut.' + ${commande.statut().name()}}">Payée</td>
                 <td>

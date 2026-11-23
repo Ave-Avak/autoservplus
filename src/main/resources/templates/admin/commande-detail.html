@@ -176,7 +176,7 @@
             </thead>
             <tbody>
             <tr th:each="d : ${retractations}">
-                <td th:text="${d.dateDemande()}">20 novembre 2026</td>
+                <td th:text="${#temporals.format(d.dateDemande(), 'dd/MM/yyyy HH:mm')}">20/11/2026 10:12</td>
                 <td th:text="#{'admin.ventes.demande.statut.' + ${d.statut()}}">En attente</td>
                 <td th:text="${d.motifMembre()} ?: #{admin.compte.journal.sans-motif}">Pièce inutile</td>
                 <td>

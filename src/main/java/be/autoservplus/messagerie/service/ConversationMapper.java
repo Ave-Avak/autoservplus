@@ -4,11 +4,11 @@ import be.autoservplus.messagerie.domain.Conversation;
 import be.autoservplus.messagerie.domain.RoleExpediteur;
 import be.autoservplus.messagerie.service.dto.ConversationVue;
 import be.autoservplus.messagerie.service.dto.MessageVue;
-import be.autoservplus.reservation.service.support.FormatageRdv;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Component;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -42,7 +42,7 @@ public class ConversationMapper {
         String libelleGarage = messages.getMessage("messagerie.garage", null,
                 LocaleContextHolder.getLocale());
         List<MessageVue> vues = fil.getMessages().stream()
-                .map(m -> MessageVue.de(m, FormatageRdv.jourLisible(m.getDateEnvoi(), zone),
+                .map(m -> MessageVue.de(m, LocalDateTime.ofInstant(m.getDateEnvoi(), zone),
                         libelleGarage))
                 .toList();
         return vue(fil, lecteur, zone, vues);
@@ -57,7 +57,7 @@ public class ConversationMapper {
                 fil.getIntervention() == null ? null : fil.getIntervention().getNumero(),
                 fil.isCloturee(),
                 fil.nombreNonLusPar(lecteur),
-                FormatageRdv.jourLisible(fil.getUpdatedAt(), zone),
+                LocalDateTime.ofInstant(fil.getUpdatedAt(), zone),
                 messagesVus);
     }
 }

@@ -49,11 +49,11 @@
                 </div>
                 <div>
                     <dt th:text="#{admin.retractations.date-commande}">Commandé le</dt>
-                    <dd th:text="${d.dateCommande()}">22 août 2026</dd>
+                    <dd th:text="${#temporals.format(d.dateCommande(), 'EEEE d MMMM yyyy')}">22 août 2026</dd>
                 </div>
                 <div>
                     <dt th:text="#{admin.retractations.date-demande}">Demandé le</dt>
-                    <dd th:text="${d.dateDemande()}">25 août 2026</dd>
+                    <dd th:text="${#temporals.format(d.dateDemande(), 'EEEE d MMMM yyyy')}">25 août 2026</dd>
                 </div>
                 <div th:if="${d.aUnMotifMembre()}">
                     <dt th:text="#{admin.retractations.motif-membre}">Motif du membre</dt>

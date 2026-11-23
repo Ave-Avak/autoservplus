@@ -74,7 +74,7 @@
             </thead>
             <tbody>
             <tr th:each="e : ${entrees}">
-                <td th:text="${e.date()}">23 août 2026</td>
+                <td th:text="${#temporals.format(e.date(), 'EEEE d MMMM yyyy')}">23 août 2026</td>
                 <td th:text="#{'admin.journal.type.' + ${e.type()}}">Catalogue</td>
                 <!--/* Auteur inconnu : compte anonymisé (F23) ou écriture système. On le dit
                      plutôt que de laisser une cellule vide, qui se lirait comme une perte. */-->

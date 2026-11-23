@@ -34,7 +34,7 @@
                 <td><a th:href="@{/admin/messages/{ref}(ref=${f.reference()})}" th:text="${f.sujet()}">Question</a></td>
                 <td th:text="${f.prenomMembre()}">Marie</td>
                 <td th:text="${f.estRattachee()} ? ${f.numeroIntervention()} : ''">ITV-2026-0011</td>
-                <td th:text="${f.derniereActivite()}">23 août 2026</td>
+                <td th:text="${#temporals.format(f.derniereActivite(), 'EEEE d MMMM yyyy')}">23 août 2026</td>
                 <td>
                     <span th:if="${f.aDesNonLus()}" class="badge" th:text="#{messagerie.non-lus(${f.nombreNonLus()})}">2 non lus</span>
                     <span th:if="${f.cloturee()}" th:text="#{messagerie.clos}">Clôturé</span>

@@ -3,6 +3,7 @@ package be.autoservplus.retractation.service;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.temps.FuseauGarage;
 import be.autoservplus.facturation.domain.Avoir;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.repository.FactureRepository;
@@ -84,6 +85,7 @@ public class AdminRetractationService {
     private final UtilisateurRepository utilisateurs;
     private final ApplicationEventPublisher evenements;
     private final Clock horloge;
+    private final FuseauGarage fuseau;
 
     public AdminRetractationService(DemandeAnnulationRepository demandes,
                                     CommandeRepository commandes,
@@ -93,7 +95,9 @@ public class AdminRetractationService {
                                     PrestatairePaiement prestataire,
                                     UtilisateurRepository utilisateurs,
                                     ApplicationEventPublisher evenements,
-                                    Clock horloge) {
+                                    Clock horloge,
+                                    FuseauGarage fuseau) {
+        this.fuseau = fuseau;
         this.demandes = demandes;
         this.commandes = commandes;
         this.paiements = paiements;
@@ -109,7 +113,7 @@ public class AdminRetractationService {
 
     /** Demandes en attente de decision, de la plus ancienne a la plus recente. */
     public List<DemandeAnnulationVueAdmin> demandesEnAttente() {
-        ZoneId zone = horloge.getZone();
+        ZoneId zone = fuseau.zone();
         Instant maintenant = horloge.instant();
         return demandes.enAttente().stream()
                 .map(demande -> DemandeAnnulationVueAdmin.de(demande, zone, maintenant))
@@ -121,7 +125,7 @@ public class AdminRetractationService {
      * ancienne, pour son détail au back-office. Le membre ne voit que la dernière.
      */
     public List<DemandeAnnulationVueAdmin> historiqueDeLaCommande(UUID referenceCommande) {
-        ZoneId zone = horloge.getZone();
+        ZoneId zone = fuseau.zone();
         Instant maintenant = horloge.instant();
         return demandes.historiqueDeLaCommande(referenceCommande).stream()
                 .map(demande -> DemandeAnnulationVueAdmin.de(demande, zone, maintenant))
@@ -130,7 +134,7 @@ public class AdminRetractationService {
 
     /** Une demande precise, pour l ecran de refus motive. */
     public DemandeAnnulationVueAdmin vue(UUID reference) {
-        return DemandeAnnulationVueAdmin.de(charger(reference), horloge.getZone(), horloge.instant());
+        return DemandeAnnulationVueAdmin.de(charger(reference), fuseau.zone(), horloge.instant());
     }
 
     // --- decisions ---------------------------------------------------------------------

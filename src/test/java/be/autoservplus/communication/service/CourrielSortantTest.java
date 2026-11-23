@@ -6,8 +6,7 @@ import be.autoservplus.identite.domain.ChampCompte;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
-import be.autoservplus.reservation.domain.ParametreAtelier;
-import be.autoservplus.reservation.repository.ParametreAtelierRepository;
+import be.autoservplus.support.FuseauxDeTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,8 +23,6 @@ import java.util.Map;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 /**
  * Rédaction des courriels : chaque type, dans chaque langue, sans transaction (le
@@ -51,10 +48,8 @@ class CourrielSortantTest {
         messages.setDefaultEncoding("UTF-8");
         messages.setFallbackToSystemLocale(false);
         IdentiteGarage garage = identiteDeTest();
-        ParametreAtelierRepository parametres = mock(ParametreAtelierRepository.class);
-        when(parametres.courants()).thenReturn(new ParametreAtelier());
         courriel = new CourrielSortant(messages, new EnvoiApresCommit(partis::add), garage,
-                parametres, new LiensCourriel("http://localhost:8080/"),
+                FuseauxDeTest.bruxelles(), new LiensCourriel("http://localhost:8080/"),
                 new MentionsIdentiteGarage(garage, messages));
         this.messages = messages;
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie",
@@ -163,10 +158,8 @@ class CourrielSortantTest {
     void envoisHorsDeLaRequete() {
         List<Courriel> horsRequete = new ArrayList<>();
         IdentiteGarage garage = identiteDeTest();
-        ParametreAtelierRepository parametres = mock(ParametreAtelierRepository.class);
-        when(parametres.courants()).thenReturn(new ParametreAtelier());
         courriel = new CourrielSortant(messages, new EnvoiApresCommit(partis::add, horsRequete::add),
-                garage, parametres, new LiensCourriel("http://localhost:8080/"),
+                garage, FuseauxDeTest.bruxelles(), new LiensCourriel("http://localhost:8080/"),
                 new MentionsIdentiteGarage(garage, messages));
 
         tousLesEnvois().forEach((type, envoi) -> envoi.accept(Langue.fr));
@@ -243,10 +236,8 @@ class CourrielSortantTest {
     /** La confirmation imprime l'identité rubrique par rubrique. */
     private void avecIdentiteComplete() {
         IdentiteGarage identite = identiteDeTest();
-        ParametreAtelierRepository parametres = mock(ParametreAtelierRepository.class);
-        when(parametres.courants()).thenReturn(new ParametreAtelier());
         courriel = new CourrielSortant(messages, new EnvoiApresCommit(partis::add), identite,
-                parametres, new LiensCourriel("http://localhost:8080/"),
+                FuseauxDeTest.bruxelles(), new LiensCourriel("http://localhost:8080/"),
                 new MentionsIdentiteGarage(identite, messages));
     }
 

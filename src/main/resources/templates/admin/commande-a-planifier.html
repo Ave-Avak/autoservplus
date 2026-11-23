@@ -19,7 +19,7 @@
         <dt th:text="#{admin.planification.colonne.client}">Client</dt>
         <dd th:text="${commande.client()}">Marie Dupont</dd>
         <dt th:text="#{admin.planification.colonne.date}">Date</dt>
-        <dd th:text="${commande.date()}">23 août 2026</dd>
+        <dd th:text="${#temporals.format(commande.date(), 'EEEE d MMMM yyyy')}">23 août 2026</dd>
         <dt th:text="#{admin.planification.colonne.prestations}">Prestations</dt>
         <dd>
             <ul>

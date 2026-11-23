@@ -14,6 +14,7 @@ import java.sql.Timestamp;
 import java.time.OffsetDateTime;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Locale;
@@ -84,7 +85,7 @@ public class JournalService {
         String motif = (String) ligne[8];
 
         return new EntreeJournal(
-                FormatageRdv.jourLisible(horodatage, zone),
+                LocalDateTime.ofInstant(horodatage, zone),
                 type,
                 prenom == null ? null : "%s %s".formatted(prenom, nom),
                 cible,

@@ -2,6 +2,7 @@ package be.autoservplus.facturation.service;
 
 import be.autoservplus.facturation.domain.CompteurFacture;
 import be.autoservplus.facturation.repository.CompteurFactureRepository;
+import be.autoservplus.support.FuseauxDeTest;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -10,7 +11,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,7 +33,7 @@ class GenerateurNumeroFactureTest {
 
     private GenerateurNumeroFacture generateurAu(String instant) {
         return new GenerateurNumeroFacture(compteurs,
-                Clock.fixed(Instant.parse(instant), ZoneId.of("Europe/Brussels")));
+                Clock.fixed(Instant.parse(instant), ZoneOffset.UTC), FuseauxDeTest.bruxelles());
     }
 
     private void compteurExistant(short exercice, int dernierNumero) {
@@ -77,10 +78,10 @@ class GenerateurNumeroFactureTest {
     }
 
     @Test
-    @DisplayName("l'exercice vient de l'horloge injectee : un 31 decembre reste sur l'annee courante")
+    @DisplayName("l'exercice est l'année au garage : le 1er janvier à 0 h 30 ouvre le nouvel exercice")
     void exerciceLuDepuisLHorloge() {
-        // 23h30 UTC le 31/12 = 00h30 le 01/01 a Bruxelles : c'est le fuseau de
-        // l horloge qui tranche l exercice, pas UTC.
+        // 23 h 30 UTC le 31/12, c'est 0 h 30 le 01/01 à Bruxelles. L'horloge est en UTC comme
+        // en production : c'est le fuseau du garage qui tranche l'exercice.
         compteurExistant((short) 2027, 0);
 
         assertThat(generateurAu("2026-12-31T23:30:00Z").prochain().valeur())

@@ -6,6 +6,7 @@ import be.autoservplus.vente.domain.Paiement;
 import be.autoservplus.vente.domain.SituationPaiement;
 import be.autoservplus.vente.domain.StatutCommande;
 
+import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.UUID;
 
@@ -27,7 +28,7 @@ import java.util.UUID;
 public record CommandeHistoriqueVue(
         UUID reference,
         String numero,
-        String date,
+        LocalDateTime date,
         String totalTvac,
         StatutCommande statut,
         SituationPaiement situation,
@@ -39,7 +40,8 @@ public record CommandeHistoriqueVue(
         boolean rembourseApresAnnulation) {
 
     /** Ligne sans paiement reçu après annulation. */
-    public CommandeHistoriqueVue(UUID reference, String numero, String date, String totalTvac,
+    public CommandeHistoriqueVue(UUID reference, String numero, LocalDateTime date,
+                                 String totalTvac,
                                  StatutCommande statut, SituationPaiement situation,
                                  UUID referenceFacture, String numeroFacture) {
         this(reference, numero, date, totalTvac, statut, situation, referenceFacture, numeroFacture,
@@ -52,7 +54,7 @@ public record CommandeHistoriqueVue(
         return new CommandeHistoriqueVue(
                 commande.getReference(),
                 commande.getNumero(),
-                FormatageRdv.jourLisible(commande.getDateCommande(), zone),
+                LocalDateTime.ofInstant(commande.getDateCommande(), zone),
                 FormatageRdv.eurosEcran(commande.getMontantTvac()),
                 commande.getStatut(),
                 situation,

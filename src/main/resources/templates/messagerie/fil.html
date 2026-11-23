@@ -22,7 +22,7 @@
         <li th:each="m : ${fil.messages()}" th:classappend="${m.duGarage()} ? 'du-garage' : 'du-membre'">
             <p class="carte-meta">
                 <strong th:text="${m.auteur()}">Marie</strong>
-                <span th:text="${m.date()}">23 août 2026</span>
+                <span th:text="${#temporals.format(m.date(), 'EEEE d MMMM yyyy')}">23 août 2026</span>
             </p>
             <p th:text="${m.corps()}">Bonjour, ma facture est-elle disponible ?</p>
         </li>
