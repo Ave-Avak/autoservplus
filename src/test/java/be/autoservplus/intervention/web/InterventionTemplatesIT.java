@@ -17,12 +17,15 @@ import be.autoservplus.intervention.service.GenerateurNumeroIntervention;
 import be.autoservplus.reservation.domain.*;
 import be.autoservplus.reservation.repository.*;
 import be.autoservplus.support.SocleIntegration;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -34,6 +37,7 @@ import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -63,6 +67,8 @@ class InterventionTemplatesIT extends SocleIntegration {
     @Autowired private InterventionRepository interventions;
     @Autowired private HistoriqueStatutInterventionRepository historiques;
     @Autowired private GenerateurNumeroIntervention numeros;
+    @Autowired private JdbcTemplate jdbc;
+    @PersistenceContext private EntityManager entites;
 
     private UUID reference;
 
@@ -122,6 +128,76 @@ class InterventionTemplatesIT extends SocleIntegration {
                 .andExpect(content().string(containsString("badge")))
                 .andExpect(content().string(not(containsString("hx-trigger"))))
                 .andExpect(content().string(not(containsString("hx-get"))));
+    }
+
+    // --- entrée directe au garage : ni rendez-vous ni commande ------------------------
+
+    /**
+     * Détache l'intervention de son rendez-vous, comme les cinq interventions de la graine
+     * de démonstration : le schéma l'admet (V32), aucun écran ne le crée.
+     */
+    private void detacherDuRendezVous() {
+        interventions.flush();
+        jdbc.update("UPDATE intervention SET rdv_id = NULL WHERE reference = ?", reference);
+        entites.clear();
+    }
+
+    @Test
+    @DisplayName("entrée directe : le propriétaire du véhicule ouvre le suivi")
+    void entreeDirecteSuivi() throws Exception {
+        detacherDuRendezVous();
+
+        mvc.perform(get("/mes-interventions/{ref}", reference).locale(java.util.Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Vidange")));
+    }
+
+    @Test
+    @DisplayName("entrée directe en attente d'accord : le propriétaire atteint l'écran de validation")
+    void entreeDirecteValidation() throws Exception {
+        provoquerDepassement();
+        detacherDuRendezVous();
+
+        mvc.perform(get("/mes-interventions/{ref}/validation", reference).locale(java.util.Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Travaux supplémentaires à valider")))
+                // 49,00 et 89,00 hors TVA, soit 166,98 à payer, TVA comprise.
+                .andExpect(content().string(containsString("138,00")))
+                .andExpect(content().string(containsString("166,98")));
+    }
+
+    @Test
+    @WithMockUser(username = "paul@exemple.be")
+    @DisplayName("entrée directe : un autre membre reçoit 404, au suivi comme à la validation")
+    void entreeDirecteAutreMembre() throws Exception {
+        utilisateurs.save(new Utilisateur("paul@exemple.be", "$2a$12$h", "Martin", "Paul",
+                TypeUtilisateur.MEMBRE));
+        provoquerDepassement();
+        detacherDuRendezVous();
+
+        mvc.perform(get("/mes-interventions/{ref}", reference)).andExpect(status().isNotFound());
+        mvc.perform(get("/mes-interventions/{ref}/validation", reference)).andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("entrée directe sur un véhicule retiré du parc : pas d'erreur 500")
+    void entreeDirecteVehiculeRetire() throws Exception {
+        detacherDuRendezVous();
+        jdbc.update("UPDATE vehicule SET deleted_at = now() WHERE plaque = '1-ABC-123'");
+
+        int statut = mvc.perform(get("/mes-interventions/{ref}", reference).locale(java.util.Locale.FRENCH))
+                .andReturn().getResponse().getStatus();
+
+        assertThat(statut).isIn(200, 404);
+    }
+
+    @Test
+    @DisplayName("entrée directe dont le propriétaire est anonymisé : 404, pas d'erreur 500")
+    void entreeDirecteProprietaireAnonymise() throws Exception {
+        detacherDuRendezVous();
+        jdbc.update("UPDATE utilisateur SET anonymise_le = now() WHERE email = 'marie@exemple.be'");
+
+        mvc.perform(get("/mes-interventions/{ref}", reference)).andExpect(status().isNotFound());
     }
 
     // --- RM-15 : encart de validation et ecran de decision ---------------------------

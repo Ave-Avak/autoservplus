@@ -418,9 +418,9 @@ public class InterventionService {
      */
     private Intervention chargerPourMembre(UUID reference, String email) {
         Intervention it = charger(reference);
-        // titulaire() couvre les DEUX origines : rendez-vous honore et commande de
-        // services payee (F12-b). Tester getRdv() seul privait le membre qui a achete
-        // une prestation en ligne de l acces a sa propre intervention.
+        // titulaire() couvre le rendez-vous honoré, la commande de services payée (F12-b)
+        // et, sans l'un ni l'autre, le propriétaire du véhicule. Tester getRdv() seul privait
+        // de son intervention le membre qui avait acheté une prestation en ligne.
         var titulaire = it.titulaire();
         if (titulaire == null || !titulaire.getEmail().equals(email)) {
             throw new RessourceIntrouvableException("Intervention", reference);
@@ -437,8 +437,9 @@ public class InterventionService {
      */
     private void notifierDepassementSansEchouer(Intervention it) {
         if (it.getRdv() == null) {
-            // Entree directe au garage (hors V1) : aucun membre a prevenir. La bascule
-            // reste valable, le garage traitera l accord hors ligne.
+            // Le courriel de dépassement cite le rendez-vous : sans lui, il ne part pas. Le
+            // titulaire voit l'encart « Validation requise » sur son suivi, et le garage peut
+            // le prévenir hors ligne. La bascule reste valable.
             log.warn("Depassement de devis sur l intervention {} sans RDV lie : aucun membre a notifier.",
                     it.getNumero());
             return;

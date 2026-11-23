@@ -229,18 +229,28 @@ public class Intervention extends BaseEntity {
     }
 
     /**
-     * Membre concerne, quelle que soit l origine.
+     * Membre concerné, quelle que soit l'origine : celui du rendez-vous, celui de la
+     * commande, ou à défaut le propriétaire du véhicule.
      *
-     * <p>Centralise ce que plusieurs appelants faisaient a la main via
-     * {@code getRdv().getMembre()} : expression qui levait une NPE des qu une
-     * intervention ne venait pas d un rendez-vous. Rend {@code null} pour une entree
-     * directe au garage, seul cas ou personne n est rattache.</p>
+     * <p>Centralise ce que plusieurs appelants faisaient à la main via
+     * {@code getRdv().getMembre()}, expression qui levait une NPE dès qu'une intervention
+     * ne venait pas d'un rendez-vous.</p>
+     *
+     * <p>Une intervention sans rendez-vous ni commande, l'entrée directe au garage que le
+     * schéma admet (V32), a pour titulaire le propriétaire du véhicule. Il la lit déjà dans
+     * l'historique de son véhicule : lui en refuser le suivi et la validation d'un
+     * dépassement n'avait pas de sens. Rend {@code null} si le véhicule n'a plus de
+     * propriétaire joignable, compte anonymisé compris : personne n'est alors prévenu.</p>
      */
     public Utilisateur titulaire() {
         if (rdv != null) {
             return rdv.getMembre();
         }
-        return commande == null ? null : commande.getMembre();
+        if (commande != null) {
+            return commande.getMembre();
+        }
+        Utilisateur proprietaire = vehicule == null ? null : vehicule.getMembre();
+        return proprietaire == null || proprietaire.estAnonymise() ? null : proprietaire;
     }
 
     // --- transitions ---------------------------------------------------------------

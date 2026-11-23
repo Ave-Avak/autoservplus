@@ -14,6 +14,7 @@ import be.autoservplus.reservation.domain.Vehicule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -47,6 +48,44 @@ class InterventionTest {
 
     private Intervention interventionDepuis(Prestation... prestations) {
         return new Intervention("INT-2026-0001", rdvAvec(prestations));
+    }
+
+    @Nested
+    @DisplayName("titulaire")
+    class Titulaire {
+
+        /** Entrée directe au garage : ni rendez-vous ni commande, cas admis par le schéma. */
+        private Intervention entreeDirecte(Vehicule vehicule) {
+            Intervention it = new Intervention();
+            ReflectionTestUtils.setField(it, "vehicule", vehicule);
+            return it;
+        }
+
+        @Test
+        @DisplayName("d'un rendez-vous : le membre du rendez-vous")
+        void depuisUnRendezVous() {
+            assertThat(interventionDepuis(vidange).titulaire()).isSameAs(marie);
+        }
+
+        @Test
+        @DisplayName("sans rendez-vous ni commande : le propriétaire du véhicule")
+        void entreeDirecteAuGarage() {
+            assertThat(entreeDirecte(golf).titulaire()).isSameAs(marie);
+        }
+
+        @Test
+        @DisplayName("propriétaire anonymisé : personne, sans exception")
+        void proprietaireAnonymise() {
+            marie.anonymiser("jeton", "$2a$12$inerte", DEBUT);
+
+            assertThat(entreeDirecte(golf).titulaire()).isNull();
+        }
+
+        @Test
+        @DisplayName("véhicule absent : personne, sans exception")
+        void vehiculeAbsent() {
+            assertThat(entreeDirecte(null).titulaire()).isNull();
+        }
     }
 
     @Nested
