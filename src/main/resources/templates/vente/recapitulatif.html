@@ -76,10 +76,11 @@
     <!-- F24 : acceptation des CGV exigee avant la commande, revalidee cote serveur.
          Le bouton porte la mention imposee par l'art. VI.45 CDE (cle commande.bouton) :
          « Commande avec obligation de paiement ». -->
-    <form th:action="@{/commande}" method="post" class="formulaire">
+    <form th:action="@{/commande}" method="post" class="formulaire" novalidate>
         <div class="champ champ-case">
             <input type="checkbox" id="cgv" name="cgv" value="true" required
-                   aria-describedby="cgv-erreur">
+                   th:aria-invalid="${erreurCgv != null} ? 'true'"
+                   th:aria-describedby="${erreurCgv != null} ? 'cgv-erreur'">
             <label for="cgv">
                 <span th:text="#{commande.cgv.prefixe}">J'ai lu et j'accepte les</span>
                 <a th:href="@{/cgv}" th:text="#{commande.cgv.lien}">conditions générales de vente</a>

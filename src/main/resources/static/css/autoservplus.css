@@ -158,6 +158,15 @@ main {
 
 h1 { color: var(--bleu-marine); margin-top: 0; }
 
+/* Lien déjà visité dans le contenu : #6B21A8 tient 8.72:1 sur blanc, 8.34:1 sur
+   --gris-50, et au moins 7.04:1 sur les fonds clairs des messages et des encadrés
+   (--gris-200, #FEE2E2, #E0E7FF, #FEF3C7, #DCFCE7), au lieu du violet par défaut du
+   navigateur, jamais calculé. La règle ne vise que les liens sans classe de <main> :
+   l'en-tête et le pied sont hors de <main>, un lien présenté en bouton porte une
+   classe. :where la laisse à la spécificité d'une pseudo-classe seule, si bien qu'un
+   lien stylé par son composant (carte, fil d'Ariane) garde sa couleur. */
+:where(main a:not([class])):visited { color: #6B21A8; }
+
 /* Un tableau de donnees defile dans son conteneur, la page jamais : exception de WCAG
    1.4.10 pour les contenus a deux dimensions. Pas de display:block sur le <table>,
    qui lui ferait perdre sa semantique de tableau dans certains navigateurs. Le
@@ -236,6 +245,9 @@ main code { overflow-wrap: anywhere; }
 /* Notice harmonisée de l'UE sur la garantie légale : à la largeur de l'écran, sans
    déformation (règlement (UE) 2025/1960, annexe I : rien ne s'étire ni ne se recadre). */
 .notice-garantie img { display: block; max-width: 100%; height: auto; }
+/* Une figure reçoit du navigateur 40 px de marge de chaque côté : au téléphone, la notice
+   y perdait un quart de sa largeur. */
+.notice-garantie { margin: var(--espace-l) 0; }
 
 .texte-succes { color: var(--succes-texte); }
 .texte-alerte { color: var(--alerte-texte); }
@@ -573,7 +585,15 @@ main section h2 {
 }
 .carte-actions a { color: var(--bleu-secondaire); font-size: 0.9375rem; }
 
-.actions-page { margin-top: var(--espace-xl); }
+/* Le bouton et le lien voisin sur une ligne, alignés, et l'un sous l'autre quand la
+   largeur manque : le lien ne se coupe plus au milieu de son texte. */
+.actions-page {
+    margin-top: var(--espace-xl);
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--espace-m);
+}
 /* Un bouton d'action sur la ligne des liens voisins. En classe : un attribut style est
    bloqué par la politique de sécurité du contenu. */
 .formulaire-en-ligne { display: inline; }

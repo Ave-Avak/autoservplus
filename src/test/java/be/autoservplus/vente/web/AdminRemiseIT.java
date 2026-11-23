@@ -150,8 +150,9 @@ class AdminRemiseIT extends SocleIntegration {
         UUID commande = commandePayee(membre());
         LocalDate aujourdhui = LocalDate.now(BRUXELLES);
 
-        saisir(commande, aujourdhui.plusDays(1)).andExpect(flash().attributeExists("erreur"));
-        saisir(commande, aujourdhui.minusDays(1)).andExpect(flash().attributeExists("erreur"));
+        saisir(commande, aujourdhui.plusDays(1)).andExpect(flash().attributeExists("erreurRemise"))
+                .andExpect(flash().attribute("dateRemiseSaisie", aujourdhui.plusDays(1)));
+        saisir(commande, aujourdhui.minusDays(1)).andExpect(flash().attributeExists("erreurRemise"));
         assertThat(dateRemise(commande)).isNull();
 
         saisir(commande, aujourdhui).andExpect(flash().attributeExists("message"));
@@ -183,7 +184,7 @@ class AdminRemiseIT extends SocleIntegration {
         saisir(commande, aujourdhui).andExpect(flash().attributeExists("message"));
         en(marie.getEmail(), () -> retractations.demander(marie.getEmail(), commande, null));
 
-        saisir(commande, aujourdhui).andExpect(flash().attributeExists("erreur"));
+        saisir(commande, aujourdhui).andExpect(flash().attributeExists("erreurRemise"));
 
         assertThat(dateRemise(commande)).isEqualTo(aujourdhui);
     }

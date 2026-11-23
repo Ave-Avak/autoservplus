@@ -561,15 +561,19 @@ class NavigationEcransIT extends SocleIntegration {
         /**
          * L administrateur ne commande pas (CdC 8.4) et lit ses messages au back-office.
          * Il recoit en revanche des notifications (avis deposes, messages recus).
+         * Le super-administrateur n'en reçoit aucune, l'exploitant n'étant pas le garage :
+         * son en-tête ne porte pas le lien, qui menait à une liste toujours vide.
          */
         @Test
-        @DisplayName("en-tête public d'un rôle du back-office : ni panier ni messages du membre, notifications oui")
+        @DisplayName("en-tête public d'un rôle du back-office : ni panier ni messages du membre, notifications pour l'administrateur seul")
         void enTetePublicDuBackOffice() throws Exception {
             for (Role role : List.of(Role.ADMINISTRATEUR, Role.SUPER_ADMINISTRATEUR)) {
                 Set<String> entete = liens(Jsoup.parse(ouvrir("/services", role).getContentAsString())
                         .select("header").outerHtml(), false);
                 assertThat(entete).as(role.name()).doesNotContain("/panier", "/mes-messages")
-                        .contains("/mes-notifications", "/admin", "/mon-compte");
+                        .contains("/admin", "/mon-compte");
+                assertThat(entete.contains("/mes-notifications")).as(role.name())
+                        .isEqualTo(role == Role.ADMINISTRATEUR);
             }
             Set<String> membre = liens(Jsoup.parse(ouvrir("/services", Role.MEMBRE).getContentAsString())
                     .select("header").outerHtml(), false);

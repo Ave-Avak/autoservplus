@@ -53,6 +53,14 @@ public record CommandeAdminDetail(
         boolean demandeDeRetractation) {
 
     /**
+     * La section de la remise ne s'affiche pas sur une commande annulée, sauf si une date
+     * y avait été saisie : son historique reste alors lisible.
+     */
+    public boolean remiseAffichee() {
+        return contientDesPieces && (statut != StatutCommande.ANNULEE || dateRemise != null);
+    }
+
+    /**
      * La date de remise se saisit sur une commande payée qui porte des pièces, tant
      * qu'aucune demande de rétractation n'a été faite.
      */
