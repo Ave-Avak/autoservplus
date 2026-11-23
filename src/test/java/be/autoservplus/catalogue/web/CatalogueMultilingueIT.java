@@ -213,13 +213,16 @@ class CatalogueMultilingueIT extends SocleIntegration {
     }
 
     @Test
-    @DisplayName("une prestation de la graine, sans traduction, s'affiche en français avec lang=fr")
+    @DisplayName("une prestation sans traduction s'affiche en français avec lang=fr")
     void prestationNonTraduite() throws Exception {
-        Prestation prestation = prestations.findByActifTrueOrderByLibelleAsc().get(0);
+        // Prestation propre au test : celles de la graine sont traduites depuis V67.
+        Categorie atelier = categories.save(new Categorie("ZQX_ML_S", "Atelier zqx", TypeCategorie.SERVICE));
+        Prestation prestation = prestations.saveAndFlush(new Prestation(atelier, "ZQX-ML-S1",
+                "Réglage des phares zqx", new BigDecimal("25.00"), 30));
 
         Document fiche = ouvrir("/services/" + prestation.getReference(), NL);
 
-        assertThat(fiche.selectFirst("h1").text()).isEqualTo(prestation.getLibelle());
+        assertThat(fiche.selectFirst("h1").text()).isEqualTo("Réglage des phares zqx");
         assertThat(fiche.selectFirst("h1").attr("lang")).isEqualTo("fr");
         assertThat(fiche.selectFirst("html").attr("lang")).isEqualTo("nl");
     }
