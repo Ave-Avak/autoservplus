@@ -2,6 +2,7 @@ package be.autoservplus.intervention.domain;
 
 import be.autoservplus.common.entity.BaseEntity;
 import be.autoservplus.reservation.domain.LigneRdv;
+import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.Vehicule;
@@ -18,6 +19,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -132,6 +134,16 @@ public class Intervention extends BaseEntity {
     @Column(name = "version", nullable = false)
     private long version;
 
+    /**
+     * Langue des libellés figés sur les lignes, fixée à la création : celle du membre si
+     * le siège du garage l'admet, sinon sa langue par défaut. Une ligne saisie en texte
+     * libre reste telle que l'atelier l'écrit.
+     */
+    @NotNull
+    @Enumerated(EnumType.STRING)
+    @Column(name = "langue_document", nullable = false, updatable = false, length = 2)
+    private Langue langueDocument = Langue.fr;
+
     protected Intervention() {
         // requis par JPA
     }
@@ -149,6 +161,16 @@ public class Intervention extends BaseEntity {
      * chemin de creation ne puisse produire une intervention sans devis de reference.</p>
      */
     public Intervention(String numero, Rdv rdv) {
+        this(numero, rdv, Langue.fr);
+    }
+
+    /**
+     * @param langueDocument langue dans laquelle les lignes tirées du catalogue se figent,
+     *                       décidée par l'appelant comme pour une commande
+     *                       ({@code IdentiteGarage.langueDuDocument})
+     */
+    public Intervention(String numero, Rdv rdv, Langue langueDocument) {
+        this.langueDocument = Objects.requireNonNull(langueDocument, "langueDocument");
         this.reference = UUID.randomUUID();
         this.numero = Objects.requireNonNull(numero, "numero");
         this.rdv = Objects.requireNonNull(rdv, "rdv");
@@ -185,6 +207,8 @@ public class Intervention extends BaseEntity {
         it.reference = UUID.randomUUID();
         it.numero = Objects.requireNonNull(numero, "numero");
         it.commande = Objects.requireNonNull(commande, "commande");
+        // Née d'une commande, l'intervention en reprend la langue : mêmes libellés.
+        it.langueDocument = commande.getLangueDocument();
         it.vehicule = Objects.requireNonNull(vehicule, "vehicule");
         Objects.requireNonNull(lignes, "lignes");
         if (lignes.isEmpty()) {
@@ -526,6 +550,12 @@ public class Intervention extends BaseEntity {
 
     public Long getId() { return id; }
     public UUID getReference() { return reference; }
+    public Langue getLangueDocument() { return langueDocument; }
+
+    /** Langue dans laquelle une ligne tirée du catalogue fige son libellé. */
+    Locale langueDesLibelles() {
+        return Locale.forLanguageTag(langueDocument.name());
+    }
     public String getNumero() { return numero; }
     public Rdv getRdv() { return rdv; }
     public Commande getCommande() { return commande; }

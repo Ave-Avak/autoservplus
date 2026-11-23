@@ -1,6 +1,7 @@
 package be.autoservplus.pilotage.service;
 
 import be.autoservplus.catalogue.service.AdminCatalogueService;
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.pilotage.repository.IndicateursRepository;
 import be.autoservplus.pilotage.service.dto.Annulations;
 import be.autoservplus.pilotage.service.dto.JourChiffre;
@@ -12,6 +13,7 @@ import be.autoservplus.reservation.domain.PlageOuverture;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.reservation.repository.PlageOuvertureRepository;
 import be.autoservplus.reservation.repository.PosteAtelierRepository;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,6 +88,9 @@ public class TableauDeBordService {
         Instant debut = periode.debut(zone);
         Instant fin = periode.finExclue(zone);
 
+        // Classements et catégories nomment le catalogue dans la langue de l'écran de
+        // l'administrateur, le français hors de toute requête.
+        String langue = LanguesSupportees.plusProche(LocaleContextHolder.getLocale()).getLanguage();
         int postesActifs = postes.findByActifTrueOrderByOrdreAscLibelleAsc().size();
         List<RepartitionStatut> rendezVous = indicateurs.rendezVousParStatut(debut, fin);
 
@@ -101,9 +106,9 @@ public class TableauDeBordService {
                 indicateurs.minutesReservees(debut, fin),
                 capaciteEnMinutes(periode, postesActifs),
                 postesActifs,
-                indicateurs.topPrestations(debut, fin, TAILLE_CLASSEMENT),
-                indicateurs.topPieces(debut, fin, TAILLE_CLASSEMENT),
-                indicateurs.chiffreAffaireParCategorie(debut, fin),
+                indicateurs.topPrestations(debut, fin, langue, TAILLE_CLASSEMENT),
+                indicateurs.topPieces(debut, fin, langue, TAILLE_CLASSEMENT),
+                indicateurs.chiffreAffaireParCategorie(debut, fin, langue),
                 chiffreDesTrenteDerniersJours(),
                 // Méthode écrite lors du back-office catalogue et restée sans appelant
                 // de production jusqu'ici : c'est son écran.

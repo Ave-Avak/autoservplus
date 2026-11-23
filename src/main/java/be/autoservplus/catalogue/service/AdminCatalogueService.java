@@ -4,6 +4,7 @@ import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.HistoriqueModificationCatalogue;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.Traductions;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.domain.TypeEntiteCatalogue;
 import be.autoservplus.catalogue.repository.CategorieRepository;
@@ -151,6 +152,9 @@ public class AdminCatalogueService {
         Prestation prestation = new Prestation(categorie, donnees.code(), donnees.libelle(),
                 donnees.prixHtva(), donnees.dureeMinutes());
         prestation.setDescription(donnees.description());
+        if (donnees.traductions() != null) {
+            prestation.traduire(donnees.traductions());
+        }
         prestation.setTauxTva(donnees.tauxTva());
         if (!donnees.actif()) {
             prestation.desactiver();
@@ -177,6 +181,9 @@ public class AdminCatalogueService {
                 donnees.prixHtva());
         piece.setMarque(donnees.marque());
         piece.setDescription(donnees.description());
+        if (donnees.traductions() != null) {
+            piece.traduire(donnees.traductions());
+        }
         piece.setTauxTva(donnees.tauxTva());
         piece.setQuantiteStock(donnees.quantiteStock());
         piece.setSeuilAlerte(donnees.seuilAlerte());
@@ -211,6 +218,9 @@ public class AdminCatalogueService {
         prestation.changerCategorie(categorieDeType(donnees.codeCategorie(), TypeCategorie.SERVICE));
         prestation.renommer(donnees.libelle());
         prestation.setDescription(donnees.description());
+        if (donnees.traductions() != null) {
+            prestation.traduire(donnees.traductions());
+        }
         prestation.modifierPrix(donnees.prixHtva());
         prestation.setTauxTva(donnees.tauxTva());
         prestation.setDureeMinutes(donnees.dureeMinutes());
@@ -237,6 +247,9 @@ public class AdminCatalogueService {
         piece.renommer(donnees.libelle());
         piece.setMarque(donnees.marque());
         piece.setDescription(donnees.description());
+        if (donnees.traductions() != null) {
+            piece.traduire(donnees.traductions());
+        }
         piece.modifierPrix(donnees.prixHtva());
         piece.setTauxTva(donnees.tauxTva());
         piece.setQuantiteStock(donnees.quantiteStock());
@@ -416,6 +429,7 @@ public class AdminCatalogueService {
         etat.put("tauxTva", montant(prestation.getTauxTva()));
         etat.put("dureeMinutes", String.valueOf(prestation.getDureeMinutes()));
         etat.put("actif", String.valueOf(prestation.isActif()));
+        noterTraductions(etat, prestation.getTraductions());
         return etat;
     }
 
@@ -431,7 +445,20 @@ public class AdminCatalogueService {
         etat.put("quantiteStock", String.valueOf(piece.getQuantiteStock()));
         etat.put("seuilAlerte", String.valueOf(piece.getSeuilAlerte()));
         etat.put("actif", String.valueOf(piece.isActif()));
+        noterTraductions(etat, piece.getTraductions());
         return etat;
+    }
+
+    /**
+     * Les quatre traductions sont des champs métier comme le libellé français : un
+     * libellé néerlandais changé change ce que lit le client, et ce qui se fige sur sa
+     * facture.
+     */
+    private static void noterTraductions(Map<String, String> etat, Traductions traductions) {
+        etat.put("libelleNl", traductions.getLibelleNl());
+        etat.put("libelleEn", traductions.getLibelleEn());
+        etat.put("descriptionNl", traductions.getDescriptionNl());
+        etat.put("descriptionEn", traductions.getDescriptionEn());
     }
 
     /**

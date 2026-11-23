@@ -83,6 +83,7 @@ public class ImportCatalogueController {
         modele.addAttribute("titre", msg("admin.import.titre"));
         modele.addAttribute("entetePrestations", ImportCatalogueService.enTetePrestations());
         modele.addAttribute("entetePieces", ImportCatalogueService.enTetePieces());
+        modele.addAttribute("colonnesFacultatives", ImportCatalogueService.colonnesFacultatives());
     }
 
     private String msg(String cle) {

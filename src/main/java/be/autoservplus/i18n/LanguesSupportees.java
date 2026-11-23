@@ -2,6 +2,8 @@ package be.autoservplus.i18n;
 
 import be.autoservplus.identite.domain.Langue;
 
+import org.springframework.context.i18n.LocaleContextHolder;
+
 import java.util.List;
 import java.util.Locale;
 
@@ -60,6 +62,31 @@ public final class LanguesSupportees {
                 .filter(admise -> admise.getLanguage().equals(demandee.getLanguage()))
                 .findFirst()
                 .orElse(DEFAUT);
+    }
+
+    /**
+     * Langue de l'écran en cours : celle de la requête, ramenée aux langues admises. Hors
+     * de toute requête, le français du site.
+     */
+    public static Locale deLEcran() {
+        return plusProche(LocaleContextHolder.getLocale());
+    }
+
+    /**
+     * Langue négociée sur un en-tête {@code Accept-Language} seul, sans session : la
+     * première langue admise dans l'ordre de préférence du client, {@code nl-BE} valant
+     * {@code nl}. Un en-tête absent, illisible ou sans langue admise donne le français.
+     */
+    public static Locale negociee(String acceptLanguage) {
+        if (acceptLanguage == null || acceptLanguage.isBlank()) {
+            return DEFAUT;
+        }
+        try {
+            Locale trouvee = Locale.lookup(Locale.LanguageRange.parse(acceptLanguage), ADMISES);
+            return trouvee == null ? DEFAUT : trouvee;
+        } catch (IllegalArgumentException e) {
+            return DEFAUT;
+        }
     }
 
     /** Vraie si la locale active correspond a la langue donnee. */

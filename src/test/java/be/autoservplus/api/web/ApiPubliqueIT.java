@@ -1,5 +1,13 @@
 package be.autoservplus.api.web;
 
+import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.Traductions;
+import be.autoservplus.catalogue.domain.TypeCategorie;
+import be.autoservplus.catalogue.repository.CategorieRepository;
+import be.autoservplus.catalogue.repository.PrestationRepository;
+import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -8,7 +16,15 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.support.TransactionTemplate;
 
+import java.math.BigDecimal;
+import java.nio.charset.StandardCharsets;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -18,6 +34,7 @@ import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 import be.autoservplus.support.SocleIntegration;
@@ -37,6 +54,9 @@ import be.autoservplus.support.SocleIntegration;
 class ApiPubliqueIT extends SocleIntegration {
 
     @Autowired private MockMvc mvc;
+    @Autowired private CategorieRepository categories;
+    @Autowired private PrestationRepository prestations;
+    @Autowired private TransactionTemplate transactions;
 
     @Nested
     @DisplayName("Prestations")
@@ -110,6 +130,101 @@ class ApiPubliqueIT extends SocleIntegration {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.contenu.length()").value(1))
                     .andExpect(jsonPath("$.liens[*].rel", hasItem("next")));
+        }
+    }
+
+    @Nested
+    @DisplayName("Langue de la réponse")
+    class LangueDeLaReponse {
+
+        private String code;
+
+        @BeforeEach
+        void semer() {
+            code = "IT-API-" + UUID.randomUUID().toString().substring(0, 8);
+            transactions.executeWithoutResult(statut -> {
+                Categorie categorie = new Categorie(code, "Catégorie de l'API", TypeCategorie.SERVICE);
+                categorie.traduire("Categorie van de API", null);
+                categories.save(categorie);
+                Prestation prestation = new Prestation(categorie, code, "Prestation de l'API",
+                        new BigDecimal("10.00"), 30);
+                prestation.traduire(new Traductions("Dienst van de API", null, "Beschrijving", null));
+                prestations.save(prestation);
+            });
+        }
+
+        /** La prestation semée, cherchée de page en page : la base des tests en porte d'autres. */
+        private Map<String, Object> prestationSemee(String acceptLanguage) throws Exception {
+            for (int page = 0; ; page++) {
+                var requete = get("/api/v1/prestations").param("taille", "100").param("page", String.valueOf(page));
+                if (acceptLanguage != null) {
+                    requete.header("Accept-Language", acceptLanguage);
+                }
+                String corps = mvc.perform(requete).andExpect(status().isOk())
+                        .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+                List<Map<String, Object>> trouvees = JsonPath.read(corps, "$.contenu[?(@.code=='" + code + "')]");
+                if (!trouvees.isEmpty()) {
+                    return trouvees.getFirst();
+                }
+                List<Object> contenu = JsonPath.read(corps, "$.contenu");
+                assertThat(contenu).as("prestation semée introuvable").isNotEmpty();
+            }
+        }
+
+        @Test
+        @DisplayName("Accept-Language nl : textes néerlandais, Content-Language nl, Vary sur l'en-tête")
+        void neerlandais() throws Exception {
+            mvc.perform(get("/api/v1/prestations").header("Accept-Language", "nl-BE, fr;q=0.8"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Language", "nl"))
+                    .andExpect(header().stringValues("Vary", hasItem(containsString("Accept-Language"))));
+
+            Map<String, Object> prestation = prestationSemee("nl-BE, fr;q=0.8");
+            assertThat(prestation).containsEntry("libelle", "Dienst van de API")
+                    .containsEntry("description", "Beschrijving")
+                    .containsEntry("categorie", "Categorie van de API");
+        }
+
+        @Test
+        @DisplayName("Accept-Language en sans traduction : Content-Language en, textes en français")
+        void anglaisEnRepli() throws Exception {
+            mvc.perform(get("/api/v1/prestations").header("Accept-Language", "en"))
+                    .andExpect(header().string("Content-Language", "en"));
+
+            assertThat(prestationSemee("en")).containsEntry("libelle", "Prestation de l'API")
+                    .containsEntry("categorie", "Catégorie de l'API");
+        }
+
+        @Test
+        @DisplayName("sans en-tête, langue non admise ou en-tête illisible : le français")
+        void francaisParDefaut() throws Exception {
+            mvc.perform(get("/api/v1/prestations"))
+                    .andExpect(header().string("Content-Language", "fr"))
+                    .andExpect(header().stringValues("Vary", hasItem(containsString("Accept-Language"))));
+            mvc.perform(get("/api/v1/prestations").header("Accept-Language", "de, es;q=0.5"))
+                    .andExpect(header().string("Content-Language", "fr"));
+            mvc.perform(get("/api/v1/prestations").header("Accept-Language", "???"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Language", "fr"));
+
+            assertThat(prestationSemee(null)).containsEntry("libelle", "Prestation de l'API");
+        }
+
+        @Test
+        @DisplayName("la langue vient de l'en-tête seul : ?lang= ne change pas la réponse")
+        void parametreLangIgnore() throws Exception {
+            mvc.perform(get("/api/v1/prestations").param("lang", "nl").header("Accept-Language", "fr"))
+                    .andExpect(header().string("Content-Language", "fr"));
+        }
+
+        @Test
+        @DisplayName("la documentation OpenAPI décrit l'en-tête de la demande et ceux de la réponse")
+        void documentation() throws Exception {
+            mvc.perform(get("/v3/api-docs/public"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.paths./api/v1/prestations.get.parameters[*].name", hasItem("Accept-Language")))
+                    .andExpect(jsonPath("$.paths./api/v1/prestations.get.responses.200.headers.Content-Language").exists())
+                    .andExpect(jsonPath("$.paths./api/v1/prestations.get.responses.200.headers.Vary").exists());
         }
     }
 

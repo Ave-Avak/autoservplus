@@ -1,5 +1,6 @@
 package be.autoservplus.catalogue.web.dto;
 
+import be.autoservplus.catalogue.domain.Traductions;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -34,6 +35,16 @@ public class PieceForm {
 
     private String description;
 
+    @Size(max = 150, message = "{admin.catalogue.validation.traduction}")
+    private String libelleNl;
+
+    private String descriptionNl;
+
+    @Size(max = 150, message = "{admin.catalogue.validation.traduction}")
+    private String libelleEn;
+
+    private String descriptionEn;
+
     @NotNull(message = "{admin.catalogue.validation.prix}")
     @DecimalMin(value = "0.00", message = "{admin.catalogue.validation.prix}")
     @Digits(integer = 8, fraction = 2, message = "{admin.catalogue.validation.prix}")
@@ -62,6 +73,26 @@ public class PieceForm {
     public void setMarque(String marque) { this.marque = marque; }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
+    public String getLibelleNl() { return libelleNl; }
+    public void setLibelleNl(String libelleNl) { this.libelleNl = libelleNl; }
+    public String getDescriptionNl() { return descriptionNl; }
+    public void setDescriptionNl(String descriptionNl) { this.descriptionNl = descriptionNl; }
+    public String getLibelleEn() { return libelleEn; }
+    public void setLibelleEn(String libelleEn) { this.libelleEn = libelleEn; }
+    public String getDescriptionEn() { return descriptionEn; }
+    public void setDescriptionEn(String descriptionEn) { this.descriptionEn = descriptionEn; }
+
+    /** Les traductions saisies. Un champ laissé vide vaut « non traduit ». */
+    public Traductions traductions() {
+        return new Traductions(libelleNl, libelleEn, descriptionNl, descriptionEn);
+    }
+
+    public void reprendre(Traductions traductions) {
+        this.libelleNl = traductions.getLibelleNl();
+        this.libelleEn = traductions.getLibelleEn();
+        this.descriptionNl = traductions.getDescriptionNl();
+        this.descriptionEn = traductions.getDescriptionEn();
+    }
     public BigDecimal getPrixHtva() { return prixHtva; }
     public void setPrixHtva(BigDecimal prixHtva) { this.prixHtva = prixHtva; }
     public BigDecimal getTauxTva() { return tauxTva; }

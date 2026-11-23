@@ -24,10 +24,10 @@
 <main id="contenu">
 
     <article class="fiche">
-        <p class="fiche-categorie" th:text="${article.categorie()}">Catégorie</p>
-        <h1 th:text="${article.libelle()}">Libellé</h1>
+        <p class="fiche-categorie" th:text="${article.categorie()}" th:lang="${article.langueCategorie()}">Catégorie</p>
+        <h1 th:text="${article.libelle()}" th:lang="${article.langueLibelle()}">Libellé</h1>
 
-        <p class="fiche-description" th:text="${article.description()}">Description</p>
+        <p class="fiche-description" th:text="${article.description()}" th:lang="${article.langueDescription()}">Description</p>
 
         <dl class="fiche-details">
             <div th:if="${article.dureeMinutes() != null}">

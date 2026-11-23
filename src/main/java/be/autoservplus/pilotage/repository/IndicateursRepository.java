@@ -113,66 +113,91 @@ public class IndicateursRepository {
     }
 
     /**
-     * Prestations les plus realisees sur la periode, par quantite.
+     * Prestations les plus réalisées sur la période, par quantité.
      *
-     * <p><b>Lu sur les lignes d intervention, pas sur le panier.</b> C est la seule
-     * source possible : {@code ligne_panier.service_id} existe au schema mais reste
-     * volontairement non mappe tant que F12 (services au panier) n est pas livre.
-     * Aucune prestation ne transite donc par la vente en ligne. Le classement porte sur
-     * ce que l atelier a reellement execute.</p>
+     * <p><b>Lu sur les lignes d'intervention, pas sur le panier.</b> Le classement porte
+     * sur ce que l'atelier a réellement exécuté. Une ligne en texte libre, sans
+     * prestation du catalogue, n'y entre pas.</p>
      *
-     * <p>Borne sur {@code finReelle} : une prestation compte quand elle est faite, pas
-     * quand elle est planifiee. Les interventions en cours n y figurent pas.</p>
+     * <p>Borné sur {@code fin_reelle} : une prestation compte quand elle est faite, pas
+     * quand elle est planifiée. Les interventions en cours n'y figurent pas.</p>
+     *
+     * <p>Regroupé par prestation et non par libellé figé : depuis V66 le libellé d'une
+     * ligne est écrit dans la langue du document, et la même prestation réalisée pour
+     * un membre francophone et pour un membre néerlandophone formerait deux rangs. Le
+     * nom affiché est le libellé courant du catalogue, dans la langue demandée. Requête
+     * native : une prestation retirée du catalogue garde son rang, le natif ne filtrant
+     * pas {@code deleted_at}.</p>
+     *
+     * @param langue {@code fr}, {@code nl} ou {@code en}, le français quand la traduction manque
      */
-    @SuppressWarnings("unchecked")
-    public List<LigneClassement> topPrestations(Instant debut, Instant fin, int limite) {
-        return em.createQuery("""
-                        SELECT new be.autoservplus.pilotage.service.dto.LigneClassement(
-                            l.libelleFige, SUM(l.quantite), SUM(l.prixUnitaireHtva * l.quantite))
-                        FROM LigneIntervention l
-                        JOIN l.intervention i
-                        WHERE l.prestation IS NOT NULL
-                          AND i.finReelle >= :debut AND i.finReelle < :fin
-                        GROUP BY l.libelleFige
-                        ORDER BY SUM(l.quantite) DESC
-                        """)
-                .setParameter("debut", debut)
-                .setParameter("fin", fin)
-                .setMaxResults(limite)
-                .getResultList();
+    public List<LigneClassement> topPrestations(Instant debut, Instant fin, String langue, int limite) {
+        return classement("""
+                SELECT %s AS libelle, SUM(l.quantite) AS quantite, SUM(l.prix_unitaire_htva * l.quantite)
+                FROM ligne_intervention l
+                JOIN intervention i ON i.id = l.intervention_id AND i.deleted_at IS NULL
+                JOIN service a ON a.id = l.service_id
+                WHERE i.fin_reelle >= :debut AND i.fin_reelle < :fin
+                GROUP BY a.id
+                ORDER BY quantite DESC, libelle
+                """, debut, fin, langue, limite);
     }
 
     /**
-     * Pieces les plus vendues en ligne sur la periode, par quantite.
+     * Pièces les plus vendues en ligne sur la période, par quantité.
      *
-     * <p><b>Ventes en ligne seulement</b> : les pieces posees par l atelier passent par
-     * {@code ligne_intervention} et ne sont pas comptees ici. Melanger les deux sources
-     * dans un meme classement additionnerait des chiffres qui ne se facturent pas de la
-     * meme facon : le garage lit ici ce que sa boutique a vendu.</p>
+     * <p><b>Ventes en ligne seulement</b> : les pièces posées par l'atelier passent par
+     * {@code ligne_intervention} et ne sont pas comptées ici. Mêler les deux sources
+     * dans un même classement additionnerait des chiffres qui ne se facturent pas de la
+     * même façon : le garage lit ici ce que sa boutique a vendu.</p>
      *
      * <p>Même assiette que {@link #chiffreAffaireParCategorie} : les lignes des commandes
      * facturées pendant la période. Comptées à la date de commande, une commande annulée
      * ou jamais payée entrait au classement, et son total dépassait le chiffre
      * d'affaires de sa catégorie.</p>
+     *
+     * <p>Regroupé par pièce, nommée par son libellé courant dans la langue demandée,
+     * pour la raison donnée à {@link #topPrestations}.</p>
      */
+    public List<LigneClassement> topPieces(Instant debut, Instant fin, String langue, int limite) {
+        return classement("""
+                SELECT %s AS libelle, SUM(l.quantite) AS quantite, SUM(l.prix_unitaire_htva * l.quantite)
+                FROM ligne_panier l
+                JOIN piece a ON a.id = l.piece_id
+                WHERE EXISTS (SELECT 1 FROM facture f
+                              WHERE f.commande_id = l.commande_id
+                                AND f.date_emission >= :debut AND f.date_emission < :fin)
+                GROUP BY a.id
+                ORDER BY quantite DESC, libelle
+                """, debut, fin, langue, limite);
+    }
+
     @SuppressWarnings("unchecked")
-    public List<LigneClassement> topPieces(Instant debut, Instant fin, int limite) {
-        return em.createQuery("""
-                        SELECT new be.autoservplus.pilotage.service.dto.LigneClassement(
-                            l.libelleFige, SUM(l.quantite), SUM(l.prixUnitaireHtva * l.quantite))
-                        FROM LignePanier l
-                        JOIN l.commande c
-                        WHERE l.piece IS NOT NULL
-                          AND EXISTS (SELECT 1 FROM Facture f
-                                      WHERE f.commande = c
-                                        AND f.dateEmission >= :debut AND f.dateEmission < :fin)
-                        GROUP BY l.libelleFige
-                        ORDER BY SUM(l.quantite) DESC
-                        """)
+    private List<LigneClassement> classement(String requete, Instant debut, Instant fin, String langue, int limite) {
+        List<Object[]> lignes = em.createNativeQuery(requete.formatted(libelleCourant("a")))
+                .setParameter("langue", langue)
                 .setParameter("debut", debut)
                 .setParameter("fin", fin)
                 .setMaxResults(limite)
                 .getResultList();
+        return lignes.stream()
+                .map(ligne -> new LigneClassement((String) ligne[0], ((Number) ligne[1]).longValue(),
+                        (BigDecimal) ligne[2]))
+                .toList();
+    }
+
+    /**
+     * Libellé d'un article ou d'une catégorie dans la langue du paramètre {@code langue},
+     * le français quand la traduction manque ou n'est faite que d'espaces. Même règle que
+     * {@code TexteLocalise.choisir}, écrite en SQL parce que le libellé sert aussi au tri.
+     */
+    private static String libelleCourant(String alias) {
+        return """
+                CASE :langue
+                    WHEN 'nl' THEN COALESCE(NULLIF(BTRIM(%1$s.libelle_nl), ''), %1$s.libelle)
+                    WHEN 'en' THEN COALESCE(NULLIF(BTRIM(%1$s.libelle_en), ''), %1$s.libelle)
+                    ELSE %1$s.libelle
+                END""".formatted(alias);
     }
 
     /**
@@ -272,21 +297,22 @@ public class IndicateursRepository {
      * de leur pièce ou de leur prestation. Requête native : une ligne porte l'une ou
      * l'autre, et la catégorie se lit par un COALESCE sur deux jointures externes. Un
      * article retiré du catalogue garde sa catégorie, le natif ne filtrant pas
-     * {@code deleted_at}.</p>
+     * {@code deleted_at}. La catégorie porte son libellé dans la langue demandée.</p>
      */
     @SuppressWarnings("unchecked")
-    public List<MontantCategorie> chiffreAffaireParCategorie(Instant debut, Instant fin) {
+    public List<MontantCategorie> chiffreAffaireParCategorie(Instant debut, Instant fin, String langue) {
         List<Object[]> lignes = em.createNativeQuery("""
-                        SELECT cat.libelle, SUM(l.prix_unitaire_htva * l.quantite) AS htva
+                        SELECT %s AS libelle, SUM(l.prix_unitaire_htva * l.quantite) AS htva
                         FROM facture f
                         JOIN ligne_panier l ON l.commande_id = f.commande_id
                         LEFT JOIN piece p ON p.id = l.piece_id
                         LEFT JOIN service s ON s.id = l.service_id
                         JOIN categorie cat ON cat.id = COALESCE(p.categorie_id, s.categorie_id)
                         WHERE f.date_emission >= :debut AND f.date_emission < :fin
-                        GROUP BY cat.libelle
-                        ORDER BY htva DESC, cat.libelle
-                        """)
+                        GROUP BY cat.id
+                        ORDER BY htva DESC, libelle
+                        """.formatted(libelleCourant("cat")))
+                .setParameter("langue", langue)
                 .setParameter("debut", debut)
                 .setParameter("fin", fin)
                 .getResultList();

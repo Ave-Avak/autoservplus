@@ -1,5 +1,6 @@
 package be.autoservplus.importcsv.service;
 
+import be.autoservplus.catalogue.domain.Traductions;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.importcsv.service.dto.RapportImport;
 import org.junit.jupiter.api.DisplayName;
@@ -8,6 +9,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
@@ -40,6 +42,7 @@ class ImportCatalogueIT extends SocleIntegration {
     @Autowired private MockMvc mvc;
     @Autowired private ImportCatalogueService imports;
     @Autowired private PrestationRepository prestations;
+    @Autowired private JdbcTemplate jdbc;
 
     private static byte[] csv(String contenu) {
         return contenu.getBytes(StandardCharsets.UTF_8);
@@ -112,6 +115,106 @@ class ImportCatalogueIT extends SocleIntegration {
             assertThat(prestations.findByCode(code).orElseThrow().getPrixHtva())
                     .as("une inversion prix / taux serait invisible sans en-tete nommee")
                     .isEqualByComparingTo(new BigDecimal("33.00"));
+        }
+    }
+
+    @Nested
+    @DisplayName("Traductions, colonnes facultatives")
+    @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+    class ColonnesDeTraduction {
+
+        private static final String EN_TETE_TRADUITE =
+                "categorie;code;libelle;description;prix_htva;taux_tva;duree_minutes;"
+                        + "libelle_nl;libelle_en;description_nl;description_en\r\n";
+
+        private Traductions traductionsDe(String code) {
+            return prestations.findByCode(code).orElseThrow().getTraductions();
+        }
+
+        @Test
+        @DisplayName("les quatre colonnes créent une prestation traduite")
+        void creationTraduite() {
+            String code = code();
+
+            imports.importerPrestations(csv(EN_TETE_TRADUITE + "ENTRETIEN;" + code
+                    + ";Vidange importée " + code + ";Desc;45,00;21,00;30;Olie verversen;Oil change;Beschrijving;Description\r\n"));
+
+            assertThat(traductionsDe(code)).isEqualTo(
+                    new Traductions("Olie verversen", "Oil change", "Beschrijving", "Description"));
+        }
+
+        @Test
+        @DisplayName("un fichier sans ces colonnes se réimporte sans effacer les traductions")
+        void fichierAncienGardeLesTraductions() {
+            String code = code();
+            imports.importerPrestations(csv(EN_TETE_TRADUITE + "ENTRETIEN;" + code
+                    + ";Vidange " + code + ";Desc;45,00;21,00;30;Olie verversen;Oil change;;\r\n"));
+
+            RapportImport rapport = imports.importerPrestations(csv(enTete()
+                    + "ENTRETIEN;" + code + ";Vidange complète " + code + ";Desc;49,00;21,00;30\r\n"));
+
+            assertThat(rapport.misAJour()).isEqualTo(1);
+            assertThat(prestations.findByCode(code).orElseThrow().getLibelle()).isEqualTo("Vidange complète " + code);
+            assertThat(traductionsDe(code).getLibelleNl()).isEqualTo("Olie verversen");
+            assertThat(traductionsDe(code).getLibelleEn()).isEqualTo("Oil change");
+        }
+
+        @Test
+        @DisplayName("une colonne présente fait foi, cellule vide comprise, les colonnes absentes restent en place")
+        void celluleVideRetireLaTraduction() {
+            String code = code();
+            imports.importerPrestations(csv(EN_TETE_TRADUITE + "ENTRETIEN;" + code
+                    + ";Vidange " + code + ";Desc;45,00;21,00;30;Olie verversen;Oil change;;\r\n"));
+
+            imports.importerPrestations(csv(
+                    "categorie;code;libelle;description;prix_htva;taux_tva;duree_minutes;libelle_nl\r\n"
+                            + "ENTRETIEN;" + code + ";Vidange " + code + ";Desc;45,00;21,00;30;\r\n"));
+
+            assertThat(traductionsDe(code).getLibelleNl()).isNull();
+            assertThat(traductionsDe(code).getLibelleEn()).isEqualTo("Oil change");
+        }
+
+        @Test
+        @DisplayName("une traduction modifiée par l'import entre à l'historique, avant et après")
+        void historique() {
+            String code = code();
+            imports.importerPrestations(csv(EN_TETE_TRADUITE + "ENTRETIEN;" + code
+                    + ";Vidange " + code + ";Desc;45,00;21,00;30;Olie verversen;;;\r\n"));
+
+            imports.importerPrestations(csv(EN_TETE_TRADUITE + "ENTRETIEN;" + code
+                    + ";Vidange " + code + ";Desc;45,00;21,00;30;Olie vervangen;Oil change;;\r\n"));
+
+            Long id = prestations.findByCode(code).orElseThrow().getId();
+            assertThat(jdbc.queryForList("""
+                    SELECT champ_modifie || ' : ' || COALESCE(valeur_avant, 'aucune') || ' / ' || valeur_apres
+                    FROM historique_modification_catalogue WHERE entite_id = ? AND type_entite = 'PRESTATION'
+                    ORDER BY champ_modifie""", String.class, id))
+                    .containsExactly("libelleEn : aucune / Oil change",
+                            "libelleNl : Olie verversen / Olie vervangen");
+        }
+
+        @Test
+        @DisplayName("un libellé traduit trop long est refusé avec sa ligne et sa colonne")
+        void libelleTropLong() {
+            String code = code();
+
+            assertThatThrownBy(() -> imports.importerPrestations(csv(EN_TETE_TRADUITE + "ENTRETIEN;" + code
+                    + ";Vidange " + code + ";Desc;45,00;21,00;30;" + "n".repeat(151) + ";;;\r\n")))
+                    .isInstanceOfSatisfying(ImportRefuseException.class, refus -> {
+                        assertThat(refus.rapport().erreurs()).singleElement().satisfies(erreur -> {
+                            assertThat(erreur.ligne()).isEqualTo(2);
+                            assertThat(erreur.motif()).contains("libelle_nl").contains("150");
+                        });
+                    });
+            assertThat(prestations.findByCode(code)).isEmpty();
+        }
+
+        @Test
+        @DisplayName("l'écran annonce les colonnes facultatives")
+        void ecran() throws Exception {
+            assertThat(mvc.perform(get("/admin/import")).andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString())
+                    .contains("libelle_nl;libelle_en;description_nl;description_en");
         }
     }
 

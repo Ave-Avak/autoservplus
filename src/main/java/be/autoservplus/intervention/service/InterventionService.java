@@ -1,5 +1,6 @@
 package be.autoservplus.intervention.service;
 
+import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
@@ -68,6 +69,7 @@ public class InterventionService {
     private final GenerateurNumeroIntervention numeros;
     private final ServiceCourriel courriel;
     private final ApplicationEventPublisher evenements;
+    private final IdentiteGarage identite;
     private final Clock horloge;
 
     public InterventionService(InterventionRepository interventions,
@@ -80,6 +82,7 @@ public class InterventionService {
                                GenerateurNumeroIntervention numeros,
                                ServiceCourriel courriel,
                                ApplicationEventPublisher evenements,
+                               IdentiteGarage identite,
                                Clock horloge) {
         this.interventions = interventions;
         this.historiques = historiques;
@@ -91,6 +94,7 @@ public class InterventionService {
         this.numeros = numeros;
         this.courriel = courriel;
         this.evenements = evenements;
+        this.identite = identite;
         this.horloge = horloge;
     }
 
@@ -105,7 +109,8 @@ public class InterventionService {
     public Intervention creerDepuisRdv(Rdv rdv) {
         return interventions.findByRdvId(rdv.getId())
                 .orElseGet(() -> {
-                    Intervention creee = ecrire(new Intervention(numeros.prochain(), rdv));
+                    Intervention creee = ecrire(new Intervention(numeros.prochain(), rdv,
+                            identite.langueDuDocument(rdv.getMembre().getLangue())));
                     // Ligne de naissance de la chronologie (F17) : pas d etat anterieur.
                     // Dans la branche orElseGet uniquement : un second appel idempotent
                     // ne doit pas inventer une seconde naissance.

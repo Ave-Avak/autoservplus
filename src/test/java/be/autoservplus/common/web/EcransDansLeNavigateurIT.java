@@ -33,6 +33,7 @@ import com.microsoft.playwright.BrowserContext;
 import com.microsoft.playwright.Locator;
 import com.microsoft.playwright.Page;
 import com.microsoft.playwright.Response;
+import com.microsoft.playwright.assertions.PlaywrightAssertions;
 import com.microsoft.playwright.options.WaitForSelectorState;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
@@ -69,6 +70,7 @@ import java.util.UUID;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * Les écrans ouverts dans un vrai navigateur, sur un vrai serveur.
@@ -205,15 +207,15 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
             navigateur.parcourir("connexion-" + r, LARGE, null, contexte -> {
                 Page page = contexte.newPage();
                 page.navigate("/connexion");
-                assertThat(champActif(page)).as("le champ de l'adresse a le focus à l'ouverture").isEqualTo("email");
+                attendreLeFocus(page.locator("#email"), "le champ de l'adresse a le focus à l'ouverture");
                 page.keyboard().type(comptes.get(r).getEmail());
                 page.keyboard().press("Tab");
-                assertThat(champActif(page)).as("une tabulation mène au mot de passe").isEqualTo("password");
+                attendreLeFocus(page.locator("#password"), "une tabulation mène au mot de passe");
                 page.keyboard().type(MOT_DE_PASSE);
                 page.keyboard().press("Enter");
                 if (r != Role.MEMBRE) {
                     page.waitForURL("**/connexion/etape/second-facteur");
-                    assertThat(champActif(page)).as("le champ du code a le focus").isEqualTo("code");
+                    attendreLeFocus(page.locator("#code"), "le champ du code a le focus");
                     page.keyboard().type(Totp.code(SECRET_TOTP, Totp.pasDe(horloge.instant())));
                     page.keyboard().press("Enter");
                 }
@@ -394,14 +396,14 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
             page.navigate("/services");
             page.keyboard().press("Tab");
             Locator lien = page.locator(".lien-evitement");
-            assertThat(lien.evaluate("lien => lien === document.activeElement")).isEqualTo(true);
+            attendreLeFocus(lien, "la première tabulation mène au lien d'évitement");
             assertThat(lien.boundingBox().x).as("le lien entre dans la fenêtre quand il a le focus")
                     .isGreaterThanOrEqualTo(0);
             page.keyboard().press("Enter");
             assertThat(page.url()).endsWith("#contenu");
             page.keyboard().press("Tab");
-            assertThat(page.evaluate("() => document.activeElement.closest('main') !== null"))
-                    .as("la tabulation suivante entre dans le contenu, après l'en-tête").isEqualTo(true);
+            attendreLeFocus(page.locator("main :focus"),
+                    "la tabulation suivante entre dans le contenu, après l'en-tête");
         });
     }
 
@@ -421,19 +423,17 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
             for (int i = 0; i < 20 && !estActif(bouton); i++) {
                 page.keyboard().press("Tab");
             }
-            assertThat(estActif(bouton)).as("le bouton s'atteint à la tabulation").isTrue();
+            attendreLeFocus(bouton, "le bouton s'atteint à la tabulation");
             page.keyboard().press("Enter");
             assertThat(bouton.getAttribute("aria-expanded")).isEqualTo("true");
             assertThat(panneau.isVisible()).isTrue();
 
             page.keyboard().press("Tab");
-            assertThat(page.evaluate("id => document.getElementById(id).contains(document.activeElement)",
-                    bouton.getAttribute("aria-controls")))
-                    .as("la tabulation suivante entre dans le panneau").isEqualTo(true);
+            attendreLeFocus(panneau.locator(":focus"), "la tabulation suivante entre dans le panneau");
             page.keyboard().press("Escape");
             assertThat(bouton.getAttribute("aria-expanded")).isEqualTo("false");
             assertThat(panneau.isVisible()).isFalse();
-            assertThat(estActif(bouton)).as("Échap rend le focus au bouton").isTrue();
+            attendreLeFocus(bouton, "Échap rend le focus au bouton");
         });
     }
 
@@ -508,8 +508,14 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
 
     // --- outillage ---------------------------------------------------------------------
 
-    private static String champActif(Page page) {
-        return (String) page.evaluate("() => document.activeElement.id");
+    /**
+     * Le focus s'attend, il ne se lit pas une seule fois : après une navigation, le
+     * navigateur applique {@code autofocus} un instant après la fin du chargement, et une
+     * lecture immédiate de l'élément actif trouve encore le corps de la page.
+     */
+    private static void attendreLeFocus(Locator element, String constat) {
+        assertThatCode(() -> PlaywrightAssertions.assertThat(element).isFocused())
+                .as(constat).doesNotThrowAnyException();
     }
 
     private static boolean estActif(Locator element) {

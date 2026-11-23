@@ -51,7 +51,10 @@
             <tbody>
             <tr th:each="p : ${pieces}">
                 <td th:text="${p.identifiant()}">F-001</td>
-                <td th:text="${p.libelle()}">Filtre à huile</td>
+                <td><span th:text="${p.libelle()}">Filtre à huile</span>
+                    <span th:unless="${p.traduit()}" class="badge badge-en_attente"
+                          th:text="#{admin.catalogue.non-traduit}">Non traduit</span>
+                </td>
                 <td th:text="${p.categorieLibelle()}">Filtres</td>
                 <td th:text="${p.prixHtva()} + ' €'">12,50 €</td>
                 <td th:text="${p.tauxTva()} + ' %'">21 %</td>

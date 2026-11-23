@@ -234,6 +234,7 @@ production.
 | `FACTURES_ARCHIVE` | `./data/factures` | Répertoire d'archivage des factures (conservation dix ans) |
 | `MEDIAS_RACINE` | `./data/uploads` | Répertoire des fichiers déposés |
 | `GARAGE_RAISON_SOCIALE`, `GARAGE_TVA`, `GARAGE_BCE`, `GARAGE_IBAN`, etc. | valeurs de démonstration | Identité légale imprimée sur les factures et les mentions légales |
+| `GARAGE_LANGUES_DOCUMENTS` | `fr` (`fr,nl` sous `demo`) | Langues des factures et des avoirs, la première par défaut. Elles suivent la région du siège : `nl` en Flandre, `fr` en Wallonie, les deux à Bruxelles. Toute autre valeur fait refuser le démarrage |
 | `MOLLIE_API_KEY` | *vide* | Clé ou jeton Mollie. Vide, le paiement passe par une passerelle bouchonnée |
 | `MOLLIE_PROFILE_ID` | *vide* | Identifiant de profil Mollie, requis avec un jeton d'organisation |
 | `MOLLIE_MODE_TEST` | `true` | Emploie le mode test de Mollie plutôt que des paiements réels |

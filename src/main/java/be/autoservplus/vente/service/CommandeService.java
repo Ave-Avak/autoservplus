@@ -1,5 +1,6 @@
 package be.autoservplus.vente.service;
 
+import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Consentement;
@@ -61,6 +62,7 @@ public class CommandeService {
     private final ConsentementRepository consentements;
     private final GenerateurNumeroCommande numeros;
     private final VersionsDocumentsService versionsDocuments;
+    private final IdentiteGarage identite;
     private final Clock horloge;
 
     public CommandeService(CommandeRepository commandes,
@@ -69,6 +71,7 @@ public class CommandeService {
                            ConsentementRepository consentements,
                            GenerateurNumeroCommande numeros,
                            VersionsDocumentsService versionsDocuments,
+                           IdentiteGarage identite,
                            Clock horloge) {
         this.commandes = commandes;
         this.paiements = paiements;
@@ -76,6 +79,7 @@ public class CommandeService {
         this.consentements = consentements;
         this.numeros = numeros;
         this.versionsDocuments = versionsDocuments;
+        this.identite = identite;
         this.horloge = horloge;
     }
 
@@ -137,7 +141,10 @@ public class CommandeService {
         Commande commande = commandes.saveAndFlush(new Commande(
                 numeros.prochain(), panier.getMembre(),
                 panier.totalHtva(), panier.totalTva(), panier.totalTvac(),
-                horloge.instant(), renonciationRetenue));
+                horloge.instant(), renonciationRetenue,
+                // La langue des documents se décide ici, une fois : la facture et l'avoir
+                // la reprendront, et les lignes s'y figent à l'instant suivant.
+                identite.langueDuDocument(panier.getMembre().getLangue())));
         commande.reprendreLignes(lignes);
 
         // Preuve contractuelle F24, dans la MÊME transaction : un rollback de la

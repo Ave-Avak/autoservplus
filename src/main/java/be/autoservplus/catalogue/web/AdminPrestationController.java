@@ -197,7 +197,7 @@ public class AdminPrestationController {
     private DonneesPrestation versDonnees(PrestationForm f) {
         return new DonneesPrestation(f.getCodeCategorie(), f.getCode(), f.getLibelle(),
                 f.getDescription(), f.getPrixHtva(), f.getTauxTva(), f.getDureeMinutes(),
-                f.isActif());
+                f.isActif(), f.traductions());
     }
 
     private PrestationForm versFormulaire(ArticleVueAdmin vue) {
@@ -210,6 +210,7 @@ public class AdminPrestationController {
         f.setTauxTva(vue.tauxTva());
         f.setDureeMinutes(vue.dureeMinutes());
         f.setActif(vue.actif());
+        f.reprendre(vue.traductions());
         return f;
     }
 

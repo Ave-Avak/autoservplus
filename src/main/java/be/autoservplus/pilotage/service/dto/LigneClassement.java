@@ -5,12 +5,15 @@ import java.math.BigDecimal;
 /**
  * Une ligne de classement des ventes (BL-1).
  *
- * <p>Groupe sur le <b>libelle fige</b> et non sur l article : un article renomme ou
- * retire du catalogue garde ses ventes passees sous le nom qu il portait au moment de
- * la vente, ce qui est aussi la regle comptable appliquee aux lignes (RM-30).</p>
+ * <p>Un rang par article du catalogue, nommé par son libellé courant dans la langue de
+ * l'administrateur. Le libellé figé d'une ligne ne sert plus de clé : il est écrit dans
+ * la langue du document de chaque vente, et un même article vendu en français et en
+ * néerlandais occuperait deux rangs. Un article renommé ou retiré garde son rang et ses
+ * ventes passées, sous son nom du jour.</p>
  *
- * @param quantite   somme des quantites vendues, {@code Long} car COUNT/SUM JPQL
- * @param montantHtva chiffre d affaires hors TVA genere par cet article
+ * @param libelle     libellé courant de l'article, en français quand la traduction manque
+ * @param quantite    somme des quantités vendues
+ * @param montantHtva chiffre d'affaires hors TVA généré par cet article
  */
 public record LigneClassement(String libelle, Long quantite, BigDecimal montantHtva) {
 }

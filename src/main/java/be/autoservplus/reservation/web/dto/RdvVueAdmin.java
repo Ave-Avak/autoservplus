@@ -1,5 +1,6 @@
 package be.autoservplus.reservation.web.dto;
 
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.reservation.domain.JoursFeries;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
@@ -10,6 +11,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -51,6 +53,9 @@ public record RdvVueAdmin(
 
     public static RdvVueAdmin de(Rdv rdv, ZoneId zone, Instant maintenant) {
         StatutRdv s = rdv.getStatut();
+        // Un rendez-vous ne fige aucun libellé : la prestation porte son nom courant, dans
+        // la langue de l'écran de l'administrateur.
+        Locale langue = LanguesSupportees.deLEcran();
         return new RdvVueAdmin(
                 rdv.getReference(),
                 rdv.getNumero(),
@@ -64,7 +69,7 @@ public record RdvVueAdmin(
                 rdv.getMembre().getEmail(),
                 rdv.getVehicule().getMarque() + " " + rdv.getVehicule().getModele()
                         + " (" + rdv.getVehicule().getPlaque() + ")",
-                rdv.getLignes().stream().map(l -> l.getPrestation().getLibelle()).toList(),
+                rdv.getLignes().stream().map(l -> l.getPrestation().libelle(langue).texte()).toList(),
                 FormatageRdv.eurosEcran(rdv.montantTvac()),
                 rdv.getCommentaire(),
                 rdv.getMotifRefus(),

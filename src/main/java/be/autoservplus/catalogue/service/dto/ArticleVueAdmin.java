@@ -2,6 +2,7 @@ package be.autoservplus.catalogue.service.dto;
 
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.Traductions;
 
 import java.math.BigDecimal;
 import java.util.UUID;
@@ -30,7 +31,22 @@ public record ArticleVueAdmin(
         String marque,
         Integer quantiteStock,
         Integer seuilAlerte,
-        boolean actif) {
+        boolean actif,
+        Traductions traductions) {
+
+    /** Un article sans aucune traduction. */
+    public ArticleVueAdmin(UUID reference, String identifiant, String libelle, String description,
+                           String categorieCode, String categorieLibelle, BigDecimal prixHtva, BigDecimal prixTvac,
+                           BigDecimal tauxTva, Integer dureeMinutes, String marque, Integer quantiteStock,
+                           Integer seuilAlerte, boolean actif) {
+        this(reference, identifiant, libelle, description, categorieCode, categorieLibelle, prixHtva, prixTvac,
+                tauxTva, dureeMinutes, marque, quantiteStock, seuilAlerte, actif, Traductions.aucune());
+    }
+
+    /** Vrai quand le libellé existe en néerlandais et en anglais : sinon le site l'affiche en français. */
+    public boolean traduit() {
+        return traductions.libelleComplet();
+    }
 
     public static ArticleVueAdmin de(Prestation prestation) {
         return new ArticleVueAdmin(
@@ -47,7 +63,8 @@ public record ArticleVueAdmin(
                 null,
                 null,
                 null,
-                prestation.isActif());
+                prestation.isActif(),
+                prestation.getTraductions());
     }
 
     public static ArticleVueAdmin de(Piece piece) {
@@ -65,6 +82,7 @@ public record ArticleVueAdmin(
                 piece.getMarque(),
                 piece.getQuantiteStock(),
                 piece.getSeuilAlerte(),
-                piece.isActif());
+                piece.isActif(),
+                piece.getTraductions());
     }
 }

@@ -4,12 +4,13 @@ import be.autoservplus.comptabilite.repository.ExportComptableRepository;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
+import be.autoservplus.config.IdentiteGarage;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Locale;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -41,13 +42,16 @@ public class ExportComptableService {
     private final ExportComptableRepository pieces;
     private final ParametreAtelierRepository parametres;
     private final MessageSource messages;
+    private final IdentiteGarage identite;
 
     public ExportComptableService(ExportComptableRepository pieces,
                                   ParametreAtelierRepository parametres,
-                                  MessageSource messages) {
+                                  MessageSource messages,
+                                  IdentiteGarage identite) {
         this.pieces = pieces;
         this.parametres = parametres;
         this.messages = messages;
+        this.identite = identite;
     }
 
     /** Journal des factures emises sur la periode. */
@@ -117,7 +121,12 @@ public class ExportComptableService {
         return message("admin.export.colonne." + suffixe);
     }
 
+    /**
+     * En-têtes et statuts dans la langue par défaut des documents du garage, et non dans
+     * celle de l'administrateur qui exporte : deux exports du même garage ont les mêmes
+     * en-têtes, quel que soit le poste qui les demande.
+     */
     private String message(String cle) {
-        return messages.getMessage(cle, null, LocaleContextHolder.getLocale());
+        return messages.getMessage(cle, null, Locale.forLanguageTag(identite.langueParDefaut().name()));
     }
 }

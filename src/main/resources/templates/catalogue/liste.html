@@ -28,6 +28,7 @@
            th:href="${typeArticle == 'service'} ? @{/services(categorie=${cat.code})} : @{/pieces(categorie=${cat.code})}"
            th:classappend="${categorieActive == cat.code} ? 'filtre-actif' : ''"
            th:text="${cat.libelle}"
+           th:lang="${cat.langueLibelle}"
            class="filtre">Catégorie</a>
     </nav>
 
@@ -41,10 +42,10 @@
                 <a th:href="${typeArticle == 'service'}
                         ? @{/services/{ref}(ref=${article.reference})}
                         : @{/pieces/{ref}(ref=${article.reference})}"
-                   th:text="${article.libelle}">Libellé</a>
+                   th:text="${article.libelle}" th:lang="${article.langueLibelle}">Libellé</a>
             </h2>
-            <p class="carte-categorie" th:text="${article.categorie}">Catégorie</p>
-            <p class="carte-description" th:text="${article.description}">Description</p>
+            <p class="carte-categorie" th:text="${article.categorie}" th:lang="${article.langueCategorie}">Catégorie</p>
+            <p class="carte-description" th:text="${article.description}" th:lang="${article.langueDescription}">Description</p>
 
             <p class="carte-meta" th:if="${article.dureeMinutes != null}">
                 <span th:text="#{catalogue.duree}">Durée :</span> <span th:text="${article.dureeLisible()}">1 h</span>
