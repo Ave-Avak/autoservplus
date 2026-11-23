@@ -1,5 +1,6 @@
 package be.autoservplus.catalogue.domain;
 
+import be.autoservplus.common.montant.CalculTva;
 import be.autoservplus.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
@@ -7,7 +8,6 @@ import jakarta.validation.constraints.*;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
@@ -88,11 +88,12 @@ public class Piece extends BaseEntity {
         this.prixHtva = Objects.requireNonNull(prixHtva, "prixHtva");
     }
 
-    /** Prix affiche au client, taxe comprise, conformement a la regle RM-30. */
+    /**
+     * Prix affiché au client, taxe comprise (RM-30). C'est le nombre même qui sert au total
+     * d'une ligne : le prix annoncé est le prix payé.
+     */
     public BigDecimal prixTvac() {
-        BigDecimal coefficient = BigDecimal.ONE.add(
-                tauxTva.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
-        return prixHtva.multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
+        return CalculTva.unitaireTvac(prixHtva, tauxTva);
     }
 
     public boolean estDisponible() {

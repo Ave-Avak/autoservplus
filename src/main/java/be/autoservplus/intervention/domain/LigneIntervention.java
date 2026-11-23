@@ -1,5 +1,6 @@
 package be.autoservplus.intervention.domain;
 
+import be.autoservplus.common.montant.CalculTva;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import jakarta.persistence.*;
@@ -159,11 +160,13 @@ public class LigneIntervention {
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
-    /** Total TVAC, taux fige a la creation. */
+    /**
+     * Total taxe comprise, taux figé à la création : prix unitaire affiché fois quantité. Le
+     * total hors TVA ci-dessus reste la mesure du devis (RM-15), qui compare des sommes hors
+     * TVA et n'est pas touché par l'arrondi du prix taxe comprise.
+     */
     public BigDecimal totalTvac() {
-        BigDecimal coefficient = BigDecimal.ONE.add(
-                tauxTva.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
-        return totalHtva().multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
+        return CalculTva.totalTvac(prixUnitaireHtva, tauxTva, quantite);
     }
 
     /**

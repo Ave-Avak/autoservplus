@@ -20,6 +20,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -41,7 +43,7 @@ import static org.mockito.Mockito.when;
  * ventilation, idempotence et refus d une commande non payee. La continuite de la
  * numerotation, elle, se prouve contre une vraie base ({@code NumerotationFactureIT}).
  */
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 @DisplayName("FactureService")
 class FactureServiceTest {
 
@@ -70,13 +72,14 @@ class FactureServiceTest {
         return piece;
     }
 
-    /** Commande payee portant les lignes indiquees, montants sommes ligne a ligne. */
+    /** Commande payée portant les lignes indiquées, aux montants que le panier calcule. */
     private Commande commandePayeeAvec(List<LignePanier> lignes) {
+        VentilationTva ventilation = VentilationTva.desLignes(lignes);
+        return commandePayee(ventilation.totalHtva(), ventilation.totalTva());
+    }
+
+    private Commande commandePayee(BigDecimal htva, BigDecimal tva) {
         Panier panier = new Panier(marie);
-        BigDecimal htva = lignes.stream().map(LignePanier::totalHtva)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal tva = lignes.stream().map(LignePanier::totalTva)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
         Commande commande = new Commande("CMD-2026-0001", panier.getMembre(),
                 htva, tva, htva.add(tva), MAINTENANT.minusSeconds(600));
         commande.confirmerPaiement(MAINTENANT.minusSeconds(60));
@@ -99,6 +102,43 @@ class FactureServiceTest {
     @Nested
     @DisplayName("emission")
     class Emission {
+
+        @Test
+        @DisplayName("montants figés sous une autre formule : la facture est émise, l'écart est écrit en erreur")
+        void ecartDeVentilation(CapturedOutput journal) {
+            // Deux filtres à 15,00 : l'ancienne formule figeait 24,80 + 5,21 = 30,01.
+            List<LignePanier> lignes = lignes(piece("P-1", "12.40", "21.00"), 2);
+            Commande commande = commandePayee(new BigDecimal("24.80"), new BigDecimal("5.21"));
+            when(factures.findByCommande(commande)).thenReturn(Optional.empty());
+            when(commandes.lignesDe(commande)).thenReturn(lignes);
+            numeroAttribue("2026-0001", (short) 2026, 1);
+            when(factures.save(any(Facture.class))).thenAnswer(i -> i.getArgument(0));
+
+            Facture facture = service.emettrePourCommande(commande.getReference());
+
+            assertThat(facture.getMontantTvac()).isEqualByComparingTo("30.01");
+            assertThat(journal.getOut()).contains("ERROR").contains("Facture 2026-0001")
+                    .contains("24.80 HTVA, 5.21 TVA, 30.01 TVAC")
+                    .contains("24.79 HTVA, 5.21 TVA, 30.00 TVAC");
+        }
+
+        @Test
+        @DisplayName("montants cohérents : aucune erreur au journal")
+        void sansEcart(CapturedOutput journal) {
+            List<LignePanier> lignes = lignes(piece("P-1", "12.40", "21.00"), 2);
+            Commande commande = commandePayeeAvec(lignes);
+            when(factures.findByCommande(commande)).thenReturn(Optional.empty());
+            when(commandes.lignesDe(commande)).thenReturn(lignes);
+            numeroAttribue("2026-0001", (short) 2026, 1);
+            when(factures.save(any(Facture.class))).thenAnswer(i -> i.getArgument(0));
+
+            Facture facture = service.emettrePourCommande(commande.getReference());
+
+            assertThat(facture.getMontantHtva()).isEqualByComparingTo("24.79");
+            assertThat(facture.getMontantTva()).isEqualByComparingTo("5.21");
+            assertThat(facture.getMontantTvac()).isEqualByComparingTo("30.00");
+            assertThat(journal.getOut()).doesNotContain("diffèrent de la ventilation");
+        }
 
         @Test
         @DisplayName("recopie les montants figes de la commande et son numero attribue")

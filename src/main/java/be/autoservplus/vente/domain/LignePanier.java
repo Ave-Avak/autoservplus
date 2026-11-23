@@ -1,5 +1,6 @@
 package be.autoservplus.vente.domain;
 
+import be.autoservplus.common.montant.CalculTva;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import jakarta.persistence.*;
@@ -221,17 +222,25 @@ public class LignePanier {
                 .setScale(2, RoundingMode.HALF_UP);
     }
 
-    /** Total TVAC de la ligne, au taux fige a l ajout. */
-    public BigDecimal totalTvac() {
-        BigDecimal coefficient = BigDecimal.ONE.add(
-                tauxTva.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
-        return totalHtva().multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
+    /** Prix unitaire taxe comprise, au prix et au taux figés à l'ajout : celui du catalogue ce jour-là. */
+    public BigDecimal prixUnitaireTvac() {
+        return CalculTva.unitaireTvac(prixUnitaireHtva, tauxTva);
     }
 
     /**
-     * TVA de la ligne, definie comme TVAC - HTVA plutot que recalculee : l identite
-     * HTVA + TVA = TVAC tient alors par construction, centime d arrondi compris.
+     * Total taxe comprise de la ligne : le prix unitaire affiché, multiplié par la quantité.
+     * La ligne n'a ni base ni TVA propres, elles se calculent par taux sur tout le document
+     * ({@link CalculTva}).
      */
+    public BigDecimal totalTvac() {
+        return CalculTva.totalTvac(prixUnitaireHtva, tauxTva, quantite);
+    }
+
+    /**
+     * @deprecated la TVA se calcule par taux sur le document, non par ligne. Gardée le temps
+     *             que les écrans et l'export cessent de l'afficher.
+     */
+    @Deprecated(forRemoval = true)
     public BigDecimal totalTva() {
         return totalTvac().subtract(totalHtva());
     }

@@ -1,5 +1,6 @@
 package be.autoservplus.vente.domain;
 
+import be.autoservplus.common.montant.CalculTva;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.common.entity.BaseEntity;
@@ -214,23 +215,29 @@ public class Panier extends BaseEntity {
 
     // --- totaux (RM-30) --------------------------------------------------------------
     //
-    // Chaque total est la somme des montants DE LIGNE deja arrondis a 2 decimales,
-    // jamais un calcul sur le total d un coup : avec des taux mixtes (6 % et 21 %),
-    // appliquer une TVA au total HTVA global serait tout simplement faux, et meme a
-    // taux unique l arrondi different d un centime. La TVA de ligne est definie comme
-    // TVAC - HTVA, ce qui garantit l identite HTVA + TVA = TVAC que la table commande
-    // verifiera par CHECK (ck_commande_coherence) au moment de la conversion.
+    // Le total taxe comprise est la somme des totaux de ligne, chacun étant le prix unitaire
+    // affiché fois la quantité. La base et la TVA se déduisent de ce total, par taux et sur
+    // tout le panier (CalculTva) : la TVA est une différence, ce qui garantit l'identité
+    // HTVA + TVA = TVAC que la table commande vérifie par CHECK (ck_commande_coherence) à la
+    // conversion. Ce sont ces trois nombres que la commande fige et que la facture reprend.
 
     public BigDecimal totalHtva() {
-        return somme(LignePanier::totalHtva);
+        return CalculTva.totalHtva(ventilation());
     }
 
     public BigDecimal totalTva() {
-        return somme(LignePanier::totalTva);
+        return CalculTva.totalTva(ventilation());
     }
 
     public BigDecimal totalTvac() {
         return somme(LignePanier::totalTvac);
+    }
+
+    /** Base et TVA par taux, sur l'ensemble des lignes du panier. */
+    public List<CalculTva.Tranche> ventilation() {
+        return CalculTva.ventiler(lignes.stream()
+                .map(ligne -> new CalculTva.MontantTaxe(ligne.getTauxTva(), ligne.totalTvac()))
+                .toList());
     }
 
     private BigDecimal somme(Function<LignePanier, BigDecimal> montant) {

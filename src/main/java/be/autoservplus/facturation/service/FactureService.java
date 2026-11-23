@@ -116,6 +116,7 @@ public class FactureService {
                 commande, tauxApplique, horloge.instant()));
         log.info("Facture {} emise pour la commande {} ({} EUR TVAC).",
                 facture.getNumero(), commande.getNumero(), facture.getMontantTvac());
+        signalerEcartDeVentilation(facture, commande, ventilation);
         // Limite assumée : le récapitulatif exige l'adresse et le profil refuse de
         // l'effacer tant que la commande attend son paiement. Si elle manque malgré
         // tout, la facture est émise : le paiement est encaissé, et refuser laisserait
@@ -127,6 +128,25 @@ public class FactureService {
                     facture.getNumero(), commande.getNumero());
         }
         return facture;
+    }
+
+    /**
+     * La facture reprend les montants figés de la commande, son PDF imprime une ventilation
+     * recalculée des lignes : les deux doivent donner les mêmes nombres. Un écart ne peut
+     * venir que d'une commande conclue sous une autre formule de calcul. La facture est émise
+     * quand même, une commande payée doit avoir la sienne (RM-22), et l'écart est écrit en
+     * erreur pour être corrigé par une note de crédit et une nouvelle facture.
+     */
+    private void signalerEcartDeVentilation(Facture facture, Commande commande, VentilationTva ventilation) {
+        if (ventilation.totalHtva().compareTo(commande.getMontantHtva()) != 0
+                || ventilation.totalTva().compareTo(commande.getMontantTva()) != 0
+                || ventilation.totalTvac().compareTo(commande.getMontantTvac()) != 0) {
+            log.error("Facture {} : les montants figés de la commande {} ({} HTVA, {} TVA, {} TVAC) "
+                            + "diffèrent de la ventilation de ses lignes ({} HTVA, {} TVA, {} TVAC).",
+                    facture.getNumero(), commande.getNumero(),
+                    commande.getMontantHtva(), commande.getMontantTva(), commande.getMontantTvac(),
+                    ventilation.totalHtva(), ventilation.totalTva(), ventilation.totalTvac());
+        }
     }
 
     /**
