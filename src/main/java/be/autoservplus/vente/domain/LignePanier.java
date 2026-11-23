@@ -17,28 +17,28 @@ import java.util.Locale;
 import java.util.Objects;
 
 /**
- * Ligne d un panier : une piece detachee et sa quantite, aux conditions <b>figees
- * a l ajout</b> (libelle, prix unitaire HTVA, taux TVA copies depuis la piece).
- * Un changement de catalogue ulterieur ne touche pas un panier existant. Invariant
- * de conception, meme recopie que {@code LigneRdv} et {@code LigneIntervention}.
- * Aucun numero de regle au CdC ne couvre le figeage lui-meme.
+ * Ligne d'un panier : une pièce détachée et sa quantité, aux conditions <b>figées
+ * à l'ajout</b> (libellé, prix unitaire HTVA, taux TVA copiés depuis la pièce).
+ * Un changement de catalogue ultérieur ne touche pas un panier existant. Invariant
+ * de conception, même recopie que {@code LigneRdv} et {@code LigneIntervention}.
+ * Aucun numéro de règle au CdC ne couvre le figeage lui-même.
  *
- * <p>Pas de suppression logique : la ligne n existe que par son panier, un retrait
+ * <p>Pas de suppression logique : la ligne n'existe que par son panier, un retrait
  * passe par {@code orphanRemoval} de la relation parente.</p>
  *
- * <p>La table {@code ligne_panier} sert aussi aux commandes : a la conversion
- * (F14), la meme ligne passe de {@code panier_id} a {@code commande_id} via
- * {@link #rattacherA}, pas de recopie, les valeurs figees voyagent telles
+ * <p>La table {@code ligne_panier} sert aussi aux commandes : à la conversion
+ * (F14), la même ligne passe de {@code panier_id} à {@code commande_id} via
+ * {@link #rattacherA}, pas de recopie, les valeurs figées voyagent telles
  * quelles, le CHECK {@code ck_ligne_rattachement_unique} garantit le XOR.
  * La colonne {@code service_id} (ligne de service, F12) reste volontairement
- * non mappee dans ce bloc.</p>
+ * non mappée dans ce bloc.</p>
  */
 @Entity
 @Table(name = "ligne_panier")
 @EntityListeners(AuditingEntityListener.class)
 public class LignePanier {
 
-    /** Borne physique de la colonne SMALLINT : refusee avant tout debordement. */
+    /** Borne physique de la colonne SMALLINT : refusée avant tout débordement. */
     private static final int QUANTITE_MAX = Short.MAX_VALUE;
 
     @Id
@@ -46,8 +46,8 @@ public class LignePanier {
     private Long id;
 
     // panier_id, commande_id et piece_id sont NULLABLES en base (XOR panier/commande
-    // et piece/service) : le mapping reste aussi permissif que le schema. Le
-    // constructeur garantit qu une ligne nait avec panier et piece poses. La
+    // et pièce/service) : le mapping reste aussi permissif que le schéma. Le
+    // constructeur garantit qu'une ligne naît avec panier et pièce posés. La
     // conversion (rattacherA) bascule ensuite panier -> commande.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "panier_id")
@@ -63,9 +63,9 @@ public class LignePanier {
 
     /**
      * Prestation vendue (F12). La colonne {@code service_id} existait au socle V4,
-     * volontairement non mappee tant que le service ne passait pas par le panier.
-     * Le CHECK {@code ck_ligne_article_unique} impose deja le XOR avec {@code piece}
-     * en base : une ligne est d une nature ou de l autre, jamais des deux.
+     * volontairement non mappée tant que le service ne passait pas par le panier.
+     * Le CHECK {@code ck_ligne_article_unique} impose déjà le XOR avec {@code piece}
+     * en base : une ligne est d'une nature ou de l'autre, jamais des deux.
      */
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_id")
@@ -115,10 +115,10 @@ public class LignePanier {
     }
 
     /**
-     * Ligne de prestation (F12). <b>Memes valeurs figees a l ajout</b> que pour une
-     * piece (RM-30) : libelle, prix et taux sont recopies au moment ou le membre
+     * Ligne de prestation (F12). <b>Mêmes valeurs figées à l'ajout</b> que pour une
+     * pièce (RM-30) : libellé, prix et taux sont recopiés au moment où le membre
      * ajoute, pas relus au passage en commande. Un tarif revu entre-temps ne change
-     * pas ce que le membre a vu quand il a decide.
+     * pas ce que le membre a vu quand il a décidé.
      *
      * <p>Le libellé recopié ici est celui du français, langue d'origine. Il n'est que
      * provisoire : la conclusion de la commande le refige dans la langue de ses
@@ -135,12 +135,12 @@ public class LignePanier {
         this.quantite = (short) quantite;
     }
 
-    /** Nature de la ligne, lue sur l article reellement rattache. */
+    /** Nature de la ligne, lue sur l'article réellement rattaché. */
     public boolean estService() {
         return prestation != null;
     }
 
-    /** Fusion d un doublon (F13) : la quantite s ajoute, les conditions figees restent. */
+    /** Fusion d'un doublon (F13) : la quantité s'ajoute, les conditions figées restent. */
     void augmenterQuantite(int supplement) {
         exigerHorsCommande();
         exigerQuantiteValide(supplement);
@@ -155,11 +155,11 @@ public class LignePanier {
     }
 
     /**
-     * <b>Immuabilite comptable</b> : une ligne rattachee a une commande est une piece
-     * comptable (conservee 10 ans), plus une ligne de panier. Toute mutation est
-     * refusee ICI, dans l entite, pas par convention d appel : meme un appelant qui
-     * tiendrait encore une reference (la collection du panier n est pas purgee dans
-     * la transaction de conversion, voir {@link #rattacherA}) se heurte a la garde.
+     * <b>Immuabilité comptable</b> : une ligne rattachée à une commande est une pièce
+     * comptable (conservée 10 ans), plus une ligne de panier. Toute mutation est
+     * refusée ICI, dans l'entité, pas par convention d'appel : même un appelant qui
+     * tiendrait encore une référence (la collection du panier n'est pas purgée dans
+     * la transaction de conversion, voir {@link #rattacherA}) se heurte à la garde.
      */
     private void exigerHorsCommande() {
         if (commande != null) {
@@ -170,17 +170,17 @@ public class LignePanier {
     }
 
     /**
-     * Conversion F14 : la ligne quitte son panier pour la commande, valeurs figees
-     * inchangees. Definitif : une ligne de commande ne revient jamais au panier
-     * (le CHECK XOR garantit qu elle n appartient qu a un seul des deux).
+     * Conversion F14 : la ligne quitte son panier pour la commande, valeurs figées
+     * inchangées. Définitif : une ligne de commande ne revient jamais au panier
+     * (le CHECK XOR garantit qu'elle n'appartient qu'à un seul des deux).
      *
-     * <p><b>Piege {@code orphanRemoval}</b> : la ligne ne doit PAS etre retiree de
-     * la collection {@code Panier.lignes} dans la meme session, car ce retrait la
+     * <p><b>Piège {@code orphanRemoval}</b> : la ligne ne doit PAS être retirée de
+     * la collection {@code Panier.lignes} dans la même session, car ce retrait la
      * marquerait orpheline et Hibernate la SUPPRIMERAIT physiquement, commande
      * comprise. Seul ce changement de FK fait foi. Le panier se recharge vide.</p>
      */
     void rattacherA(Commande commande) {
-        exigerHorsCommande(); // definitif : une ligne ne change jamais de commande
+        exigerHorsCommande(); // définitif : une ligne ne change jamais de commande
         this.commande = Objects.requireNonNull(commande, "commande");
         this.panier = null;
         // Écart à RM-30, qui fige tout à l'ajout au panier : le libellé est figé ici, à la

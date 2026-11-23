@@ -11,16 +11,16 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Vue du panier destinee au membre proprietaire (F13).
+ * Vue du panier destinée au membre propriétaire (F13).
  *
  * <p><b>RM-30</b> : les prix sont affichés taxe comprise, ligne par ligne, et les totaux
  * donnent le hors TVA, la TVA par taux et le total taxe comprise. Une ligne n'a ni base ni
  * TVA propres. Les montants sont pré-formatés en euros via {@code FormatageRdv} et viennent
  * des valeurs <b>figées</b> des lignes, jamais du catalogue courant.</p>
  *
- * <p>Contrainte de <b>F13</b> : une piece devenue inactive apres son ajout reste
- * listee. Le drapeau {@code pieceActive} de la ligne et
- * {@code contientPieceInactive} du panier permettent au recapitulatif de la
+ * <p>Contrainte de <b>F13</b> : une pièce devenue inactive après son ajout reste
+ * listée. Le drapeau {@code pieceActive} de la ligne et
+ * {@code contientPieceInactive} du panier permettent au récapitulatif de la
  * signaler.</p>
  */
 public record PanierVue(
@@ -50,8 +50,8 @@ public record PanierVue(
                 TvaParTauxVue.de(panier.ventilation()),
                 FormatageRdv.eurosEcran(panier.totalTvac()),
                 panier.estVide(),
-                // Ne porte que sur les pieces : une ligne de service n a pas de piece,
-                // et l interroger levait une NPE.
+                // Ne porte que sur les pièces : une ligne de service n'a pas de pièce,
+                // et l'interroger levait une NPE.
                 panier.getLignes().stream()
                         .filter(ligne -> !ligne.estService())
                         .anyMatch(ligne -> !ligne.getPiece().isActif()),
@@ -59,7 +59,7 @@ public record PanierVue(
                 panier.getLignes().stream().anyMatch(ligne -> !ligne.estService()));
     }
 
-    /** Panier jamais cree : la lecture ne provoque aucune ecriture, elle rend du vide. */
+    /** Panier jamais créé : la lecture ne provoque aucune écriture, elle rend du vide. */
     public static PanierVue vide() {
         String zero = FormatageRdv.eurosEcran(BigDecimal.ZERO);
         return new PanierVue(List.of(), 0, zero, zero, List.of(), zero, true, false, false, false);
@@ -86,8 +86,8 @@ public record PanierVue(
                     ligne.getQuantite(),
                     FormatageRdv.eurosEcran(ligne.prixUnitaireTvac()),
                     FormatageRdv.eurosEcran(ligne.totalTvac()),
-                    // Un service inactif se signale comme une piece inactive : meme
-                    // colonne a l ecran, meme sens pour le membre.
+                    // Un service inactif se signale comme une pièce inactive : même
+                    // colonne à l'écran, même sens pour le membre.
                     ligne.estService()
                             ? ligne.getPrestation().isActif()
                             : ligne.getPiece().isActif());

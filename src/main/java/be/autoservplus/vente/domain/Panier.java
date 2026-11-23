@@ -21,25 +21,25 @@ import java.util.UUID;
 import java.util.function.Function;
 
 /**
- * Panier d achat d un membre (F13). Un membre a au plus un panier en cours
- * (<b>RM-19</b>) : l unicite est garantie en base par l index partiel
+ * Panier d'achat d'un membre (F13). Un membre a au plus un panier en cours
+ * (<b>RM-19</b>) : l'unicité est garantie en base par l'index partiel
  * {@code uq_panier_membre_actif} sur {@code membre_id}, le service se contente
- * de trouver-ou-creer.
+ * de trouver-ou-créer.
  *
- * <p>Les prix, libelles et taux TVA des lignes sont <b>figes a l ajout</b>, copies
- * depuis la piece : une evolution du catalogue ne reecrit jamais un panier existant.
- * Invariant de conception partage avec {@code LigneRdv} et {@code LigneIntervention} :
- * la recopie a l ajout preserve l integrite historique, sans numero de regle
+ * <p>Les prix, libellés et taux TVA des lignes sont <b>figés à l'ajout</b>, copiés
+ * depuis la pièce : une évolution du catalogue ne réécrit jamais un panier existant.
+ * Invariant de conception partagé avec {@code LigneRdv} et {@code LigneIntervention} :
+ * la recopie à l'ajout préserve l'intégrité historique, sans numéro de règle
  * au CdC.</p>
  *
- * <p>L entite porte les calculs (RM-30 : totaux ligne a ligne, jamais sur un total
- * global d abord) et la mecanique des lignes (fusion des doublons, quantites
- * positives). Les regles qui dependent de l etat du <i>catalogue</i> (piece active
- * et stock disponible, contraintes de F13) vivent dans le service : le panier n a
- * pas a interroger le stock, il recoit des ajouts deja arbitres.</p>
+ * <p>L'entité porte les calculs (RM-30 : totaux ligne à ligne, jamais sur un total
+ * global d'abord) et la mécanique des lignes (fusion des doublons, quantités
+ * positives). Les règles qui dépendent de l'état du <i>catalogue</i> (pièce active
+ * et stock disponible, contraintes de F13) vivent dans le service : le panier n'a
+ * pas à interroger le stock, il reçoit des ajouts déjà arbitrés.</p>
  *
- * <p>Colonnes non mappees en V1 : {@code date_expiration} appartient a la
- * reservation virtuelle de stock (RM-21, documentee V2).</p>
+ * <p>Colonnes non mappées en V1 : {@code date_expiration} appartient à la
+ * réservation virtuelle de stock (RM-21, documentée V2).</p>
  */
 @Entity
 @Table(name = "panier")
@@ -74,10 +74,10 @@ public class Panier extends BaseEntity {
     // --- lignes ----------------------------------------------------------------------
 
     /**
-     * Ajoute une piece au panier, ou <b>incremente la ligne existante</b> si la piece
-     * y figure deja : jamais deux lignes pour la meme piece. En cas de fusion, les
-     * valeurs figees a la premiere entree (prix, libelle, taux) sont conservees :
-     * c est la date d entree au panier qui fait foi, pas le catalogue du jour.
+     * Ajoute une pièce au panier, ou <b>incrémente la ligne existante</b> si la pièce
+     * y figure déjà : jamais deux lignes pour la même pièce. En cas de fusion, les
+     * valeurs figées à la première entrée (prix, libellé, taux) sont conservées :
+     * c'est la date d'entrée au panier qui fait foi, pas le catalogue du jour.
      */
     public LignePanier ajouterPiece(Piece piece, int quantite) {
         Objects.requireNonNull(piece, "piece");
@@ -93,10 +93,10 @@ public class Panier extends BaseEntity {
     }
 
     /**
-     * Ajoute une prestation au panier, ou incremente la ligne existante (F12), selon
-     * le meme patron que {@link #ajouterPiece} : valeurs figees a la premiere entree.
+     * Ajoute une prestation au panier, ou incrémente la ligne existante (F12), selon
+     * le même patron que {@link #ajouterPiece} : valeurs figées à la première entrée.
      *
-     * @throws PanierDeNatureMixteException si le panier contient deja des pieces
+     * @throws PanierDeNatureMixteException si le panier contient déjà des pièces
      */
     public LignePanier ajouterService(Prestation prestation, int quantite) {
         Objects.requireNonNull(prestation, "prestation");
@@ -112,17 +112,17 @@ public class Panier extends BaseEntity {
     }
 
     /**
-     * <b>Un panier est d une seule nature</b> : que des pieces, ou que des services.
+     * <b>Un panier est d'une seule nature</b> : que des pièces, ou que des services.
      *
-     * <p>Garde qui evite la retractation PARTIELLE. Une commande mixte serait
-     * insoluble en V1 : une piece reste retractable quand un service pleinement
-     * execute sous renonciation VI.53 ne l est plus, et annuler une partie de la
-     * commande demanderait de lever {@code uq_avoir_facture}, ce que F30 a remis a
+     * <p>Garde qui évite la rétractation PARTIELLE. Une commande mixte serait
+     * insoluble en V1 : une pièce reste rétractable quand un service pleinement
+     * exécuté sous renonciation VI.53 ne l'est plus, et annuler une partie de la
+     * commande demanderait de lever {@code uq_avoir_facture}, ce que F30 a remis à
      * la V2.</p>
      *
-     * <p>La garde vit ICI, au plus tot, plutot qu au passage en commande : refuser
-     * l ajout laisse le membre corriger tout de suite, alors qu un panier constitue
-     * puis rejete a la caisse lui ferait perdre son travail sans qu il comprenne
+     * <p>La garde vit ICI, au plus tôt, plutôt qu'au passage en commande : refuser
+     * l'ajout laisse le membre corriger tout de suite, alors qu'un panier constitué
+     * puis rejeté à la caisse lui ferait perdre son travail sans qu'il comprenne
      * pourquoi.</p>
      */
     private void exigerNatureCompatible(boolean ajoutDUnService) {
@@ -141,12 +141,12 @@ public class Panier extends BaseEntity {
         return !lignes.isEmpty() && lignes.stream().allMatch(LignePanier::estService);
     }
 
-    /** Quantite deja au panier pour cette prestation. */
+    /** Quantité déjà au panier pour cette prestation. */
     public int quantitePour(Prestation prestation) {
         return lignePour(prestation).map(ligne -> (int) ligne.getQuantite()).orElse(0);
     }
 
-    /** Quantite deja au panier pour cette piece : sert au controle de stock cumule. */
+    /** Quantité déjà au panier pour cette pièce : sert au contrôle de stock cumulé. */
     public int quantitePour(Piece piece) {
         return lignePour(piece).map(l -> (int) l.getQuantite()).orElse(0);
     }
@@ -157,7 +157,7 @@ public class Panier extends BaseEntity {
     }
 
     /**
-     * Change la quantite d une ligne. Passe par l agregat : {@code changerQuantite}
+     * Change la quantité d'une ligne. Passe par l'agrégat : {@code changerQuantite}
      * reste package-private, aucune ligne ne se modifie hors de son panier.
      */
     public boolean modifierQuantite(Long ligneId, int quantite) {
@@ -169,11 +169,11 @@ public class Panier extends BaseEntity {
         return true;
     }
 
-    // Les deux retraits ci-dessous EPARGNENT toute ligne deja rattachee a une
+    // Les deux retraits ci-dessous EPARGNENT toute ligne déjà rattachée à une
     // commande : la retirer de la collection la marquerait orpheline et Hibernate
-    // supprimerait physiquement une piece comptable. En production le cas est
-    // inatteignable (une ligne de commande n'est plus chargee avec le panier),
-    // mais l'immuabilite ne repose pas sur cette hypothese de chargement.
+    // supprimerait physiquement une pièce comptable. En production le cas est
+    // inatteignable (une ligne de commande n'est plus chargée avec le panier),
+    // mais l'immuabilité ne repose pas sur cette hypothèse de chargement.
 
     public boolean retirerLigne(Long ligneId) {
         Objects.requireNonNull(ligneId, "ligneId");
@@ -188,15 +188,15 @@ public class Panier extends BaseEntity {
         return lignes.isEmpty();
     }
 
-    /** Nombre total d articles (somme des quantites), pour le compteur d en-tete. */
+    /** Nombre total d'articles (somme des quantités), pour le compteur d'en-tête. */
     public int nombreArticles() {
         return lignes.stream().mapToInt(LignePanier::getQuantite).sum();
     }
 
     /**
-     * La comparaison passe par la reference publique de la piece, pas par l egalite
-     * d entite : deux instances non persistees ont un id null et {@code equals} les
-     * distinguerait a tort, alors que la reference est posee des la construction.
+     * La comparaison passe par la référence publique de la pièce, pas par l'égalité
+     * d'entité : deux instances non persistées ont un id null et {@code equals} les
+     * distinguerait à tort, alors que la référence est posée dès la construction.
      */
     private Optional<LignePanier> lignePour(Piece piece) {
         return lignes.stream()
@@ -205,7 +205,7 @@ public class Panier extends BaseEntity {
                 .findFirst();
     }
 
-    /** Meme recherche par reference pour une prestation (F12). */
+    /** Même recherche par référence pour une prestation (F12). */
     private Optional<LignePanier> lignePour(Prestation prestation) {
         return lignes.stream()
                 .filter(LignePanier::estService)
