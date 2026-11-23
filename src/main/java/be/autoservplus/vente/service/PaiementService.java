@@ -33,25 +33,25 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * Paiement d une commande (seconde moitie de F14) : initiation aupres du
- * prestataire, traitement des notifications entrantes, decrement du stock au
- * paiement confirme, expiration RM-21 (portee par le job dedie).
+ * Paiement d'une commande (seconde moitié de F14) : initiation auprès du
+ * prestataire, traitement des notifications entrantes, décrément du stock au
+ * paiement confirmé, expiration RM-21 (portée par le job dédié).
  *
- * <p><b>Securite du webhook (strategie §11)</b> : le payload entrant n est
- * JAMAIS cru. L identifiant recu sert uniquement a retrouver le paiement. Le
- * statut authentique est RELU aupres du prestataire via la passerelle. Un
- * attaquant qui connait l URL du webhook ne peut donc pas forger un « paye ».</p>
+ * <p><b>Sécurité du webhook (stratégie §11)</b> : le payload entrant n'est
+ * JAMAIS cru. L'identifiant reçu sert uniquement à retrouver le paiement. Le
+ * statut authentique est RELU auprès du prestataire via la passerelle. Un
+ * attaquant qui connaît l'URL du webhook ne peut donc pas forger un « payé ».</p>
  *
- * <p><b>Idempotence par l etat</b> : un webhook rejoue retombe sur une commande
- * deja PAYEE et un paiement deja REUSSI, aucun double decrement, aucun double
- * evenement, aucune double ecriture. Les courses (webhook contre job
- * d expiration, webhooks concurrents) sont serialisees par le verrou pessimiste
- * sur la commande, puis tranchees par les gardes d entite : une PAYEE ne
+ * <p><b>Idempotence par l'état</b> : un webhook rejoué retombe sur une commande
+ * déjà PAYEE et un paiement déjà REUSSI, aucun double décrément, aucun double
+ * événement, aucune double écriture. Les courses (webhook contre job
+ * d'expiration, webhooks concurrents) sont sérialisées par le verrou pessimiste
+ * sur la commande, puis tranchées par les gardes d'entité : une PAYEE ne
  * redevient pas ANNULEE, une ANNULEE ne devient pas PAYEE.</p>
  *
  * <p>Pas de {@code @PreAuthorize} de classe : {@link #traiterNotification} est
- * appelee par le prestataire, sans session. Seule l initiation, geste du
- * membre, exige l authentification.</p>
+ * appelée par le prestataire, sans session. Seule l'initiation, geste du
+ * membre, exige l'authentification.</p>
  */
 @Service
 @Transactional(readOnly = true)
@@ -90,9 +90,9 @@ public class PaiementService {
         this.evenements = evenements;
         this.transaction = transaction;
         this.horloge = horloge;
-        // Barre finale retiree une fois pour toutes : la concatenation qui suit
-        // produirait sinon un double separateur, et une URL de retour invalide ne se
-        // decouvrirait que chez le prestataire.
+        // Barre finale retirée une fois pour toutes : la concaténation qui suit
+        // produirait sinon un double séparateur, et une URL de retour invalide ne se
+        // découvrirait que chez le prestataire.
         this.urlPublique = urlPublique.endsWith("/")
                 ? urlPublique.substring(0, urlPublique.length() - 1)
                 : urlPublique;
@@ -248,29 +248,29 @@ public class PaiementService {
     // --- retour du membre depuis la page du prestataire --------------------------------
 
     /**
-     * Constate l issue du paiement au retour du membre, et rend la situation du
-     * paiement a l issue de ce constat : payee, en cours de traitement, echouee, ou
-     * encore a payer apres un abandon.
+     * Constate l'issue du paiement au retour du membre, et rend la situation du
+     * paiement à l'issue de ce constat : payée, en cours de traitement, échouée, ou
+     * encore à payer après un abandon.
      *
-     * <p><b>Le retour n est PAS une preuve de paiement</b>, et rien ici ne le traite
-     * comme tel. Le prestataire y renvoie le membre quelle que soit l issue (y compris
-     * apres un abandon pur et simple) et l adresse est une URL que
-     * n importe qui peut ouvrir. Ce qui tranche reste ce qui tranchait deja : le
+     * <p><b>Le retour n'est PAS une preuve de paiement</b>, et rien ici ne le traite
+     * comme tel. Le prestataire y renvoie le membre quelle que soit l'issue (y compris
+     * après un abandon pur et simple) et l'adresse est une URL que
+     * n'importe qui peut ouvrir. Ce qui tranche reste ce qui tranchait déjà : le
      * statut RELU chez le prestataire par {@link #traiterNotification}. Le retour ne
-     * fait que declencher cette relecture plus tot.</p>
+     * fait que déclencher cette relecture plus tôt.</p>
      *
-     * <p><b>Pourquoi ce declenchement est necessaire et non redondant.</b> La
-     * notification serveur a serveur n arrive pas toujours : elle n est meme pas
-     * demandee quand le site n est pas joignable depuis l exterieur, ce qui est le cas
-     * de tout poste de developpement. Sans cette reconciliation, la commande resterait
-     * EN_ATTENTE_PAIEMENT apres un paiement reussi, puis serait annulee par le job
-     * RM-21 au bout de trente minutes, soit un encaissement reel sans commande en face.</p>
+     * <p><b>Pourquoi ce déclenchement est nécessaire et non redondant.</b> La
+     * notification serveur à serveur n'arrive pas toujours : elle n'est même pas
+     * demandée quand le site n'est pas joignable depuis l'extérieur, ce qui est le cas
+     * de tout poste de développement. Sans cette réconciliation, la commande resterait
+     * EN_ATTENTE_PAIEMENT après un paiement réussi, puis serait annulée par le job
+     * RM-21 au bout de trente minutes, soit un encaissement réel sans commande en face.</p>
      *
-     * <p><b>Aucun risque de double effet</b> : l appel emprunte exactement le chemin du
-     * webhook, dont l idempotence vient de l etat sous verrou pessimiste. Webhook et
-     * retour peuvent donc arriver dans n importe quel ordre, ou tous les deux : la
-     * facture n est emise qu une fois, sur la transition reelle, et la numerotation
-     * continue sans trou n est pas plus exposee qu avant.</p>
+     * <p><b>Aucun risque de double effet</b> : l'appel emprunte exactement le chemin du
+     * webhook, dont l'idempotence vient de l'état sous verrou pessimiste. Webhook et
+     * retour peuvent donc arriver dans n'importe quel ordre, ou tous les deux : la
+     * facture n'est émise qu'une fois, sur la transition réelle, et la numérotation
+     * continue sans trou n'est pas plus exposée qu'avant.</p>
      *
      * <p>Cette absence de double effet porte sur le traitement d'une notification, pas
      * sur l'initiation : relire un paiement ne dit rien des autres tentatives de la
@@ -283,8 +283,8 @@ public class PaiementService {
         Commande commande = commandeDuMembre(referenceCommande, email);
         Optional<Paiement> derniere = paiements.findFirstByCommandeOrderByDateInitiationDescIdDesc(commande);
         derniere.map(Paiement::getReferenceMollie)
-                // Une tentative sans reference prestataire n a jamais quitte le site :
-                // il n y a rien a relire chez lui.
+                // Une tentative sans référence prestataire n'a jamais quitté le site :
+                // il n'y a rien à relire chez lui.
                 .filter(reference -> reference != null && !reference.isBlank())
                 .ifPresentOrElse(
                         reference -> journaliserRetour(commande, traiterNotification(reference)),
@@ -301,14 +301,14 @@ public class PaiementService {
     }
 
     /**
-     * Trace du retour du membre, a lire cote a cote avec celle de la notification
-     * serveur a serveur ecrite par le controleur de webhook.
+     * Trace du retour du membre, à lire côte à côte avec celle de la notification
+     * serveur à serveur écrite par le contrôleur de webhook.
      *
-     * <p>Le numero de commande, et non sa reference technique : c est lui qui figure
+     * <p>Le numéro de commande, et non sa référence technique : c'est lui qui figure
      * sur la facture et dans les autres traces de ce service, donc le seul identifiant
-     * par lequel l exploitant relie une ligne de journal a un dossier. Ni montant, ni
-     * adresse, ni identifiant d acces : une trace d exploitation n a pas besoin de
-     * porter une donnee personnelle pour etre utile.</p>
+     * par lequel l'exploitant relie une ligne de journal à un dossier. Ni montant, ni
+     * adresse, ni identifiant d'accès : une trace d'exploitation n'a pas besoin de
+     * porter une donnée personnelle pour être utile.</p>
      */
     private void journaliserRetour(Commande commande, IssueRelecture issue) {
         log.info("Retour du membre pour la commande {} : statut relu chez le prestataire "
@@ -320,20 +320,20 @@ public class PaiementService {
 
     /**
      * Traite une notification du prestataire. Rejouable sans double effet : voir
-     * le Javadoc de classe pour la securite (statut relu, jamais le payload) et
-     * l idempotence par l etat.
+     * le Javadoc de classe pour la sécurité (statut relu, jamais le payload) et
+     * l'idempotence par l'état.
      *
-     * @return ce que la relecture a constate et ce qu elle a change, pour que chacun
-     *         des deux declencheurs (retour du membre, notification serveur a serveur)
-     *         redige SA ligne de journal. Rendre l information plutot que de l ecrire
+     * @return ce que la relecture a constaté et ce qu'elle a changé, pour que chacun
+     *         des deux déclencheurs (retour du membre, notification serveur à serveur)
+     *         rédige SA ligne de journal. Rendre l'information plutôt que de l'écrire
      *         ici est ce qui permet de distinguer les deux chemins, que
-     *         {@code docs/deploiement.md} demande de voir arriver tour a tour. Une
-     *         ligne ecrite au fond de cette methode serait identique dans les deux cas.
+     *         {@code docs/deploiement.md} demande de voir arriver tour à tour. Une
+     *         ligne écrite au fond de cette méthode serait identique dans les deux cas.
      */
     @Transactional
     public IssueRelecture traiterNotification(String referencePrestataire) {
         Paiement paiement = paiementPrestataire(referencePrestataire);
-        // Strategie securite §11 : seul l etat relu chez le prestataire fait foi.
+        // Stratégie sécurité §11 : seul l'état relu chez le prestataire fait foi.
         return appliquer(paiement, prestataire.lireEtat(referencePrestataire));
     }
 
@@ -360,9 +360,9 @@ public class PaiementService {
      */
     private IssueRelecture appliquer(Paiement paiement, EtatPaiement etat) {
         String referencePrestataire = paiement.getReferenceMollie();
-        // Le moyen arrive dans la meme reponse que le statut, et se pose des qu il est
-        // connu, y compris sur un paiement qui n a pas encore abouti. L entite refuse
-        // de le reecrire, donc un rejeu ne peut pas l alterer.
+        // Le moyen arrive dans la même réponse que le statut, et se pose dès qu'il est
+        // connu, y compris sur un paiement qui n'a pas encore abouti. L'entité refuse
+        // de le réécrire, donc un rejeu ne peut pas l'altérer.
         paiement.enregistrerMethode(etat.methode());
         StatutPaiement statutAuthentique = etat.statut();
         IssueRelecture.Effet effet = switch (statutAuthentique) {
@@ -376,7 +376,7 @@ public class PaiementService {
                 }
                 yield IssueRelecture.Effet.DEJA_TRAITE;
             }
-            case INITIE -> IssueRelecture.Effet.EN_ATTENTE; // rien de neuf a constater
+            case INITIE -> IssueRelecture.Effet.EN_ATTENTE; // rien de neuf à constater
             case REMBOURSE -> {
                 log.warn("Statut REMBOURSE recu pour le paiement {} : bloc retractation "
                         + "a venir, ignore.", referencePrestataire);
@@ -387,9 +387,9 @@ public class PaiementService {
     }
 
     /**
-     * Paiement confirme par le prestataire. Le verrou pessimiste sur la commande
-     * serialise ce traitement avec le job d expiration et les webhooks rejoues.
-     * L etat relu sous verrou decide ensuite, une fois pour toutes.
+     * Paiement confirmé par le prestataire. Le verrou pessimiste sur la commande
+     * sérialise ce traitement avec le job d'expiration et les webhooks rejoués.
+     * L'état relu sous verrou décide ensuite, une fois pour toutes.
      */
     private IssueRelecture.Effet confirmer(Paiement paiement) {
         Commande commande = commandes.verrouillerParId(paiement.getCommande().getId())
@@ -397,8 +397,8 @@ public class PaiementService {
                         "Commande", paiement.getCommande().getId()));
 
         if (commande.getStatut() == StatutCommande.PAYEE) {
-            // Webhook rejoue : tout est deja fait. On aligne au besoin le paiement
-            // sur la realite, et rien d autre : ni stock, ni evenement.
+            // Webhook rejoué : tout est déjà fait. On aligne au besoin le paiement
+            // sur la réalité, et rien d'autre : ni stock, ni événement.
             confirmerLePaiementSeul(paiement);
             return IssueRelecture.Effet.DEJA_TRAITE;
         }
@@ -411,7 +411,7 @@ public class PaiementService {
         decrementerStock(commande);
         paiements.saveAndFlush(paiement);
         commandes.saveAndFlush(commande);
-        // Publie UNE fois, sur la transition reelle uniquement : point d accroche de
+        // Publié UNE fois, sur la transition réelle uniquement : point d'accroche de
         // la facture (RM-22, bloc suivant) et du courriel de confirmation.
         evenements.publishEvent(new CommandePayeeEvent(commande.getReference()));
         return IssueRelecture.Effet.FACTURE_EMISE;
@@ -448,10 +448,10 @@ public class PaiementService {
         }
     }
 
-    /** Echec ou expiration : terminal pour CE paiement, la commande attend toujours. */
+    /** Échec ou expiration : terminal pour CE paiement, la commande attend toujours. */
     private IssueRelecture.Effet clore(Paiement paiement, StatutPaiement cible) {
         if (paiement.estTermine()) {
-            return IssueRelecture.Effet.DEJA_TRAITE; // rejouee : deja constate
+            return IssueRelecture.Effet.DEJA_TRAITE; // rejouée : déjà constaté
         }
         if (cible == StatutPaiement.ECHOUE) {
             paiement.echouer(horloge.instant());
@@ -463,21 +463,21 @@ public class PaiementService {
     }
 
     /**
-     * Regle (a) du decrement : au paiement confirme, chaque piece est verrouillee
-     * (FOR UPDATE, ordre deterministe par id, les lignes arrivent triees) puis
-     * decrementee. Si le stock est devenu insuffisant (un autre membre a paye la
-     * meme piece entre-temps, rien n etait reserve) la commande reste PAYEE (on
-     * n annule pas un encaissement), le stock plancher a 0, le drapeau
-     * {@code rupture_a_honorer} leve l alerte et la trace ci-dessous dit QUOI
-     * honorer. Le garage gere hors ligne.
+     * Règle (a) du décrément : au paiement confirmé, chaque pièce est verrouillée
+     * (FOR UPDATE, ordre déterministe par id, les lignes arrivent triées) puis
+     * décrémentée. Si le stock est devenu insuffisant (un autre membre a payé la
+     * même pièce entre-temps, rien n'était réservé) la commande reste PAYEE (on
+     * n'annule pas un encaissement), le stock plancher à 0, le drapeau
+     * {@code rupture_a_honorer} lève l'alerte et la trace ci-dessous dit QUOI
+     * honorer. Le garage gère hors ligne.
      */
     private void decrementerStock(Commande commande) {
         List<LignePanier> lignes = commandes.lignesDe(commande);
         List<String> ruptures = new ArrayList<>();
         for (LignePanier ligne : lignes) {
-            // Ceinture et bretelles. lignesDe ne rend deja QUE les lignes de piece, car
-            // son JOIN FETCH est une jointure interne. Ce garde n est pas
-            // atteint aujourd hui. Il protege d un elargissement futur de la requete,
+            // Ceinture et bretelles. lignesDe ne rend déjà QUE les lignes de pièce, car
+            // son JOIN FETCH est une jointure interne. Ce garde n'est pas
+            // atteint aujourd'hui. Il protège d'un élargissement futur de la requête,
             // qui ferait sinon lever une NPE sur getPiece() au moment du paiement.
             if (ligne.estService()) {
                 continue;
@@ -506,18 +506,18 @@ public class PaiementService {
     // --- adresses absolues remises au prestataire --------------------------------------
 
     /**
-     * Ou le prestataire renvoie le membre une fois la page de paiement quittee.
+     * Où le prestataire renvoie le membre une fois la page de paiement quittée.
      *
-     * <p>Absolue et derivee de {@code autoservplus.url-publique}, non de la requete
-     * en cours : le prestataire renvoie un navigateur vers le site tel qu il est
-     * joignable depuis l exterieur, ce que l URL vue par le serveur derriere un
+     * <p>Absolue et dérivée de {@code autoservplus.url-publique}, non de la requête
+     * en cours : le prestataire renvoie un navigateur vers le site tel qu'il est
+     * joignable depuis l'extérieur, ce que l'URL vue par le serveur derrière un
      * reverse proxy ne dit pas.</p>
      */
     private String urlRetour(UUID referenceCommande) {
         return urlPublique + "/commande/" + referenceCommande + "/retour";
     }
 
-    /** Ou le prestataire notifie le serveur, sans navigateur ni session. */
+    /** Où le prestataire notifie le serveur, sans navigateur ni session. */
     private String urlNotification() {
         return urlPublique + "/webhooks/paiement";
     }

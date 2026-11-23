@@ -12,24 +12,24 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 /**
- * Page de paiement bouchonnee : ce que {@link PrestatairePaiementFictif} ne peut
- * pas fournir, faute d etre un site web.
+ * Page de paiement bouchonnée : ce que {@link PrestatairePaiementFictif} ne peut
+ * pas fournir, faute d'être un site web.
  *
  * <p><b>Pourquoi cette classe existe.</b> Le bouchon rendait depuis toujours une
- * URL {@code /paiement-fictif/{reference}} vers laquelle le controleur de commande
+ * URL {@code /paiement-fictif/{reference}} vers laquelle le contrôleur de commande
  * redirige, mais rien ne servait cette adresse. Le membre qui cliquait
- * « Procéder au paiement » tombait sur un 404, et la chaine marchande n etait
+ * « Procéder au paiement » tombait sur un 404, et la chaîne marchande n'était
  * achevable que par un appel HTTP direct au webhook, ce que seuls les tests
- * faisaient. Le parcours etait donc vert en integration et impraticable a
- * l ecran.</p>
+ * faisaient. Le parcours était donc vert en intégration et impraticable à
+ * l'écran.</p>
  *
- * <p><b>Le chemin emprunte est le VRAI chemin.</b> La simulation ne prend aucun
+ * <p><b>Le chemin emprunté est le VRAI chemin.</b> La simulation ne prend aucun
  * raccourci : elle pose le statut chez le prestataire, exactement comme un
- * encaissement reel le ferait, puis laisse {@link PaiementService#traiterNotification}
- * relire ce statut et decider. Rien ici n ecrit dans la commande, ne decremente le
- * stock ni ne publie d evenement. Une simulation qui appellerait directement les
- * transitions du domaine validerait un chemin que la production n emprunte pas,
- * et c est precisement le defaut qu elle repare.</p>
+ * encaissement réel le ferait, puis laisse {@link PaiementService#traiterNotification}
+ * relire ce statut et décider. Rien ici n'écrit dans la commande, ne décrémente le
+ * stock ni ne publie d'événement. Une simulation qui appellerait directement les
+ * transitions du domaine validerait un chemin que la production n'emprunte pas,
+ * et c'est précisément le défaut qu'elle répare.</p>
  *
  * <p>Active sous la condition exacte du bouchon dont elle est la face visible
  * ({@link SiAucunPrestataireConfigure}) : les deux vivent et meurent ensemble.</p>
@@ -50,7 +50,7 @@ public class SimulationPaiementService {
         this.paiementService = paiementService;
     }
 
-    /** Ce que le membre doit pouvoir verifier avant de payer : numero et montant. */
+    /** Ce que le membre doit pouvoir vérifier avant de payer : numéro et montant. */
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
     public SimulationPaiementVue aRegler(String referencePrestataire, String email) {
@@ -58,26 +58,26 @@ public class SimulationPaiementService {
     }
 
     /**
-     * Simule l issue choisie et retourne la reference de la commande, pour y ramener
+     * Simule l'issue choisie et retourne la référence de la commande, pour y ramener
      * le membre.
      *
      * <p><b>Volontairement NON transactionnelle.</b> Elle doit laisser
      * {@code traiterNotification} ouvrir la sienne : ouverte ici en lecture seule
-     * (convention du projet), la transaction englobante empecherait l ecriture.
-     * Ouverte en ecriture, elle placerait le verrou pessimiste sur la commande hors
-     * du perimetre que le service a concu. Les deux lectures qui l encadrent se
-     * suffisent d une transaction chacune.</p>
+     * (convention du projet), la transaction englobante empêcherait l'écriture.
+     * Ouverte en écriture, elle placerait le verrou pessimiste sur la commande hors
+     * du périmètre que le service a conçu. Les deux lectures qui l'encadrent se
+     * suffisent d'une transaction chacune.</p>
      *
-     * @param issue issue a simuler : encaissement accepte, refuse par la banque, ou en
+     * @param issue issue à simuler : encaissement accepté, refusé par la banque, ou en
      *              attente de confirmation
      */
     @PreAuthorize("isAuthenticated()")
     public UUID simuler(String referencePrestataire, IssueSimulee issue, String email) {
         Paiement paiement = paiementDuMembre(referencePrestataire, email);
         UUID referenceCommande = paiement.getCommande().getReference();
-        // L ordre est celui du monde reel : le statut change CHEZ le prestataire,
-        // puis la notification survient. L inverse ferait relire un statut qui n a
-        // pas encore bouge, et la notification ne constaterait rien.
+        // L'ordre est celui du monde réel : le statut change CHEZ le prestataire,
+        // puis la notification survient. L'inverse ferait relire un statut qui n'a
+        // pas encore bougé, et la notification ne constaterait rien.
         if (issue == IssueSimulee.OUVERT_NON_ANNULABLE) {
             // Rien ne change chez le prestataire, donc aucune notification : le
             // paiement reste ouvert, et le job RM-21 ne pourra pas l'annuler.
@@ -117,15 +117,15 @@ public class SimulationPaiementService {
     }
 
     /**
-     * Un membre ne pilote que ses propres paiements. Reference inconnue et paiement
-     * d autrui repondent la meme chose, 404, jamais 403, comme les autres
-     * ressources nominatives du projet : un 403 confirmerait l existence de la
-     * ressource a qui n y a pas droit.
+     * Un membre ne pilote que ses propres paiements. Référence inconnue et paiement
+     * d'autrui répondent la même chose, 404, jamais 403, comme les autres
+     * ressources nominatives du projet : un 403 confirmerait l'existence de la
+     * ressource à qui n'y a pas droit.
      *
-     * <p>Sans {@code @Transactional} : appelee en interne, elle ne passerait pas par
-     * le proxy et l annotation serait un mensonge. Elle n en a pas besoin :
+     * <p>Sans {@code @Transactional} : appelée en interne, elle ne passerait pas par
+     * le proxy et l'annotation serait un mensonge. Elle n'en a pas besoin :
      * {@code findByReferenceMollie} charge la commande et le membre par JOIN FETCH,
-     * donc les deux dereferencements ci-dessous tiennent hors session.</p>
+     * donc les deux déréférencements ci-dessous tiennent hors session.</p>
      */
     private Paiement paiementDuMembre(String referencePrestataire, String email) {
         Paiement paiement = paiements.findByReferenceMollie(referencePrestataire)

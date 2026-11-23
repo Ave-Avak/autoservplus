@@ -11,26 +11,26 @@ import org.springframework.http.MediaType;
 import org.springframework.web.client.RestClient;
 
 /**
- * Client HTTP dedie au prestataire de paiement, construit uniquement lorsqu un
- * identifiant est configure.
+ * Client HTTP dédié au prestataire de paiement, construit uniquement lorsqu'un
+ * identifiant est configuré.
  *
- * <p><b>Un {@code RestClient} deja arme plutot qu un {@code RestClient.Builder}
- * injecte dans la passerelle.</b> L en-tete d autorisation et les delais sont ainsi
- * poses une fois, hors de la passerelle : celle-ci ne manipule jamais le jeton, elle
- * ne fait qu emettre des requetes deja authentifiees. C est aussi ce qui rend la
- * passerelle testable en substituant ce seul bean, sans variable d environnement ni
- * reseau.</p>
+ * <p><b>Un {@code RestClient} déjà armé plutôt qu'un {@code RestClient.Builder}
+ * injecté dans la passerelle.</b> L'en-tête d'autorisation et les délais sont ainsi
+ * posés une fois, hors de la passerelle : celle-ci ne manipule jamais le jeton, elle
+ * ne fait qu'émettre des requêtes déjà authentifiées. C'est aussi ce qui rend la
+ * passerelle testable en substituant ce seul bean, sans variable d'environnement ni
+ * réseau.</p>
  *
- * <p>Les delais sont bornes des l etablissement de la connexion : un prestataire qui
- * ne repond pas doit echouer vite. Sans borne, un appel sortant immobiliserait un
+ * <p>Les délais sont bornés dès l'établissement de la connexion : un prestataire qui
+ * ne répond pas doit échouer vite. Sans borne, un appel sortant immobiliserait un
  * thread de traitement et, pour la relecture de statut, une connexion de base de
- * donnees avec lui.</p>
+ * données avec lui.</p>
  */
 @Configuration
 @SiPrestataireConfigure
 public class MollieClientConfig {
 
-    /** Racine de l API v2 de Mollie. Les chemins employes lui sont relatifs. */
+    /** Racine de l'API v2 de Mollie. Les chemins employés lui sont relatifs. */
     private static final String URL_API = "https://api.mollie.com/v2";
 
     @Bean
@@ -41,8 +41,8 @@ public class MollieClientConfig {
                         .build(ClientHttpRequestFactorySettings.defaults()
                                 .withConnectTimeout(MollieGateway.DELAI_MAXIMUM)
                                 .withReadTimeout(MollieGateway.DELAI_MAXIMUM)))
-                // Le jeton ne vit que dans cet en-tete par defaut : aucune methode de
-                // la passerelle ne le recoit, ne le recopie ni ne peut le journaliser.
+                // Le jeton ne vit que dans cet en-tête par défaut : aucune méthode de
+                // la passerelle ne le reçoit, ne le recopie ni ne peut le journaliser.
                 .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + proprietes.jeton())
                 .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                 .defaultHeader(HttpHeaders.ACCEPT, MediaType.APPLICATION_JSON_VALUE)

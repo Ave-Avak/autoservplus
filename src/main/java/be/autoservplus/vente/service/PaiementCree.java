@@ -1,7 +1,7 @@
 package be.autoservplus.vente.service;
 
 /**
- * Resultat de la creation d un paiement chez le prestataire.
+ * Résultat de la création d'un paiement chez le prestataire.
  *
  * @param referencePrestataire identifiant du paiement chez le prestataire
  *                             (celui que renverra le webhook)

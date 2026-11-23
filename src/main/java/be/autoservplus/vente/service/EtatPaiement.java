@@ -3,25 +3,25 @@ package be.autoservplus.vente.service;
 import be.autoservplus.vente.domain.StatutPaiement;
 
 /**
- * Ce que le prestataire rapporte d un paiement quand on le relit : son statut
- * authentique, le moyen effectivement employe s il est deja connu, et l'adresse de
+ * Ce que le prestataire rapporte d'un paiement quand on le relit : son statut
+ * authentique, le moyen effectivement employé s'il est déjà connu, et l'adresse de
  * sa page de paiement tant qu'elle est ouverte.
  *
- * <p><b>Un record plutot que le seul statut</b>, parce que ces informations
- * arrivent dans la meme reponse. Les separer imposerait un second appel reseau pour
- * une donnee deja recue, et un appel de plus a l interieur de la transaction qui
+ * <p><b>Un record plutôt que le seul statut</b>, parce que ces informations
+ * arrivent dans la même réponse. Les séparer imposerait un second appel réseau pour
+ * une donnée déjà reçue, et un appel de plus à l'intérieur de la transaction qui
  * relit le statut. Cette transaction tient déjà une connexion à la base pendant un
  * aller-retour vers le prestataire, borné seulement par le délai de
  * {@code MollieGateway.DELAI_MAXIMUM}. Le correctif, sortir l'appel de la transaction,
  * reste pour la V2, et rien ne doit l'aggraver d'ici là.</p>
  *
- * @param statut      statut projete vers le vocabulaire du domaine
- * @param methode     moyen employe tel que le prestataire le nomme (bancontact, carte,
- *                    virement...), ou {@code null} tant qu il ne le connait pas : le
- *                    client choisit sur la page du prestataire, donc apres la creation
- *                    du paiement. Un prestataire bouchonne n en rapporte aucun, et
- *                    l ecran de detail dit alors que le moyen n a pas ete communique
- *                    plutot que d en inventer un.
+ * @param statut      statut projeté vers le vocabulaire du domaine
+ * @param methode     moyen employé tel que le prestataire le nomme (bancontact, carte,
+ *                    virement...), ou {@code null} tant qu'il ne le connaît pas : le
+ *                    client choisit sur la page du prestataire, donc après la création
+ *                    du paiement. Un prestataire bouchonné n'en rapporte aucun, et
+ *                    l'écran de détail dit alors que le moyen n'a pas été communiqué
+ *                    plutôt que d'en inventer un.
  * @param urlPaiement page de paiement encore ouverte, ou {@code null} : le prestataire
  *                    ne la rend que pour un paiement qui attend le client. C'est elle
  *                    qui permet de reprendre une tentative au lieu d'en créer une
@@ -34,17 +34,17 @@ import be.autoservplus.vente.domain.StatutPaiement;
 public record EtatPaiement(StatutPaiement statut, String methode, String urlPaiement,
                            boolean annulable) {
 
-    /** Etat d'un paiement que le prestataire ne dit pas annulable. */
+    /** État d'un paiement que le prestataire ne dit pas annulable. */
     public EtatPaiement(StatutPaiement statut, String methode, String urlPaiement) {
         this(statut, methode, urlPaiement, false);
     }
 
-    /** Etat sans page de paiement ouverte. */
+    /** État sans page de paiement ouverte. */
     public EtatPaiement(StatutPaiement statut, String methode) {
         this(statut, methode, null, false);
     }
 
-    /** Etat sans moyen connu ni page ouverte. */
+    /** État sans moyen connu ni page ouverte. */
     public static EtatPaiement de(StatutPaiement statut) {
         return new EtatPaiement(statut, null, null, false);
     }

@@ -19,21 +19,21 @@ import org.springframework.web.bind.annotation.RequestParam;
 import java.util.UUID;
 
 /**
- * Page de paiement de substitution, servie a l adresse que le prestataire
- * bouchonne annonce. Elle rend la chaine marchande parcourable a l ecran sans
- * aucun service externe : c est le repli lisible quand aucune cle de prestataire
- * n est fournie.
+ * Page de paiement de substitution, servie à l'adresse que le prestataire
+ * bouchonné annonce. Elle rend la chaîne marchande parcourable à l'écran sans
+ * aucun service externe : c'est le repli lisible quand aucune clé de prestataire
+ * n'est fournie.
  *
- * <p><b>Elle s annonce pour ce qu elle est.</b> Banniere permanente « paiement
- * simule », mention explicite qu aucun debit n a lieu, et trois issues offertes
- * plutot qu un seul bouton : l echec d encaissement et le paiement en attente de
- * confirmation font partie du parcours a demontrer autant que le succes, et rien
- * d autre dans l application ne permet de les provoquer. Une page qui se ferait passer pour une vraie page de paiement
- * serait, elle, indefendable.</p>
+ * <p><b>Elle s'annonce pour ce qu'elle est.</b> Bannière permanente « paiement
+ * simulé », mention explicite qu'aucun débit n'a lieu, et trois issues offertes
+ * plutôt qu'un seul bouton : l'échec d'encaissement et le paiement en attente de
+ * confirmation font partie du parcours à démontrer autant que le succès, et rien
+ * d'autre dans l'application ne permet de les provoquer. Une page qui se ferait passer pour une vraie page de paiement
+ * serait, elle, indéfendable.</p>
  *
- * <p>Active tant qu aucun identifiant de prestataire n est fourni, comme le bouchon
- * qu elle donne a voir, y compris en production, ou un repli annonce vaut mieux
- * qu une rupture au paiement.</p>
+ * <p>Active tant qu'aucun identifiant de prestataire n'est fourni, comme le bouchon
+ * qu'elle donne à voir, y compris en production, où un repli annoncé vaut mieux
+ * qu'une rupture au paiement.</p>
  */
 @Controller
 @SiAucunPrestataireConfigure
@@ -61,11 +61,11 @@ public class PaiementSimuleController {
     }
 
     /**
-     * Simule l issue puis renvoie le membre par la MEME porte qu un prestataire reel :
-     * l URL de retour de la commande, et non la page de confirmation en direct. Un
-     * raccourci ici laisserait la reconciliation du retour sans couverture, alors
-     * qu elle est le seul chemin par lequel un paiement aboutit lorsque la
-     * notification serveur a serveur n arrive pas.
+     * Simule l'issue puis renvoie le membre par la MEME porte qu'un prestataire réel :
+     * l'URL de retour de la commande, et non la page de confirmation en direct. Un
+     * raccourci ici laisserait la réconciliation du retour sans couverture, alors
+     * qu'elle est le seul chemin par lequel un paiement aboutit lorsque la
+     * notification serveur à serveur n'arrive pas.
      */
     @PostMapping("/{referencePrestataire}")
     public String simuler(@AuthenticationPrincipal UserDetails membre,

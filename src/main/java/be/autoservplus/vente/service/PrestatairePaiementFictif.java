@@ -13,20 +13,20 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * Prestataire de paiement bouchonne, actif tant qu aucun identifiant de
- * prestataire n est fourni : toute la logique metier du module se developpe et se
- * teste contre lui, sans reseau, avec des statuts programmes (meme role que
+ * Prestataire de paiement bouchonné, actif tant qu'aucun identifiant de
+ * prestataire n'est fourni : toute la logique métier du module se développe et se
+ * teste contre lui, sans réseau, avec des statuts programmés (même rôle que
  * {@code TransportConsole} pour le courriel).
  *
- * <p>Un paiement cree nait INITIE. Les tests, la demonstration et la page de
- * paiement simulee font evoluer son statut via {@link #programmerStatut} : c est ce
- * que {@link #lireEtat} restituera, comme le ferait la relecture de l API
+ * <p>Un paiement créé naît INITIE. Les tests, la démonstration et la page de
+ * paiement simulée font évoluer son statut via {@link #programmerStatut} : c'est ce
+ * que {@link #lireEtat} restituera, comme le ferait la relecture de l'API
  * Mollie.</p>
  *
- * <p><b>Le repli s annonce.</b> Il vaut aussi en production, ou il evite de rompre
- * un parcours d achat faute de cle, mais un encaissement simule qui se tairait
- * serait pire que la rupture qu il evite. D ou l avertissement au demarrage, et la
- * banniere que porte la page de paiement simulee.</p>
+ * <p><b>Le repli s'annonce.</b> Il vaut aussi en production, où il évite de rompre
+ * un parcours d'achat faute de clé, mais un encaissement simulé qui se tairait
+ * serait pire que la rupture qu'il évite. D'où l'avertissement au démarrage, et la
+ * bannière que porte la page de paiement simulée.</p>
  */
 @Service
 @SiAucunPrestataireConfigure
@@ -50,7 +50,7 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
     /** Paiements dont tout appel échoue, comme pendant une panne du prestataire. */
     private final Set<String> enPanne = ConcurrentHashMap.newKeySet();
 
-    /** Remboursements deja accordes, indexes par cle d idempotence. */
+    /** Remboursements déjà accordés, indexés par clé d'idempotence. */
     private final Map<String, String> remboursements = new ConcurrentHashMap<>();
 
     /**
@@ -73,9 +73,9 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
     }
 
     /**
-     * Aucun moyen de paiement n est rapporte, et c est volontaire : en inventer un
-     * ferait afficher « Bancontact » sur une commande que personne n a payee. L ecran
-     * de detail sait dire que le moyen n a pas ete communique.
+     * Aucun moyen de paiement n'est rapporté, et c'est volontaire : en inventer un
+     * ferait afficher « Bancontact » sur une commande que personne n'a payée. L'écran
+     * de détail sait dire que le moyen n'a pas été communiqué.
      *
      * <p>Une référence inconnue rend EXPIRE. Les statuts vivent en mémoire : après un
      * redémarrage, une tentative restée ouverte en base n'existe plus ici, comme un
@@ -120,19 +120,19 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
     }
 
     /**
-     * Remboursement bouchonne : succes immediat, comme un prestataire qui accepte le
+     * Remboursement bouchonné : succès immédiat, comme un prestataire qui accepte le
      * Refund sur-le-champ.
      *
-     * <p>Le paiement d origine doit exister et avoir ete encaisse, rembourser une
-     * reference inconnue ou un paiement jamais abouti est une erreur de programmation
+     * <p>Le paiement d'origine doit exister et avoir été encaissé, rembourser une
+     * référence inconnue ou un paiement jamais abouti est une erreur de programmation
      * que le bouchon signale au lieu de la masquer, sans quoi les tests de la
-     * retractation passeraient sur une chaine que le vrai prestataire refuserait.</p>
+     * rétractation passeraient sur une chaîne que le vrai prestataire refuserait.</p>
      *
-     * <p>La cle d idempotence est honoree : deux appels portant la meme cle rendent
-     * la meme reference de remboursement, exactement comme le ferait Mollie. C est ce
-     * qui permet de prouver en test qu une double validation ne rembourse qu une
-     * fois : meme si, en amont, le verrou optimiste et l index unique de l avoir
-     * doivent l avoir deja empechee.</p>
+     * <p>La clé d'idempotence est honorée : deux appels portant la même clé rendent
+     * la même référence de remboursement, exactement comme le ferait Mollie. C'est ce
+     * qui permet de prouver en test qu'une double validation ne rembourse qu'une
+     * fois : même si, en amont, le verrou optimiste et l'index unique de l'avoir
+     * doivent l'avoir déjà empêchée.</p>
      */
     @Override
     public RemboursementCree rembourser(DemandeRemboursement demande) {
@@ -153,9 +153,9 @@ public class PrestatairePaiementFictif implements PrestatairePaiement {
     }
 
     /**
-     * Avertissement au demarrage. En {@code WARN} et non en {@code INFO} : un
-     * exploitant qui croit encaisser alors qu il simule ne decouvrirait le probleme
-     * qu au moment de compter la caisse.
+     * Avertissement au démarrage. En {@code WARN} et non en {@code INFO} : un
+     * exploitant qui croit encaisser alors qu'il simule ne découvrirait le problème
+     * qu'au moment de compter la caisse.
      */
     @PostConstruct
     void annoncerLeRepli() {

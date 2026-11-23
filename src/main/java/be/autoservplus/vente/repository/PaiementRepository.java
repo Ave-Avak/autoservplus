@@ -17,8 +17,8 @@ import java.util.UUID;
 public interface PaiementRepository extends JpaRepository<Paiement, Long> {
 
     /**
-     * Resolution d une notification entrante : le prestataire n envoie que sa
-     * reference, la commande est chargee avec pour la suite du traitement.
+     * Résolution d'une notification entrante : le prestataire n'envoie que sa
+     * référence, la commande est chargée avec pour la suite du traitement.
      */
     @Query("""
             SELECT p FROM Paiement p
@@ -28,10 +28,10 @@ public interface PaiementRepository extends JpaRepository<Paiement, Long> {
     Optional<Paiement> findByReferenceMollie(@Param("referencePrestataire") String referencePrestataire);
 
     /**
-     * Derniere tentative de paiement d une commande, pour la reconciliation au retour
-     * du membre. L identifiant departage deux tentatives nees dans la meme
-     * milliseconde : cas rare en production, systematique avec une horloge figee de
-     * test, et un depart au hasard ferait relire le statut de la mauvaise.
+     * Dernière tentative de paiement d'une commande, pour la réconciliation au retour
+     * du membre. L'identifiant départage deux tentatives nées dans la même
+     * milliseconde : cas rare en production, systématique avec une horloge figée de
+     * test, et un départ au hasard ferait relire le statut de la mauvaise.
      */
     Optional<Paiement> findFirstByCommandeOrderByDateInitiationDescIdDesc(Commande commande);
 
@@ -68,6 +68,6 @@ public interface PaiementRepository extends JpaRepository<Paiement, Long> {
             """)
     List<Paiement> recusApresAnnulation();
 
-    /** Paiements non aboutis d une commande, a expirer avec elle (job RM-21). */
+    /** Paiements non aboutis d'une commande, à expirer avec elle (job RM-21). */
     List<Paiement> findByCommandeAndStatutIn(Commande commande, Collection<StatutPaiement> statuts);
 }
