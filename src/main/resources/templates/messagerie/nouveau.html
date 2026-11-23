@@ -26,9 +26,9 @@
         </p>
         <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('corps')}" th:errors="*{corps}">Message obligatoire.</p>
 
-        <!-- Le socle ne prévoit qu'un rattachement à une intervention. Pour une
+        <!--/* Le socle ne prévoit qu'un rattachement à une intervention. Pour une
              question sur une commande, le membre ouvre un fil libre et cite la
-             référence dans son message. -->
+             référence dans son message. */-->
         <p class="carte-meta" th:text="#{messagerie.nouveau.aide}">
             Pour une question sur une commande, citez son numéro dans votre message.
         </p>

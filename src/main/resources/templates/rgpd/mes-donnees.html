@@ -39,8 +39,8 @@
         <li th:text="#{rgpd.donnees.contenu.traitement}">Les informations sur le traitement.</li>
     </ul>
 
-    <!-- Enoncer les exclusions evite qu'une absence ne se lise comme un oubli :
-         la meme liste figure dans le fichier lui-meme. -->
+    <!--/* Enoncer les exclusions evite qu'une absence ne se lise comme un oubli :
+         la meme liste figure dans le fichier lui-meme. */-->
     <h2 th:text="#{rgpd.donnees.exclusions.titre}">Ce que le fichier ne contient pas</h2>
     <ul>
         <li th:text="#{rgpd.donnees.exclusions.mot-de-passe}">Votre mot de passe.</li>
@@ -48,8 +48,8 @@
         <li th:text="#{rgpd.donnees.exclusions.secrets}">Les jetons de session.</li>
     </ul>
 
-    <!-- Re-authentification : une session ouverte ne suffit pas a rassembler tout
-         le dossier d'une personne en un seul fichier. -->
+    <!--/* Re-authentification : une session ouverte ne suffit pas a rassembler tout
+         le dossier d'une personne en un seul fichier. */-->
     <h2 th:text="#{rgpd.donnees.confirmation.titre}">Confirmez votre mot de passe</h2>
     <form th:action="@{/mes-donnees/export}" method="post" class="formulaire">
         <div class="champ">

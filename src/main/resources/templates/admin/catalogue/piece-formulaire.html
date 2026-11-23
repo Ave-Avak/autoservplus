@@ -37,9 +37,9 @@
                th:errors="*{codeCategorie}"></p>
         </div>
 
-        <!-- La reference constructeur est l'ancre d'unicite de la piece : saisissable a
+        <!--/* La reference constructeur est l'ancre d'unicite de la piece : saisissable a
              la creation, affichee mais figee a l'edition (champ cache pour la validation,
-             ignoree par le service). -->
+             ignoree par le service). */-->
         <div class="champ" th:unless="${edition}">
             <label for="referenceFabricant" th:text="#{admin.catalogue.champ.reference-fabricant}">Référence constructeur</label>
             <input type="text" id="referenceFabricant" th:field="*{referenceFabricant}"
@@ -159,8 +159,8 @@
         </p>
     </form>
 
-    <!-- BL-7 : historique des modifications de cet article, en consultation seule.
-         Affiche uniquement en edition : un article qu'on cree n'a pas de passe. -->
+    <!--/* BL-7 : historique des modifications de cet article, en consultation seule.
+         Affiche uniquement en edition : un article qu'on cree n'a pas de passe. */-->
     <section th:if="${edition and historique != null and !#lists.isEmpty(historique)}">
         <h2 th:text="#{admin.journal.article.titre}">Historique des modifications</h2>
         <div class="defilement" tabindex="0" role="region" aria-labelledby="legende-admin-catalogue-piece-formulaire">

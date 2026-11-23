@@ -3,7 +3,7 @@
 <head><meta charset="UTF-8"><title>Fragments anti-robot</title></head>
 <body>
 
-<!--
+<!--/*
   Deux controles passifs, a inserer dans tout formulaire public. Voir PiegeAntiBot
   pour ce qu'ils valent : ils ecartent le robot generique, pas l'adversaire determine.
 
@@ -16,7 +16,7 @@
   Le masquage passe par une classe CSS et non par type="hidden" : un champ cache par
   l'attribut n'est pas rempli par un robot naif, qui ne vise que les champs visibles
   du DOM. C'est le contraire de l'effet recherche.
--->
+*/-->
 <th:block th:fragment="pieges(horodatage)">
     <div class="piege" aria-hidden="true">
         <label for="societe">Société</label>
@@ -25,14 +25,14 @@
     <input type="hidden" name="affiche" th:value="${horodatage}">
 </th:block>
 
-<!--
+<!--/*
   Widget Turnstile. Rendu seulement si une cle de site est configuree : sans elle,
   le formulaire fonctionne sur les trois autres couches, et afficher un widget vide
   n'apprendrait rien au visiteur sinon que quelque chose ne va pas.
 
   Le script vient de challenges.cloudflare.com, autorise dans script-src. La trame
   qu'il ouvre l'est par frame-src. Voir SecuriteConfig pour la politique complete.
--->
+*/-->
 <th:block th:fragment="turnstile(cleSite)" th:if="${cleSite != null and !cleSite.isEmpty()}">
     <div class="cf-turnstile" th:attr="data-sitekey=${cleSite}"></div>
     <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>

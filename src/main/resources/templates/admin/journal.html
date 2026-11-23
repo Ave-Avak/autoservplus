@@ -16,8 +16,8 @@
         Consultation seule : ces traces sont écrites par les transactions métier et ne peuvent pas être modifiées ici.
     </p>
 
-    <!-- GET et non POST : filtrer est une lecture, et l'URL obtenue doit pouvoir
-         être partagée ou remise en favori. -->
+    <!--/* GET et non POST : filtrer est une lecture, et l'URL obtenue doit pouvoir
+         être partagée ou remise en favori. */-->
     <form th:action="@{/admin/journal}" method="get">
         <p>
             <label for="type" th:text="#{admin.journal.filtre.type}">Type</label>
@@ -36,8 +36,8 @@
             <label for="acteur" th:text="#{admin.journal.filtre.acteur}">Acteur (nom ou prénom)</label>
             <input type="text" id="acteur" name="acteur" th:value="${acteur}" maxlength="120">
         </p>
-        <!-- Dates rendues en ISO, jamais via th:field : le format belge casserait la
-             validation du navigateur (piège documenté). -->
+        <!--/* Dates rendues en ISO, jamais via th:field : le format belge casserait la
+             validation du navigateur (piège documenté). */-->
         <p>
             <label for="depuis" th:text="#{admin.journal.filtre.depuis}">Du</label>
             <input type="date" id="depuis" name="depuis"
@@ -76,8 +76,8 @@
             <tr th:each="e : ${entrees}">
                 <td th:text="${e.date()}">23 août 2026</td>
                 <td th:text="#{'admin.journal.type.' + ${e.type()}}">Catalogue</td>
-                <!-- Auteur inconnu : compte anonymisé (F23) ou écriture système. On le dit
-                     plutôt que de laisser une cellule vide, qui se lirait comme une perte. -->
+                <!--/* Auteur inconnu : compte anonymisé (F23) ou écriture système. On le dit
+                     plutôt que de laisser une cellule vide, qui se lirait comme une perte. */-->
                 <td th:text="${e.acteurConnu()} ? ${e.acteur()} : #{admin.journal.acteur-inconnu}">Marie Dupont</td>
                 <td th:text="${e.cible()}">ITV-2026-0011</td>
                 <td th:text="${e.detail()}">EN_COURS, puis TERMINEE</td>

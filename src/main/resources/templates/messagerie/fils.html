@@ -26,8 +26,8 @@
         <li th:each="f : ${fils}">
             <p>
                 <a th:href="@{/mes-messages/{ref}(ref=${f.reference()})}" th:text="${f.sujet()}">Question sur ma vidange</a>
-                <!-- Marqueur textuel et non seulement coloré : un lecteur d'écran doit
-                     percevoir qu'un fil attend une lecture. -->
+                <!--/* Marqueur textuel et non seulement coloré : un lecteur d'écran doit
+                     percevoir qu'un fil attend une lecture. */-->
                 <span th:if="${f.aDesNonLus()}" class="badge" th:text="#{messagerie.non-lus(${f.nombreNonLus()})}">2 non lus</span>
                 <span th:if="${f.cloturee()}" class="badge" th:text="#{messagerie.clos}">Clôturé</span>
             </p>

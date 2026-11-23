@@ -178,9 +178,13 @@ class PremiereVisiteSansSessionIT extends SocleIntegration {
     @DisplayName("Tampon réel de 8192 octets")
     class TamponReel {
 
-        /** Les quatre pages où le défaut a été constaté, et où il se reproduit sur une version sans le correctif. */
+        /**
+         * Trois des quatre pages où le défaut a été constaté, et où il se reproduit sur une
+         * version sans le correctif. La page de contact n'y figure plus : ses commentaires de
+         * gabarit ne partant plus dans la page, elle tient sous le tampon.
+         */
         @ParameterizedTest(name = "{0}")
-        @ValueSource(strings = {"/services", "/cgv", "/confidentialite", "/contact"})
+        @ValueSource(strings = {"/services", "/cgv", "/confidentialite"})
         @DisplayName("sans aucun cookie, une page longue arrive entière, bandeau compris")
         void pageLongue(String adresse) throws Exception {
             HttpResponse<String> reponse;

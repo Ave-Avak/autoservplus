@@ -38,9 +38,9 @@
             </thead>
             <tbody>
             <tr th:each="commande : ${commandes}">
-                <!-- Le numero mene au detail (F32). Un lien porte sur le numero plutot
+                <!--/* Le numero mene au detail (F32). Un lien porte sur le numero plutot
                      qu'une ligne entiere rendue cliquable en JavaScript : il s'annonce au
-                     lecteur d'ecran, s'atteint au clavier et s'ouvre dans un onglet. -->
+                     lecteur d'ecran, s'atteint au clavier et s'ouvre dans un onglet. */-->
                 <th scope="row">
                     <a th:href="@{/commandes/{ref}(ref=${commande.reference()})}"
                        th:text="${commande.numero()}">CMD-2026-0001</a>
@@ -49,8 +49,8 @@
                 <td th:text="${commande.totalTvac()}">48,38 €</td>
                 <td th:text="#{'commande.statut.' + ${commande.statut().name()}}">Payée</td>
                 <td>
-                    <!-- Le lien n'apparait que si la facture existe : une commande non
-                         payee n'a pas de facture, et n'en aura pas tant qu'elle ne l'est pas. -->
+                    <!--/* Le lien n'apparait que si la facture existe : une commande non
+                         payee n'a pas de facture, et n'en aura pas tant qu'elle ne l'est pas. */-->
                     <a th:if="${commande.estFacturee()}"
                        th:href="@{/factures/{ref}/pdf(ref=${commande.referenceFacture()})}"
                        th:text="#{commandes.telecharger(${commande.numeroFacture()})}">
@@ -60,17 +60,17 @@
                           th:text="${commande.statut().name() == 'EN_ATTENTE_PAIEMENT'}
                                    ? #{commandes.facture.apres-paiement} : #{commandes.facture.aucune}">Aucune facture</span>
                 </td>
-                <!-- Etat de retractation : porte par une carte separee, indexee par
+                <!--/* Etat de retractation : porte par une carte separee, indexee par
                      reference de commande. Le module vente ignore la retractation.
-                     C'est le gabarit qui fait la jointure. -->
+                     C'est le gabarit qui fait la jointure. */-->
                 <td th:with="retractation=${retractations[commande.reference()]}">
-                    <!-- Note de credit disponible : la demande a ete validee. -->
+                    <!--/* Note de credit disponible : la demande a ete validee. */-->
                     <a th:if="${retractation != null and retractation.aUnAvoir()}"
                        th:href="@{/avoirs/{ref}/pdf(ref=${retractation.referenceAvoir()})}"
                        th:text="#{commandes.avoir.telecharger(${retractation.numeroAvoir()})}">
                         Télécharger l'avoir AV-2026-0001
                     </a>
-                    <!-- Demande deposee, en attente de la decision du garage. -->
+                    <!--/* Demande deposee, en attente de la decision du garage. */-->
                     <span th:if="${retractation != null and retractation.estEnAttente()}"
                           class="badge badge-en_attente"
                           th:text="#{commandes.annulation.en-attente}">Demande en cours</span>
@@ -87,22 +87,22 @@
                                       and !retractation.aUnAvoir())}"
                           class="carte-meta" th:text="#{commandes.annulation.indisponible}">Annulation non disponible</span>
                 </td>
-                <!-- Reprise du paiement. Le bouton de la page de confirmation ne sert
+                <!--/* Reprise du paiement. Le bouton de la page de confirmation ne sert
                      qu'une fois : onglet fermé, prestataire indisponible au premier essai
                      ou simple retour plus tard, et la commande n'était plus payable nulle
                      part alors qu'elle le reste pendant tout son délai RM-21. Cet écran est
                      le seul où le membre la retrouve sans avoir gardé son adresse.
                      La condition n'est qu'un affichage : une requête forgée sur une
                      commande déjà payée, annulée ou appartenant à autrui est refusée par
-                     PaiementService.initierPaiement, qui porte la garde. -->
+                     PaiementService.initierPaiement, qui porte la garde. */-->
                 <td>
                     <form th:if="${commande.peutEtrePayee()}"
                           th:action="@{/commande/{ref}/payer(ref=${commande.reference()})}"
                           method="post">
-                        <!-- Plusieurs lignes peuvent attendre leur paiement : sans
+                        <!--/* Plusieurs lignes peuvent attendre leur paiement : sans
                              aria-label, la liste des boutons d'une page annoncerait
                              autant de « Procéder au paiement » indistinguables. Le
-                             libellé visible est complété, jamais remplacé (WCAG 2.5.3). -->
+                             libellé visible est complété, jamais remplacé (WCAG 2.5.3). */-->
                         <span th:if="${commande.paiementEchoue()}" class="carte-meta"
                               th:text="#{commandes.paiement.echoue}">Paiement échoué</span>
                         <button type="submit" class="btn-cta" th:unless="${commande.paiementEchoue()}"

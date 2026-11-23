@@ -16,9 +16,9 @@
         Journal des factures et des commandes sur une période, au format CSV, pour votre comptable.
     </p>
 
-    <!-- GET : un export est une lecture, l'URL doit pouvoir être remise en favori.
+    <!--/* GET : un export est une lecture, l'URL doit pouvoir être remise en favori.
          Deux boutons submit avec formaction : une seule saisie de période sert les
-         deux exports, plutôt que deux formulaires à remplir en double. -->
+         deux exports, plutôt que deux formulaires à remplir en double. */-->
     <form th:action="@{/admin/export/factures.csv}" method="get">
         <p>
             <label for="depuis" th:text="#{admin.export.depuis}">Du</label>

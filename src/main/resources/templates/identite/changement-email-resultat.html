@@ -11,9 +11,9 @@
 
 <a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
-<!-- En-tête PUBLIQUE : à cet instant la session vient d'être coupée, et le lien peut
+<!--/* En-tête PUBLIQUE : à cet instant la session vient d'être coupée, et le lien peut
      avoir été ouvert dans un navigateur jamais connecté. Un menu « Mon compte » y
-     mènerait vers un formulaire de connexion sans explication. -->
+     mènerait vers un formulaire de connexion sans explication. */-->
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
@@ -32,9 +32,9 @@
     <div th:if="${echec != null}">
         <h1 th:text="#{changement-email.resultat.echec.titre}">Lien inutilisable</h1>
         <div class="message message-erreur" role="alert" th:text="${echec}">Motif du refus.</div>
-        <!-- Aucun lien direct vers le formulaire : il est authentifié, et le membre
+        <!--/* Aucun lien direct vers le formulaire : il est authentifié, et le membre
              arrive ici depuis sa boîte, souvent déconnecté. On le renvoie donc vers la
-             connexion, seul chemin qui aboutisse. -->
+             connexion, seul chemin qui aboutisse. */-->
         <p class="actions-page">
             <a class="btn-cta" th:href="@{/connexion}" th:text="#{nav.connexion}">Se connecter</a>
         </p>

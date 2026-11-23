@@ -25,8 +25,8 @@
 
         <fieldset>
             <legend th:text="#{avis.formulaire.note}">Votre note</legend>
-            <!-- Boutons radio et non une liste deroulante : les cinq valeurs sont
-                 visibles d'un coup et atteignables au clavier sans ouvrir de menu. -->
+            <!--/* Boutons radio et non une liste deroulante : les cinq valeurs sont
+                 visibles d'un coup et atteignables au clavier sans ouvrir de menu. */-->
             <p th:each="valeur : ${#numbers.sequence(1, 5)}">
                 <input type="radio" th:id="'note-' + ${valeur}" th:field="*{note}" th:value="${valeur}">
                 <label th:for="'note-' + ${valeur}" th:text="#{avis.note(${valeur})}">1 sur 5</label>

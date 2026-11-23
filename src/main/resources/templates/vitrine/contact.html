@@ -18,27 +18,27 @@
     <p th:text="#{vitrine.contact.intro}">Une question sur un devis, une pièce ou un rendez-vous ?</p>
 
     <section>
-        <!--
+        <!--/*
           Identité reprise du fragment partagé avec les pages légales : dénomination,
           adresse, BCE, TVA, téléphone et courriel sont les mentions exigées de tout
           professionnel vendant à distance (art. VI.45 CDE). Le fragment garantit
           qu'elles soient rigoureusement les mêmes ici et sur les mentions légales :
           deux copies finiraient par diverger, et une coordonnée périmée sur la page
           que le client consulte est exactement le défaut que l'article vise.
-        -->
+        */-->
         <h2 th:text="#{vitrine.contact.identite.titre}">Le garage</h2>
         <div th:replace="~{fragments/legal :: identite}"></div>
     </section>
 
     <section>
         <h2 th:text="#{vitrine.contact.horaires.titre}">Horaires d'ouverture</h2>
-        <!--
+        <!--/*
           Les horaires viennent de plage_ouverture, la table dont sont déduits les
           créneaux réservables : ce qui est affiché ici et ce que propose l'agenda ne
           peuvent pas diverger. Les sept jours sont rendus, fermetures comprises :
           sauter une ligne ne dirait pas au lecteur si le garage ferme ce jour-là ou
           si la saisie manque.
-        -->
+        */-->
         <dl class="horaires" th:attr="aria-label=#{vitrine.contact.horaires.aria}">
             <th:block th:each="jour : ${horaires}">
                 <dt th:text="#{__${jour.cleJour()}__}">Lundi</dt>
@@ -58,7 +58,7 @@
     <section>
         <h2 th:text="#{vitrine.contact.acces.titre}">Nous trouver</h2>
         <p th:text="#{vitrine.contact.acces.corps}">Le garage se situe à l'adresse reprise ci-dessus.</p>
-        <!--
+        <!--/*
           Plan d'accès = un LIEN sortant, pas une carte embarquée. Une carte interactive
           exigerait du JavaScript tiers et un assouplissement de la CSP (script-src reste
           'self'), et chargerait des tuiles depuis un domaine externe dès l'ouverture de
@@ -67,7 +67,7 @@
           rel="noopener noreferrer" : le service externe n'obtient ni handle sur notre
           fenêtre ni référent (la politique du site est déjà SAME_ORIGIN).
           L'adresse est construite depuis la configuration, jamais recopiée.
-        -->
+        */-->
         <p>
             <a th:href="'https://www.openstreetmap.org/search?query=' + ${#uris.escapeQueryParam(garage.adresseLisible() + ', ' + garage.pays())}"
                target="_blank" rel="noopener noreferrer"

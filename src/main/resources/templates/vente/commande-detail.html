@@ -27,9 +27,9 @@
         <dt th:text="#{commandes.colonne.statut}">Statut</dt>
         <dd th:text="#{'commande.statut.' + ${commande.statut().name()}}">Payée</dd>
 
-        <!-- Paiement : la section n'apparait que si un paiement a abouti. Une commande
+        <!--/* Paiement : la section n'apparait que si un paiement a abouti. Une commande
              en attente n'a pas de mode de paiement, et laisser une case vide donnerait
-             a croire a une information perdue. -->
+             a croire a une information perdue. */-->
         <th:block th:if="${commande.paiementRecuApresAnnulation()}">
             <dt th:text="#{commande.detail.paiement-tardif.recu}">Paiement reçu après l'annulation</dt>
             <dd th:text="${#temporals.format(commande.recuApresAnnulationLe(), 'dd/MM/yyyy')}">21/11/2026</dd>
@@ -41,9 +41,9 @@
         <th:block th:if="${commande.estPayee() and !commande.paiementRecuApresAnnulation()}">
             <dt th:text="#{commande.detail.mode-paiement}">Mode de paiement</dt>
             <dd th:if="${commande.methodePaiementConnue()}" th:text="${commande.methodePaiement()}">Bancontact</dd>
-            <!-- Le moyen employe est constate chez le prestataire. Le bouchon de
+            <!--/* Le moyen employe est constate chez le prestataire. Le bouchon de
                  developpement ne le renseigne pas. On le dit plutot que d'afficher un
-                 moyen inventé. -->
+                 moyen inventé. */-->
             <dd th:unless="${commande.methodePaiementConnue()}" class="carte-meta"
                 th:text="#{commande.detail.mode-paiement.inconnu}">En ligne (moyen non communiqué)</dd>
 
@@ -93,8 +93,8 @@
                 <td th:text="${ligne.totalTvac()}">48,40 €</td>
             </tr>
             </tbody>
-            <!-- Totaux repris de la commande, pas recalcules : ce sont ceux qui ont ete
-                 factures et encaisses. -->
+            <!--/* Totaux repris de la commande, pas recalcules : ce sont ceux qui ont ete
+                 factures et encaisses. */-->
             <tfoot>
             <tr>
                 <th scope="row" colspan="4" th:text="#{commande.detail.total-htva}">Total HTVA</th>
@@ -115,12 +115,12 @@
     <h2 th:text="#{commande.detail.documents}">Documents et démarches</h2>
 
     <ul class="liste-actions">
-        <!-- Reprise du paiement, même raison qu'à la liste : le bouton de la page de
+        <!--/* Reprise du paiement, même raison qu'à la liste : le bouton de la page de
              confirmation ne sert qu'une fois, et une commande non payée reste payable
              pendant tout son délai RM-21. La condition n'est qu'un affichage : la
              garde vit dans PaiementService.initierPaiement, qui refuse une commande
              déjà payée, annulée ou appartenant à autrui. En tête de liste : c'est la
-             seule démarche qui expire. -->
+             seule démarche qui expire. */-->
         <li th:if="${commande.paiementEnCours()}" role="status" th:text="#{commande.paiement.en-cours}">
             Un paiement de cette commande est en cours de traitement chez le prestataire.
         </li>
@@ -143,8 +143,8 @@
             </form>
         </li>
 
-        <!-- Mêmes conditions qu'à la liste, sur les mêmes vues : une commande non
-             payee n'a pas de facture, et n'en aura pas tant qu'elle ne l'est pas. -->
+        <!--/* Mêmes conditions qu'à la liste, sur les mêmes vues : une commande non
+             payee n'a pas de facture, et n'en aura pas tant qu'elle ne l'est pas. */-->
         <li th:if="${commande.estFacturee()}">
             <a th:href="@{/factures/{ref}/pdf(ref=${commande.referenceFacture()})}"
                th:text="#{commandes.telecharger(${commande.numeroFacture()})}">
@@ -163,8 +163,8 @@
             <span class="badge badge-en_attente" th:text="#{commandes.annulation.en-attente}">Demande en cours</span>
         </li>
 
-        <!-- Eligibilite calculee par RetractationService, partagee avec la liste :
-             le bouton ne peut pas apparaitre ici et manquer la-bas. -->
+        <!--/* Eligibilite calculee par RetractationService, partagee avec la liste :
+             le bouton ne peut pas apparaitre ici et manquer la-bas. */-->
         <li th:if="${retractation != null and retractation.demandable()}">
             <a th:href="@{/commandes/{ref}/annulation(ref=${commande.reference()})}"
                th:text="#{commandes.annulation.demander}">Demander l'annulation</a>

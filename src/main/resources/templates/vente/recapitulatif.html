@@ -18,8 +18,8 @@
 
     <h1 id="titre-vente-recapitulatif" th:text="#{commande.recap.titre}">Récapitulatif de commande</h1>
 
-    <!-- Refus de conversion lies aux lignes (stock, piece inactive) : le message
-         actionnable s affiche au-dessus du tableau concerne. -->
+    <!--/* Refus de conversion lies aux lignes (stock, piece inactive) : le message
+         actionnable s affiche au-dessus du tableau concerne. */-->
     <div class="message message-erreur" th:if="${erreurLignes}" role="alert"
          th:text="${erreurLignes}">Erreur</div>
 
@@ -33,7 +33,7 @@
     <div class="message message-erreur" th:if="${panier.contientPieceInactive()}" role="alert"
          th:text="#{panier.avertissement.piece-inactive}">Certains articles ne sont plus vendus.</div>
 
-    <!-- RM-30 : detail HTVA / TVA / TVAC par ligne et en totaux, valeurs figees. -->
+    <!--/* RM-30 : detail HTVA / TVA / TVAC par ligne et en totaux, valeurs figees. */-->
     <div class="defilement" tabindex="0" role="region" aria-labelledby="titre-vente-recapitulatif">
         <table class="tableau">
             <thead>
@@ -73,9 +73,9 @@
         </table>
     </div>
 
-    <!-- F24 : acceptation des CGV exigee avant la commande, revalidee cote serveur.
+    <!--/* F24 : acceptation des CGV exigee avant la commande, revalidee cote serveur.
          Le bouton porte la mention imposee par l'art. VI.45 CDE (cle commande.bouton) :
-         « Commande avec obligation de paiement ». -->
+         « Commande avec obligation de paiement ». */-->
     <form th:action="@{/commande}" method="post" class="formulaire" novalidate>
         <div class="champ champ-case">
             <input type="checkbox" id="cgv" name="cgv" value="true" required
@@ -90,12 +90,12 @@
                th:text="${erreurCgv}">Erreur</p>
         </div>
 
-        <!-- F12 / art. VI.53 CDE : présentée UNIQUEMENT si le panier contient un
+        <!--/* F12 / art. VI.53 CDE : présentée UNIQUEMENT si le panier contient un
              service, et JAMAIS pré-cochée, une case pré-cochée vaudrait consentement
              implicite. Elle n'est pas non plus « required » : le client reste libre de
              conserver son droit de rétractation. Son état est enregistré dans les DEUX
              cas, sans quoi l'absence de trace serait ambiguë entre « a refusé » et
-             « jamais interrogé ». La présentation est revalidée côté serveur. -->
+             « jamais interrogé ». La présentation est revalidée côté serveur. */-->
         <div class="champ" th:if="${panier.contientService()}">
             <input type="checkbox" id="renonciationVi53" name="renonciationVi53" value="true">
             <label for="renonciationVi53" th:text="#{commande.vi53.libelle}">

@@ -18,9 +18,9 @@
 
     <p th:text="#{changement-email.actuelle(${email})}">Votre adresse actuelle est adresse@exemple.be.</p>
 
-    <!-- Le point essentiel pour le membre : rien ne change tant qu'il n'a pas cliqué
+    <!--/* Le point essentiel pour le membre : rien ne change tant qu'il n'a pas cliqué
          le lien. Le taire ferait croire à un basculement immédiat, et une saisie
-         erronée serait vécue comme la perte du compte. -->
+         erronée serait vécue comme la perte du compte. */-->
     <p class="texte-info" th:text="#{changement-email.aide}">
         Votre adresse ne changera qu'après confirmation du lien envoyé à la nouvelle adresse.</p>
 
@@ -40,8 +40,8 @@
 
         <div class="champ">
             <label for="motDePasse" th:text="#{changement-email.mot-de-passe}">Votre mot de passe</label>
-            <!-- Jamais th:field sur ce champ : il repeuplerait la valeur au retour
-                 d'erreur, donc renverrait le mot de passe dans la page. -->
+            <!--/* Jamais th:field sur ce champ : il repeuplerait la valeur au retour
+                 d'erreur, donc renverrait le mot de passe dans la page. */-->
             <input type="password" id="motDePasse" name="motDePasse"
                    autocomplete="current-password" required>
             <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motDePasse')}"

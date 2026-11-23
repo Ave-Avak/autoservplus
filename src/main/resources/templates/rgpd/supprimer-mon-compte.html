@@ -22,9 +22,9 @@
         Vous exercez votre droit à l'effacement (article 17 du RGPD).
     </p>
 
-    <!-- Dire ce qui est conservé AVANT l'action, pas après : une confirmation qui
+    <!--/* Dire ce qui est conservé AVANT l'action, pas après : une confirmation qui
          annoncerait « tout est effacé » serait fausse, et la personne découvrirait
-         la conservation comptable au pire moment. -->
+         la conservation comptable au pire moment. */-->
     <h2 th:text="#{suppression.effets.titre}">Ce qui se passe</h2>
     <ul>
         <li th:text="#{suppression.effets.donnees}">Vos données personnelles sont effacées.</li>
@@ -34,8 +34,8 @@
         <li th:text="#{suppression.effets.irreversible}">L'opération est irréversible.</li>
     </ul>
 
-    <!-- Rappel non bloquant de portabilité : proposer l'export F22 avant un
-         effacement définitif est la bonne pratique, pas une étape obligatoire. -->
+    <!--/* Rappel non bloquant de portabilité : proposer l'export F22 avant un
+         effacement définitif est la bonne pratique, pas une étape obligatoire. */-->
     <p class="texte-info">
         <span th:text="#{suppression.export.rappel}">Pensez à exporter vos données avant.</span>
         <a th:href="@{/mes-donnees}" th:text="#{suppression.export.lien}">Exporter mes données</a>

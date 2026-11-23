@@ -15,9 +15,9 @@
 
     <nav class="grille-articles" th:attr="aria-label=#{compte.sections}"
          aria-label="Sections de mon compte">
-        <!-- En tete : c'est ici que le membre corrige son nom, son adresse et sa
+        <!--/* En tete : c'est ici que le membre corrige son nom, son adresse et sa
              langue. La langue enregistree vaut pour ses prochaines connexions et
-             pour ses documents PDF (F6). -->
+             pour ses documents PDF (F6). */-->
         <a class="carte carte-lien" th:href="@{/mon-profil}">
             <h2 th:text="#{profil.titre}">Mon profil</h2>
             <p th:text="#{profil.carte.description}">Modifiez votre nom, vos coordonnées
@@ -55,10 +55,10 @@
             <p th:text="#{rgpd.donnees.carte.description}">Consultez le droit d'accès et
                 exportez les données que nous détenons sur vous.</p>
         </a>
-        <!-- F23 : droit a l'effacement (art. 17 RGPD). Place apres l'export : la
+        <!--/* F23 : droit a l'effacement (art. 17 RGPD). Place apres l'export : la
              portabilite se propose avant la suppression, pas apres. Reserve au
              membre. Un compte du back-office se ferme par le super-administrateur :
-             le garage garde un gestionnaire, et le journal d'audit ses auteurs. -->
+             le garage garde un gestionnaire, et le journal d'audit ses auteurs. */-->
         <a class="carte carte-lien" sec:authorize="!hasRole('ADMINISTRATEUR')"
            th:href="@{/supprimer-mon-compte}">
             <h2 th:text="#{suppression.titre}">Supprimer mon compte</h2>

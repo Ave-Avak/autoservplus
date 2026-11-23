@@ -18,8 +18,8 @@
 
     <p role="alert" class="message message-erreur" th:if="${erreur}" th:text="${erreur}">Import refusé.</p>
 
-    <!-- Tout ou rien : le rapport décrit ce qui A été fait si l'import a réussi, et ce
-         qui AURAIT été fait s'il a été refusé. -->
+    <!--/* Tout ou rien : le rapport décrit ce qui A été fait si l'import a réussi, et ce
+         qui AURAIT été fait s'il a été refusé. */-->
     <section th:if="${rapport}">
         <h2 th:text="#{admin.import.rapport}">Rapport d'import</h2>
         <p th:text="#{admin.import.bilan(${rapport.crees()}, ${rapport.misAJour()}, ${rapport.erreurs().size()})}">

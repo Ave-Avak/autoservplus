@@ -33,9 +33,9 @@
         Un dossier existe déjà : ITV-2026-0011.
     </p>
 
-    <!-- Le véhicule est demandé ICI parce que intervention.vehicule_id est NOT NULL et
+    <!--/* Le véhicule est demandé ICI parce que intervention.vehicule_id est NOT NULL et
          qu'une prestation achetée en ligne n'est rattachée à aucun véhicule au moment
-         de l'achat. C'est aussi le bon moment : l'atelier sait sur quoi il travaille. -->
+         de l'achat. C'est aussi le bon moment : l'atelier sait sur quoi il travaille. */-->
     <p th:if="${!commande.dejaPlanifiee() and commande.sansVehicule()}"
        th:text="#{admin.planification.sans-vehicule}">
         Ce client n'a aucun véhicule enregistré : il doit en ajouter un avant l'ouverture du dossier.

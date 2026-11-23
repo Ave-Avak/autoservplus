@@ -26,8 +26,8 @@
 
     <ul class="galerie" th:unless="${#lists.isEmpty(photos)}">
         <li th:each="p : ${photos}">
-            <!-- L'URL porte l'identifiant de la ligne, jamais le chemin du fichier :
-                 le chemin réel est résolu côté serveur. -->
+            <!--/* L'URL porte l'identifiant de la ligne, jamais le chemin du fichier :
+                 le chemin réel est résolu côté serveur. */-->
             <img th:src="@{/images/galerie/{id}(id=${p.id()})}" th:alt="${p.texteAlt()}"
                  width="200" alt="">
             <p class="carte-meta" th:text="${p.texteAlt()}">Vidange terminée</p>
@@ -45,8 +45,8 @@
           method="post" enctype="multipart/form-data">
         <p>
             <label for="fichiers" th:text="#{admin.galerie.fichiers}">Images</label>
-            <!-- accept ne fait que guider le sélecteur : le contrôle réel est fait sur
-                 les octets d'en-tête côté serveur, jamais sur ce que le client annonce. -->
+            <!--/* accept ne fait que guider le sélecteur : le contrôle réel est fait sur
+                 les octets d'en-tête côté serveur, jamais sur ce que le client annonce. */-->
             <input type="file" id="fichiers" name="fichiers" multiple required
                    th:accept="${typesAdmis}">
         </p>
@@ -54,8 +54,8 @@
             Formats admis : .jpg, .png, .webp
         </p>
         <p>
-            <!-- Obligatoire : une image sans alternative textuelle est invisible pour
-                 un lecteur d'écran (WCAG 2.1 AA, critère 1.1.1). -->
+            <!--/* Obligatoire : une image sans alternative textuelle est invisible pour
+                 un lecteur d'écran (WCAG 2.1 AA, critère 1.1.1). */-->
             <label for="texteAlt" th:text="#{admin.galerie.texte-alt}">Description de l'image</label>
             <input type="text" id="texteAlt" name="texteAlt" maxlength="200" required>
         </p>

@@ -30,8 +30,8 @@
         </li>
     </ol>
 
-    <!-- Répondre ne rouvre pas : la réouverture reste un geste explicite, sans quoi
-         une réponse relancerait un dossier que le garage venait de clore. -->
+    <!--/* Répondre ne rouvre pas : la réouverture reste un geste explicite, sans quoi
+         une réponse relancerait un dossier que le garage venait de clore. */-->
     <p th:if="${fil.cloturee()}" th:text="#{admin.messagerie.clos.explication}">
         Ce fil est clôturé. Rouvrez-le depuis la liste pour pouvoir y répondre.
     </p>
