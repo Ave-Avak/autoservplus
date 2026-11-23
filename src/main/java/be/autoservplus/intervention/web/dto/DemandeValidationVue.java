@@ -18,7 +18,9 @@ import java.util.UUID;
  * {@code RdvVue}. Ici l information tarifaire est l objet meme de la question posee.
  * Un accord donne sans voir le prix de chaque poste ne serait pas un accord expres.</p>
  *
- * <p>Tous les montants sont en HTVA, comme le seuil qu ils servent a expliquer.</p>
+ * <p>Les montants sont hors TVA, comme le seuil qu'ils servent à expliquer, sauf
+ * {@code totalProposeTvac} : le membre accepte un montant à payer, il le voit taxe comprise
+ * (RM-30).</p>
  */
 public record DemandeValidationVue(
         UUID reference,
@@ -26,6 +28,7 @@ public record DemandeValidationVue(
         String vehicule,
         String devisInitial,
         String totalPropose,
+        String totalProposeTvac,
         String ecart,
         String commentaireAdmin,
         List<LigneProposeeVue> lignesEnAttente) {
@@ -40,6 +43,7 @@ public record DemandeValidationVue(
                 vehicule.getMarque() + " " + vehicule.getModele() + " (" + vehicule.getPlaque() + ")",
                 FormatageRdv.eurosEcran(initial),
                 FormatageRdv.eurosEcran(propose),
+                FormatageRdv.eurosEcran(it.totalProposeTvac()),
                 FormatageRdv.eurosEcran(propose.subtract(initial)),
                 it.getCommentaireAdmin(),
                 it.lignesEnAttente().stream().map(LigneProposeeVue::de).toList());

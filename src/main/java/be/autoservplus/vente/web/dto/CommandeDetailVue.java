@@ -1,5 +1,6 @@
 package be.autoservplus.vente.web.dto;
 
+import be.autoservplus.common.montant.CalculTva;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
@@ -40,6 +41,11 @@ public record CommandeDetailVue(
         List<LigneVue> lignes,
         String totalHtva,
         String totalTva,
+        /**
+         * TVA de chaque taux, recalculée des lignes affichées. Vide quand le détail ne porte
+         * aucune ligne : l'écran montre alors la TVA totale de la commande.
+         */
+        List<TvaParTauxVue> tvaParTaux,
         String totalTvac,
         String methodePaiement,
         java.time.LocalDateTime datePaiement,
@@ -61,7 +67,7 @@ public record CommandeDetailVue(
             int quantite,
             String prixUnitaireHtva,
             String tauxTva,
-            String totalHtva,
+            String prixUnitaireTvac,
             String totalTvac) {
 
         static LigneVue de(LignePanier ligne) {
@@ -70,7 +76,7 @@ public record CommandeDetailVue(
                     ligne.getQuantite(),
                     FormatageRdv.eurosEcran(ligne.getPrixUnitaireHtva()),
                     pourcentage(ligne.getTauxTva()),
-                    FormatageRdv.eurosEcran(ligne.totalHtva()),
+                    FormatageRdv.eurosEcran(ligne.prixUnitaireTvac()),
                     FormatageRdv.eurosEcran(ligne.totalTvac()));
         }
 
@@ -99,6 +105,7 @@ public record CommandeDetailVue(
                 lignes.stream().map(LigneVue::de).toList(),
                 FormatageRdv.eurosEcran(commande.getMontantHtva()),
                 FormatageRdv.eurosEcran(commande.getMontantTva()),
+                tvaParTaux(lignes),
                 FormatageRdv.eurosEcran(commande.getMontantTvac()),
                 paiement == null ? null : paiement.getMethode(),
                 paiement == null ? null : local(paiement.getDateFinalisation(), zone),
@@ -106,6 +113,13 @@ public record CommandeDetailVue(
                 situation, null, null,
                 paiement == null ? null : local(paiement.getRecuApresAnnulationLe(), zone),
                 paiement == null ? null : local(paiement.getRembourseLe(), zone));
+    }
+
+    /** TVA par taux des lignes données, par le même calcul que la facture. */
+    static List<TvaParTauxVue> tvaParTaux(List<LignePanier> lignes) {
+        return TvaParTauxVue.de(CalculTva.ventiler(lignes.stream()
+                .map(ligne -> new CalculTva.MontantTaxe(ligne.getTauxTva(), ligne.totalTvac()))
+                .toList()));
     }
 
     private static java.time.LocalDateTime local(java.time.Instant instant, ZoneId zone) {
@@ -127,7 +141,7 @@ public record CommandeDetailVue(
     /** Le meme detail, augmente du lien vers sa facture. */
     public CommandeDetailVue avecFacture(UUID referenceFacture, String numeroFacture) {
         return new CommandeDetailVue(reference, numero, date, statut, lignes,
-                totalHtva, totalTva, totalTvac, methodePaiement, datePaiement,
+                totalHtva, totalTva, tvaParTaux, totalTvac, methodePaiement, datePaiement,
                 statutPaiement, situation, referenceFacture, numeroFacture,
                 recuApresAnnulationLe, rembourseApresAnnulationLe);
     }

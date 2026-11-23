@@ -62,7 +62,11 @@
         </div>
         <div>
             <dt th:text="#{intervention.validation.nouveau-total}">Nouveau total si vous acceptez</dt>
-            <dd><strong th:text="${demande.totalPropose()}">138,00 €</strong></dd>
+            <dd th:text="${demande.totalPropose()}">138,00 €</dd>
+        </div>
+        <div>
+            <dt th:text="#{intervention.validation.nouveau-total-tvac}">Montant à payer, TVA comprise, si vous acceptez</dt>
+            <dd><strong th:text="${demande.totalProposeTvac()}">166,98 €</strong></dd>
         </div>
     </dl>
 

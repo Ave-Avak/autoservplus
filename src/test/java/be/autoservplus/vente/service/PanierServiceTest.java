@@ -14,6 +14,7 @@ import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Panier;
 import be.autoservplus.vente.repository.PanierRepository;
 import be.autoservplus.vente.web.dto.PanierVue;
+import be.autoservplus.vente.web.dto.TvaParTauxVue;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -164,10 +165,11 @@ class PanierServiceTest {
 
             PanierVue vue = service.panierDuMembre(EMAIL);
             PanierVue.LignePanierVue ligne = vue.lignes().get(0);
-            assertThat(ligne.prixUnitaireHtva()).isEqualTo(FormatageRdv.euros(new BigDecimal("19.99")));
-            assertThat(ligne.tauxTva()).isEqualTo("21");
-            // 19,99 x 2 = 39,98 HTVA : sur le prix d'entree au panier, pas les 99,99 du jour.
-            assertThat(ligne.totalHtva()).isEqualTo(FormatageRdv.euros(new BigDecimal("39.98")));
+            // 19,99 à 21 %, soit 24,19 taxe comprise : le prix et le taux d'entrée au panier,
+            // pas les 99,99 à 6 % du jour.
+            assertThat(ligne.prixUnitaireTvac()).isEqualTo(FormatageRdv.euros(new BigDecimal("24.19")));
+            assertThat(ligne.totalTvac()).isEqualTo(FormatageRdv.euros(new BigDecimal("48.38")));
+            assertThat(vue.tvaParTaux()).extracting(TvaParTauxVue::taux).containsExactly("21");
         }
 
         @Test
@@ -374,7 +376,7 @@ class PanierServiceTest {
          * est la seule lecture correcte de RM-30.
          */
         @Test
-        @DisplayName("taux mixtes 6 % et 21 % : totaux sommes ligne a ligne, arrondis HALF_UP")
+        @DisplayName("taux mixtes 6 % et 21 % : prix taxe comprise par ligne, base et TVA par taux")
         void tauxMixtes() {
             Panier panier = new Panier(marie);
             panier.ajouterPiece(ampoule, 3);
@@ -385,15 +387,17 @@ class PanierServiceTest {
 
             assertThat(vue.nombreArticles()).isEqualTo(5);
             PanierVue.LignePanierVue ligneAmpoule = vue.lignes().get(0);
-            assertThat(ligneAmpoule.totalHtva()).isEqualTo(FormatageRdv.euros(new BigDecimal("30.03")));
-            assertThat(ligneAmpoule.totalTva()).isEqualTo(FormatageRdv.euros(new BigDecimal("1.80")));
+            assertThat(ligneAmpoule.prixUnitaireTvac()).isEqualTo(FormatageRdv.euros(new BigDecimal("10.61")));
             assertThat(ligneAmpoule.totalTvac()).isEqualTo(FormatageRdv.euros(new BigDecimal("31.83")));
-            assertThat(ligneAmpoule.tauxTva()).isEqualTo("6");
 
             PanierVue.LignePanierVue lignePlaquettes = vue.lignes().get(1);
-            assertThat(lignePlaquettes.totalHtva()).isEqualTo(FormatageRdv.euros(new BigDecimal("39.98")));
-            assertThat(lignePlaquettes.totalTva()).isEqualTo(FormatageRdv.euros(new BigDecimal("8.40")));
+            assertThat(lignePlaquettes.prixUnitaireTvac()).isEqualTo(FormatageRdv.euros(new BigDecimal("24.19")));
             assertThat(lignePlaquettes.totalTvac()).isEqualTo(FormatageRdv.euros(new BigDecimal("48.38")));
+
+            // Une ligne de TVA par taux, par taux croissant.
+            assertThat(vue.tvaParTaux()).containsExactly(
+                    new TvaParTauxVue("6", FormatageRdv.euros(new BigDecimal("1.80"))),
+                    new TvaParTauxVue("21", FormatageRdv.euros(new BigDecimal("8.40"))));
 
             assertThat(vue.totalHtva()).isEqualTo(FormatageRdv.euros(new BigDecimal("70.01")));
             assertThat(vue.totalTva()).isEqualTo(FormatageRdv.euros(new BigDecimal("10.20")));

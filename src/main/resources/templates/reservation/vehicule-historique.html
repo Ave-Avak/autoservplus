@@ -30,6 +30,7 @@
                 <th scope="col" th:text="#{historique.colonne.date}">Date</th>
                 <th scope="col" th:text="#{historique.colonne.reference}">Référence</th>
                 <th scope="col" th:text="#{historique.colonne.travaux}">Prestations et pièces</th>
+                <th scope="col" th:text="#{historique.colonne.total}">Total TVAC</th>
                 <th scope="col" th:text="#{historique.colonne.statut}">Statut</th>
             </tr>
             </thead>
@@ -44,6 +45,7 @@
                             th:text="#{${'historique.type.' + l.type()}} + ' : ' + ${l.libelle()} + ' x' + ${l.quantite()}">Prestation : Vidange x1</li>
                     </ul>
                 </td>
+                <td th:text="${i.totalTvac()}">59,29 €</td>
                 <td th:text="#{${i.clePercue()}}">Terminée</td>
             </tr>
             </tbody>

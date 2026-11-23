@@ -13,10 +13,10 @@ import java.util.UUID;
 /**
  * Vue du panier destinee au membre proprietaire (F13).
  *
- * <p><b>RM-30</b> : le detail HTVA / TVA / TVAC est expose par ligne et en totaux,
- * pre-formate en euros via {@code FormatageRdv} (convention du projet : le DTO
- * connait la locale monetaire, le template non). Les montants viennent des valeurs
- * <b>figees</b> des lignes, jamais du catalogue courant.</p>
+ * <p><b>RM-30</b> : les prix sont affichés taxe comprise, ligne par ligne, et les totaux
+ * donnent le hors TVA, la TVA par taux et le total taxe comprise. Une ligne n'a ni base ni
+ * TVA propres. Les montants sont pré-formatés en euros via {@code FormatageRdv} et viennent
+ * des valeurs <b>figées</b> des lignes, jamais du catalogue courant.</p>
  *
  * <p>Contrainte de <b>F13</b> : une piece devenue inactive apres son ajout reste
  * listee. Le drapeau {@code pieceActive} de la ligne et
@@ -28,6 +28,8 @@ public record PanierVue(
         int nombreArticles,
         String totalHtva,
         String totalTva,
+        /** TVA de chaque taux présent au panier, par taux croissant. */
+        List<TvaParTauxVue> tvaParTaux,
         String totalTvac,
         boolean estVide,
         boolean contientPieceInactive,
@@ -45,6 +47,7 @@ public record PanierVue(
                 panier.nombreArticles(),
                 FormatageRdv.eurosEcran(panier.totalHtva()),
                 FormatageRdv.eurosEcran(panier.totalTva()),
+                TvaParTauxVue.de(panier.ventilation()),
                 FormatageRdv.eurosEcran(panier.totalTvac()),
                 panier.estVide(),
                 // Ne porte que sur les pieces : une ligne de service n a pas de piece,
@@ -59,7 +62,7 @@ public record PanierVue(
     /** Panier jamais cree : la lecture ne provoque aucune ecriture, elle rend du vide. */
     public static PanierVue vide() {
         String zero = FormatageRdv.eurosEcran(BigDecimal.ZERO);
-        return new PanierVue(List.of(), 0, zero, zero, zero, true, false, false, false);
+        return new PanierVue(List.of(), 0, zero, zero, List.of(), zero, true, false, false, false);
     }
 
     public record LignePanierVue(
@@ -67,11 +70,8 @@ public record PanierVue(
             UUID referencePiece,
             String libelle,
             short quantite,
-            String prixUnitaireHtva,
-            /** Taux fige a l ajout, en pourcent sans decimales inutiles (« 6 », « 21 »). */
-            String tauxTva,
-            String totalHtva,
-            String totalTva,
+            /** Prix unitaire taxe comprise, au prix et au taux figés à l'ajout. */
+            String prixUnitaireTvac,
             String totalTvac,
             boolean pieceActive) {
 
@@ -84,10 +84,7 @@ public record PanierVue(
                     // Dans la langue de l'écran tant que la commande n'est pas conclue.
                     ligne.libelleAffiche(LanguesSupportees.plusProche(LocaleContextHolder.getLocale())),
                     ligne.getQuantite(),
-                    FormatageRdv.eurosEcran(ligne.getPrixUnitaireHtva()),
-                    ligne.getTauxTva().stripTrailingZeros().toPlainString(),
-                    FormatageRdv.eurosEcran(ligne.totalHtva()),
-                    FormatageRdv.eurosEcran(ligne.totalTva()),
+                    FormatageRdv.eurosEcran(ligne.prixUnitaireTvac()),
                     FormatageRdv.eurosEcran(ligne.totalTvac()),
                     // Un service inactif se signale comme une piece inactive : meme
                     // colonne a l ecran, meme sens pour le membre.

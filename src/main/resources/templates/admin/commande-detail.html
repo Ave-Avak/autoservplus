@@ -127,7 +127,6 @@
                 <th scope="col" th:text="#{commande.detail.colonne.quantite}">Quantité</th>
                 <th scope="col" th:text="#{commande.detail.colonne.prix-unitaire}">Prix unitaire HTVA</th>
                 <th scope="col" th:text="#{commande.detail.colonne.taux}">TVA</th>
-                <th scope="col" th:text="#{commande.detail.colonne.total-htva}">Total HTVA</th>
                 <th scope="col" th:text="#{commande.detail.colonne.total-tvac}">Total TVAC</th>
             </tr>
             </thead>
@@ -137,7 +136,6 @@
                 <td th:text="${l.quantite()}">2</td>
                 <td th:text="${l.prixUnitaireHtva()}">19,99 €</td>
                 <td th:text="${l.tauxTva()}">21 %</td>
-                <td th:text="${l.totalHtva()}">39,98 €</td>
                 <td th:text="${l.totalTvac()}">48,38 €</td>
             </tr>
             </tbody>
@@ -146,8 +144,14 @@
     <dl>
         <dt th:text="#{commande.detail.total-htva}">Total HTVA</dt>
         <dd th:text="${commande.totalHtva()}">39,98 €</dd>
-        <dt th:text="#{commande.detail.total-tva}">TVA</dt>
-        <dd th:text="${commande.totalTva()}">8,40 €</dd>
+        <th:block th:each="t : ${commande.tvaParTaux()}">
+            <dt th:text="#{panier.total.tva-taux(${t.taux()})}">TVA 21 %</dt>
+            <dd th:text="${t.montant()}">8,40 €</dd>
+        </th:block>
+        <th:block th:if="${commande.tvaParTaux().isEmpty()}">
+            <dt th:text="#{commande.detail.total-tva}">TVA</dt>
+            <dd th:text="${commande.totalTva()}">8,40 €</dd>
+        </th:block>
         <dt th:text="#{commande.detail.total-tvac}">Total TVAC</dt>
         <dd th:text="${commande.totalTvac()}">48,38 €</dd>
     </dl>

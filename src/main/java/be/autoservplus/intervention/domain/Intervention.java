@@ -514,6 +514,18 @@ public class Intervention extends BaseEntity {
         return sommeHtva(l -> !l.estRefusee());
     }
 
+    /**
+     * Ce que le membre paierait, taxe comprise, s'il accepte tout ce qui lui est proposé. Le
+     * seuil de RM-15 se mesure hors TVA, mais c'est un montant à payer qu'il accepte.
+     */
+    public BigDecimal totalProposeTvac() {
+        return lignes.stream()
+                .filter(l -> !l.estRefusee())
+                .map(LigneIntervention::totalTvac)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
     public BigDecimal totalFacturableTvac() {
         return lignes.stream()
                 .filter(LigneIntervention::estFacturable)

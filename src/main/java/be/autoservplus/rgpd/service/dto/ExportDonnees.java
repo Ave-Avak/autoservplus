@@ -235,8 +235,7 @@ public record ExportDonnees(
             short quantite,
             BigDecimal prixUnitaireHtva,
             BigDecimal tauxTva,
-            BigDecimal totalHtva,
-            BigDecimal totalTva,
+            BigDecimal prixUnitaireTvac,
             BigDecimal totalTvac,
             Instant dateAjout) {
 
@@ -246,8 +245,7 @@ public record ExportDonnees(
                     ligne.getQuantite(),
                     ligne.getPrixUnitaireHtva(),
                     ligne.getTauxTva(),
-                    ligne.totalHtva(),
-                    ligne.totalTva(),
+                    ligne.prixUnitaireTvac(),
                     ligne.totalTvac(),
                     dateAjout);
         }
@@ -287,8 +285,7 @@ public record ExportDonnees(
             short quantite,
             BigDecimal prixUnitaireHtva,
             BigDecimal tauxTva,
-            BigDecimal totalHtva,
-            BigDecimal totalTva,
+            BigDecimal prixUnitaireTvac,
             BigDecimal totalTvac) {
 
         public static LigneCommandeExport de(LignePanier ligne) {
@@ -297,8 +294,7 @@ public record ExportDonnees(
                     ligne.getQuantite(),
                     ligne.getPrixUnitaireHtva(),
                     ligne.getTauxTva(),
-                    ligne.totalHtva(),
-                    ligne.totalTva(),
+                    ligne.prixUnitaireTvac(),
                     ligne.totalTvac());
         }
     }

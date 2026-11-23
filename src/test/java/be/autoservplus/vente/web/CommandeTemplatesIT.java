@@ -41,6 +41,7 @@ import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -89,23 +90,40 @@ class CommandeTemplatesIT extends SocleIntegration {
         ampoule = pieces.save(ampoule);
     }
 
-    /** Meme cas a taux mixtes que les tests unitaires : totaux 70,01 / 10,20 / 80,21. */
+    /**
+     * Même cas à taux mixtes que les tests unitaires : 3 ampoules à 10,61 (6 %) et 2 jeux de
+     * plaquettes à 24,19 (21 %), soit 70,01 hors TVA, 1,80 et 8,40 de TVA, 80,21 à payer.
+     */
     private void remplirLePanier() {
         panierService.ajouterPiece("marie@exemple.be", ampoule.getReference(), 3);
         panierService.ajouterPiece("marie@exemple.be", plaquettes.getReference(), 2);
     }
 
     @Test
-    @DisplayName("GET /commande rend le recapitulatif RM-30 et le bouton a mention legale")
+    @DisplayName("GET /commande rend le récapitulatif en prix taxe comprise, la TVA par taux et le bouton à mention légale")
     void recapitulatifRendu() throws Exception {
         remplirLePanier();
 
         mvc.perform(get("/commande").locale(Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Récapitulatif de commande")))
-                .andExpect(content().string(containsString("30,03")))
+                // RM-30 : chaque ligne porte son prix unitaire et son total taxe comprise.
+                .andExpect(content().string(containsString("Prix unitaire TVAC")))
+                .andExpect(content().string(containsString("10,61")))
+                .andExpect(content().string(containsString("31,83")))
+                .andExpect(content().string(containsString("24,19")))
+                .andExpect(content().string(containsString("48,38")))
+                // Ni total hors TVA ni TVA par ligne : 30,03 était la base des ampoules.
+                .andExpect(content().string(not(containsString("30,03"))))
+                .andExpect(content().string(not(containsString("Taux TVA"))))
+                // Totaux : hors TVA, une ligne de TVA par taux, total taxe comprise.
+                .andExpect(content().string(containsString("Total HTVA")))
                 .andExpect(content().string(containsString("70,01")))
-                .andExpect(content().string(containsString("10,20")))
+                .andExpect(content().string(containsString("TVA 6 %")))
+                .andExpect(content().string(containsString("1,80")))
+                .andExpect(content().string(containsString("TVA 21 %")))
+                .andExpect(content().string(containsString("8,40")))
+                .andExpect(content().string(containsString("Total TVAC")))
                 .andExpect(content().string(containsString("80,21")))
                 // Art. VI.45 CDE : la formule exacte, pas « Valider » ni « Payer ».
                 .andExpect(content().string(containsString("Commande avec obligation de paiement")))

@@ -183,20 +183,22 @@ class CommandeDetailIT extends SocleIntegration {
 
             assertContient(page, "Plaquettes de frein avant");
             assertContient(page, "Articles commandés");
-            assertContient(page, "21 %");
-            assertContient(page, euros("20,00"));   // prix unitaire HTVA
-            assertContient(page, euros("60,00"));   // total ligne HTVA : 3 x 20,00
+            // Le membre lit des prix taxe comprise : 20,00 à 21 %, soit 24,20 l'unité.
+            assertContient(page, "Prix unitaire TVAC");
+            assertContient(page, euros("24,20"));   // prix unitaire TVAC
+            assertContient(page, euros("72,60"));   // total de la ligne : 3 x 24,20
+            assertNeContientPas(page, "Prix unitaire HTVA");
         }
 
         @Test
-        @DisplayName("affiche les trois totaux de la commande")
+        @DisplayName("affiche le hors TVA, la TVA de chaque taux et le total taxe comprise")
         void troisTotaux() throws Exception {
             UUID reference = commander(MARIE, piece("Ampoule", "10.00"), 2);
 
             String page = detail(MARIE, reference);
 
             assertContient(page, "Total HTVA");
-            assertContient(page, "Total TVA");
+            assertContient(page, "TVA 21 %");
             assertContient(page, "Total TVAC");
             assertContient(page, euros("20,00"));   // HTVA : 2 x 10,00
             assertContient(page, euros("4,20"));    // TVA a 21 %

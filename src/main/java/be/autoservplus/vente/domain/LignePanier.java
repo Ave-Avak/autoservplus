@@ -12,7 +12,6 @@ import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Objects;
@@ -217,11 +216,6 @@ public class LignePanier {
 
     // --- montants (RM-30) ------------------------------------------------------------
 
-    public BigDecimal totalHtva() {
-        return prixUnitaireHtva.multiply(BigDecimal.valueOf(quantite))
-                .setScale(2, RoundingMode.HALF_UP);
-    }
-
     /** Prix unitaire taxe comprise, au prix et au taux figés à l'ajout : celui du catalogue ce jour-là. */
     public BigDecimal prixUnitaireTvac() {
         return CalculTva.unitaireTvac(prixUnitaireHtva, tauxTva);
@@ -234,15 +228,6 @@ public class LignePanier {
      */
     public BigDecimal totalTvac() {
         return CalculTva.totalTvac(prixUnitaireHtva, tauxTva, quantite);
-    }
-
-    /**
-     * @deprecated la TVA se calcule par taux sur le document, non par ligne. Gardée le temps
-     *             que les écrans et l'export cessent de l'afficher.
-     */
-    @Deprecated(forRemoval = true)
-    public BigDecimal totalTva() {
-        return totalTvac().subtract(totalHtva());
     }
 
     public Long getId() { return id; }
