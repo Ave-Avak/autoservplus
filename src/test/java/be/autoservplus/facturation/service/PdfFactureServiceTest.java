@@ -149,7 +149,7 @@ class PdfFactureServiceTest {
         assertThat(document.lignes()).singleElement().satisfies(ligne -> {
             assertThat(ligne.libelle()).isEqualTo("Plaquettes");
             assertThat(ligne.quantite()).isEqualTo(2);
-            assertThat(ligne.totalHtva()).isEqualByComparingTo("39.98");
+            assertThat(ligne.totalTvac()).isEqualByComparingTo("48.38");
         });
     }
 

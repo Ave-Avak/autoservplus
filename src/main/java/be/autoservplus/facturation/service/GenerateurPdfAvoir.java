@@ -158,7 +158,7 @@ public class GenerateurPdfAvoir {
         table.setSpacingAfter(16);
         for (String cle : List.of("facture.colonne.description", "facture.colonne.quantite",
                 "facture.colonne.prix-unitaire", "facture.colonne.taux",
-                "facture.colonne.total-htva")) {
+                "facture.colonne.total-tvac")) {
             table.addCell(celluleEntete(libelle(document, cle),
                     cle.endsWith("description") ? Element.ALIGN_LEFT : Element.ALIGN_RIGHT));
         }
@@ -168,7 +168,7 @@ public class GenerateurPdfAvoir {
             table.addCell(cellule(montant(ligne.prixUnitaireHtva(), document.locale()),
                     Element.ALIGN_RIGHT));
             table.addCell(cellule(pourcentage(ligne.tauxTva()), Element.ALIGN_RIGHT));
-            table.addCell(cellule(montant(ligne.totalHtva(), document.locale()),
+            table.addCell(cellule(montant(ligne.totalTvac(), document.locale()),
                     Element.ALIGN_RIGHT));
         }
         return table;

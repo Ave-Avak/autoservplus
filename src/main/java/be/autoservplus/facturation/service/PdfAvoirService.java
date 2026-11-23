@@ -126,6 +126,6 @@ public class PdfAvoirService {
                 ligne.getQuantite(),
                 ligne.getPrixUnitaireHtva(),
                 ligne.getTauxTva(),
-                ligne.totalHtva());
+                ligne.totalTvac());
     }
 }

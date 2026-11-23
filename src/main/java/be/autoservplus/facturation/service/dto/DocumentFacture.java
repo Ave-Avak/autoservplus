@@ -61,12 +61,16 @@ public record DocumentFacture(
         }
     }
 
-    /** Une ligne facturee, aux valeurs figees a la commande. */
+    /**
+     * Une ligne facturée, aux valeurs figées à la commande : le prix unitaire hors TVA et le
+     * taux qu'exige la facture, et le total taxe comprise que le client a payé. La base
+     * imposable n'existe que par taux, à la ventilation.
+     */
     public record LigneFacture(
             String libelle,
             int quantite,
             BigDecimal prixUnitaireHtva,
             BigDecimal tauxTva,
-            BigDecimal totalHtva) {
+            BigDecimal totalTvac) {
     }
 }
