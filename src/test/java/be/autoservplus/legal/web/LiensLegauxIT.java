@@ -27,7 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * Les liens légaux (F24) sont au pied de toutes les pages, publiques comme membres, dans
  * cet ordre : CGV, mentions légales, politique de confidentialité, garantie légale,
- * gestion des cookies. Ils sont portés par la ligne commune du fragment des cookies.
+ * formulaire de rétractation, contact, gestion des cookies. Ils sont portés par le pied de
+ * page commun, et par lui seul : une page ne les répète pas dans son contenu.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -36,10 +37,11 @@ class LiensLegauxIT extends SocleIntegration {
 
     private static final String MEMBRE = "liens-legaux@exemple.be";
     private static final Pattern LIGNE_LEGALE =
-            Pattern.compile("<nav class=\"pied pied-cookies\"[^>]*>(.*?)</nav>", Pattern.DOTALL);
+            Pattern.compile("<footer class=\"pied\">(.*?)</footer>", Pattern.DOTALL);
     private static final Pattern LIEN = Pattern.compile("href=\"([^\"]+)\"");
     private static final List<String> ATTENDUS =
-            List.of("/cgv", "/mentions-legales", "/confidentialite", "/garantie-legale", "/cookies");
+            List.of("/cgv", "/mentions-legales", "/confidentialite", "/garantie-legale",
+                    "/retractation/formulaire", "/contact", "/cookies");
 
     @Autowired private MockMvc mvc;
     @Autowired private UtilisateurRepository utilisateurs;
@@ -59,7 +61,7 @@ class LiensLegauxIT extends SocleIntegration {
     @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"/", "/services", "/pieces", "/connexion", "/inscription", "/contact",
             "/cgv", "/garantie-legale", "/cookies", "/mot-de-passe/oublie"})
-    @DisplayName("pages publiques : les cinq liens, dans l'ordre")
+    @DisplayName("pages publiques : les sept liens, dans l'ordre")
     void pagesPubliques(String adresse) throws Exception {
         String ligne = ligneLegale(get(adresse).with(anonymous()).header("Accept-Language", "fr"));
 
@@ -68,7 +70,7 @@ class LiensLegauxIT extends SocleIntegration {
 
     @ParameterizedTest(name = "{0}")
     @ValueSource(strings = {"/mon-compte", "/panier", "/commandes"})
-    @DisplayName("pages membres : les cinq liens, dans l'ordre")
+    @DisplayName("pages membres : les sept liens, dans l'ordre")
     void pagesMembres(String adresse) throws Exception {
         if (utilisateurs.findByEmail(MEMBRE).isEmpty()) {
             Utilisateur membre = new Utilisateur(MEMBRE, "$2a$12$abcdefghijklmnopqrstuv",
@@ -81,6 +83,18 @@ class LiensLegauxIT extends SocleIntegration {
                 .header("Accept-Language", "fr"));
 
         assertThat(liens(ligne)).containsExactlyElementsOf(ATTENDUS);
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"/", "/cgv", "/confidentialite", "/contact", "/retractation/formulaire"})
+    @DisplayName("un seul pied, et aucune liste de renvois légaux recopiée dans le contenu")
+    void aucunDoublon(String adresse) throws Exception {
+        String page = mvc.perform(get(adresse).with(anonymous()).header("Accept-Language", "fr"))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+
+        assertThat(page.split("<footer", -1)).hasSize(2);
+        assertThat(page.split("href=\"/mentions-legales\"", -1)).hasSize(2);
     }
 
     @Test

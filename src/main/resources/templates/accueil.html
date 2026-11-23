@@ -62,17 +62,6 @@
     </section>
 </main>
 
-<footer class="pied">
-    <ul>
-        <li><a th:href="@{/contact}" th:text="#{nav.contact}">Contact</a></li>
-        <li><a th:href="@{/cgv}" th:text="#{legal.lien.cgv}">CGV</a></li>
-        <li><a th:href="@{/mentions-legales}" th:text="#{legal.lien.mentions}">Mentions légales</a></li>
-        <li><a th:href="@{/confidentialite}" th:text="#{legal.lien.confidentialite}">Confidentialité</a></li>
-        <li><a th:href="@{/retractation/formulaire}" th:text="#{retractation.formulaire.lien}">Formulaire de rétractation</a></li>
-    </ul>
-    <p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p>
-</footer>
-
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>

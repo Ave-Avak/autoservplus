@@ -286,6 +286,7 @@ main code { overflow-wrap: anywhere; }
 }
 .pied ul {
     list-style: none;
+    margin: 0 0 var(--espace-m);
     padding: 0;
     display: flex;
     flex-wrap: wrap;
@@ -293,6 +294,7 @@ main code { overflow-wrap: anywhere; }
     justify-content: center;
 }
 .pied a { color: var(--gris-700); }
+.pied p { margin: 0; }
 
 /* Menu repliable. Sous 40em, la ligne du compte ne tient plus (588 px mesures pour le
    membre, 572 px pour la ligne du back-office) : les listes passent en colonne sur toute
@@ -748,15 +750,6 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     color: var(--gris-700);
 }
 
-/* Ligne légale et « Gérer mes cookies » : rendue comme la continuation du pied de page.
-   Elle est rattachée au fragment du bandeau plutôt qu'à chaque <footer>, dont la
-   structure varie d'un écran à l'autre depuis la suppression de layout/base.html. */
-.pied-cookies {
-    margin: 0;
-    border-top: none;
-    padding-top: 0;
-}
-
 .formulaire-cookies { max-width: 40rem; }
 
 @media (max-width: 640px) {
@@ -829,16 +822,6 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
     .horaires { grid-template-columns: 1fr; gap: 0.125rem var(--espace-m); }
     .identite-garage dd,
     .horaires dd { margin-bottom: var(--espace-s); }
-}
-
-/* Renvois croises entre les trois documents. */
-.liens-legaux {
-    list-style: none;
-    padding: 0;
-    margin: var(--espace-l) 0 0;
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--espace-m);
 }
 
 /* --- Selecteur de langue (F6) ------------------------------------------------------ */

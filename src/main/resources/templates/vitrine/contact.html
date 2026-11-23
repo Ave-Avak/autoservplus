@@ -89,12 +89,10 @@
     <section>
         <h2 th:text="#{vitrine.contact.legal.titre}">Informations légales</h2>
         <nav th:attr="aria-label=#{legal.liens.aria}" aria-label="Documents légaux">
-            <div th:replace="~{fragments/legal :: liens}"></div>
         </nav>
     </section>
 </main>
 
-<footer class="pied"><p th:text="#{pied.copyright}">&copy; 2026 AutoServ+</p></footer>
-<div th:replace="~{fragments/cookies :: bandeau}"></div>
+<div th:replace="~{fragments/pied :: pied}"></div>
 </body>
 </html>
