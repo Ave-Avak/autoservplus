@@ -61,9 +61,9 @@ class GenerateurPdfFactureTest {
     private static DocumentFacture factureMultiTaux(Locale locale) {
         List<DocumentFacture.LigneFacture> lignes = List.of(
                 new DocumentFacture.LigneFacture("Plaquettes de frein avant", 1,
-                        new BigDecimal("100.00"), new BigDecimal("21.00"), new BigDecimal("100.00")),
+                        new BigDecimal("100.00"), new BigDecimal("21.00"), new BigDecimal("121.00")),
                 new DocumentFacture.LigneFacture("Recyclage huile usagee", 1,
-                        new BigDecimal("50.00"), new BigDecimal("6.00"), new BigDecimal("50.00")));
+                        new BigDecimal("50.00"), new BigDecimal("6.00"), new BigDecimal("53.00")));
         VentilationTva ventilation = new VentilationTva(List.of(
                 new VentilationTva.TrancheTva(new BigDecimal("6"),
                         new BigDecimal("50.00"), new BigDecimal("3.00")),
@@ -163,6 +163,10 @@ class GenerateurPdfFactureTest {
         assertThat(texte).contains("50,00", "3,00", "100,00", "21,00");
         // Totaux : HTVA, TVA, TVAC.
         assertThat(texte).contains("Total HTVA", "Total TVA", "Total TVAC");
+        // Lignes : unitaire hors TVA, taux et total taxe comprise. Le total hors TVA ne
+        // figure qu'une fois, au pied : une ligne n'a pas de base propre.
+        assertThat(texte).contains("P.U. HTVA", "121,00", "53,00");
+        assertThat(texte.split("Total HTVA", -1)).hasSize(2);
         assertThat(texte).contains("150,00", "24,00", "174,00");
     }
 
@@ -204,7 +208,7 @@ class GenerateurPdfFactureTest {
                 new DocumentFacture.ClientFacture("Jean Sansadresse", null, null, null, null,
                         "Belgique"),
                 List.of(new DocumentFacture.LigneFacture("Ampoule H7", 2,
-                        new BigDecimal("9.90"), new BigDecimal("21.00"), new BigDecimal("19.80"))),
+                        new BigDecimal("9.90"), new BigDecimal("21.00"), new BigDecimal("23.96"))),
                 new VentilationTva(List.of(new VentilationTva.TrancheTva(
                         new BigDecimal("21"), new BigDecimal("19.80"), new BigDecimal("4.16")))),
                 new BigDecimal("19.80"), new BigDecimal("4.16"), new BigDecimal("23.96"),

@@ -39,11 +39,15 @@ class VentilationTvaTest {
 
     /** Panier reel : les lignes portent les memes calculs que ceux de la commande. */
     private List<LignePanier> lignes(Object... pieceEtQuantite) {
+        return panier(pieceEtQuantite).getLignes();
+    }
+
+    private Panier panier(Object... pieceEtQuantite) {
         Panier panier = new Panier(marie);
         for (int i = 0; i < pieceEtQuantite.length; i += 2) {
             panier.ajouterPiece((Piece) pieceEtQuantite[i], (int) pieceEtQuantite[i + 1]);
         }
-        return panier.getLignes();
+        return panier;
     }
 
     @Test
@@ -89,27 +93,32 @@ class VentilationTvaTest {
                 piece("Ampoule", "9.90", "21.00"), 3));
 
         assertThat(ventilation.tranches()).hasSize(1);
-        assertThat(ventilation.totalHtva()).isEqualByComparingTo("69.68");
+        // 2 x 24,19 et 3 x 11,98 : 84,32 payés. La base se déduit de ce total, 69,69, et non
+        // de la somme des prix hors TVA des lignes, qui vaudrait 69,68.
+        assertThat(ventilation.totalTvac()).isEqualByComparingTo("84.32");
+        assertThat(ventilation.totalHtva()).isEqualByComparingTo("69.69");
+        assertThat(ventilation.totalTva()).isEqualByComparingTo("14.63");
     }
 
     @Test
-    @DisplayName("le total des tranches egale au centime la somme des lignes")
-    void totauxCoherentsAvecLesLignes() {
-        // Prix a decimales fachees : c est la que recalculer la TVA depuis la base
-        // cumulee, au lieu de sommer les lignes, ferait deriver d un centime.
-        List<LignePanier> lignes = lignes(
+    @DisplayName("le total des tranches égale au centime les montants que la commande fige")
+    void totauxCoherentsAvecLaCommande() {
+        // Prix à décimales fâchées. La commande fige les totaux du panier, la facture
+        // recalcule sa ventilation depuis les lignes : les deux doivent donner les mêmes
+        // nombres, sans quoi le PDF contredirait la facture.
+        Panier panier = panier(
                 piece("Joint", "0.07", "21.00"), 3,
                 piece("Vis", "0.03", "6.00"), 7);
-        VentilationTva ventilation = VentilationTva.desLignes(lignes);
+        VentilationTva ventilation = VentilationTva.desLignes(panier.getLignes());
 
-        BigDecimal htvaLignes = lignes.stream().map(LignePanier::totalHtva)
-                .reduce(BigDecimal.ZERO, BigDecimal::add);
-        BigDecimal tvaLignes = lignes.stream().map(LignePanier::totalTva)
+        BigDecimal tvacDesLignes = panier.getLignes().stream().map(LignePanier::totalTvac)
                 .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        assertThat(ventilation.totalHtva()).isEqualByComparingTo(htvaLignes);
-        assertThat(ventilation.totalTva()).isEqualByComparingTo(tvaLignes);
-        assertThat(ventilation.totalTvac()).isEqualByComparingTo(htvaLignes.add(tvaLignes));
+        // 3 x 0,08 à 21 % et 7 x 0,03 à 6 %.
+        assertThat(ventilation.totalTvac()).isEqualByComparingTo("0.45").isEqualByComparingTo(tvacDesLignes);
+        assertThat(ventilation.totalHtva()).isEqualByComparingTo("0.40").isEqualByComparingTo(panier.totalHtva());
+        assertThat(ventilation.totalTva()).isEqualByComparingTo("0.05").isEqualByComparingTo(panier.totalTva());
+        assertThat(panier.totalTvac()).isEqualByComparingTo(ventilation.totalTvac());
     }
 
     @Test

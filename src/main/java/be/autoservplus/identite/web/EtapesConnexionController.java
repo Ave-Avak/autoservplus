@@ -25,12 +25,12 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.List;
 
 /**
- * Ecrans des etapes qui suivent le mot de passe : second facteur, changement impose,
- * enrolement.
+ * Écrans des étapes qui suivent le mot de passe : second facteur, changement imposé,
+ * enrôlement.
  *
- * <p>Chaque ecran commence par {@link ParcoursConnexion#garder} : une connexion partielle
- * ne choisit pas son etape, et un compte connecte n a rien a faire ici. Ce sont les seules
- * routes, avec la deconnexion, qu une connexion partielle peut atteindre.</p>
+ * <p>Chaque écran commence par {@link ParcoursConnexion#garder} : une connexion partielle
+ * ne choisit pas son étape, et un compte connecté n'a rien à faire ici. Ce sont les seules
+ * routes, avec la deconnexion, qu'une connexion partielle peut atteindre.</p>
  */
 @Controller
 @RequestMapping(EtapeConnexion.PREFIXE)
@@ -56,9 +56,9 @@ public class EtapesConnexionController {
     }
 
     /**
-     * Point d entree du gestionnaire de refus : il ne connait que le prefixe. La garde
-     * oriente toujours, vers l etape en cours ou vers la page d arrivee du role pour
-     * une connexion deja aboutie.
+     * Point d'entrée du gestionnaire de refus : il ne connaît que le préfixe. La garde
+     * oriente toujours, vers l'étape en cours ou vers la page d'arrivée du rôle pour
+     * une connexion déjà aboutie.
      */
     @GetMapping
     public String aiguiller(Authentication authentification,
@@ -95,7 +95,7 @@ public class EtapesConnexionController {
             case ACCEPTE -> parcours.avancer(requete, reponse, partielle.avecSecondFacteurValide());
             case VERROUILLE -> {
                 // La connexion partielle tombe : le verrouillage vaut pour le mot de
-                // passe aussi, et laisser l etape ouverte permettrait de continuer a
+                // passe aussi, et laisser l'étape ouverte permettrait de continuer à
                 // essayer en attendant la fin du verrouillage. Même refus que le mot de
                 // passe : pendant un verrou, un code juste et un code faux aboutissent à
                 // la même page.
@@ -103,7 +103,7 @@ public class EtapesConnexionController {
                 yield "redirect:" + EchecAuthentificationHandler.DESTINATION;
             }
             case INDISPONIBLE -> {
-                // Message generique : la cause technique est au journal, pas a l ecran.
+                // Message générique : la cause technique est au journal, pas à l'écran.
                 modele.addAttribute("titre", msg("connexion.etape.second-facteur.titre"));
                 modele.addAttribute("erreur", msg("connexion.etape.second-facteur.indisponible"));
                 yield VUE_SECOND_FACTEUR;
@@ -111,15 +111,15 @@ public class EtapesConnexionController {
             case REFUSE -> {
                 modele.addAttribute("titre", msg("connexion.etape.second-facteur.titre"));
                 modele.addAttribute("erreur", msg("connexion.etape.second-facteur.erreur"));
-                // Le champ de secours ne sert qu a la saisie. Le verdict est celui du
-                // meme service. Le rouvrir evite de faire chercher a nouveau le lien.
+                // Le champ de secours ne sert qu'à la saisie. Le verdict est celui du
+                // même service. Le rouvrir évite de faire chercher à nouveau le lien.
                 modele.addAttribute("secoursOuvert", MODE_SECOURS.equals(mode));
                 yield VUE_SECOND_FACTEUR;
             }
         };
     }
 
-    // --- changement impose ------------------------------------------------------------
+    // --- changement imposé ------------------------------------------------------------
 
     @GetMapping("/mot-de-passe")
     public String motDePasse(Authentication authentification, Model modele,
@@ -166,7 +166,7 @@ public class EtapesConnexionController {
         modele.addAttribute("enConnexion", true);
     }
 
-    // --- enrolement -------------------------------------------------------------------
+    // --- enrôlement -------------------------------------------------------------------
 
     @GetMapping("/enrolement")
     public String enrolement(Authentication authentification, Model modele,
@@ -193,8 +193,8 @@ public class EtapesConnexionController {
             List<String> codes = secondFacteur.confirmerEnrolement(authentification.getName(),
                     code, requete.getSession().getId());
             redirection.addFlashAttribute("codesSecours", codes);
-            // Le code qui vient de confirmer l enrolement prouve la possession du
-            // telephone : le redemander dans la foulee n ajouterait rien.
+            // Le code qui vient de confirmer l'enrôlement prouve la possession du
+            // téléphone : le redemander dans la foulee n'ajouterait rien.
             return parcours.avancer(requete, reponse,
                     ((AuthentificationPartielle) authentification).avecSecondFacteurValide(),
                     SecuriteCompteController.CHEMIN_CODES);

@@ -23,42 +23,42 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Note de credit : <b>seul moyen legal de corriger une facture deja emise</b> (F30).
+ * Note de crédit : <b>seul moyen légal de corriger une facture déjà émise</b> (F30).
  *
- * <p>La facture ne se rectifie pas et ne s annule pas : le trigger
- * {@code tg_facture_immuable} (V6) le refuse en base, et c est precisement ce refus
- * qui justifie l existence de cette entite. Corriger une facture, c est emettre un
- * second document qui la contre-passe. L original reste au dossier, les deux se
+ * <p>La facture ne se rectifie pas et ne s'annule pas : le trigger
+ * {@code tg_facture_immuable} (V6) le refuse en base, et c'est précisément ce refus
+ * qui justifie l'existence de cette entité. Corriger une facture, c'est émettre un
+ * second document qui la contre-passe. L'original reste au dossier, les deux se
  * lisent ensemble.</p>
  *
  * <p><b>Contre-passation exacte</b> : les trois montants sont ceux de la facture
- * d origine, recopies tels quels et <b>positifs</b>. Le sens est porte par la nature
+ * d'origine, recopiés tels quels et <b>positifs</b>. Le sens est porté par la nature
  * du document, pas par le signe des montants : le CHECK {@code ck_avoir_montants} du
- * socle exige d ailleurs des montants positifs ou nuls. Un avoir de 48,38 EUR annule
- * une facture de 48,38 EUR. Le stocker en -48,38 obligerait chaque lecteur a savoir
- * quelle convention de signe a ete retenue.</p>
+ * socle exige d'ailleurs des montants positifs ou nuls. Un avoir de 48,38 EUR annule
+ * une facture de 48,38 EUR. Le stocker en -48,38 obligerait chaque lecteur à savoir
+ * quelle convention de signe a été retenue.</p>
  *
  * <p><b>Pas de suppression logique</b>, comme {@link Facture} : la loi impose sept
- * ans de conservation (Code TVA art. 60) et il n existe aucune correction d une
- * correction. L entite n herite donc pas de {@code BaseEntity}, qui porterait
- * {@code deleted_at}. Elle est immuable apres emission, defendue a deux etages :
+ * ans de conservation (Code TVA art. 60) et il n'existe aucune correction d'une
+ * correction. L'entité n'hérite donc pas de {@code BaseEntity}, qui porterait
+ * {@code deleted_at}. Elle est immuable après émission, défendue à deux étages :
  * {@code updatable = false} au mapping, {@code tg_avoir_immuable} (V27) en base.
- * Seul {@code cheminPdf} bouge. Le document est archive apres coup, sans que son
+ * Seul {@code cheminPdf} bouge. Le document est archivé après coup, sans que son
  * contenu comptable change.</p>
  *
- * <p><b>Motif</b> : stocke sous une forme stable et non traduite (le nom du motif
- * legal retenu). Le PDF l imprime dans la langue du membre via le
- * {@code MessageSource}. Ranger ici une phrase francaise donnerait une note de
- * credit francaise a un client neerlandophone, alors que la facture qu elle corrige
- * aurait ete emise en neerlandais. Les mots du membre, eux, restent sur sa demande :
- * ils expliquent sa decision, ils ne fondent pas le document comptable.</p>
+ * <p><b>Motif</b> : stocké sous une forme stable et non traduite (le nom du motif
+ * légal retenu). Le PDF l'imprime dans la langue du membre via le
+ * {@code MessageSource}. Ranger ici une phrase française donnerait une note de
+ * crédit française à un client néerlandophone, alors que la facture qu'elle corrige
+ * aurait été émise en néerlandais. Les mots du membre, eux, restent sur sa demande :
+ * ils expliquent sa décision, ils ne fondent pas le document comptable.</p>
  */
 @Entity
 @Table(name = "avoir")
 @EntityListeners(AuditingEntityListener.class)
 public class Avoir {
 
-    /** Motif legal d un avoir de retractation (CDE art. VI.47). Valeur stable, non traduite. */
+    /** Motif légal d'un avoir de rétractation (CDE art. VI.47). Valeur stable, non traduite. */
     public static final String MOTIF_RETRACTATION = "RETRACTATION_F30";
 
     @Id
@@ -91,7 +91,7 @@ public class Avoir {
     @Column(name = "date_emission", nullable = false, updatable = false)
     private Instant dateEmission;
 
-    /** Chemin du PDF archive, pose a la premiere generation (a la demande). */
+    /** Chemin du PDF archivé, posé à la première génération (à la demande). */
     @Column(name = "chemin_pdf", length = 255)
     private String cheminPdf;
 
@@ -116,12 +116,12 @@ public class Avoir {
     }
 
     /**
-     * Emet la note de credit qui contre-passe integralement une facture (perimetre
+     * Émet la note de crédit qui contre-passe intégralement une facture (périmètre
      * V1 : annulation totale). Les montants sont ceux de la facture, jamais
-     * recalcules : c est ce document precis qui est corrige, avec les taux figes qui
-     * etaient les siens. Les recalculer depuis le catalogue du jour produirait, sur
-     * un prix ou un taux modifie entre-temps, un avoir qui n annulerait pas la
-     * facture au centime pres.
+     * recalculés : c'est ce document précis qui est corrigé, avec les taux figés qui
+     * étaient les siens. Les recalculer depuis le catalogue du jour produirait, sur
+     * un prix ou un taux modifié entre-temps, un avoir qui n'annulerait pas la
+     * facture au centime près.
      */
     public static Avoir contrePassant(String numero, Facture facture, String motif,
                                       Instant dateEmission) {
@@ -135,8 +135,8 @@ public class Avoir {
         avoir.montantTvac = Objects.requireNonNull(facture.getMontantTvac(), "montantTvac");
         avoir.motif = Objects.requireNonNull(motif, "motif");
         avoir.dateEmission = Objects.requireNonNull(dateEmission, "dateEmission");
-        // Meme invariant que sur la facture, defendu aux deux etages : l entite avant
-        // la base (ck_avoir_coherence), pour echouer la ou l erreur est comprehensible.
+        // Même invariant que sur la facture, défendu aux deux étages : l'entité avant
+        // la base (ck_avoir_coherence), pour échouer là où l'erreur est compréhensible.
         if (avoir.montantHtva.add(avoir.montantTva).compareTo(avoir.montantTvac) != 0) {
             throw new IllegalArgumentException(
                     "Montants incoherents : HTVA + TVA doit valoir TVAC.");
@@ -145,9 +145,9 @@ public class Avoir {
     }
 
     /**
-     * Enregistre l emplacement du PDF archive. Seule mutation admise apres emission :
-     * elle ne touche aucune donnee comptable, et {@code tg_avoir_immuable} l autorise
-     * pour cette raison precise.
+     * Enregistre l'emplacement du PDF archivé. Seule mutation admise après émission :
+     * elle ne touche aucune donnée comptable, et {@code tg_avoir_immuable} l'autorise
+     * pour cette raison précise.
      */
     public void archiverPdf(String chemin) {
         this.cheminPdf = Objects.requireNonNull(chemin, "chemin");
@@ -158,12 +158,12 @@ public class Avoir {
     }
 
     /**
-     * Exercice comptable de la note de credit, lu de son numero.
+     * Exercice comptable de la note de crédit, lu de son numéro.
      *
-     * <p>Le numero a ete attribue par le compteur de l exercice. Le relire est donc
-     * exact par construction, la ou deduire l annee de {@code date_emission}
-     * dependrait du fuseau retenu pour la conversion et pourrait basculer d un
-     * exercice a l autre dans la nuit du 31 decembre.</p>
+     * <p>Le numéro a été attribué par le compteur de l'exercice. Le relire est donc
+     * exact par construction, là où déduire l'année de {@code date_emission}
+     * dépendrait du fuseau retenu pour la conversion et pourrait basculer d'un
+     * exercice à l'autre dans la nuit du 31 décembre.</p>
      */
     public short exercice() {
         return Short.parseShort(numero.substring(numero.indexOf('-') + 1, numero.lastIndexOf('-')));

@@ -1,6 +1,7 @@
 package be.autoservplus.notification.service;
 
 import be.autoservplus.intervention.repository.InterventionRepository;
+import be.autoservplus.intervention.service.DepassementSoumisEvent;
 import be.autoservplus.intervention.service.InterventionTermineeEvent;
 import be.autoservplus.notification.domain.TypeNotification;
 import be.autoservplus.reservation.domain.StatutRdv;
@@ -141,6 +142,30 @@ public class NotificationEvenementListener {
                 log.warn("Paiement à rembourser sur la commande {} : aucun administrateur "
                         + "actif à notifier.", commande.getNumero());
             }
+            return true;
+        });
+    }
+
+    /**
+     * Dépassement de devis soumis à l'accord du membre (RM-15) : son titulaire le lit dans
+     * son espace, que l'intervention vienne d'un rendez-vous, d'une commande ou d'une
+     * entrée directe au garage. Second canal à côté du courriel.
+     */
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public void surDepassementSoumis(DepassementSoumisEvent evenement) {
+        deposer("depassement", evenement.referenceIntervention(), () -> {
+            var intervention = interventions.findByReference(evenement.referenceIntervention())
+                    .orElse(null);
+            if (intervention == null) {
+                return false;
+            }
+            var titulaire = intervention.titulaire();
+            if (titulaire == null) {
+                return false;
+            }
+            notifications.deposer(titulaire,
+                    TypeNotification.DEPASSEMENT_A_VALIDER, intervention.getNumero());
             return true;
         });
     }

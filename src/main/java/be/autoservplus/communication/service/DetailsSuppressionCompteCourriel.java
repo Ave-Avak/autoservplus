@@ -3,16 +3,16 @@ package be.autoservplus.communication.service;
 import be.autoservplus.identite.domain.Langue;
 
 /**
- * Elements du courriel confirmant la suppression d un compte (F23). Chaines plates,
- * comme {@link DetailsConfirmationCommande} : le module communication ne depend ni de
- * l identite ni du module rgpd.
+ * Éléments du courriel confirmant la suppression d'un compte (F23). Chaînes plates,
+ * comme {@link DetailsConfirmationCommande} : le module communication ne dépend ni de
+ * l'identité ni du module rgpd.
  *
- * <p>L adresse et le prenom sont ceux <b>captures avant l anonymisation</b>. Les
- * relire apres coup ne donnerait rien : l anonymisation vient de les effacer, et la
- * ligne rechargee porte un jeton non routable.</p>
+ * <p>L'adresse et le prénom sont ceux <b>capturés avant l'anonymisation</b>. Les
+ * relire après coup ne donnerait rien : l'anonymisation vient de les effacer, et la
+ * ligne rechargée porte un jeton non routable.</p>
  *
- * @param adresseEmail adresse reelle du membre, capturee avant effacement
- * @param prenom       prenom reel, capture avant effacement, pour la salutation
+ * @param adresseEmail adresse réelle du membre, capturée avant effacement
+ * @param prenom       prénom réel, capturé avant effacement, pour la salutation
  * @param langue       langue du compte, celle du courriel
  */
 public record DetailsSuppressionCompteCourriel(String adresseEmail, String prenom,

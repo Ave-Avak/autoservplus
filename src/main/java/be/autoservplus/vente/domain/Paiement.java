@@ -14,15 +14,15 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Tentative de paiement d une commande aupres du prestataire (F14).
+ * Tentative de paiement d'une commande auprès du prestataire (F14).
  *
- * <p>La machine a etats est portee par l entite ({@link StatutPaiement#peutPasserA}).
- * {@code @Version} (V24) protege la course entre le webhook et le job d expiration.
- * La cle d idempotence, generee a la creation et unique en base, accompagne l appel
- * au prestataire pour qu une requete rejouee ne debite pas deux fois.</p>
+ * <p>La machine à états est portée par l'entité ({@link StatutPaiement#peutPasserA}).
+ * {@code @Version} (V24) protège la course entre le webhook et le job d'expiration.
+ * La clé d'idempotence, générée à la création et unique en base, accompagne l'appel
+ * au prestataire pour qu'une requête rejouée ne débite pas deux fois.</p>
  *
- * <p>Un echec ou une expiration est terminal : re-essayer, c est creer un NOUVEAU
- * paiement pour la meme commande. Pas de soft delete en base.</p>
+ * <p>Un échec ou une expiration est terminal : re-essayer, c'est créer un NOUVEAU
+ * paiement pour la même commande. Pas de soft delete en base.</p>
  */
 @Entity
 @Table(name = "paiement")
@@ -36,7 +36,7 @@ public class Paiement {
     @Column(name = "reference", nullable = false, updatable = false)
     private UUID reference;
 
-    // commande_id est nullable en base (un paiement pourra couvrir une reservation
+    // commande_id est nullable en base (un paiement pourra couvrir une réservation
     // de parking). Dans ce bloc, le constructeur la pose toujours.
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "commande_id")
@@ -47,8 +47,8 @@ public class Paiement {
 
     /**
      * Identifiant du Refund chez le prestataire (V27), contrepartie de
-     * {@link #referenceMollie}. Seul point de rapprochement avec l extrait du
-     * prestataire si le membre conteste n avoir jamais ete rembourse.
+     * {@link #referenceMollie}. Seul point de rapprochement avec l'extrait du
+     * prestataire si le membre conteste n'avoir jamais été remboursé.
      */
     @Column(name = "reference_remboursement", length = 64)
     private String referenceRemboursement;
@@ -66,23 +66,23 @@ public class Paiement {
     private String devise = "EUR";
 
     /**
-     * Moyen effectivement employe (Bancontact, carte, virement...), tel que le
-     * prestataire le rapporte. Affiche au detail d une commande (F32, CdC P384).
+     * Moyen effectivement employé (Bancontact, carte, virement...), tel que le
+     * prestataire le rapporte. Affiché au détail d'une commande (F32, CdC P384).
      *
-     * <p><b>Ecrit a la relecture, jamais a la creation</b> : le moyen n est pas choisi
-     * par AutoServ+ mais constate chez le prestataire, qui ne le connait qu une fois le
-     * client passe par sa page. La colonne reste donc nulle a l insertion et se
+     * <p><b>Écrit à la relecture, jamais à la création</b> : le moyen n'est pas choisi
+     * par AutoServ+ mais constaté chez le prestataire, qui ne le connaît qu'une fois le
+     * client passé par sa page. La colonne reste donc nulle à l'insertion et se
      * renseigne quand la relecture du statut le rapporte.</p>
      *
-     * <p><b>Correction d une promesse non tenue.</b> Le champ etait mappe
-     * {@code insertable = false, updatable = false} en annoncant qu il « se remplirait
-     * de lui-meme le jour ou MollieGateway serait cable ». C etait faux : ainsi mappe,
-     * Hibernate ne l ecrit jamais, et l ecran aurait continue d afficher « moyen non
-     * communique » avec un prestataire reel branche. Un commentaire faux coute plus
-     * cher qu un commentaire absent, car il dispense de verifier.</p>
+     * <p><b>Correction d'une promesse non tenue.</b> Le champ était mappé
+     * {@code insertable = false, updatable = false} en annonçant qu'il « se remplirait
+     * de lui-même le jour où MollieGateway serait câblé ». C'était faux : ainsi mappé,
+     * Hibernate ne l'écrit jamais, et l'écran aurait continué d'afficher « moyen non
+     * communiqué » avec un prestataire réel branché. Un commentaire faux coûte plus
+     * cher qu'un commentaire absent, car il dispense de vérifier.</p>
      *
-     * <p>Un prestataire bouchonne n en rapporte aucun : la valeur reste nulle et
-     * l ecran le dit, plutot que d inventer un moyen.</p>
+     * <p>Un prestataire bouchonné n'en rapporte aucun : la valeur reste nulle et
+     * l'écran le dit, plutôt que d'inventer un moyen.</p>
      */
     @Column(name = "methode", length = 30)
     private String methode;
@@ -147,8 +147,8 @@ public class Paiement {
     }
 
     /**
-     * Reference attribuee par le prestataire, posee UNE fois a l initiation.
-     * Elle identifie le paiement dans les notifications entrantes. La reecrire
+     * Référence attribuée par le prestataire, posée UNE fois à l'initiation.
+     * Elle identifie le paiement dans les notifications entrantes. La réécrire
      * casserait ce lien.
      */
     public void enregistrerReferencePrestataire(String referencePrestataire) {
@@ -165,7 +165,7 @@ public class Paiement {
         transitionVers(StatutPaiement.EN_COURS);
     }
 
-    /** Paiement encaisse : irreversible, le remboursement sera un Refund distinct. */
+    /** Paiement encaissé : irréversible, le remboursement sera un Refund distinct. */
     public void confirmer(Instant maintenant) {
         transitionVers(StatutPaiement.REUSSI);
         this.dateFinalisation = Objects.requireNonNull(maintenant, "maintenant");
@@ -225,13 +225,13 @@ public class Paiement {
     }
 
     /**
-     * Le prestataire a accepte le Refund (F30) : l encaissement est contre-passe.
+     * Le prestataire a accepté le Refund (F30) : l'encaissement est contre-passé.
      *
-     * <p>{@code dateFinalisation} n est PAS reecrite : elle date l encaissement, et
-     * c est cette date-la que porte la facture immuable. La date du remboursement
-     * vit sur la demande d annulation qui l a declenche ({@code decide_le}) et sur
-     * la note de credit ({@code date_emission}) : trois evenements distincts, trois
-     * horodatages distincts, aucun ecrase par le suivant.</p>
+     * <p>{@code dateFinalisation} n'est PAS réécrite : elle date l'encaissement, et
+     * c'est cette date-là que porte la facture immuable. La date du remboursement
+     * vit sur la demande d'annulation qui l'a déclenché ({@code decide_le}) et sur
+     * la note de crédit ({@code date_emission}) : trois événements distincts, trois
+     * horodatages distincts, aucun écrasé par le suivant.</p>
      *
      * @param referencePrestataire identifiant du Refund, pour le rapprochement
      */
@@ -242,12 +242,12 @@ public class Paiement {
     }
 
     /**
-     * Enregistre le moyen rapporte par le prestataire, une seule fois.
+     * Enregistre le moyen rapporté par le prestataire, une seule fois.
      *
-     * <p>Ne reecrit jamais une valeur deja posee, et ignore une valeur vide : la
-     * relecture du statut est rejouee a chaque notification et a chaque retour du
+     * <p>Ne réécrit jamais une valeur déjà posée, et ignore une valeur vide : la
+     * relecture du statut est rejouée à chaque notification et à chaque retour du
      * membre. Sans cette garde, un prestataire qui cesserait de rapporter le moyen
-     * effacerait une donnee que la facture emise a peut-etre deja opposee.</p>
+     * effacerait une donnée que la facture émise a peut-être déjà opposée.</p>
      */
     public void enregistrerMethode(String methodeRapportee) {
         if (this.methode == null && methodeRapportee != null && !methodeRapportee.isBlank()) {
@@ -256,12 +256,12 @@ public class Paiement {
     }
 
     /**
-     * Cle d idempotence du remboursement, <b>derivee</b> de la reference du paiement
-     * et donc stable : deux appels pour le meme paiement portent la meme cle, et le
-     * prestataire ne rembourse qu une fois meme si la requete est rejouee. Une cle
-     * tiree au hasard a chaque appel offrirait exactement la garantie inverse.
-     * Distincte de {@link #cleIdempotence}, qui couvre l encaissement : ce sont deux
-     * operations differentes chez le prestataire.
+     * Clé d'idempotence du remboursement, <b>dérivée</b> de la référence du paiement
+     * et donc stable : deux appels pour le même paiement portent la même clé, et le
+     * prestataire ne rembourse qu'une fois même si la requête est rejouée. Une clé
+     * tirée au hasard à chaque appel offrirait exactement la garantie inverse.
+     * Distincte de {@link #cleIdempotence}, qui couvre l'encaissement : ce sont deux
+     * opérations différentes chez le prestataire.
      */
     public String cleIdempotenceRemboursement() {
         return "remboursement-" + reference;

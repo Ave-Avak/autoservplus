@@ -20,30 +20,30 @@ import java.util.Objects;
 import java.util.UUID;
 
 /**
- * Facture emise : document comptable legal, immuable des sa creation (F31).
+ * Facture émise : document comptable légal, immuable dès sa création (F31).
  *
- * <p><b>Pas de suppression logique</b>, contrairement aux entites metier du socle :
- * une facture ne se supprime pas, meme logiquement. La loi impose sa conservation
- * dix ans et sa seule correction legale est la note de credit (table {@code avoir}).
- * Elle n herite donc pas de {@code BaseEntity}, qui porterait {@code deleted_at}.
- * Meme precedent que les journaux append-only du projet.</p>
+ * <p><b>Pas de suppression logique</b>, contrairement aux entités métier du socle :
+ * une facture ne se supprime pas, même logiquement. La loi impose sa conservation
+ * dix ans et sa seule correction légale est la note de crédit (table {@code avoir}).
+ * Elle n'hérite donc pas de {@code BaseEntity}, qui porterait {@code deleted_at}.
+ * Même précédent que les journaux append-only du projet.</p>
  *
- * <p><b>Immuabilite</b> defendue en base par le trigger {@code tg_facture_immuable}
- * (V6), qui refuse toute modification du numero, des montants, du taux et de la date
- * d emission. Le mapping le redouble par {@code updatable = false} : la garde de
- * l entite evite l aller-retour vers la base, celle de la base survit a n importe
- * quel appelant. Seul {@code cheminPdf} reste modifiable. Le document est archive
- * apres coup, sans que son contenu comptable bouge.</p>
+ * <p><b>Immuabilité</b> défendue en base par le trigger {@code tg_facture_immuable}
+ * (V6), qui refuse toute modification du numéro, des montants, du taux et de la date
+ * d'émission. Le mapping le redouble par {@code updatable = false} : la garde de
+ * l'entité évite l'aller-retour vers la base, celle de la base survit à n'importe
+ * quel appelant. Seul {@code cheminPdf} reste modifiable. Le document est archivé
+ * après coup, sans que son contenu comptable bouge.</p>
  *
  * <p><b>Source</b> : une commande OU une intervention, jamais les deux (CHECK
  * {@code ck_facture_origine_unique}). Ce bloc ne livre que la facture de commande.
- * {@code interventionId} est mappe en identifiant brut plutot qu en association pour
- * que la colonne existe des maintenant sans faire dependre la facturation du module
- * intervention. Le bloc RM-17 futur promouvra l association s il en a besoin.</p>
+ * {@code interventionId} est mappé en identifiant brut plutôt qu'en association pour
+ * que la colonne existe dès maintenant sans faire dépendre la facturation du module
+ * intervention. Le bloc RM-17 futur promouvra l'association s'il en a besoin.</p>
  *
- * <p><b>Montants figes</b> : recopies de la commande a l emission, jamais relus du
- * catalogue. Une modification de prix posterieure ne reecrit donc aucune facture,
- * comme les lignes figees ne reecrivent aucune commande.</p>
+ * <p><b>Montants figés</b> : recopiés de la commande à l'émission, jamais relus du
+ * catalogue. Une modification de prix postérieure ne réécrit donc aucune facture,
+ * comme les lignes figées ne réécrivent aucune commande.</p>
  */
 @Entity
 @Table(name = "facture")
@@ -87,7 +87,7 @@ public class Facture {
     @Column(name = "montant_tvac", nullable = false, updatable = false, precision = 10, scale = 2)
     private BigDecimal montantTvac;
 
-    /** Taux unique de la facture, {@code null} si elle en melange plusieurs (V26). */
+    /** Taux unique de la facture, {@code null} si elle en mélange plusieurs (V26). */
     @Column(name = "taux_tva_applique", updatable = false, precision = 5, scale = 2)
     private BigDecimal tauxTvaApplique;
 
@@ -125,7 +125,7 @@ public class Facture {
     @Column(name = "langue_document", nullable = false, updatable = false, length = 2)
     private Langue langueDocument;
 
-    /** Chemin du PDF archive, pose a la premiere generation (a la demande). */
+    /** Chemin du PDF archivé, posé à la première génération (à la demande). */
     @Column(name = "chemin_pdf", length = 255)
     private String cheminPdf;
 
@@ -150,10 +150,10 @@ public class Facture {
     }
 
     /**
-     * Emet la facture d une commande payee. Les montants sont ceux de la commande,
-     * recopies tels quels : l identite HTVA + TVA = TVAC, deja garantie par la
-     * commande, est reverifiee ici plutot qu attendue du CHECK
-     * {@code ck_facture_coherence}, le meme invariant, defendu aux deux etages.
+     * Émet la facture d'une commande payée. Les montants sont ceux de la commande,
+     * recopiés tels quels : l'identité HTVA + TVA = TVAC, déjà garantie par la
+     * commande, est revérifiée ici plutôt qu'attendue du CHECK
+     * {@code ck_facture_coherence}, le même invariant, défendu aux deux étages.
      *
      * @param tauxTvaApplique le taux unique, ou {@code null} si la facture est multi-taux
      */
@@ -184,8 +184,8 @@ public class Facture {
         facture.montantTvac = Objects.requireNonNull(commande.getMontantTvac(), "montantTvac");
         facture.tauxTvaApplique = tauxTvaApplique;
         facture.dateEmission = Objects.requireNonNull(dateEmission, "dateEmission");
-        // Aucune echeance : la facture suit un encaissement deja realise, il n y a
-        // rien a reclamer. La colonne sert aux ventes a terme, hors V1.
+        // Aucune échéance : la facture suit un encaissement déjà réalisé, il n'y a
+        // rien à réclamer. La colonne sert aux ventes à terme, hors V1.
         facture.dateEcheance = null;
         if (facture.montantHtva.add(facture.montantTva).compareTo(facture.montantTvac) != 0) {
             throw new IllegalArgumentException(
@@ -195,9 +195,9 @@ public class Facture {
     }
 
     /**
-     * Enregistre l emplacement du PDF archive. Seule mutation admise apres emission :
-     * elle ne touche aucune donnee comptable, et le trigger de la base l autorise
-     * pour cette raison precise.
+     * Enregistre l'emplacement du PDF archivé. Seule mutation admise après émission :
+     * elle ne touche aucune donnée comptable, et le trigger de la base l'autorise
+     * pour cette raison précise.
      */
     public void archiverPdf(String chemin) {
         this.cheminPdf = Objects.requireNonNull(chemin, "chemin");

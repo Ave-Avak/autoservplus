@@ -32,22 +32,22 @@ import static be.autoservplus.facturation.service.StylePdf.pourcentage;
 import static be.autoservplus.facturation.service.StylePdf.tableauInvisible;
 
 /**
- * Composition du PDF d une facture (F31), avec OpenPDF.
+ * Composition du PDF d'une facture (F31), avec OpenPDF.
  *
- * <p>Toutes les mentions obligatoires d une facture belge y figurent : numero et
- * date d emission, identification complete de l emetteur (denomination, siege, BCE,
- * TVA), identification du client, detail par ligne avec taux applique, et
- * <b>ventilation de la base imposable par taux</b>. C est cette derniere qui rend
- * une facture multi-taux verifiable par l administration.</p>
+ * <p>Toutes les mentions obligatoires d'une facture belge y figurent : numéro et
+ * date d'émission, identification complète de l'émetteur (dénomination, siège, BCE,
+ * TVA), identification du client, détail par ligne avec taux appliqué, et
+ * <b>ventilation de la base imposable par taux</b>. C'est cette dernière qui rend
+ * une facture multi-taux vérifiable par l'administration.</p>
  *
- * <p>Aucune chaine en dur : chaque libelle passe par le {@code MessageSource}, dans
- * la langue du membre. Les montants et les dates suivent la meme locale, la devise
- * etant forcee a l euro (un {@code Locale.ENGLISH} non contraint imprimerait des
+ * <p>Aucune chaîne en dur : chaque libellé passe par le {@code MessageSource}, dans
+ * la langue du membre. Les montants et les dates suivent la même locale, la devise
+ * étant forcée à l'euro (un {@code Locale.ENGLISH} non contraint imprimerait des
  * dollars).</p>
  *
  * <p>Les primitives de composition (couleurs, cellules, formatage) vivent dans
- * {@link StylePdf}, partagees avec {@link GenerateurPdfAvoir} : une facture et son
- * avoir doivent se ressembler au pixel pres, le client les compare cote a cote.</p>
+ * {@link StylePdf}, partagées avec {@link GenerateurPdfAvoir} : une facture et son
+ * avoir doivent se ressembler au pixel près, le client les compare côte à côte.</p>
  */
 @Component
 public class GenerateurPdfFacture {
@@ -86,7 +86,7 @@ public class GenerateurPdfFacture {
 
     // --- blocs du document -------------------------------------------------------------
 
-    /** Bandeau : emetteur a gauche, identite du document a droite. */
+    /** Bandeau : émetteur à gauche, identité du document à droite. */
     private PdfPTable enTete(DocumentFacture document) {
         PdfPTable entete = tableauInvisible(new float[]{55, 45});
         entete.setSpacingAfter(24);
@@ -137,14 +137,14 @@ public class GenerateurPdfFacture {
         return bloc;
     }
 
-    /** Detail par ligne : description, quantite, prix unitaire HTVA, taux, montant. */
+    /** Détail par ligne : description, quantité, prix unitaire hors TVA, taux, total taxe comprise. */
     private PdfPTable tableauDesLignes(DocumentFacture document) {
         PdfPTable table = new PdfPTable(new float[]{46, 10, 16, 12, 16});
         table.setWidthPercentage(100);
         table.setSpacingAfter(16);
         for (String cle : List.of("facture.colonne.description", "facture.colonne.quantite",
                 "facture.colonne.prix-unitaire", "facture.colonne.taux",
-                "facture.colonne.total-htva")) {
+                "facture.colonne.total-tvac")) {
             table.addCell(celluleEntete(libelle(document, cle),
                     cle.endsWith("description") ? Element.ALIGN_LEFT : Element.ALIGN_RIGHT));
         }
@@ -154,7 +154,7 @@ public class GenerateurPdfFacture {
             table.addCell(cellule(montant(ligne.prixUnitaireHtva(), document.locale()),
                     Element.ALIGN_RIGHT));
             table.addCell(cellule(pourcentage(ligne.tauxTva()), Element.ALIGN_RIGHT));
-            table.addCell(cellule(montant(ligne.totalHtva(), document.locale()),
+            table.addCell(cellule(montant(ligne.totalTvac(), document.locale()),
                     Element.ALIGN_RIGHT));
         }
         return table;
@@ -192,7 +192,7 @@ public class GenerateurPdfFacture {
         return table;
     }
 
-    /** Conditions de paiement et mentions legales de pied de facture. */
+    /** Conditions de paiement et mentions légales de pied de facture. */
     private Paragraph mentionsLegales(DocumentFacture document) {
         Paragraph mentions = new Paragraph();
         mentions.add(new Phrase(libelle(document, "facture.mention.payee",

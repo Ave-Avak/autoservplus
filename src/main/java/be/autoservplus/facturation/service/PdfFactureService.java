@@ -15,22 +15,22 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Fabrique et sert le PDF d une facture (F31), avec archivage.
+ * Fabrique et sert le PDF d'une facture (F31), avec archivage.
  *
- * <p><b>Genere a la demande, archive une fois.</b> Le document n est pas fabrique a
- * l emission : rien n oblige a produire un PDF que personne ne reclamera. A la
- * premiere demande il est compose, ecrit dans l archive, et le chemin est inscrit
+ * <p><b>Généré à la demande, archivé une fois.</b> Le document n'est pas fabriqué à
+ * l'émission : rien n'oblige à produire un PDF que personne ne réclamera. À la
+ * première demande il est composé, écrit dans l'archive, et le chemin est inscrit
  * sur la facture. Toutes les demandes suivantes relisent ce fichier.</p>
  *
- * <p>Servir l archive plutot que regenerer n est pas une optimisation mais une
- * exigence : la facture conservee dix ans doit rester le document remis au client,
- * pas ce que le code produirait aujourd hui. Une evolution du gabarit ne doit pas
- * reecrire retroactivement des documents deja transmis.</p>
+ * <p>Servir l'archive plutôt que régénérer n'est pas une optimisation mais une
+ * exigence : la facture conservée dix ans doit rester le document remis au client,
+ * pas ce que le code produirait aujourd'hui. Une évolution du gabarit ne doit pas
+ * réécrire rétroactivement des documents déjà transmis.</p>
  *
- * <p>Si le fichier archive a disparu, le service le reconstruit plutot que d echouer :
- * les donnees comptables sont figees en base, le document reconstitue porte les memes
- * montants, et un client sans facture serait un probleme plus grave qu un document
- * regenere.</p>
+ * <p>Si le fichier archivé a disparu, le service le reconstruit plutôt que d'échouer :
+ * les données comptables sont figées en base, le document reconstitué porte les mêmes
+ * montants, et un client sans facture serait un problème plus grave qu'un document
+ * régénéré.</p>
  */
 @Service
 public class PdfFactureService {
@@ -54,11 +54,11 @@ public class PdfFactureService {
     }
 
     /**
-     * PDF de la facture : relu de l archive s il y est, compose et archive sinon.
+     * PDF de la facture : relu de l'archive s'il y est, composé et archivé sinon.
      *
-     * <p>Transactionnel en ecriture pour le seul {@code chemin_pdf} : le trigger
-     * {@code tg_facture_immuable} laisse passer cette colonne precisement parce
-     * qu elle ne porte aucune donnee comptable.</p>
+     * <p>Transactionnel en écriture pour le seul {@code chemin_pdf} : le trigger
+     * {@code tg_facture_immuable} laisse passer cette colonne précisément parce
+     * qu'elle ne porte aucune donnée comptable.</p>
      */
     @Transactional
     public byte[] pdfDe(Facture facture) {
@@ -77,14 +77,14 @@ public class PdfFactureService {
         return pdf;
     }
 
-    /** Nom de fichier propose au telechargement : le numero de facture, rien d autre. */
+    /** Nom de fichier proposé au téléchargement : le numéro de facture, rien d'autre. */
     public String nomDeFichier(Facture facture) {
         return "facture-%s.pdf".formatted(facture.getNumero());
     }
 
     /**
-     * Constitue le document a imprimer. La locale est celle du membre, pas celle de
-     * la session : une facture est emise dans la langue du client.
+     * Constitue le document à imprimer. La locale est celle du membre, pas celle de
+     * la session : une facture est émise dans la langue du client.
      */
     private DocumentFacture documentDe(Facture facture) {
         Commande commande = facture.getCommande();
@@ -123,6 +123,6 @@ public class PdfFactureService {
                 ligne.getQuantite(),
                 ligne.getPrixUnitaireHtva(),
                 ligne.getTauxTva(),
-                ligne.totalHtva());
+                ligne.totalTvac());
     }
 }

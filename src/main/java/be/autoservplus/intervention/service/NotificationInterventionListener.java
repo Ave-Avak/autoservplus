@@ -59,9 +59,9 @@ public class NotificationInterventionListener {
                         evenement.referenceIntervention());
                 return;
             }
-            // titulaire() couvre les deux origines depuis F12-b : un service achete en
-            // ligne a un titulaire, meme sans rendez-vous. Seule l entree directe au
-            // garage n en a aucun.
+            // titulaire() couvre les deux origines depuis F12-b, un service acheté en ligne
+            // ayant un titulaire même sans rendez-vous, et l'entrée directe au garage, dont
+            // le titulaire est le propriétaire du véhicule.
             Utilisateur membre = it.titulaire();
             if (membre == null) {
                 log.warn("Intervention {} terminee sans titulaire : aucun membre a notifier.",

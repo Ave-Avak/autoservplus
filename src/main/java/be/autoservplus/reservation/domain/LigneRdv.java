@@ -1,5 +1,6 @@
 package be.autoservplus.reservation.domain;
 
+import be.autoservplus.common.montant.CalculTva;
 import be.autoservplus.catalogue.domain.Prestation;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -89,11 +90,9 @@ public class LigneRdv {
         return prixUnitaireHtva.multiply(BigDecimal.valueOf(quantite)).setScale(2, RoundingMode.HALF_UP);
     }
 
-    /** Total taxe comprise, calcule sur le taux fige a la reservation (RM-30). */
+    /** Total taxe comprise, au prix et au taux figés à la réservation (RM-30) : prix unitaire affiché fois quantité. */
     public BigDecimal totalTvac() {
-        BigDecimal coefficient = BigDecimal.ONE.add(
-                tauxTva.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
-        return totalHtva().multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
+        return CalculTva.totalTvac(prixUnitaireHtva, tauxTva, quantite);
     }
 
     public int dureeMinutes() {

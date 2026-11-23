@@ -18,20 +18,20 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /**
- * Telechargement de la facture PDF d une commande payee (F31).
+ * Téléchargement de la facture PDF d'une commande payée (F31).
  *
- * <p>La facture est adressee par sa reference publique et l appartenance est
- * verifiee au service : la facture d autrui remonte en 404, jamais en 403. Un 403
- * confirmerait a un tiers que ce numero de facture existe, alors qu il s agit d un
- * document nominatif. Meme mecanisme que le reste du projet, ou
- * {@code RessourceIntrouvableException} porte deja {@code @ResponseStatus(NOT_FOUND)}.</p>
+ * <p>La facture est adressée par sa référence publique et l'appartenance est
+ * vérifiée au service : la facture d'autrui remonte en 404, jamais en 403. Un 403
+ * confirmerait à un tiers que ce numéro de facture existe, alors qu'il s'agit d'un
+ * document nominatif. Même mécanisme que le reste du projet, où
+ * {@code RessourceIntrouvableException} porte déjà {@code @ResponseStatus(NOT_FOUND)}.</p>
  *
- * <p>L identite vient du contexte de securite, jamais d un parametre de requete :
- * sans cela, n importe qui telechargerait la facture de n importe qui en changeant
- * un identifiant dans l URL.</p>
+ * <p>L'identité vient du contexte de sécurité, jamais d'un paramètre de requête :
+ * sans cela, n'importe qui téléchargerait la facture de n'importe qui en changeant
+ * un identifiant dans l'URL.</p>
  *
- * <p>Le PDF est fabrique a la premiere demande puis relu de l archive. La politique
- * appartient au service, le controleur ne fait que servir des octets.</p>
+ * <p>Le PDF est fabriqué à la première demande puis relu de l'archive. La politique
+ * appartient au service, le contrôleur ne fait que servir des octets.</p>
  */
 @Controller
 @RequestMapping("/factures")
@@ -50,16 +50,16 @@ public class FactureController {
                                               @PathVariable UUID reference) {
         Facture facture = factures.pourMembre(reference, membre.getUsername());
         byte[] document = pdf.pdfDe(facture);
-        // attachment : le navigateur propose l enregistrement plutot que d ouvrir le
-        // document dans la page. Nom de fichier encode en UTF-8 (ContentDisposition
-        // s en charge) pour les clients qui n acceptent pas l ASCII seul.
+        // attachment : le navigateur propose l'enregistrement plutôt que d'ouvrir le
+        // document dans la page. Nom de fichier encodé en UTF-8 (ContentDisposition
+        // s'en charge) pour les clients qui n'acceptent pas l'ASCII seul.
         ContentDisposition disposition = ContentDisposition.attachment()
                 .filename(pdf.nomDeFichier(facture), StandardCharsets.UTF_8)
                 .build();
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
-                // Document nominatif : aucun cache partage ne doit le conserver.
+                // Document nominatif : aucun cache partagé ne doit le conserver.
                 .header(HttpHeaders.CACHE_CONTROL, "private, no-store")
                 .body(document);
     }

@@ -14,12 +14,15 @@ import be.autoservplus.intervention.service.GenerateurNumeroIntervention;
 import be.autoservplus.reservation.domain.*;
 import be.autoservplus.reservation.repository.*;
 import be.autoservplus.support.SocleIntegration;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +62,8 @@ class AdminInterventionTemplatesIT extends SocleIntegration {
     @Autowired private RdvRepository rdvs;
     @Autowired private InterventionRepository interventions;
     @Autowired private GenerateurNumeroIntervention numeros;
+    @Autowired private JdbcTemplate jdbc;
+    @PersistenceContext private EntityManager entites;
 
     private UUID reference;
 
@@ -86,6 +91,29 @@ class AdminInterventionTemplatesIT extends SocleIntegration {
         mvc.perform(get("/admin/interventions").locale(java.util.Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Interventions en cours")));
+    }
+
+    @Test
+    @DisplayName("liste : une intervention née d'un rendez-vous en donne le numéro, pas « Entrée directe »")
+    void origineRendezVous() throws Exception {
+        mvc.perform(get("/admin/interventions").locale(java.util.Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("RDV : RDV-INT-0001")))
+                .andExpect(content().string(not(containsString("Entrée directe"))));
+    }
+
+    @Test
+    @DisplayName("liste : une entrée directe le dit, et nomme le propriétaire du véhicule")
+    void origineEntreeDirecte() throws Exception {
+        interventions.flush();
+        jdbc.update("UPDATE intervention SET rdv_id = NULL WHERE reference = ?", reference);
+        entites.clear();
+
+        mvc.perform(get("/admin/interventions").locale(java.util.Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Entrée directe")))
+                .andExpect(content().string(containsString("Marie Dupont")))
+                .andExpect(content().string(not(containsString("RDV : "))));
     }
 
     @Test

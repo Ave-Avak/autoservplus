@@ -1,9 +1,9 @@
 package be.autoservplus.vente.domain;
 
 /**
- * Motifs d annulation d une commande, alignes sur le dictionnaire et le CHECK
- * {@code ck_commande_motif_annulation} (V24). Ce bloc n en produit qu un :
- * TIMEOUT_PAIEMENT (RM-21). Les autres sont autorises en base des maintenant
+ * Motifs d'annulation d'une commande, alignés sur le dictionnaire et le CHECK
+ * {@code ck_commande_motif_annulation} (V24). Ce bloc n'en produit qu'un :
+ * TIMEOUT_PAIEMENT (RM-21). Les autres sont autorisés en base dès maintenant
  * et attendront leurs blocs respectifs.
  */
 public enum MotifAnnulationCommande {

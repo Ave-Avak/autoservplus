@@ -147,6 +147,26 @@ class HistoriqueEntretienIT extends SocleIntegration {
         }
 
         @Test
+        @DisplayName("le membre lit un total taxe comprise par intervention, aucun pour une intervention annulée")
+        void totalTvacSaufAnnulee() throws Exception {
+            mvc.perform(get("/mes-vehicules/{ref}/historique", golf).with(marie()).locale(Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Total TVAC")))
+                    .andExpect(content().string(containsString("59,29")));
+
+            Intervention it = interventions.findByReference(intervention).orElseThrow();
+            it.annuler();
+            interventions.saveAndFlush(it);
+
+            mvc.perform(get("/mes-vehicules/{ref}/historique", golf).with(marie()).locale(Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString(numero)))
+                    .andExpect(content().string(containsString("Annulée")))
+                    .andExpect(content().string(not(containsString("59,29"))))
+                    .andExpect(content().string(not(containsString("€"))));
+        }
+
+        @Test
         @DisplayName("véhicule d'autrui ou inconnu : 404, jamais 403")
         void autrui() throws Exception {
             mvc.perform(get("/mes-vehicules/{ref}/historique", clio).with(marie()))
@@ -203,6 +223,10 @@ class HistoriqueEntretienIT extends SocleIntegration {
         @Test
         @DisplayName("une intervention annulée n'affiche aucun total, ni au garage ni au membre")
         void annuleeSansTotal() throws Exception {
+            mvc.perform(get("/admin/vehicules/{ref}/historique", golf).with(admin()).locale(Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Total facturable")));
+
             Intervention it = interventions.findByReference(intervention).orElseThrow();
             it.annuler();
             interventions.saveAndFlush(it);

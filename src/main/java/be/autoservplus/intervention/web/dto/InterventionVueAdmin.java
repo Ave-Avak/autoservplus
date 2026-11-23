@@ -20,6 +20,8 @@ public record InterventionVueAdmin(
         String numero,
         String statut,
         String rdvNumero,
+        /** Commande de prestations d'origine (F12-b), ou {@code null}. Sans rendez-vous ni commande : entrée directe. */
+        String commandeNumero,
         String vehicule,
         String membreNom,
         String membreEmail,
@@ -55,15 +57,20 @@ public record InterventionVueAdmin(
     public static InterventionVueAdmin de(Intervention it, ZoneId zone) {
         StatutIntervention s = it.getStatut();
         var rdv = it.getRdv();
+        var commande = it.getCommande();
         var vehicule = it.getVehicule();
+        // Le membre est le titulaire, quelle que soit l'origine : celui du rendez-vous, de la
+        // commande, ou le propriétaire du véhicule pour une entrée directe.
+        var titulaire = it.titulaire();
         return new InterventionVueAdmin(
                 it.getReference(),
                 it.getNumero(),
                 s.name(),
                 rdv != null ? rdv.getNumero() : null,
+                commande != null ? commande.getNumero() : null,
                 vehicule.getMarque() + " " + vehicule.getModele() + " (" + vehicule.getPlaque() + ")",
-                rdv != null ? rdv.getMembre().nomComplet() : null,
-                rdv != null ? rdv.getMembre().getEmail() : null,
+                titulaire != null ? titulaire.nomComplet() : null,
+                titulaire != null ? titulaire.getEmail() : null,
                 it.getCommentaireAdmin(),
                 it.getDebutReel() == null ? null : LocalDateTime.ofInstant(it.getDebutReel(), zone),
                 it.getFinReelle() == null ? null : LocalDateTime.ofInstant(it.getFinReelle(), zone),

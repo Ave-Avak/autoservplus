@@ -14,8 +14,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 /**
  * Affichage du formulaire de connexion.
  *
- * <p>La soumission n est pas traitee ici : Spring Security intercepte le POST vers
- * /connexion avant qu il n atteigne un controleur. Ce controleur ne sert donc qu a
+ * <p>La soumission n'est pas traitée ici : Spring Security intercepte le POST vers
+ * /connexion avant qu'il n'atteigne un contrôleur. Ce contrôleur ne sert donc qu'à
  * afficher la page et les messages associes.</p>
  *
  * <p>Le widget Turnstile n'apparaît que lorsque la prochaine tentative l'exigera : d'après

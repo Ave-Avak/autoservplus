@@ -7,9 +7,9 @@ import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsDepassementCourriel;
-import be.autoservplus.communication.service.DetailsRdvCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.i18n.LanguesSupportees;
+import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.service.AuteurCourant;
 import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
@@ -279,6 +279,7 @@ public class InterventionService {
         if (avant != StatutIntervention.ATTENTE_VALIDATION_MEMBRE
                 && enregistre.getStatut() == StatutIntervention.ATTENTE_VALIDATION_MEMBRE) {
             notifierDepassementSansEchouer(enregistre);
+            evenements.publishEvent(new DepassementSoumisEvent(enregistre.getReference()));
         }
         return ligne;
     }
@@ -418,9 +419,9 @@ public class InterventionService {
      */
     private Intervention chargerPourMembre(UUID reference, String email) {
         Intervention it = charger(reference);
-        // titulaire() couvre les DEUX origines : rendez-vous honore et commande de
-        // services payee (F12-b). Tester getRdv() seul privait le membre qui a achete
-        // une prestation en ligne de l acces a sa propre intervention.
+        // titulaire() couvre le rendez-vous honoré, la commande de services payée (F12-b)
+        // et, sans l'un ni l'autre, le propriétaire du véhicule. Tester getRdv() seul privait
+        // de son intervention le membre qui avait acheté une prestation en ligne.
         var titulaire = it.titulaire();
         if (titulaire == null || !titulaire.getEmail().equals(email)) {
             throw new RessourceIntrouvableException("Intervention", reference);
@@ -436,24 +437,26 @@ public class InterventionService {
      * depuis son suivi, comme second canal.
      */
     private void notifierDepassementSansEchouer(Intervention it) {
-        if (it.getRdv() == null) {
-            // Entree directe au garage (hors V1) : aucun membre a prevenir. La bascule
-            // reste valable, le garage traitera l accord hors ligne.
-            log.warn("Depassement de devis sur l intervention {} sans RDV lie : aucun membre a notifier.",
+        // titulaire() et non le membre du rendez-vous : une intervention née d'une commande
+        // de prestations, ou entrée directement au garage, attend le même accord.
+        Utilisateur titulaire = it.titulaire();
+        if (titulaire == null) {
+            log.warn("Dépassement de devis sur l'intervention {} sans titulaire : aucun membre à prévenir.",
                     it.getNumero());
             return;
         }
-        ZoneId zone = parametres.courants().zone();
-        Rdv rdv = it.getRdv();
-        Locale langue = LanguesSupportees.duCompte(rdv.getMembre().getLangue());
+        Locale langue = LanguesSupportees.duCompte(titulaire.getLangue());
         try {
+            Vehicule vehicule = it.getVehicule();
             courriel.envoyerDemandeValidationDepassement(
-                    rdv.getMembre(),
-                    new DetailsRdvCourriel(rdv.getNumero(), rdv.getDebut().atZone(zone)),
+                    titulaire,
                     new DetailsDepassementCourriel(
                             it.getNumero(),
+                            "%s %s (%s)".formatted(vehicule.getMarque(), vehicule.getModele(),
+                                    vehicule.getPlaque()),
                             FormatageRdv.euros(it.devisReferenceHtva(), langue),
                             FormatageRdv.euros(it.totalProposeHtva(), langue),
+                            FormatageRdv.euros(it.totalProposeTvac(), langue),
                             it.lignesEnAttente().stream()
                                     .map(l -> "- %s x%d : %s"
                                             .formatted(l.getLibelleFige(), l.getQuantite(),

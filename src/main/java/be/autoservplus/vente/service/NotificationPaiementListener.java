@@ -18,10 +18,10 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * Previent le membre (confirmation du contrat par courriel, art. VI.46, § 7, CDE) et
- * le garage quand une commande passe a PAYEE. Meme patron que {@code NotificationInterventionListener} : AFTER_COMMIT :
- * un rollback emporte l evenement, un courriel n annonce jamais un encaissement
- * non acquis, et exceptions du fournisseur avalees apres journal.
+ * Prévient le membre (confirmation du contrat par courriel, art. VI.46, § 7, CDE) et
+ * le garage quand une commande passe à PAYEE. Même patron que {@code NotificationInterventionListener} : AFTER_COMMIT :
+ * un rollback emporte l'événement, un courriel n'annonce jamais un encaissement
+ * non acquis, et exceptions du fournisseur avalées après journal.
  *
  * <p>Côté garage, un courriel à l'adresse de l'atelier dit ce que la commande porte et
  * si une rupture est à honorer. La notification aux administrateurs part de

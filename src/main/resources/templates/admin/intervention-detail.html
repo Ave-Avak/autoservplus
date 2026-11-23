@@ -51,6 +51,10 @@
             <dt th:text="#{admin.historique.rdv}">Rendez-vous d'origine</dt>
             <dd th:text="${intervention.rdvNumero()}">RDV-2026-0001</dd>
         </div>
+        <div th:if="${intervention.commandeNumero() != null}">
+            <dt th:text="#{admin.intervention.commande-origine}">Commande d'origine</dt>
+            <dd th:text="${intervention.commandeNumero()}">CMD-2026-0001</dd>
+        </div>
         <div th:if="${intervention.debutReel() != null}">
             <dt th:text="#{intervention.suivi.demarree}">Démarrée le</dt>
             <dd th:text="${#strings.capitalize(#temporals.format(intervention.debutReel(), 'EEEE d MMMM yyyy HH:mm'))}">Lundi 14 septembre 2026 09:00</dd>

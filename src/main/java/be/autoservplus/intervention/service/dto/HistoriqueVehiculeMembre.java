@@ -2,6 +2,8 @@ package be.autoservplus.intervention.service.dto;
 
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
+import be.autoservplus.intervention.domain.StatutIntervention;
+import be.autoservplus.reservation.service.support.FormatageRdv;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -36,6 +38,12 @@ public record HistoriqueVehiculeMembre(
             String numero,
             LocalDate date,
             String clePercue,
+            /**
+             * Total taxe comprise des lignes facturables, comme sur l'écran de suivi, ou
+             * {@code null} pour une intervention annulée : rien n'y est dû, aucun montant ne
+             * s'affiche, pas plus qu'au back-office.
+             */
+            String totalTvac,
             List<Ligne> lignes) {
 
         static Entree de(Intervention it, ZoneId zone) {
@@ -44,6 +52,8 @@ public record HistoriqueVehiculeMembre(
                     it.getNumero(),
                     LocalDate.ofInstant(it.dateDeReference(), zone),
                     it.getStatut().clePercue(),
+                    it.getStatut() == StatutIntervention.ANNULEE
+                            ? null : FormatageRdv.eurosEcran(it.totalFacturableTvac()),
                     it.getLignes().stream()
                             .filter(LigneIntervention::estFacturable)
                             .map(Ligne::de)

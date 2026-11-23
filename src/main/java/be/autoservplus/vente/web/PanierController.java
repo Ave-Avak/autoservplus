@@ -21,22 +21,22 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 import java.util.UUID;
 
 /**
- * Panier du membre connecte, sous /panier (F13). Toute la zone exige une
+ * Panier du membre connecté, sous /panier (F13). Toute la zone exige une
  * authentification ({@code anyRequest().authenticated()} de la configuration de
- * securite). Le service redouble par {@code @PreAuthorize} en defense en
- * profondeur, et l identite vient du contexte de securite, jamais de l URL.
+ * sécurité). Le service redouble par {@code @PreAuthorize} en défense en
+ * profondeur, et l'identité vient du contexte de sécurité, jamais de l'URL.
  *
- * <p>Pattern PRG + flash comme les autres controleurs. Les messages de succes et
- * d erreur sont resolus ici via le {@code MessageSource} (cles {@code panier.*}) :
- * le refus de stock, notamment, restitue la quantite encore disponible, car un refus
+ * <p>Pattern PRG + flash comme les autres contrôleurs. Les messages de succès et
+ * d'erreur sont résolus ici via le {@code MessageSource} (clés {@code panier.*}) :
+ * le refus de stock, notamment, restitue la quantité encore disponible, car un refus
  * sans chiffre ne serait pas actionnable. {@link RessourceIntrouvableException}
- * n est volontairement PAS catchee : une ligne d autrui ou inconnue remonte en 404,
- * meme raisonnement que sur les reponses RM-15 du suivi d intervention.</p>
+ * n'est volontairement PAS catchée : une ligne d'autrui ou inconnue remonte en 404,
+ * même raisonnement que sur les réponses RM-15 du suivi d'intervention.</p>
  *
- * <p>« Vider » passe par une page de confirmation dediee (GET puis POST), comme
- * les ecrans admin d annulation : la CSP interdit les scripts en ligne, un
- * {@code confirm()} n est pas disponible, et un geste destructif ne se declenche
- * pas d un seul clic.</p>
+ * <p>« Vider » passe par une page de confirmation dédiée (GET puis POST), comme
+ * les écrans admin d'annulation : la CSP interdit les scripts en ligne, un
+ * {@code confirm()} n'est pas disponible, et un geste destructif ne se déclenche
+ * pas d'un seul clic.</p>
  */
 @Controller
 @RequestMapping("/panier")
@@ -67,10 +67,10 @@ public class PanierController {
     }
 
     /**
-     * Ajout d une prestation au panier (F12). Endpoint distinct de
-     * {@code /panier/ajouter} : les deux natures ne partagent ni le service appele ni
-     * les controles (stock pour la piece, aucun pour la prestation), et un parametre
-     * « type » obligerait le controleur a trancher ce que la route dit deja.
+     * Ajout d'une prestation au panier (F12). Endpoint distinct de
+     * {@code /panier/ajouter} : les deux natures ne partagent ni le service appelé ni
+     * les contrôles (stock pour la pièce, aucun pour la prestation), et un paramètre
+     * « type » obligerait le contrôleur à trancher ce que la route dit déjà.
      */
     @PostMapping("/ajouter-service")
     public String ajouterService(@AuthenticationPrincipal UserDetails membre,
@@ -113,10 +113,10 @@ public class PanierController {
     }
 
     /**
-     * Tronc commun PRG : execute l action, traduit les refus metier en messages
+     * Tronc commun PRG : exécute l'action, traduit les refus métier en messages
      * flash i18n, et revient toujours sur le panier. {@link IllegalArgumentException}
-     * couvre la quantite invalide (0, negative, hors borne) detectee par le service :
-     * le membre recoit une consigne, pas une page d erreur.
+     * couvre la quantité invalide (0, négative, hors borne) détectée par le service :
+     * le membre reçoit une consigne, pas une page d'erreur.
      */
     private String executer(RedirectAttributes redirection, String cleSucces, Runnable action) {
         try {

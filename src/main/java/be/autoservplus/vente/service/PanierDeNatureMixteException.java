@@ -3,17 +3,17 @@ package be.autoservplus.vente.service;
 import be.autoservplus.common.exception.RegleMetierException;
 
 /**
- * Levee quand un ajout melangerait pieces et prestations dans un meme panier (F12).
+ * Levée quand un ajout mélangerait pièces et prestations dans un même panier (F12).
  *
- * <p><b>Ce n est pas une contrainte d ergonomie, c est la garde qui evite la
- * retractation partielle.</b> Une commande mixte poserait un probleme insoluble en
- * V1 : une piece reste retractable quand un service pleinement execute sous
- * renonciation VI.53 ne l est plus. Annuler une partie de la commande demanderait de
- * lever {@code uq_avoir_facture} et d emettre un avoir partiel, precisement ce que
- * F30 a remis a la V2.</p>
+ * <p><b>Ce n'est pas une contrainte d'ergonomie, c'est la garde qui évite la
+ * rétractation partielle.</b> Une commande mixte poserait un problème insoluble en
+ * V1 : une pièce reste rétractable quand un service pleinement exécuté sous
+ * renonciation VI.53 ne l'est plus. Annuler une partie de la commande demanderait de
+ * lever {@code uq_avoir_facture} et d'émettre un avoir partiel, précisément ce que
+ * F30 a remis à la V2.</p>
  *
- * <p>Le message dit au membre quoi faire, pas ce que le systeme ne sait pas faire :
- * commander separement est une action, « natures incompatibles » n en est pas une.</p>
+ * <p>Le message dit au membre quoi faire, pas ce que le système ne sait pas faire :
+ * commander séparément est une action, « natures incompatibles » n'en est pas une.</p>
  */
 public class PanierDeNatureMixteException extends RegleMetierException {
 

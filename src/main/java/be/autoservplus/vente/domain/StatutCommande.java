@@ -1,13 +1,13 @@
 package be.autoservplus.vente.domain;
 
 /**
- * Cycle de vie d une commande, aligne sur le CHECK {@code ck_commande_statut}
+ * Cycle de vie d'une commande, aligné sur le CHECK {@code ck_commande_statut}
  * de la table (V4).
  *
  * <p>Naissance en EN_ATTENTE_PAIEMENT (RM-19). Le bloc paiement exerce
- * EN_ATTENTE_PAIEMENT vers PAYEE (webhook confirme) et vers ANNULEE (timeout
- * RM-21). La retractation (F30, RM-23) exerce PAYEE vers REMBOURSEE, a la
- * validation de la demande d annulation par l administrateur.</p>
+ * EN_ATTENTE_PAIEMENT vers PAYEE (webhook confirmé) et vers ANNULEE (timeout
+ * RM-21). La rétractation (F30, RM-23) exerce PAYEE vers REMBOURSEE, à la
+ * validation de la demande d'annulation par l'administrateur.</p>
  */
 public enum StatutCommande {
     EN_ATTENTE_PAIEMENT,
@@ -16,9 +16,9 @@ public enum StatutCommande {
     REMBOURSEE;
 
     /**
-     * Transitions autorisees. PAYEE ne redevient jamais ANNULEE (un paiement
-     * encaisse ne s efface pas) et ANNULEE ne devient jamais PAYEE (la garde
-     * tranche la course entre le job d expiration et un webhook tardif).
+     * Transitions autorisées. PAYEE ne redevient jamais ANNULEE (un paiement
+     * encaissé ne s'efface pas) et ANNULEE ne devient jamais PAYEE (la garde
+     * tranche la course entre le job d'expiration et un webhook tardif).
      */
     public boolean peutPasserA(StatutCommande cible) {
         return switch (this) {

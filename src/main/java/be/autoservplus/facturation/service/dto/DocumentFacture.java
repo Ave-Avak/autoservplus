@@ -8,15 +8,15 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Tout ce qu il faut imprimer sur une facture, et rien d autre.
+ * Tout ce qu'il faut imprimer sur une facture, et rien d'autre.
  *
- * <p>Le generateur PDF ne voit aucune entite : il recoit ce document deja constitue
- * et n a donc ni contexte de persistance a tenir ouvert, ni association paresseuse a
- * declencher. Il devient testable sans base ni Spring.</p>
+ * <p>Le générateur PDF ne voit aucune entité : il reçoit ce document déjà constitué
+ * et n'a donc ni contexte de persistance à tenir ouvert, ni association paresseuse à
+ * déclencher. Il devient testable sans base ni Spring.</p>
  *
  * <p>{@code locale} est celle du <b>membre</b> (colonne {@code utilisateur.langue}) et
- * non celle du navigateur : une facture est un document contractuel, elle est emise
- * dans la langue du client, pas dans celle de la session qui la telecharge.</p>
+ * non celle du navigateur : une facture est un document contractuel, elle est émise
+ * dans la langue du client, pas dans celle de la session qui la télécharge.</p>
  */
 public record DocumentFacture(
         String numero,
@@ -32,12 +32,12 @@ public record DocumentFacture(
         Locale locale) {
 
     /**
-     * Coordonnees du client telles qu elles etaient a l emission.
+     * Coordonnées du client telles qu'elles étaient à l'émission.
      *
-     * <p>Le nom arrive <b>compose</b> plutot qu en prenom et nom separes : le document
-     * ne les affiche jamais separement, et un compte anonymise n a pas de prenom ni de
+     * <p>Le nom arrive <b>composé</b> plutôt qu'en prénom et nom séparés : le document
+     * ne les affiche jamais séparément, et un compte anonymisé n'a pas de prénom ni de
      * nom mais un marqueur unique, traduit dans la langue du document (F23). Deux
-     * champs auraient force a couper ce marqueur en deux.</p>
+     * champs auraient forcé à couper ce marqueur en deux.</p>
      */
     public record ClientFacture(
             String nomComplet,
@@ -48,9 +48,9 @@ public record DocumentFacture(
             String pays) {
 
         /**
-         * Adresse sur une ligne, ou {@code null} si le membre n en a pas renseigne :
-         * les colonnes d adresse sont nullables en base, et une facture doit sortir
-         * meme pour un client qui n a jamais complete son profil.
+         * Adresse sur une ligne, ou {@code null} si le membre n'en a pas renseigné :
+         * les colonnes d'adresse sont nullables en base, et une facture doit sortir
+         * même pour un client qui n'a jamais complété son profil.
          */
         public String adresseLisible() {
             if (rue == null || codePostal == null || localite == null) {
@@ -61,12 +61,16 @@ public record DocumentFacture(
         }
     }
 
-    /** Une ligne facturee, aux valeurs figees a la commande. */
+    /**
+     * Une ligne facturée, aux valeurs figées à la commande : le prix unitaire hors TVA et le
+     * taux qu'exige la facture, et le total taxe comprise que le client a payé. La base
+     * imposable n'existe que par taux, à la ventilation.
+     */
     public record LigneFacture(
             String libelle,
             int quantite,
             BigDecimal prixUnitaireHtva,
             BigDecimal tauxTva,
-            BigDecimal totalHtva) {
+            BigDecimal totalTvac) {
     }
 }

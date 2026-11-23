@@ -10,7 +10,7 @@ import java.util.List;
 public interface EvenementSecuriteCompteRepository
         extends JpaRepository<EvenementSecuriteCompte, Long> {
 
-    /** Du plus recent au plus ancien, auteur charge d un coup : meme parti que le journal V40. */
+    /** Du plus récent au plus ancien, auteur charge d'un coup : même parti que le journal V40. */
     @Query("""
            select e from EvenementSecuriteCompte e
            left join fetch e.auteur

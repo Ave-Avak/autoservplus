@@ -25,24 +25,24 @@ import java.time.Duration;
 import java.util.Optional;
 
 /**
- * Rubrique « Mes donnees personnelles » du compte (F22, droit d acces,
+ * Rubrique « Mes données personnelles » du compte (F22, droit d'accès,
  * article 15 RGPD) : explication du droit, confirmation du mot de passe,
- * telechargement du fichier.
+ * téléchargement du fichier.
  *
  * <p>La zone exige une authentification ({@code anyRequest().authenticated()} de la
- * configuration de securite). Le service redouble par {@code @PreAuthorize}, et
- * l identite vient du contexte de securite, jamais d un parametre de requete. Un
- * membre ne peut donc exporter que son propre dossier : il n existe aucune URL
- * permettant de designer un autre titulaire.
+ * configuration de sécurité). Le service redouble par {@code @PreAuthorize}, et
+ * l'identité vient du contexte de sécurité, jamais d'un paramètre de requête. Un
+ * membre ne peut donc exporter que son propre dossier : il n'existe aucune URL
+ * permettant de désigner un autre titulaire.
  *
- * <p><b>Refus par redirection codee.</b> Le POST rend soit un fichier
- * ({@code ResponseEntity}), soit une redirection vers l ecran : deux natures de
- * reponse que Spring MVC ne sait pas resoudre depuis un type de retour
- * {@code Object}. Le refus voyage donc en <b>code</b> dans l URL
- * ({@code ?erreur=motdepasse}), que le GET retraduit en message i18n. Ecart assume
- * au patron PRG+flash des autres controleurs, impose par la reponse binaire. Le
- * code ne divulgue rien et le delai restant est <b>recalcule</b> au GET plutot que
- * transporte, ce qui evite d afficher une echeance perimee.
+ * <p><b>Refus par redirection codée.</b> Le POST rend soit un fichier
+ * ({@code ResponseEntity}), soit une redirection vers l'écran : deux natures de
+ * réponse que Spring MVC ne sait pas résoudre depuis un type de retour
+ * {@code Object}. Le refus voyage donc en <b>code</b> dans l'URL
+ * ({@code ?erreur=motdepasse}), que le GET retraduit en message i18n. Écart assumé
+ * au patron PRG+flash des autres contrôleurs, imposé par la réponse binaire. Le
+ * code ne divulgue rien et le délai restant est <b>recalculé</b> au GET plutôt que
+ * transporté, ce qui évite d'afficher une échéance périmée.
  */
 @Controller
 @RequestMapping("/mes-donnees")
@@ -67,8 +67,8 @@ public class DonneesPersonnellesController {
 
         modele.addAttribute("titre", msg("rgpd.donnees.titre"));
         modele.addAttribute("exportPossible", attente.isEmpty());
-        // Confirmation de l'export precedent : le telechargement ne rafraichit pas
-        // la page, le membre lit donc cette trace a sa visite suivante.
+        // Confirmation de l'export précédent : le téléchargement ne rafraîchit pas
+        // la page, le membre lit donc cette trace à sa visite suivante.
         attente.ifPresent(restant -> modele.addAttribute("message",
                 msg("rgpd.donnees.message.recent", delaiLisible(restant))));
         messageErreur(codeErreur, attente)
@@ -79,9 +79,9 @@ public class DonneesPersonnellesController {
     /**
      * Produit et sert le fichier, ou redirige avec un code de refus.
      *
-     * <p>{@code Content-Disposition: attachment} et un nom de fichier date : le
-     * document est fait pour etre archive par la personne, pas affiche dans
-     * l onglet.
+     * <p>{@code Content-Disposition: attachment} et un nom de fichier daté : le
+     * document est fait pour être archivé par la personne, pas affiché dans
+     * l'onglet.
      */
     @PostMapping("/export")
     public ResponseEntity<byte[]> exporter(@AuthenticationPrincipal UserDetails membre,
@@ -102,10 +102,10 @@ public class DonneesPersonnellesController {
     }
 
     /**
-     * Redirection « 303 See Other » : la reponse a un POST n est pas le document,
-     * le rechargement de l ecran ne doit pas rejouer la tentative. Le chemin passe
+     * Redirection « 303 See Other » : la réponse à un POST n'est pas le document,
+     * le rechargement de l'écran ne doit pas rejouer la tentative. Le chemin passe
      * par {@code ServletUriComponentsBuilder} pour rester valide sous un contexte
-     * de deploiement non racine.
+     * de déploiement non racine.
      */
     private ResponseEntity<byte[]> refus(String code) {
         return ResponseEntity.status(HttpStatus.SEE_OTHER)
@@ -117,12 +117,12 @@ public class DonneesPersonnellesController {
     }
 
     /**
-     * Traduit un code de refus en message. Un code inconnu (l URL est modifiable
-     * a la main) ne produit aucun message plutot qu une page en erreur.
+     * Traduit un code de refus en message. Un code inconnu (l'URL est modifiable
+     * à la main) ne produit aucun message plutôt qu'une page en erreur.
      *
-     * <p>Le refus de quota n est affiche que si l echeance n est pas deja passee :
-     * entre le POST et le GET, le delai a pu expirer, et annoncer une attente
-     * revolue serait faux.
+     * <p>Le refus de quota n'est affiché que si l'échéance n'est pas déjà passée :
+     * entre le POST et le GET, le délai a pu expirer, et annoncer une attente
+     * révolue serait faux.
      */
     private Optional<String> messageErreur(String code, Optional<Duration> attente) {
         if (ERREUR_MOT_DE_PASSE.equals(code)) {
@@ -136,8 +136,8 @@ public class DonneesPersonnellesController {
     }
 
     /**
-     * Delai restant en heures et minutes. Une attente de moins d une minute
-     * s annonce « 1 min » : « 0 min » se lirait comme « c est possible
+     * Délai restant en heures et minutes. Une attente de moins d'une minute
+     * s'annonce « 1 min » : « 0 min » se lirait comme « c'est possible
      * maintenant », alors que la garde refuse encore.
      */
     private String delaiLisible(Duration attente) {

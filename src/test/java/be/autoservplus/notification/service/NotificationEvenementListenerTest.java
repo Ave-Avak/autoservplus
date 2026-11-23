@@ -4,6 +4,7 @@ import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.repository.InterventionRepository;
+import be.autoservplus.intervention.service.DepassementSoumisEvent;
 import be.autoservplus.intervention.service.InterventionTermineeEvent;
 import be.autoservplus.notification.domain.TypeNotification;
 import be.autoservplus.reservation.domain.Rdv;
@@ -39,6 +40,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -169,6 +171,31 @@ class NotificationEvenementListenerTest {
 
             verify(notifications).deposer(marie, TypeNotification.INTERVENTION_TERMINEE,
                     "ITV-2026-0011");
+        }
+
+        @Test
+        @DisplayName("un dépassement soumis (RM-15) est déposé dans l'espace du titulaire")
+        void depassementSoumis() {
+            Intervention intervention = mock(Intervention.class);
+            when(intervention.titulaire()).thenReturn(marie);
+            when(intervention.getNumero()).thenReturn("INT-2026-0005");
+            when(interventions.findByReference(REFERENCE)).thenReturn(Optional.of(intervention));
+
+            listener.surDepassementSoumis(new DepassementSoumisEvent(REFERENCE));
+
+            verify(notifications).deposer(marie, TypeNotification.DEPASSEMENT_A_VALIDER, "INT-2026-0005");
+        }
+
+        @Test
+        @DisplayName("un dépassement sans titulaire ne dépose rien et ne lève rien")
+        void depassementSansTitulaire() {
+            Intervention intervention = mock(Intervention.class);
+            when(intervention.titulaire()).thenReturn(null);
+            when(interventions.findByReference(REFERENCE)).thenReturn(Optional.of(intervention));
+
+            listener.surDepassementSoumis(new DepassementSoumisEvent(REFERENCE));
+
+            verifyNoInteractions(notifications);
         }
 
         @Test

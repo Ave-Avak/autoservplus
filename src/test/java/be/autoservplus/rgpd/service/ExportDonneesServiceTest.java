@@ -336,8 +336,10 @@ class ExportDonneesServiceTest {
                 assertThat(cmd.lignes()).singleElement().satisfies(ligne -> {
                     assertThat(ligne.libelle()).isEqualTo("Plaquettes avant");
                     assertThat(ligne.quantite()).isEqualTo((short) 2);
-                    assertThat(ligne.totalHtva()).isEqualByComparingTo("39.98");
-                    assertThat(ligne.totalTva()).isEqualByComparingTo("8.40");
+                    // La ligne porte son prix unitaire taxe comprise et son total : la base
+                    // et la TVA n'existent que sur la commande, par taux.
+                    assertThat(ligne.prixUnitaireHtva()).isEqualByComparingTo("19.99");
+                    assertThat(ligne.prixUnitaireTvac()).isEqualByComparingTo("24.19");
                     assertThat(ligne.totalTvac()).isEqualByComparingTo("48.38");
                 });
             });

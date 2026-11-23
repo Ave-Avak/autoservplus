@@ -96,7 +96,7 @@ class CommandeControllerTest {
     @BeforeEach
     void setUp() {
         org.mockito.Mockito.reset(service, paniers, paiements);
-        panierNonVide = new PanierVue(List.of(), 5, "70,01 €", "10,20 €", "80,21 €",
+        panierNonVide = new PanierVue(List.of(), 5, "70,01 €", "10,20 €", List.of(), "80,21 €",
                 false, false, false, true);
     }
 

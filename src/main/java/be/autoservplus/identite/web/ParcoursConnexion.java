@@ -27,23 +27,23 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * Conduit une connexion du mot de passe jusqu a son aboutissement, etape par etape.
+ * Conduit une connexion du mot de passe jusqu'à son aboutissement, étape par étape.
  *
- * <p><b>Point de greffe : le gestionnaire de succes du formulaire.</b> Spring Security
- * 6.5 n a pas de MFA natif. Apres le mot de passe, ce gestionnaire remplace
- * l authentification complete par une {@link AuthentificationPartielle} sans autorite,
- * tant qu une etape reste. Un filtre aurait du redecouvrir a chaque requete ce que le
- * gestionnaire sait au moment exact ou le mot de passe vient d etre verifie. Un
- * intercepteur MVC, lui, ne verrait pas les refus de la chaine de securite.</p>
+ * <p><b>Point de greffe : le gestionnaire de succès du formulaire.</b> Spring Security
+ * 6.5 n'a pas de MFA natif. Après le mot de passe, ce gestionnaire remplace
+ * l'authentification complète par une {@link AuthentificationPartielle} sans autorité,
+ * tant qu'une étape reste. Un filtre aurait dû redécouvrir à chaque requête ce que le
+ * gestionnaire sait au moment exact où le mot de passe vient d'être vérifié. Un
+ * intercepteur MVC, lui, ne verrait pas les refus de la chaîne de sécurité.</p>
  *
- * <p><b>L etape suivante se deduit du compte</b>, relu en base a chaque pas, et non d un
- * etat tenu en session : un super-administrateur qui reinitialise un second facteur
- * pendant qu une connexion est en cours change la suite de cette connexion.</p>
+ * <p><b>L'étape suivante se déduit du compte</b>, relu en base à chaque pas, et non d'un
+ * état tenu en session : un super-administrateur qui réinitialise un second facteur
+ * pendant qu'une connexion est en cours change la suite de cette connexion.</p>
  *
- * <p><b>A l aboutissement</b> : nouvel identifiant de session (protection contre la
- * fixation : l identifiant connu d un tiers pendant l etape partielle ne doit pas
- * devenir celui d une session complete), compteurs remis a zero, langue du profil
- * appliquee.</p>
+ * <p><b>À l'aboutissement</b> : nouvel identifiant de session (protection contre la
+ * fixation : l'identifiant connu d'un tiers pendant l'étape partielle ne doit pas
+ * devenir celui d'une session complète), compteurs remis à zéro, langue du profil
+ * appliquée.</p>
  *
  * <p><b>Cinq minutes par étape.</b> Au-delà, la connexion partielle est abandonnée et
  * l'utilisateur recommence au mot de passe. Le délai court de l'ouverture de l'étape,
@@ -63,7 +63,7 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
     private final Clock horloge;
     private final SecurityContextHolderStrategy strategie =
             SecurityContextHolder.getContextHolderStrategy();
-    /** Meme composition que celle que HttpSecurity installe par defaut. */
+    /** Même composition que celle que HttpSecurity installe par défaut. */
     private final SecurityContextRepository depot = new DelegatingSecurityContextRepository(
             new RequestAttributeSecurityContextRepository(),
             new HttpSessionSecurityContextRepository());
@@ -85,7 +85,7 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
         this.horloge = horloge;
     }
 
-    /** Le mot de passe vient d etre verifie. */
+    /** Le mot de passe vient d'être vérifié. */
     @Override
     public void onAuthenticationSuccess(HttpServletRequest requete, HttpServletResponse reponse,
                                         Authentication complete)
@@ -97,8 +97,8 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
             reponse.sendRedirect(requete.getContextPath() + etape.get().chemin());
             return;
         }
-        // Aucune etape : comportement d avant le second facteur, a l identique. Le
-        // filtre du formulaire a deja change l identifiant de session.
+        // Aucune étape : comportement d'avant le second facteur, à l'identique. Le
+        // filtre du formulaire a déjà changé l'identifiant de session.
         tentatives.connexionAboutie(complete.getName());
         langue.onAuthenticationSuccess(requete, reponse, complete);
     }
@@ -117,8 +117,8 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
 
     /**
      * Comme {@link #avancer(HttpServletRequest, HttpServletResponse, AuthentificationPartielle)},
-     * mais vers une destination imposee si la connexion aboutit : les codes de secours a
-     * la fin d un enrolement, qui ne s affichent qu une fois.
+     * mais vers une destination imposée si la connexion aboutit : les codes de secours à
+     * la fin d'un enrôlement, qui ne s'affichent qu'une fois.
      */
     public String avancer(HttpServletRequest requete, HttpServletResponse reponse,
                           AuthentificationPartielle partielle, String destinationFinale) {
@@ -143,8 +143,8 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
     }
 
     /**
-     * Garde d un ecran d etape : {@code null} si la requete est bien a cette etape,
-     * sinon la redirection qui y remet de l ordre. Un compte deja connecte n a rien a
+     * Garde d'un écran d'étape : {@code null} si la requête est bien à cette étape,
+     * sinon la redirection qui y remet de l'ordre. Un compte déjà connecté n'a rien à
      * faire ici. Une connexion partielle ne choisit pas son étape. Une étape ouverte
      * depuis plus de {@link #DELAI_ETAPE} est abandonnée.
      */
@@ -156,8 +156,8 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
         Optional<EtapeConnexion> courante =
                 etapeSuivante(partielle.getName(), partielle.secondFacteurValide());
         if (courante.isEmpty()) {
-            // Plus rien a franchir : un tiers a pu lever l obligation entre-temps. On
-            // ne fait pas aboutir sur un GET : l utilisateur recommence proprement.
+            // Plus rien à franchir : un tiers a pu lever l'obligation entre-temps. On
+            // ne fait pas aboutir sur un GET : l'utilisateur recommence proprement.
             return "redirect:/connexion";
         }
         if (Instant.now(horloge).isAfter(partielle.etapeOuverteLe().plus(DELAI_ETAPE))) {
@@ -169,7 +169,7 @@ public class ParcoursConnexion implements AuthenticationSuccessHandler {
         return courante.get() == attendue ? null : "redirect:" + courante.get().chemin();
     }
 
-    /** Ecarte une connexion partielle : verrouillage, ou etape devenue impossible. */
+    /** Écarte une connexion partielle : verrouillage, ou étape devenue impossible. */
     public void abandonner(HttpServletRequest requete, HttpServletResponse reponse) {
         strategie.clearContext();
         HttpSession session = requete.getSession(false);

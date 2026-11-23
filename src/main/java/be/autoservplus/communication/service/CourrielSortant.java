@@ -304,12 +304,11 @@ public class CourrielSortant implements ServiceCourriel {
 
     @Override
     public void envoyerDemandeValidationDepassement(Utilisateur destinataire,
-                                                    DetailsRdvCourriel rdv,
                                                     DetailsDepassementCourriel depassement) {
-        Locale langue = langue(destinataire.getLangue());
         auCompte("depassement", destinataire, null, depassement.numeroIntervention(),
-                rdv.numero(), jour(rdv.debut(), langue, "EEEE d MMMM yyyy"),
+                depassement.vehicule(),
                 depassement.montantInitial(), depassement.montantPropose(),
+                depassement.montantAPayer(),
                 String.join("\n", depassement.lignesEnAttente()),
                 liens.vers(depassement.cheminValidation()));
     }

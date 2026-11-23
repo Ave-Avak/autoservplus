@@ -5,27 +5,27 @@ import org.springframework.context.annotation.ConditionContext;
 import org.springframework.core.type.AnnotatedTypeMetadata;
 
 /**
- * Decide quelle passerelle de paiement s active : la reelle si un identifiant de
+ * Décide quelle passerelle de paiement s'active : la réelle si un identifiant de
  * prestataire est fourni, le bouchon sinon.
  *
- * <p><b>Ce qui decide est la CLE, plus le profil Spring.</b> Le projet choisissait
- * jusqu ici par {@code @Profile("prod")}, ce qui liait deux questions
- * independantes. Deployer en {@code prod} sans cle levait une
- * {@code UnsupportedOperationException} au clic sur « payer » : l exception au
- * milieu d un parcours d achat, soit le pire point de rupture possible. Et
- * demarrer en {@code demo} avec une cle valide l ignorait. La presence d un
+ * <p><b>Ce qui décide est la CLE, plus le profil Spring.</b> Le projet choisissait
+ * jusqu'ici par {@code @Profile("prod")}, ce qui liait deux questions
+ * indépendantes. Déployer en {@code prod} sans clé levait une
+ * {@code UnsupportedOperationException} au clic sur « payer » : l'exception au
+ * milieu d'un parcours d'achat, soit le pire point de rupture possible. Et
+ * démarrer en {@code demo} avec une clé valide l'ignorait. La présence d'un
  * identifiant est la seule question qui compte, et elle se pose telle quelle.</p>
  *
- * <p><b>Une {@link Condition} plutot qu un {@code @ConditionalOnExpression}.</b>
- * L expression SpEL aurait interpole la valeur de la propriete dans une chaine
- * evaluee : un identifiant contenant un caractere de syntaxe aurait produit une
- * erreur d analyse SpEL <b>citant l identifiant</b> dans la trace. Un secret ne
- * doit jamais pouvoir se retrouver dans un journal par accident, fut-ce celui d une
- * erreur de demarrage. Lire l environnement en Java ne court pas ce risque.</p>
+ * <p><b>Une {@link Condition} plutôt qu'un {@code @ConditionalOnExpression}.</b>
+ * L'expression SpEL aurait interpolé la valeur de la propriété dans une chaîne
+ * évaluée : un identifiant contenant un caractère de syntaxe aurait produit une
+ * erreur d'analyse SpEL <b>citant l'identifiant</b> dans la trace. Un secret ne
+ * doit jamais pouvoir se retrouver dans un journal par accident, fût-ce celui d'une
+ * erreur de démarrage. Lire l'environnement en Java ne court pas ce risque.</p>
  */
 public final class ConditionPrestataire {
 
-    /** Propriete unique dont depend le choix, referencee ici seulement. */
+    /** Propriété unique dont dépend le choix, référencée ici seulement. */
     static final String CLE = "autoservplus.paiement.mollie.cle-api";
 
     private ConditionPrestataire() {
@@ -36,7 +36,7 @@ public final class ConditionPrestataire {
         return valeur != null && !valeur.isBlank();
     }
 
-    /** Un identifiant est fourni : la passerelle reelle prend la main. */
+    /** Un identifiant est fourni : la passerelle réelle prend la main. */
     public static class PrestataireConfigure implements Condition {
         @Override
         public boolean matches(ConditionContext contexte, AnnotatedTypeMetadata metadonnees) {
@@ -44,7 +44,7 @@ public final class ConditionPrestataire {
         }
     }
 
-    /** Aucun identifiant : repli sur le bouchon et sa page de paiement simulee. */
+    /** Aucun identifiant : repli sur le bouchon et sa page de paiement simulée. */
     public static class AucunPrestataireConfigure implements Condition {
         @Override
         public boolean matches(ConditionContext contexte, AnnotatedTypeMetadata metadonnees) {

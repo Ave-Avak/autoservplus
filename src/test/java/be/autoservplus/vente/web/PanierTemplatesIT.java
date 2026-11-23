@@ -72,30 +72,42 @@ class PanierTemplatesIT extends SocleIntegration {
         ampoule = pieces.save(ampoule);
     }
 
-    /** Meme cas a taux mixtes que le test unitaire RM-30, verifie a la main. */
+    /**
+     * Même cas à taux mixtes que le test unitaire RM-30 : 3 ampoules à 10,61 (6 %) et 2 jeux
+     * de plaquettes à 24,19 (21 %).
+     */
     private void remplirLePanier() {
         panierService.ajouterPiece("marie@exemple.be", ampoule.getReference(), 3);
         panierService.ajouterPiece("marie@exemple.be", plaquettes.getReference(), 2);
     }
 
     @Test
-    @DisplayName("GET /panier rend le detail HTVA / TVA / TVAC par ligne et en totaux (RM-30)")
+    @DisplayName("GET /panier rend les prix taxe comprise par ligne, puis le hors TVA, la TVA par taux et le total (RM-30)")
     void detailRm30() throws Exception {
         remplirLePanier();
 
         mvc.perform(get("/panier").locale(Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Mon panier")))
-                // Ligne ampoule : 30,03 HTVA / 1,80 TVA / 31,83 TVAC a 6 %.
-                .andExpect(content().string(containsString("30,03")))
-                .andExpect(content().string(containsString("1,80")))
+                .andExpect(content().string(containsString("Prix unitaire TVAC")))
+                // Ligne ampoule : 10,61 l'unité, 31,83 les trois.
+                .andExpect(content().string(containsString("10,61")))
                 .andExpect(content().string(containsString("31,83")))
-                // Ligne plaquettes : 39,98 / 8,40 / 48,38 a 21 %.
-                .andExpect(content().string(containsString("39,98")))
+                // Ligne plaquettes : 24,19 l'unité, 48,38 les deux.
+                .andExpect(content().string(containsString("24,19")))
                 .andExpect(content().string(containsString("48,38")))
-                // Totaux sommes ligne a ligne.
+                // Ni total hors TVA ni TVA par ligne : 30,03 et 39,98 étaient les bases.
+                .andExpect(content().string(not(containsString("30,03"))))
+                .andExpect(content().string(not(containsString("39,98"))))
+                .andExpect(content().string(not(containsString("Taux TVA"))))
+                // Totaux : hors TVA, une ligne de TVA par taux, total taxe comprise.
+                .andExpect(content().string(containsString("Total HTVA")))
                 .andExpect(content().string(containsString("70,01")))
-                .andExpect(content().string(containsString("10,20")))
+                .andExpect(content().string(containsString("TVA 6 %")))
+                .andExpect(content().string(containsString("1,80")))
+                .andExpect(content().string(containsString("TVA 21 %")))
+                .andExpect(content().string(containsString("8,40")))
+                .andExpect(content().string(containsString("Total TVAC")))
                 .andExpect(content().string(containsString("80,21")))
                 // Compteur d en-tete : 5 articles.
                 .andExpect(content().string(containsString("Panier (5)")));

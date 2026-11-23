@@ -1,37 +1,28 @@
 package be.autoservplus.facturation.service;
 
+import be.autoservplus.common.montant.CalculTva;
 import be.autoservplus.vente.domain.LignePanier;
 
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 
 /**
- * Ventilation de la TVA par taux, mention obligatoire d une facture belge des lors
- * que plusieurs taux coexistent (AR n°1, art. 5 : base imposable ventilee par taux).
+ * Ventilation de la TVA par taux, mention obligatoire d'une facture belge dès lors
+ * que plusieurs taux coexistent (AR n°1, art. 5 : base imposable ventilée par taux).
  *
- * <p><b>Les tranches somment les montants deja calcules ligne a ligne, elles ne les
- * recalculent pas.</b> C est la seule facon de garantir que le total des tranches
- * egale au centime les montants figes de la commande : chaque ligne definit sa TVA
- * comme TVAC moins HTVA (RM-30), et refaire le calcul depuis la base cumulee d une
- * tranche produirait, sur certains arrondis, un centime d ecart entre la facture et
- * le document PDF qui la presente.</p>
+ * <p><b>Chaque tranche se calcule sur le total taxe comprise de son taux</b>, par
+ * {@link CalculTva}, exactement comme le panier a calculé les montants que la commande a
+ * figés : le total des tranches égale donc au centime les montants de la facture. La base
+ * n'est pas la somme de bases de ligne, une ligne n'en a pas.</p>
  *
- * <p>Tranches triees par taux croissant : l ordre d affichage d une facture est
- * fixe, il ne doit pas dependre de l ordre des lignes du panier.</p>
+ * <p>Tranches triées par taux croissant : l'ordre d'affichage d'une facture est
+ * fixe, il ne doit pas dépendre de l'ordre des lignes du panier.</p>
  */
 public record VentilationTva(List<TrancheTva> tranches) {
 
-    /** Une base imposable et sa TVA, pour un taux donne. */
+    /** Une base imposable et sa TVA, pour un taux donné. */
     public record TrancheTva(BigDecimal taux, BigDecimal baseHtva, BigDecimal montantTva) {
-
-        TrancheTva ajouter(BigDecimal htva, BigDecimal tva) {
-            return new TrancheTva(taux, baseHtva.add(htva), montantTva.add(tva));
-        }
 
         public BigDecimal montantTvac() {
             return baseHtva.add(montantTva);
@@ -39,24 +30,17 @@ public record VentilationTva(List<TrancheTva> tranches) {
     }
 
     public static VentilationTva desLignes(List<LignePanier> lignes) {
-        // LinkedHashMap indexee par la valeur textuelle du taux : « 21 » et « 21.00 »
-        // designent le meme taux, un BigDecimal les distinguerait par leur echelle.
-        Map<String, TrancheTva> parTaux = new LinkedHashMap<>();
-        for (LignePanier ligne : lignes) {
-            BigDecimal taux = ligne.getTauxTva().stripTrailingZeros();
-            parTaux.merge(taux.toPlainString(),
-                    new TrancheTva(taux, ligne.totalHtva(), ligne.totalTva()),
-                    (existante, ajout) -> existante.ajouter(ajout.baseHtva(), ajout.montantTva()));
-        }
-        List<TrancheTva> triees = new ArrayList<>(parTaux.values());
-        triees.sort(Comparator.comparing(TrancheTva::taux));
-        return new VentilationTva(List.copyOf(triees));
+        return new VentilationTva(CalculTva.ventiler(lignes.stream()
+                        .map(ligne -> new CalculTva.MontantTaxe(ligne.getTauxTva(), ligne.totalTvac()))
+                        .toList()).stream()
+                .map(tranche -> new TrancheTva(tranche.taux(), tranche.base(), tranche.tva()))
+                .toList());
     }
 
     /**
-     * Le taux de la facture s il est unique.
+     * Le taux de la facture s'il est unique.
      *
-     * @return le taux, ou {@link Optional#empty()} si la facture melange plusieurs
+     * @return le taux, ou {@link Optional#empty()} si la facture mélange plusieurs
      *         taux : la colonne {@code taux_tva_applique} vaut alors NULL, la
      *         ventilation faisant seule foi (V26)
      */

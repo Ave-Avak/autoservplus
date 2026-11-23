@@ -33,15 +33,22 @@
             <h2 th:text="${i.numero()}">INT-2026-0001</h2>
             <p>
                 <strong th:if="${i.membreNom() != null}" th:text="${i.membreNom()}">Marie Dupont</strong>
-                <span th:if="${i.membreNom() == null}"><em th:text="#{admin.interventions.entree-directe}">Entrée directe</em></span>
-                <br>
+                <br th:if="${i.membreNom() != null}">
                 <a th:if="${i.membreEmail() != null}"
                    th:href="'mailto:' + ${i.membreEmail()}"
                    th:text="${i.membreEmail()}">marie@exemple.be</a>
             </p>
             <p th:text="${i.vehicule()}">VW Golf (1-ABC-123)</p>
+            <!--/* L'origine se lit sur l'intervention, pas sur la présence d'un membre : une
+                 intervention née d'une commande, ou entrée directement, a aussi un titulaire. */-->
             <p th:if="${i.rdvNumero() != null}" th:text="#{admin.interventions.rdv(${i.rdvNumero()})}">
                 RDV : RDV-2026-0001
+            </p>
+            <p th:if="${i.commandeNumero() != null}" th:text="#{admin.interventions.commande(${i.commandeNumero()})}">
+                Commande : CMD-2026-0001
+            </p>
+            <p th:if="${i.rdvNumero() == null and i.commandeNumero() == null}">
+                <em th:text="#{admin.interventions.entree-directe}">Entrée directe</em>
             </p>
             <p th:text="#{admin.interventions.total(${i.totalTvac()})}">Total : 49,00 €</p>
 

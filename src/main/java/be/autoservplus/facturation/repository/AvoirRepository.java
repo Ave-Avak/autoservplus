@@ -15,13 +15,13 @@ import java.util.UUID;
 public interface AvoirRepository extends JpaRepository<Avoir, Long> {
 
     /**
-     * Avoir d une facture, s il en existe un. Support de l idempotence : le controle
-     * applicatif s appuie dessus, l index unique {@code uq_avoir_facture} (V27)
-     * tranche les courses que ce controle ne peut pas voir.
+     * Avoir d'une facture, s'il en existe un. Support de l'idempotence : le contrôle
+     * applicatif s'appuie dessus, l'index unique {@code uq_avoir_facture} (V27)
+     * tranche les courses que ce contrôle ne peut pas voir.
      */
     Optional<Avoir> findByFacture(Facture facture);
 
-    /** L avoir est adresse par sa reference publique, jamais par sa cle primaire. */
+    /** L'avoir est adressé par sa référence publique, jamais par sa clé primaire. */
     @Query("""
             SELECT a FROM Avoir a
             JOIN FETCH a.facture f

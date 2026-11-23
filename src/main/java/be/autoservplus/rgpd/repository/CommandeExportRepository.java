@@ -10,18 +10,18 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * Lecture des commandes d un membre et de leurs lignes pour l export (F22).
+ * Lecture des commandes d'un membre et de leurs lignes pour l'export (F22).
  *
- * <p>Deux requetes plutot qu un {@code JOIN FETCH} des lignes : la seconde ramene
+ * <p>Deux requêtes plutôt qu'un {@code JOIN FETCH} des lignes : la seconde ramène
  * en un seul appel les lignes de <b>toutes</b> les commandes du membre, que le
- * service regroupe ensuite en memoire. Le cout est de deux requetes quel que soit
- * le nombre de commandes : ni N+1, ni produit cartesien a dedupliquer.
+ * service regroupe ensuite en mémoire. Le coût est de deux requêtes quel que soit
+ * le nombre de commandes : ni N+1, ni produit cartésien à dédupliquer.
  *
- * <p>La piece du catalogue n est pas jointe : le libelle et les montants sont
- * <b>figes sur la ligne</b> a l ajout au panier (RM-30), l export n a donc rien a
- * lire du catalogue courant. C est aussi ce qui evite le piege de
+ * <p>La pièce du catalogue n'est pas jointe : le libellé et les montants sont
+ * <b>figés sur la ligne</b> à l'ajout au panier (RM-30), l'export n'a donc rien à
+ * lire du catalogue courant. C'est aussi ce qui évite le piège de
  * {@code CommandeRepository.lignesDe}, dont le {@code JOIN FETCH l.piece} est une
- * jointure interne : une ligne de service (colonne {@code service_id}, F12 a
+ * jointure interne : une ligne de service (colonne {@code service_id}, F12 à
  * venir) y serait silencieusement absente.
  */
 public interface CommandeExportRepository extends Repository<Commande, Long> {
@@ -33,7 +33,7 @@ public interface CommandeExportRepository extends Repository<Commande, Long> {
             """)
     List<Commande> pourMembre(@Param("email") String email);
 
-    /** Lignes de plusieurs commandes d un coup. L appelant garantit une liste non vide. */
+    /** Lignes de plusieurs commandes d'un coup. L'appelant garantit une liste non vide. */
     @Query("""
             SELECT l FROM LignePanier l
             WHERE l.commande IN :commandes

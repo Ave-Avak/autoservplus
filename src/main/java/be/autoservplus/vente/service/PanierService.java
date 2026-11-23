@@ -20,27 +20,27 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 /**
- * Panier d achat du membre connecte (F13) : consultation, ajout d une piece,
- * modification de quantite, retrait de ligne, vidage.
+ * Panier d'achat du membre connecté (F13) : consultation, ajout d'une pièce,
+ * modification de quantité, retrait de ligne, vidage.
  *
- * <p>L identite vient toujours du contexte de securite, transmise en email par le
- * controleur ({@code @AuthenticationPrincipal}) : jamais d un parametre de requete.
- * L ownership est verifie par le chargement : une ligne n est cherchee que dans le
- * panier du membre, une ligne d autrui remonte donc en
- * {@link RessourceIntrouvableException} (404, meme code qu un id inconnu) sans
- * confirmer son existence, meme mecanisme que {@code interventionDuMembre}.</p>
+ * <p>L'identité vient toujours du contexte de sécurité, transmise en email par le
+ * contrôleur ({@code @AuthenticationPrincipal}) : jamais d'un paramètre de requête.
+ * L'ownership est vérifié par le chargement : une ligne n'est cherchée que dans le
+ * panier du membre, une ligne d'autrui remonte donc en
+ * {@link RessourceIntrouvableException} (404, même code qu'un id inconnu) sans
+ * confirmer son existence, même mécanisme que {@code interventionDuMembre}.</p>
  *
- * <p><b>RM-19</b> (au plus un panier par membre) : trouve-ou-cree porte par les
- * chemins d ecriture uniquement. Une lecture ne cree pas de ligne en base, un GET
- * reste sans effet de bord. Le dernier arbitre est l index unique partiel
- * {@code uq_panier_membre_actif} : deux creations concurrentes ne peuvent pas
+ * <p><b>RM-19</b> (au plus un panier par membre) : trouve-ou-crée porté par les
+ * chemins d'écriture uniquement. Une lecture ne crée pas de ligne en base, un GET
+ * reste sans effet de bord. Le dernier arbitre est l'index unique partiel
+ * {@code uq_panier_membre_actif} : deux créations concurrentes ne peuvent pas
  * passer toutes les deux, la perdante est traduite en
  * {@link ConflitConcurrenceException}.</p>
  *
- * <p><b>F13 / stock</b> : le controle porte sur le stock <b>physique</b> de la
- * piece, sans decrementation a l ajout. La reservation virtuelle de 30 minutes
- * (RM-21) est une evolution V2 documentee. Consequence assumee : deux membres
- * peuvent mettre la derniere piece au panier, le premier qui commandera l aura.</p>
+ * <p><b>F13 / stock</b> : le contrôle porte sur le stock <b>physique</b> de la
+ * pièce, sans décrémentation à l'ajout. La réservation virtuelle de 30 minutes
+ * (RM-21) est une évolution V2 documentée. Conséquence assumée : deux membres
+ * peuvent mettre la dernière pièce au panier, le premier qui commandera l'aura.</p>
  */
 @Service
 @Transactional(readOnly = true)
@@ -68,24 +68,24 @@ public class PanierService {
         return paniers.findByMembreEmail(email).map(PanierVue::de).orElseGet(PanierVue::vide);
     }
 
-    /** Nombre d articles pour le compteur d en-tete. 0 si aucun panier n existe. */
+    /** Nombre d'articles pour le compteur d'en-tête. 0 si aucun panier n'existe. */
     public int nombreArticles(String email) {
         return paniers.nombreArticles(email);
     }
 
-    // --- ecritures --------------------------------------------------------------------
+    // --- écritures --------------------------------------------------------------------
 
     /**
-     * Ajoute une prestation au panier (F12), trouve-ou-cree, en fusionnant la ligne
-     * existante le cas echeant.
+     * Ajoute une prestation au panier (F12), trouve-ou-crée, en fusionnant la ligne
+     * existante le cas échéant.
      *
-     * <p><b>Aucun controle de stock</b>, contrairement aux pieces : une prestation est
-     * du temps d atelier, pas un article denombrable. Ce que la V1 ne verifie donc pas
-     * ici, c est la disponibilite d un creneau. Le service est vendu, sa planification
-     * reste une etape separee (decouplage assume, voir la dette F12-a).</p>
+     * <p><b>Aucun contrôle de stock</b>, contrairement aux pièces : une prestation est
+     * du temps d'atelier, pas un article dénombrable. Ce que la V1 ne vérifie donc pas
+     * ici, c'est la disponibilité d'un créneau. Le service est vendu, sa planification
+     * reste une étape séparée (découplage assumé, voir la dette F12-a).</p>
      *
-     * <p>Prestation inactive refusee, miroir exact de RM-28 pour les pieces : on ne
-     * vend pas ce qui a ete retire du catalogue.</p>
+     * <p>Prestation inactive refusée, miroir exact de RM-28 pour les pièces : on ne
+     * vend pas ce qui a été retiré du catalogue.</p>
      */
     @Transactional
     @PreAuthorize("isAuthenticated()")
@@ -103,9 +103,9 @@ public class PanierService {
     }
 
     /**
-     * Ajoute une piece au panier (trouve-ou-cree), en fusionnant avec la ligne
-     * existante le cas echeant. Le controle de stock porte sur la quantite
-     * <b>cumulee</b> : trois ajouts de 2 ne peuvent pas contourner un stock de 5.
+     * Ajoute une pièce au panier (trouve-ou-crée), en fusionnant avec la ligne
+     * existante le cas échéant. Le contrôle de stock porte sur la quantité
+     * <b>cumulée</b> : trois ajouts de 2 ne peuvent pas contourner un stock de 5.
      */
     @Transactional
     public PanierVue ajouterPiece(String email, UUID referencePiece, int quantite) {
@@ -118,8 +118,8 @@ public class PanierService {
         Panier panier = trouveOuCree(email);
         int dejaAuPanier = panier.quantitePour(piece);
         if (dejaAuPanier + quantite > piece.getQuantiteStock()) {
-            // La quantite encore disponible tient compte de ce que le panier contient
-            // deja : c est ce que le membre peut effectivement AJOUTER.
+            // La quantité encore disponible tient compte de ce que le panier contient
+            // déjà : c'est ce que le membre peut effectivement AJOUTER.
             throw new StockInsuffisantException(piece.getLibelle(), quantite,
                     Math.max(0, piece.getQuantiteStock() - dejaAuPanier));
         }
@@ -128,11 +128,11 @@ public class PanierService {
     }
 
     /**
-     * Change la quantite d une ligne. Le stock est controle sur la <b>nouvelle
-     * quantite totale</b> de la ligne. Une piece devenue inactive (contrainte F13)
+     * Change la quantité d'une ligne. Le stock est contrôlé sur la <b>nouvelle
+     * quantité totale</b> de la ligne. Une pièce devenue inactive (contrainte F13)
      * ne peut
-     * plus voir sa quantite augmenter : la reduire reste permis, on peut toujours
-     * renoncer a un article, pas en acquerir davantage.
+     * plus voir sa quantité augmenter : la réduire reste permis, on peut toujours
+     * renoncer à un article, pas en acquérir davantage.
      */
     @Transactional
     public PanierVue modifierQuantite(String email, Long ligneId, int quantite) {
@@ -162,9 +162,9 @@ public class PanierService {
     }
 
     /**
-     * Retire toutes les lignes. Sans panier existant, l operation est un simple
-     * non-evenement : l etat vise (un panier vide) est deja atteint, et un 404
-     * revelerait sans necessite qu aucun panier n a jamais ete cree.
+     * Retire toutes les lignes. Sans panier existant, l'opération est un simple
+     * non-événement : l'état visé (un panier vide) est déjà atteint, et un 404
+     * révélerait sans nécessité qu'aucun panier n'a jamais été créé.
      */
     @Transactional
     public void vider(String email) {
@@ -177,9 +177,9 @@ public class PanierService {
     // --- helpers ----------------------------------------------------------------------
 
     /**
-     * Panier du membre pour manipuler une ligne. L absence de panier remonte comme
-     * « ligne introuvable », pas « panier introuvable » : la reponse est la meme que
-     * pour une ligne d autrui, aucune information n est divulguee.
+     * Panier du membre pour manipuler une ligne. L'absence de panier remonte comme
+     * « ligne introuvable », pas « panier introuvable » : la réponse est la même que
+     * pour une ligne d'autrui, aucune information n'est divulguée.
      */
     private Panier panierExistant(String email, Long ligneId) {
         return paniers.findByMembreEmail(email)
@@ -191,11 +191,11 @@ public class PanierService {
     }
 
     /**
-     * Creation du panier (RM-19). Si deux requetes du meme membre creent en meme
-     * temps, l index unique partiel en base rejette la seconde : on traduit en
-     * conflit de concurrence explicite plutot que de laisser fuir une erreur SQL.
-     * La transaction est perdue de toute facon, le membre rejoue son geste et
-     * trouve le panier cree par la premiere.
+     * Création du panier (RM-19). Si deux requêtes du même membre créent en même
+     * temps, l'index unique partiel en base rejette la seconde : on traduit en
+     * conflit de concurrence explicite plutôt que de laisser fuir une erreur SQL.
+     * La transaction est perdue de toute façon, le membre rejoue son geste et
+     * trouve le panier créé par la première.
      */
     private Panier creerPour(String email) {
         Utilisateur membre = utilisateurs.findByEmail(email)

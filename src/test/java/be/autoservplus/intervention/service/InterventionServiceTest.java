@@ -24,6 +24,7 @@ import be.autoservplus.reservation.domain.PosteAtelier;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
+import be.autoservplus.vente.domain.Commande;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -34,6 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -238,15 +240,70 @@ class InterventionServiceTest {
         @Test
         @DisplayName("ajout au-dela du seuil : bascule et courriel de demande de validation")
         void notifieLeMembreALaBascule() {
-            when(parametres.courants()).thenReturn(new ParametreAtelier());
             Intervention it = interventionEnCours();
             Prestation chere = prestationA("89.00");
 
             service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
-            verify(courriel).envoyerDemandeValidationDepassement(eq(marie), any(),
-                    any(DetailsDepassementCourriel.class));
+            ArgumentCaptor<DetailsDepassementCourriel> details =
+                    ArgumentCaptor.forClass(DetailsDepassementCourriel.class);
+            verify(courriel).envoyerDemandeValidationDepassement(eq(marie), details.capture());
+            assertThat(details.getValue().numeroIntervention()).isEqualTo("INT-2026-0001");
+            assertThat(details.getValue().vehicule()).isEqualTo("VW Golf (1-ABC-123)");
+            // 49,00 et 89,00 hors TVA à 21 % : 59,29 et 107,69, soit 166,98 à payer.
+            assertThat(details.getValue().montantPropose()).startsWith("138,00");
+            assertThat(details.getValue().montantAPayer()).startsWith("166,98");
+            assertThat(details.getValue().cheminValidation())
+                    .isEqualTo("/mes-interventions/" + it.getReference() + "/validation");
+            // La notification de l'espace membre part de cet événement, après la validation.
+            verify(evenements).publishEvent(new DepassementSoumisEvent(it.getReference()));
+        }
+
+        @Test
+        @DisplayName("intervention née d'une commande : le membre de la commande est prévenu, sans rendez-vous")
+        void notifieLeTitulaireDUneCommande() {
+            Intervention it = interventionEnCours();
+            Utilisateur paul = new Utilisateur("paul@exemple.be", "$2a$12$h", "Martin", "Paul",
+                    TypeUtilisateur.MEMBRE);
+            ReflectionTestUtils.setField(it, "rdv", null);
+            ReflectionTestUtils.setField(it, "commande", new Commande("CMD-2026-0009", paul,
+                    new BigDecimal("49.00"), new BigDecimal("10.29"), new BigDecimal("59.29"), MAINTENANT));
+            Prestation chere = prestationA("89.00");
+
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+            verify(courriel).envoyerDemandeValidationDepassement(eq(paul), any(DetailsDepassementCourriel.class));
+            verify(evenements).publishEvent(new DepassementSoumisEvent(it.getReference()));
+        }
+
+        @Test
+        @DisplayName("entrée directe au garage : le propriétaire du véhicule est prévenu")
+        void notifieLeProprietaireDUneEntreeDirecte() {
+            Intervention it = interventionEnCours();
+            ReflectionTestUtils.setField(it, "rdv", null);
+            Prestation chere = prestationA("89.00");
+
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+
+            verify(courriel).envoyerDemandeValidationDepassement(eq(marie), any(DetailsDepassementCourriel.class));
+            verify(evenements).publishEvent(new DepassementSoumisEvent(it.getReference()));
+        }
+
+        @Test
+        @DisplayName("aucun titulaire : la bascule tient, aucun courriel, aucune exception")
+        void sansTitulaire() {
+            Intervention it = interventionEnCours();
+            ReflectionTestUtils.setField(it, "rdv", null);
+            marie.anonymiser("jeton", "$2a$12$inerte", MAINTENANT);
+            Prestation chere = prestationA("89.00");
+
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+            assertThat(it.titulaire()).isNull();
+            verify(courriel, never()).envoyerDemandeValidationDepassement(any(), any());
         }
 
         @Test
@@ -258,17 +315,16 @@ class InterventionServiceTest {
             service.ajouterLigneMainOeuvre(it.getReference(), petite.getReference(), (short) 1);
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
-            verify(courriel, never()).envoyerDemandeValidationDepassement(any(), any(), any());
+            verify(courriel, never()).envoyerDemandeValidationDepassement(any(), any());
         }
 
         @Test
         @DisplayName("un fournisseur mail en panne n'annule pas la bascule deja persistee")
         void echecCourrielNAnnulePasLaBascule() {
-            when(parametres.courants()).thenReturn(new ParametreAtelier());
             Intervention it = interventionEnCours();
             Prestation chere = prestationA("89.00");
             doThrow(new RuntimeException("SMTP indisponible"))
-                    .when(courriel).envoyerDemandeValidationDepassement(any(), any(), any());
+                    .when(courriel).envoyerDemandeValidationDepassement(any(), any());
 
             service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
 
@@ -280,7 +336,6 @@ class InterventionServiceTest {
         void validerParLeProprietaire() {
             Intervention it = interventionEnCours();
             Prestation chere = prestationA("89.00");
-            when(parametres.courants()).thenReturn(new ParametreAtelier());
             service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
 
             Intervention resultat = service.validerDepassement(it.getReference(), "marie@exemple.be");
@@ -294,7 +349,6 @@ class InterventionServiceTest {
         void refuserParLeProprietaire() {
             Intervention it = interventionEnCours();
             Prestation chere = prestationA("89.00");
-            when(parametres.courants()).thenReturn(new ParametreAtelier());
             service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
 
             Intervention resultat = service.refuserDepassement(it.getReference(), "marie@exemple.be");
@@ -341,7 +395,7 @@ class InterventionServiceTest {
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.PLANIFIEE);
             assertThat(it.getLignes()).hasSize(1);
             verify(interventions, never()).saveAndFlush(any());
-            verify(courriel, never()).envoyerDemandeValidationDepassement(any(), any(), any());
+            verify(courriel, never()).envoyerDemandeValidationDepassement(any(), any());
         }
 
         @Test
@@ -476,7 +530,6 @@ class InterventionServiceTest {
         @Test
         @DisplayName("valider/refuser un depassement historise aussi : l'historique n'a pas de trou")
         void reponseMembreHistorisee() {
-            when(parametres.courants()).thenReturn(new ParametreAtelier());
             Intervention it = interventionChargee();
             it.demarrer(MAINTENANT);
             Categorie c = new Categorie("REP", "Reparation", TypeCategorie.SERVICE);

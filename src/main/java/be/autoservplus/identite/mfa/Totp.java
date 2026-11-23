@@ -10,16 +10,16 @@ import java.time.Instant;
 import java.util.OptionalLong;
 
 /**
- * Mot de passe a usage unique fonde sur le temps (TOTP, RFC 6238) : HMAC-SHA1, pas de
- * 30 secondes, six chiffres, les parametres que toutes les applications
- * d authentification acceptent sans configuration.
+ * Mot de passe à usage unique fondé sur le temps (TOTP, RFC 6238) : HMAC-SHA1, pas de
+ * 30 secondes, six chiffres, les paramètres que toutes les applications
+ * d'authentification acceptent sans configuration.
  *
- * <p><b>Implementation maison plutot qu une bibliotheque.</b> Les candidates
- * ({@code dev.samstevens.totp}, {@code googleauth}) ne sont plus publiees depuis 2020,
- * et aucune ne gere ce qui demande reellement du soin ici : la persistance du dernier pas
- * accepte, donc l anti-rejeu. Le calcul lui-meme tient en quelques lignes de
- * {@code javax.crypto} et se verifie contre les vecteurs de l annexe B de la RFC :
- * c est ce qui rend ce choix defendable, pas sa brievete.</p>
+ * <p><b>Implémentation maison plutôt qu'une bibliothèque.</b> Les candidates
+ * ({@code dev.samstevens.totp}, {@code googleauth}) ne sont plus publiées depuis 2020,
+ * et aucune ne gère ce qui demande réellement du soin ici : la persistance du dernier pas
+ * accepté, donc l'anti-rejeu. Le calcul lui-même tient en quelques lignes de
+ * {@code javax.crypto} et se vérifie contre les vecteurs de l'annexe B de la RFC :
+ * c'est ce qui rend ce choix defendable, pas sa brievete.</p>
  */
 public final class Totp {
 
@@ -27,8 +27,8 @@ public final class Totp {
     public static final int CHIFFRES = 6;
 
     /**
-     * Un pas de part et d autre : la derive d horloge d un telephone et le temps de
-     * saisie ne doivent pas faire echouer un code juste. Au-dela, la fenetre ouverte a
+     * Un pas de part et d'autre : la dérive d'horloge d'un téléphone et le temps de
+     * saisie ne doivent pas faire échouer un code juste. Au-delà, la fenêtre ouverte à
      * qui devine croit sans servir personne.
      */
     public static final int TOLERANCE_PAS = 1;
@@ -46,10 +46,10 @@ public final class Totp {
         return code(secret, pas, CHIFFRES);
     }
 
-    /** Huit chiffres ne servent qu aux vecteurs de la RFC, qui sont donnes ainsi. */
+    /** Huit chiffres ne servent qu'aux vecteurs de la RFC, qui sont donnés ainsi. */
     static String code(byte[] secret, long pas, int chiffres) {
         byte[] empreinte = hmac(secret, ByteBuffer.allocate(Long.BYTES).putLong(pas).array());
-        // Troncature dynamique (RFC 4226 §5.3) : le dernier quartet choisit ou lire.
+        // Troncature dynamique (RFC 4226 §5.3) : le dernier quartet choisit où lire.
         int decalage = empreinte[empreinte.length - 1] & 0x0f;
         int binaire = ((empreinte[decalage] & 0x7f) << 24)
                 | ((empreinte[decalage + 1] & 0xff) << 16)
@@ -60,14 +60,14 @@ public final class Totp {
     }
 
     /**
-     * Cherche le pas auquel correspond la saisie, dans la tolerance, en refusant tout pas
-     * deja consomme.
+     * Cherche le pas auquel correspond la saisie, dans la tolérance, en refusant tout pas
+     * déjà consommé.
      *
-     * <p>Les trois candidats sont toujours calcules et compares en temps constant : une
-     * sortie anticipee laisserait le temps de reponse dire lequel a correspondu.</p>
+     * <p>Les trois candidats sont toujours calculés et comparés en temps constant : une
+     * sortie anticipée laisserait le temps de réponse dire lequel a correspondu.</p>
      *
-     * @param dernierPasAccepte {@code null} si aucun code n a encore ete accepte
-     * @return le pas accepte, a memoriser par l appelant. Vide si la saisie est refusee
+     * @param dernierPasAccepte {@code null} si aucun code n'a encore été accepté
+     * @return le pas accepté, à mémoriser par l'appelant. Vide si la saisie est refusée
      */
     public static OptionalLong verifier(byte[] secret, String saisie, Instant maintenant,
                                         Long dernierPasAccepte) {
@@ -89,7 +89,7 @@ public final class Totp {
         return retenu == Long.MIN_VALUE ? OptionalLong.empty() : OptionalLong.of(retenu);
     }
 
-    /** Les applications affichent souvent « 123 456 » : l espace n est pas une faute. */
+    /** Les applications affichent souvent « 123 456 » : l'espace n'est pas une faute. */
     static String normaliser(String saisie) {
         return saisie == null ? "" : saisie.replaceAll("\\s", "");
     }
@@ -100,7 +100,7 @@ public final class Totp {
             mac.init(new SecretKeySpec(cle, ALGORITHME));
             return mac.doFinal(message);
         } catch (GeneralSecurityException impossible) {
-            // HmacSHA1 est exige de toute implementation Java.
+            // HmacSHA1 est exigé de toute implémentation Java.
             throw new IllegalStateException("HmacSHA1 indisponible", impossible);
         }
     }

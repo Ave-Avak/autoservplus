@@ -12,11 +12,11 @@ import java.time.Clock;
 import java.util.List;
 
 /**
- * Consigne les evenements de securite d un compte.
+ * Consigne les événements de sécurité d'un compte.
  *
- * <p>{@code MANDATORY} : l evenement s ecrit dans la transaction du geste qu il trace.
- * Ecrit apres coup, il pourrait manquer si le geste echoue, ou survivre a un geste
- * annule, ce qui serait pire.</p>
+ * <p>{@code MANDATORY} : l'événement s'écrit dans la transaction du geste qu'il trace.
+ * Écrit après coup, il pourrait manquer si le geste échoue, ou survivre à un geste
+ * annulé, ce qui serait pire.</p>
  */
 @Component
 public class JournalSecuriteCompte {

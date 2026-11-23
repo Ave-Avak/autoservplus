@@ -14,19 +14,19 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import java.io.IOException;
 
 /**
- * Hors des etapes de connexion, une connexion PARTIELLE est vue comme anonyme.
+ * Hors des étapes de connexion, une connexion PARTIELLE est vue comme anonyme.
  *
- * <p>Le jeton partiel porte le {@code UserDetails} du compte, pour que les etapes
- * sachent qui elles servent. Sur une route publique, il etait donc lu comme une
+ * <p>Le jeton partiel porte le {@code UserDetails} du compte, pour que les étapes
+ * sachent qui elles servent. Sur une route publique, il était donc lu comme une
  * connexion : {@code @AuthenticationPrincipal} le resolvait, et le choix des cookies
- * s enregistrait au nom du compte, les compteurs du panier et des notifications
- * s affichaient, avant que le second facteur ait ete fourni.</p>
+ * s'enregistrait au nom du compte, les compteurs du panier et des notifications
+ * s'affichaient, avant que le second facteur ait été fourni.</p>
  *
- * <p>Place APRES {@code AuthorizationFilter} : les routes protegees ont deja refuse le
- * jeton partiel et renvoye a l etape ({@code RefusAccesEnEtapes}). Ce filtre ne touche
- * que ce qui a ete autorise, c est-a-dire le public. Le contexte n est remplace que pour
- * la duree de la requete, jamais enregistre : la session garde la connexion partielle,
- * et l etape reste reprenable.</p>
+ * <p>Placé APRÈS {@code AuthorizationFilter} : les routes protégées ont déjà refusé le
+ * jeton partiel et renvoyé à l'étape ({@code RefusAccesEnEtapes}). Ce filtre ne touche
+ * que ce qui a été autorisé, c'est-à-dire le public. Le contexte n'est remplacé que pour
+ * la durée de la requête, jamais enregistré : la session garde la connexion partielle,
+ * et l'étape reste reprenable.</p>
  */
 public class ConnexionPartielleHorsEtapes extends OncePerRequestFilter {
 
@@ -55,7 +55,7 @@ public class ConnexionPartielleHorsEtapes extends OncePerRequestFilter {
         }
     }
 
-    /** Les pages d erreur aussi : elles rendent l en-tete, donc ses compteurs. */
+    /** Les pages d'erreur aussi : elles rendent l'en-tête, donc ses compteurs. */
     @Override
     protected boolean shouldNotFilterErrorDispatch() {
         return false;

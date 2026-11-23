@@ -37,6 +37,8 @@ public record CommandeAdminDetail(
         boolean contientDesPieces,
         String totalHtva,
         String totalTva,
+        /** TVA de chaque taux, recalculée des lignes de la commande. */
+        List<TvaParTauxVue> tvaParTaux,
         String totalTvac,
         String methodePaiement,
         LocalDateTime datePaiement,
@@ -86,6 +88,7 @@ public record CommandeAdminDetail(
                 !pieces.isEmpty(),
                 FormatageRdv.eurosEcran(commande.getMontantHtva()),
                 FormatageRdv.eurosEcran(commande.getMontantTva()),
+                CommandeDetailVue.tvaParTaux(java.util.stream.Stream.concat(pieces.stream(), prestations.stream()).toList()),
                 FormatageRdv.eurosEcran(commande.getMontantTvac()),
                 paiement == null ? null : paiement.getMethode(),
                 paiement == null ? null : local(paiement.getDateFinalisation(), zone),

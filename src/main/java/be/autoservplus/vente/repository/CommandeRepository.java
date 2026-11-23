@@ -19,7 +19,7 @@ import java.util.UUID;
 
 public interface CommandeRepository extends JpaRepository<Commande, Long> {
 
-    /** La commande est adressee par sa reference publique, jamais par sa cle primaire. */
+    /** La commande est adressée par sa référence publique, jamais par sa clé primaire. */
     @Query("""
             SELECT c FROM Commande c
             JOIN FETCH c.membre
@@ -28,19 +28,19 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
     Optional<Commande> findByReference(@Param("reference") UUID reference);
 
     /**
-     * Verrou pessimiste (SELECT FOR UPDATE) : la table commande n a pas de colonne
-     * version, et la course webhook / job d expiration se resout en serialisant les
-     * deux ecritures. Le second lecteur voit le statut deja change et sa garde
-     * d entite tranche, au lieu d ecraser silencieusement l etat de l autre.
+     * Verrou pessimiste (SELECT FOR UPDATE) : la table commande n'a pas de colonne
+     * version, et la course webhook / job d'expiration se résout en sérialisant les
+     * deux écritures. Le second lecteur voit le statut déjà changé et sa garde
+     * d'entité tranche, au lieu d'écraser silencieusement l'état de l'autre.
      */
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM Commande c WHERE c.id = :id")
     Optional<Commande> verrouillerParId(@Param("id") Long id);
 
     /**
-     * Historique des commandes d un membre, de la plus recente a la plus ancienne
-     * (F32). Le membre est identifie par son courriel, comme partout ailleurs a
-     * partir du contexte de securite : jamais par un identifiant de requete.
+     * Historique des commandes d'un membre, de la plus récente à la plus ancienne
+     * (F32). Le membre est identifié par son courriel, comme partout ailleurs à
+     * partir du contexte de sécurité : jamais par un identifiant de requête.
      */
     @Query("""
             SELECT c FROM Commande c
@@ -58,13 +58,13 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
                                          @Param("limite") Instant limite);
 
     /**
-     * Lignes de PIECE d une commande, pieces chargees, triees par id de piece : l ordre
-     * de verrouillage au decrement est ainsi deterministe (anti-interblocage).
+     * Lignes de PIECE d'une commande, pièces chargées, triées par id de pièce : l'ordre
+     * de verrouillage au décrément est ainsi déterministe (anti-interblocage).
      *
-     * <p><b>Ne rend QUE les lignes de piece.</b> Le {@code JOIN FETCH} est une jointure
-     * interne : une ligne de service, dont {@code piece} est nul, en est exclue. C est
-     * voulu : cette requete sert le decrement de stock, qui ne concerne que des pieces,
-     * et son tri par identifiant de piece n aurait pas de sens autrement. Pour les
+     * <p><b>Ne rend QUE les lignes de pièce.</b> Le {@code JOIN FETCH} est une jointure
+     * interne : une ligne de service, dont {@code piece} est nul, en est exclue. C'est
+     * voulu : cette requête sert le décrément de stock, qui ne concerne que des pièces,
+     * et son tri par identifiant de pièce n'aurait pas de sens autrement. Pour les
      * prestations, voir {@link #lignesServiceDe}.</p>
      */
     @Query("""
@@ -76,12 +76,12 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
     List<LignePanier> lignesDe(@Param("commande") Commande commande);
 
     /**
-     * Lignes de SERVICE d une commande (F12-b), prestations chargees.
+     * Lignes de SERVICE d'une commande (F12-b), prestations chargées.
      *
-     * <p>Requete distincte plutot qu un elargissement de {@link #lignesDe} : cette
-     * derniere trie par identifiant de piece pour garantir un ordre de verrouillage
-     * deterministe au decrement de stock, propriete qu un {@code LEFT JOIN} melant les
-     * deux natures ferait perdre pour un besoin qui n en a pas.</p>
+     * <p>Requête distincte plutôt qu'un élargissement de {@link #lignesDe} : cette
+     * dernière trie par identifiant de pièce pour garantir un ordre de verrouillage
+     * déterministe au décrément de stock, propriété qu'un {@code LEFT JOIN} mêlant les
+     * deux natures ferait perdre pour un besoin qui n'en a pas.</p>
      */
     @Query("""
             SELECT l FROM LignePanier l
@@ -92,10 +92,10 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
     List<LignePanier> lignesServiceDe(@Param("commande") Commande commande);
 
     /**
-     * Commandes payees comportant au moins une ligne de service (F12-b).
+     * Commandes payées comportant au moins une ligne de service (F12-b).
      *
      * <p>{@code DISTINCT} : une commande de plusieurs prestations remonterait autant de
-     * fois qu elle a de lignes.</p>
+     * fois qu'elle a de lignes.</p>
      */
     @Query("""
             SELECT DISTINCT c FROM Commande c

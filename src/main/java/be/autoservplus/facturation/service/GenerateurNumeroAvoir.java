@@ -10,25 +10,25 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 
 /**
- * Attribue le numero d une note de credit, format {@code AV-ANNEE-NNNN}, avec la
- * meme garantie legale de suite <b>sans trou</b> par exercice que la facture.
+ * Attribue le numéro d'une note de crédit, format {@code AV-ANNEE-NNNN}, avec la
+ * même garantie légale de suite <b>sans trou</b> par exercice que la facture.
  *
- * <p>Jumeau de {@link GenerateurNumeroFacture}, et pour la meme raison : un document
- * rectificatif est soumis a la discipline de numerotation de l AR n°1 (art. 5, suite
- * ininterrompue. Art. 12 pour la note de credit). Reprendre ici la sequence
- * {@code seq_numero_avoir} du socle V9 aurait ete plus court d une classe, mais
- * aurait fait cohabiter deux raisonnements contradictoires dans le meme module :
- * V26 a disqualifie la sequence pour la facture au motif qu elle laisse des trous au
+ * <p>Jumeau de {@link GenerateurNumeroFacture}, et pour la même raison : un document
+ * rectificatif est soumis à la discipline de numérotation de l'AR n°1 (art. 5, suite
+ * ininterrompue. Art. 12 pour la note de crédit). Reprendre ici la séquence
+ * {@code seq_numero_avoir} du socle V9 aurait été plus court d'une classe, mais
+ * aurait fait cohabiter deux raisonnements contradictoires dans le même module :
+ * V26 a disqualifié la séquence pour la facture au motif qu'elle laisse des trous au
  * rollback, et ce motif ne devient pas faux parce que le document change de nom.</p>
  *
- * <p>Compteur <b>separe</b> de celui des factures : un avoir a sa propre suite legale
- * et ne consomme pas un numero de facture. Les deux suites se lisent independamment
+ * <p>Compteur <b>séparé</b> de celui des factures : un avoir a sa propre suite légale
+ * et ne consomme pas un numéro de facture. Les deux suites se lisent indépendamment
  * dans les livres.</p>
  *
- * <p>{@code Propagation.MANDATORY} verrouille la regle dans le code : un numero ne
- * peut pas etre tire hors d une transaction existante. Un appel isole echoue
- * immediatement au lieu d ouvrir sa propre transaction, de committer l increment,
- * puis de laisser l emission echouer plus loin : exactement le trou qu on evite.</p>
+ * <p>{@code Propagation.MANDATORY} verrouille la règle dans le code : un numéro ne
+ * peut pas être tiré hors d'une transaction existante. Un appel isolé échoue
+ * immédiatement au lieu d'ouvrir sa propre transaction, de committer l'incrément,
+ * puis de laisser l'émission échouer plus loin : exactement le trou qu'on évite.</p>
  */
 @Component
 public class GenerateurNumeroAvoir {
@@ -45,22 +45,22 @@ public class GenerateurNumeroAvoir {
     }
 
     /**
-     * Consomme le numero suivant de l exercice courant.
+     * Consomme le numéro suivant de l'exercice courant.
      *
      * @throws org.springframework.transaction.IllegalTransactionStateException
-     *         si aucune transaction n est en cours
+     *         si aucune transaction n'est en cours
      */
     @Transactional(propagation = Propagation.MANDATORY)
     public NumeroAvoir prochain() {
         // Année au garage, comme la date imprimée sur le document : l'horloge est en UTC.
         short exercice = (short) fuseau.annee(horloge.instant());
-        // Creation avant verrouillage : on ne peut pas verrouiller une ligne absente.
+        // Création avant verrouillage : on ne peut pas verrouiller une ligne absente.
         compteurs.creerSiAbsent(exercice);
         CompteurAvoir compteur = compteurs.verrouillerParExercice(exercice)
                 .orElseThrow(() -> new IllegalStateException(
                         "Compteur d avoir introuvable pour l exercice " + exercice));
         int sequence = compteur.consommerProchainNumero();
-        // Flush immediat : l increment part en base tant que le verrou est tenu.
+        // Flush immédiat : l'incrément part en base tant que le verrou est tenu.
         compteurs.saveAndFlush(compteur);
         return NumeroAvoir.de(exercice, sequence);
     }

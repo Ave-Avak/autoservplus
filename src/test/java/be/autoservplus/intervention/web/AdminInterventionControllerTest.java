@@ -87,6 +87,7 @@ class AdminInterventionControllerTest {
         vueDemo = new InterventionVueAdmin(REF, "INT-2026-0001",
                 "PLANIFIEE",
                 "RDV-2026-0001",
+                null,
                 "VW Golf (1-ABC-123)",
                 "Marie Dupont", "marie@exemple.be",
                 null, null, null,

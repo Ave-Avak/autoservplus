@@ -1,5 +1,6 @@
 package be.autoservplus.catalogue.domain;
 
+import be.autoservplus.common.montant.CalculTva;
 import be.autoservplus.common.entity.BaseEntity;
 import jakarta.persistence.*;
 import jakarta.validation.Valid;
@@ -7,7 +8,6 @@ import jakarta.validation.constraints.*;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
@@ -85,14 +85,12 @@ public class Prestation extends BaseEntity {
     /**
      * Prix affiche au client, taxe comprise.
      *
-     * <p>La regle RM-30 impose que les prix presentes au consommateur soient exprimes
-     * toutes taxes comprises. Le calcul se fait en BigDecimal, jamais en virgule
-     * flottante, afin d eviter tout ecart d arrondi sur une facture.</p>
+     * <p>La règle RM-30 impose que les prix présentés au consommateur soient exprimés
+     * toutes taxes comprises. C'est le nombre même qui sert au total d'une ligne : le prix
+     * annoncé est le prix payé.</p>
      */
     public BigDecimal prixTvac() {
-        BigDecimal coefficient = BigDecimal.ONE.add(
-                tauxTva.divide(new BigDecimal("100"), 4, RoundingMode.HALF_UP));
-        return prixHtva.multiply(coefficient).setScale(2, RoundingMode.HALF_UP);
+        return CalculTva.unitaireTvac(prixHtva, tauxTva);
     }
 
     /** Montant de la taxe pour une unite. */

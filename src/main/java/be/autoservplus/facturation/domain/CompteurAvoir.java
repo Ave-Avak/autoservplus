@@ -12,22 +12,22 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.time.Instant;
 
 /**
- * Compteur des notes de credit d un exercice comptable (V27).
+ * Compteur des notes de crédit d'un exercice comptable (V27).
  *
  * <p>Jumeau de {@link CompteurFacture}, et volontairement <b>distinct</b> de lui :
- * un avoir a sa propre suite legale et ne consomme pas un numero de facture. Les
- * deux suites se lisent separement dans les livres, elles ne s entrelacent pas.</p>
+ * un avoir a sa propre suite légale et ne consomme pas un numéro de facture. Les
+ * deux suites se lisent séparément dans les livres, elles ne s'entrelacent pas.</p>
  *
- * <p>Meme mecanique et meme justification qu en V26 : l increment se fait en table,
- * donc dans la transaction qui insere l avoir. Une emission annulee rend son numero
- * au lieu de creuser un trou, ce qu une sequence PostgreSQL ne sait pas faire :
+ * <p>Même mécanique et même justification qu'en V26 : l'incrément se fait en table,
+ * donc dans la transaction qui insère l'avoir. Une émission annulée rend son numéro
+ * au lieu de creuser un trou, ce qu'une séquence PostgreSQL ne sait pas faire :
  * {@code nextval} est non transactionnel par conception. La discipline vaut pour le
- * document rectificatif comme pour la facture qu il corrige (AR n°1, art. 5 et 12).</p>
+ * document rectificatif comme pour la facture qu'il corrige (AR n°1, art. 5 et 12).</p>
  *
- * <p>Les deux compteurs ne sont pas factorises dans une entite commune : ils vivent
- * dans deux tables distinctes, et une hierarchie JPA (ou une table unique
- * discriminee) rendrait le verrou de l un observable depuis l autre. Deux tables
- * separees serialisent deux flux qui n ont aucune raison de s attendre.</p>
+ * <p>Les deux compteurs ne sont pas factorisés dans une entité commune : ils vivent
+ * dans deux tables distinctes, et une hiérarchie JPA (ou une table unique
+ * discriminée) rendrait le verrou de l'un observable depuis l'autre. Deux tables
+ * séparées sérialisent deux flux qui n'ont aucune raison de s'attendre.</p>
  */
 @Entity
 @Table(name = "compteur_avoir")
@@ -59,11 +59,11 @@ public class CompteurAvoir {
     }
 
     /**
-     * Consomme le numero suivant de l exercice. Appele sous verrou de ligne : deux
-     * emissions concurrentes sont serialisees, la seconde lit la valeur committee par
-     * la premiere et ne peut donc pas la reattribuer.
+     * Consomme le numéro suivant de l'exercice. Appelé sous verrou de ligne : deux
+     * émissions concurrentes sont sérialisées, la seconde lit la valeur committée par
+     * la première et ne peut donc pas la réattribuer.
      *
-     * @return le numero attribue, strictement croissant a partir de 1
+     * @return le numéro attribué, strictement croissant à partir de 1
      */
     public int consommerProchainNumero() {
         return ++dernierNumero;
