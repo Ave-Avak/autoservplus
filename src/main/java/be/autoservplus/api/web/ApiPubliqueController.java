@@ -7,13 +7,19 @@ import be.autoservplus.api.web.dto.PrestationPublique;
 import be.autoservplus.catalogue.service.CatalogueService;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
 import be.autoservplus.config.IdentiteGarage;
+import be.autoservplus.i18n.LanguesSupportees;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import be.autoservplus.common.web.NumeroPage;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -22,6 +28,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * API REST publique en lecture seule (BL-8), sous {@code /api/v1}.
@@ -67,23 +74,43 @@ public class ApiPubliqueController {
         this.identite = identite;
     }
 
-    @Operation(summary = "Liste les prestations proposees",
-            description = "Prestations actives du garage, paginees. Aucune donnee de gestion "
-                    + "(stock, marge, seuil) n est exposee.")
+    @Operation(summary = "Liste les prestations proposées",
+            description = "Prestations actives du garage, paginées. Aucune donnée de gestion "
+                    + "(stock, marge, seuil) n'est exposée. Le libellé, la description et la "
+                    + "catégorie sont rendus dans la langue négociée par Accept-Language, parmi "
+                    + "fr, nl et en. Un texte sans traduction est rendu en français.")
+    @ApiResponse(responseCode = "200", description = "Page de prestations, triée sur le libellé rendu",
+            headers = {
+                    @Header(name = HttpHeaders.CONTENT_LANGUAGE,
+                            description = "Langue négociée : fr, nl ou en. Un texte sans traduction "
+                                    + "reste en français dans une réponse nl ou en.",
+                            schema = @Schema(type = "string", allowableValues = {"fr", "nl", "en"})),
+                    @Header(name = HttpHeaders.VARY,
+                            description = "Accept-Language : la réponse dépend de la langue demandée.",
+                            schema = @Schema(type = "string"))})
     @GetMapping("/prestations")
     public ResponseEntity<PagePublique<PrestationPublique>> prestations(
-            @Parameter(description = "Index de page, a partir de zero")
+            @Parameter(description = "Index de page, à partir de zéro")
             @RequestParam(defaultValue = "0") int page,
-            @Parameter(description = "Elements par page, 100 au maximum")
-            @RequestParam(defaultValue = "" + TAILLE_DEFAUT) int taille) {
+            @Parameter(description = "Éléments par page, 100 au maximum")
+            @RequestParam(defaultValue = "" + TAILLE_DEFAUT) int taille,
+            @Parameter(description = "Langues préférées du client. Admises : fr, nl, en. "
+                    + "Sans en-tête ou sans langue admise, le français.", example = "nl-BE, fr;q=0.8")
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
 
-        List<PrestationPublique> toutes = catalogue.prestationsActives().stream()
+        // La langue vient de l'en-tête seul, jamais de la session ni de « ?lang= » : la
+        // réponse est mise en cache par des intermédiaires, qui ne connaissent que
+        // l'en-tête annoncé par Vary.
+        Locale langue = LanguesSupportees.negociee(acceptLanguage);
+        List<PrestationPublique> toutes = catalogue.prestationsActives(langue).stream()
                 .map(PrestationPublique::de)
                 .toList();
         return ResponseEntity.ok()
                 // Catalogue public et peu changeant : une minute de cache suffit a
                 // absorber un pic sans servir un tarif perime.
                 .cacheControl(CacheControl.maxAge(Duration.ofMinutes(1)).cachePublic())
+                .header(HttpHeaders.CONTENT_LANGUAGE, langue.getLanguage())
+                .varyBy(HttpHeaders.ACCEPT_LANGUAGE)
                 .body(paginer(toutes, page, taille));
     }
 

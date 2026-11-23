@@ -1,5 +1,8 @@
 package be.autoservplus.importcsv.service;
 
+import be.autoservplus.catalogue.domain.Piece;
+import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.Traductions;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.catalogue.service.AdminCatalogueService;
@@ -50,6 +53,18 @@ public class ImportCatalogueService {
             List.of("categorie", "reference_fabricant", "libelle", "marque", "description",
                     "prix_htva", "taux_tva", "stock", "seuil_alerte");
 
+    /**
+     * Colonnes facultatives, communes aux prestations et aux pièces. Une colonne absente
+     * laisse la traduction de l'article en place : un fichier écrit avant les traductions
+     * se réimporte sans rien effacer. Une colonne présente fait foi, cellule vide
+     * comprise, qui retire la traduction.
+     */
+    private static final List<String> COLONNES_TRADUCTION =
+            List.of("libelle_nl", "libelle_en", "description_nl", "description_en");
+
+    /** Longueur des colonnes de libellé, en base comme au formulaire. */
+    private static final int LONGUEUR_LIBELLE = 150;
+
     private final AdminCatalogueService catalogue;
     private final PrestationRepository prestations;
     private final PieceRepository pieces;
@@ -69,6 +84,10 @@ public class ImportCatalogueService {
 
     public static String enTetePieces() {
         return String.join(";", COLONNES_PIECE);
+    }
+
+    public static String colonnesFacultatives() {
+        return String.join(";", COLONNES_TRADUCTION);
     }
 
     @Transactional
@@ -132,6 +151,7 @@ public class ImportCatalogueService {
 
     /** @return {@code true} si l article a ete cree, {@code false} s il a ete mis a jour */
     private boolean traiterPrestation(Ligne ligne) {
+        var existante = prestations.findByCode(ligne.texteObligatoire("code"));
         DonneesPrestation donnees = new DonneesPrestation(
                 ligne.texteObligatoire("categorie"),
                 ligne.texteObligatoire("code"),
@@ -140,9 +160,9 @@ public class ImportCatalogueService {
                 ligne.montant("prix_htva"),
                 ligne.tauxTva("taux_tva"),
                 ligne.entier("duree_minutes"),
-                true);
+                true,
+                ligne.traductions(existante.map(Prestation::getTraductions).orElse(null)));
 
-        var existante = prestations.findByCode(donnees.code());
         if (existante.isPresent()) {
             catalogue.modifierPrestation(existante.get().getReference(), donnees);
             return false;
@@ -152,6 +172,7 @@ public class ImportCatalogueService {
     }
 
     private boolean traiterPiece(Ligne ligne) {
+        var existante = pieces.findByReferenceFabricant(ligne.texteObligatoire("reference_fabricant"));
         DonneesPiece donnees = new DonneesPiece(
                 ligne.texteObligatoire("categorie"),
                 ligne.texteObligatoire("reference_fabricant"),
@@ -162,9 +183,9 @@ public class ImportCatalogueService {
                 ligne.tauxTva("taux_tva"),
                 ligne.entier("stock"),
                 ligne.entier("seuil_alerte"),
-                true);
+                true,
+                ligne.traductions(existante.map(Piece::getTraductions).orElse(null)));
 
-        var existante = pieces.findByReferenceFabricant(donnees.referenceFabricant());
         if (existante.isPresent()) {
             catalogue.modifierPiece(existante.get().getReference(), donnees);
             return false;
@@ -193,6 +214,37 @@ public class ImportCatalogueService {
             }
             String valeur = cellules.get(index);
             return valeur.isEmpty() ? null : valeur;
+        }
+
+        /**
+         * Traductions à enregistrer, ou {@code null} quand le fichier n'en porte aucune
+         * colonne : l'article garde alors les siennes. Colonne par colonne, celle qui
+         * manque reprend la valeur en place.
+         *
+         * @param enPlace traductions de l'article mis à jour, {@code null} pour une création
+         */
+        Traductions traductions(Traductions enPlace) {
+            if (COLONNES_TRADUCTION.stream().noneMatch(entete::contains)) {
+                return null;
+            }
+            Traductions depart = enPlace == null ? Traductions.aucune() : enPlace;
+            return new Traductions(
+                    traduction("libelle_nl", depart.getLibelleNl()),
+                    traduction("libelle_en", depart.getLibelleEn()),
+                    traduction("description_nl", depart.getDescriptionNl()),
+                    traduction("description_en", depart.getDescriptionEn()));
+        }
+
+        private String traduction(String colonne, String enPlace) {
+            if (!entete.contains(colonne)) {
+                return enPlace;
+            }
+            String valeur = texte(colonne);
+            if (colonne.startsWith("libelle") && valeur != null && valeur.length() > LONGUEUR_LIBELLE) {
+                throw new IllegalArgumentException("Colonne « " + colonne + " » : "
+                        + LONGUEUR_LIBELLE + " caractères au plus.");
+            }
+            return valeur;
         }
 
         String texteObligatoire(String colonne) {

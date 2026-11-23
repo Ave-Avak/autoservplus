@@ -73,6 +73,11 @@ public class CatalogueService {
 
     public List<ArticleVue> prestationsActives() {
         Locale langue = langue();
+        return prestationsActives(langue);
+    }
+
+    /** Les prestations actives dans une langue donnée, pour un appelant qui ne suit pas celle de l'écran. */
+    public List<ArticleVue> prestationsActives(Locale langue) {
         return triees(prestations.findByActifTrueOrderByLibelleAsc().stream()
                 .map(prestation -> ArticleVue.de(prestation, langue)), langue);
     }

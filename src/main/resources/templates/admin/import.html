@@ -70,6 +70,11 @@
         <p><button type="submit" class="btn-cta" th:text="#{admin.import.envoyer}">Importer</button></p>
     </form>
 
+    <p class="carte-meta">
+        <span th:text="#{admin.import.colonnes-facultatives}">Colonnes facultatives pour les traductions :</span>
+        <code th:text="${colonnesFacultatives}">libelle_nl;libelle_en</code>
+    </p>
+
     <p class="carte-meta" th:text="#{admin.import.tout-ou-rien}">
         Une seule ligne invalide annule l'import entier : corrigez votre fichier et renvoyez-le.
     </p>
