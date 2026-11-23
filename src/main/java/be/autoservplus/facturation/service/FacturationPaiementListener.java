@@ -12,23 +12,23 @@ import org.springframework.transaction.event.TransactionPhase;
 import org.springframework.transaction.event.TransactionalEventListener;
 
 /**
- * Emet la facture des qu une commande passe a PAYEE (F31).
+ * Émet la facture dès qu'une commande passe à PAYEE (F31).
  *
  * <p>{@code AFTER_COMMIT}, comme {@code NotificationInterventionListener} et
  * {@code NotificationPaiementListener} : une facture ne peut pas exister pour un
- * encaissement qui n a pas ete committe. Si la transaction de paiement est annulee,
- * l evenement meurt avec elle et aucun numero n est consomme.</p>
+ * encaissement qui n'a pas été committé. Si la transaction de paiement est annulée,
+ * l'événement meurt avec elle et aucun numéro n'est consommé.</p>
  *
- * <p>Difference avec les deux precedents : ce listener <b>ecrit</b>. Sa transaction
- * {@code REQUIRES_NEW} n est donc pas en lecture seule, et son echec a des
- * consequences comptables : d ou le journal en ERROR et non en WARN. Le paiement,
- * lui, reste acquis : on ne rembourse pas un client parce qu un PDF a manque. La
- * reprise (rejeu de l emission pour une commande payee sans facture) releve d un
- * traitement de reconciliation, hors perimetre de ce bloc.</p>
+ * <p>Différence avec les deux précédents : ce listener <b>écrit</b>. Sa transaction
+ * {@code REQUIRES_NEW} n'est donc pas en lecture seule, et son échec a des
+ * conséquences comptables : d'où le journal en ERROR et non en WARN. Le paiement,
+ * lui, reste acquis : on ne rembourse pas un client parce qu'un PDF a manqué. La
+ * reprise (rejeu de l'émission pour une commande payée sans facture) relève d'un
+ * traitement de réconciliation, hors périmètre de ce bloc.</p>
  *
- * <p>Le listener vit dans {@code facturation}, module qui depend deja de
- * {@code vente} (la facture nait d une commande) : l inverse ferait dependre la
- * vente de la facturation pour un evenement qu elle publie deja.</p>
+ * <p>Le listener vit dans {@code facturation}, module qui dépend déjà de
+ * {@code vente} (la facture naît d'une commande) : l'inverse ferait dépendre la
+ * vente de la facturation pour un événement qu'elle publie déjà.</p>
  */
 @Component
 public class FacturationPaiementListener {
@@ -49,10 +49,10 @@ public class FacturationPaiementListener {
             log.info("Facture {} disponible pour la commande {}.",
                     facture.getNumero(), evenement.referenceCommande());
         } catch (DataIntegrityViolationException e) {
-            // Course entre deux emissions simultanees : l index partiel
-            // uq_facture_commande a refuse la seconde. La facture existe, ecrite par
-            // l autre transaction. Celle-ci est annulee, son numero rendu au
-            // compteur. Rien a reprendre.
+            // Course entre deux émissions simultanées : l'index partiel
+            // uq_facture_commande a refusé la seconde. La facture existe, écrite par
+            // l'autre transaction. Celle-ci est annulée, son numéro rendu au
+            // compteur. Rien à reprendre.
             log.info("Facture de la commande {} deja emise par un traitement concurrent.",
                     evenement.referenceCommande());
         } catch (RuntimeException e) {

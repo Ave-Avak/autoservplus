@@ -17,25 +17,25 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * Fabrique et sert le PDF d une note de credit (F30), avec archivage.
+ * Fabrique et sert le PDF d'une note de crédit (F30), avec archivage.
  *
- * <p>Meme politique que {@code PdfFactureService}, et pour les memes raisons.
- * <b>Genere a la demande</b> : rien n oblige a produire un PDF que personne ne
- * reclamera. L avoir existe en base des la validation, c est lui qui fait foi.
- * <b>Archive une fois</b> : le document conserve dix ans doit rester celui qui a ete
- * remis au client, pas ce que le code produirait aujourd hui. Une evolution du
- * gabarit ne doit pas reecrire retroactivement des pieces deja transmises.</p>
+ * <p>Même politique que {@code PdfFactureService}, et pour les mêmes raisons.
+ * <b>Généré à la demande</b> : rien n'oblige à produire un PDF que personne ne
+ * réclamera. L'avoir existe en base dès la validation, c'est lui qui fait foi.
+ * <b>Archivé une fois</b> : le document conservé dix ans doit rester celui qui a été
+ * remis au client, pas ce que le code produirait aujourd'hui. Une évolution du
+ * gabarit ne doit pas réécrire rétroactivement des pièces déjà transmises.</p>
  *
- * <p>Si le fichier archive a disparu, le service reconstruit plutot que d echouer :
- * les donnees comptables sont figees en base et le document reconstitue porte les
- * memes montants.</p>
+ * <p>Si le fichier archivé a disparu, le service reconstruit plutôt que d'échouer :
+ * les données comptables sont figées en base et le document reconstitué porte les
+ * mêmes montants.</p>
  *
- * <p><b>Les lignes et la ventilation sont celles de la facture corrigee</b>, relues
- * par {@link FactureService}. Elles ne sont ni recopiees ni recalculees : les lignes
- * sont immuables depuis leur rattachement a la commande, et c est precisement ce qui
- * garantit qu un avoir contre-passe la facture au centime pres. Recalculer depuis le
- * catalogue du jour produirait, sur un prix modifie entre-temps, un avoir qui
- * n annule pas ce qu il pretend annuler.</p>
+ * <p><b>Les lignes et la ventilation sont celles de la facture corrigée</b>, relues
+ * par {@link FactureService}. Elles ne sont ni recopiées ni recalculées : les lignes
+ * sont immuables depuis leur rattachement à la commande, et c'est précisément ce qui
+ * garantit qu'un avoir contre-passe la facture au centime près. Recalculer depuis le
+ * catalogue du jour produirait, sur un prix modifié entre-temps, un avoir qui
+ * n'annule pas ce qu'il prétend annuler.</p>
  */
 @Service
 public class PdfAvoirService {
@@ -61,12 +61,12 @@ public class PdfAvoirService {
     }
 
     /**
-     * PDF de la note de credit : relu de l archive s il y est, compose et archive
+     * PDF de la note de crédit : relu de l'archive s'il y est, composé et archivé
      * sinon.
      *
-     * <p>Transactionnel en ecriture pour le seul {@code chemin_pdf} : le trigger
-     * {@code tg_avoir_immuable} (V27) laisse passer cette colonne precisement parce
-     * qu elle ne porte aucune donnee comptable.</p>
+     * <p>Transactionnel en écriture pour le seul {@code chemin_pdf} : le trigger
+     * {@code tg_avoir_immuable} (V27) laisse passer cette colonne précisément parce
+     * qu'elle ne porte aucune donnée comptable.</p>
      */
     @Transactional
     public byte[] pdfDe(Avoir avoir) {
@@ -85,15 +85,15 @@ public class PdfAvoirService {
         return pdf;
     }
 
-    /** Nom de fichier propose au telechargement : le numero de l avoir, rien d autre. */
+    /** Nom de fichier proposé au téléchargement : le numéro de l'avoir, rien d'autre. */
     public String nomDeFichier(Avoir avoir) {
         return "avoir-%s.pdf".formatted(avoir.getNumero());
     }
 
     /**
-     * Constitue le document a imprimer. La locale est celle du membre, pas celle de
-     * la session : la note de credit est emise dans la langue du client, la meme que
-     * celle de la facture qu elle corrige.
+     * Constitue le document à imprimer. La locale est celle du membre, pas celle de
+     * la session : la note de crédit est émise dans la langue du client, la même que
+     * celle de la facture qu'elle corrige.
      */
     private DocumentAvoir documentDe(Avoir avoir) {
         Facture facture = avoir.getFacture();

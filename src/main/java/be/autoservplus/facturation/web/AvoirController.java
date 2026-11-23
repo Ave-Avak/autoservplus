@@ -18,21 +18,21 @@ import java.nio.charset.StandardCharsets;
 import java.util.UUID;
 
 /**
- * Telechargement de la note de credit PDF d une retractation validee (F30).
+ * Téléchargement de la note de crédit PDF d'une rétractation validée (F30).
  *
  * <p>Jumeau de {@code FactureController}, et volontairement identique dans ses
- * gardes : la note de credit est adressee par sa reference publique et
- * l appartenance est verifiee au service. L avoir d autrui remonte en <b>404, jamais
- * en 403</b>. Un 403 confirmerait a un tiers que cette note de credit existe, alors
- * qu il s agit d un document nominatif. Et il apprendrait au passage que le
- * titulaire a exerce son droit de retractation.</p>
+ * gardes : la note de crédit est adressée par sa référence publique et
+ * l'appartenance est vérifiée au service. L'avoir d'autrui remonte en <b>404, jamais
+ * en 403</b>. Un 403 confirmerait à un tiers que cette note de crédit existe, alors
+ * qu'il s'agit d'un document nominatif. Et il apprendrait au passage que le
+ * titulaire a exercé son droit de rétractation.</p>
  *
- * <p>L identite vient du contexte de securite, jamais d un parametre de requete :
- * sans cela, changer un identifiant dans l URL suffirait a telecharger le document
- * de n importe qui.</p>
+ * <p>L'identité vient du contexte de sécurité, jamais d'un paramètre de requête :
+ * sans cela, changer un identifiant dans l'URL suffirait à télécharger le document
+ * de n'importe qui.</p>
  *
- * <p>{@code RessourceIntrouvableException} porte deja
- * {@code @ResponseStatus(NOT_FOUND)} : ce controleur n a rien a catcher pour rendre
+ * <p>{@code RessourceIntrouvableException} porte déjà
+ * {@code @ResponseStatus(NOT_FOUND)} : ce contrôleur n'a rien à catcher pour rendre
  * un 404 propre. Il sert des octets ou rien.</p>
  */
 @Controller
@@ -58,7 +58,7 @@ public class AvoirController {
         return ResponseEntity.ok()
                 .contentType(MediaType.APPLICATION_PDF)
                 .header(HttpHeaders.CONTENT_DISPOSITION, disposition.toString())
-                // Document nominatif : aucun cache partage ne doit le conserver.
+                // Document nominatif : aucun cache partagé ne doit le conserver.
                 .header(HttpHeaders.CACHE_CONTROL, "private, no-store")
                 .body(document);
     }

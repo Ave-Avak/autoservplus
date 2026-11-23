@@ -8,20 +8,20 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Ventilation de la TVA par taux, mention obligatoire d une facture belge des lors
- * que plusieurs taux coexistent (AR n°1, art. 5 : base imposable ventilee par taux).
+ * Ventilation de la TVA par taux, mention obligatoire d'une facture belge dès lors
+ * que plusieurs taux coexistent (AR n°1, art. 5 : base imposable ventilée par taux).
  *
  * <p><b>Chaque tranche se calcule sur le total taxe comprise de son taux</b>, par
  * {@link CalculTva}, exactement comme le panier a calculé les montants que la commande a
  * figés : le total des tranches égale donc au centime les montants de la facture. La base
  * n'est pas la somme de bases de ligne, une ligne n'en a pas.</p>
  *
- * <p>Tranches triees par taux croissant : l ordre d affichage d une facture est
- * fixe, il ne doit pas dependre de l ordre des lignes du panier.</p>
+ * <p>Tranches triées par taux croissant : l'ordre d'affichage d'une facture est
+ * fixe, il ne doit pas dépendre de l'ordre des lignes du panier.</p>
  */
 public record VentilationTva(List<TrancheTva> tranches) {
 
-    /** Une base imposable et sa TVA, pour un taux donne. */
+    /** Une base imposable et sa TVA, pour un taux donné. */
     public record TrancheTva(BigDecimal taux, BigDecimal baseHtva, BigDecimal montantTva) {
 
         public BigDecimal montantTvac() {
@@ -38,9 +38,9 @@ public record VentilationTva(List<TrancheTva> tranches) {
     }
 
     /**
-     * Le taux de la facture s il est unique.
+     * Le taux de la facture s'il est unique.
      *
-     * @return le taux, ou {@link Optional#empty()} si la facture melange plusieurs
+     * @return le taux, ou {@link Optional#empty()} si la facture mélange plusieurs
      *         taux : la colonne {@code taux_tva_applique} vaut alors NULL, la
      *         ventilation faisant seule foi (V26)
      */

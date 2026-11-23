@@ -32,23 +32,23 @@ import static be.autoservplus.facturation.service.StylePdf.pourcentage;
 import static be.autoservplus.facturation.service.StylePdf.tableauInvisible;
 
 /**
- * Composition du PDF d une note de credit (F30), avec OpenPDF : jamais iText, dont
- * la licence AGPL est incompatible avec un logiciel proprietaire.
+ * Composition du PDF d'une note de crédit (F30), avec OpenPDF : jamais iText, dont
+ * la licence AGPL est incompatible avec un logiciel propriétaire.
  *
  * <p><b>Mentions obligatoires du document rectificatif</b> (AR n°1, art. 12) : outre
- * celles d une facture (numero, date, identification complete de l emetteur et du
- * client, detail par ligne, ventilation de la base imposable par taux) la note de
- * credit porte la <b>reference precise de la facture qu elle corrige</b> (numero et
+ * celles d'une facture (numéro, date, identification complète de l'émetteur et du
+ * client, détail par ligne, ventilation de la base imposable par taux) la note de
+ * crédit porte la <b>référence précise de la facture qu'elle corrige</b> (numéro et
  * date) et la mention de restitution de TVA. Sans ce rattachement, elle ne corrige
- * rien de verifiable.</p>
+ * rien de vérifiable.</p>
  *
- * <p>Meme charte et memes primitives que la facture ({@link StylePdf}) : le client
- * recoit les deux documents et les compare. Seuls changent le titre, le bloc de
- * reference a l original et les mentions de pied, c est-a-dire exactement ce qui
- * distingue les deux documents, et rien d autre.</p>
+ * <p>Même charte et mêmes primitives que la facture ({@link StylePdf}) : le client
+ * reçoit les deux documents et les compare. Seuls changent le titre, le bloc de
+ * référence à l'original et les mentions de pied, c'est-à-dire exactement ce qui
+ * distingue les deux documents, et rien d'autre.</p>
  *
- * <p>Aucune chaine en dur : chaque libelle passe par le {@code MessageSource}, dans
- * la langue du membre, la meme que celle de la facture corrigee.</p>
+ * <p>Aucune chaîne en dur : chaque libellé passe par le {@code MessageSource}, dans
+ * la langue du membre, la même que celle de la facture corrigée.</p>
  */
 @Component
 public class GenerateurPdfAvoir {
@@ -88,8 +88,8 @@ public class GenerateurPdfAvoir {
     // --- blocs du document -------------------------------------------------------------
 
     /**
-     * Bandeau : emetteur a gauche, identite du document a droite, avec la reference
-     * a la facture corrigee, qui est la mention distinctive de l avoir.
+     * Bandeau : émetteur à gauche, identité du document à droite, avec la référence
+     * à la facture corrigée, qui est la mention distinctive de l'avoir.
      */
     private PdfPTable enTete(DocumentAvoir document) {
         PdfPTable entete = tableauInvisible(new float[]{55, 45});
@@ -114,7 +114,7 @@ public class GenerateurPdfAvoir {
                         libelle(document, "facture.date-emission"),
                         date(document.dateEmission(), document.locale())),
                 police(9, Font.NORMAL, GRIS_TEXTE)));
-        // Rattachement au document corrige : mention obligatoire (AR n°1, art. 12).
+        // Rattachement au document corrigé : mention obligatoire (AR n°1, art. 12).
         identite.add(new Phrase("%s\n".formatted(libelle(document, "avoir.facture-origine",
                         document.numeroFactureOrigine(),
                         date(document.dateFactureOrigine(), document.locale()))),
@@ -126,7 +126,7 @@ public class GenerateurPdfAvoir {
         return entete;
     }
 
-    /** Destinataire de la note de credit : le titulaire de la facture corrigee. */
+    /** Destinataire de la note de crédit : le titulaire de la facture corrigée. */
     private PdfPTable blocsIdentite(DocumentAvoir document) {
         PdfPTable bloc = tableauInvisible(new float[]{55, 45});
         bloc.setSpacingAfter(20);
@@ -147,10 +147,10 @@ public class GenerateurPdfAvoir {
     }
 
     /**
-     * Detail par ligne, identique a celui de la facture : c est le meme achat qui est
-     * annule. Les montants restent positifs : le sens du document est porte par son
+     * Détail par ligne, identique à celui de la facture : c'est le même achat qui est
+     * annulé. Les montants restent positifs : le sens du document est porté par son
      * titre et par sa mention de pied, pas par un signe que le lecteur devrait
-     * interpreter.
+     * interpréter.
      */
     private PdfPTable tableauDesLignes(DocumentAvoir document) {
         PdfPTable table = new PdfPTable(new float[]{46, 10, 16, 12, 16});
@@ -174,7 +174,7 @@ public class GenerateurPdfAvoir {
         return table;
     }
 
-    /** Totaux credites et ventilation de la TVA restituee par taux. */
+    /** Totaux crédités et ventilation de la TVA restituée par taux. */
     private PdfPTable totaux(DocumentAvoir document) {
         PdfPTable conteneur = tableauInvisible(new float[]{50, 50});
         conteneur.setSpacingAfter(24);
@@ -206,7 +206,7 @@ public class GenerateurPdfAvoir {
         return table;
     }
 
-    /** Motif de la correction, restitution de TVA et mentions legales de pied. */
+    /** Motif de la correction, restitution de TVA et mentions légales de pied. */
     private Paragraph mentionsLegales(DocumentAvoir document) {
         Paragraph mentions = new Paragraph();
         mentions.add(new Phrase(libelle(document, "avoir.mention.motif",
@@ -214,8 +214,8 @@ public class GenerateurPdfAvoir {
                 police(9, Font.BOLD, GRIS_TEXTE)));
         mentions.add(new Phrase(libelle(document, "avoir.mention.remboursement") + "\n",
                 police(8, Font.NORMAL, GRIS_TEXTE)));
-        // Mention de restitution : c est elle qui autorise l emetteur a recuperer la
-        // TVA deja declaree sur la facture d origine.
+        // Mention de restitution : c'est elle qui autorise l'émetteur à récupérer la
+        // TVA déjà déclarée sur la facture d'origine.
         mentions.add(new Phrase(libelle(document, "avoir.mention.tva") + "\n",
                 police(8, Font.NORMAL, GRIS_TEXTE)));
         mentions.add(new Phrase(libelle(document, "facture.mention.conservation") + "\n\n",

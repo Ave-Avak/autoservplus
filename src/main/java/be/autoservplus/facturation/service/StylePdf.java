@@ -19,24 +19,24 @@ import java.util.Currency;
 import java.util.Locale;
 
 /**
- * Primitives de composition partagees par les documents comptables PDF : couleurs de
+ * Primitives de composition partagées par les documents comptables PDF : couleurs de
  * la charte, cellules, formatage des montants et des dates.
  *
- * <p>Extraites de {@code GenerateurPdfFacture} quand la note de credit est arrivee.
- * Une facture et un avoir sont deux documents differents (titre, mentions legales,
- * blocs de reference) mais ils doivent se ressembler au pixel pres : meme bandeau,
- * meme tableau, meme pied. Dupliquer ces trente lignes aurait garanti qu elles
- * divergent a la premiere retouche de charte, et un client qui recoit une facture et
- * son avoir les compare cote a cote.</p>
+ * <p>Extraites de {@code GenerateurPdfFacture} quand la note de crédit est arrivée.
+ * Une facture et un avoir sont deux documents différents (titre, mentions légales,
+ * blocs de référence) mais ils doivent se ressembler au pixel près : même bandeau,
+ * même tableau, même pied. Dupliquer ces trente lignes aurait garanti qu'elles
+ * divergent à la première retouche de charte, et un client qui reçoit une facture et
+ * son avoir les compare côte à côte.</p>
  *
  * <p>Seules les <b>primitives</b> sont mises en commun, pas la structure des
- * documents : factoriser plus haut aurait produit un generateur unique parametre par
+ * documents : factoriser plus haut aurait produit un générateur unique paramétré par
  * des drapeaux, moins lisible que deux compositions explicites.</p>
  *
- * <p><b>Ecart de charte assume</b> : les couleurs sont celles de la charte
+ * <p><b>Écart de charte assumé</b> : les couleurs sont celles de la charte
  * (bleu marine {@code #1F3864}, gris), mais la typographie est Helvetica et non
- * Inter. Inter est une police web. L embarquer dans un PDF suppose de livrer le
- * fichier de fonte dans le depot. Helvetica est une des quatorze polices garanties
+ * Inter. Inter est une police web. L'embarquer dans un PDF suppose de livrer le
+ * fichier de fonte dans le dépôt. Helvetica est une des quatorze polices garanties
  * par le format PDF, donc lisible partout sans embarquement.</p>
  */
 final class StylePdf {
@@ -47,8 +47,8 @@ final class StylePdf {
     static final Color GRIS_BORDURE = new Color(0xE5, 0xE7, 0xEB);
 
     /**
-     * Fuseau des dates imprimees. En dur et non issu de l horloge : un document
-     * comptable belge date en heure belge, quel que soit le fuseau du serveur qui
+     * Fuseau des dates imprimées. En dur et non issu de l'horloge : un document
+     * comptable belge daté en heure belge, quel que soit le fuseau du serveur qui
      * le compose.
      */
     static final ZoneId BRUXELLES = ZoneId.of("Europe/Brussels");
@@ -106,8 +106,8 @@ final class StylePdf {
     }
 
     /**
-     * Montant dans la locale du membre, devise forcee a l euro : sans cette
-     * contrainte, un document en anglais s afficherait en dollars.
+     * Montant dans la locale du membre, devise forcée à l'euro : sans cette
+     * contrainte, un document en anglais s'afficherait en dollars.
      */
     static String montant(BigDecimal valeur, Locale locale) {
         NumberFormat format = NumberFormat.getCurrencyInstance(locale);

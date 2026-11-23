@@ -16,13 +16,13 @@ import java.util.UUID;
 public interface FactureRepository extends JpaRepository<Facture, Long> {
 
     /**
-     * Facture d une commande, s il y en a une. Support de l idempotence : le
-     * controle applicatif s appuie dessus, l index partiel {@code uq_facture_commande}
-     * tranche les courses que ce controle ne peut pas voir.
+     * Facture d'une commande, s'il y en a une. Support de l'idempotence : le
+     * contrôle applicatif s'appuie dessus, l'index partiel {@code uq_facture_commande}
+     * tranche les courses que ce contrôle ne peut pas voir.
      */
     Optional<Facture> findByCommande(Commande commande);
 
-    /** La facture est adressee par sa reference publique, jamais par sa cle primaire. */
+    /** La facture est adressée par sa référence publique, jamais par sa clé primaire. */
     @Query("""
             SELECT f FROM Facture f
             JOIN FETCH f.membre
@@ -32,9 +32,9 @@ public interface FactureRepository extends JpaRepository<Facture, Long> {
     Optional<Facture> findByReference(@Param("reference") UUID reference);
 
     /**
-     * Factures des commandes d un membre, de la plus recente a la plus ancienne.
-     * Le membre est identifie par son courriel, comme partout ailleurs a partir du
-     * contexte de securite.
+     * Factures des commandes d'un membre, de la plus récente à la plus ancienne.
+     * Le membre est identifié par son courriel, comme partout ailleurs à partir du
+     * contexte de sécurité.
      */
     @Query("""
             SELECT f FROM Facture f
@@ -45,9 +45,9 @@ public interface FactureRepository extends JpaRepository<Facture, Long> {
     List<Facture> facturesDuMembre(@Param("email") String email);
 
     /**
-     * Compte sans charger : sert a refuser qu un membre vide son adresse postale alors
-     * qu une facture reste a generer. Charger la liste pour n en regarder que la
-     * taille couterait les lignes et leurs relations.
+     * Compte sans charger : sert à refuser qu'un membre vide son adresse postale alors
+     * qu'une facture reste à générer. Charger la liste pour n'en regarder que la
+     * taille coûterait les lignes et leurs relations.
      */
     long countByMembreEmail(String email);
 
