@@ -144,9 +144,10 @@ public class MessagerieService {
     private Intervention interventionDuMembre(String email, UUID reference) {
         Intervention intervention = interventions.findByReference(reference)
                 .orElseThrow(() -> new RessourceIntrouvableException("Intervention", reference));
-        boolean sienne = intervention.getRdv() != null
-                && intervention.getRdv().getMembre().getEmail().equals(email);
-        if (!sienne) {
+        // Le titulaire, et non le membre du rendez-vous : une intervention née d'une
+        // commande ou d'une entrée directe n'a pas de rendez-vous.
+        Utilisateur titulaire = intervention.titulaire();
+        if (titulaire == null || !titulaire.getEmail().equals(email)) {
             throw new RessourceIntrouvableException("Intervention", reference);
         }
         return intervention;

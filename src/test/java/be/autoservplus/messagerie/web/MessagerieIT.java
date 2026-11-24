@@ -1,5 +1,6 @@
 package be.autoservplus.messagerie.web;
 
+import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -17,6 +18,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -59,6 +61,7 @@ class MessagerieIT extends SocleIntegration {
     @Autowired private ConversationRepository conversations;
     @Autowired private NotificationRepository notifications;
     @Autowired private UtilisateurRepository utilisateurs;
+    @Autowired private JdbcTemplate jdbc;
 
     private String marie;
     private String paul;
@@ -75,6 +78,17 @@ class MessagerieIT extends SocleIntegration {
     private void creer(String email, String prenom, TypeUtilisateur type) {
         utilisateurs.save(new Utilisateur(email, "$2a$12$abcdefghijklmnopqrstuv",
                 "Test", prenom, type));
+    }
+
+    /** Entrée directe au garage (V32) : ni rendez-vous ni commande, véhicule du membre. */
+    private UUID interventionDirecte(String email) {
+        Long membre = utilisateurs.findByEmail(email).orElseThrow().getId();
+        Long vehicule = jdbc.queryForObject("INSERT INTO vehicule (reference, membre_id, plaque, marque, "
+                        + "modele, motorisation) VALUES (gen_random_uuid(), ?, ?, 'VW', 'Golf', 'DIESEL') "
+                        + "RETURNING id", Long.class, membre, "MSG" + COMPTEUR.getAndIncrement());
+        return jdbc.queryForObject("INSERT INTO intervention (numero, vehicule_id, statut, "
+                        + "montant_devis_htva) VALUES (?, ?, 'PLANIFIEE', 0) RETURNING reference",
+                UUID.class, "INT-MSG-" + vehicule, vehicule);
     }
 
     private UUID filDe(String email, String sujet) {
@@ -115,6 +129,20 @@ class MessagerieIT extends SocleIntegration {
             mvc.perform(get("/mes-messages").with(user(marie)))
                     .andExpect(status().isOk())
                     .andExpect(content().string(not(containsString("Secret de Paul"))));
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("un fil se rattache à une intervention sans rendez-vous dont le membre est titulaire")
+        void interventionSansRendezVous() {
+            UUID intervention = interventionDirecte(marie);
+
+            UUID fil = messagerie.ouvrir(marie, "Ma révision", "Quand puis-je venir ?", intervention);
+
+            assertThat(jdbc.queryForObject("SELECT intervention_id IS NOT NULL FROM conversation "
+                    + "WHERE reference = ?", Boolean.class, fil)).isTrue();
+            assertThatThrownBy(() -> messagerie.ouvrir(paul, "Pas la mienne", "Bonjour", intervention))
+                    .isInstanceOf(RessourceIntrouvableException.class);
         }
 
         @Test
