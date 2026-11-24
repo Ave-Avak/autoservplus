@@ -24,6 +24,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.servlet.ViewResolver;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -257,7 +258,7 @@ class AdminInterventionControllerTest {
                             .with(csrf()))
                     .andExpect(status().is3xxRedirection());
 
-            verify(service).ajouterLigneMainOeuvre(REF, prestation, (short) 2);
+            verify(service).ajouterLigneMainOeuvre(REF, prestation, BigDecimal.valueOf(2));
         }
 
         @Test

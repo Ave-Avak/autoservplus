@@ -3,6 +3,7 @@ package be.autoservplus.intervention.web;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.intervention.domain.Intervention;
+import be.autoservplus.intervention.domain.QuantiteLigneRefuseeException;
 import be.autoservplus.intervention.service.InterventionService;
 import be.autoservplus.intervention.service.dto.ClotureIntervention;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
@@ -15,6 +16,7 @@ import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -143,7 +145,7 @@ public class AdminInterventionController {
     public String ajouterLigne(@AuthenticationPrincipal UserDetails admin,
                                @PathVariable UUID reference,
                                @RequestParam UUID prestation,
-                               @RequestParam short quantite,
+                               @RequestParam BigDecimal quantite,
                                RedirectAttributes redirection) {
         try {
             service.ajouterLigneMainOeuvre(reference, prestation, quantite);
@@ -151,6 +153,9 @@ public class AdminInterventionController {
         } catch (RessourceIntrouvableException e) {
             // La prestation choisie dans la liste a disparu du catalogue entre-temps.
             redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.prestation"));
+        } catch (QuantiteLigneRefuseeException e) {
+            // Décimale pour un forfait, nulle, ou trop précise pour des heures (Q-H-37).
+            redirection.addFlashAttribute("erreur", message(e.getCleMessage()));
         } catch (ConflitConcurrenceException e) {
             redirection.addFlashAttribute("erreur", message("erreur.409.message"));
         } catch (IllegalArgumentException e) {
@@ -166,7 +171,7 @@ public class AdminInterventionController {
     public String ajouterPiece(@AuthenticationPrincipal UserDetails admin,
                                @PathVariable UUID reference,
                                @RequestParam UUID piece,
-                               @RequestParam short quantite,
+                               @RequestParam int quantite,
                                RedirectAttributes redirection) {
         try {
             service.ajouterLignePiece(reference, piece, quantite);
@@ -174,6 +179,8 @@ public class AdminInterventionController {
         } catch (RessourceIntrouvableException e) {
             // La pièce choisie a été retirée de la vente entre l'affichage et l'envoi.
             redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.piece"));
+        } catch (QuantiteLigneRefuseeException e) {
+            redirection.addFlashAttribute("erreur", message(e.getCleMessage()));
         } catch (ConflitConcurrenceException e) {
             redirection.addFlashAttribute("erreur", message("erreur.409.message"));
         } catch (IllegalArgumentException e) {

@@ -2,9 +2,12 @@ package be.autoservplus.intervention.web;
 
 import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.Piece;
+import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
+import be.autoservplus.catalogue.domain.UnitePrestation;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
+import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -59,6 +62,7 @@ class PiecesInterventionIT extends SocleIntegration {
     @Autowired private UtilisateurRepository utilisateurs;
     @Autowired private CategorieRepository categories;
     @Autowired private PieceRepository pieces;
+    @Autowired private PrestationRepository prestations;
     @Autowired private InterventionService service;
     @Autowired private JdbcTemplate jdbc;
 
@@ -223,6 +227,42 @@ class PiecesInterventionIT extends SocleIntegration {
                 .andExpect(status().is3xxRedirection());
 
         assertThat(stock(courroie)).isEqualTo(5);
+    }
+
+    @Test
+    @DisplayName("une prestation à l'heure s'ajoute en heures décimales et se lit « 1,5 h »")
+    void heuresDecimales() throws Exception {
+        UUID dossier = interventionEnCours("1000.00");
+        Categorie atelier = categories.save(new Categorie("IT-PCE-ATE-" + COMPTEUR.getAndIncrement(), "Atelier",
+                TypeCategorie.SERVICE));
+        Prestation mainDOeuvre = prestations.save(new Prestation(atelier, "IT-MO-" + COMPTEUR.getAndIncrement(),
+                "Main-d'œuvre IT", new BigDecimal("65.00"), 60, UnitePrestation.HEURE));
+
+        mvc.perform(post("/admin/interventions/{ref}/lignes", dossier).with(csrf())
+                        .param("prestation", mainDOeuvre.getReference().toString())
+                        .param("quantite", "1.5"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attributeExists("message"));
+
+        assertThat(detail(dossier)).contains("1,5 h");
+        assertThat(jdbc.queryForObject("SELECT unite FROM ligne_intervention l JOIN intervention i "
+                + "ON i.id = l.intervention_id WHERE i.reference = ?", String.class, dossier)).isEqualTo("HEURE");
+    }
+
+    @Test
+    @DisplayName("une quantité décimale pour une prestation au forfait est refusée avec un message")
+    void forfaitDecimalRefuse() throws Exception {
+        UUID dossier = interventionEnCours("1000.00");
+        Categorie atelier = categories.save(new Categorie("IT-PCE-ATE-" + COMPTEUR.getAndIncrement(), "Atelier",
+                TypeCategorie.SERVICE));
+        Prestation vidange = prestations.save(new Prestation(atelier, "IT-VID-" + COMPTEUR.getAndIncrement(),
+                "Vidange IT", new BigDecimal("49.00"), 30));
+
+        mvc.perform(post("/admin/interventions/{ref}/lignes", dossier).with(csrf()).locale(Locale.FRENCH)
+                        .param("prestation", vidange.getReference().toString())
+                        .param("quantite", "1.5"))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attribute("erreur", containsString("unités entières")));
     }
 
     @Test

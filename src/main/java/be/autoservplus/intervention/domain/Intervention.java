@@ -177,7 +177,7 @@ public class Intervention extends BaseEntity {
         this.vehicule = Objects.requireNonNull(rdv.getVehicule(), "rdv.vehicule");
         for (LigneRdv l : rdv.getLignes()) {
             this.lignes.add(new LigneIntervention(this, l.getPrestation(),
-                    l.getQuantite(), l.getPrixUnitaireHtva(), l.getTauxTva(), false));
+                    BigDecimal.valueOf(l.getQuantite()), l.getPrixUnitaireHtva(), l.getTauxTva(), false));
         }
         this.montantDevisInitialHtva = totalDevisInitialHtva();
     }
@@ -221,7 +221,7 @@ public class Intervention extends BaseEntity {
                         "Seules les lignes de service donnent lieu a une intervention.");
             }
             it.lignes.add(new LigneIntervention(it, ligne.getPrestation(),
-                    ligne.getQuantite(), ligne.getPrixUnitaireHtva(), ligne.getTauxTva(),
+                    BigDecimal.valueOf(ligne.getQuantite()), ligne.getPrixUnitaireHtva(), ligne.getTauxTva(),
                     false));
         }
         it.montantDevisInitialHtva = it.totalDevisInitialHtva();
@@ -338,7 +338,7 @@ public class Intervention extends BaseEntity {
      * {@link #exigerAjoutEnCours()}.
      */
     public LigneIntervention ajouterLigneMainOeuvre(be.autoservplus.catalogue.domain.Prestation prestation,
-                                                    short quantite,
+                                                    BigDecimal quantite,
                                                     BigDecimal prixUnitaireHtva,
                                                     BigDecimal tauxTva) {
         exigerAjoutEnCours();
@@ -351,7 +351,7 @@ public class Intervention extends BaseEntity {
 
     /** Ajoute une piece detachee au dossier. Meme garde que la main d oeuvre (RM-14). */
     public LigneIntervention ajouterLignePiece(be.autoservplus.catalogue.domain.Piece piece,
-                                               short quantite) {
+                                               int quantite) {
         exigerAjoutEnCours();
         LigneIntervention ligne = new LigneIntervention(this, piece, quantite, true);
         this.lignes.add(ligne);

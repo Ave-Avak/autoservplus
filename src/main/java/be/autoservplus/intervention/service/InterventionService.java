@@ -42,6 +42,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.ZoneId;
 import java.util.ArrayList;
@@ -323,7 +324,7 @@ public class InterventionService {
      * membre. La regle vit dans le domaine, pas ici.
      */
     @Transactional
-    public LigneIntervention ajouterLigneMainOeuvre(UUID interventionRef, UUID prestationRef, short quantite) {
+    public LigneIntervention ajouterLigneMainOeuvre(UUID interventionRef, UUID prestationRef, BigDecimal quantite) {
         Intervention it = charger(interventionRef);
         Prestation prestation = prestations.findByReference(prestationRef)
                 .orElseThrow(() -> new RessourceIntrouvableException("Prestation", prestationRef));
@@ -348,7 +349,7 @@ public class InterventionService {
      *                                       pièce désactivée n'est plus proposée (RM-28)
      */
     @Transactional
-    public LigneIntervention ajouterLignePiece(UUID interventionRef, UUID pieceRef, short quantite) {
+    public LigneIntervention ajouterLignePiece(UUID interventionRef, UUID pieceRef, int quantite) {
         Intervention it = charger(interventionRef);
         Piece piece = pieces.findByReference(pieceRef)
                 .filter(Piece::isActif)
@@ -582,8 +583,9 @@ public class InterventionService {
                             FormatageRdv.euros(it.totalProposeHtva(), langue),
                             FormatageRdv.euros(it.totalProposeTvac(), langue),
                             it.lignesEnAttente().stream()
-                                    .map(l -> "- %s x%d : %s"
-                                            .formatted(l.getLibelleFige(), l.getQuantite(),
+                                    .map(l -> "- %s x%s : %s"
+                                            .formatted(l.getLibelleFige(),
+                                                    FormatageQuantite.lisible(l.getQuantite(), l.getUnite(), langue),
                                                     FormatageRdv.euros(l.totalHtva(), langue)))
                                     .toList(),
                             "/mes-interventions/" + it.getReference() + "/validation"));

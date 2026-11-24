@@ -250,7 +250,7 @@ class InterventionServiceTest {
             Intervention it = interventionEnCours();
             Prestation chere = prestationA("89.00");
 
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
             ArgumentCaptor<DetailsDepassementCourriel> details =
@@ -278,7 +278,7 @@ class InterventionServiceTest {
                     new BigDecimal("49.00"), new BigDecimal("10.29"), new BigDecimal("59.29"), MAINTENANT));
             Prestation chere = prestationA("89.00");
 
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
             verify(courriel).envoyerDemandeValidationDepassement(eq(paul), any(DetailsDepassementCourriel.class));
@@ -292,7 +292,7 @@ class InterventionServiceTest {
             ReflectionTestUtils.setField(it, "rdv", null);
             Prestation chere = prestationA("89.00");
 
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             verify(courriel).envoyerDemandeValidationDepassement(eq(marie), any(DetailsDepassementCourriel.class));
             verify(evenements).publishEvent(new DepassementSoumisEvent(it.getReference()));
@@ -306,7 +306,7 @@ class InterventionServiceTest {
             marie.anonymiser("jeton", "$2a$12$inerte", MAINTENANT);
             Prestation chere = prestationA("89.00");
 
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
             assertThat(it.titulaire()).isNull();
@@ -371,7 +371,7 @@ class InterventionServiceTest {
             Intervention it = interventionEnCours();
             Prestation petite = prestationA("2.00");
 
-            service.ajouterLigneMainOeuvre(it.getReference(), petite.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), petite.getReference(), BigDecimal.valueOf(1));
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
             verify(courriel, never()).envoyerDemandeValidationDepassement(any(), any());
@@ -385,7 +385,7 @@ class InterventionServiceTest {
             doThrow(new RuntimeException("SMTP indisponible"))
                     .when(courriel).envoyerDemandeValidationDepassement(any(), any());
 
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
         }
@@ -395,7 +395,7 @@ class InterventionServiceTest {
         void validerParLeProprietaire() {
             Intervention it = interventionEnCours();
             Prestation chere = prestationA("89.00");
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             Intervention resultat = service.validerDepassement(it.getReference(), "marie@exemple.be");
 
@@ -408,7 +408,7 @@ class InterventionServiceTest {
         void refuserParLeProprietaire() {
             Intervention it = interventionEnCours();
             Prestation chere = prestationA("89.00");
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             Intervention resultat = service.refuserDepassement(it.getReference(), "marie@exemple.be");
 
@@ -447,7 +447,7 @@ class InterventionServiceTest {
             Prestation chere = prestationA("500.00");
 
             assertThatThrownBy(() -> service.ajouterLigneMainOeuvre(
-                    it.getReference(), chere.getReference(), (short) 1))
+                    it.getReference(), chere.getReference(), BigDecimal.valueOf(1)))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("RM-14");
 
@@ -596,7 +596,7 @@ class InterventionServiceTest {
             when(prestations.findByReference(chere.getReference())).thenReturn(Optional.of(chere));
 
             // L ajout au-dela du seuil bascule l entite : premiere entree historisee.
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
             // La reponse du membre fait repartir le travail : seconde entree.
             service.validerDepassement(it.getReference(), "marie@exemple.be");
 

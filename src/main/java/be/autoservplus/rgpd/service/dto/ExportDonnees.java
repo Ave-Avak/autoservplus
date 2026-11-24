@@ -625,12 +625,14 @@ public record ExportDonnees(
      * Ligne d'intervention. {@code accordMembre} est restitué tel quel, y compris
      * {@code null} : c'est la réponse du membre à une demande de dépassement de
      * devis (RM-15), sa décision, donc sa donnée. {@code null} signifie qu'aucune
-     * réponse n'est attendue ni donnée.
+     * réponse n'est attendue ni donnée. {@code unite} vaut {@code PIECE}, {@code FORFAIT}
+     * ou {@code HEURE}, la seule dont la quantité peut être décimale (V73).
      */
     public record LigneInterventionExport(
             String type,
             String libelle,
-            short quantite,
+            BigDecimal quantite,
+            String unite,
             BigDecimal prixUnitaireHtva,
             BigDecimal tauxTva,
             BigDecimal totalHtva,
@@ -642,6 +644,7 @@ public record ExportDonnees(
                     ligne.getType().name(),
                     ligne.getLibelleFige(),
                     ligne.getQuantite(),
+                    ligne.getUnite().name(),
                     ligne.getPrixUnitaireHtva(),
                     ligne.getTauxTva(),
                     ligne.totalHtva(),

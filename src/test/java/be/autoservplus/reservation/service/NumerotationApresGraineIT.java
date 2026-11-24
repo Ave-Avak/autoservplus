@@ -89,6 +89,22 @@ class NumerotationApresGraineIT extends SocleIntegration {
                 .isEqualTo(1L);
     }
 
+    @Test
+    @DisplayName("base migrée avec les graines : les lignes de pièce de la graine sont en PIECE, les autres au forfait")
+    void unitesDesLignesDeLaGraine() {
+        migrerAvecLesGraines();
+
+        // V900 insère huit lignes : trois pièces (filtre, batterie, plaquettes) et cinq
+        // prestations (révision, vidange, deux plaquettes, diagnostic de l'intervention annulée).
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM ligne_intervention WHERE created_by = 'demo' "
+                + "AND piece_id IS NOT NULL AND unite = 'PIECE'", Long.class)).isEqualTo(3L);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM ligne_intervention WHERE created_by = 'demo' "
+                + "AND piece_id IS NULL AND unite = 'FORFAIT'", Long.class)).isEqualTo(5L);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM ligne_intervention WHERE created_by = 'demo'",
+                Long.class)).isEqualTo(8L);
+    }
+
     private Instant premierCreneauLibre(List<UUID> choix) {
         LocalDate jour = reservations.premierJourReservable().plusDays(1);
         LocalDate dernier = reservations.dernierJourReservable();

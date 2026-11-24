@@ -1,8 +1,10 @@
 package be.autoservplus.intervention.web.dto;
 
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
+import be.autoservplus.intervention.service.FormatageQuantite;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 
 import java.time.LocalDateTime;
@@ -113,7 +115,7 @@ public record InterventionVueAdmin(
      * les interventions ouvertes : une ligne refusée ne sera pas posée.
      */
     public record LigneInterventionVue(
-            Long id, String type, String libelle, short quantite,
+            Long id, String type, String libelle, String quantite,
             String prixUnitaireHtva, String totalHtva,
             String cleEtat, boolean compteDansLeTotal, boolean aCommander) {
 
@@ -122,7 +124,7 @@ public record InterventionVueAdmin(
                     l.getId(),
                     l.getType().name(),
                     l.getLibelleFige(),
-                    l.getQuantite(),
+                    FormatageQuantite.lisible(l.getQuantite(), l.getUnite(), LanguesSupportees.deLEcran()),
                     FormatageRdv.eurosEcran(l.getPrixUnitaireHtva()),
                     FormatageRdv.eurosEcran(l.totalHtva()),
                     cleEtat(l),

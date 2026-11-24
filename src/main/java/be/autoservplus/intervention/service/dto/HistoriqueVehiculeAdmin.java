@@ -1,8 +1,10 @@
 package be.autoservplus.intervention.service.dto;
 
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
+import be.autoservplus.intervention.service.FormatageQuantite;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 
 import java.time.LocalDate;
@@ -57,11 +59,12 @@ public record HistoriqueVehiculeAdmin(
     }
 
     /** {@code etat} est un suffixe de clé : initiale, ajoutee, attente, refusee. */
-    public record Ligne(String type, String libelle, short quantite, String totalHtva,
+    public record Ligne(String type, String libelle, String quantite, String totalHtva,
                         String etat, boolean facturable) {
 
         static Ligne de(LigneIntervention l) {
-            return new Ligne(l.getType().name(), l.getLibelleFige(), l.getQuantite(),
+            return new Ligne(l.getType().name(), l.getLibelleFige(),
+                    FormatageQuantite.lisible(l.getQuantite(), l.getUnite(), LanguesSupportees.deLEcran()),
                     FormatageRdv.eurosEcran(l.totalHtva()), etat(l), l.estFacturable());
         }
 

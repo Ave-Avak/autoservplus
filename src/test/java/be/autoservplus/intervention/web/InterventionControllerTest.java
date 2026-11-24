@@ -160,7 +160,7 @@ class InterventionControllerTest {
     void ecranValidation() throws Exception {
         DemandeValidationVue demande = new DemandeValidationVue(REF, "INT-2026-0001",
                 "VW Golf (1-ABC-123)", "49,00 €", "138,00 €", "166,98 €", "89,00 €", null,
-                List.of(new DemandeValidationVue.LigneProposeeVue("Plaquettes", (short) 1, "89,00 €")));
+                List.of(new DemandeValidationVue.LigneProposeeVue("Plaquettes", "1", "89,00 €")));
         doReturn(demande).when(service).demandeValidation(REF, "marie@exemple.be");
 
         mvc.perform(get("/mes-interventions/{ref}/validation", REF))

@@ -215,7 +215,7 @@ class InterventionTemplatesIT extends SocleIntegration {
                 new BigDecimal("89.00"), 60));
         Intervention it = interventions.findByReference(reference).orElseThrow();
         it.demarrer(java.time.Instant.parse("2026-12-01T09:00:00Z"));
-        it.ajouterLigneMainOeuvre(plaquettes, (short) 1,
+        it.ajouterLigneMainOeuvre(plaquettes, BigDecimal.valueOf(1),
                 plaquettes.getPrixHtva(), plaquettes.getTauxTva());
         interventions.saveAndFlush(it);
     }

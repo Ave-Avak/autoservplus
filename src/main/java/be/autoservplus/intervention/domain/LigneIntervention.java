@@ -69,8 +69,14 @@ public class LigneIntervention {
     @Column(name = "libelle_fige", nullable = false, length = 150)
     private String libelleFige;
 
-    @Column(name = "quantite", nullable = false)
-    private short quantite;
+    /** Entière pour une pièce ou un forfait, en heures au centième pour une ligne à l'heure (V73). */
+    @Column(name = "quantite", nullable = false, precision = 7, scale = 2)
+    private BigDecimal quantite;
+
+    /** Figée à la création, comme le libellé et le prix (V73). */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "unite", nullable = false, length = 10, updatable = false)
+    private UniteLigne unite;
 
     @Column(name = "prix_unitaire_htva", nullable = false, precision = 10, scale = 2)
     private BigDecimal prixUnitaireHtva;
@@ -118,36 +124,54 @@ public class LigneIntervention {
      *
      * @param ajouteeEnCours {@code false} pour une ligne issue du RDV (devis initial),
      *                       {@code true} pour un ajout du garage pendant l intervention.
+     * @throws QuantiteLigneRefuseeException quantité nulle, négative, décimale pour un
+     *                                       forfait ou trop précise pour des heures
      */
-    LigneIntervention(Intervention intervention, Prestation prestation, short quantite,
+    LigneIntervention(Intervention intervention, Prestation prestation, BigDecimal quantite,
                       BigDecimal prixUnitaireHtva, BigDecimal tauxTva, boolean ajouteeEnCours) {
         this.intervention = Objects.requireNonNull(intervention, "intervention");
         this.prestation = Objects.requireNonNull(prestation, "prestation");
-        exigerQuantitePositive(quantite);
+        this.unite = UniteLigne.de(prestation);
+        this.quantite = quantiteValide(quantite, unite);
         this.libelleFige = prestation.libelle(intervention.langueDesLibelles()).texte();
-        this.quantite = quantite;
         this.prixUnitaireHtva = Objects.requireNonNull(prixUnitaireHtva, "prixUnitaireHtva");
         this.tauxTva = Objects.requireNonNull(tauxTva, "tauxTva");
         this.ajouteeEnCours = ajouteeEnCours;
     }
 
     /** Ligne de piece detachee prelevee du catalogue. Les prix figent ceux du catalogue. */
-    public LigneIntervention(Intervention intervention, Piece piece, short quantite,
+    public LigneIntervention(Intervention intervention, Piece piece, int quantite,
                              boolean ajouteeEnCours) {
         this.intervention = Objects.requireNonNull(intervention, "intervention");
         this.piece = Objects.requireNonNull(piece, "piece");
-        exigerQuantitePositive(quantite);
+        this.unite = UniteLigne.PIECE;
+        this.quantite = quantiteValide(BigDecimal.valueOf(quantite), unite);
         this.libelleFige = piece.libelle(intervention.langueDesLibelles()).texte();
-        this.quantite = quantite;
         this.prixUnitaireHtva = piece.getPrixHtva();
         this.tauxTva = piece.getTauxTva();
         this.ajouteeEnCours = ajouteeEnCours;
     }
 
-    private static void exigerQuantitePositive(short quantite) {
-        if (quantite < 1) {
-            throw new IllegalArgumentException("La quantite doit valoir au moins 1.");
+    /** Plus grande quantité que porte {@code NUMERIC(7,2)}. */
+    private static final BigDecimal QUANTITE_MAXIMALE = new BigDecimal("99999.99");
+
+    /**
+     * Quantité ramenée à deux décimales, après les contrôles de V73 : strictement positive,
+     * entière sauf pour une ligne à l'heure, sous la borne de la colonne.
+     */
+    private static BigDecimal quantiteValide(BigDecimal quantite, UniteLigne unite) {
+        Objects.requireNonNull(quantite, "quantite");
+        if (quantite.signum() <= 0) {
+            throw QuantiteLigneRefuseeException.nonPositive();
         }
+        BigDecimal reduite = quantite.stripTrailingZeros();
+        if (!unite.admetDesDecimales() && reduite.scale() > 0) {
+            throw QuantiteLigneRefuseeException.nonEntiere();
+        }
+        if (reduite.scale() > 2 || quantite.compareTo(QUANTITE_MAXIMALE) > 0) {
+            throw QuantiteLigneRefuseeException.tropPrecise();
+        }
+        return quantite.setScale(2);
     }
 
     /**
@@ -156,7 +180,8 @@ public class LigneIntervention {
      * que lui.
      */
     public int quantitePourLeStock() {
-        return quantite;
+        // Entière par construction et par ck_ligne_interv_quantite_unite : exacte, ou erreur.
+        return quantite.intValueExact();
     }
 
     /** Type deduit du champ non-null. */
@@ -165,14 +190,14 @@ public class LigneIntervention {
     }
 
     public BigDecimal totalHtva() {
-        return prixUnitaireHtva.multiply(BigDecimal.valueOf(quantite))
-                .setScale(2, RoundingMode.HALF_UP);
+        return prixUnitaireHtva.multiply(quantite).setScale(2, RoundingMode.HALF_UP);
     }
 
     /**
-     * Total taxe comprise, taux figé à la création : prix unitaire affiché fois quantité. Le
-     * total hors TVA ci-dessus reste la mesure du devis (RM-15), qui compare des sommes hors
-     * TVA et n'est pas touché par l'arrondi du prix taxe comprise.
+     * Total taxe comprise, taux figé à la création : prix unitaire affiché fois quantité,
+     * arrondi au cent pour des heures (Q-H-35). Le total hors TVA ci-dessus reste la mesure du
+     * devis (RM-15), qui compare des sommes hors TVA et n'est pas touché par l'arrondi du prix
+     * taxe comprise.
      */
     public BigDecimal totalTvac() {
         return CalculTva.totalTvac(prixUnitaireHtva, tauxTva, quantite);
@@ -248,7 +273,8 @@ public class LigneIntervention {
     public Prestation getPrestation() { return prestation; }
     public Piece getPiece() { return piece; }
     public String getLibelleFige() { return libelleFige; }
-    public short getQuantite() { return quantite; }
+    public BigDecimal getQuantite() { return quantite; }
+    public UniteLigne getUnite() { return unite; }
     public BigDecimal getPrixUnitaireHtva() { return prixUnitaireHtva; }
     public BigDecimal getTauxTva() { return tauxTva; }
     public boolean isAjouteeEnCours() { return ajouteeEnCours; }

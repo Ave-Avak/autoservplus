@@ -450,8 +450,9 @@ class SchemaIT extends SocleIntegration {
                 Long.class, vehiculeId);
         Long serviceId = jdbc.queryForObject("SELECT id FROM service LIMIT 1", Long.class);
         jdbc.update("INSERT INTO ligne_intervention "
-                        + "(intervention_id, service_id, libelle_fige, quantite, prix_unitaire_htva, taux_tva) "
-                        + "VALUES (?, ?, 'Vidange', 1, 49.00, 21.00), (?, ?, 'Plaquettes', 1, 89.00, 21.00)",
+                        + "(intervention_id, service_id, libelle_fige, quantite, prix_unitaire_htva, taux_tva, unite) "
+                        + "VALUES (?, ?, 'Vidange', 1, 49.00, 21.00, 'FORFAIT'), "
+                        + "(?, ?, 'Plaquettes', 1, 89.00, 21.00, 'FORFAIT')",
                 interventionId, serviceId, interventionId, serviceId);
 
         java.math.BigDecimal devis = jdbc.queryForObject(
@@ -512,20 +513,20 @@ class SchemaIT extends SocleIntegration {
         // AVANT la violation : une contrainte violee avorte la transaction PostgreSQL,
         // et tout ordre suivant y serait rejete en 25P02 sans rien prouver.
         jdbc.update("INSERT INTO ligne_intervention (intervention_id, service_id, libelle_fige, "
-                        + "quantite, prix_unitaire_htva, taux_tva, ajoutee_en_cours, accord_membre) "
-                        + "VALUES (?, ?, 'Devis initial', 1, 10.00, 21.00, false, NULL)",
+                        + "quantite, prix_unitaire_htva, taux_tva, ajoutee_en_cours, accord_membre, unite) "
+                        + "VALUES (?, ?, 'Devis initial', 1, 10.00, 21.00, false, NULL, 'FORFAIT')",
                 interventionId, serviceId);
         for (String accord : new String[] {"NULL", "true", "false"}) {
             jdbc.update("INSERT INTO ligne_intervention (intervention_id, service_id, libelle_fige, "
-                            + "quantite, prix_unitaire_htva, taux_tva, ajoutee_en_cours, accord_membre) "
-                            + "VALUES (?, ?, 'Ajout', 1, 10.00, 21.00, true, " + accord + ")",
+                            + "quantite, prix_unitaire_htva, taux_tva, ajoutee_en_cours, accord_membre, unite) "
+                            + "VALUES (?, ?, 'Ajout', 1, 10.00, 21.00, true, " + accord + ", 'FORFAIT')",
                     interventionId, serviceId);
         }
 
         assertThatThrownBy(() -> jdbc.update(
                 "INSERT INTO ligne_intervention (intervention_id, service_id, libelle_fige, "
-                        + "quantite, prix_unitaire_htva, taux_tva, ajoutee_en_cours, accord_membre) "
-                        + "VALUES (?, ?, 'Incoherente', 1, 10.00, 21.00, false, true)",
+                        + "quantite, prix_unitaire_htva, taux_tva, ajoutee_en_cours, accord_membre, unite) "
+                        + "VALUES (?, ?, 'Incoherente', 1, 10.00, 21.00, false, true, 'FORFAIT')",
                 interventionId, serviceId))
                 .isInstanceOf(DataIntegrityViolationException.class)
                 .hasMessageContaining("ck_ligne_interv_accord");
