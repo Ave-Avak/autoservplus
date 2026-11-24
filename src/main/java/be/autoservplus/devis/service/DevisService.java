@@ -2,6 +2,8 @@ package be.autoservplus.devis.service;
 
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.numerotation.CompteurAnnuel;
+import be.autoservplus.common.numerotation.TypeCompteur;
 import be.autoservplus.common.temps.FuseauGarage;
 import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.devis.domain.Devis;
@@ -42,14 +44,14 @@ public class DevisService {
     private final DevisRepository devis;
     private final PanierRepository paniers;
     private final VehiculeService vehicules;
-    private final GenerateurNumeroDevis numeros;
+    private final CompteurAnnuel numeros;
     private final GenerateurPdfDevis generateur;
     private final IdentiteGarage identite;
     private final FuseauGarage fuseau;
     private final Clock horloge;
 
     public DevisService(DevisRepository devis, PanierRepository paniers, VehiculeService vehicules,
-                        GenerateurNumeroDevis numeros, GenerateurPdfDevis generateur,
+                        CompteurAnnuel numeros, GenerateurPdfDevis generateur,
                         IdentiteGarage identite, FuseauGarage fuseau, Clock horloge) {
         this.devis = devis;
         this.paniers = paniers;
@@ -86,8 +88,9 @@ public class DevisService {
                     "Le panier porte un article qui n'est plus proposé à la vente.");
         }
         Instant maintenant = horloge.instant();
-        Devis emis = Devis.depuisLePanier(numeros.prochain(), panier, vehicule, maintenant,
-                fuseau.jour(maintenant), identite.langueDuDocument(panier.getMembre().getLangue()));
+        String numero = numeros.prochainNumero(TypeCompteur.DEVIS);
+        Devis emis = Devis.depuisLePanier(numero, panier, vehicule, maintenant,
+                fuseau.jour(maintenant),identite.langueDuDocument(panier.getMembre().getLangue()));
         return devis.save(emis).getNumero();
     }
 
