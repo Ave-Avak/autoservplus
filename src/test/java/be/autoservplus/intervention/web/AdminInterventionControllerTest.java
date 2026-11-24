@@ -4,6 +4,7 @@ import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.service.InterventionService;
+import be.autoservplus.intervention.service.dto.ClotureIntervention;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +27,8 @@ import org.springframework.web.servlet.ViewResolver;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -167,6 +170,31 @@ class AdminInterventionControllerTest {
             mvc.perform(post("/admin/interventions/{ref}/terminer", REF).with(csrf()))
                     .andExpect(status().is3xxRedirection())
                     .andExpect(flash().attributeExists("erreur"));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        @DisplayName("clôture : la confirmation nomme les pièces ramenées à zéro (Q-H-31)")
+        void clotureAvecPlancher() throws Exception {
+            doReturn(new ClotureIntervention("INT-2026-0001", List.of("Plaquettes avant", "Disques")))
+                    .when(service).terminer(REF);
+
+            mvc.perform(post("/admin/interventions/{ref}/terminer", REF).with(csrf()))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(flash().attribute("message", containsString("INT-2026-0001")))
+                    .andExpect(flash().attribute("message", containsString("Plaquettes avant, Disques")));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        @DisplayName("clôture sans plancher : la confirmation ne parle pas du stock")
+        void clotureSansPlancher() throws Exception {
+            doReturn(new ClotureIntervention("INT-2026-0001", List.of())).when(service).terminer(REF);
+
+            mvc.perform(post("/admin/interventions/{ref}/terminer", REF).with(csrf()).locale(java.util.Locale.FRENCH))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(flash().attribute("message", containsString("INT-2026-0001")))
+                    .andExpect(flash().attribute("message", not(containsString("stock"))));
         }
 
         @Test

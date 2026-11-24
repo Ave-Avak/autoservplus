@@ -19,6 +19,7 @@ import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.intervention.repository.HistoriqueStatutInterventionRepository;
 import be.autoservplus.intervention.repository.InterventionRepository;
+import be.autoservplus.intervention.service.dto.ClotureIntervention;
 import be.autoservplus.intervention.service.dto.PieceAjoutableVue;
 import be.autoservplus.intervention.web.dto.DemandeValidationVue;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
@@ -35,6 +36,7 @@ import be.autoservplus.reservation.service.support.FormatageRdv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.AuditorAware;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
@@ -42,11 +44,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 
 /**
@@ -74,6 +80,7 @@ public class InterventionService {
     private final VehiculeRepository vehicules;
     private final ParametreAtelierRepository parametres;
     private final AuteurCourant auteurCourant;
+    private final AuditorAware<String> auditeur;
     private final GenerateurNumeroIntervention numeros;
     private final ServiceCourriel courriel;
     private final ApplicationEventPublisher evenements;
@@ -88,6 +95,7 @@ public class InterventionService {
                                VehiculeRepository vehicules,
                                ParametreAtelierRepository parametres,
                                AuteurCourant auteurCourant,
+                               AuditorAware<String> auditeur,
                                GenerateurNumeroIntervention numeros,
                                ServiceCourriel courriel,
                                ApplicationEventPublisher evenements,
@@ -101,6 +109,7 @@ public class InterventionService {
         this.vehicules = vehicules;
         this.parametres = parametres;
         this.auteurCourant = auteurCourant;
+        this.auditeur = auditeur;
         this.numeros = numeros;
         this.courriel = courriel;
         this.evenements = evenements;
@@ -218,16 +227,60 @@ public class InterventionService {
      * {@code AFTER_COMMIT}, jamais pendant la transaction, ou un rollback annoncerait
      * une cloture qui n a pas eu lieu. Seule cette transition publie : c est la seule
      * qui appelle le membre a se deplacer.
+     *
+     * <p>Le stock des pièces posées se décompte ici, dans la même transaction : statut et
+     * stock tiennent ou tombent ensemble. La facture d'atelier (H4-2) s'y ajoutera entre le
+     * décompte et l'événement.</p>
      */
     @Transactional
-    public Intervention terminer(UUID reference) {
+    public ClotureIntervention terminer(UUID reference) {
         Intervention it = charger(reference);
         StatutIntervention avant = it.getStatut();
         it.terminer(horloge.instant());
         historiser(it, avant, it.getStatut(), null);
+        List<String> rameneesAZero = decompterLeStock(it);
         Intervention enregistre = ecrire(it);
         evenements.publishEvent(new InterventionTermineeEvent(enregistre.getReference()));
-        return enregistre;
+        return new ClotureIntervention(enregistre.getNumero(), rameneesAZero);
+    }
+
+    /**
+     * Retire du stock les pièces posées : les lignes facturables seules, devis initial et
+     * ajouts acceptés. Une ligne refusée par le membre n'a pas été posée, et une
+     * intervention annulée ne passe jamais ici : c'est pourquoi le stock se décompte à la
+     * clôture et non à l'ajout.
+     *
+     * <p>Une clôture n'est jamais refusée pour un stock insuffisant (Q-H-31) : une pièce
+     * commandée exprès et posée sans que sa réception ait été saisie est bien sortie, zéro
+     * est alors la valeur juste. Le stock descend au plus à zéro, comme au paiement d'une
+     * commande, et le manque s'écrit au journal. Les pièces sont traitées par identifiant
+     * croissant, pour que deux clôtures prennent leurs verrous dans le même ordre.</p>
+     *
+     * @return libellés, dans la langue de l'écran, des pièces dont le plancher a joué
+     */
+    private List<String> decompterLeStock(Intervention it) {
+        Map<Long, Integer> demandes = new TreeMap<>();
+        Map<Long, Piece> parIdentifiant = new HashMap<>();
+        for (LigneIntervention ligne : it.getLignes()) {
+            if (ligne.getPiece() == null || !ligne.estFacturable()) {
+                continue;
+            }
+            demandes.merge(ligne.getPiece().getId(), ligne.quantitePourLeStock(), Integer::sum);
+            parIdentifiant.put(ligne.getPiece().getId(), ligne.getPiece());
+        }
+        String auteur = auditeur.getCurrentAuditor().orElse(null);
+        Locale langue = LanguesSupportees.deLEcran();
+        List<String> rameneesAZero = new ArrayList<>();
+        demandes.forEach((pieceId, demande) -> {
+            int enStock = pieces.retirerAuPlus(pieceId, demande, auteur);
+            if (enStock < demande) {
+                Piece piece = parIdentifiant.get(pieceId);
+                log.warn("Stock insuffisant à la clôture de l'intervention {} : {} (posées {}, en stock {}), "
+                        + "ramené à zéro.", it.getNumero(), piece.getReferenceFabricant(), demande, enStock);
+                rameneesAZero.add(piece.libelle(langue).texte());
+            }
+        });
+        return rameneesAZero;
     }
 
     /**

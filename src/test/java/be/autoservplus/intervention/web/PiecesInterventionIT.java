@@ -177,6 +177,54 @@ class PiecesInterventionIT extends SocleIntegration {
                 + "ON i.id = l.intervention_id WHERE i.reference = ?", Integer.class, dossier)).isZero();
     }
 
+    private int stock(Piece piece) {
+        return jdbc.queryForObject("SELECT quantite_stock FROM piece WHERE id = ?", Integer.class, piece.getId());
+    }
+
+    @Test
+    @DisplayName("la clôture décompte les pièces posées, sans parler du stock quand il suffisait")
+    void clotureDecompte() throws Exception {
+        UUID dossier = interventionEnCours("1000.00");
+        Piece filtre = piece("Filtre IT", 5);
+        ajouter(dossier, filtre, 2);
+
+        mvc.perform(post("/admin/interventions/{ref}/terminer", dossier).with(csrf()).locale(Locale.FRENCH))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attribute("message", containsString("a été terminée")))
+                .andExpect(flash().attribute("message", not(containsString("ramené à zéro"))));
+
+        assertThat(stock(filtre)).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("stock insuffisant : clôture acceptée, stock à zéro, la confirmation nomme la pièce")
+    void cloturePlancher() throws Exception {
+        UUID dossier = interventionEnCours("1000.00");
+        Piece joint = piece("Joint de culasse IT", 1);
+        ajouter(dossier, joint, 2);
+
+        mvc.perform(post("/admin/interventions/{ref}/terminer", dossier).with(csrf()).locale(Locale.FRENCH))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(flash().attribute("message", containsString("ramené à zéro pour : Joint de culasse IT")));
+
+        assertThat(stock(joint)).isZero();
+        assertThat(jdbc.queryForObject("SELECT statut FROM intervention WHERE reference = ?", String.class,
+                dossier)).isEqualTo(StatutIntervention.TERMINEE.name());
+    }
+
+    @Test
+    @DisplayName("une intervention annulée ne décompte rien")
+    void annulationSansDecompte() throws Exception {
+        UUID dossier = interventionEnCours("1000.00");
+        Piece courroie = piece("Courroie IT", 5);
+        ajouter(dossier, courroie, 2);
+
+        mvc.perform(post("/admin/interventions/{ref}/annuler", dossier).with(csrf()))
+                .andExpect(status().is3xxRedirection());
+
+        assertThat(stock(courroie)).isEqualTo(5);
+    }
+
     @Test
     @DisplayName("le membre voit la pièce dans son suivi, jamais la mention « à commander »")
     void mentionReserveeAuGarage() throws Exception {

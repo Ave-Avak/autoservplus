@@ -24,6 +24,28 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
 
     boolean existsByReferenceFabricant(String referenceFabricant);
 
+    /**
+     * Retire du stock au plus la quantité demandée, sans descendre sous zéro, et rend le
+     * stock d'avant : un résultat inférieur à la demande dit que le plancher a joué.
+     *
+     * <p>Une seule instruction verrouille la ligne, lit le stock à jour et l'écrit. Un
+     * verrou posé par une requête JPQL ne suffit pas quand la pièce est déjà chargée dans
+     * la transaction, comme celles d'une intervention lue avec ses lignes : JPA rend
+     * l'instance déjà gérée sans relire son stock, et deux clôtures simultanées perdraient
+     * un décompte.</p>
+     */
+    @Query(value = """
+            WITH avant AS (SELECT id, quantite_stock FROM piece WHERE id = :id FOR UPDATE)
+            UPDATE piece p
+            SET quantite_stock = GREATEST(avant.quantite_stock - :quantite, 0),
+                updated_at = now(), updated_by = :auteur
+            FROM avant
+            WHERE p.id = avant.id
+            RETURNING avant.quantite_stock
+            """, nativeQuery = true)
+    int retirerAuPlus(@Param("id") Long id, @Param("quantite") int quantite,
+                      @Param("auteur") String auteur);
+
     /** Catalogue complet pour le back-office, actifs et inactifs confondus. */
     @Query("SELECT p FROM Piece p JOIN FETCH p.categorie ORDER BY p.libelle")
     List<Piece> catalogueComplet();

@@ -4,6 +4,7 @@ import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.service.InterventionService;
+import be.autoservplus.intervention.service.dto.ClotureIntervention;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -83,8 +84,16 @@ public class AdminInterventionController {
     public String terminer(@AuthenticationPrincipal UserDetails admin,
                            @PathVariable UUID reference,
                            RedirectAttributes redirection) {
-        return appliquerTransition(reference, redirection,
-                () -> service.terminer(reference), "admin.intervention.message.terminee");
+        return appliquer(reference, redirection, () -> {
+            ClotureIntervention cloture = service.terminer(reference);
+            String confirmation = message("admin.intervention.message.terminee", cloture.numero());
+            if (cloture.piecesRameneesAZero().isEmpty()) {
+                return confirmation;
+            }
+            // Le garage ne lit pas le journal : la confirmation dit quel stock vérifier (Q-H-31).
+            return confirmation + " " + message("admin.intervention.message.stock-ramene",
+                    String.join(", ", cloture.piecesRameneesAZero()));
+        });
     }
 
     @PostMapping("/{reference}/annuler")
@@ -195,9 +204,13 @@ public class AdminInterventionController {
 
     private String appliquerTransition(UUID reference, RedirectAttributes redirection,
                                        Supplier<Intervention> action, String cleSucces) {
+        return appliquer(reference, redirection, () -> message(cleSucces, action.get().getNumero()));
+    }
+
+    /** @param action exécute la transition et rend la confirmation à afficher */
+    private String appliquer(UUID reference, RedirectAttributes redirection, Supplier<String> action) {
         try {
-            Intervention it = action.get();
-            redirection.addFlashAttribute("message", message(cleSucces, it.getNumero()));
+            redirection.addFlashAttribute("message", action.get());
         } catch (ConflitConcurrenceException e) {
             redirection.addFlashAttribute("erreur", message("erreur.409.message"));
         } catch (IllegalStateException e) {

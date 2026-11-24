@@ -17,6 +17,7 @@ import be.autoservplus.identite.service.AuteurCourant;
 import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
+import be.autoservplus.intervention.service.dto.ClotureIntervention;
 import be.autoservplus.intervention.repository.HistoriqueStatutInterventionRepository;
 import be.autoservplus.intervention.repository.InterventionRepository;
 import be.autoservplus.intervention.web.dto.InterventionVueMembre;
@@ -37,6 +38,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.AuditorAware;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -56,6 +58,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -73,6 +76,7 @@ class InterventionServiceTest {
     @Mock private be.autoservplus.reservation.repository.VehiculeRepository vehicules;
     @Mock private ParametreAtelierRepository parametres;
     @Mock private AuteurCourant auteurCourant;
+    @Mock private AuditorAware<String> auditeur;
     @Mock private GenerateurNumeroIntervention numeros;
     @Mock private ServiceCourriel courriel;
     @Mock private ApplicationEventPublisher evenements;
@@ -91,7 +95,7 @@ class InterventionServiceTest {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
         service = new InterventionService(interventions, historiques, prestations, pieces,
                 commandes, vehicules, parametres,
-                auteurCourant, numeros, courriel, evenements, GaragesDeTest.bruxellois(), horloge);
+                auteurCourant, auditeur, numeros, courriel, evenements, GaragesDeTest.bruxellois(), horloge);
 
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         golf = new Vehicule(marie, "1-ABC-123", "VW", "Golf", Motorisation.DIESEL);
@@ -746,5 +750,89 @@ class InterventionServiceTest {
         Intervention resultat = service.modifierCommentaireAdmin(ref, "  Piece commandee ");
 
         assertThat(resultat.getCommentaireAdmin()).isEqualTo("Piece commandee");
+    }
+
+    @Nested
+    @DisplayName("stock des pièces décompté à la clôture (Q-H-31)")
+    class StockALaCloture {
+
+        private Categorie freinage;
+
+        @BeforeEach
+        void categorie() {
+            freinage = new Categorie("FRE", "Freinage", TypeCategorie.PIECE);
+        }
+
+        private Piece piece(long id, String libelle, String prixHtva) {
+            Piece p = new Piece(freinage, "P-" + id, libelle, new BigDecimal(prixHtva));
+            ReflectionTestUtils.setField(p, "id", id);
+            return p;
+        }
+
+        /** Devis initial : la vidange seule, 49,00 € HTVA, seuil RM-15 à 53,90 €. */
+        private Intervention enCours() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            it.demarrer(MAINTENANT);
+            doReturn(Optional.of(it)).when(interventions).findByReference(it.getReference());
+            return it;
+        }
+
+        @Test
+        @DisplayName("les pièces posées sont décomptées, une ligne refusée par le membre ne l'est pas")
+        void decompteDesPiecesPosees() {
+            Intervention it = enCours();
+            doReturn(it).when(interventions).saveAndFlush(it);
+            Piece filtre = piece(7L, "Filtre", "1.00");
+            Piece disques = piece(3L, "Disques", "80.00");
+            it.ajouterLignePiece(filtre, (short) 1);
+            it.ajouterLignePiece(filtre, (short) 2);
+            it.ajouterLignePiece(disques, (short) 1);
+            it.refuserDepassement();
+            when(pieces.retirerAuPlus(7L, 3, null)).thenReturn(10);
+
+            ClotureIntervention cloture = service.terminer(it.getReference());
+
+            verify(pieces).retirerAuPlus(7L, 3, null);
+            verify(pieces, never()).retirerAuPlus(eq(3L), org.mockito.ArgumentMatchers.anyInt(), any());
+            assertThat(cloture.numero()).isEqualTo("INT-2026-0001");
+            assertThat(cloture.piecesRameneesAZero()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("un stock insuffisant ne refuse pas la clôture et nomme la pièce ramenée à zéro")
+        void plancherNommeLaPiece() {
+            Intervention it = enCours();
+            doReturn(it).when(interventions).saveAndFlush(it);
+            it.ajouterLignePiece(piece(7L, "Filtre", "1.00"), (short) 2);
+            when(pieces.retirerAuPlus(7L, 2, null)).thenReturn(1);
+
+            ClotureIntervention cloture = service.terminer(it.getReference());
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.TERMINEE);
+            assertThat(cloture.piecesRameneesAZero()).containsExactly("Filtre");
+        }
+
+        @Test
+        @DisplayName("un stock tout juste suffisant tombe à zéro sans être signalé : le plancher n'a pas joué")
+        void stockToutJusteSuffisant() {
+            Intervention it = enCours();
+            doReturn(it).when(interventions).saveAndFlush(it);
+            it.ajouterLignePiece(piece(7L, "Filtre", "1.00"), (short) 2);
+            when(pieces.retirerAuPlus(7L, 2, null)).thenReturn(2);
+
+            assertThat(service.terminer(it.getReference()).piecesRameneesAZero()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("une intervention annulée ne décompte rien")
+        void annulationSansDecompte() {
+            Intervention it = enCours();
+            doReturn(it).when(interventions).saveAndFlush(it);
+            it.ajouterLignePiece(piece(7L, "Filtre", "1.00"), (short) 2);
+
+            service.annuler(it.getReference());
+
+            verifyNoInteractions(pieces);
+        }
     }
 }

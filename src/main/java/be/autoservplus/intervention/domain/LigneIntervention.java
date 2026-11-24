@@ -150,6 +150,15 @@ public class LigneIntervention {
         }
     }
 
+    /**
+     * Nombre de pièces que la ligne retire du stock à la clôture. Seul point où la quantité
+     * d'une ligne devient un nombre de pièces : la quantité décimale (H4-1b) ne changera
+     * que lui.
+     */
+    public int quantitePourLeStock() {
+        return quantite;
+    }
+
     /** Type deduit du champ non-null. */
     public TypeLigneIntervention getType() {
         return prestation != null ? TypeLigneIntervention.MAIN_OEUVRE : TypeLigneIntervention.PIECE;
