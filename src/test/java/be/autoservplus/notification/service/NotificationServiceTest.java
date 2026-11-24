@@ -22,6 +22,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 import org.springframework.context.support.StaticMessageSource;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.Pageable;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -33,6 +35,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -132,10 +135,10 @@ class NotificationServiceTest {
         @Test
         @DisplayName("rend le texte compose depuis le type et l argument, pas depuis la base")
         void rendDansLaLangueDuLecteur() {
-            when(notifications.findByMembreOrderByDateEnvoiDescIdDesc(marie))
-                    .thenReturn(List.of(notificationDe(marie)));
+            when(notifications.findByMembreOrderByDateEnvoiDescIdDesc(eq(marie), any(Pageable.class)))
+                    .thenReturn(new PageImpl<>(List.of(notificationDe(marie))));
 
-            var vues = service.mesNotifications(MARIE);
+            var vues = service.mesNotifications(MARIE, 0).getContent();
 
             assertThat(vues).hasSize(1);
             assertThat(vues.getFirst().titre()).isEqualTo("Rendez-vous confirmé");

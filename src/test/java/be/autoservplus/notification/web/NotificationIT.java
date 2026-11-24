@@ -203,7 +203,7 @@ class NotificationIT extends SocleIntegration {
         @WithAnonymousUser
         @DisplayName("niveau methode : le service refuse hors authentification")
         void preAuthorizeDeMethode() {
-            assertThatThrownBy(() -> service.mesNotifications(marie))
+            assertThatThrownBy(() -> service.mesNotifications(marie, 0))
                     .isInstanceOf(AccessDeniedException.class);
         }
 

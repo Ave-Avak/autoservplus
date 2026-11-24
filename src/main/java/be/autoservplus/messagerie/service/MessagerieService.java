@@ -1,6 +1,7 @@
 package be.autoservplus.messagerie.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.NumeroPage;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
@@ -17,6 +18,9 @@ import be.autoservplus.notification.service.NotificationService;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -52,6 +56,9 @@ public class MessagerieService {
 
     private static final Logger log = LoggerFactory.getLogger(MessagerieService.class);
 
+    /** Fils par page dans l'espace membre. */
+    public static final int TAILLE_PAGE = 20;
+
     /** Délai minimal entre deux courriels au garage pour un même fil (Q-H-13). */
     static final Duration INTERVALLE_AVIS_GARAGE = Duration.ofMinutes(15);
 
@@ -84,11 +91,12 @@ public class MessagerieService {
 
     // --- lecture ------------------------------------------------------------------------
 
-    public List<ConversationVue> mesFils(String email) {
+    /** @param page numéro de page à partir de zéro, borné */
+    public Page<ConversationVue> mesFils(String email, int page) {
         ZoneId zone = parametres.courants().zone();
-        return conversations.duMembre(membre(email)).stream()
-                .map(fil -> mapper.resume(fil, RoleExpediteur.MEMBRE, zone))
-                .toList();
+        return conversations.duMembre(membre(email),
+                        PageRequest.of(NumeroPage.borne(page, TAILLE_PAGE), TAILLE_PAGE))
+                .map(fil -> mapper.resume(fil, RoleExpediteur.MEMBRE, zone));
     }
 
     public long nombreFilsNonLus(String email) {

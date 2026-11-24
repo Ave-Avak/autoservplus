@@ -1,6 +1,7 @@
 package be.autoservplus.messagerie.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.NumeroPage;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -11,6 +12,9 @@ import be.autoservplus.messagerie.service.dto.ConversationVue;
 import be.autoservplus.notification.domain.TypeNotification;
 import be.autoservplus.notification.service.NotificationService;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,13 +68,20 @@ public class AdminMessagerieService {
         this.horloge = horloge;
     }
 
-    /** Tous les fils. Les ouverts avant les clos. */
-    public List<ConversationVue> tous() {
+    /**
+     * Tous les fils, par page. Les ouverts avant les clos.
+     *
+     * @param page numéro de page à partir de zéro, borné
+     */
+    public Page<ConversationVue> tous(int page) {
         ZoneId zone = parametres.courants().zone();
-        return conversations.tousPourLeGarage().stream()
-                .map(fil -> mapper.resume(fil, RoleExpediteur.ADMINISTRATEUR, zone))
-                .toList();
+        return conversations.tousPourLeGarage(
+                        PageRequest.of(NumeroPage.borne(page, TAILLE_PAGE), TAILLE_PAGE))
+                .map(fil -> mapper.resume(fil, RoleExpediteur.ADMINISTRATEUR, zone));
     }
+
+    /** Fils par page au back-office. */
+    public static final int TAILLE_PAGE = 50;
 
     /** Detail d un fil. Ouvrir vaut lecture, comme cote membre. */
     @Transactional

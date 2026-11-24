@@ -159,6 +159,24 @@ class MessagerieIT extends SocleIntegration {
 
         @Test
         @WithMockUser
+        @DisplayName("la liste des fils se pagine par vingt, le plus récent d'abord")
+        void pagination() throws Exception {
+            for (int i = 1; i <= MessagerieService.TAILLE_PAGE + 1; i++) {
+                filDe(marie, "Fil " + i);
+            }
+
+            mvc.perform(get("/mes-messages").with(user(marie)).locale(java.util.Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Fil 21")))
+                    .andExpect(content().string(not(containsString(">Fil 1<"))))
+                    .andExpect(content().string(containsString("/mes-messages?page=2")));
+            mvc.perform(get("/mes-messages").param("page", "2").with(user(marie)))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString(">Fil 1<")));
+        }
+
+        @Test
+        @WithMockUser
         @DisplayName("repondre dans le fil d autrui est refuse par un 404")
         void reponseDansLeFilDAutrui() throws Exception {
             UUID celuiDePaul = filDe(paul, "Fil de Paul");
@@ -363,7 +381,7 @@ class MessagerieIT extends SocleIntegration {
         @WithMockUser(username = "membre@exemple.be", roles = "MEMBRE")
         @DisplayName("niveau methode : le service garage refuse meme sans passer par l URL")
         void serviceGarageRedouble() {
-            assertThatThrownBy(() -> adminMessagerie.tous())
+            assertThatThrownBy(() -> adminMessagerie.tous(0))
                     .isInstanceOf(AccessDeniedException.class);
         }
     }

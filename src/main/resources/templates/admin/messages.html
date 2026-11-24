@@ -55,6 +55,7 @@
             </tbody>
         </table>
     </div>
+    <nav th:replace="~{fragments/pagination :: liensSimples(${resultats}, '/admin/messages')}"></nav>
 </main>
 <div th:replace="~{fragments/pied :: pied}"></div>
 </body>

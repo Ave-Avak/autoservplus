@@ -47,6 +47,7 @@
             </form>
         </li>
     </ul>
+    <nav th:replace="~{fragments/pagination :: liensSimples(${resultats}, '/mes-notifications')}"></nav>
 
     <p class="actions-page">
         <a th:href="@{/mon-compte}" th:text="#{notifications.retour}">Retour à mon compte</a>

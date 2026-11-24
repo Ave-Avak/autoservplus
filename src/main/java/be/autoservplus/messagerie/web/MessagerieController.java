@@ -50,9 +50,13 @@ public class MessagerieController {
     }
 
     @GetMapping
-    public String liste(@AuthenticationPrincipal UserDetails membre, Model modele) {
+    public String liste(@AuthenticationPrincipal UserDetails membre,
+                        @RequestParam(defaultValue = "1") int page,
+                        Model modele) {
+        var resultats = messagerie.mesFils(membre.getUsername(), page - 1);
         modele.addAttribute("titre", msg("messagerie.titre"));
-        modele.addAttribute("fils", messagerie.mesFils(membre.getUsername()));
+        modele.addAttribute("fils", resultats.getContent());
+        modele.addAttribute("resultats", resultats);
         return "messagerie/fils";
     }
 

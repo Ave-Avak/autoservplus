@@ -48,9 +48,11 @@ public class AdminMessagerieController {
     }
 
     @GetMapping
-    public String liste(Model modele) {
+    public String liste(@RequestParam(defaultValue = "1") int page, Model modele) {
+        var resultats = messagerie.tous(page - 1);
         modele.addAttribute("titre", msg("admin.messagerie.titre"));
-        modele.addAttribute("fils", messagerie.tous());
+        modele.addAttribute("fils", resultats.getContent());
+        modele.addAttribute("resultats", resultats);
         return "admin/messages";
     }
 

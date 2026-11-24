@@ -37,6 +37,7 @@
             </p>
         </li>
     </ul>
+    <nav th:replace="~{fragments/pagination :: liensSimples(${resultats}, '/mes-messages')}"></nav>
 </main>
 <div th:replace="~{fragments/pied :: pied}"></div>
 </body>

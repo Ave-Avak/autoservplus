@@ -2,6 +2,8 @@ package be.autoservplus.messagerie.repository;
 
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.messagerie.domain.Conversation;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -37,6 +39,15 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
             """)
     List<Conversation> duMembre(@Param("membre") Utilisateur membre);
 
+    /** Fils du membre, par page, le plus récemment remué d'abord. */
+    @Query(value = """
+            SELECT c FROM Conversation c
+            WHERE c.membre = :membre
+            ORDER BY c.updatedAt DESC, c.id DESC
+            """,
+            countQuery = "SELECT COUNT(c) FROM Conversation c WHERE c.membre = :membre")
+    Page<Conversation> duMembre(@Param("membre") Utilisateur membre, Pageable page);
+
     /** Tous les fils, pour le garage. Les fils ouverts remontent avant les clos. */
     @Query("""
             SELECT c FROM Conversation c
@@ -44,6 +55,15 @@ public interface ConversationRepository extends JpaRepository<Conversation, Long
             ORDER BY c.cloturee ASC, c.updatedAt DESC, c.id DESC
             """)
     List<Conversation> tousPourLeGarage();
+
+    /** Tous les fils, par page, les ouverts avant les clos. */
+    @Query(value = """
+            SELECT c FROM Conversation c
+            JOIN FETCH c.membre
+            ORDER BY c.cloturee ASC, c.updatedAt DESC, c.id DESC
+            """,
+            countQuery = "SELECT COUNT(c) FROM Conversation c")
+    Page<Conversation> tousPourLeGarage(Pageable page);
 
     /**
      * Nombre de fils du membre comportant au moins un message non lu venu du garage.
