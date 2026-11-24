@@ -65,12 +65,18 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
      *
      * <p>Calcule en base et non en memoire : compter les photos deja chargees donnerait
      * un rang faux des qu une aurait ete supprimee entre-temps.</p>
+     *
+     * <p>Jointures externes explicites : un chemin {@code p.prestation.reference} écrit
+     * dans le WHERE est une jointure interne, et les trois ensemble ne retenaient
+     * aucune photo, qui n'a jamais qu'une seule origine. Le rang repartait alors de 0 à
+     * chaque dépôt.</p>
      */
     @Query("""
             SELECT COALESCE(MAX(p.ordre), -1) + 1 FROM Photo p
-            WHERE (:prestation IS NOT NULL AND p.prestation.reference = :prestation)
-               OR (:piece IS NOT NULL AND p.piece.reference = :piece)
-               OR (:intervention IS NOT NULL AND p.intervention.reference = :intervention)
+            LEFT JOIN p.prestation s LEFT JOIN p.piece pc LEFT JOIN p.intervention i
+            WHERE (:prestation IS NOT NULL AND s.reference = :prestation)
+               OR (:piece IS NOT NULL AND pc.reference = :piece)
+               OR (:intervention IS NOT NULL AND i.reference = :intervention)
             """)
     short prochainOrdre(@Param("prestation") UUID prestation,
                         @Param("piece") UUID piece,

@@ -155,6 +155,9 @@ class GalerieIT extends SocleIntegration {
             var vues = galerie.dePrestation(prestation);
             assertThat(vues).hasSizeGreaterThanOrEqualTo(2);
             assertThat(vues).isSortedAccordingTo((x, y) -> Short.compare(x.ordre(), y.ordre()));
+            assertThat(vues.stream().map(v -> v.ordre()).distinct().count())
+                    .as("chaque photo ajoutée prend le rang suivant")
+                    .isEqualTo(vues.size());
         }
 
         @Test
