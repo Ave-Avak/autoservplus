@@ -97,8 +97,22 @@ public class MessagerieService {
     @Transactional
     public ConversationVue lire(String email, UUID reference) {
         Conversation fil = filDuMembre(email, reference);
-        fil.marquerLuPar(RoleExpediteur.MEMBRE);
+        fil.marquerLuPar(RoleExpediteur.MEMBRE, horloge.instant());
         return mapper.detail(fil, RoleExpediteur.MEMBRE, parametres.courants().zone());
+    }
+
+    /**
+     * Messages du fil postérieurs au curseur, pour le rafraîchissement du fil ouvert. Ceux du
+     * garage sont lus à leur affichage, comme à l'ouverture du fil.
+     *
+     * <p>L'appartenance est vérifiée avant que le curseur ne serve : un curseur ne désigne
+     * jamais un fil, il ne fait que filtrer celui que le membre a le droit de lire.</p>
+     */
+    @Transactional
+    public ConversationVue suite(String email, UUID reference, long apres) {
+        Conversation fil = filDuMembre(email, reference);
+        fil.marquerLuPar(RoleExpediteur.MEMBRE, horloge.instant());
+        return mapper.suite(fil, RoleExpediteur.MEMBRE, parametres.courants().zone(), apres);
     }
 
     // --- ecriture -----------------------------------------------------------------------

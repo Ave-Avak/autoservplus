@@ -21,12 +21,17 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.servlet.ViewResolver;
 
+import java.time.Clock;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -56,6 +61,12 @@ class InterventionControllerTest {
 
     @TestConfiguration
     static class SecuriteTest {
+        /** Horloge réelle : le rafraîchissement du statut compte son arrêt depuis l'affichage. */
+        @Bean
+        Clock horloge() {
+            return Clock.fixed(Instant.parse("2026-11-24T10:00:00Z"), ZoneOffset.UTC);
+        }
+
         @Bean
         SecurityFilterChain filtresTest(HttpSecurity http) throws Exception {
             return http
@@ -121,6 +132,24 @@ class InterventionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(view().name("intervention/suivi :: blocStatut"))
                 .andExpect(model().attribute("intervention", vueDemo));
+    }
+
+    @Test
+    @WithMockUser(username = "marie@exemple.be")
+    @DisplayName("quinze minutes après l'affichage, le statut répond 286 et le rafraîchissement s'arrête")
+    void arretDuRafraichissement() throws Exception {
+        long affichage = Instant.parse("2026-11-24T10:00:00Z").toEpochMilli();
+
+        mvc.perform(get("/mes-interventions/{ref}/statut", REF)
+                        .param("depuis", String.valueOf(affichage - Duration.ofMinutes(16).toMillis())))
+                .andExpect(status().is(286));
+        verifyNoInteractions(service);
+
+        doReturn(vueDemo).when(service).interventionDuMembre(REF, "marie@exemple.be");
+        mvc.perform(get("/mes-interventions/{ref}/statut", REF)
+                        .param("depuis", String.valueOf(affichage - Duration.ofMinutes(14).toMillis())))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("instantPage", affichage - Duration.ofMinutes(14).toMillis()));
     }
 
     // --- RM-15 : ecran de validation du depassement -----------------------------------

@@ -1,8 +1,10 @@
 package be.autoservplus.messagerie.web;
 
+import be.autoservplus.common.web.Rafraichissement;
 import be.autoservplus.messagerie.service.MessagerieService;
 import be.autoservplus.messagerie.web.dto.FormulaireFil;
 import be.autoservplus.messagerie.web.dto.FormulaireReponse;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -16,8 +18,10 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.Clock;
 import java.util.UUID;
 
 /**
@@ -37,10 +41,12 @@ public class MessagerieController {
 
     private final MessagerieService messagerie;
     private final MessageSource messages;
+    private final Clock horloge;
 
-    public MessagerieController(MessagerieService messagerie, MessageSource messages) {
+    public MessagerieController(MessagerieService messagerie, MessageSource messages, Clock horloge) {
         this.messagerie = messagerie;
         this.messages = messages;
+        this.horloge = horloge;
     }
 
     @GetMapping
@@ -81,6 +87,60 @@ public class MessagerieController {
         modele.addAttribute("titre", vue.sujet());
         modele.addAttribute("fil", vue);
         return "messagerie/fil";
+    }
+
+    /**
+     * Messages arrivés depuis le dernier affiché, rendus à la suite du fil ouvert. 204 quand
+     * il n'y a rien de neuf, {@link Rafraichissement#ARRET} quinze minutes après l'affichage.
+     * Un fil d'autrui répond 404 avant que le curseur ne serve.
+     */
+    @GetMapping("/{reference}/messages")
+    public String suite(@AuthenticationPrincipal UserDetails membre,
+                        @PathVariable UUID reference,
+                        @RequestParam long apres,
+                        @RequestParam(required = false) Long depuis,
+                        Model modele,
+                        HttpServletResponse reponse) {
+        if (Rafraichissement.expire(depuis, horloge.instant())) {
+            reponse.setStatus(Rafraichissement.ARRET);
+            return null;
+        }
+        var vue = messagerie.suite(membre.getUsername(), reference, apres);
+        if (vue.messages().isEmpty()) {
+            reponse.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            return null;
+        }
+        modele.addAttribute("fil", vue);
+        if (depuis != null) {
+            modele.addAttribute("instantPage", depuis);
+        }
+        return "messagerie/fil :: suite";
+    }
+
+    /**
+     * Compteur des fils non lus de l'en-tête, interrogé toutes les 30 secondes. 204 quand il
+     * n'a pas changé : la page garde le sien sans rien recevoir.
+     */
+    @GetMapping("/compteur")
+    public String compteur(@AuthenticationPrincipal UserDetails membre,
+                           @RequestParam(required = false) Long actuel,
+                           @RequestParam(required = false) Long depuis,
+                           Model modele,
+                           HttpServletResponse reponse) {
+        if (Rafraichissement.expire(depuis, horloge.instant())) {
+            reponse.setStatus(Rafraichissement.ARRET);
+            return null;
+        }
+        long nombre = messagerie.nombreFilsNonLus(membre.getUsername());
+        if (actuel != null && actuel == nombre) {
+            reponse.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            return null;
+        }
+        modele.addAttribute("nombreFilsNonLus", nombre);
+        if (depuis != null) {
+            modele.addAttribute("instantPage", depuis);
+        }
+        return "fragments/entete :: compteurMessages";
     }
 
     @PostMapping("/{reference}")

@@ -120,8 +120,8 @@ public class Conversation extends BaseEntity {
     }
 
     /** Marque lus les messages venus du camp oppose au lecteur. */
-    public void marquerLuPar(RoleExpediteur lecteur) {
-        messages.forEach(message -> message.marquerLuPar(lecteur));
+    public void marquerLuPar(RoleExpediteur lecteur, Instant maintenant) {
+        messages.forEach(message -> message.marquerLuPar(lecteur, maintenant));
     }
 
     public long nombreNonLusPar(RoleExpediteur lecteur) {

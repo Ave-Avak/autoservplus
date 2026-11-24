@@ -132,12 +132,28 @@ class ConversationTest {
             fil.ajouter(fil.getMembre(), RoleExpediteur.MEMBRE, "Bonjour ?", T0);
             fil.ajouter(patron(), RoleExpediteur.ADMINISTRATEUR, "Bonjour, oui.", T0);
 
-            fil.marquerLuPar(RoleExpediteur.MEMBRE);
+            fil.marquerLuPar(RoleExpediteur.MEMBRE, T0.plusSeconds(60));
 
             assertThat(fil.nombreNonLusPar(RoleExpediteur.MEMBRE)).isZero();
             assertThat(fil.nombreNonLusPar(RoleExpediteur.ADMINISTRATEUR))
                     .as("la lecture du membre ne doit pas eteindre le compteur du garage")
                     .isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("la lecture est datée une fois, une relecture ne déplace pas la date")
+        void dateDeLecture() {
+            Conversation fil = filDe(marie());
+            fil.ajouter(fil.getMembre(), RoleExpediteur.MEMBRE, "Bonjour ?", T0);
+            fil.ajouter(patron(), RoleExpediteur.ADMINISTRATEUR, "Bonjour, oui.", T0);
+
+            fil.marquerLuPar(RoleExpediteur.MEMBRE, T0.plusSeconds(60));
+            fil.marquerLuPar(RoleExpediteur.MEMBRE, T0.plusSeconds(600));
+
+            assertThat(fil.getMessages().get(1).getLuLe()).isEqualTo(T0.plusSeconds(60));
+            assertThat(fil.getMessages().get(0).getLuLe())
+                    .as("le message du membre n est pas lu par son auteur")
+                    .isNull();
         }
     }
 }

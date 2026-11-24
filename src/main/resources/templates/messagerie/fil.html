@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
     <title th:text="${fil.sujet()} + ' | AutoServ+'">Fil | AutoServ+</title>
     <meta name="robots" content="noindex, nofollow">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
@@ -18,15 +19,27 @@
     <p role="status" class="message" th:if="${message}" th:text="${message}">Message envoyé.</p>
     <p role="alert" class="message message-erreur" th:if="${erreur}" th:text="${erreur}">Ce fil est clôturé.</p>
 
-    <ol class="fil-discussion">
-        <li th:each="m : ${fil.messages()}" th:classappend="${m.duGarage()} ? 'du-garage' : 'du-membre'">
-            <p class="carte-meta">
-                <strong th:text="${m.auteur()}">Marie</strong>
-                <span th:text="${#temporals.format(m.date(), 'EEEE d MMMM yyyy')}">23 août 2026</span>
-            </p>
-            <p th:text="${m.corps()}">Bonjour, ma facture est-elle disponible ?</p>
-        </li>
-    </ol>
+    <!--/* Le fil se complète seul toutes les 10 secondes : le fragment « suite » ne rend
+         que les messages postérieurs au dernier affiché, puis un nouveau déclencheur qui
+         remplace l'ancien. Rien de nouveau : réponse 204, rien ne bouge. Quinze minutes
+         après l'affichage de la page : réponse 286, le rafraîchissement s'arrête. */-->
+    <div class="fil" aria-live="polite">
+        <th:block th:fragment="suite">
+            <ol class="fil-discussion" th:unless="${#lists.isEmpty(fil.messages())}">
+                <li th:each="m : ${fil.messages()}" th:classappend="${m.duGarage()} ? 'du-garage' : 'du-membre'">
+                    <p class="carte-meta">
+                        <strong th:text="${m.auteur()}">Marie</strong>
+                        <span th:text="${#temporals.format(m.date(), 'EEEE d MMMM yyyy')}">23 août 2026</span>
+                    </p>
+                    <p th:text="${m.corps()}">Bonjour, ma facture est-elle disponible ?</p>
+                </li>
+            </ol>
+            <div id="suite-fil" th:unless="${fil.cloturee()}"
+                 th:with="dernier=${#lists.isEmpty(fil.messages())} ? ${apres ?: 0} : ${fil.messages()[#lists.size(fil.messages()) - 1].id()}"
+                 th:hx-get="@{/mes-messages/{ref}/messages(ref=${fil.reference()},apres=${dernier},depuis=${instantPage})}"
+                 hx-trigger="every 10s" hx-swap="outerHTML"></div>
+        </th:block>
+    </div>
 
     <p th:if="${fil.cloturee()}" th:text="#{messagerie.clos.explication}">
         Ce fil est clôturé : vous ne pouvez plus y répondre. Ouvrez-en un nouveau si besoin.
@@ -45,5 +58,6 @@
     <p><a th:href="@{/mes-messages}" th:text="#{messagerie.retour}">Retour à mes messages</a></p>
 </main>
 <div th:replace="~{fragments/pied :: pied}"></div>
+<script th:src="@{/js/htmx.min.js}"></script>
 </body>
 </html>

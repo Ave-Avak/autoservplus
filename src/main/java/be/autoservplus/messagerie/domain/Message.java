@@ -57,6 +57,10 @@ public class Message extends BaseEntity {
     @Column(name = "lu", nullable = false)
     private boolean lu;
 
+    /** Instant de la lecture par le destinataire (V70). Nul tant que le message n'est pas lu. */
+    @Column(name = "lu_le")
+    private Instant luLe;
+
     @Column(name = "date_envoi", nullable = false, updatable = false)
     private Instant dateEnvoi;
 
@@ -86,11 +90,12 @@ public class Message extends BaseEntity {
     /**
      * Marque le message lu par le camp oppose. <b>Sans effet si c est l expediteur qui
      * le relit</b> : le compteur de non-lus doit compter ce que l autre n a pas encore
-     * vu, pas ce que son auteur revisite.
+     * vu, pas ce que son auteur revisite. Une seconde lecture garde la date de la première.
      */
-    public void marquerLuPar(RoleExpediteur lecteur) {
-        if (lecteur != role) {
+    public void marquerLuPar(RoleExpediteur lecteur, Instant maintenant) {
+        if (lecteur != role && !lu) {
             this.lu = true;
+            this.luLe = Objects.requireNonNull(maintenant, "maintenant");
         }
     }
 
@@ -104,5 +109,6 @@ public class Message extends BaseEntity {
     public RoleExpediteur getRole() { return role; }
     public String getCorps() { return corps; }
     public boolean isLu() { return lu; }
+    public Instant getLuLe() { return luLe; }
     public Instant getDateEnvoi() { return dateEnvoi; }
 }

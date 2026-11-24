@@ -31,11 +31,12 @@
          tout le bloc, y compris son propre hx-get : le rafraîchissement suivant repart
          de la nouvelle version. Quand l'intervention est terminée ou annulée, les
          attributs hx-* sont omis (Thymeleaf ne rend pas un attribut de valeur nulle) :
-         plus de rafraîchissement, plus de trafic inutile. */-->
+         plus de rafraîchissement, plus de trafic inutile. Quinze minutes après l'affichage
+         de la page, le serveur répond 286 et HTMX cesse d'interroger. */-->
     <div th:fragment="blocStatut"
          id="statut-intervention"
          aria-live="polite"
-         th:hx-get="${intervention.estTerminale()} ? null : @{/mes-interventions/{ref}/statut(ref=${intervention.reference()})}"
+         th:hx-get="${intervention.estTerminale()} ? null : @{/mes-interventions/{ref}/statut(ref=${intervention.reference()},depuis=${instantPage})}"
          th:hx-trigger="${intervention.estTerminale()} ? null : 'every 10s'"
          th:hx-swap="${intervention.estTerminale()} ? null : 'outerHTML'">
 

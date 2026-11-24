@@ -72,8 +72,16 @@ public class AdminMessagerieService {
     @Transactional
     public ConversationVue lire(UUID reference) {
         Conversation fil = charger(reference);
-        fil.marquerLuPar(RoleExpediteur.ADMINISTRATEUR);
+        fil.marquerLuPar(RoleExpediteur.ADMINISTRATEUR, horloge.instant());
         return mapper.detail(fil, RoleExpediteur.ADMINISTRATEUR, parametres.courants().zone());
+    }
+
+    /** Messages postérieurs au curseur, pour le rafraîchissement du fil ouvert au garage. */
+    @Transactional
+    public ConversationVue suite(UUID reference, long apres) {
+        Conversation fil = charger(reference);
+        fil.marquerLuPar(RoleExpediteur.ADMINISTRATEUR, horloge.instant());
+        return mapper.suite(fil, RoleExpediteur.ADMINISTRATEUR, parametres.courants().zone(), apres);
     }
 
     @Transactional

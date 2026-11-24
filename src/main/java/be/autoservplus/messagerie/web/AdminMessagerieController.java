@@ -1,7 +1,9 @@
 package be.autoservplus.messagerie.web;
 
+import be.autoservplus.common.web.Rafraichissement;
 import be.autoservplus.messagerie.service.AdminMessagerieService;
 import be.autoservplus.messagerie.web.dto.FormulaireReponse;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -15,8 +17,10 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.Clock;
 import java.util.UUID;
 
 /**
@@ -34,10 +38,13 @@ public class AdminMessagerieController {
 
     private final AdminMessagerieService messagerie;
     private final MessageSource messages;
+    private final Clock horloge;
 
-    public AdminMessagerieController(AdminMessagerieService messagerie, MessageSource messages) {
+    public AdminMessagerieController(AdminMessagerieService messagerie, MessageSource messages,
+                                     Clock horloge) {
         this.messagerie = messagerie;
         this.messages = messages;
+        this.horloge = horloge;
     }
 
     @GetMapping
@@ -45,6 +52,29 @@ public class AdminMessagerieController {
         modele.addAttribute("titre", msg("admin.messagerie.titre"));
         modele.addAttribute("fils", messagerie.tous());
         return "admin/messages";
+    }
+
+    /** Messages arrivés depuis le dernier affiché, comme côté membre. */
+    @GetMapping("/{reference}/messages")
+    public String suite(@PathVariable UUID reference,
+                        @RequestParam long apres,
+                        @RequestParam(required = false) Long depuis,
+                        Model modele,
+                        HttpServletResponse reponse) {
+        if (Rafraichissement.expire(depuis, horloge.instant())) {
+            reponse.setStatus(Rafraichissement.ARRET);
+            return null;
+        }
+        var vue = messagerie.suite(reference, apres);
+        if (vue.messages().isEmpty()) {
+            reponse.setStatus(HttpServletResponse.SC_NO_CONTENT);
+            return null;
+        }
+        modele.addAttribute("fil", vue);
+        if (depuis != null) {
+            modele.addAttribute("instantPage", depuis);
+        }
+        return "admin/message-fil :: suite";
     }
 
     @GetMapping("/{reference}")

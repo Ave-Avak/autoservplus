@@ -58,9 +58,15 @@
                 <li sec:authorize="!hasRole('ADMINISTRATEUR')"><a th:href="@{/panier}"
                        th:text="${nombreArticlesPanier != null} ? #{panier.nav(${nombreArticlesPanier})} : #{nav.panier}"
                        th:attr="aria-current=${cheminCourant == '/panier'} ? 'page' : null">Panier</a></li>
+                <!--/* Le compteur se rafraîchit toutes les 30 secondes sur les pages qui chargent
+                     HTMX, sans effet ailleurs. 204 tant qu'il ne change pas. */-->
                 <li sec:authorize="!hasRole('ADMINISTRATEUR')"><a th:href="@{/mes-messages}"
-                       th:text="${nombreFilsNonLus != null} ? #{messagerie.nav(${nombreFilsNonLus})} : #{nav.messages}"
-                       th:attr="aria-current=${cheminCourant == '/mes-messages'} ? 'page' : null">Messages</a></li>
+                       th:attr="aria-current=${cheminCourant == '/mes-messages'} ? 'page' : null"><span
+                        th:fragment="compteurMessages" id="compteur-messages"
+                        th:hx-get="${nombreFilsNonLus != null} ? @{/mes-messages/compteur(actuel=${nombreFilsNonLus},depuis=${instantPage})} : null"
+                        th:hx-trigger="${nombreFilsNonLus != null} ? 'every 30s' : null"
+                        hx-swap="outerHTML"
+                        th:text="${nombreFilsNonLus != null} ? #{messagerie.nav(${nombreFilsNonLus})} : #{nav.messages}">Messages</span></a></li>
                 <!--/* L'exploitant n'est pas le garage : aucun avis ne lui est adressé, et le
                      lien menait à une liste toujours vide. */-->
                 <li sec:authorize="!hasRole('SUPER_ADMINISTRATEUR')"><a th:href="@{/mes-notifications}"

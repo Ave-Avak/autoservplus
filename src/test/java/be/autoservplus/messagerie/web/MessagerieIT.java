@@ -24,6 +24,8 @@ import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -62,6 +64,7 @@ class MessagerieIT extends SocleIntegration {
     @Autowired private NotificationRepository notifications;
     @Autowired private UtilisateurRepository utilisateurs;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private Clock horloge;
 
     private String marie;
     private String paul;
@@ -216,6 +219,93 @@ class MessagerieIT extends SocleIntegration {
             assertThat(apres.nombreNonLusPar(RoleExpediteur.ADMINISTRATEUR))
                     .as("le membre a lu son propre message : le garage doit encore le lire")
                     .isEqualTo(1);
+        }
+    }
+
+    @Nested
+    @DisplayName("Rafraichissement du fil et du compteur")
+    class Rafraichissement {
+
+        private long dernierId(UUID fil) {
+            return jdbc.queryForObject("SELECT max(m.id) FROM message m JOIN conversation c "
+                    + "ON c.id = m.conversation_id WHERE c.reference = ?", Long.class, fil);
+        }
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("le fil ne rend que les messages suivants, lus et datés à leur affichage")
+        void suiteDuFil() throws Exception {
+            UUID fil = filDe(marie, "Suite");
+            long curseur = dernierId(fil);
+            adminMessagerie.repondre("admin@autoservplus.be", fil, "Réponse du garage.");
+
+            mvc.perform(get("/mes-messages/{ref}/messages", fil).param("apres", String.valueOf(curseur))
+                            .with(user(marie)))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Réponse du garage.")))
+                    .andExpect(content().string(not(containsString("Bonjour, une question."))))
+                    .andExpect(content().string(containsString("apres=" + dernierId(fil))));
+
+            assertThat(jdbc.queryForObject("SELECT lu_le IS NOT NULL FROM message WHERE id = ?",
+                    Boolean.class, dernierId(fil))).isTrue();
+            mvc.perform(get("/mes-messages/{ref}/messages", fil).param("apres", String.valueOf(dernierId(fil)))
+                            .with(user(marie)))
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("le curseur ne sert qu'après le contrôle d'appartenance : le fil d'autrui répond 404")
+        void curseurSurLeFilDAutrui() throws Exception {
+            UUID fil = filDe(paul, "Fil de Paul");
+
+            mvc.perform(get("/mes-messages/{ref}/messages", fil).param("apres", "0").with(user(marie)))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("quinze minutes après l'affichage, le fil et le compteur répondent 286")
+        void arretApresInactivite() throws Exception {
+            UUID fil = filDe(marie, "Ancien");
+            String ancien = String.valueOf(horloge.millis() - Duration.ofMinutes(16).toMillis());
+
+            mvc.perform(get("/mes-messages/{ref}/messages", fil).param("apres", "0")
+                            .param("depuis", ancien).with(user(marie)))
+                    .andExpect(status().is(286));
+            mvc.perform(get("/mes-messages/compteur").param("actuel", "0")
+                            .param("depuis", ancien).with(user(marie)))
+                    .andExpect(status().is(286));
+        }
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("le compteur répond 204 tant qu'il ne change pas, puis rend le nouveau nombre")
+        void compteur() throws Exception {
+            UUID fil = filDe(marie, "Compteur de l'en-tête");
+            adminMessagerie.repondre("admin@autoservplus.be", fil, "Une réponse.");
+
+            mvc.perform(get("/mes-messages/compteur").param("actuel", "1").with(user(marie)))
+                    .andExpect(status().isNoContent());
+            mvc.perform(get("/mes-messages/compteur").param("actuel", "0").with(user(marie))
+                            .locale(java.util.Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("id=\"compteur-messages\"")))
+                    .andExpect(content().string(containsString("actuel=1")));
+        }
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("le fil ouvert au garage se complète des messages du membre")
+        void suiteCoteGarage() throws Exception {
+            UUID fil = filDe(marie, "Côté garage");
+            long curseur = dernierId(fil);
+            messagerie.repondre(marie, fil, "Une précision du membre.");
+
+            mvc.perform(get("/admin/messages/{ref}/messages", fil).param("apres", String.valueOf(curseur))
+                            .with(user("admin@autoservplus.be").roles("ADMINISTRATEUR")))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Une précision du membre.")));
         }
     }
 
