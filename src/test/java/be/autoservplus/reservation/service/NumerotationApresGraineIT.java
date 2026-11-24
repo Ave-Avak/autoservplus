@@ -105,6 +105,19 @@ class NumerotationApresGraineIT extends SocleIntegration {
                 Long.class)).isEqualTo(8L);
     }
 
+    @Test
+    @DisplayName("base migrée avec les graines : la main-d'œuvre de démonstration est à l'heure, 65,00 HTVA, une heure")
+    void prestationHoraireDeDemonstration() {
+        migrerAvecLesGraines();
+
+        var prestation = jdbc.queryForMap("SELECT unite, prix_htva, duree_minutes, actif FROM service "
+                + "WHERE code = 'MAIN_OEUVRE_HEURE'");
+        assertThat(prestation.get("unite")).isEqualTo("HEURE");
+        assertThat((java.math.BigDecimal) prestation.get("prix_htva")).isEqualByComparingTo("65.00");
+        assertThat(prestation.get("duree_minutes")).isEqualTo(60);
+        assertThat(prestation.get("actif")).isEqualTo(true);
+    }
+
     private Instant premierCreneauLibre(List<UUID> choix) {
         LocalDate jour = reservations.premierJourReservable().plusDays(1);
         LocalDate dernier = reservations.dernierJourReservable();
