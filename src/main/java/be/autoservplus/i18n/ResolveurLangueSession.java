@@ -22,24 +22,28 @@ import java.util.Locale;
  *
  * <p>Cette classe est le <b>point de passage unique</b> ou l ensemble ferme des
  * langues est impose, dans les deux sens : ce que le visiteur demande
- * ({@link #setLocale}) comme ce dont il herite faute de choix
- * ({@link #determineDefaultLocale}). Filtrer dans l intercepteur de changement
- * aurait laisse passer tout autre appelant.</p>
+ * ({@link #setLocale}) comme ce dont il herite faute de choix (la fonction posée par
+ * le constructeur). Filtrer dans l intercepteur de changement aurait laisse passer
+ * tout autre appelant.</p>
  */
 public class ResolveurLangueSession extends SessionLocaleResolver {
 
     /**
-     * Langue heritee quand aucun choix n a ete exprime dans la session.
+     * Pose la langue héritée quand aucun choix n'a été exprimé dans la session.
      *
-     * <p>L en-tete {@code Accept-Language} du navigateur reste consulte : c est le
-     * comportement qui existait avant F6, et le supprimer aurait servi du francais a
-     * un visiteur neerlandophone qui n a rien demande. Il est simplement <b>ramene a
-     * l ensemble admis</b> : une langue inconnue donne du francais, pas un document
-     * qui s annonce dans une langue qu il ne parle pas.</p>
+     * <p>L'en-tête {@code Accept-Language} du navigateur reste consulté : le supprimer
+     * aurait servi du français à un visiteur néerlandophone qui n'a rien demandé. Il est
+     * simplement <b>ramené à l'ensemble admis</b> : une langue inconnue donne du
+     * français, pas un document qui s'annonce dans une langue qu'il ne parle pas.</p>
+     *
+     * <p>Par une fonction et non par la redéfinition de {@code determineDefaultLocale} :
+     * depuis Spring 6, {@code resolveLocale} appelle la fonction sans passer par cette
+     * méthode, dépréciée. La redéfinition n'était donc jamais appelée, et un navigateur
+     * en allemand recevait {@code lang="de"} sur une page en français
+     * ({@code ResolveurLangueSessionTest}).</p>
      */
-    @Override
-    protected Locale determineDefaultLocale(HttpServletRequest requete) {
-        return LanguesSupportees.plusProche(requete.getLocale());
+    public ResolveurLangueSession() {
+        setDefaultLocaleFunction(requete -> LanguesSupportees.plusProche(requete.getLocale()));
     }
 
     /**
