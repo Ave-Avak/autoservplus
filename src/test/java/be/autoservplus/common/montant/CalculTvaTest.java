@@ -55,6 +55,39 @@ class CalculTvaTest {
     }
 
     @Test
+    @DisplayName("1,5 h à 65,00 HTVA : 78,65 l'heure affichée, 117,98 payés")
+    void heureEtDemieATauxRond() {
+        assertThat(CalculTva.unitaireTvac(new BigDecimal("65.00"), VINGT_ET_UN)).isEqualByComparingTo("78.65");
+        assertThat(CalculTva.totalTvac(new BigDecimal("65.00"), VINGT_ET_UN, new BigDecimal("1.5")))
+                .isEqualByComparingTo("117.98");
+    }
+
+    @Test
+    @DisplayName("1,5 h à 62,50 HTVA : 75,63 l'heure affichée, 113,45 payés et non 113,44")
+    void heureEtDemieATauxArrondi() {
+        assertThat(CalculTva.unitaireTvac(new BigDecimal("62.50"), VINGT_ET_UN)).isEqualByComparingTo("75.63");
+
+        BigDecimal total = CalculTva.totalTvac(new BigDecimal("62.50"), VINGT_ET_UN, new BigDecimal("1.5"));
+
+        assertThat(total).isEqualByComparingTo("113.45").hasScaleOf(2);
+        // Le prix hors TVA taxé d'un bloc donnerait 113,44 : un centime sous le taux affiché.
+        assertThat(new BigDecimal("62.50").multiply(new BigDecimal("1.5")).multiply(new BigDecimal("1.21"))
+                .setScale(2, java.math.RoundingMode.HALF_UP)).isEqualByComparingTo("113.44");
+    }
+
+    @Test
+    @DisplayName("une quantité entière passée en décimal donne le même total que l'entier")
+    void quantiteEntiereEnDecimal() {
+        for (String prix : PRIX) {
+            for (int quantite = 1; quantite <= 10; quantite++) {
+                assertThat(CalculTva.totalTvac(new BigDecimal(prix), VINGT_ET_UN, new BigDecimal(quantite + ".00")))
+                        .as("%s x %d", prix, quantite)
+                        .isEqualByComparingTo(CalculTva.totalTvac(new BigDecimal(prix), VINGT_ET_UN, quantite));
+            }
+        }
+    }
+
+    @Test
     @DisplayName("deux filtres à huile à 15,00 : 30,00 payés, base 24,79, TVA 5,21")
     void deuxFiltresAHuile() {
         assertThat(CalculTva.unitaireTvac(new BigDecimal("12.40"), VINGT_ET_UN)).isEqualByComparingTo("15.00");
