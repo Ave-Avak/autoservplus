@@ -24,6 +24,7 @@ import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.PosteAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
 import be.autoservplus.reservation.repository.VehiculeRepository;
+import be.autoservplus.rgpd.service.LectureArchive;
 import be.autoservplus.support.SocleIntegration;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.Panier;
@@ -43,6 +44,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
+
 
 import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
@@ -206,12 +208,12 @@ class ExportDonneesIT extends SocleIntegration {
     }
 
     private String exporter(String motDePasse) throws Exception {
-        return mvc.perform(post("/mes-donnees/export").with(csrf())
+        return LectureArchive.document(mvc.perform(post("/mes-donnees/export").with(csrf())
                         .locale(Locale.FRANCE)
                         .param("motDePasse", motDePasse))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith("application/json"))
-                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+                .andExpect(content().contentTypeCompatibleWith("application/zip"))
+                .andReturn().getResponse().getContentAsByteArray());
     }
 
     @Test

@@ -1,11 +1,13 @@
 package be.autoservplus.rgpd.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.galerie.domain.Photo;
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.EvenementSecuriteCompteRepository;
 import be.autoservplus.identite.repository.ModificationCompteRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.rgpd.repository.AjoutAuPanier;
 import be.autoservplus.rgpd.repository.CommandeExportRepository;
@@ -13,10 +15,12 @@ import be.autoservplus.rgpd.repository.FactureExportRepository;
 import be.autoservplus.rgpd.repository.ConsentementExportRepository;
 import be.autoservplus.rgpd.repository.InterventionExportRepository;
 import be.autoservplus.rgpd.repository.PanierExportRepository;
+import be.autoservplus.rgpd.repository.PhotoExportRepository;
 import be.autoservplus.rgpd.repository.RdvExportRepository;
 import be.autoservplus.rgpd.repository.VehiculeExportRepository;
 import be.autoservplus.rgpd.service.dto.ExportDonnees;
 import be.autoservplus.rgpd.service.dto.FichierExport;
+import be.autoservplus.stockage.service.StockageMedia;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Panier;
@@ -32,6 +36,8 @@ import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -81,10 +87,13 @@ import java.util.stream.Collectors;
  * suppression est logique précisément pour préserver cet historique. La plaque y
  * est donc rapprochée depuis ce parc, jamais lue sur la relation.
  *
- * <p><b>Périmètre non couvert en V1</b>, faute d'entité JPA (les tables existent
- * au schéma mais aucun code ne les alimente) : avis, messagerie, notifications.
- * L'export ne comporte donc pas ces sections plutôt que des tableaux vides
- * trompeurs.
+ * <p><b>Périmètre non couvert en V1</b> : avis, messages et notifications ne sont
+ * pas restitués, alors que leurs tables sont alimentées depuis les lots qui les ont
+ * livrés. Limite inscrite au registre, à corriger avant la mise en service.
+ *
+ * <p><b>Archive</b> : le document structuré et les copies des photos d'intervention
+ * qu'il déclare ({@link ArchiveExport}). Un fichier absent du disque reste déclaré,
+ * sans copie, et l'export n'échoue pas pour autant.
  *
  * <p><b>Factures</b> : restituées depuis l'entité {@code Facture} du module
  * facturation, et non déduites des commandes payées. Une commande payée n'est pas
@@ -105,7 +114,7 @@ public class ExportDonneesService {
      * n'est pas un libellé d'interface mais l'identité d'un document que la
      * personne archivera, et qui doit rester reconnaissable d'un export à l'autre.
      */
-    private static final String MOTIF_NOM_FICHIER = "mes-donnees-%s.json";
+    private static final String MOTIF_NOM_FICHIER = "mes-donnees-%s.zip";
 
     private final UtilisateurRepository utilisateurs;
     private final VehiculeExportRepository vehicules;
@@ -116,6 +125,8 @@ public class ExportDonneesService {
     private final ConsentementExportRepository consentements;
     private final PanierRepository paniers;
     private final PanierExportRepository panierExport;
+    private final PhotoExportRepository photos;
+    private final StockageMedia stockage;
     private final EvenementSecuriteCompteRepository evenementsSecurite;
     private final ModificationCompteRepository modificationsCompte;
     private final CatalogueTraitements catalogue;
@@ -133,6 +144,8 @@ public class ExportDonneesService {
                                 ConsentementExportRepository consentements,
                                 PanierRepository paniers,
                                 PanierExportRepository panierExport,
+                                PhotoExportRepository photos,
+                                StockageMedia stockage,
                                 EvenementSecuriteCompteRepository evenementsSecurite,
                                 ModificationCompteRepository modificationsCompte,
                                 CatalogueTraitements catalogue,
@@ -149,6 +162,8 @@ public class ExportDonneesService {
         this.consentements = consentements;
         this.paniers = paniers;
         this.panierExport = panierExport;
+        this.photos = photos;
+        this.stockage = stockage;
         this.evenementsSecurite = evenementsSecurite;
         this.modificationsCompte = modificationsCompte;
         this.catalogue = catalogue;
@@ -173,7 +188,11 @@ public class ExportDonneesService {
         exigerMotDePasse(membre, motDePasse);
         exigerDelaiEcoule(email);
 
-        byte[] contenu = serialiseur.enJson(assembler(membre, email));
+        Map<String, String> joints = new LinkedHashMap<>();
+        byte[] document = serialiseur.enJson(assembler(membre, email, joints));
+        Map<String, byte[]> fichiers = new LinkedHashMap<>();
+        joints.forEach((nom, chemin) -> fichiers.put(nom, stockage.lire(chemin)));
+        byte[] contenu = ArchiveExport.zipper(document, fichiers);
         registre.enregistrer(email);
         JOURNAL.info("Export RGPD produit pour le compte {}", membre.getReference());
         return new FichierExport(nomDuFichier(), contenu);
@@ -202,7 +221,7 @@ public class ExportDonneesService {
      *         ne se construit pas sur un titulaire supposé
      */
     public ExportDonnees assembler(String email) {
-        return assembler(charger(email), email);
+        return assembler(charger(email), email, new LinkedHashMap<>());
     }
 
     /**
@@ -238,7 +257,11 @@ public class ExportDonneesService {
         return MOTIF_NOM_FICHIER.formatted(LocalDate.now(horloge));
     }
 
-    private ExportDonnees assembler(Utilisateur membre, String email) {
+    /**
+     * @param joints reçoit, par son chemin dans l'archive, le chemin de stockage de
+     *               chaque fichier que le document déclare
+     */
+    private ExportDonnees assembler(Utilisateur membre, String email, Map<String, String> joints) {
         Locale langue = Locale.forLanguageTag(membre.getLangue().name());
         List<Consentement> preuves = consentements.pourMembre(email);
 
@@ -263,7 +286,7 @@ public class ExportDonneesService {
                         rendezVous.pourMembre(email).stream()
                                 .map(rdv -> ExportDonnees.RdvExport.de(rdv, plaque(plaques, rdv.getVehicule())))
                                 .toList(),
-                        interventionsDuParc(plaques),
+                        interventionsDuParc(plaques, joints),
                         preuves.stream().map(ExportDonnees.ConsentementExport::de).toList(),
                         ExportDonnees.ConnexionExport.de(membre,
                                 evenementsSecurite.evenementsDe(membre.getId())),
@@ -281,14 +304,53 @@ public class ExportDonneesService {
      * <p>Sans véhicule, pas d'intervention possible : le cas sort avant la requête
      * plutôt que de soumettre un {@code IN ()} vide à la base.
      */
-    private List<ExportDonnees.InterventionExport> interventionsDuParc(Map<Long, String> plaques) {
+    private List<ExportDonnees.InterventionExport> interventionsDuParc(Map<Long, String> plaques,
+                                                                      Map<String, String> joints) {
         if (plaques.isEmpty()) {
             return List.of();
         }
-        return interventions.pourVehicules(plaques.keySet()).stream()
+        List<Intervention> dossiers = interventions.pourVehicules(plaques.keySet());
+        Map<Long, List<ExportDonnees.PhotoExport>> photosParIntervention =
+                photosDesInterventions(dossiers, joints);
+        return dossiers.stream()
                 .map(intervention -> ExportDonnees.InterventionExport.de(intervention,
-                        plaque(plaques, intervention.getVehicule())))
+                        plaque(plaques, intervention.getVehicule()),
+                        photosParIntervention.getOrDefault(intervention.getId(), List.of())))
                 .toList();
+    }
+
+    /**
+     * Photos des interventions, chacune nommée dans l'archive par sa référence.
+     *
+     * <p>Un fichier qui manque sur le disque (volume restauré, effacement manuel) laisse
+     * la photo déclarée sans copie, avec un WARN : refuser l'export priverait le membre
+     * de tout le reste de son dossier pour une image.</p>
+     */
+    private Map<Long, List<ExportDonnees.PhotoExport>> photosDesInterventions(
+            List<Intervention> dossiers, Map<String, String> joints) {
+        if (dossiers.isEmpty()) {
+            return Map.of();
+        }
+        Map<Long, List<ExportDonnees.PhotoExport>> parIntervention = new LinkedHashMap<>();
+        for (Photo photo : photos.pourInterventions(dossiers.stream().map(Intervention::getId).toList())) {
+            String nom = null;
+            if (stockage.existe(photo.getChemin())) {
+                nom = "photos/" + photo.getReference() + extension(photo.getChemin());
+                joints.put(nom, photo.getChemin());
+            } else {
+                JOURNAL.warn("Export RGPD : fichier absent pour la photo {}, declaree sans copie",
+                        photo.getReference());
+            }
+            parIntervention.computeIfAbsent(photo.getIntervention().getId(), cle -> new ArrayList<>())
+                    .add(new ExportDonnees.PhotoExport(nom, photo.getTexteAlt()));
+        }
+        return parIntervention;
+    }
+
+    /** Extension du fichier stocké, point compris, ou rien s'il n'en a pas. */
+    private static String extension(String chemin) {
+        int point = chemin.lastIndexOf('.');
+        return point < chemin.lastIndexOf('/') + 1 ? "" : chemin.substring(point);
     }
 
     /**

@@ -435,6 +435,10 @@ public record ExportDonnees(
      * <p>La plaque arrive en argument, pour la même raison que dans
      * {@link RdvExport} : l'historique d'atelier d'un véhicule retiré du parc reste
      * détenu, il doit rester exporté.
+     *
+     * <p>Les photos de l'atelier arrivent aussi en argument : elles se rattachent au
+     * véhicule d'un membre identifié, l'article 15, § 3 impose d'en remettre une copie.
+     * Leurs fichiers sont joints à l'archive, cette section dit où les trouver.
      */
     public record InterventionExport(
             String numero,
@@ -448,9 +452,11 @@ public record ExportDonnees(
             BigDecimal montantDevisInitialHtva,
             BigDecimal totalFacturableHtva,
             BigDecimal totalFacturableTvac,
-            List<LigneInterventionExport> lignes) {
+            List<LigneInterventionExport> lignes,
+            List<PhotoExport> photos) {
 
-        public static InterventionExport de(Intervention intervention, String plaque) {
+        public static InterventionExport de(Intervention intervention, String plaque,
+                                            List<PhotoExport> photos) {
             return new InterventionExport(
                     intervention.getNumero(),
                     intervention.getStatut().percuLabel(),
@@ -463,8 +469,19 @@ public record ExportDonnees(
                     intervention.getMontantDevisInitialHtva(),
                     intervention.totalFacturableHtva(),
                     intervention.totalFacturableTvac(),
-                    intervention.getLignes().stream().map(LigneInterventionExport::de).toList());
+                    intervention.getLignes().stream().map(LigneInterventionExport::de).toList(),
+                    photos);
         }
+    }
+
+    /**
+     * Photo d'une intervention.
+     *
+     * @param fichier chemin du fichier dans l'archive, nul si le fichier manque sur le
+     *                disque du garage : la photo reste déclarée, sa copie ne peut pas
+     *                être jointe
+     */
+    public record PhotoExport(String fichier, String description) {
     }
 
     /**

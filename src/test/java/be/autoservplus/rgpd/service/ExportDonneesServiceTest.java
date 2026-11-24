@@ -25,10 +25,12 @@ import be.autoservplus.rgpd.repository.FactureExportRepository;
 import be.autoservplus.rgpd.repository.ConsentementExportRepository;
 import be.autoservplus.rgpd.repository.InterventionExportRepository;
 import be.autoservplus.rgpd.repository.PanierExportRepository;
+import be.autoservplus.rgpd.repository.PhotoExportRepository;
 import be.autoservplus.rgpd.repository.RdvExportRepository;
 import be.autoservplus.rgpd.repository.VehiculeExportRepository;
 import be.autoservplus.rgpd.service.dto.ExportDonnees;
 import be.autoservplus.rgpd.service.dto.FichierExport;
+import be.autoservplus.stockage.service.StockageMedia;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Panier;
@@ -93,6 +95,8 @@ class ExportDonneesServiceTest {
     @Mock private ConsentementExportRepository consentements;
     @Mock private PanierRepository paniers;
     @Mock private PanierExportRepository panierExport;
+    @Mock private PhotoExportRepository photos;
+    @Mock private StockageMedia stockage;
     @Mock private EvenementSecuriteCompteRepository evenementsSecurite;
     @Mock private ModificationCompteRepository modificationsCompte;
     @Mock private PasswordEncoder encodeur;
@@ -116,7 +120,7 @@ class ExportDonneesServiceTest {
         Clock horloge = Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels"));
         registre = new RegistreExportsRecents(horloge);
         service = new ExportDonneesService(utilisateurs, vehicules, rendezVous, interventions,
-                commandes, factures, consentements, paniers, panierExport, evenementsSecurite,
+                commandes, factures, consentements, paniers, panierExport, photos, stockage, evenementsSecurite,
                 modificationsCompte, new CatalogueTraitements(messages), serialiseur, registre, encodeur, horloge);
 
         marie = new Utilisateur(EMAIL, EMPREINTE, "Dupont", "Marie", TypeUtilisateur.MEMBRE);
@@ -765,15 +769,15 @@ class ExportDonneesServiceTest {
         }
 
         @Test
-        @DisplayName("produit un fichier JSON date du jour quand les deux gardes passent")
+        @DisplayName("produit une archive datée du jour, document JSON compris, quand les deux gardes passent")
         void exportNominal() {
             compteSansDonnees();
             motDePasseValide();
 
             FichierExport fichier = service.exporter(EMAIL, "MotDePasseDeMarie!");
 
-            assertThat(fichier.nom()).isEqualTo("mes-donnees-2026-08-22.json");
-            assertThat(new String(fichier.contenu(), StandardCharsets.UTF_8))
+            assertThat(fichier.nom()).isEqualTo("mes-donnees-2026-08-22.zip");
+            assertThat(LectureArchive.document(fichier.contenu()))
                     .contains("\"donnees_personnelles\"")
                     .contains("\"informations_traitement\"");
         }

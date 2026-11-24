@@ -79,7 +79,8 @@ public class DonneesPersonnellesController {
     /**
      * Produit et sert le fichier, ou redirige avec un code de refus.
      *
-     * <p>{@code Content-Disposition: attachment} et un nom de fichier daté : le
+     * <p>Une archive ZIP : le document structuré et les copies des photos qu'il
+     * déclare. {@code Content-Disposition: attachment} et un nom de fichier daté : le
      * document est fait pour être archivé par la personne, pas affiché dans
      * l'onglet.
      */
@@ -90,7 +91,7 @@ public class DonneesPersonnellesController {
         try {
             FichierExport fichier = service.exporter(membre.getUsername(), motDePasse);
             return ResponseEntity.ok()
-                    .contentType(MediaType.APPLICATION_JSON)
+                    .contentType(MediaType.parseMediaType("application/zip"))
                     .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
                             .filename(fichier.nom()).build().toString())
                     .body(fichier.contenu());

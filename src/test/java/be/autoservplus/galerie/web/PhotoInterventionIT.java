@@ -20,6 +20,9 @@ import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.PosteAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
 import be.autoservplus.reservation.repository.VehiculeRepository;
+import be.autoservplus.rgpd.service.ExportDonneesService;
+import be.autoservplus.rgpd.service.LectureArchive;
+import be.autoservplus.rgpd.service.dto.FichierExport;
 import be.autoservplus.stockage.service.StockageMedia;
 import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,6 +32,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import org.springframework.transaction.annotation.Transactional;
@@ -38,6 +43,7 @@ import java.time.Duration;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -67,6 +73,7 @@ class PhotoInterventionIT extends SocleIntegration {
 
     private static final String MARIE = "marie.photos@exemple.be";
     private static final String PAUL = "paul.photos@exemple.be";
+    private static final String MOT_DE_PASSE = "MotDePasseDeMarie2026!";
     private static final byte[] JPEG = jpegMinimal();
 
     @Autowired private MockMvc mvc;
@@ -80,6 +87,8 @@ class PhotoInterventionIT extends SocleIntegration {
     @Autowired private GenerateurNumeroIntervention numeros;
     @Autowired private PhotoRepository photos;
     @Autowired private StockageMedia stockage;
+    @Autowired private ExportDonneesService export;
+    @Autowired private PasswordEncoder encodeur;
 
     private UUID intervention;
     private UUID photo;
@@ -88,7 +97,7 @@ class PhotoInterventionIT extends SocleIntegration {
 
     @BeforeEach
     void preparer() {
-        Utilisateur marie = utilisateurs.save(new Utilisateur(MARIE, "$2a$12$h",
+        Utilisateur marie = utilisateurs.save(new Utilisateur(MARIE, encodeur.encode(MOT_DE_PASSE),
                 "Dupont", "Marie", TypeUtilisateur.MEMBRE));
         Utilisateur paul = utilisateurs.save(new Utilisateur(PAUL, "$2a$12$h",
                 "Martin", "Paul", TypeUtilisateur.MEMBRE));
@@ -198,5 +207,22 @@ class PhotoInterventionIT extends SocleIntegration {
                 .andExpect(status().isNotFound());
 
         assertThat(photos.findAll()).anyMatch(p -> p.getReference().equals(photoDePaul));
+    }
+
+    @Test
+    @WithMockUser(username = MARIE)
+    @DisplayName("l'export F22 du titulaire joint la copie de sa photo, jamais celle d'un autre membre")
+    void exportJointLaPhoto() {
+        FichierExport fichier = export.exporter(MARIE, MOT_DE_PASSE);
+
+        Map<String, byte[]> entrees = LectureArchive.entrees(fichier.contenu());
+        String nom = entrees.keySet().stream()
+                .filter(cle -> cle.startsWith("photos/" + photo))
+                .findFirst().orElseThrow(() -> new AssertionError("photo absente de l'archive"));
+        assertThat(entrees.get(nom)).isEqualTo(JPEG);
+        assertThat(entrees.keySet()).noneMatch(cle -> cle.contains(photoDePaul.toString()));
+        assertThat(LectureArchive.document(fichier.contenu()))
+                .contains(nom)
+                .contains("Plaquettes usées");
     }
 }
