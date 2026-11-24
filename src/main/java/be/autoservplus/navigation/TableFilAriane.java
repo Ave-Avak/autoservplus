@@ -147,6 +147,7 @@ public class TableFilAriane {
         fixe("/mes-donnees", "rgpd.donnees.titre", "/mon-compte");
         fixe("/supprimer-mon-compte", "suppression.titre", "/mon-compte");
         fixe("/commandes", "commandes.titre", "/mon-compte");
+        fixe("/mes-devis", "devis.titre", "/mon-compte");
         dynamique("/commandes/{reference}", "commande.detail.titre", "/commandes",
                 attribut("commande", CommandeDetailVue.class, CommandeDetailVue::numero));
         fixe("/commandes/{reference}/annulation", "retractation.titre", "/commandes");

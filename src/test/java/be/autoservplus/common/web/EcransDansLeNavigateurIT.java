@@ -8,6 +8,7 @@ import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.web.NavigationEcransIT.Role;
+import be.autoservplus.devis.service.DevisService;
 import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -144,6 +145,7 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
     @Autowired private DisponibiliteService disponibilites;
     @Autowired private RdvService rdvService;
     @Autowired private PanierService panierService;
+    @Autowired private DevisService devisService;
     @Autowired private CommandeService commandeService;
 
     private Navigateur navigateur;
@@ -540,7 +542,9 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
 
     /**
      * De quoi ouvrir des écrans à variable : une pièce, deux véhicules, un rendez-vous et
-     * une commande. Les prestations, les postes et les plages viennent des migrations.
+     * une commande. Puis un panier rempli et un devis, pour que le panier montre le choix du
+     * véhicule et que la liste des devis ait une ligne. Les prestations, les postes et les
+     * plages viennent des migrations.
      */
     private void semerLesDonnees(Utilisateur membre) {
         Piece piece = transactions.execute(statut -> {
@@ -573,6 +577,8 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
         try {
             panierService.ajouterPiece(membre.getEmail(), piece.getReference(), 2);
             commande = commandeService.passerCommande(membre.getEmail(), true, false, null).reference();
+            panierService.ajouterPiece(membre.getEmail(), piece.getReference(), 1);
+            devisService.emettre(membre.getEmail(), voiture.getReference());
         } finally {
             SecurityContextHolder.clearContext();
         }

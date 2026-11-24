@@ -179,6 +179,8 @@ class NavigationEcransIT extends SocleIntegration {
             variable("/commandes/{reference}", Acces.CONNECTE),
             variable("/commandes/{reference}/annulation", Acces.CONNECTE),
             new Route("/factures/{reference}/pdf", "/factures/" + REF + "/pdf", Acces.CONNECTE, false, 404),
+            ecran("/mes-devis", Acces.CONNECTE),
+            new Route("/mes-devis/{reference}/pdf", "/mes-devis/" + REF + "/pdf", Acces.CONNECTE, false, 404),
             new Route("/avoirs/{reference}/pdf", "/avoirs/" + REF + "/pdf", Acces.CONNECTE, false, 404),
             new Route("/paiement-fictif/{referencePrestataire}", "/paiement-fictif/inconnue",
                     Acces.CONNECTE, false, 404),

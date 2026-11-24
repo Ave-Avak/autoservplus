@@ -1,6 +1,7 @@
 package be.autoservplus.vente.web;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.reservation.service.VehiculeService;
 import be.autoservplus.vente.service.PanierService;
 import be.autoservplus.vente.service.PieceInactiveException;
 import be.autoservplus.vente.service.StockInsuffisantException;
@@ -51,6 +52,7 @@ class PanierControllerTest {
 
     @Autowired private MockMvc mvc;
     @MockitoBean private PanierService service;
+    @MockitoBean private VehiculeService vehicules;
 
     @TestConfiguration
     static class SecuriteTest {
@@ -85,7 +87,7 @@ class PanierControllerTest {
         mvc.perform(get("/panier"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("vente/panier"))
-                .andExpect(model().attributeExists("panier"));
+                .andExpect(model().attributeExists("panier", "vehicules"));
     }
 
     @Test

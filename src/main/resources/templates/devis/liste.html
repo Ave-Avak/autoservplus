@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{devis.titre} + ' | AutoServ+'">Mes devis | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/entete :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{devis.titre}">Mes devis</h1>
+    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+
+    <p th:text="#{devis.intro}">Un devis reprend votre panier tel qu'il était le jour de son émission.</p>
+
+    <p th:if="${#lists.isEmpty(devis)}" th:text="#{devis.aucun}">Vous n'avez encore demandé aucun devis.</p>
+
+    <div class="defilement" th:unless="${#lists.isEmpty(devis)}" tabindex="0" role="region" aria-labelledby="legende-devis">
+        <table class="tableau">
+            <caption id="legende-devis" th:text="#{devis.legende}">Vos devis, du plus récent au plus ancien</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{devis.colonne.numero}">Numéro</th>
+                <th scope="col" th:text="#{devis.colonne.date}">Émis le</th>
+                <th scope="col" th:text="#{devis.colonne.validite}">Valable jusqu'au</th>
+                <th scope="col" th:text="#{devis.colonne.vehicule}">Véhicule</th>
+                <th scope="col" th:text="#{devis.colonne.montant}">Montant TVAC</th>
+                <th scope="col" th:text="#{devis.colonne.document}">Document</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="d : ${devis}">
+                <th scope="row" th:text="${d.numero()}">DEV-2026-0001</th>
+                <td th:text="${#temporals.format(d.dateEmission(), 'd MMMM yyyy')}">24 novembre 2026</td>
+                <td>
+                    <span th:text="${#temporals.format(d.valableJusquAu(), 'd MMMM yyyy')}">24 décembre 2026</span>
+                    <span th:if="${d.expire()}" class="carte-meta" th:text="#{devis.expire}">Expiré</span>
+                </td>
+                <td th:text="${d.vehicule()}">Volkswagen Golf (1-ABC-123)</td>
+                <td th:text="${d.totalTvac()}">80,21 €</td>
+                <td>
+                    <a th:href="@{/mes-devis/{ref}/pdf(ref=${d.reference()})}"
+                       th:text="#{devis.telecharger(${d.numero()})}">Télécharger le devis DEV-2026-0001</a>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <p class="actions-page">
+        <a th:href="@{/panier}" th:text="#{devis.vers-panier}">Demander un devis depuis mon panier</a>
+    </p>
+</main>
+
+<div th:replace="~{fragments/pied :: pied}"></div>
+</body>
+</html>
