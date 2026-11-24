@@ -36,7 +36,7 @@ public class CatalogueTraitements {
      * legale de l article 6 qui l autorise.
      */
     private static final List<String> FINALITES = List.of(
-            "compte", "reservation", "intervention", "vente", "devis",
+            "compte", "reservation", "intervention", "vente", "devis", "messagerie",
             "comptabilite", "communication", "marketing", "securite");
 
     /** Categories de donnees traitees, alignees sur les sections de l export. */

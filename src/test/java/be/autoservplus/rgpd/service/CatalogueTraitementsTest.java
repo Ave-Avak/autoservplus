@@ -121,8 +121,8 @@ class CatalogueTraitementsTest {
                     catalogue.informationsTraitement(Locale.forLanguageTag(langue));
 
             assertThat(infos.responsableTraitement()).isNotBlank();
-            // Neuf depuis le devis (F15), qui a sa finalité et sa durée de conservation.
-            assertThat(infos.finalites()).hasSize(9);
+            // Dix : le devis (F15) et la messagerie ont chacun leur finalité.
+            assertThat(infos.finalites()).hasSize(10);
             assertThat(infos.categoriesDonnees()).hasSize(7).allSatisfy(
                     categorie -> assertThat(categorie).isNotBlank());
             // Cinq depuis l ajout de Cloudflare (Turnstile) et de Have I Been Pwned.

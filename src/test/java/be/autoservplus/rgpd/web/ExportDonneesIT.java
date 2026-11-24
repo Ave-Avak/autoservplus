@@ -20,6 +20,9 @@ import be.autoservplus.identite.repository.ConsentementRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.repository.InterventionRepository;
+import be.autoservplus.messagerie.domain.Conversation;
+import be.autoservplus.messagerie.domain.RoleExpediteur;
+import be.autoservplus.messagerie.repository.ConversationRepository;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.PosteAtelier;
 import be.autoservplus.reservation.domain.Rdv;
@@ -116,6 +119,7 @@ class ExportDonneesIT extends SocleIntegration {
     @Autowired private InterventionRepository interventions;
     @Autowired private FactureService facturation;
     @Autowired private DevisRepository devis;
+    @Autowired private ConversationRepository conversations;
 
     private final ObjectMapper lecteur = new ObjectMapper();
 
@@ -195,6 +199,10 @@ class ExportDonneesIT extends SocleIntegration {
                 debutRdv, Duration.ofMinutes(30), List.of(vidange), "Bruit a l avant"));
         interventions.save(new Intervention("INT-" + numeroDossier, rdv));
 
+        Conversation fil = new Conversation(membre, null, "Fil " + marque);
+        fil.ajouter(membre, RoleExpediteur.MEMBRE, "Message de " + marque, Instant.parse("2026-03-03T09:00:00Z"));
+        conversations.save(fil);
+
         // Devis tiré d'un panier à part : celui du membre garde la ligne déjà commandée.
         Panier pourDevis = new Panier(membre);
         pourDevis.ajouterPiece(ampoule, 1);
@@ -238,6 +246,7 @@ class ExportDonneesIT extends SocleIntegration {
         assertThat(document)
                 .contains("1-ABC-123").contains("Volkswagen")
                 .contains("CMD-MARIE").contains("RDV-MARIE").contains("INT-MARIE").contains("DEV-MARIE")
+                .contains("Message de Volkswagen")
                 .contains("81.240.10.7")
                 .contains(numerosFactures.get("marie@exemple.be"));
         // Rien de Jean : ni vehicule, ni dossier, ni adresse IP de consentement,
@@ -245,7 +254,7 @@ class ExportDonneesIT extends SocleIntegration {
         assertThat(document)
                 .doesNotContain("2-XYZ-789").doesNotContain("Renault")
                 .doesNotContain("CMD-JEAN").doesNotContain("RDV-JEAN").doesNotContain("INT-JEAN")
-                .doesNotContain("DEV-JEAN")
+                .doesNotContain("DEV-JEAN").doesNotContain("Message de Renault")
                 .doesNotContain("195.130.1.1").doesNotContain("jean@exemple.be")
                 .doesNotContain(numerosFactures.get("jean@exemple.be"));
     }
@@ -271,6 +280,14 @@ class ExportDonneesIT extends SocleIntegration {
         assertThat(donnees.path("interventions").size()).isEqualTo(1);
         assertThat(donnees.path("consentements").size()).isEqualTo(1);
         assertThat(donnees.path("connexion_et_securite").has("derniere_connexion")).isTrue();
+
+        // Échanges avec le garage : le fil et son message, sections présentes même vides.
+        assertThat(donnees.path("messagerie").size()).isEqualTo(1);
+        assertThat(donnees.path("messagerie").get(0).path("messages").get(0).path("corps").asText())
+                .isEqualTo("Message de Peugeot");
+        assertThat(donnees.path("messagerie").get(0).path("messages").get(0).has("lu_le")).isTrue();
+        assertThat(donnees.path("notifications").isArray()).isTrue();
+        assertThat(donnees.path("avis").isArray()).isTrue();
 
         // Devis : l'instantané entier, lignes comprises.
         JsonNode devisExporte = donnees.path("devis");

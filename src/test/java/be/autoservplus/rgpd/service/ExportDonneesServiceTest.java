@@ -1,5 +1,6 @@
 package be.autoservplus.rgpd.service;
 
+import be.autoservplus.avis.domain.Avis;
 import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
@@ -15,17 +16,24 @@ import be.autoservplus.identite.repository.EvenementSecuriteCompteRepository;
 import be.autoservplus.identite.repository.ModificationCompteRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.intervention.domain.Intervention;
+import be.autoservplus.messagerie.domain.Conversation;
+import be.autoservplus.messagerie.domain.RoleExpediteur;
+import be.autoservplus.notification.domain.Notification;
+import be.autoservplus.notification.domain.TypeNotification;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.PosteAtelier;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.rgpd.repository.AjoutAuPanier;
 import be.autoservplus.facturation.domain.Facture;
+import be.autoservplus.rgpd.repository.AvisExportRepository;
 import be.autoservplus.rgpd.repository.CommandeExportRepository;
+import be.autoservplus.rgpd.repository.ConversationExportRepository;
 import be.autoservplus.rgpd.repository.DevisExportRepository;
 import be.autoservplus.rgpd.repository.FactureExportRepository;
 import be.autoservplus.rgpd.repository.ConsentementExportRepository;
 import be.autoservplus.rgpd.repository.InterventionExportRepository;
+import be.autoservplus.rgpd.repository.NotificationExportRepository;
 import be.autoservplus.rgpd.repository.PanierExportRepository;
 import be.autoservplus.rgpd.repository.PhotoExportRepository;
 import be.autoservplus.rgpd.repository.RdvExportRepository;
@@ -63,6 +71,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -96,6 +105,9 @@ class ExportDonneesServiceTest {
     @Mock private CommandeExportRepository commandes;
     @Mock private FactureExportRepository factures;
     @Mock private DevisExportRepository devis;
+    @Mock private ConversationExportRepository fils;
+    @Mock private NotificationExportRepository notificationsExport;
+    @Mock private AvisExportRepository avisExport;
     @Mock private ConsentementExportRepository consentements;
     @Mock private PanierRepository paniers;
     @Mock private PanierExportRepository panierExport;
@@ -124,7 +136,7 @@ class ExportDonneesServiceTest {
         Clock horloge = Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels"));
         registre = new RegistreExportsRecents(horloge);
         service = new ExportDonneesService(utilisateurs, vehicules, rendezVous, interventions,
-                commandes, factures, devis, consentements, paniers, panierExport, photos, stockage, evenementsSecurite,
+                commandes, factures, devis, fils, notificationsExport, avisExport, consentements, paniers, panierExport, photos, stockage, evenementsSecurite,
                 modificationsCompte, new CatalogueTraitements(messages), serialiseur, registre, encodeur, horloge);
 
         marie = new Utilisateur(EMAIL, EMPREINTE, "Dupont", "Marie", TypeUtilisateur.MEMBRE);
@@ -421,6 +433,40 @@ class ExportDonneesServiceTest {
             compteSansDonnees();
 
             assertThat(service.assembler(EMAIL).donneesPersonnelles().factures()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("restitue chaque fil et ses messages, avec la date de lecture, les notifications et les avis")
+        void echangesAvecLeGarage() {
+            compteSansDonnees();
+            Instant envoi = Instant.parse("2026-11-20T09:00:00Z");
+            Utilisateur garage = new Utilisateur("garage@exemple.be", EMPREINTE, "Garage", "Atelier",
+                    TypeUtilisateur.ADMINISTRATEUR);
+            Conversation fil = new Conversation(marie, null, "Ma vidange");
+            fil.ajouter(marie, RoleExpediteur.MEMBRE, "Quand puis-je venir ?", envoi);
+            fil.ajouter(garage, RoleExpediteur.ADMINISTRATEUR, "Mardi à 9 h.", envoi.plusSeconds(3600));
+            fil.marquerLuPar(RoleExpediteur.MEMBRE, envoi.plusSeconds(7200));
+            when(fils.pourMembre(EMAIL)).thenReturn(List.of(fil));
+            when(notificationsExport.pourMembre(EMAIL)).thenReturn(List.of(new Notification(marie,
+                    TypeNotification.MESSAGE_RECU, "Nouveau message", "Ma vidange", envoi)));
+            Avis avis = mock(Avis.class);
+            when(avis.getNote()).thenReturn((short) 4);
+            when(avis.getCommentaire()).thenReturn("Travail soigné.");
+            when(avis.isPublie()).thenReturn(true);
+            when(avisExport.pourMembre(EMAIL)).thenReturn(List.of(avis));
+
+            ExportDonnees.DonneesPersonnelles donnees = service.assembler(EMAIL).donneesPersonnelles();
+
+            ExportDonnees.FilExport exporte = donnees.messagerie().getFirst();
+            assertThat(exporte.sujet()).isEqualTo("Ma vidange");
+            assertThat(exporte.messages()).extracting(ExportDonnees.MessageExport::expediteur)
+                    .containsExactly("MEMBRE", "ADMINISTRATEUR");
+            assertThat(exporte.messages().get(1).luLe()).isEqualTo(envoi.plusSeconds(7200));
+            assertThat(exporte.messages().get(0).luLe()).isNull();
+            assertThat(donnees.notifications()).singleElement()
+                    .satisfies(n -> assertThat(n.valeur()).isEqualTo("Ma vidange"));
+            assertThat(donnees.avis()).singleElement()
+                    .satisfies(a -> assertThat(a.commentaire()).isEqualTo("Travail soigné."));
         }
 
         @Test

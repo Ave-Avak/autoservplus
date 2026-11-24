@@ -10,11 +10,14 @@ import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.rgpd.repository.AjoutAuPanier;
+import be.autoservplus.rgpd.repository.AvisExportRepository;
 import be.autoservplus.rgpd.repository.CommandeExportRepository;
+import be.autoservplus.rgpd.repository.ConversationExportRepository;
 import be.autoservplus.rgpd.repository.DevisExportRepository;
 import be.autoservplus.rgpd.repository.FactureExportRepository;
 import be.autoservplus.rgpd.repository.ConsentementExportRepository;
 import be.autoservplus.rgpd.repository.InterventionExportRepository;
+import be.autoservplus.rgpd.repository.NotificationExportRepository;
 import be.autoservplus.rgpd.repository.PanierExportRepository;
 import be.autoservplus.rgpd.repository.PhotoExportRepository;
 import be.autoservplus.rgpd.repository.RdvExportRepository;
@@ -88,9 +91,10 @@ import java.util.stream.Collectors;
  * suppression est logique précisément pour préserver cet historique. La plaque y
  * est donc rapprochée depuis ce parc, jamais lue sur la relation.
  *
- * <p><b>Périmètre non couvert en V1</b> : avis, messages et notifications ne sont
- * pas restitués, alors que leurs tables sont alimentées depuis les lots qui les ont
- * livrés. Limite inscrite au registre, à corriger avant la mise en service.
+ * <p><b>Échanges avec le garage</b> : chaque fil et ses messages (expéditeur, corps, date
+ * d'envoi, date de lecture), les notifications de l'espace membre et les avis déposés,
+ * publiés ou non. L'article 15 vise toutes les données traitées, et ces trois-là le sont
+ * depuis les lots qui les ont livrés.
  *
  * <p><b>Archive</b> : le document structuré et les copies des photos d'intervention
  * qu'il déclare ({@link ArchiveExport}). Un fichier absent du disque reste déclaré,
@@ -124,6 +128,9 @@ public class ExportDonneesService {
     private final CommandeExportRepository commandes;
     private final FactureExportRepository factures;
     private final DevisExportRepository devis;
+    private final ConversationExportRepository fils;
+    private final NotificationExportRepository notificationsExport;
+    private final AvisExportRepository avis;
     private final ConsentementExportRepository consentements;
     private final PanierRepository paniers;
     private final PanierExportRepository panierExport;
@@ -144,6 +151,9 @@ public class ExportDonneesService {
                                 CommandeExportRepository commandes,
                                 FactureExportRepository factures,
                                 DevisExportRepository devis,
+                                ConversationExportRepository fils,
+                                NotificationExportRepository notificationsExport,
+                                AvisExportRepository avis,
                                 ConsentementExportRepository consentements,
                                 PanierRepository paniers,
                                 PanierExportRepository panierExport,
@@ -163,6 +173,9 @@ public class ExportDonneesService {
         this.commandes = commandes;
         this.factures = factures;
         this.devis = devis;
+        this.fils = fils;
+        this.notificationsExport = notificationsExport;
+        this.avis = avis;
         this.consentements = consentements;
         this.paniers = paniers;
         this.panierExport = panierExport;
@@ -294,6 +307,11 @@ public class ExportDonneesService {
                                 .map(rdv -> ExportDonnees.RdvExport.de(rdv, plaque(plaques, rdv.getVehicule())))
                                 .toList(),
                         interventionsDuParc(plaques, joints),
+                        fils.pourMembre(email).stream().map(ExportDonnees.FilExport::de).toList(),
+                        notificationsExport.pourMembre(email).stream()
+                                .map(ExportDonnees.NotificationExport::de)
+                                .toList(),
+                        avis.pourMembre(email).stream().map(ExportDonnees.AvisExport::de).toList(),
                         preuves.stream().map(ExportDonnees.ConsentementExport::de).toList(),
                         ExportDonnees.ConnexionExport.de(membre,
                                 evenementsSecurite.evenementsDe(membre.getId())),

@@ -1,5 +1,6 @@
 package be.autoservplus.rgpd.service.dto;
 
+import be.autoservplus.avis.domain.Avis;
 import be.autoservplus.devis.domain.Devis;
 import be.autoservplus.devis.domain.LigneDevis;
 import be.autoservplus.identite.domain.Consentement;
@@ -10,6 +11,9 @@ import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
+import be.autoservplus.messagerie.domain.Conversation;
+import be.autoservplus.messagerie.domain.Message;
+import be.autoservplus.notification.domain.Notification;
 import be.autoservplus.reservation.domain.LigneRdv;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.Vehicule;
@@ -66,6 +70,9 @@ public record ExportDonnees(
             List<DevisExport> devis,
             List<RdvExport> rendezVous,
             List<InterventionExport> interventions,
+            List<FilExport> messagerie,
+            List<NotificationExport> notifications,
+            List<AvisExport> avis,
             List<ConsentementExport> consentements,
             ConnexionExport connexionEtSecurite,
             List<ModificationCompteExport> modificationsDuCompte) {
@@ -367,6 +374,63 @@ public record ExportDonnees(
                     ligne.getTauxTva(),
                     ligne.prixUnitaireTvac(),
                     ligne.totalTvac());
+        }
+    }
+
+    /**
+     * Fil de discussion avec le garage et ses messages, dans l'ordre d'envoi. L'expéditeur est
+     * désigné par son rôle : le membre lui-même ou le garage, qui parle d'une seule voix.
+     */
+    public record FilExport(
+            String sujet,
+            String numeroIntervention,
+            boolean cloture,
+            List<MessageExport> messages) {
+
+        public static FilExport de(Conversation fil) {
+            return new FilExport(
+                    fil.getSujet(),
+                    fil.getIntervention() == null ? null : fil.getIntervention().getNumero(),
+                    fil.isCloturee(),
+                    fil.getMessages().stream().map(MessageExport::de).toList());
+        }
+    }
+
+    /** {@code luLe} est nul pour un message non lu par son destinataire. */
+    public record MessageExport(String expediteur, String corps, Instant dateEnvoi, boolean lu,
+                                Instant luLe) {
+
+        public static MessageExport de(Message message) {
+            return new MessageExport(message.getRole().name(), message.getCorps(),
+                    message.getDateEnvoi(), message.isLu(), message.getLuLe());
+        }
+    }
+
+    /**
+     * Notification déposée dans l'espace du membre, telle qu'elle est conservée : son type, le
+     * texte d'origine en français et la valeur qu'elle porte (numéro de dossier, sujet d'un
+     * fil). L'écran compose le texte affiché dans la langue du lecteur.
+     */
+    public record NotificationExport(String type, String titre, String valeur, String statut,
+                                     String canal, Instant dateEnvoi, Instant dateLecture) {
+
+        public static NotificationExport de(Notification notification) {
+            return new NotificationExport(notification.getType().name(), notification.getTitre(),
+                    notification.getCorps(), notification.getStatut().name(),
+                    notification.getCanal().name(), notification.getDateEnvoi(),
+                    notification.getDateLecture());
+        }
+    }
+
+    /** Avis déposé par le membre, publié ou non, signalé ou non. */
+    public record AvisExport(String numeroIntervention, short note, String commentaire,
+                             Instant dateDepot, boolean publie, boolean signale) {
+
+        public static AvisExport de(Avis avis) {
+            return new AvisExport(
+                    avis.getIntervention() == null ? null : avis.getIntervention().getNumero(),
+                    avis.getNote(), avis.getCommentaire(), avis.getDateDepot(),
+                    avis.isPublie(), avis.isSignale());
         }
     }
 
