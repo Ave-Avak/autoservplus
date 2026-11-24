@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 public interface PhotoRepository extends JpaRepository<Photo, Long> {
@@ -31,6 +32,33 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
             ORDER BY p.ordre ASC, p.id ASC
             """)
     List<Photo> dIntervention(@Param("reference") UUID reference);
+
+    /**
+     * Photo d'une prestation ou d'une pièce, seule servie à l'adresse publique. Une photo
+     * d'intervention n'y est pas trouvée, comme une référence inconnue.
+     */
+    @Query("""
+            SELECT p FROM Photo p
+            WHERE p.reference = :reference AND p.intervention IS NULL
+            """)
+    Optional<Photo> duCatalogue(@Param("reference") UUID reference);
+
+    /** Photo de cette intervention-là : une référence prise dans une autre n'est pas trouvée. */
+    @Query("""
+            SELECT p FROM Photo p
+            WHERE p.reference = :photo AND p.intervention.reference = :intervention
+            """)
+    Optional<Photo> dUneIntervention(@Param("intervention") UUID intervention,
+                                     @Param("photo") UUID photo);
+
+    /** Photo d'une fiche donnée, quelle que soit sa nature, pour la retirer de sa galerie. */
+    @Query("""
+            SELECT p FROM Photo p
+            LEFT JOIN p.prestation s LEFT JOIN p.piece pc LEFT JOIN p.intervention i
+            WHERE p.reference = :photo
+              AND (s.reference = :fiche OR pc.reference = :fiche OR i.reference = :fiche)
+            """)
+    Optional<Photo> deLaFiche(@Param("fiche") UUID fiche, @Param("photo") UUID photo);
 
     /**
      * Rang suivant dans une galerie, pour poser l ordre d une photo qu on ajoute.

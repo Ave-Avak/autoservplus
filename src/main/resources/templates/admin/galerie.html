@@ -26,12 +26,14 @@
 
     <ul class="galerie" th:unless="${#lists.isEmpty(photos)}">
         <li th:each="p : ${photos}">
-            <!--/* L'URL porte l'identifiant de la ligne, jamais le chemin du fichier :
-                 le chemin réel est résolu côté serveur. */-->
-            <img th:src="@{/images/galerie/{id}(id=${p.id()})}" th:alt="${p.texteAlt()}"
-                 width="200" alt="">
+            <!--/* L'URL porte la référence de la photo, jamais le chemin du fichier ni sa
+                 clé. Une photo d'intervention ne passe pas par l'adresse publique. */-->
+            <img th:src="${type == 'interventions'}
+                     ? @{/admin/interventions/{r}/photos/{p}(r=${reference},p=${p.reference()})}
+                     : @{/images/galerie/{p}(p=${p.reference()})}"
+                 th:alt="${p.texteAlt()}" width="200" alt="">
             <p class="carte-meta" th:text="${p.texteAlt()}">Vidange terminée</p>
-            <form th:action="@{/admin/galerie/{t}/{r}/{id}/supprimer(t=${type},r=${reference},id=${p.id()})}"
+            <form th:action="@{/admin/galerie/{t}/{r}/{p}/supprimer(t=${type},r=${reference},p=${p.reference()})}"
                   method="post">
                 <button type="submit" class="lien-bouton"
                         th:aria-label="#{admin.galerie.supprimer.aria(${p.texteAlt()})}"
@@ -52,6 +54,9 @@
         </p>
         <p class="carte-meta" th:text="#{admin.galerie.formats(${libelleTypesAdmis})}">
             Formats admis : .jpg, .png, .webp
+        </p>
+        <p class="texte-info" th:if="${type == 'interventions'}" th:text="#{admin.galerie.consigne-intervention}">
+            Ne déposez aucune photo qui montre un visage ou une plaque lisible.
         </p>
         <p>
             <!--/* Obligatoire : une image sans alternative textuelle est invisible pour

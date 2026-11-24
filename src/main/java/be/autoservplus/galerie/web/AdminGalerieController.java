@@ -84,13 +84,13 @@ public class AdminGalerieController {
         return "redirect:/admin/galerie/" + type + "/" + reference;
     }
 
-    @PostMapping("/{type}/{reference}/{id}/supprimer")
+    @PostMapping("/{type}/{reference}/{photo}/supprimer")
     public String supprimer(@PathVariable String type,
                             @PathVariable UUID reference,
-                            @PathVariable Long id,
+                            @PathVariable UUID photo,
                             RedirectAttributes redirection) {
         TypeGalerie.depuisChemin(type);
-        admin.supprimer(id);
+        admin.supprimer(reference, photo);
         redirection.addFlashAttribute("message", msg("admin.galerie.supprimee"));
         return "redirect:/admin/galerie/" + type + "/" + reference;
     }

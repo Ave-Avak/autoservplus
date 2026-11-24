@@ -342,6 +342,15 @@ public class InterventionService {
                 parametres.courants().zone());
     }
 
+    /**
+     * Vérifie que le membre est le titulaire de l'intervention, pour un appelant qui sert
+     * une ressource rattachée (photo). Même réponse qu'une référence inconnue sinon.
+     */
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public void exigerTitulaire(UUID reference, String email) {
+        chargerPourMembre(reference, email);
+    }
+
     // --- RM-15 : validation du depassement par le membre -----------------------------
 
     /**

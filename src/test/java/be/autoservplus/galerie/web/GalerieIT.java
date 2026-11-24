@@ -190,9 +190,9 @@ class GalerieIT extends SocleIntegration {
         void imageServie() throws Exception {
             UUID prestation = premierePrestation();
             admin.ajouterAPrestation(prestation, List.of(image("a.jpg")), "Vue");
-            Long id = galerie.dePrestation(prestation).getFirst().id();
+            UUID photo = galerie.dePrestation(prestation).getFirst().reference();
 
-            mvc.perform(get("/images/galerie/{id}", id))
+            mvc.perform(get("/images/galerie/{p}", photo))
                     .andExpect(status().isOk())
                     .andExpect(header().string("Content-Type", "image/jpeg"))
                     .andExpect(header().string("Cache-Control",
@@ -205,18 +205,18 @@ class GalerieIT extends SocleIntegration {
         void suppression() {
             UUID prestation = premierePrestation();
             admin.ajouterAPrestation(prestation, List.of(image("a.jpg")), "Vue");
-            Long id = galerie.dePrestation(prestation).getFirst().id();
+            UUID photo = galerie.dePrestation(prestation).getFirst().reference();
 
-            admin.supprimer(id);
+            admin.supprimer(prestation, photo);
 
-            assertThat(photos.findById(id)).isEmpty();
+            assertThat(photos.findAll()).noneMatch(p -> p.getReference().equals(photo));
         }
 
         @Test
         @WithAnonymousUser
         @DisplayName("une image inconnue rend 404, pas une erreur serveur")
         void imageInconnue() throws Exception {
-            mvc.perform(get("/images/galerie/{id}", 999_999L))
+            mvc.perform(get("/images/galerie/{p}", UUID.randomUUID()))
                     .andExpect(status().isNotFound());
         }
     }
