@@ -1,6 +1,7 @@
 package be.autoservplus.messagerie.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.messagerie.domain.Conversation;
@@ -44,6 +45,7 @@ public class AdminMessagerieService {
     private final ConversationMapper mapper;
     private final ParametreAtelierRepository parametres;
     private final NotificationService notifications;
+    private final ServiceCourriel courriels;
     private final Clock horloge;
 
     public AdminMessagerieService(ConversationRepository conversations,
@@ -51,12 +53,14 @@ public class AdminMessagerieService {
                                   ConversationMapper mapper,
                                   ParametreAtelierRepository parametres,
                                   NotificationService notifications,
+                                  ServiceCourriel courriels,
                                   Clock horloge) {
         this.conversations = conversations;
         this.membres = membres;
         this.mapper = mapper;
         this.parametres = parametres;
         this.notifications = notifications;
+        this.courriels = courriels;
         this.horloge = horloge;
     }
 
@@ -92,6 +96,8 @@ public class AdminMessagerieService {
                         "Utilisateur", emailAdministrateur));
         fil.ajouter(auteur, RoleExpediteur.ADMINISTRATEUR, corps, horloge.instant());
         notifications.deposer(fil.getMembre(), TypeNotification.MESSAGE_RECU, fil.getSujet());
+        // A26 : le membre est prévenu par courriel, sans le corps du message, après validation.
+        courriels.envoyerAvisReponseGarage(fil.getMembre(), fil.getSujet(), fil.getReference());
     }
 
     @Transactional

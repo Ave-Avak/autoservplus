@@ -1,6 +1,7 @@
 package be.autoservplus.messagerie.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
@@ -50,11 +52,15 @@ public class MessagerieService {
 
     private static final Logger log = LoggerFactory.getLogger(MessagerieService.class);
 
+    /** Délai minimal entre deux courriels au garage pour un même fil (Q-H-13). */
+    static final Duration INTERVALLE_AVIS_GARAGE = Duration.ofMinutes(15);
+
     private final ConversationRepository conversations;
     private final UtilisateurRepository membres;
     private final InterventionRepository interventions;
     private final ParametreAtelierRepository parametres;
     private final NotificationService notifications;
+    private final ServiceCourriel courriels;
     private final ConversationMapper mapper;
     private final Clock horloge;
 
@@ -63,6 +69,7 @@ public class MessagerieService {
                              InterventionRepository interventions,
                              ParametreAtelierRepository parametres,
                              NotificationService notifications,
+                             ServiceCourriel courriels,
                              ConversationMapper mapper,
                              Clock horloge) {
         this.conversations = conversations;
@@ -70,6 +77,7 @@ public class MessagerieService {
         this.interventions = interventions;
         this.parametres = parametres;
         this.notifications = notifications;
+        this.courriels = courriels;
         this.mapper = mapper;
         this.horloge = horloge;
     }
@@ -132,7 +140,7 @@ public class MessagerieService {
         Conversation fil = new Conversation(membre, intervention, sujet);
         fil.ajouter(membre, RoleExpediteur.MEMBRE, corps, horloge.instant());
         conversations.save(fil);
-        prevenirLeGarage(fil.getSujet());
+        prevenirLeGarage(fil, membre);
         return fil.getReference();
     }
 
@@ -140,8 +148,9 @@ public class MessagerieService {
     @Transactional
     public void repondre(String email, UUID reference, String corps) {
         Conversation fil = filDuMembre(email, reference);
-        fil.ajouter(membre(email), RoleExpediteur.MEMBRE, corps, horloge.instant());
-        prevenirLeGarage(fil.getSujet());
+        Utilisateur membre = membre(email);
+        fil.ajouter(membre, RoleExpediteur.MEMBRE, corps, horloge.instant());
+        prevenirLeGarage(fil, membre);
     }
 
     // --- helpers privees -----------------------------------------------------------------
@@ -172,7 +181,18 @@ public class MessagerieService {
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
     }
 
-    private void prevenirLeGarage(String sujet) {
+    /**
+     * Avis au garage d'un message du membre : une notification à chaque administrateur, et un
+     * courriel à l'adresse de l'atelier, au plus un par fil et par quart d'heure (Q-H-13).
+     */
+    private void prevenirLeGarage(Conversation fil, Utilisateur membre) {
+        if (fil.dernierMessageAppelleUnAvis(INTERVALLE_AVIS_GARAGE)) {
+            courriels.envoyerAvisMessageAuGarage(fil.getSujet(), membre.nomComplet(), fil.getReference());
+        }
+        notifierLesAdministrateurs(fil.getSujet());
+    }
+
+    private void notifierLesAdministrateurs(String sujet) {
         List<Utilisateur> administrateurs = membres.findByTypeUtilisateurAndStatut(
                 TypeUtilisateur.ADMINISTRATEUR, StatutUtilisateur.ACTIF);
         if (administrateurs.isEmpty()) {

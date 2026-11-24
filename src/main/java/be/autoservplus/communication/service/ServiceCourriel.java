@@ -6,6 +6,7 @@ import be.autoservplus.identite.domain.Utilisateur;
 import java.time.Instant;
 import java.time.ZonedDateTime;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * Envoi des courriels transactionnels.
@@ -261,4 +262,17 @@ public interface ServiceCourriel {
     /** Prévient l'atelier qu'un paiement reçu sur une commande annulée attend son remboursement. */
     void envoyerAvisPaiementARembourserAuGarage(String numeroCommande, String montantTvac,
                                                 String membre);
+
+    /**
+     * Le garage a répondu dans un fil (A26). Le courriel donne le sujet et le lien du fil,
+     * jamais le corps du message : une boîte aux lettres se lit sans le second facteur de
+     * l'espace membre. Langue du compte.
+     */
+    void envoyerAvisReponseGarage(Utilisateur destinataire, String sujet, UUID fil);
+
+    /**
+     * Un membre a écrit dans un fil, à l'adresse de l'atelier. Sans le corps du message, pour
+     * la même raison que l'avis au membre.
+     */
+    void envoyerAvisMessageAuGarage(String sujet, String membre, UUID fil);
 }

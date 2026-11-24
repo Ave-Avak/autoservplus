@@ -17,6 +17,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -122,6 +123,31 @@ public class Conversation extends BaseEntity {
     /** Marque lus les messages venus du camp oppose au lecteur. */
     public void marquerLuPar(RoleExpediteur lecteur, Instant maintenant) {
         messages.forEach(message -> message.marquerLuPar(lecteur, maintenant));
+    }
+
+    /**
+     * Le dernier message du membre appelle-t-il un avis au garage ? Au plus un avis par
+     * intervalle : un membre qui écrit trois messages en cinq minutes ne produit qu'un
+     * courriel.
+     *
+     * <p>Les avis ne sont pas enregistrés, ils se rejouent : le premier message du membre en
+     * appelle un, puis chaque message écrit au moins un intervalle après le dernier avis.
+     * Le résultat est celui qu'aurait donné un horodatage conservé, sans colonne de plus.</p>
+     */
+    public boolean dernierMessageAppelleUnAvis(Duration intervalle) {
+        Instant dernierAvis = null;
+        boolean avis = false;
+        for (Message message : messages) {
+            if (message.getRole() != RoleExpediteur.MEMBRE) {
+                continue;
+            }
+            avis = dernierAvis == null
+                    || !message.getDateEnvoi().isBefore(dernierAvis.plus(intervalle));
+            if (avis) {
+                dernierAvis = message.getDateEnvoi();
+            }
+        }
+        return avis && !messages.isEmpty() && messages.get(messages.size() - 1).getRole() == RoleExpediteur.MEMBRE;
     }
 
     public long nombreNonLusPar(RoleExpediteur lecteur) {

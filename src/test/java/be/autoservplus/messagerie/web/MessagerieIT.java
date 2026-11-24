@@ -1,6 +1,7 @@
 package be.autoservplus.messagerie.web;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -22,6 +23,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Clock;
@@ -33,6 +35,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -65,6 +72,8 @@ class MessagerieIT extends SocleIntegration {
     @Autowired private UtilisateurRepository utilisateurs;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private Clock horloge;
+    // Espion : les courriels partent réellement par le transport de test, l'appel est observé.
+    @MockitoSpyBean private ServiceCourriel courriels;
 
     private String marie;
     private String paul;
@@ -177,6 +186,29 @@ class MessagerieIT extends SocleIntegration {
 
             assertThat(notifications.countByMembreAndStatut(membre, StatutNotification.NON_LUE))
                     .isGreaterThan(avant);
+        }
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("la réponse du garage part par courriel au membre, avec le sujet et sans le corps")
+        void courrielAuMembre() {
+            UUID reference = filDe(marie, "Ma facture");
+            adminMessagerie.repondre("admin@autoservplus.be", reference, "Texte confidentiel du garage.");
+
+            var membre = utilisateurs.findByEmail(marie).orElseThrow();
+            verify(courriels).envoyerAvisReponseGarage(
+                    argThat(destinataire -> destinataire.getEmail().equals(membre.getEmail())),
+                    eq("Ma facture"), eq(reference));
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("deux messages du membre à la suite ne valent qu'un courriel au garage")
+        void unSeulAvisAuGarage() {
+            UUID reference = filDe(marie, "Deux messages");
+            messagerie.repondre(marie, reference, "Et une précision.");
+
+            verify(courriels, times(1)).envoyerAvisMessageAuGarage(eq("Deux messages"), any(), eq(reference));
         }
 
         @Test
