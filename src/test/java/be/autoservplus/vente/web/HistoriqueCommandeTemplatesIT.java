@@ -186,7 +186,7 @@ class HistoriqueCommandeTemplatesIT extends SocleIntegration {
                 .andExpect(content().string(containsString(
                         "Le délai de paiement de cette commande est dépassé")))
                 .andExpect(content().string(not(containsString("/payer"))));
-        mvc.perform(get("/commande/" + echue.getReference() + "/confirmation").locale(new Locale("nl")))
+        mvc.perform(get("/commande/" + echue.getReference() + "/confirmation").locale(Locale.of("nl")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("De betalingstermijn van deze bestelling is verstreken")))
                 .andExpect(content().string(not(containsString("/payer"))));

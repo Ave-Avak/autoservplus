@@ -188,7 +188,7 @@ class RdvControllerFormulaireTest {
         mvc.perform(postReservation().locale(Locale.FRENCH))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(flash().attribute("message", "Votre rendez-vous RDV-2026-0042 est confirmé."));
-        mvc.perform(postReservation().locale(new Locale("nl")))
+        mvc.perform(postReservation().locale(Locale.of("nl")))
                 .andExpect(flash().attribute("message", "Uw afspraak RDV-2026-0042 is bevestigd."));
     }
 

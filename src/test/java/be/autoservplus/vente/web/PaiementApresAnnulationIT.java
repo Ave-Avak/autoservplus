@@ -307,7 +307,7 @@ class PaiementApresAnnulationIT extends SocleIntegration {
                 .andExpect(content().string(containsString("Remboursé le")))
                 .andExpect(content().string(not(containsString("Montant à régler"))));
         mvc.perform(get("/commande/{ref}/confirmation", commande.getReference())
-                        .with(user(MEMBRE).roles("MEMBRE")).locale(new Locale("nl")))
+                        .with(user(MEMBRE).roles("MEMBRE")).locale(Locale.of("nl")))
                 .andExpect(content().string(containsString("<h1>Bestelling geannuleerd</h1>")))
                 .andExpect(content().string(containsString("de betalingstermijn is verstreken")))
                 .andExpect(content().string(containsString("is terugbetaald op de rekening")));
@@ -320,7 +320,7 @@ class PaiementApresAnnulationIT extends SocleIntegration {
                 .andExpect(content().string(containsString(">Remboursé<")));
 
         mvc.perform(get("/commandes/{ref}", commande.getReference())
-                        .with(user(MEMBRE).roles("MEMBRE")).locale(new Locale("nl")))
+                        .with(user(MEMBRE).roles("MEMBRE")).locale(Locale.of("nl")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Betaling ontvangen na de annulering")))
                 .andExpect(content().string(containsString("is terugbetaald op de rekening")))

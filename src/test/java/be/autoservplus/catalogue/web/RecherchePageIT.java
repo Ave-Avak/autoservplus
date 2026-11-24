@@ -66,7 +66,7 @@ class RecherchePageIT extends SocleIntegration {
     @Test
     @DisplayName("la page se rend en néerlandais et en anglais, titre et prix compris")
     void autresLangues() throws Exception {
-        String neerlandais = ouvrir("/recherche?q=zqx", new Locale("nl"));
+        String neerlandais = ouvrir("/recherche?q=zqx", Locale.of("nl"));
         assertThat(neerlandais).contains("<title>Zoeken: zqx | AutoServ+</title>");
         assertThat(neerlandais).contains("15 resultaten voor &quot;zqx&quot;.");
         assertThat(neerlandais).contains("Diensten (1)").contains("Onderdelen (14)");
@@ -132,7 +132,7 @@ class RecherchePageIT extends SocleIntegration {
         assertThat(page).contains("value=\"z\"");
         assertThat(page).doesNotContain("résultat").doesNotContain("class=\"carte\"");
 
-        assertThat(ouvrir("/recherche?q=z", new Locale("nl"))).contains("Voer minstens 2 tekens in.");
+        assertThat(ouvrir("/recherche?q=z", Locale.of("nl"))).contains("Voer minstens 2 tekens in.");
     }
 
     @Test
@@ -169,7 +169,7 @@ class RecherchePageIT extends SocleIntegration {
 
         assertThat(ouvrir("/services", Locale.FRENCH)).contains(barre)
                 .contains("<form class=\"recherche-entete\" action=\"/recherche\" method=\"get\" role=\"search\"");
-        assertThat(ouvrir("/services", new Locale("nl"))).contains("placeholder=\"Een dienst of onderdeel zoeken\"");
+        assertThat(ouvrir("/services", Locale.of("nl"))).contains("placeholder=\"Een dienst of onderdeel zoeken\"");
         assertThat(ouvrir("/recherche?q=zqx", Locale.FRENCH)).doesNotContain(barre);
 
         String membre = mvc.perform(get("/pieces").with(user("membre@exemple.be").roles("MEMBRE")))

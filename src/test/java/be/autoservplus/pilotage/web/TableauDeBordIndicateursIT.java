@@ -232,7 +232,7 @@ class TableauDeBordIndicateursIT extends SocleIntegration {
                 .as("deux libellés figés pour la même pièce")
                 .containsExactly("Filtre du test", "Testfilter");
 
-        String neerlandais = ecran("/admin", new Locale("nl"));
+        String neerlandais = ecran("/admin", Locale.of("nl"));
         assertThat(neerlandais).contains("Testfilter").doesNotContain("Filtre du test");
         assertThat(neerlandais).contains("Testfiltratie").doesNotContain("Filtration du test");
 
@@ -242,7 +242,7 @@ class TableauDeBordIndicateursIT extends SocleIntegration {
         assertThat(anglais).contains("Filtration du test");
 
         String csv = new String(mvc.perform(get("/admin/tableau-de-bord/indicateurs.csv").param("periode", "mois")
-                        .with(user(ADMIN).roles("ADMINISTRATEUR")).locale(new Locale("nl")))
+                        .with(user(ADMIN).roles("ADMINISTRATEUR")).locale(Locale.of("nl")))
                 .andReturn().getResponse().getContentAsByteArray(), StandardCharsets.UTF_8);
         assertThat(csv).contains(";Testfilter;4\r\n").contains(";Testfiltratie;79,96\r\n");
     }
@@ -297,7 +297,7 @@ class TableauDeBordIndicateursIT extends SocleIntegration {
     @Test
     @DisplayName("l'écran se rend en néerlandais et en anglais")
     void autresLangues() throws Exception {
-        String neerlandais = ecran("/admin", new Locale("nl"));
+        String neerlandais = ecran("/admin", Locale.of("nl"));
         assertThat(neerlandais).contains("Nieuwe klanten").contains("Deze maand").contains("79,96 €");
         assertThat(neerlandais).contains("2 geannuleerd op 6 afspraken: 1 door het lid, 1 door de garage.");
         assertThat(neerlandais).contains("1 afwezigheid, 1 aanvraag geweigerd door de garage.");
@@ -330,7 +330,7 @@ class TableauDeBordIndicateursIT extends SocleIntegration {
         assertThat(csv).contains("Pièces les plus vendues;Filtre du test;4\r\n");
 
         String neerlandais = new String(mvc.perform(get("/admin/tableau-de-bord/indicateurs.csv")
-                        .with(user(ADMIN).roles("ADMINISTRATEUR")).locale(new Locale("nl")))
+                        .with(user(ADMIN).roles("ADMINISTRATEUR")).locale(Locale.of("nl")))
                 .andReturn().getResponse().getContentAsByteArray(), StandardCharsets.UTF_8);
         assertThat(neerlandais).startsWith("﻿Rubriek;Indicator;Waarde\r\n").contains(";Nieuwe klanten;3\r\n");
     }

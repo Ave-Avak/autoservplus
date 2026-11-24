@@ -501,8 +501,10 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
             assertThat(formulaire.count()).as("refus : le véhicule reste").isEqualTo(1);
 
             page.onceDialog(boite -> boite.accept());
-            page.waitForNavigation(() -> formulaire.locator("button").click());
-            assertThat(formulaire.count()).as("accord : le véhicule est retiré").isZero();
+            formulaire.locator("button").click();
+            // Accord : le véhicule est retiré. L'assertion de Playwright attend le
+            // rechargement qui suit l'envoi, là où waitForNavigation est déprécié.
+            PlaywrightAssertions.assertThat(formulaire).hasCount(0);
         });
     }
 

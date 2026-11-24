@@ -67,7 +67,7 @@ class SuppressionCompteTemplatesIT extends SocleIntegration {
     @Test
     @DisplayName("l'ecran se rend aussi en neerlandais et en anglais")
     void ecranDansLesTroisLangues() throws Exception {
-        mvc.perform(get("/supprimer-mon-compte").locale(new Locale("nl")))
+        mvc.perform(get("/supprimer-mon-compte").locale(Locale.of("nl")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Mijn account verwijderen")))
                 .andExpect(content().string(containsString("SUPPRIMER")))
@@ -115,7 +115,7 @@ class SuppressionCompteTemplatesIT extends SocleIntegration {
                 .andExpect(content().string(containsString("Votre compte a été supprimé")))
                 .andExpect(content().string(not(containsString("??suppression"))));
 
-        mvc.perform(get("/compte-supprime").with(anonymous()).locale(new Locale("nl")))
+        mvc.perform(get("/compte-supprime").with(anonymous()).locale(Locale.of("nl")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Uw account is verwijderd")));
     }

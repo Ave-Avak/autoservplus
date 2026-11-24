@@ -115,7 +115,7 @@ class RetractationTemplatesIT extends SocleIntegration {
         Commande commande = commandePayee("CMD-IT-RETT-0002");
 
         mvc.perform(get("/commandes/{ref}/annulation", commande.getReference())
-                        .locale(new Locale("nl")))
+                        .locale(Locale.of("nl")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("herroepingsrecht")))
                 .andExpect(content().string(not(containsString("??retractation"))));
@@ -164,7 +164,7 @@ class RetractationTemplatesIT extends SocleIntegration {
         org.assertj.core.api.Assertions.assertThat(demandes.historiqueDe(commande)).isEmpty();
 
         mvc.perform(post("/commandes/{ref}/annulation/verification", commande.getReference())
-                        .with(csrf()).locale(new Locale("nl")))
+                        .with(csrf()).locale(Locale.of("nl")))
                 .andExpect(content().string(containsString("Herroeping bevestigen")));
         mvc.perform(post("/commandes/{ref}/annulation/verification", commande.getReference())
                         .with(csrf()).locale(Locale.ENGLISH))
@@ -283,7 +283,7 @@ class RetractationTemplatesIT extends SocleIntegration {
         demandes.saveAndFlush(new DemandeAnnulation(commande, null,
                 horloge.instant()));
 
-        mvc.perform(get("/admin/retractations").locale(new Locale("nl"))
+        mvc.perform(get("/admin/retractations").locale(Locale.of("nl"))
                         .with(user("admin@autoservplus.be").roles("ADMINISTRATEUR")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Annuleringsaanvragen")))
