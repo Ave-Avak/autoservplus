@@ -164,7 +164,7 @@ public class GenerateurPdfAvoir {
         }
         for (DocumentFacture.LigneFacture ligne : document.lignes()) {
             table.addCell(cellule(ligne.libelle(), Element.ALIGN_LEFT));
-            table.addCell(cellule(String.valueOf(ligne.quantite()), Element.ALIGN_RIGHT));
+            table.addCell(cellule(ligne.quantite(), Element.ALIGN_RIGHT));
             table.addCell(cellule(montant(ligne.prixUnitaireHtva(), document.locale()),
                     Element.ALIGN_RIGHT));
             table.addCell(cellule(pourcentage(ligne.tauxTva()), Element.ALIGN_RIGHT));

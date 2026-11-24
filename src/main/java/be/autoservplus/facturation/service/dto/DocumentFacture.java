@@ -66,11 +66,21 @@ public record DocumentFacture(
      * taux qu'exige la facture, et le total taxe comprise que le client a payé. La base
      * imposable n'existe que par taux, à la ventilation.
      */
+    /**
+     * @param quantite rédigée dans la langue du document : « 2 » pour une pièce ou un
+     *                 forfait, « 1,5 h » pour des heures de main-d'œuvre
+     */
     public record LigneFacture(
             String libelle,
-            int quantite,
+            String quantite,
             BigDecimal prixUnitaireHtva,
             BigDecimal tauxTva,
             BigDecimal totalTvac) {
+
+        /** Ligne à quantité entière, celle d'une commande. */
+        public LigneFacture(String libelle, int quantite, BigDecimal prixUnitaireHtva, BigDecimal tauxTva,
+                            BigDecimal totalTvac) {
+            this(libelle, String.valueOf(quantite), prixUnitaireHtva, tauxTva, totalTvac);
+        }
     }
 }

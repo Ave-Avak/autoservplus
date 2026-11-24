@@ -3,6 +3,7 @@ package be.autoservplus.facturation.service;
 import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.TypeCategorie;
+import be.autoservplus.common.montant.CalculTva;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.vente.domain.LignePanier;
@@ -131,5 +132,34 @@ class VentilationTvaTest {
         assertThat(ventilation.tranches())
                 .as("L echelle du BigDecimal ne doit pas scinder une tranche en deux")
                 .hasSize(1);
+    }
+    @Test
+    @DisplayName("par montants, une commande donne la même ventilation que par ses lignes")
+    void parMontantsCommeParLignes() {
+        List<LignePanier> lignes = lignes(
+                piece("Joint", "0.07", "21.00"), 3,
+                piece("Vis", "0.03", "6.00"), 7);
+
+        VentilationTva parMontants = VentilationTva.desMontants(lignes.stream()
+                .map(l -> new CalculTva.MontantTaxe(l.getTauxTva(), l.totalTvac()))
+                .toList());
+
+        assertThat(parMontants).isEqualTo(VentilationTva.desLignes(lignes));
+    }
+
+    @Test
+    @DisplayName("une ligne en heures entre dans la tranche de son taux : 1,5 h et 15,00 donnent 132,98")
+    void ligneEnHeures() {
+        BigDecimal heures = CalculTva.totalTvac(
+                new BigDecimal("65.00"), new BigDecimal("21.00"), new BigDecimal("1.5"));
+
+        VentilationTva ventilation = VentilationTva.desMontants(List.of(
+                new CalculTva.MontantTaxe(new BigDecimal("21.00"), heures),
+                new CalculTva.MontantTaxe(new BigDecimal("21.00"), new BigDecimal("15.00"))));
+
+        assertThat(heures).isEqualByComparingTo("117.98");
+        assertThat(ventilation.totalTvac()).isEqualByComparingTo("132.98");
+        assertThat(ventilation.totalHtva()).isEqualByComparingTo("109.90");
+        assertThat(ventilation.totalTva()).isEqualByComparingTo("23.08");
     }
 }
