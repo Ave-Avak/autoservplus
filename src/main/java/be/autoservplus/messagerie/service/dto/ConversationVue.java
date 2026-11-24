@@ -16,6 +16,7 @@ import java.util.UUID;
  */
 public record ConversationVue(
         UUID reference,
+        String numero,
         String sujet,
         String prenomMembre,
         String numeroIntervention,

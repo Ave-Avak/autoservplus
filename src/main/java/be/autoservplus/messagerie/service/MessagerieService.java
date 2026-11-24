@@ -1,6 +1,8 @@
 package be.autoservplus.messagerie.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.numerotation.CompteurAnnuel;
+import be.autoservplus.common.numerotation.TypeCompteur;
 import be.autoservplus.common.web.NumeroPage;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.StatutUtilisateur;
@@ -69,6 +71,7 @@ public class MessagerieService {
     private final NotificationService notifications;
     private final ServiceCourriel courriels;
     private final ConversationMapper mapper;
+    private final CompteurAnnuel compteur;
     private final Clock horloge;
 
     public MessagerieService(ConversationRepository conversations,
@@ -78,6 +81,7 @@ public class MessagerieService {
                              NotificationService notifications,
                              ServiceCourriel courriels,
                              ConversationMapper mapper,
+                             CompteurAnnuel compteur,
                              Clock horloge) {
         this.conversations = conversations;
         this.membres = membres;
@@ -86,6 +90,7 @@ public class MessagerieService {
         this.notifications = notifications;
         this.courriels = courriels;
         this.mapper = mapper;
+        this.compteur = compteur;
         this.horloge = horloge;
     }
 
@@ -145,7 +150,8 @@ public class MessagerieService {
         Intervention intervention = referenceIntervention == null
                 ? null : interventionDuMembre(email, referenceIntervention);
 
-        Conversation fil = new Conversation(membre, intervention, sujet);
+        Conversation fil = new Conversation(compteur.prochainNumero(TypeCompteur.FIL), membre,
+                intervention, sujet);
         fil.ajouter(membre, RoleExpediteur.MEMBRE, corps, horloge.instant());
         conversations.save(fil);
         prevenirLeGarage(fil, membre);
@@ -192,15 +198,20 @@ public class MessagerieService {
     /**
      * Avis au garage d'un message du membre : une notification à chaque administrateur, et un
      * courriel à l'adresse de l'atelier, au plus un par fil et par quart d'heure (Q-H-13).
+     *
+     * <p>La notification ne porte que le numéro du fil (Q-H-27). Elle reste chez
+     * l'administrateur après la suppression du compte (F23), qui efface le fil : le sujet,
+     * écrit par le membre, y aurait survécu.</p>
      */
     private void prevenirLeGarage(Conversation fil, Utilisateur membre) {
         if (fil.dernierMessageAppelleUnAvis(INTERVALLE_AVIS_GARAGE)) {
-            courriels.envoyerAvisMessageAuGarage(fil.getSujet(), membre.nomComplet(), fil.getReference());
+            courriels.envoyerAvisMessageAuGarage(fil.getNumero(), fil.getSujet(), membre.nomComplet(),
+                    fil.getReference());
         }
-        notifierLesAdministrateurs(fil.getSujet());
+        notifierLesAdministrateurs(fil.getNumero());
     }
 
-    private void notifierLesAdministrateurs(String sujet) {
+    private void notifierLesAdministrateurs(String numeroFil) {
         List<Utilisateur> administrateurs = membres.findByTypeUtilisateurAndStatut(
                 TypeUtilisateur.ADMINISTRATEUR, StatutUtilisateur.ACTIF);
         if (administrateurs.isEmpty()) {
@@ -208,6 +219,6 @@ public class MessagerieService {
             return;
         }
         administrateurs.forEach(administrateur ->
-                notifications.deposer(administrateur, TypeNotification.MESSAGE_RECU, sujet));
+                notifications.deposer(administrateur, TypeNotification.MESSAGE_RECU, numeroFil));
     }
 }

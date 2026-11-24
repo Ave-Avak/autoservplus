@@ -382,6 +382,7 @@ public record ExportDonnees(
      * désigné par son rôle : le membre lui-même ou le garage, qui parle d'une seule voix.
      */
     public record FilExport(
+            String numero,
             String sujet,
             String numeroIntervention,
             boolean cloture,
@@ -389,6 +390,7 @@ public record ExportDonnees(
 
         public static FilExport de(Conversation fil) {
             return new FilExport(
+                    fil.getNumero(),
                     fil.getSujet(),
                     fil.getIntervention() == null ? null : fil.getIntervention().getNumero(),
                     fil.isCloturee(),

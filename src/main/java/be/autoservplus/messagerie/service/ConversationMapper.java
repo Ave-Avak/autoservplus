@@ -61,6 +61,7 @@ public class ConversationMapper {
                                 List<MessageVue> messagesVus) {
         return new ConversationVue(
                 fil.getReference(),
+                fil.getNumero(),
                 fil.getSujet(),
                 fil.getMembre().getPrenom(),
                 fil.getIntervention() == null ? null : fil.getIntervention().getNumero(),

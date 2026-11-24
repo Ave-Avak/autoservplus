@@ -13,8 +13,10 @@
 <header th:replace="~{fragments/entete :: entete}"></header>
 <main id="contenu">
     <h1 th:text="${fil.sujet()}">Question sur ma vidange</h1>
-    <p class="carte-meta" th:if="${fil.estRattachee()}"
-       th:text="#{messagerie.rattache(${fil.numeroIntervention()})}">Travaux ITV-2026-0011</p>
+    <p class="carte-meta">
+        <span th:text="#{messagerie.numero(${fil.numero()})}">Fil FIL-2026-0001</span>
+        <span th:if="${fil.estRattachee()}" th:text="#{messagerie.rattache(${fil.numeroIntervention()})}">Travaux ITV-2026-0011</span>
+    </p>
 
     <p role="status" class="message" th:if="${message}" th:text="${message}">Message envoyé.</p>
     <p role="alert" class="message message-erreur" th:if="${erreur}" th:text="${erreur}">Ce fil est clôturé.</p>

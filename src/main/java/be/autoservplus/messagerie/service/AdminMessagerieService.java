@@ -108,7 +108,8 @@ public class AdminMessagerieService {
         fil.ajouter(auteur, RoleExpediteur.ADMINISTRATEUR, corps, horloge.instant());
         notifications.deposer(fil.getMembre(), TypeNotification.MESSAGE_RECU, fil.getSujet());
         // A26 : le membre est prévenu par courriel, sans le corps du message, après validation.
-        courriels.envoyerAvisReponseGarage(fil.getMembre(), fil.getSujet(), fil.getReference());
+        courriels.envoyerAvisReponseGarage(fil.getMembre(), fil.getNumero(), fil.getSujet(),
+                fil.getReference());
     }
 
     @Transactional

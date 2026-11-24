@@ -442,7 +442,7 @@ class ExportDonneesServiceTest {
             Instant envoi = Instant.parse("2026-11-20T09:00:00Z");
             Utilisateur garage = new Utilisateur("garage@exemple.be", EMPREINTE, "Garage", "Atelier",
                     TypeUtilisateur.ADMINISTRATEUR);
-            Conversation fil = new Conversation(marie, null, "Ma vidange");
+            Conversation fil = new Conversation("FIL-2026-0007", marie, null, "Ma vidange");
             fil.ajouter(marie, RoleExpediteur.MEMBRE, "Quand puis-je venir ?", envoi);
             fil.ajouter(garage, RoleExpediteur.ADMINISTRATEUR, "Mardi à 9 h.", envoi.plusSeconds(3600));
             fil.marquerLuPar(RoleExpediteur.MEMBRE, envoi.plusSeconds(7200));
@@ -458,6 +458,7 @@ class ExportDonneesServiceTest {
             ExportDonnees.DonneesPersonnelles donnees = service.assembler(EMAIL).donneesPersonnelles();
 
             ExportDonnees.FilExport exporte = donnees.messagerie().getFirst();
+            assertThat(exporte.numero()).isEqualTo("FIL-2026-0007");
             assertThat(exporte.sujet()).isEqualTo("Ma vidange");
             assertThat(exporte.messages()).extracting(ExportDonnees.MessageExport::expediteur)
                     .containsExactly("MEMBRE", "ADMINISTRATEUR");

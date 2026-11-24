@@ -62,6 +62,14 @@ public class Conversation extends BaseEntity {
     @Column(name = "reference", nullable = false, updatable = false)
     private UUID reference;
 
+    /**
+     * Désignation du fil hors de l'espace du membre (V71). La notification d'un
+     * administrateur ne cite que lui : le sujet, texte libre du membre, y survivrait à la
+     * suppression du compte.
+     */
+    @Column(name = "numero", length = 20, nullable = false, updatable = false)
+    private String numero;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "membre_id", nullable = false, updatable = false)
     private Utilisateur membre;
@@ -88,10 +96,12 @@ public class Conversation extends BaseEntity {
     /**
      * Ouvre un fil au nom du membre.
      *
+     * @param numero       numéro {@code FIL-AAAA-NNNN} attribué par le compteur annuel
      * @param intervention travaux concernes, ou {@code null} pour un fil libre
      * @throws IllegalArgumentException sujet vide
      */
-    public Conversation(Utilisateur membre, Intervention intervention, String sujet) {
+    public Conversation(String numero, Utilisateur membre, Intervention intervention, String sujet) {
+        this.numero = Objects.requireNonNull(numero, "numero");
         this.membre = Objects.requireNonNull(membre, "membre");
         Objects.requireNonNull(sujet, "sujet");
         String titre = sujet.strip();
@@ -168,6 +178,7 @@ public class Conversation extends BaseEntity {
 
     public Long getId() { return id; }
     public UUID getReference() { return reference; }
+    public String getNumero() { return numero; }
     public Utilisateur getMembre() { return membre; }
     public Intervention getIntervention() { return intervention; }
     public String getSujet() { return sujet; }

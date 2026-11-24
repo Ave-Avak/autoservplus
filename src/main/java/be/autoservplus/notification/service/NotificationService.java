@@ -119,7 +119,7 @@ public class NotificationService {
         ZoneId zone = parametres.courants().zone();
         return notifications.findByMembreOrderByDateEnvoiDescIdDesc(membre,
                         PageRequest.of(NumeroPage.borne(page, TAILLE_PAGE), TAILLE_PAGE))
-                .map(notification -> vue(notification, langue, zone));
+                .map(notification -> vue(notification, membre.getTypeUtilisateur(), langue, zone));
     }
 
     /** Compteur affiche dans la navigation. */
@@ -159,12 +159,13 @@ public class NotificationService {
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
     }
 
-    private NotificationVue vue(Notification notification, Locale langue, ZoneId zone) {
+    private NotificationVue vue(Notification notification, TypeUtilisateur lecteur, Locale langue,
+                                ZoneId zone) {
         TypeNotification type = notification.getType();
         return new NotificationVue(
                 notification.getId(),
                 messages.getMessage(type.cleTitre(), null, langue),
-                messages.getMessage(type.cleCorps(), new Object[]{notification.getCorps()}, langue),
+                messages.getMessage(type.cleCorps(lecteur), new Object[]{notification.getCorps()}, langue),
                 !notification.estNonLue(),
                 LocalDateTime.ofInstant(notification.getDateEnvoi(), zone));
     }

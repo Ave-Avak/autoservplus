@@ -11,7 +11,10 @@ package be.autoservplus.common.numerotation;
 public enum TypeCompteur {
 
     /** Devis F15, {@code DEV-AAAA-NNNN} (V69). */
-    DEVIS("compteur_devis", "DEV");
+    DEVIS("compteur_devis", "DEV"),
+
+    /** Fil de discussion, {@code FIL-AAAA-NNNN} (V71). */
+    FIL("compteur_fil", "FIL");
 
     private final String table;
     private final String prefixe;

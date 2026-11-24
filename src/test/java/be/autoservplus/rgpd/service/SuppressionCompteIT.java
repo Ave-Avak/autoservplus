@@ -500,6 +500,33 @@ class SuppressionCompteIT extends SocleIntegration {
     }
 
     @Test
+    @DisplayName("après la suppression, la notification de l'administrateur ne garde que le numéro du fil")
+    void notificationAdministrateurSansTexteDuMembre() {
+        Utilisateur marie = membre();
+        String sujet = "Sujet confidentiel " + COMPTEUR.getAndIncrement();
+        Long administrateur = transactions.execute(statut -> {
+            Utilisateur compte = new Utilisateur("admin-" + COMPTEUR.getAndIncrement() + "@exemple.be",
+                    encodeur.encode(MOT_DE_PASSE), "Atelier", "Admin", TypeUtilisateur.ADMINISTRATEUR);
+            // Actif : seuls les administrateurs actifs reçoivent la notification.
+            compte.confirmerAdresseEmail();
+            return utilisateurs.save(compte).getId();
+        });
+        executerEn(marie.getEmail(), () ->
+                messagerie.ouvrir(marie.getEmail(), sujet, "Mon numéro de châssis est le suivant.", null));
+        String numero = jdbc.queryForObject("SELECT numero FROM conversation WHERE membre_id = ?",
+                String.class, marie.getId());
+
+        supprimer(marie);
+
+        assertThat(jdbc.queryForList("SELECT corps FROM notification WHERE membre_id = ?",
+                String.class, administrateur)).containsExactly(numero);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM notification WHERE corps LIKE ? OR titre LIKE ?",
+                Integer.class, "%" + sujet + "%", "%" + sujet + "%")).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM conversation WHERE numero = ?",
+                Integer.class, numero)).isZero();
+    }
+
+    @Test
     @DisplayName("les devis du membre sont supprimés, lignes comprises, ceux d'un autre membre restent")
     void devisSupprimes() {
         Utilisateur marie = membre();

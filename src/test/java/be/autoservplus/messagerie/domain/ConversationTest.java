@@ -28,7 +28,7 @@ class ConversationTest {
     }
 
     private static Conversation filDe(Utilisateur membre) {
-        return new Conversation(membre, null, "Question sur ma vidange");
+        return new Conversation("FIL-2026-0001", membre, null, "Question sur ma vidange");
     }
 
     @Nested
@@ -53,9 +53,9 @@ class ConversationTest {
         void sujet() {
             Utilisateur marie = marie();
 
-            assertThatThrownBy(() -> new Conversation(marie, null, "   "))
+            assertThatThrownBy(() -> new Conversation("FIL-2026-0001", marie, null, "   "))
                     .isInstanceOf(IllegalArgumentException.class);
-            assertThat(new Conversation(marie, null, "S".repeat(300)).getSujet())
+            assertThat(new Conversation("FIL-2026-0001", marie, null, "S".repeat(300)).getSujet())
                     .hasSize(Conversation.LONGUEUR_SUJET);
         }
 

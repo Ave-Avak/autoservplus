@@ -10,7 +10,7 @@ import java.time.Clock;
 
 /**
  * Attribue le numéro suivant d'une suite annuelle, format {@code PRÉFIXE-AAAA-NNNN}, la
- * suite repartant à 1 chaque année au garage. Sert les devis.
+ * suite repartant à 1 chaque année au garage. Sert les devis et les fils de discussion.
  *
  * <p>Une seule instruction lit et incrémente le compteur de l'année : l'insertion crée
  * la ligne de la première attribution de l'année, le conflit sur la clé incrémente la
@@ -18,7 +18,7 @@ import java.time.Clock;
  * sans verrou explicite, là où un compteur lu puis écrit en deux temps exigerait un
  * {@code SELECT ... FOR UPDATE} précédé d'une création à part, comme pour les factures.</p>
  *
- * <p>Un devis n'est pas une pièce comptable : rien n'impose une suite sans
+ * <p>Ni un devis ni un fil ne sont des pièces comptables : rien n'impose une suite sans
  * trou. Le compteur tourne pourtant dans la transaction de l'appelant
  * ({@code MANDATORY}), pour qu'une création annulée ne consomme pas de numéro. Les
  * factures, les avoirs et les commandes gardent leur propre numérotation.</p>

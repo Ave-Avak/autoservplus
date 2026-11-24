@@ -264,15 +264,15 @@ public interface ServiceCourriel {
                                                 String membre);
 
     /**
-     * Le garage a répondu dans un fil (A26). Le courriel donne le sujet et le lien du fil,
-     * jamais le corps du message : une boîte aux lettres se lit sans le second facteur de
-     * l'espace membre. Langue du compte.
+     * Le garage a répondu dans un fil (A26). Le courriel donne le numéro, le sujet et le lien
+     * du fil, jamais le corps du message : une boîte aux lettres se lit sans le second
+     * facteur de l'espace membre. Langue du compte.
      */
-    void envoyerAvisReponseGarage(Utilisateur destinataire, String sujet, UUID fil);
+    void envoyerAvisReponseGarage(Utilisateur destinataire, String numeroFil, String sujet, UUID fil);
 
     /**
      * Un membre a écrit dans un fil, à l'adresse de l'atelier. Sans le corps du message, pour
      * la même raison que l'avis au membre.
      */
-    void envoyerAvisMessageAuGarage(String sujet, String membre, UUID fil);
+    void envoyerAvisMessageAuGarage(String numeroFil, String sujet, String membre, UUID fil);
 }

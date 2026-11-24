@@ -2,6 +2,7 @@ package be.autoservplus.reservation.service;
 
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PrestationRepository;
+import be.autoservplus.messagerie.service.MessagerieService;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.VehiculeRepository;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import javax.sql.DataSource;
 import java.time.Instant;
@@ -43,13 +45,18 @@ class NumerotationApresGraineIT extends SocleIntegration {
     @Autowired private RdvService reservations;
     @Autowired private VehiculeRepository vehicules;
     @Autowired private PrestationRepository prestations;
+    @Autowired private MessagerieService messagerie;
+
+    private void migrerAvecLesGraines() {
+        Flyway.configure().dataSource(source)
+                .locations("classpath:db/migration", "classpath:db/demo")
+                .load().migrate();
+    }
 
     @Test
     @DisplayName("base migrée avec les graines : une réservation passe du premier coup")
     void reservationApresGraine() {
-        Flyway.configure().dataSource(source)
-                .locations("classpath:db/migration", "classpath:db/demo")
-                .load().migrate();
+        migrerAvecLesGraines();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM rdv", Long.class))
                 .as("la graine porte des rendez-vous").isPositive();
 
@@ -61,6 +68,24 @@ class NumerotationApresGraineIT extends SocleIntegration {
         Rdv rdv = reservations.reserver(MARIE, vehicule.getReference(), choix, debut, null);
 
         assertThat(jdbc.queryForObject("SELECT count(*) FROM rdv WHERE numero = ?", Long.class, rdv.getNumero()))
+                .isEqualTo(1L);
+    }
+
+    @Test
+    @WithMockUser(username = MARIE)
+    @DisplayName("base migrée avec les graines : le fil de la graine est numéroté, le suivant sans collision")
+    void filApresGraine() {
+        migrerAvecLesGraines();
+        List<String> numerosDeLaGraine = jdbc.queryForList(
+                "SELECT numero FROM conversation WHERE created_by = 'demo'", String.class);
+        assertThat(numerosDeLaGraine).isNotEmpty().allMatch(numero -> numero.matches("FIL-\\d{4}-\\d{4}"));
+
+        UUID fil = messagerie.ouvrir(MARIE, "Après la graine", "Bonjour, une question.", null);
+
+        String numero = jdbc.queryForObject("SELECT numero FROM conversation WHERE reference = ?",
+                String.class, fil);
+        assertThat(numero).isNotIn(numerosDeLaGraine);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM conversation WHERE numero = ?", Long.class, numero))
                 .isEqualTo(1L);
     }
 

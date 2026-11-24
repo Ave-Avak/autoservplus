@@ -1,5 +1,7 @@
 package be.autoservplus.notification.domain;
 
+import be.autoservplus.identite.domain.TypeUtilisateur;
+
 /**
  * Motif d une notification in-app (BL-6). Stocke en clair dans
  * {@code notification.type} (varchar 40), et surtout <b>cle de rendu</b> : c est lui
@@ -15,7 +17,9 @@ package be.autoservplus.notification.domain;
  *
  * <p>Chaque valeur resout deux cles : {@code notification.type.<NOM>.titre} et
  * {@code notification.type.<NOM>.corps}, cette derniere prenant l argument metier
- * (numero de rendez-vous, de commande, d intervention ou d avoir) en parametre.</p>
+ * (numero de rendez-vous, de commande, d intervention ou d avoir) en parametre.
+ * {@link #MESSAGE_RECU} a un second corps pour l'administrateur, voir
+ * {@link #cleCorps(TypeUtilisateur)}.</p>
  */
 public enum TypeNotification {
 
@@ -63,5 +67,17 @@ public enum TypeNotification {
     /** Cle i18n du corps affiche. Le message attend l argument metier en {0}. */
     public String cleCorps() {
         return "notification.type." + name() + ".corps";
+    }
+
+    /**
+     * Clé i18n du corps pour ce lecteur. Un administrateur lit {@link #MESSAGE_RECU} sous une
+     * clé propre, dont l'argument est le numéro du fil et non son sujet (Q-H-27) : la
+     * notification reste chez lui après la suppression du compte du membre.
+     */
+    public String cleCorps(TypeUtilisateur lecteur) {
+        if (this == MESSAGE_RECU && lecteur != TypeUtilisateur.MEMBRE) {
+            return "notification.type.MESSAGE_RECU.garage.corps";
+        }
+        return cleCorps();
     }
 }

@@ -199,7 +199,7 @@ class ExportDonneesIT extends SocleIntegration {
                 debutRdv, Duration.ofMinutes(30), List.of(vidange), "Bruit a l avant"));
         interventions.save(new Intervention("INT-" + numeroDossier, rdv));
 
-        Conversation fil = new Conversation(membre, null, "Fil " + marque);
+        Conversation fil = new Conversation("FIL-" + numeroDossier, membre, null, "Fil " + marque);
         fil.ajouter(membre, RoleExpediteur.MEMBRE, "Message de " + marque, Instant.parse("2026-03-03T09:00:00Z"));
         conversations.save(fil);
 

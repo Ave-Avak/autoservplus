@@ -11,6 +11,7 @@ import be.autoservplus.messagerie.service.AdminMessagerieService;
 import be.autoservplus.messagerie.service.MessagerieService;
 import be.autoservplus.notification.domain.StatutNotification;
 import be.autoservplus.notification.repository.NotificationRepository;
+import be.autoservplus.notification.service.NotificationService;
 import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -21,6 +22,9 @@ import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMock
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -29,7 +33,13 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Clock;
 import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -69,6 +79,7 @@ class MessagerieIT extends SocleIntegration {
     @Autowired private AdminMessagerieService adminMessagerie;
     @Autowired private ConversationRepository conversations;
     @Autowired private NotificationRepository notifications;
+    @Autowired private NotificationService notificationsService;
     @Autowired private UtilisateurRepository utilisateurs;
     @Autowired private JdbcTemplate jdbc;
     @Autowired private Clock horloge;
@@ -105,6 +116,10 @@ class MessagerieIT extends SocleIntegration {
 
     private UUID filDe(String email, String sujet) {
         return messagerie.ouvrir(email, sujet, "Bonjour, une question.", null);
+    }
+
+    private String numeroDe(UUID fil) {
+        return jdbc.queryForObject("SELECT numero FROM conversation WHERE reference = ?", String.class, fil);
     }
 
     @Nested
@@ -216,7 +231,7 @@ class MessagerieIT extends SocleIntegration {
             var membre = utilisateurs.findByEmail(marie).orElseThrow();
             verify(courriels).envoyerAvisReponseGarage(
                     argThat(destinataire -> destinataire.getEmail().equals(membre.getEmail())),
-                    eq("Ma facture"), eq(reference));
+                    eq(numeroDe(reference)), eq("Ma facture"), eq(reference));
         }
 
         @Test
@@ -226,7 +241,8 @@ class MessagerieIT extends SocleIntegration {
             UUID reference = filDe(marie, "Deux messages");
             messagerie.repondre(marie, reference, "Et une précision.");
 
-            verify(courriels, times(1)).envoyerAvisMessageAuGarage(eq("Deux messages"), any(), eq(reference));
+            verify(courriels, times(1)).envoyerAvisMessageAuGarage(eq(numeroDe(reference)), eq("Deux messages"), any(),
+                    eq(reference));
         }
 
         @Test
@@ -356,6 +372,80 @@ class MessagerieIT extends SocleIntegration {
                             .with(user("admin@autoservplus.be").roles("ADMINISTRATEUR")))
                     .andExpect(status().isOk())
                     .andExpect(content().string(containsString("Une précision du membre.")));
+        }
+    }
+
+    @Nested
+    @DisplayName("Numéro du fil (Q-H-27)")
+    class Numero {
+
+        @Test
+        @WithMockUser
+        @DisplayName("un fil ouvert reçoit le numéro suivant de la suite de l'année")
+        void numeroSuivant() {
+            String premier = numeroDe(filDe(marie, "Premier"));
+            String second = numeroDe(filDe(paul, "Second"));
+
+            assertThat(premier).matches("FIL-\\d{4}-\\d{4}");
+            assertThat(second.substring(0, 9)).isEqualTo(premier.substring(0, 9));
+            assertThat(Integer.parseInt(second.substring(9)))
+                    .isEqualTo(Integer.parseInt(premier.substring(9)) + 1);
+        }
+
+        @Test
+        @DisplayName("deux fils ouverts en même temps reçoivent deux numéros distincts")
+        void deuxFilsSimultanes() throws Exception {
+            ExecutorService pool = Executors.newFixedThreadPool(2);
+            CountDownLatch depart = new CountDownLatch(1);
+            Future<UUID> deMarie = pool.submit(() -> ouvrirEnTantQue(marie, depart));
+            Future<UUID> dePaul = pool.submit(() -> ouvrirEnTantQue(paul, depart));
+            depart.countDown();
+
+            String numeroDeMarie = numeroDe(deMarie.get(30, TimeUnit.SECONDS));
+            String numeroDePaul = numeroDe(dePaul.get(30, TimeUnit.SECONDS));
+            pool.shutdown();
+
+            assertThat(numeroDeMarie).isNotEqualTo(numeroDePaul);
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM conversation WHERE numero IN (?, ?)",
+                    Integer.class, numeroDeMarie, numeroDePaul)).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("la notification de l'administrateur porte le numéro du fil, jamais son sujet")
+        void notificationAdministrateurSansSujet() {
+            String administrateur = "msg-admin" + COMPTEUR.getAndIncrement() + "@exemple.be";
+            Utilisateur compte = new Utilisateur(administrateur, "$2a$12$abcdefghijklmnopqrstuv", "Test",
+                    "Admin", TypeUtilisateur.ADMINISTRATEUR);
+            // Actif : seuls les administrateurs actifs reçoivent la notification.
+            compte.confirmerAdresseEmail();
+            utilisateurs.save(compte);
+            UUID reference = executerEn(marie, "MEMBRE", () -> filDe(marie, "Sujet personnel de Marie"));
+            String numero = numeroDe(reference);
+
+            Long idAdministrateur = utilisateurs.findByEmail(administrateur).orElseThrow().getId();
+            assertThat(jdbc.queryForList("SELECT corps FROM notification WHERE membre_id = ? "
+                    + "AND type = 'MESSAGE_RECU'", String.class, idAdministrateur))
+                    .containsExactly(numero);
+
+            String lu = executerEn(administrateur, "ADMINISTRATEUR",
+                    () -> notificationsService.mesNotifications(administrateur, 0).getContent().get(0).corps());
+            assertThat(lu).contains(numero).doesNotContain("Sujet personnel");
+        }
+
+        private UUID ouvrirEnTantQue(String email, CountDownLatch depart) throws InterruptedException {
+            depart.await(5, TimeUnit.SECONDS);
+            return executerEn(email, "MEMBRE", () -> filDe(email, "Simultané"));
+        }
+
+        private <T> T executerEn(String email, String role, Supplier<T> action) {
+            SecurityContext contexte = SecurityContextHolder.createEmptyContext();
+            contexte.setAuthentication(new TestingAuthenticationToken(email, "n/a", "ROLE_" + role));
+            SecurityContextHolder.setContext(contexte);
+            try {
+                return action.get();
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
         }
     }
 

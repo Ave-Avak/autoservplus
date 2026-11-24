@@ -454,13 +454,15 @@ public class CourrielSortant implements ServiceCourriel {
     }
 
     @Override
-    public void envoyerAvisReponseGarage(Utilisateur destinataire, String sujet, UUID fil) {
-        auCompte("reponse-garage", destinataire, null, sujet, liens.vers("/mes-messages/" + fil));
+    public void envoyerAvisReponseGarage(Utilisateur destinataire, String numeroFil, String sujet,
+                                         UUID fil) {
+        auCompte("reponse-garage", destinataire, null, numeroFil, sujet,
+                liens.vers("/mes-messages/" + fil));
     }
 
     @Override
-    public void envoyerAvisMessageAuGarage(String sujet, String membre, UUID fil) {
-        auGarage("message-au-garage", fil.toString(), Locale.FRENCH, sujet, membre,
+    public void envoyerAvisMessageAuGarage(String numeroFil, String sujet, String membre, UUID fil) {
+        auGarage("message-au-garage", numeroFil, Locale.FRENCH, numeroFil, sujet, membre,
                 liens.vers("/admin/messages/" + fil));
     }
 
