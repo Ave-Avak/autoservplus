@@ -7,9 +7,12 @@ import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
+import be.autoservplus.devis.domain.Devis;
+import be.autoservplus.devis.repository.DevisRepository;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.identite.domain.Consentement;
+import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -50,6 +53,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -111,6 +115,7 @@ class ExportDonneesIT extends SocleIntegration {
     @Autowired private RdvRepository rdvs;
     @Autowired private InterventionRepository interventions;
     @Autowired private FactureService facturation;
+    @Autowired private DevisRepository devis;
 
     private final ObjectMapper lecteur = new ObjectMapper();
 
@@ -190,6 +195,12 @@ class ExportDonneesIT extends SocleIntegration {
                 debutRdv, Duration.ofMinutes(30), List.of(vidange), "Bruit a l avant"));
         interventions.save(new Intervention("INT-" + numeroDossier, rdv));
 
+        // Devis tiré d'un panier à part : celui du membre garde la ligne déjà commandée.
+        Panier pourDevis = new Panier(membre);
+        pourDevis.ajouterPiece(ampoule, 1);
+        devis.save(Devis.depuisLePanier("DEV-" + numeroDossier, pourDevis, vehicule,
+                Instant.parse("2026-03-02T09:00:00Z"), LocalDate.of(2026, 3, 2), Langue.fr));
+
         // Le contexte de persistance est vide avant l'export : en production celui-ci
         // s'execute dans sa propre transaction et relit tout depuis la base. Sans ce
         // clear, les collections deja chargees ici (les lignes deplacees du panier
@@ -226,7 +237,7 @@ class ExportDonneesIT extends SocleIntegration {
 
         assertThat(document)
                 .contains("1-ABC-123").contains("Volkswagen")
-                .contains("CMD-MARIE").contains("RDV-MARIE").contains("INT-MARIE")
+                .contains("CMD-MARIE").contains("RDV-MARIE").contains("INT-MARIE").contains("DEV-MARIE")
                 .contains("81.240.10.7")
                 .contains(numerosFactures.get("marie@exemple.be"));
         // Rien de Jean : ni vehicule, ni dossier, ni adresse IP de consentement,
@@ -234,6 +245,7 @@ class ExportDonneesIT extends SocleIntegration {
         assertThat(document)
                 .doesNotContain("2-XYZ-789").doesNotContain("Renault")
                 .doesNotContain("CMD-JEAN").doesNotContain("RDV-JEAN").doesNotContain("INT-JEAN")
+                .doesNotContain("DEV-JEAN")
                 .doesNotContain("195.130.1.1").doesNotContain("jean@exemple.be")
                 .doesNotContain(numerosFactures.get("jean@exemple.be"));
     }
@@ -259,6 +271,15 @@ class ExportDonneesIT extends SocleIntegration {
         assertThat(donnees.path("interventions").size()).isEqualTo(1);
         assertThat(donnees.path("consentements").size()).isEqualTo(1);
         assertThat(donnees.path("connexion_et_securite").has("derniere_connexion")).isTrue();
+
+        // Devis : l'instantané entier, lignes comprises.
+        JsonNode devisExporte = donnees.path("devis");
+        assertThat(devisExporte.size()).isEqualTo(1);
+        assertThat(devisExporte.get(0).path("numero").asText()).isEqualTo("DEV-PAUL");
+        assertThat(devisExporte.get(0).path("valable_jusqu_au").asText()).isEqualTo("2026-04-01");
+        assertThat(devisExporte.get(0).path("vehicule_plaque").asText()).isEqualTo("3-PAU-001");
+        assertThat(devisExporte.get(0).path("lignes").size()).isEqualTo(1);
+        assertThat(devisExporte.get(0).path("lignes").get(0).path("libelle").asText()).isEqualTo("Ampoule H7");
 
         // Panier en cours : articles choisis, jamais commandes, mais detenus.
         JsonNode panier = donnees.path("panier_en_cours");

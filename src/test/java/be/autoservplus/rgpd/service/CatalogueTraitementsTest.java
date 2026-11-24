@@ -121,7 +121,8 @@ class CatalogueTraitementsTest {
                     catalogue.informationsTraitement(Locale.forLanguageTag(langue));
 
             assertThat(infos.responsableTraitement()).isNotBlank();
-            assertThat(infos.finalites()).hasSize(8);
+            // Neuf depuis le devis (F15), qui a sa finalité et sa durée de conservation.
+            assertThat(infos.finalites()).hasSize(9);
             assertThat(infos.categoriesDonnees()).hasSize(7).allSatisfy(
                     categorie -> assertThat(categorie).isNotBlank());
             // Cinq depuis l ajout de Cloudflare (Turnstile) et de Have I Been Pwned.
@@ -133,7 +134,7 @@ class CatalogueTraitementsTest {
                 assertThat(destinataire.role()).isNotBlank().doesNotStartWith("??");
                 assertThat(destinataire.pays()).isNotBlank().doesNotStartWith("??");
             });
-            assertThat(infos.dureesConservation()).hasSize(5);
+            assertThat(infos.dureesConservation()).hasSize(6);
             assertThat(infos.droits()).hasSize(8);
         }
     }

@@ -1,5 +1,7 @@
 package be.autoservplus.rgpd.service.dto;
 
+import be.autoservplus.devis.domain.Devis;
+import be.autoservplus.devis.domain.LigneDevis;
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.EvenementSecuriteCompte;
 import be.autoservplus.identite.domain.ModificationCompte;
@@ -17,6 +19,7 @@ import be.autoservplus.vente.domain.Panier;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -60,6 +63,7 @@ public record ExportDonnees(
             PanierExport panierEnCours,
             List<CommandeExport> commandes,
             List<FactureExport> factures,
+            List<DevisExport> devis,
             List<RdvExport> rendezVous,
             List<InterventionExport> interventions,
             List<ConsentementExport> consentements,
@@ -291,6 +295,73 @@ public record ExportDonnees(
         public static LigneCommandeExport de(LignePanier ligne) {
             return new LigneCommandeExport(
                     ligne.getLibelleFige(),
+                    ligne.getQuantite(),
+                    ligne.getPrixUnitaireHtva(),
+                    ligne.getTauxTva(),
+                    ligne.prixUnitaireTvac(),
+                    ligne.totalTvac());
+        }
+    }
+
+    /**
+     * Devis émis par le membre depuis son panier (F15), tel qu'il a été figé : client et
+     * véhicule nommés, lignes et totaux. Le PDF n'est pas inclus, il se recompose depuis ces
+     * valeurs et se télécharge dans « Mes devis ».
+     */
+    public record DevisExport(
+            String numero,
+            Instant dateEmission,
+            LocalDate valableJusquAu,
+            String langueDocument,
+            String clientPrenom,
+            String clientNom,
+            String clientRue,
+            String clientNumeroRue,
+            String clientCodePostal,
+            String clientLocalite,
+            String clientPays,
+            String vehiculePlaque,
+            String vehiculeMarque,
+            String vehiculeModele,
+            BigDecimal montantHtva,
+            BigDecimal montantTva,
+            BigDecimal montantTvac,
+            List<LigneDevisExport> lignes) {
+
+        public static DevisExport de(Devis devis) {
+            return new DevisExport(
+                    devis.getNumero(),
+                    devis.getDateEmission(),
+                    devis.getValableJusquAu(),
+                    devis.getLangueDocument().name(),
+                    devis.getClientPrenom(),
+                    devis.getClientNom(),
+                    devis.getClientRue(),
+                    devis.getClientNumeroRue(),
+                    devis.getClientCodePostal(),
+                    devis.getClientLocalite(),
+                    devis.getClientPays(),
+                    devis.getVehiculePlaque(),
+                    devis.getVehiculeMarque(),
+                    devis.getVehiculeModele(),
+                    devis.getMontantHtva(),
+                    devis.getMontantTva(),
+                    devis.getMontantTvac(),
+                    devis.getLignes().stream().map(LigneDevisExport::de).toList());
+        }
+    }
+
+    public record LigneDevisExport(
+            String libelle,
+            short quantite,
+            BigDecimal prixUnitaireHtva,
+            BigDecimal tauxTva,
+            BigDecimal prixUnitaireTvac,
+            BigDecimal totalTvac) {
+
+        public static LigneDevisExport de(LigneDevis ligne) {
+            return new LigneDevisExport(
+                    ligne.getLibelle(),
                     ligne.getQuantite(),
                     ligne.getPrixUnitaireHtva(),
                     ligne.getTauxTva(),

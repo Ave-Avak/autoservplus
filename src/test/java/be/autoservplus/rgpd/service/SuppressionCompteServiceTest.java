@@ -1,6 +1,7 @@
 package be.autoservplus.rgpd.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.devis.repository.DevisRepository;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.CodeSecoursRepository;
@@ -16,6 +17,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
@@ -32,6 +34,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -52,6 +55,7 @@ class SuppressionCompteServiceTest {
     @Mock private UtilisateurRepository utilisateurs;
     @Mock private VehiculeAnonymisationRepository vehicules;
     @Mock private be.autoservplus.avis.repository.AvisRepository avis;
+    @Mock private DevisRepository devis;
     @Mock private TracesAuditRepository tracesAudit;
     @Mock private CodeSecoursRepository codesSecours;
     @Mock private HistoriqueModificationsCompte historiqueCompte;
@@ -65,7 +69,7 @@ class SuppressionCompteServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SuppressionCompteService(utilisateurs, vehicules, avis, tracesAudit,
+        service = new SuppressionCompteService(utilisateurs, vehicules, avis, devis, tracesAudit,
                 codesSecours, historiqueCompte, encodeur, evenements, Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
         marie = new Utilisateur("marie@exemple.be", encodeur.encode(MOT_DE_PASSE),
                 "Dupont", "Marie", TypeUtilisateur.MEMBRE);
@@ -102,6 +106,7 @@ class SuppressionCompteServiceTest {
             assertThat(marie.estAnonymise()).isFalse();
             assertThat(marie.getEmail()).isEqualTo("marie@exemple.be");
             verify(vehicules, never()).tousLesVehicules(any());
+            verify(devis, never()).supprimerDuMembre(any());
             verify(tracesAudit, never()).anonymiser(anyString(), anyString());
             verify(evenements, never()).publishEvent(any(CompteSupprimeEvent.class));
         }
@@ -207,6 +212,19 @@ class SuppressionCompteServiceTest {
             // Le compte est ecrit avant le balayage : sinon l audit JPA reposerait
             // updated_by = adresse du membre apres le passage du balayage.
             verify(utilisateurs).saveAndFlush(marie);
+        }
+
+        @Test
+        @DisplayName("les devis du membre sont supprimés, avant l'anonymisation du compte")
+        void devisSupprimes() {
+            compteExiste();
+            parcVide();
+
+            service.supprimer("marie@exemple.be", MOT_DE_PASSE, "SUPPRIMER");
+
+            InOrder ordre = inOrder(devis, utilisateurs);
+            ordre.verify(devis).supprimerDuMembre(marie.getId());
+            ordre.verify(utilisateurs).saveAndFlush(marie);
         }
     }
 

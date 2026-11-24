@@ -11,6 +11,7 @@ import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.rgpd.repository.AjoutAuPanier;
 import be.autoservplus.rgpd.repository.CommandeExportRepository;
+import be.autoservplus.rgpd.repository.DevisExportRepository;
 import be.autoservplus.rgpd.repository.FactureExportRepository;
 import be.autoservplus.rgpd.repository.ConsentementExportRepository;
 import be.autoservplus.rgpd.repository.InterventionExportRepository;
@@ -122,6 +123,7 @@ public class ExportDonneesService {
     private final InterventionExportRepository interventions;
     private final CommandeExportRepository commandes;
     private final FactureExportRepository factures;
+    private final DevisExportRepository devis;
     private final ConsentementExportRepository consentements;
     private final PanierRepository paniers;
     private final PanierExportRepository panierExport;
@@ -141,6 +143,7 @@ public class ExportDonneesService {
                                 InterventionExportRepository interventions,
                                 CommandeExportRepository commandes,
                                 FactureExportRepository factures,
+                                DevisExportRepository devis,
                                 ConsentementExportRepository consentements,
                                 PanierRepository paniers,
                                 PanierExportRepository panierExport,
@@ -159,6 +162,7 @@ public class ExportDonneesService {
         this.interventions = interventions;
         this.commandes = commandes;
         this.factures = factures;
+        this.devis = devis;
         this.consentements = consentements;
         this.paniers = paniers;
         this.panierExport = panierExport;
@@ -282,6 +286,9 @@ public class ExportDonneesService {
                         commandesAvecLignes(email),
                         factures.pourMembre(email).stream()
                                 .map(ExportDonnees.FactureExport::de)
+                                .toList(),
+                        devis.pourMembre(email).stream()
+                                .map(ExportDonnees.DevisExport::de)
                                 .toList(),
                         rendezVous.pourMembre(email).stream()
                                 .map(rdv -> ExportDonnees.RdvExport.de(rdv, plaque(plaques, rdv.getVehicule())))

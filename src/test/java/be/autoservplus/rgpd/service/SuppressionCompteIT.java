@@ -9,6 +9,7 @@ import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
+import be.autoservplus.devis.service.DevisService;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.facturation.service.PdfFactureService;
@@ -91,6 +92,7 @@ class SuppressionCompteIT extends SocleIntegration {
     @Autowired private FactureService factures;
     @Autowired private PdfFactureService pdfFactures;
     @Autowired private SuppressionCompteService suppression;
+    @Autowired private DevisService devisService;
     @Autowired private PrestatairePaiementFictif prestataireFictif;
     @Autowired private PasswordEncoder encodeur;
     @Autowired private TransactionTemplate transactions;
@@ -459,6 +461,31 @@ class SuppressionCompteIT extends SocleIntegration {
         // La FK tient : l historique d atelier reste lisible pour le garage.
         assertThat(jdbc.queryForObject("SELECT count(*) FROM rdv WHERE vehicule_id = ?",
                 Integer.class, golf.getId())).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("les devis du membre sont supprimés, lignes comprises, ceux d'un autre membre restent")
+    void devisSupprimes() {
+        Utilisateur marie = membre();
+        Utilisateur paul = membre();
+        for (Utilisateur titulaire : List.of(marie, paul)) {
+            Vehicule golf = vehicule(titulaire, "1-SUP-" + COMPTEUR.getAndIncrement());
+            Piece piece = piece();
+            executerEn(titulaire.getEmail(), () -> {
+                panierService.ajouterPiece(titulaire.getEmail(), piece.getReference(), 1);
+                return devisService.emettre(titulaire.getEmail(), golf.getReference());
+            });
+        }
+        Long devisDeMarie = jdbc.queryForObject("SELECT id FROM devis WHERE membre_id = ?", Long.class, marie.getId());
+
+        supprimer(marie);
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM devis WHERE membre_id = ?",
+                Integer.class, marie.getId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM ligne_devis WHERE devis_id = ?",
+                Integer.class, devisDeMarie)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM devis WHERE membre_id = ?",
+                Integer.class, paul.getId())).isEqualTo(1);
     }
 
     @Test

@@ -5,6 +5,7 @@ import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.devis.domain.Devis;
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
@@ -21,6 +22,7 @@ import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.rgpd.repository.AjoutAuPanier;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.rgpd.repository.CommandeExportRepository;
+import be.autoservplus.rgpd.repository.DevisExportRepository;
 import be.autoservplus.rgpd.repository.FactureExportRepository;
 import be.autoservplus.rgpd.repository.ConsentementExportRepository;
 import be.autoservplus.rgpd.repository.InterventionExportRepository;
@@ -51,6 +53,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -92,6 +95,7 @@ class ExportDonneesServiceTest {
     @Mock private InterventionExportRepository interventions;
     @Mock private CommandeExportRepository commandes;
     @Mock private FactureExportRepository factures;
+    @Mock private DevisExportRepository devis;
     @Mock private ConsentementExportRepository consentements;
     @Mock private PanierRepository paniers;
     @Mock private PanierExportRepository panierExport;
@@ -120,7 +124,7 @@ class ExportDonneesServiceTest {
         Clock horloge = Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels"));
         registre = new RegistreExportsRecents(horloge);
         service = new ExportDonneesService(utilisateurs, vehicules, rendezVous, interventions,
-                commandes, factures, consentements, paniers, panierExport, photos, stockage, evenementsSecurite,
+                commandes, factures, devis, consentements, paniers, panierExport, photos, stockage, evenementsSecurite,
                 modificationsCompte, new CatalogueTraitements(messages), serialiseur, registre, encodeur, horloge);
 
         marie = new Utilisateur(EMAIL, EMPREINTE, "Dupont", "Marie", TypeUtilisateur.MEMBRE);
@@ -417,6 +421,27 @@ class ExportDonneesServiceTest {
             compteSansDonnees();
 
             assertThat(service.assembler(EMAIL).donneesPersonnelles().factures()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("restitue les devis tels qu'ils ont été figés : client, véhicule, lignes et totaux")
+        void devisEmis() {
+            compteSansDonnees();
+            Panier panier = new Panier(marie);
+            panier.ajouterPiece(plaquettes, 2);
+            Devis emis = Devis.depuisLePanier("DEV-2026-0003", panier, golf,
+                    Instant.parse("2026-11-24T09:30:00Z"), LocalDate.of(2026, 11, 24), Langue.fr);
+            when(devis.pourMembre(EMAIL)).thenReturn(List.of(emis));
+
+            ExportDonnees.DevisExport exporte = service.assembler(EMAIL).donneesPersonnelles().devis().get(0);
+
+            assertThat(exporte.numero()).isEqualTo("DEV-2026-0003");
+            assertThat(exporte.valableJusquAu()).isEqualTo(LocalDate.of(2026, 12, 24));
+            assertThat(exporte.clientNom()).isEqualTo("Dupont");
+            assertThat(exporte.vehiculePlaque()).isEqualTo(golf.getPlaque());
+            assertThat(exporte.montantTvac()).isEqualByComparingTo(emis.getMontantTvac());
+            assertThat(exporte.lignes()).singleElement()
+                    .satisfies(ligne -> assertThat(ligne.quantite()).isEqualTo((short) 2));
         }
 
         @Test

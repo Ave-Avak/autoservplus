@@ -3,6 +3,7 @@ package be.autoservplus.rgpd.service;
 import be.autoservplus.avis.domain.Avis;
 import be.autoservplus.avis.repository.AvisRepository;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.devis.repository.DevisRepository;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.CodeSecoursRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -45,7 +46,7 @@ import java.util.List;
  * ne laisse aucune trace d'écriture. Les vérifications précédent la première
  * mutation, elles ne la rattrapent pas.</p>
  *
- * <p><b>Ordre transactionnel</b> : capture de l'adresse, véhicules, compte, flush,
+ * <p><b>Ordre transactionnel</b> : capture de l'adresse, devis, véhicules, compte, flush,
  * puis balayage des traces d'audit. Le flush n'est pas cosmétique. Sans lui, l'audit
  * JPA réécrirait {@code updated_by} avec l'adresse du membre <i>après</i> le passage
  * du balayage, et l'adresse réapparaîtrait sur la ligne qu'on vient de vider.</p>
@@ -83,6 +84,7 @@ public class SuppressionCompteService {
     private final UtilisateurRepository utilisateurs;
     private final VehiculeAnonymisationRepository vehicules;
     private final AvisRepository avis;
+    private final DevisRepository devis;
     private final TracesAuditRepository tracesAudit;
     private final CodeSecoursRepository codesSecours;
     private final HistoriqueModificationsCompte historiqueCompte;
@@ -93,6 +95,7 @@ public class SuppressionCompteService {
     public SuppressionCompteService(UtilisateurRepository utilisateurs,
                                     VehiculeAnonymisationRepository vehicules,
                                     AvisRepository avis,
+                                    DevisRepository devis,
                                     TracesAuditRepository tracesAudit,
                                     CodeSecoursRepository codesSecours,
                                     HistoriqueModificationsCompte historiqueCompte,
@@ -102,6 +105,7 @@ public class SuppressionCompteService {
         this.utilisateurs = utilisateurs;
         this.vehicules = vehicules;
         this.avis = avis;
+        this.devis = devis;
         this.tracesAudit = tracesAudit;
         this.codesSecours = codesSecours;
         this.historiqueCompte = historiqueCompte;
@@ -141,6 +145,9 @@ public class SuppressionCompteService {
                 new CompteSupprimeEvent(adresseReelle, membre.getPrenom(), membre.getReference(),
                         membre.getLangue());
 
+        // Les devis partent entiers : aucune obligation ne les fait conserver, et ils
+        // recopient le nom, l'adresse et la plaque que l'anonymisation efface ailleurs.
+        int devisSupprimes = devis.supprimerDuMembre(membre.getId());
         int supprimes = anonymiserLeParc(membre);
         int avisNeutralises = anonymiserLesAvis(membre);
         // Un ancien nom ou une ancienne adresse resterait lisible dans l'historique du
@@ -157,9 +164,10 @@ public class SuppressionCompteService {
         // Journal sans donnée personnelle : la référence identifie la ligne, jamais
         // la personne. Une trace de suppression qui contiendrait le nom ou l'adresse
         // recréerait ce que la suppression vient d'effacer.
-        JOURNAL.info("Compte {} anonymise : {} vehicule(s) supprime(s), {} avis neutralise(s), "
-                        + "{} modification(s) de compte videe(s), {} trace(s) d audit nettoyee(s).",
-                membre.getReference(), supprimes, avisNeutralises, modifications, traces);
+        JOURNAL.info("Compte {} anonymise : {} vehicule(s) supprime(s), {} devis supprime(s), "
+                        + "{} avis neutralise(s), {} modification(s) de compte videe(s), "
+                        + "{} trace(s) d audit nettoyee(s).",
+                membre.getReference(), supprimes, devisSupprimes, avisNeutralises, modifications, traces);
 
         evenements.publishEvent(evenement);
     }
