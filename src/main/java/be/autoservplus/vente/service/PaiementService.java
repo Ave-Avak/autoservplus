@@ -1,6 +1,5 @@
 package be.autoservplus.vente.service;
 
-import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.vente.domain.Commande;
@@ -17,6 +16,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
@@ -27,9 +27,12 @@ import java.time.Clock;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 
 /**
@@ -72,6 +75,7 @@ public class PaiementService {
     private final PrestatairePaiement prestataire;
     private final ApplicationEventPublisher evenements;
     private final TransactionOperations transaction;
+    private final AuditorAware<String> auditeur;
     private final Clock horloge;
     private final String urlPublique;
 
@@ -81,6 +85,7 @@ public class PaiementService {
                            PrestatairePaiement prestataire,
                            ApplicationEventPublisher evenements,
                            TransactionOperations transaction,
+                           AuditorAware<String> auditeur,
                            Clock horloge,
                            @Value("${autoservplus.url-publique}") String urlPublique) {
         this.paiements = paiements;
@@ -89,6 +94,7 @@ public class PaiementService {
         this.prestataire = prestataire;
         this.evenements = evenements;
         this.transaction = transaction;
+        this.auditeur = auditeur;
         this.horloge = horloge;
         // Barre finale retirée une fois pour toutes : la concaténation qui suit
         // produirait sinon un double séparateur, et une URL de retour invalide ne se
@@ -463,18 +469,23 @@ public class PaiementService {
     }
 
     /**
-     * Règle (a) du décrément : au paiement confirmé, chaque pièce est verrouillée
-     * (FOR UPDATE, ordre déterministe par id, les lignes arrivent triées) puis
-     * décrémentée. Si le stock est devenu insuffisant (un autre membre a payé la
-     * même pièce entre-temps, rien n'était réservé) la commande reste PAYEE (on
-     * n'annule pas un encaissement), le stock plancher à 0, le drapeau
-     * {@code rupture_a_honorer} lève l'alerte et la trace ci-dessous dit QUOI
-     * honorer. Le garage gère hors ligne.
+     * Règle (a) du décrément : au paiement confirmé, chaque pièce est décomptée par
+     * identifiant croissant, pour que deux paiements prennent leurs verrous dans le même
+     * ordre. Si le stock est devenu insuffisant (un autre membre a payé la même pièce
+     * entre-temps, rien n'était réservé) la commande reste PAYEE (on n'annule pas un
+     * encaissement), le stock plancher à 0, le drapeau {@code rupture_a_honorer} lève
+     * l'alerte et la trace ci-dessous dit QUOI honorer. Le garage gère hors ligne.
+     *
+     * <p>Le décompte passe par {@link PieceRepository#retirerAuPlus}, comme à la clôture
+     * d'une intervention, et non par un verrou JPQL sur la pièce : {@code lignesDe} l'a
+     * déjà chargée, et le verrou rendait l'instance gérée sans relire son stock. Deux
+     * paiements simultanés de la même pièce perdaient un décompte
+     * ({@code StockPaiementsConcurrenceIT}, rouge avant ce correctif).</p>
      */
     private void decrementerStock(Commande commande) {
-        List<LignePanier> lignes = commandes.lignesDe(commande);
-        List<String> ruptures = new ArrayList<>();
-        for (LignePanier ligne : lignes) {
+        Map<Long, Integer> demandes = new TreeMap<>();
+        Map<Long, String> libelles = new HashMap<>();
+        for (LignePanier ligne : commandes.lignesDe(commande)) {
             // Ceinture et bretelles. lignesDe ne rend déjà QUE les lignes de pièce, car
             // son JOIN FETCH est une jointure interne. Ce garde n'est pas
             // atteint aujourd'hui. Il protège d'un élargissement futur de la requête,
@@ -482,21 +493,19 @@ public class PaiementService {
             if (ligne.estService()) {
                 continue;
             }
-            Piece piece = pieces.verrouillerParId(ligne.getPiece().getId())
-                    .orElseThrow(() -> new RessourceIntrouvableException(
-                            "Piece", ligne.getPiece().getId()));
-            int demande = ligne.getQuantite();
-            int disponible = piece.getQuantiteStock();
-            int servi = Math.min(demande, disponible);
-            if (servi < demande) {
+            demandes.merge(ligne.getPiece().getId(), (int) ligne.getQuantite(), Integer::sum);
+            libelles.putIfAbsent(ligne.getPiece().getId(), ligne.getLibelleFige());
+        }
+        String auteur = auditeur.getCurrentAuditor().orElse(null);
+        List<String> ruptures = new ArrayList<>();
+        demandes.forEach((pieceId, demande) -> {
+            int disponible = pieces.retirerAuPlus(pieceId, demande, auteur);
+            if (disponible < demande) {
                 commande.signalerRupture();
                 ruptures.add("%s (demande %d, en stock %d)"
-                        .formatted(ligne.getLibelleFige(), demande, disponible));
+                        .formatted(libelles.get(pieceId), demande, disponible));
             }
-            if (servi > 0) {
-                piece.retirerDuStock(servi);
-            }
-        }
+        });
         if (!ruptures.isEmpty()) {
             log.warn("Rupture a honorer sur la commande {} : {}",
                     commande.getNumero(), String.join(" ; ", ruptures));

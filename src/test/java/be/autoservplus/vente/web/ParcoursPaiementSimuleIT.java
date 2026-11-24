@@ -23,6 +23,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -75,6 +76,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
     @Autowired private CommandeRepository commandes;
     @Autowired private PaiementRepository paiements;
     @Autowired private be.autoservplus.vente.service.PrestatairePaiementFictif prestataireFictif;
+    @Autowired private JdbcTemplate jdbc;
 
     private Piece filtre;
 
@@ -108,6 +110,16 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
                 .andReturn().getResponse().getRedirectedUrl();
     }
 
+    /**
+     * Stock lu en base. Le décompte passe par une instruction SQL
+     * ({@code PieceRepository.retirerAuPlus}) : la pièce déjà chargée dans la transaction
+     * du test garde l'ancien stock.
+     */
+    private int stock(Piece piece) {
+        return jdbc.queryForObject("SELECT quantite_stock FROM piece WHERE id = ?", Integer.class,
+                piece.getId());
+    }
+
     @Test
     @DisplayName("du panier a la commande payee sans jamais fabriquer d URL ni appeler le webhook")
     void parcoursCompletParLInterface() throws Exception {
@@ -136,7 +148,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
         Commande commande = commandes.findByReference(reference).orElseThrow();
         assertThat(commande.getStatut()).isEqualTo(StatutCommande.PAYEE);
         assertThat(commande.getDatePaiement()).isNotNull();
-        assertThat(pieces.findById(filtre.getId()).orElseThrow().getQuantiteStock())
+        assertThat(stock(filtre))
                 .isEqualTo(5);
     }
 
@@ -154,7 +166,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
         String referencePrestataire = urlPaiement.substring(urlPaiement.lastIndexOf('/') + 1);
         assertThat(paiements.findByReferenceMollie(referencePrestataire).orElseThrow()
                 .getStatut()).isEqualTo(StatutPaiement.ECHOUE);
-        assertThat(pieces.findById(filtre.getId()).orElseThrow().getQuantiteStock())
+        assertThat(stock(filtre))
                 .isEqualTo(7);
     }
 
@@ -171,7 +183,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
         mvc.perform(post(urlPaiement).with(csrf()).param("issue", "REUSSITE"))
                 .andExpect(status().is3xxRedirection());
 
-        assertThat(pieces.findById(filtre.getId()).orElseThrow().getQuantiteStock())
+        assertThat(stock(filtre))
                 .isEqualTo(5);
     }
 
@@ -306,7 +318,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
         assertThat(commandes.findByReference(reference).orElseThrow().getStatut())
                 .isEqualTo(StatutCommande.PAYEE);
         assertThat(tentativesDe(reference)).isEqualTo(1);
-        assertThat(pieces.findById(filtre.getId()).orElseThrow().getQuantiteStock())
+        assertThat(stock(filtre))
                 .isEqualTo(5);
     }
 
@@ -440,7 +452,7 @@ class ParcoursPaiementSimuleIT extends SocleIntegration {
 
         // L idempotence n est pas seulement annoncee par les libelles : une seule
         // transition a eu lieu, donc un seul decrement de stock.
-        assertThat(pieces.findById(filtre.getId()).orElseThrow().getQuantiteStock())
+        assertThat(stock(filtre))
                 .isEqualTo(5);
     }
 

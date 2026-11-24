@@ -28,11 +28,17 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
      * Retire du stock au plus la quantité demandée, sans descendre sous zéro, et rend le
      * stock d'avant : un résultat inférieur à la demande dit que le plancher a joué.
      *
-     * <p>Une seule instruction verrouille la ligne, lit le stock à jour et l'écrit. Un
-     * verrou posé par une requête JPQL ne suffit pas quand la pièce est déjà chargée dans
-     * la transaction, comme celles d'une intervention lue avec ses lignes : JPA rend
-     * l'instance déjà gérée sans relire son stock, et deux clôtures simultanées perdraient
-     * un décompte.</p>
+     * <p>Seul mécanisme de décompte, pour la vente comme pour l'atelier. Une seule
+     * instruction verrouille la ligne, lit le stock à jour et l'écrit. Un verrou posé par
+     * une requête JPQL ne suffit pas quand la pièce est déjà chargée dans la transaction,
+     * ce qui est le cas des deux appelants (lignes d'une commande, lignes d'une
+     * intervention) : JPA rend l'instance déjà gérée sans relire son stock, et deux
+     * décomptes simultanés en perdaient un ({@code StockPaiementsConcurrenceIT},
+     * {@code StockClotureConcurrenceIT}).</p>
+     *
+     * <p>En retour, l'instance déjà chargée garde l'ancien stock jusqu'à la fin de la
+     * transaction. Aucun appelant ne modifie la pièce après le décompte : s'il le faisait,
+     * Hibernate réécrirait l'ancien stock avec le reste de la ligne.</p>
      */
     @Query(value = """
             WITH avant AS (SELECT id, quantite_stock FROM piece WHERE id = :id FOR UPDATE)
@@ -87,16 +93,6 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
             ORDER BY p.libelle
             """)
     List<Piece> enAlerteDeStock();
-
-    /**
-     * Verrou pessimiste (SELECT FOR UPDATE) pour le decrement du stock au paiement
-     * confirme : la table piece n a pas de colonne version, et deux webhooks payes
-     * portant sur la meme piece doivent se serialiser plutot que se perdre. Verrouiller
-     * les pieces dans un ordre deterministe (id croissant) : voir CommandeRepository#lignesDe.
-     */
-    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT p FROM Piece p WHERE p.id = :id")
-    Optional<Piece> verrouillerParId(@Param("id") Long id);
 
     /**
      * Recherche sur le libellé, la description, la marque, la référence du fabricant et
