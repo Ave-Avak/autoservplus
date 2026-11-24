@@ -1,7 +1,9 @@
 package be.autoservplus.intervention.service;
 
 import be.autoservplus.config.IdentiteGarage;
+import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RegleMetierException;
@@ -17,6 +19,7 @@ import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.intervention.repository.HistoriqueStatutInterventionRepository;
 import be.autoservplus.intervention.repository.InterventionRepository;
+import be.autoservplus.intervention.service.dto.PieceAjoutableVue;
 import be.autoservplus.intervention.web.dto.DemandeValidationVue;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
 import be.autoservplus.intervention.web.dto.InterventionVueMembre;
@@ -40,8 +43,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.ZoneId;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -64,6 +69,7 @@ public class InterventionService {
     private final InterventionRepository interventions;
     private final HistoriqueStatutInterventionRepository historiques;
     private final PrestationRepository prestations;
+    private final PieceRepository pieces;
     private final CommandeRepository commandes;
     private final VehiculeRepository vehicules;
     private final ParametreAtelierRepository parametres;
@@ -77,6 +83,7 @@ public class InterventionService {
     public InterventionService(InterventionRepository interventions,
                                HistoriqueStatutInterventionRepository historiques,
                                PrestationRepository prestations,
+                               PieceRepository pieces,
                                CommandeRepository commandes,
                                VehiculeRepository vehicules,
                                ParametreAtelierRepository parametres,
@@ -89,6 +96,7 @@ public class InterventionService {
         this.interventions = interventions;
         this.historiques = historiques;
         this.prestations = prestations;
+        this.pieces = pieces;
         this.commandes = commandes;
         this.vehicules = vehicules;
         this.parametres = parametres;
@@ -269,9 +277,41 @@ public class InterventionService {
         StatutIntervention avant = it.getStatut();
         LigneIntervention ligne = it.ajouterLigneMainOeuvre(prestation, quantite,
                 prestation.getPrixHtva(), prestation.getTauxTva());
-        // La bascule RM-15 est une transition comme une autre : si l entite a change
-        // d etat d elle-meme, la chronologie (F17) le consigne, sinon l historique
-        // aurait des trous (un EN_COURS -> EN_COURS apparent) et perdrait sa coherence.
+        enregistrerAjout(it, avant);
+        return ligne;
+    }
+
+    /**
+     * Ajoute une pièce du catalogue au dossier (RM-14, cas 4 et 11). Mêmes gardes et même
+     * seuil RM-15 que la main-d'œuvre : une pièce peut, seule, déclencher la demande
+     * d'accord du membre.
+     *
+     * <p>Le stock n'est pas touché ici, une pièce absente du stock est admise : elle sera
+     * marquée « à commander » au détail (Q-H-30). Le stock se décompte à la clôture, quand
+     * on sait quelles lignes ont été posées (une ligne refusée par le membre ne l'est pas,
+     * une intervention annulée n'en pose aucune).</p>
+     *
+     * @throws RessourceIntrouvableException pièce inconnue, ou retirée de la vente : une
+     *                                       pièce désactivée n'est plus proposée (RM-28)
+     */
+    @Transactional
+    public LigneIntervention ajouterLignePiece(UUID interventionRef, UUID pieceRef, short quantite) {
+        Intervention it = charger(interventionRef);
+        Piece piece = pieces.findByReference(pieceRef)
+                .filter(Piece::isActif)
+                .orElseThrow(() -> new RessourceIntrouvableException("Piece", pieceRef));
+        StatutIntervention avant = it.getStatut();
+        LigneIntervention ligne = it.ajouterLignePiece(piece, quantite);
+        enregistrerAjout(it, avant);
+        return ligne;
+    }
+
+    /**
+     * Suite commune aux deux ajouts. La bascule RM-15 est une transition comme une autre :
+     * si l'entité a changé d'état d'elle-même, la chronologie (F17) le consigne, sinon
+     * l'historique aurait des trous (un EN_COURS vers EN_COURS apparent).
+     */
+    private void enregistrerAjout(Intervention it, StatutIntervention avant) {
         if (it.getStatut() != avant) {
             historiser(it, avant, it.getStatut(), null);
         }
@@ -281,7 +321,6 @@ public class InterventionService {
             notifierDepassementSansEchouer(enregistre);
             evenements.publishEvent(new DepassementSoumisEvent(enregistre.getReference()));
         }
-        return ligne;
     }
 
     @Transactional
@@ -314,12 +353,35 @@ public class InterventionService {
 
     public InterventionVueAdmin vueAdmin(UUID reference) {
         ZoneId zone = parametres.courants().zone();
-        return InterventionVueAdmin.de(charger(reference), zone);
+        Intervention it = charger(reference);
+        return InterventionVueAdmin.de(it, zone, piecesACommander(it));
     }
 
     /** Prestations actives, pour peupler le formulaire d ajout de ligne. */
     public List<Prestation> prestationsActives() {
         return prestations.findByActifTrueOrderByLibelleAsc();
+    }
+
+    /** Pièces en vente, libellé dans la langue de l'écran, pour le formulaire d'ajout. */
+    public List<PieceAjoutableVue> piecesAjoutables() {
+        Locale langue = LanguesSupportees.deLEcran();
+        return pieces.findByActifTrueOrderByLibelleAsc().stream()
+                .map(p -> new PieceAjoutableVue(p.getReference(), p.libelle(langue).texte(),
+                        p.getQuantiteStock()))
+                .toList();
+    }
+
+    /** Pièces de ce dossier que le stock ne couvre pas, une seule requête d'agrégat. */
+    private Set<Long> piecesACommander(Intervention it) {
+        Set<Long> pieceIds = new HashSet<>();
+        it.getLignes().stream()
+                .filter(l -> l.getPiece() != null)
+                .forEach(l -> pieceIds.add(l.getPiece().getId()));
+        if (pieceIds.isEmpty()) {
+            return Set.of();
+        }
+        return Set.copyOf(interventions.piecesACommander(pieceIds,
+                EnumSet.of(StatutIntervention.TERMINEE, StatutIntervention.ANNULEE)));
     }
 
     // --- vue membre (accessible a tout utilisateur authentifie, ownership verifie) ----

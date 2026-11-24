@@ -1,6 +1,7 @@
 package be.autoservplus.intervention.web;
 
 import be.autoservplus.common.exception.ConflitConcurrenceException;
+import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.service.InterventionService;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
@@ -229,6 +230,39 @@ class AdminInterventionControllerTest {
                     .andExpect(status().is3xxRedirection());
 
             verify(service).ajouterLigneMainOeuvre(REF, prestation, (short) 2);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        @DisplayName("POST ajouter une pièce appelle le service et confirme l'ajout (RM-14)")
+        void ajouterPiece() throws Exception {
+            UUID piece = UUID.fromString("44444444-4444-4444-4444-444444444444");
+
+            mvc.perform(post("/admin/interventions/{ref}/lignes/piece", REF)
+                            .param("piece", piece.toString())
+                            .param("quantite", "3")
+                            .with(csrf()))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("/admin/interventions/" + REF))
+                    .andExpect(flash().attributeExists("message"));
+
+            verify(service).ajouterLignePiece(REF, piece, (short) 3);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        @DisplayName("une pièce retirée de la vente entre-temps : message d'erreur, retour au détail")
+        void pieceRetiree() throws Exception {
+            UUID piece = UUID.fromString("44444444-4444-4444-4444-444444444444");
+            doThrow(new RessourceIntrouvableException("Piece", piece))
+                    .when(service).ajouterLignePiece(REF, piece, (short) 1);
+
+            mvc.perform(post("/admin/interventions/{ref}/lignes/piece", REF)
+                            .param("piece", piece.toString())
+                            .param("quantite", "1")
+                            .with(csrf()))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(flash().attributeExists("erreur"));
         }
     }
 }

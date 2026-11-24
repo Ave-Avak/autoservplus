@@ -60,4 +60,22 @@ public interface InterventionRepository extends JpaRepository<Intervention, Long
             WHERE i.vehicule.id = :vehiculeId
             """)
     List<Intervention> historiqueDuVehicule(@Param("vehiculeId") Long vehiculeId);
+
+    /**
+     * Parmi ces pièces, celles à commander : leur stock est inférieur à la quantité que
+     * réclament les interventions ouvertes (Q-H-30). Sont comptées les lignes non refusées
+     * des interventions ni terminées ni annulées, celles qui attendent la réponse du membre
+     * (RM-15) comprises. Comparer chaque ligne seule au stock laisserait deux dossiers qui
+     * demandent la même pièce unique se croire servis l'un et l'autre.
+     */
+    @Query("""
+            SELECT l.piece.id FROM LigneIntervention l
+            WHERE l.piece.id IN :pieces
+              AND l.intervention.statut NOT IN :closes
+              AND (l.accordMembre IS NULL OR l.accordMembre = true)
+            GROUP BY l.piece.id, l.piece.quantiteStock
+            HAVING l.piece.quantiteStock < SUM(l.quantite)
+            """)
+    List<Long> piecesACommander(@Param("pieces") Collection<Long> pieces,
+                                @Param("closes") Collection<StatutIntervention> closes);
 }

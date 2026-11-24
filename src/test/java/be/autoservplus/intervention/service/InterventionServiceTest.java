@@ -2,8 +2,10 @@ package be.autoservplus.intervention.service;
 
 import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.support.GaragesDeTest;
+import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
+import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
@@ -66,6 +68,7 @@ class InterventionServiceTest {
     @Mock private InterventionRepository interventions;
     @Mock private HistoriqueStatutInterventionRepository historiques;
     @Mock private PrestationRepository prestations;
+    @Mock private PieceRepository pieces;
     @Mock private be.autoservplus.vente.repository.CommandeRepository commandes;
     @Mock private be.autoservplus.reservation.repository.VehiculeRepository vehicules;
     @Mock private ParametreAtelierRepository parametres;
@@ -86,7 +89,7 @@ class InterventionServiceTest {
     @BeforeEach
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
-        service = new InterventionService(interventions, historiques, prestations,
+        service = new InterventionService(interventions, historiques, prestations, pieces,
                 commandes, vehicules, parametres,
                 auteurCourant, numeros, courriel, evenements, GaragesDeTest.bruxellois(), horloge);
 
@@ -304,6 +307,58 @@ class InterventionServiceTest {
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
             assertThat(it.titulaire()).isNull();
             verify(courriel, never()).envoyerDemandeValidationDepassement(any(), any());
+        }
+
+        private Piece pieceA(String prixHtva, int stock) {
+            Categorie c = new Categorie("FRE", "Freinage", TypeCategorie.PIECE);
+            Piece p = new Piece(c, "PL-1", "Plaquettes avant", new BigDecimal(prixHtva));
+            p.setQuantiteStock(stock);
+            when(pieces.findByReference(p.getReference())).thenReturn(Optional.of(p));
+            return p;
+        }
+
+        @Test
+        @DisplayName("une pièce au-delà du seuil fait basculer et prévient le membre (RM-14, RM-15)")
+        void pieceAuDelaDuSeuil() {
+            Intervention it = interventionEnCours();
+            Piece plaquettes = pieceA("89.00", 4);
+
+            service.ajouterLignePiece(it.getReference(), plaquettes.getReference(), (short) 1);
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+            assertThat(it.lignesEnAttente()).singleElement()
+                    .satisfies(l -> assertThat(l.getPiece()).isSameAs(plaquettes));
+            verify(courriel).envoyerDemandeValidationDepassement(eq(marie), any(DetailsDepassementCourriel.class));
+            verify(evenements).publishEvent(new DepassementSoumisEvent(it.getReference()));
+        }
+
+        @Test
+        @DisplayName("une pièce sans stock est admise, le stock n'est pas touché à l'ajout")
+        void pieceSansStockAdmise() {
+            Intervention it = interventionEnCours();
+            Piece plaquettes = pieceA("2.00", 0);
+
+            service.ajouterLignePiece(it.getReference(), plaquettes.getReference(), (short) 2);
+
+            assertThat(it.getLignes()).hasSize(2);
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+            assertThat(plaquettes.getQuantiteStock()).isZero();
+        }
+
+        @Test
+        @DisplayName("une pièce retirée de la vente est refusée, rien n'est écrit (RM-28)")
+        void pieceRetireeRefusee() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            it.demarrer(MAINTENANT);
+            when(interventions.findByReference(it.getReference())).thenReturn(Optional.of(it));
+            Piece plaquettes = pieceA("2.00", 5);
+            plaquettes.desactiver();
+
+            assertThatThrownBy(() -> service.ajouterLignePiece(
+                    it.getReference(), plaquettes.getReference(), (short) 1))
+                    .isInstanceOf(RessourceIntrouvableException.class);
+            assertThat(it.getLignes()).hasSize(1);
+            verify(interventions, never()).saveAndFlush(any());
         }
 
         @Test

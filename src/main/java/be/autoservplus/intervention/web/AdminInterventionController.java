@@ -49,6 +49,7 @@ public class AdminInterventionController {
         InterventionVueAdmin vue = service.vueAdmin(reference);
         modele.addAttribute("intervention", vue);
         modele.addAttribute("prestations", service.prestationsActives());
+        modele.addAttribute("pieces", service.piecesAjoutables());
         return "admin/intervention-detail";
     }
 
@@ -141,6 +142,29 @@ public class AdminInterventionController {
         } catch (RessourceIntrouvableException e) {
             // La prestation choisie dans la liste a disparu du catalogue entre-temps.
             redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.prestation"));
+        } catch (ConflitConcurrenceException e) {
+            redirection.addFlashAttribute("erreur", message("erreur.409.message"));
+        } catch (IllegalArgumentException e) {
+            redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.quantite"));
+        } catch (IllegalStateException e) {
+            redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.etat"));
+        }
+        return "redirect:/admin/interventions/" + reference;
+    }
+
+    /** Pièce posée en cours d'intervention (RM-14). Admise sans stock : la ligne dira « à commander ». */
+    @PostMapping("/{reference}/lignes/piece")
+    public String ajouterPiece(@AuthenticationPrincipal UserDetails admin,
+                               @PathVariable UUID reference,
+                               @RequestParam UUID piece,
+                               @RequestParam short quantite,
+                               RedirectAttributes redirection) {
+        try {
+            service.ajouterLignePiece(reference, piece, quantite);
+            redirection.addFlashAttribute("message", message("admin.intervention.message.ligne-ajoutee"));
+        } catch (RessourceIntrouvableException e) {
+            // La pièce choisie a été retirée de la vente entre l'affichage et l'envoi.
+            redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.piece"));
         } catch (ConflitConcurrenceException e) {
             redirection.addFlashAttribute("erreur", message("erreur.409.message"));
         } catch (IllegalArgumentException e) {

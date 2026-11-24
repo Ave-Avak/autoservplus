@@ -129,7 +129,13 @@
                 <tr th:each="l : ${intervention.lignes()}"
                     th:classappend="${l.compteDansLeTotal()} ? null : 'ligne-hors-total'">
                     <td th:text="#{'historique.type.' + ${l.type()}}">Prestation</td>
-                    <td th:text="${l.libelle()}">Vidange</td>
+                    <td>
+                        <span th:text="${l.libelle()}">Vidange</span>
+                        <!--/* Calculée à l'affichage (Q-H-30) : elle disparaît quand le stock
+                             saisi couvre les interventions ouvertes. */-->
+                        <span th:if="${l.aCommander()}" class="badge badge-en_attente"
+                              th:text="#{admin.intervention.ligne.a-commander}">À commander</span>
+                    </td>
                     <td th:text="#{${l.cleEtat()}}">Devis initial</td>
                     <td th:text="${l.quantite()}">1</td>
                     <td th:text="${l.prixUnitaireHtva()}">49,00 €</td>
@@ -176,6 +182,25 @@
             <div class="champ">
                 <label for="quantite" th:text="#{intervention.suivi.quantite}">Quantité</label>
                 <input type="number" id="quantite" name="quantite" min="1" value="1" required>
+            </div>
+            <button type="submit" class="btn-cta" th:text="#{admin.intervention.ajout.bouton}">Ajouter</button>
+        </form>
+
+        <!--/* Une pièce sans stock est admise : la ligne portera « à commander ». */-->
+        <h3 th:text="#{admin.intervention.ajout-piece.titre}">Ajouter une pièce</h3>
+        <form th:action="@{/admin/interventions/{ref}/lignes/piece(ref=${intervention.reference()})}"
+              method="post" class="formulaire">
+            <div class="champ">
+                <label for="piece" th:text="#{admin.intervention.ajout-piece.champ}">Pièce</label>
+                <select id="piece" name="piece" required>
+                    <option value="" th:text="#{rdv.formulaire.choisir}">Choisissez</option>
+                    <option th:each="p : ${pieces}" th:value="${p.reference()}"
+                            th:text="#{admin.intervention.ajout-piece.option(${p.libelle()}, ${p.stock()})}">Filtre à huile (en stock : 3)</option>
+                </select>
+            </div>
+            <div class="champ">
+                <label for="quantite-piece" th:text="#{intervention.suivi.quantite}">Quantité</label>
+                <input type="number" id="quantite-piece" name="quantite" min="1" value="1" required>
             </div>
             <button type="submit" class="btn-cta" th:text="#{admin.intervention.ajout.bouton}">Ajouter</button>
         </form>
