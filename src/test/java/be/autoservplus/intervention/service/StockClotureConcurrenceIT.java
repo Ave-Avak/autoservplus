@@ -5,9 +5,9 @@ import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
-import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -76,8 +76,8 @@ class StockClotureConcurrenceIT extends SocleIntegration {
     @DisplayName("deux interventions closes en même temps sur la même pièce retirent chacune la leur")
     void deuxCloturesSimultanees() throws Exception {
         String suffixe = UUID.randomUUID().toString().substring(0, 8);
-        Long membre = utilisateurs.save(new Utilisateur("stock-" + suffixe + "@exemple.be", "$2a$12$h",
-                "Dupont", "Marie", TypeUtilisateur.MEMBRE)).getId();
+        Long membre = utilisateurs.save(MembresDeTest.membre("stock-" + suffixe + "@exemple.be", "$2a$12$h",
+                "Dupont", "Marie")).getId();
         Categorie freinage = categories.save(new Categorie("STK-" + suffixe, "Freinage", TypeCategorie.PIECE));
         Piece piece = new Piece(freinage, "STK-" + suffixe, "Plaquettes concurrence", new BigDecimal("10.00"));
         piece.setQuantiteStock(5);

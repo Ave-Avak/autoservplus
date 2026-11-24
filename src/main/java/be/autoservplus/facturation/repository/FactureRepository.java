@@ -1,6 +1,7 @@
 package be.autoservplus.facturation.repository;
 
 import be.autoservplus.facturation.domain.Facture;
+import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.vente.domain.Commande;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -21,6 +22,22 @@ public interface FactureRepository extends JpaRepository<Facture, Long> {
      * tranche les courses que ce contrôle ne peut pas voir.
      */
     Optional<Facture> findByCommande(Commande commande);
+
+    /** Facture d'atelier d'une intervention (A15, RM-17) : au plus une, {@code uq_facture_intervention}. */
+    Optional<Facture> findByIntervention(Intervention intervention);
+
+    /**
+     * Intervention d'une facture d'atelier, lignes comprises. La facture arrive souvent
+     * détachée de la requête qui l'a chargée (téléchargement du PDF) : son association
+     * paresseuse ne se charge plus, la requête la relit dans la transaction en cours.
+     */
+    @Query("""
+            SELECT i FROM Facture f
+            JOIN f.intervention i
+            LEFT JOIN FETCH i.lignes
+            WHERE f.id = :facture
+            """)
+    Optional<Intervention> interventionFacturee(@Param("facture") Long facture);
 
     /** La facture est adressée par sa référence publique, jamais par sa clé primaire. */
     @Query("""
@@ -51,22 +68,24 @@ public interface FactureRepository extends JpaRepository<Facture, Long> {
      */
     long countByMembreEmail(String email);
 
-    /** Factures du back-office sur une période, par numéro, adresse du membre ou commande. */
+    /** Factures du back-office sur une période, par numéro, adresse du membre, commande ou intervention. */
     @Query(value = """
             SELECT f FROM Facture f
             JOIN FETCH f.membre m
             LEFT JOIN FETCH f.commande c
+            LEFT JOIN FETCH f.intervention i
             WHERE f.dateEmission >= :debut AND f.dateEmission < :fin
               AND (lower(f.numero) LIKE :motif OR lower(m.email) LIKE :motif
-                   OR lower(c.numero) LIKE :motif)
+                   OR lower(c.numero) LIKE :motif OR lower(i.numero) LIKE :motif)
             ORDER BY f.dateEmission DESC, f.id DESC
             """, countQuery = """
             SELECT count(f) FROM Facture f
             JOIN f.membre m
             LEFT JOIN f.commande c
+            LEFT JOIN f.intervention i
             WHERE f.dateEmission >= :debut AND f.dateEmission < :fin
               AND (lower(f.numero) LIKE :motif OR lower(m.email) LIKE :motif
-                   OR lower(c.numero) LIKE :motif)
+                   OR lower(c.numero) LIKE :motif OR lower(i.numero) LIKE :motif)
             """)
     Page<Facture> rechercherAdmin(@Param("debut") Instant debut, @Param("fin") Instant fin,
                                   @Param("motif") String motif, Pageable pagination);

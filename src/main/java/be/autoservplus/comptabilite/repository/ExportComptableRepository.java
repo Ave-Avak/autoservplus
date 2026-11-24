@@ -31,6 +31,7 @@ public class ExportComptableRepository {
                         SELECT f FROM Facture f
                         JOIN FETCH f.membre
                         LEFT JOIN FETCH f.commande
+                        LEFT JOIN FETCH f.intervention
                         WHERE f.dateEmission >= :debut AND f.dateEmission < :fin
                         ORDER BY f.dateEmission ASC, f.id ASC
                         """, Facture.class)

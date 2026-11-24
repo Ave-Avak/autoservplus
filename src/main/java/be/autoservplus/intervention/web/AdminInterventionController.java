@@ -4,6 +4,7 @@ import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.QuantiteLigneRefuseeException;
+import be.autoservplus.intervention.service.ClotureRefuseeException;
 import be.autoservplus.intervention.service.InterventionService;
 import be.autoservplus.intervention.service.dto.ClotureIntervention;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
@@ -53,6 +54,9 @@ public class AdminInterventionController {
         modele.addAttribute("intervention", vue);
         modele.addAttribute("prestations", service.prestationsActives());
         modele.addAttribute("pieces", service.piecesAjoutables());
+        modele.addAttribute("facture", service.factureAtelier(reference).orElse(null));
+        // Avertissement à la réception, avant que la clôture ne refuse (Q-H-42).
+        modele.addAttribute("compteSansAdresse", service.compteSansAdresse(reference).orElse(null));
         return "admin/intervention-detail";
     }
 
@@ -86,16 +90,31 @@ public class AdminInterventionController {
     public String terminer(@AuthenticationPrincipal UserDetails admin,
                            @PathVariable UUID reference,
                            RedirectAttributes redirection) {
-        return appliquer(reference, redirection, () -> {
-            ClotureIntervention cloture = service.terminer(reference);
-            String confirmation = message("admin.intervention.message.terminee", cloture.numero());
-            if (cloture.piecesRameneesAZero().isEmpty()) {
-                return confirmation;
-            }
+        try {
+            return appliquer(reference, redirection, () -> confirmationDeCloture(service.terminer(reference)));
+        } catch (ClotureRefuseeException refus) {
+            redirection.addFlashAttribute("erreur", message(refus.getCleMessage()));
+            // Le lien mène à la modification du compte, qui revient ici par la référence (Q-H-42).
+            redirection.addFlashAttribute("compteACompleter", refus.getCompteACompleter());
+            return "redirect:/admin/interventions/" + reference;
+        }
+    }
+
+    private String confirmationDeCloture(ClotureIntervention cloture) {
+        StringBuilder confirmation = new StringBuilder(message("admin.intervention.message.terminee", cloture.numero()));
+        if (cloture.numeroFacture() != null) {
+            confirmation.append(' ').append(message("admin.intervention.message.facture-emise", cloture.numeroFacture()));
+        } else {
+            confirmation.append(' ').append(message(cloture.neeDUneCommande()
+                    ? "admin.intervention.message.sans-facture-complementaire"
+                    : "admin.intervention.message.sans-facture"));
+        }
+        if (!cloture.piecesRameneesAZero().isEmpty()) {
             // Le garage ne lit pas le journal : la confirmation dit quel stock vérifier (Q-H-31).
-            return confirmation + " " + message("admin.intervention.message.stock-ramene",
-                    String.join(", ", cloture.piecesRameneesAZero()));
-        });
+            confirmation.append(' ').append(message("admin.intervention.message.stock-ramene",
+                    String.join(", ", cloture.piecesRameneesAZero())));
+        }
+        return confirmation.toString();
     }
 
     @PostMapping("/{reference}/annuler")

@@ -8,11 +8,11 @@ import be.autoservplus.catalogue.domain.UnitePrestation;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
-import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.intervention.service.InterventionService;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -74,8 +74,7 @@ class PiecesInterventionIT extends SocleIntegration {
     void setUp() {
         int n = COMPTEUR.getAndIncrement();
         marie = "pieces-marie" + n + "@exemple.be";
-        idMarie = utilisateurs.save(new Utilisateur(marie, "$2a$12$h", "Dupont", "Marie",
-                TypeUtilisateur.MEMBRE)).getId();
+        idMarie = utilisateurs.save(MembresDeTest.membre(marie, "$2a$12$h", "Dupont", "Marie")).getId();
         freinage = categories.save(new Categorie("IT-PCE-" + n, "Freinage", TypeCategorie.PIECE));
     }
 

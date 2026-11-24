@@ -1,6 +1,8 @@
 package be.autoservplus.intervention.service;
 
 import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.facturation.domain.Facture;
+import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.support.GaragesDeTest;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
@@ -72,6 +74,7 @@ class InterventionServiceTest {
     @Mock private HistoriqueStatutInterventionRepository historiques;
     @Mock private PrestationRepository prestations;
     @Mock private PieceRepository pieces;
+    @Mock private FactureService factures;
     @Mock private be.autoservplus.vente.repository.CommandeRepository commandes;
     @Mock private be.autoservplus.reservation.repository.VehiculeRepository vehicules;
     @Mock private ParametreAtelierRepository parametres;
@@ -93,11 +96,15 @@ class InterventionServiceTest {
     @BeforeEach
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
-        service = new InterventionService(interventions, historiques, prestations, pieces,
+        service = new InterventionService(interventions, historiques, prestations, pieces, factures,
                 commandes, vehicules, parametres,
                 auteurCourant, auditeur, numeros, courriel, evenements, GaragesDeTest.bruxellois(), horloge);
 
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
+        // Adresse complète : la clôture émet une facture, qui porte l'adresse du client (Q-H-23).
+        marie.setRue("Rue de la Loi");
+        marie.setCodePostal("1000");
+        marie.setLocalite("Bruxelles");
         golf = new Vehicule(marie, "1-ABC-123", "VW", "Golf", Motorisation.DIESEL);
         pont = new PosteAtelier("Pont 1");
         Categorie entretien = new Categorie("ENT", "Entretien", TypeCategorie.SERVICE);
@@ -750,6 +757,74 @@ class InterventionServiceTest {
         Intervention resultat = service.modifierCommentaireAdmin(ref, "  Piece commandee ");
 
         assertThat(resultat.getCommentaireAdmin()).isEqualTo("Piece commandee");
+    }
+
+    @Nested
+    @DisplayName("facture d'atelier à la clôture (A15, RM-17)")
+    class FactureALaCloture {
+
+        private Intervention enCours() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            it.demarrer(MAINTENANT);
+            doReturn(Optional.of(it)).when(interventions).findByReference(it.getReference());
+            return it;
+        }
+
+        @Test
+        @DisplayName("la clôture émet la facture et la confirmation porte son numéro")
+        void factureEmise() {
+            Intervention it = enCours();
+            doReturn(it).when(interventions).saveAndFlush(it);
+            Facture facture = org.mockito.Mockito.mock(Facture.class);
+            when(facture.getNumero()).thenReturn("2026-0050");
+            when(factures.emettrePourIntervention(it, marie)).thenReturn(Optional.of(facture));
+
+            ClotureIntervention cloture = service.terminer(it.getReference());
+
+            assertThat(cloture.numeroFacture()).isEqualTo("2026-0050");
+            assertThat(cloture.neeDUneCommande()).isFalse();
+        }
+
+        @Test
+        @DisplayName("sans titulaire : clôture refusée, rien d'écrit, aucune facture (Q-H-14)")
+        void sansTitulaire() {
+            Intervention it = enCours();
+            ReflectionTestUtils.setField(it, "rdv", null);
+            marie.anonymiser("jeton", "$2a$12$inerte", MAINTENANT);
+
+            assertThatThrownBy(() -> service.terminer(it.getReference()))
+                    .isInstanceOf(ClotureRefuseeException.class)
+                    .extracting(e -> ((ClotureRefuseeException) e).getCleMessage())
+                    .isEqualTo("admin.intervention.erreur.sans-titulaire");
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+            verifyNoInteractions(factures);
+            verify(interventions, never()).saveAndFlush(any());
+        }
+
+        @Test
+        @DisplayName("adresse du client incomplète : clôture refusée, le refus nomme le compte à compléter")
+        void sansAdresse() {
+            Intervention it = enCours();
+            marie.setRue(null);
+
+            assertThatThrownBy(() -> service.terminer(it.getReference()))
+                    .isInstanceOf(ClotureRefuseeException.class)
+                    .extracting(e -> ((ClotureRefuseeException) e).getCompteACompleter())
+                    .isEqualTo(marie.getReference());
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+            verifyNoInteractions(factures);
+        }
+
+        @Test
+        @DisplayName("une intervention planifiée est refusée par la machine à états, avant l'adresse")
+        void planifieeRefuseeParLaMachine() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            doReturn(Optional.of(it)).when(interventions).findByReference(it.getReference());
+            marie.setRue(null);
+
+            assertThatThrownBy(() -> service.terminer(it.getReference()))
+                    .isInstanceOf(IllegalStateException.class);
+        }
     }
 
     @Nested

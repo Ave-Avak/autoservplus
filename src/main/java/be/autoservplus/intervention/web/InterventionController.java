@@ -60,6 +60,9 @@ public class InterventionController {
         // un lien absent n etant pas une securite.
         modele.addAttribute("peutDeposerAvis", avis.peutDeposer(membre.getUsername(), reference));
         modele.addAttribute("intervention", vue);
+        // Facture d'atelier, son statut et son PDF au suivi (Q-H-48).
+        modele.addAttribute("facture",
+                service.factureAtelierDuMembre(reference, membre.getUsername()).orElse(null));
         return "intervention/suivi";
     }
 

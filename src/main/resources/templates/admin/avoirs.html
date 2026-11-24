@@ -51,6 +51,7 @@
                 <th scope="col" th:text="#{admin.ventes.colonne.client}">Client</th>
                 <th scope="col" th:text="#{admin.ventes.colonne.facture}">Facture corrigée</th>
                 <th scope="col" th:text="#{admin.ventes.colonne.commande}">Commande</th>
+                <th scope="col" th:text="#{admin.ventes.colonne.intervention}">Intervention</th>
                 <th scope="col" th:text="#{admin.ventes.colonne.montant}">Montant TVAC</th>
                 <th scope="col" th:text="#{admin.ventes.colonne.motif}">Motif</th>
                 <th scope="col" th:text="#{admin.ventes.colonne.document}">Document</th>
@@ -65,6 +66,11 @@
                 <td>
                     <a th:if="${a.referenceCommande() != null}" th:href="@{/admin/commandes/{ref}(ref=${a.referenceCommande()})}"
                        th:text="${a.numeroCommande()}">CMD-2026-0001</a>
+                </td>
+                <td>
+                    <a th:if="${a.referenceIntervention() != null}"
+                       th:href="@{/admin/interventions/{ref}(ref=${a.referenceIntervention()})}"
+                       th:text="${a.numeroIntervention()}">INT-2026-0001</a>
                 </td>
                 <td th:text="${a.totalTvac()}">48,38 €</td>
                 <td th:text="${a.motif()}">Rétractation</td>

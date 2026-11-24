@@ -218,4 +218,25 @@ class GenerateurPdfFactureTest {
 
         assertThat(texte).contains("Jean Sansadresse", "2026-0043");
     }
+
+    @Test
+    @DisplayName("facture d'atelier : intervention, heures, à régler à l'échéance, renvoi à la facture complétée")
+    void factureDAtelier() throws IOException {
+        DocumentFacture atelier = new DocumentFacture("2026-0050", Instant.parse("2026-11-24T15:00:00Z"),
+                null, null, marie(),
+                List.of(new DocumentFacture.LigneFacture("Main-d'œuvre (heure)", "1,5 h",
+                        new BigDecimal("65.00"), new BigDecimal("21.00"), new BigDecimal("117.98"))),
+                new VentilationTva(List.of(new VentilationTva.TrancheTva(new BigDecimal("21"),
+                        new BigDecimal("97.50"), new BigDecimal("20.48")))),
+                new BigDecimal("97.50"), new BigDecimal("20.48"), new BigDecimal("117.98"),
+                Locale.FRENCH, "INT-2026-0012", java.time.LocalDate.of(2026, 11, 24),
+                "2026-0042", Instant.parse("2026-10-02T10:00:00Z"));
+
+        String texte = texteDu(generateur.engendrer(atelier));
+
+        assertThat(texte).contains("Intervention", "INT-2026-0012", "1,5 h");
+        assertThat(texte).contains("À régler à l'atelier. Échéance : 24 novembre 2026.");
+        assertThat(texte).contains("Complète la facture 2026-0042 du 02/10/2026.");
+        assertThat(texte).doesNotContain("Facture acquittée", "Commande :");
+    }
 }

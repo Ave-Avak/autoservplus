@@ -24,6 +24,10 @@
          boîte du titulaire, le second n'est connu que de lui. */-->
     <form class="formulaire" th:action="@{/admin/comptes/{ref}/modification(ref=${reference})}"
           th:object="${formulaire}" method="post" novalidate>
+        <!--/* Venue d'une intervention dont la clôture attend l'adresse (Q-H-42) : seule sa
+             référence voyage, le retour se construit ici, jamais depuis une adresse reçue. */-->
+        <input type="hidden" name="intervention" th:if="${interventionDeRetour != null}"
+               th:value="${interventionDeRetour}">
 
         <div class="message message-erreur" th:if="${#fields.hasGlobalErrors()}" role="alert">
             <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Erreur</p>
@@ -118,7 +122,11 @@
 
         <p class="actions-page">
             <button type="submit" class="btn-cta" th:text="#{admin.compte.modification.enregistrer}">Enregistrer</button>
-            <a th:href="@{/admin/comptes/{ref}(ref=${reference})}" th:text="#{admin.compte.modification.retour}">Retour à la fiche</a>
+            <a th:if="${interventionDeRetour == null}" th:href="@{/admin/comptes/{ref}(ref=${reference})}"
+               th:text="#{admin.compte.modification.retour}">Retour à la fiche</a>
+            <a th:if="${interventionDeRetour != null}"
+               th:href="@{/admin/interventions/{ref}(ref=${interventionDeRetour})}"
+               th:text="#{admin.compte.modification.retour-intervention}">Retour à l'intervention</a>
         </p>
     </form>
 </main>

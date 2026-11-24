@@ -6,7 +6,6 @@ import be.autoservplus.facturation.repository.AvoirRepository;
 import be.autoservplus.facturation.service.dto.DocumentAvoir;
 import be.autoservplus.facturation.service.dto.DocumentFacture;
 import be.autoservplus.vente.domain.Commande;
-import be.autoservplus.vente.domain.LignePanier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
@@ -101,9 +100,7 @@ public class PdfAvoirService {
         // Instantané de la facture corrigée : la note de crédit vise le même client,
         // dans la même langue.
         Locale langue = Locale.forLanguageTag(facture.getLangueDocument().name());
-        List<DocumentFacture.LigneFacture> lignes = factureService.lignesDe(facture).stream()
-                .map(PdfAvoirService::ligneDe)
-                .toList();
+        List<DocumentFacture.LigneFacture> lignes = factureService.lignesDuDocument(facture);
         return new DocumentAvoir(
                 avoir.getNumero(),
                 avoir.getDateEmission(),
@@ -120,12 +117,4 @@ public class PdfAvoirService {
                 langue);
     }
 
-    private static DocumentFacture.LigneFacture ligneDe(LignePanier ligne) {
-        return new DocumentFacture.LigneFacture(
-                ligne.getLibelleFige(),
-                ligne.getQuantite(),
-                ligne.getPrixUnitaireHtva(),
-                ligne.getTauxTva(),
-                ligne.totalTvac());
-    }
 }

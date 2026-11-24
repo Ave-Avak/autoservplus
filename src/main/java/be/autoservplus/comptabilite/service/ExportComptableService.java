@@ -59,7 +59,7 @@ public class ExportComptableService {
         ZoneId zone = zone();
         RedacteurCsv csv = new RedacteurCsv(
                 entete("numero"), entete("date"), entete("client"), entete("commande"),
-                entete("htva"), entete("tva"), entete("tvac"), entete("taux"));
+                entete("intervention"), entete("htva"), entete("tva"), entete("tvac"), entete("taux"));
 
         pieces.facturesEmises(borneBasse(depuis, zone), borneHaute(jusqua, zone))
                 .forEach(f -> csv.ligne(
@@ -67,6 +67,8 @@ public class ExportComptableService {
                         jour(f.getDateEmission(), zone),
                         nom(f.getMembre()),
                         f.getCommande() == null ? null : f.getCommande().getNumero(),
+                        // Q-H-47 : colonne distincte, une facture d'atelier n'a pas de commande.
+                        f.getIntervention() == null ? null : f.getIntervention().getNumero(),
                         f.getMontantHtva(), f.getMontantTva(), f.getMontantTvac(),
                         f.getTauxTvaApplique()));
         return csv.texte();

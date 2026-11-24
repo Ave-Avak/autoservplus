@@ -128,6 +128,20 @@
         </table>
     </div>
 
+    <!--/* Q-H-48 : la facture d'atelier, son statut et son PDF. Le document est celui de
+         l'émission, le statut se lit ici. */-->
+    <section th:if="${facture != null}" aria-labelledby="titre-facture-atelier">
+        <h2 id="titre-facture-atelier" th:text="#{intervention.facture.titre}">Votre facture</h2>
+        <p>
+            <span th:text="#{intervention.facture.resume(${facture.numero()}, ${facture.montantTvac()})}">
+                Facture 2026-0042, 117,98 € TVAC</span>
+            <span class="badge badge-en_attente" th:text="#{${facture.cleStatut()}}">À régler</span>
+        </p>
+        <p th:text="#{intervention.facture.a-regler}">À régler à l'atelier, au retrait de votre véhicule.</p>
+        <p><a th:href="@{/factures/{ref}/pdf(ref=${facture.reference()})}"
+              th:text="#{intervention.facture.pdf}">Télécharger la facture</a></p>
+    </section>
+
     <!--/* BL-4 : proposé seulement si le dépôt aboutirait, travaux terminés et aucun avis
          déjà déposé (l'unicité en base refuserait le second). */-->
     <p class="actions-page" th:if="${peutDeposerAvis}">

@@ -6,7 +6,6 @@ import be.autoservplus.avis.service.AdminAvisService;
 import be.autoservplus.avis.service.AvisService;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PrestationRepository;
-import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.intervention.domain.Intervention;
@@ -21,6 +20,7 @@ import be.autoservplus.reservation.repository.PosteAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
 import be.autoservplus.reservation.repository.VehiculeRepository;
 import be.autoservplus.rgpd.service.SuppressionCompteService;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -95,8 +95,9 @@ class AvisIT extends SocleIntegration {
         int n = COMPTEUR.getAndIncrement();
         String email = "avis" + n + "@exemple.be";
         UUID reference = transactions.execute(statut -> {
-            Utilisateur membre = utilisateurs.saveAndFlush(new Utilisateur(
-                    email, encodeur.encode(MOT_DE_PASSE), "Test", "Alex", TypeUtilisateur.MEMBRE));
+            // Adresse complète : la clôture émet une facture, qui porte l'adresse du client.
+            Utilisateur membre = utilisateurs.saveAndFlush(MembresDeTest.membre(
+                    email, encodeur.encode(MOT_DE_PASSE), "Test", "Alex"));
             Vehicule vehicule = vehicules.saveAndFlush(new Vehicule(
                     membre, "9-AV%03d-99".formatted(n), "Renault", "Clio", Motorisation.ESSENCE));
             Prestation prestation = prestations.findByActifTrueOrderByLibelleAsc().get(0);

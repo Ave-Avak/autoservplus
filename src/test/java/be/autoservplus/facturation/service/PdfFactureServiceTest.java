@@ -85,7 +85,10 @@ class PdfFactureServiceTest {
     }
 
     private void generationAboutit() {
-        when(factureService.lignesDe(facture)).thenReturn(lignes);
+        when(factureService.lignesDuDocument(facture)).thenReturn(lignes.stream()
+                .map(l -> new DocumentFacture.LigneFacture(l.getLibelleFige(), l.getQuantite(),
+                        l.getPrixUnitaireHtva(), l.getTauxTva(), l.totalTvac()))
+                .toList());
         when(factureService.ventilationDe(facture)).thenReturn(VentilationTva.desLignes(lignes));
         when(generateur.engendrer(any(DocumentFacture.class))).thenReturn(PDF);
         when(archive.archiver(anyShort(), anyString(), any())).thenReturn("2026/2026-0042.pdf");

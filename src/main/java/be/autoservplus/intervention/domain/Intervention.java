@@ -517,6 +517,18 @@ public class Intervention extends BaseEntity {
     }
 
     /**
+     * Lignes de la facture d'atelier émise à la clôture (A15, RM-17, Q-H-41). Née d'une
+     * commande payée, l'intervention a déjà sa facture pour les prestations achetées : seuls
+     * les ajouts acceptés restent à facturer. Sinon, toutes les lignes facturables. Une
+     * liste vide signifie qu'aucune facture n'est émise.
+     */
+    public List<LigneIntervention> lignesAFacturer() {
+        return lignes.stream()
+                .filter(commande != null ? LigneIntervention::estAcceptee : LigneIntervention::estFacturable)
+                .toList();
+    }
+
+    /**
      * Total HTVA si le membre accepte tout ce qui lui est propose : facturable +
      * lignes en attente. Sert a lui presenter le montant sur lequel il se prononce.
      */

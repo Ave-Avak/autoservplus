@@ -10,6 +10,8 @@ import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsDepassementCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.facturation.domain.Facture;
+import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.service.AuteurCourant;
@@ -20,6 +22,7 @@ import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.intervention.repository.HistoriqueStatutInterventionRepository;
 import be.autoservplus.intervention.repository.InterventionRepository;
 import be.autoservplus.intervention.service.dto.ClotureIntervention;
+import be.autoservplus.intervention.service.dto.FactureAtelierVue;
 import be.autoservplus.intervention.service.dto.PieceAjoutableVue;
 import be.autoservplus.intervention.web.dto.DemandeValidationVue;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
@@ -52,6 +55,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -77,6 +81,7 @@ public class InterventionService {
     private final HistoriqueStatutInterventionRepository historiques;
     private final PrestationRepository prestations;
     private final PieceRepository pieces;
+    private final FactureService factures;
     private final CommandeRepository commandes;
     private final VehiculeRepository vehicules;
     private final ParametreAtelierRepository parametres;
@@ -92,6 +97,7 @@ public class InterventionService {
                                HistoriqueStatutInterventionRepository historiques,
                                PrestationRepository prestations,
                                PieceRepository pieces,
+                               FactureService factures,
                                CommandeRepository commandes,
                                VehiculeRepository vehicules,
                                ParametreAtelierRepository parametres,
@@ -106,6 +112,7 @@ public class InterventionService {
         this.historiques = historiques;
         this.prestations = prestations;
         this.pieces = pieces;
+        this.factures = factures;
         this.commandes = commandes;
         this.vehicules = vehicules;
         this.parametres = parametres;
@@ -229,20 +236,72 @@ public class InterventionService {
      * une cloture qui n a pas eu lieu. Seule cette transition publie : c est la seule
      * qui appelle le membre a se deplacer.
      *
-     * <p>Le stock des pièces posées se décompte ici, dans la même transaction : statut et
-     * stock tiennent ou tombent ensemble. La facture d'atelier (H4-2) s'y ajoutera entre le
-     * décompte et l'événement.</p>
+     * <p>Le stock des pièces posées se décompte ici, puis la facture d'atelier est émise
+     * (A15, RM-17), dans la même transaction : statut, stock et facture tiennent ou tombent
+     * ensemble, et une clôture annulée ne consomme aucun numéro de facture.</p>
+     *
+     * <p>Refusée avant toute écriture sans titulaire (Q-H-14), et sans son adresse quand une
+     * facture est à émettre (Q-H-23, art. 5 AR n° 1) : l'écran mène alors à la modification
+     * du compte.</p>
+     *
+     * @throws ClotureRefuseeException titulaire absent, ou adresse incomplète
      */
     @Transactional
     public ClotureIntervention terminer(UUID reference) {
         Intervention it = charger(reference);
+        if (!it.getStatut().peutPasserA(StatutIntervention.TERMINEE)) {
+            // La machine à états refuse d'abord : une intervention planifiée ne se clôt pas,
+            // quelle que soit l'adresse de son client.
+            it.terminer(horloge.instant());
+        }
+        Utilisateur titulaire = it.titulaire();
+        if (titulaire == null) {
+            throw ClotureRefuseeException.sansTitulaire();
+        }
+        if (!it.lignesAFacturer().isEmpty() && !titulaire.adressePostaleComplete()) {
+            throw ClotureRefuseeException.adresseIncomplete(titulaire.getReference());
+        }
         StatutIntervention avant = it.getStatut();
         it.terminer(horloge.instant());
         historiser(it, avant, it.getStatut(), null);
         List<String> rameneesAZero = decompterLeStock(it);
+        Optional<Facture> facture = factures.emettrePourIntervention(it, titulaire);
         Intervention enregistre = ecrire(it);
         evenements.publishEvent(new InterventionTermineeEvent(enregistre.getReference()));
-        return new ClotureIntervention(enregistre.getNumero(), rameneesAZero);
+        return new ClotureIntervention(enregistre.getNumero(), rameneesAZero,
+                facture.map(Facture::getNumero).orElse(null), enregistre.getCommande() != null);
+    }
+
+    /** Facture d'atelier de l'intervention, pour son détail au back-office. */
+    public Optional<FactureAtelierVue> factureAtelier(UUID reference) {
+        return factures.factureDe(charger(reference)).map(this::vueFacture);
+    }
+
+    /**
+     * Facture d'atelier vue par le titulaire, au suivi de son intervention (Q-H-48). Même
+     * contrôle d'appartenance que le suivi : une intervention d'autrui répond 404.
+     */
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public Optional<FactureAtelierVue> factureAtelierDuMembre(UUID reference, String email) {
+        return factures.factureDe(chargerPourMembre(reference, email)).map(this::vueFacture);
+    }
+
+    /**
+     * Compte du titulaire à compléter quand son adresse manque : un avertissement à la
+     * réception (Q-H-42), avant que la clôture ne le refuse.
+     */
+    public Optional<UUID> compteSansAdresse(UUID reference) {
+        Utilisateur titulaire = charger(reference).titulaire();
+        if (titulaire == null || titulaire.adressePostaleComplete()) {
+            return Optional.empty();
+        }
+        return Optional.of(titulaire.getReference());
+    }
+
+    private FactureAtelierVue vueFacture(Facture facture) {
+        return new FactureAtelierVue(facture.getReference(), facture.getNumero(),
+                FormatageRdv.eurosEcran(facture.getMontantTvac()), facture.getDateEcheance(),
+                facture.getMontantTvac().signum() == 0 ? "facture.statut.rien-a-regler" : "facture.statut.a-regler");
     }
 
     /**

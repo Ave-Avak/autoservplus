@@ -47,7 +47,7 @@ class SerialiseurExportJsonTest {
                         List.of(new ExportDonnees.FactureExport("2026-0007",
                                 Instant.parse("2026-03-01T08:05:00Z"),
                                 new BigDecimal("39.98"), new BigDecimal("8.40"),
-                                new BigDecimal("48.38"), "CMD-2026-0001", false, "Marie", "Dupont",
+                                new BigDecimal("48.38"), "CMD-2026-0001", null, false, "Marie", "Dupont",
                                 new ExportDonnees.AdresseExport("Rue Neuve", "12", "1000",
                                         "Bruxelles", "Belgique"))),
                         List.of(), List.of(), List.of(), List.of(), List.of(), List.of(), List.of(),

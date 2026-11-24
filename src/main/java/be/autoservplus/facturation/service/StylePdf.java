@@ -12,6 +12,7 @@ import java.awt.Color;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
@@ -126,6 +127,16 @@ public final class StylePdf {
         return DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)
                 .withLocale(locale)
                 .format(instant.atZone(BRUXELLES));
+    }
+
+    /** Un jour déjà au fuseau du garage, l'échéance d'une facture d'atelier par exemple. */
+    public static String date(LocalDate jour, Locale locale) {
+        return DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale).format(jour);
+    }
+
+    /** Date courte JJ/MM/AAAA, celle d'une référence citée dans une mention. */
+    public static String dateCourte(Instant instant) {
+        return DateTimeFormatter.ofPattern("dd/MM/yyyy").format(instant.atZone(BRUXELLES));
     }
 
     public static String nonNul(String valeur) {

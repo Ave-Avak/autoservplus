@@ -4,7 +4,6 @@ import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.communication.service.DetailsInterventionTerminee;
 import be.autoservplus.communication.service.ServiceCourriel;
-import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.intervention.domain.Intervention;
@@ -17,6 +16,7 @@ import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.PosteAtelierRepository;
 import be.autoservplus.reservation.repository.RdvRepository;
 import be.autoservplus.reservation.repository.VehiculeRepository;
+import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -78,8 +78,13 @@ class NotificationInterventionIT extends SocleIntegration {
         // une recreation violerait les contraintes d unicite (email, plaque).
         transactions.executeWithoutResult(statut -> {
             Utilisateur marie = utilisateurs.findByEmail("marie@exemple.be")
-                    .orElseGet(() -> utilisateurs.save(new Utilisateur(
-                            "marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE)));
+                    .orElseGet(() -> utilisateurs.save(MembresDeTest.membre(
+                            "marie@exemple.be", "$2a$12$h", "Dupont", "Marie")));
+            // Un autre test du même contexte a pu créer ce compte sans adresse : la clôture
+            // émet une facture, qui porte l'adresse du client.
+            marie.setRue(MembresDeTest.RUE);
+            marie.setCodePostal(MembresDeTest.CODE_POSTAL);
+            marie.setLocalite(MembresDeTest.LOCALITE);
             if (vehicules.findAll().stream().noneMatch(v -> "1-ABC-123".equals(v.getPlaque()))) {
                 vehicules.save(new Vehicule(marie, "1-ABC-123", "VW", "Golf", Motorisation.DIESEL));
             }

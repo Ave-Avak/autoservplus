@@ -25,6 +25,7 @@ import static be.autoservplus.facturation.service.StylePdf.celluleEntete;
 import static be.autoservplus.facturation.service.StylePdf.celluleInvisible;
 import static be.autoservplus.facturation.service.StylePdf.celluleTotal;
 import static be.autoservplus.facturation.service.StylePdf.date;
+import static be.autoservplus.facturation.service.StylePdf.dateCourte;
 import static be.autoservplus.facturation.service.StylePdf.montant;
 import static be.autoservplus.facturation.service.StylePdf.nonNul;
 import static be.autoservplus.facturation.service.StylePdf.police;
@@ -110,8 +111,10 @@ public class GenerateurPdfFacture {
                         libelle(document, "facture.date-emission"),
                         date(document.dateEmission(), document.locale())),
                 police(9, Font.NORMAL, GRIS_TEXTE)));
+        // Une facture d'atelier renvoie à son intervention, celle d'une commande à sa commande.
         identite.add(new Phrase("%s %s".formatted(
-                        libelle(document, "facture.commande"), document.numeroCommande()),
+                        libelle(document, document.estDAtelier() ? "facture.intervention" : "facture.commande"),
+                        document.estDAtelier() ? document.numeroIntervention() : document.numeroCommande()),
                 police(9, Font.NORMAL, GRIS_TEXTE)));
         entete.addCell(celluleInvisible(identite, Element.ALIGN_RIGHT));
         return entete;
@@ -195,11 +198,23 @@ public class GenerateurPdfFacture {
     /** Conditions de paiement et mentions légales de pied de facture. */
     private Paragraph mentionsLegales(DocumentFacture document) {
         Paragraph mentions = new Paragraph();
-        mentions.add(new Phrase(libelle(document, "facture.mention.payee",
-                        date(document.datePaiement(), document.locale())) + "\n",
-                police(9, Font.BOLD, GRIS_TEXTE)));
-        mentions.add(new Phrase(libelle(document, "facture.mention.conditions") + "\n",
-                police(8, Font.NORMAL, GRIS_TEXTE)));
+        if (document.estDAtelier()) {
+            // Q-H-49 : rien n'est payé à l'émission, la facture se règle à l'atelier.
+            mentions.add(new Phrase(libelle(document, "facture.mention.a-regler",
+                            date(document.echeance(), document.locale())) + "\n",
+                    police(9, Font.BOLD, GRIS_TEXTE)));
+            if (document.factureCompletee() != null) {
+                mentions.add(new Phrase(libelle(document, "facture.mention.complete",
+                                document.factureCompletee(), dateCourte(document.dateFactureCompletee())) + "\n",
+                        police(8, Font.NORMAL, GRIS_TEXTE)));
+            }
+        } else {
+            mentions.add(new Phrase(libelle(document, "facture.mention.payee",
+                            date(document.datePaiement(), document.locale())) + "\n",
+                    police(9, Font.BOLD, GRIS_TEXTE)));
+            mentions.add(new Phrase(libelle(document, "facture.mention.conditions") + "\n",
+                    police(8, Font.NORMAL, GRIS_TEXTE)));
+        }
         mentions.add(new Phrase(libelle(document, "facture.mention.tva") + "\n",
                 police(8, Font.NORMAL, GRIS_TEXTE)));
         mentions.add(new Phrase(libelle(document, "facture.mention.conservation") + "\n\n",

@@ -24,6 +24,18 @@
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
 
+    <!--/* Q-H-42 : la clôture refuse une facture sans adresse. Le lien mène à la modification
+         du compte, qui revient ici par la seule référence de l'intervention. */-->
+    <th:block th:with="compte=${compteACompleter != null ? compteACompleter : compteSansAdresse}">
+        <p th:if="${compte != null}" th:classappend="${compteACompleter != null} ? null : 'message'">
+            <span th:if="${compteACompleter == null}" th:text="#{admin.intervention.adresse.avertissement}">
+                L'adresse du client manque : la facture ne pourra pas être émise à la clôture.
+            </span>
+            <a th:href="@{/admin/comptes/{c}/modification(c=${compte},intervention=${intervention.reference()})}"
+               th:text="#{admin.intervention.adresse.completer}">Compléter l'adresse du client</a>
+        </p>
+    </th:block>
+
     <p>
         <span th:class="'badge badge-' + ${#strings.toLowerCase(intervention.statut())}"
               th:text="#{'admin.historique.statut.' + ${intervention.statut()}}">Planifiée</span>
@@ -110,6 +122,21 @@
             <button type="submit" class="lien-bouton texte-erreur" th:text="#{admin.intervention.action.annuler}">Annuler l'intervention</button>
         </form>
     </div>
+
+    <!--/* Facture d'atelier émise à la clôture (A15, RM-17). Le PDF est celui de l'émission,
+         le statut se lit ici (Q-H-49). */-->
+    <section th:if="${facture != null}" aria-labelledby="titre-admin-facture-atelier">
+        <h2 id="titre-admin-facture-atelier" th:text="#{admin.intervention.facture.titre}">Facture d'atelier</h2>
+        <p>
+            <span th:text="#{admin.intervention.facture.resume(${facture.numero()}, ${facture.montantTvac()})}">
+                Facture 2026-0042, 117,98 € TVAC</span>
+            <span class="badge badge-en_attente" th:text="#{${facture.cleStatut()}}">À régler</span>
+        </p>
+        <p th:text="#{admin.intervention.facture.echeance(${#temporals.format(facture.echeance(), 'd MMMM yyyy')})}">
+            Échéance : 24 novembre 2026</p>
+        <p><a th:href="@{/admin/factures/{ref}/pdf(ref=${facture.reference()})}"
+              th:text="#{admin.intervention.facture.pdf}">Télécharger la facture</a></p>
+    </section>
 
     <h2 id="titre-admin-intervention-detail" th:text="#{admin.intervention.lignes}">Lignes</h2>
     <div class="defilement" tabindex="0" role="region" aria-labelledby="titre-admin-intervention-detail">

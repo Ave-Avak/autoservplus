@@ -9,6 +9,7 @@ import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.repository.FactureRepository;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.support.FuseauxDeTest;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Panier;
@@ -61,7 +62,7 @@ class FactureServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new FactureService(factures, commandes, numeros,
+        service = new FactureService(factures, commandes, numeros, FuseauxDeTest.bruxelles(),
                 Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
     }
 
