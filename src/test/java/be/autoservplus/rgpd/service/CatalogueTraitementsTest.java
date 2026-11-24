@@ -134,7 +134,7 @@ class CatalogueTraitementsTest {
                 assertThat(destinataire.role()).isNotBlank().doesNotStartWith("??");
                 assertThat(destinataire.pays()).isNotBlank().doesNotStartWith("??");
             });
-            assertThat(infos.dureesConservation()).hasSize(6);
+            assertThat(infos.dureesConservation()).hasSize(7);
             assertThat(infos.droits()).hasSize(8);
         }
     }

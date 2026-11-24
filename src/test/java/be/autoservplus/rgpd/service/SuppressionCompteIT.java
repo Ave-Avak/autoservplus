@@ -18,6 +18,10 @@ import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.messagerie.service.MessagerieService;
+import be.autoservplus.notification.domain.Notification;
+import be.autoservplus.notification.domain.TypeNotification;
+import be.autoservplus.notification.repository.NotificationRepository;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.VehiculeRepository;
@@ -42,6 +46,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -93,6 +98,8 @@ class SuppressionCompteIT extends SocleIntegration {
     @Autowired private PdfFactureService pdfFactures;
     @Autowired private SuppressionCompteService suppression;
     @Autowired private DevisService devisService;
+    @Autowired private MessagerieService messagerie;
+    @Autowired private NotificationRepository notifications;
     @Autowired private PrestatairePaiementFictif prestataireFictif;
     @Autowired private PasswordEncoder encodeur;
     @Autowired private TransactionTemplate transactions;
@@ -461,6 +468,35 @@ class SuppressionCompteIT extends SocleIntegration {
         // La FK tient : l historique d atelier reste lisible pour le garage.
         assertThat(jdbc.queryForObject("SELECT count(*) FROM rdv WHERE vehicule_id = ?",
                 Integer.class, golf.getId())).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("les fils, leurs messages et les notifications du membre sont supprimés, ceux d'un autre restent")
+    void echangesSupprimes() {
+        Utilisateur marie = membre();
+        Utilisateur paul = membre();
+        for (Utilisateur titulaire : List.of(marie, paul)) {
+            executerEn(titulaire.getEmail(), () -> {
+                messagerie.ouvrir(titulaire.getEmail(), "Question", "Bonjour, une question.", null);
+                return notifications.save(new Notification(titulaire, TypeNotification.MESSAGE_RECU,
+                        "Nouveau message", "Question", Instant.parse("2026-11-20T09:00:00Z")));
+            });
+        }
+        Long filDeMarie = jdbc.queryForObject("SELECT id FROM conversation WHERE membre_id = ?",
+                Long.class, marie.getId());
+
+        supprimer(marie);
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM conversation WHERE membre_id = ?",
+                Integer.class, marie.getId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM message WHERE conversation_id = ?",
+                Integer.class, filDeMarie)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM notification WHERE membre_id = ?",
+                Integer.class, marie.getId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM conversation WHERE membre_id = ?",
+                Integer.class, paul.getId())).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM notification WHERE membre_id = ?",
+                Integer.class, paul.getId())).isEqualTo(1);
     }
 
     @Test

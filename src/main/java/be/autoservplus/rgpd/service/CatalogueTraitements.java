@@ -61,7 +61,7 @@ public class CatalogueTraitements {
             List.of("mollie", "brevo", "hebergeur", "cloudflare", "hibp");
 
     private static final List<String> CONSERVATIONS = List.of(
-            "compte", "comptable", "atelier", "devis", "consentement", "connexion");
+            "compte", "comptable", "atelier", "devis", "messagerie", "consentement", "connexion");
 
     /**
      * Droits rappeles. Au-dela des cinq droits materiels, le retrait du

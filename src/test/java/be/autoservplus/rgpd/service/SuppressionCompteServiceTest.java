@@ -9,6 +9,7 @@ import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.identite.service.HistoriqueModificationsCompte;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.Vehicule;
+import be.autoservplus.rgpd.repository.EchangesSuppressionRepository;
 import be.autoservplus.rgpd.repository.TracesAuditRepository;
 import be.autoservplus.rgpd.repository.VehiculeAnonymisationRepository;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +57,7 @@ class SuppressionCompteServiceTest {
     @Mock private VehiculeAnonymisationRepository vehicules;
     @Mock private be.autoservplus.avis.repository.AvisRepository avis;
     @Mock private DevisRepository devis;
+    @Mock private EchangesSuppressionRepository echanges;
     @Mock private TracesAuditRepository tracesAudit;
     @Mock private CodeSecoursRepository codesSecours;
     @Mock private HistoriqueModificationsCompte historiqueCompte;
@@ -69,7 +71,7 @@ class SuppressionCompteServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new SuppressionCompteService(utilisateurs, vehicules, avis, devis, tracesAudit,
+        service = new SuppressionCompteService(utilisateurs, vehicules, avis, devis, echanges, tracesAudit,
                 codesSecours, historiqueCompte, encodeur, evenements, Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")));
         marie = new Utilisateur("marie@exemple.be", encodeur.encode(MOT_DE_PASSE),
                 "Dupont", "Marie", TypeUtilisateur.MEMBRE);
@@ -107,6 +109,8 @@ class SuppressionCompteServiceTest {
             assertThat(marie.getEmail()).isEqualTo("marie@exemple.be");
             verify(vehicules, never()).tousLesVehicules(any());
             verify(devis, never()).supprimerDuMembre(any());
+            verify(echanges, never()).supprimerLesFils(any());
+            verify(echanges, never()).supprimerLesNotifications(any());
             verify(tracesAudit, never()).anonymiser(anyString(), anyString());
             verify(evenements, never()).publishEvent(any(CompteSupprimeEvent.class));
         }
@@ -215,15 +219,17 @@ class SuppressionCompteServiceTest {
         }
 
         @Test
-        @DisplayName("les devis du membre sont supprimés, avant l'anonymisation du compte")
+        @DisplayName("les devis, les fils et les notifications du membre sont supprimés, avant l'anonymisation du compte")
         void devisSupprimes() {
             compteExiste();
             parcVide();
 
             service.supprimer("marie@exemple.be", MOT_DE_PASSE, "SUPPRIMER");
 
-            InOrder ordre = inOrder(devis, utilisateurs);
+            InOrder ordre = inOrder(devis, echanges, utilisateurs);
             ordre.verify(devis).supprimerDuMembre(marie.getId());
+            ordre.verify(echanges).supprimerLesFils(marie.getId());
+            ordre.verify(echanges).supprimerLesNotifications(marie.getId());
             ordre.verify(utilisateurs).saveAndFlush(marie);
         }
     }
