@@ -64,7 +64,7 @@ class AnonymisationUtilisateurTest {
         marie.anonymiser(JETON, HACHAGE, MAINTENANT);
 
         // Le @SQLRestriction de l entite masquerait la ligne, et une facture
-        // conservee dix ans ne pourrait plus resoudre son titulaire.
+        // conservee sept ans ne pourrait plus resoudre son titulaire.
         assertThat(marie.estSupprime()).isFalse();
         assertThat(marie.getDeletedAt()).isNull();
     }

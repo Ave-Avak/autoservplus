@@ -24,7 +24,7 @@ import java.util.UUID;
  *
  * <p><b>Pas de suppression logique</b>, contrairement aux entités métier du socle :
  * une facture ne se supprime pas, même logiquement. La loi impose sa conservation
- * dix ans et sa seule correction légale est la note de crédit (table {@code avoir}).
+ * sept ans et sa seule correction légale est la note de crédit (table {@code avoir}).
  * Elle n'hérite donc pas de {@code BaseEntity}, qui porterait {@code deleted_at}.
  * Même précédent que les journaux append-only du projet.</p>
  *

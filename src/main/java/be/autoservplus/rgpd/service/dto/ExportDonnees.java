@@ -479,7 +479,7 @@ public record ExportDonnees(
 
         /**
          * L'instantané du client (V61) est restitué tel que la facture le porte : c'est
-         * une donnée sur la personne, conservée dix ans même après la suppression du
+         * une donnée sur la personne, conservée sept ans même après la suppression du
          * compte, et que le membre doit pouvoir lire.
          */
         public static FactureExport de(Facture facture) {

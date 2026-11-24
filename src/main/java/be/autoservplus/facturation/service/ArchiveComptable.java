@@ -18,23 +18,23 @@ import java.util.regex.Pattern;
  * Archivage des documents comptables PDF sur le système de fichiers : factures et
  * notes de crédit.
  *
- * <p>La loi belge impose la conservation des factures <b>dix ans</b> (Code TVA art. 60,
- * tel que modifié par la loi du 20 novembre 2022), et la note de crédit qui en corrige
+ * <p>La loi belge impose la conservation des factures <b>sept ans</b> (Code TVA art. 60,
+ * tel que modifié par la loi du 18 décembre 2025), et la note de crédit qui en corrige
  * une est soumise à la même obligation : une facture conservée sans son avoir donnerait
  * un montant faux au contrôle. Un document régénéré à chaque demande ne serait pas une
  * archive : il refléterait le code du jour, pas celui de l'émission. Le PDF est donc
  * écrit une fois puis relu tel quel, et c'est ce même fichier qui sert de pièce
  * justificative.</p>
  *
- * <p><b>Dix et non sept</b> : le délai était de sept ans jusqu'à la loi du 20 novembre
- * 2022, qui l'a porté à dix pour les taxes devenues exigibles à partir du 1er janvier
- * 2023. Il court à compter du 1er janvier de l'année qui suit celle de la facture, et
- * non de sa date d'émission. Un mois de décembre et le janvier suivant ne sortent donc
- * pas de l'archive la même année.</p>
+ * <p><b>Sept ans, à compter du 1er janvier qui suit</b> : la loi du 20 novembre 2022 avait
+ * porté le délai à dix ans, la loi du 18 décembre 2025 l'a ramené à sept. Il court à
+ * compter du 1er janvier de l'année qui suit celle de la facture, et non de sa date
+ * d'émission. Un mois de décembre et le janvier suivant ne sortent donc pas de l'archive
+ * la même année.</p>
  *
  * <p>Racine configurable ({@code autoservplus.facturation.archive}), jamais en dur :
  * en production elle désigne un volume sauvegardé, distinct du répertoire de
- * déploiement. Une archive de dix ans ne peut pas disparaître avec un
+ * déploiement. Une archive de sept ans ne peut pas disparaître avec un
  * redéploiement.</p>
  *
  * <p>Le chemin stocké en base est <b>relatif</b> à cette racine : déplacer l'archive

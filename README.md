@@ -231,7 +231,7 @@ production.
 | `COOKIE_SECURE` | `false` | Pose l'attribut `Secure` sur le cookie de session. À mettre à `true` dès que le site est joint en HTTPS |
 | `JAVA_OPTS` | `-XX:MaxRAMPercentage=75` | Options de la machine virtuelle Java dans le conteneur |
 | `URL_PUBLIQUE` | `http://localhost:8080` | Adresse publique, employée là où une URL absolue est indispensable |
-| `FACTURES_ARCHIVE` | `./data/factures` | Répertoire d'archivage des factures (conservation dix ans) |
+| `FACTURES_ARCHIVE` | `./data/factures` | Répertoire d'archivage des factures (conservation sept ans) |
 | `MEDIAS_RACINE` | `./data/uploads` | Répertoire des fichiers déposés |
 | `GARAGE_RAISON_SOCIALE`, `GARAGE_TVA`, `GARAGE_BCE`, `GARAGE_IBAN`, etc. | valeurs de démonstration | Identité légale imprimée sur les factures et les mentions légales |
 | `GARAGE_LANGUES_DOCUMENTS` | `fr` (`fr,nl` sous `demo`) | Langues des factures et des avoirs, la première par défaut. Elles suivent la région du siège : `nl` en Flandre, `fr` en Wallonie, les deux à Bruxelles. Toute autre valeur fait refuser le démarrage |

@@ -176,7 +176,7 @@ class GenerateurPdfFactureTest {
         String texte = texteDu(generateur.engendrer(factureMultiTaux(Locale.FRENCH)));
 
         assertThat(texte).contains("acquittée");
-        assertThat(texte).contains("dix ans");
+        assertThat(texte).contains("sept ans");
     }
 
     @Test

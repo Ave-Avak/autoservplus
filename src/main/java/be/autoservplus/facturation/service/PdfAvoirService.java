@@ -22,7 +22,7 @@ import java.util.Locale;
  * <p>Même politique que {@code PdfFactureService}, et pour les mêmes raisons.
  * <b>Généré à la demande</b> : rien n'oblige à produire un PDF que personne ne
  * réclamera. L'avoir existe en base dès la validation, c'est lui qui fait foi.
- * <b>Archivé une fois</b> : le document conservé dix ans doit rester celui qui a été
+ * <b>Archivé une fois</b> : le document conservé sept ans doit rester celui qui a été
  * remis au client, pas ce que le code produirait aujourd'hui. Une évolution du
  * gabarit ne doit pas réécrire rétroactivement des pièces déjà transmises.</p>
  *

@@ -204,7 +204,7 @@ public interface ServiceCourriel {
      * les capture avant l ecrasement et les fait voyager jusqu ici.</p>
      *
      * <p>Le message rappelle ce qui a ete conserve et pourquoi : les documents
-     * comptables, dix ans, article 60 du Code de la TVA. Une confirmation qui dirait
+     * comptables, sept ans, article 60 du Code de la TVA. Une confirmation qui dirait
      * seulement « tout est efface » serait fausse, et la personne decouvrirait la
      * conservation au pire moment.</p>
      */
