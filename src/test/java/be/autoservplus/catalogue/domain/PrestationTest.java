@@ -129,4 +129,40 @@ class PrestationTest {
         prestation.activer();
         assertThat(prestation.isActif()).isTrue();
     }
+
+    @Test
+    @DisplayName("une prestation sans unité précisée est au forfait")
+    void forfaitParDefaut() {
+        Prestation vidange = new Prestation(entretien, "VID", "Vidange", new BigDecimal("49.00"), 30);
+
+        assertThat(vidange.getUnite()).isEqualTo(UnitePrestation.FORFAIT);
+        assertThat(vidange.estALHeure()).isFalse();
+    }
+
+    @Test
+    @DisplayName("une prestation à l'heure dure une heure, toute autre durée est refusée")
+    void dureeDUnePrestationALHeure() {
+        Prestation mainDOeuvre = new Prestation(entretien, "MO", "Main-d'œuvre",
+                new BigDecimal("65.00"), 60, UnitePrestation.HEURE);
+        assertThat(mainDOeuvre.estALHeure()).isTrue();
+
+        assertThatThrownBy(() -> new Prestation(entretien, "MO2", "Main-d'œuvre",
+                new BigDecimal("65.00"), 30, UnitePrestation.HEURE))
+                .isInstanceOf(DureePrestationALHeureException.class);
+        assertThatThrownBy(() -> mainDOeuvre.setDureeMinutes(90))
+                .isInstanceOf(DureePrestationALHeureException.class);
+        assertThat(mainDOeuvre.getDureeMinutes()).isEqualTo(Prestation.DUREE_UNITE_HEURE);
+    }
+
+    @Test
+    @DisplayName("l'unité ne change pas : la même est acceptée, une autre refusée")
+    void uniteFixee() {
+        Prestation vidange = new Prestation(entretien, "VID", "Vidange", new BigDecimal("49.00"), 30);
+
+        vidange.verifierUnite(UnitePrestation.FORFAIT);
+        vidange.verifierUnite(null);
+        assertThatThrownBy(() -> vidange.verifierUnite(UnitePrestation.HEURE))
+                .isInstanceOf(UnitePrestationFixeeException.class);
+        assertThat(vidange.getUnite()).isEqualTo(UnitePrestation.FORFAIT);
+    }
 }

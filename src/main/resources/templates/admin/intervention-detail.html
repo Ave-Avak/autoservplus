@@ -176,7 +176,7 @@
                 <select id="prestation" name="prestation" required>
                     <option value="" th:text="#{rdv.formulaire.choisir}">Choisissez</option>
                     <option th:each="p : ${prestations}" th:value="${p.reference}"
-                            th:text="#{admin.intervention.ajout.option(${p.libelle}, ${p.dureeMinutes})}">Vidange (30 min)</option>
+                            th:text="${p.estALHeure()} ? #{admin.intervention.ajout.option-heure(${p.libelle})} : #{admin.intervention.ajout.option(${p.libelle}, ${p.dureeMinutes})}">Vidange (30 min)</option>
                 </select>
             </div>
             <div class="champ">

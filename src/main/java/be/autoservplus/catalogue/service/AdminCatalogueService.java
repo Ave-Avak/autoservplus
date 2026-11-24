@@ -6,6 +6,7 @@ import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.Traductions;
 import be.autoservplus.catalogue.domain.TypeCategorie;
+import be.autoservplus.catalogue.domain.UnitePrestation;
 import be.autoservplus.catalogue.domain.TypeEntiteCatalogue;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.HistoriqueModificationCatalogueRepository;
@@ -150,7 +151,8 @@ public class AdminCatalogueService {
         }
         Categorie categorie = categorieDeType(donnees.codeCategorie(), TypeCategorie.SERVICE);
         Prestation prestation = new Prestation(categorie, donnees.code(), donnees.libelle(),
-                donnees.prixHtva(), donnees.dureeMinutes());
+                donnees.prixHtva(), donnees.dureeMinutes(),
+                donnees.unite() == null ? UnitePrestation.FORFAIT : donnees.unite());
         prestation.setDescription(donnees.description());
         if (donnees.traductions() != null) {
             prestation.traduire(donnees.traductions());
@@ -206,6 +208,8 @@ public class AdminCatalogueService {
     @Transactional
     public Prestation modifierPrestation(UUID reference, DonneesPrestation donnees) {
         Prestation prestation = chargerPrestation(reference);
+        // Unité fixée à la création (V72) : refusée avant toute autre modification.
+        prestation.verifierUnite(donnees.unite());
         // A1 s applique aussi a la modification : l exclusion de sa propre reference
         // permet de re-soumettre le formulaire sans changer le nom.
         if (prestations.existsByLibelleIgnoreCaseAndReferenceNot(donnees.libelle(), reference)) {

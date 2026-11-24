@@ -216,7 +216,9 @@ public class RdvService {
     public Map<CategorieVue, List<ArticleVue>> prestationsProposees() {
         Locale langue = LanguesSupportees.deLEcran();
         Collator ordre = Collator.getInstance(langue);
+        // Une prestation à l'heure ne se réserve pas (Q-H-36) : le formulaire ne la propose pas.
         List<Prestation> triees = prestations.findByActifTrueOrderByLibelleAsc().stream()
+                .filter(p -> !p.estALHeure())
                 .sorted(Comparator.comparing(p -> p.libelle(langue).texte(), ordre))
                 .toList();
         Map<CategorieVue, List<ArticleVue>> parCategorie = new LinkedHashMap<>();
@@ -246,6 +248,7 @@ public class RdvService {
         }
         return prestations.findByReference(uuid)
                 .filter(Prestation::isActif)
+                .filter(p -> !p.estALHeure())
                 .map(Prestation::getReference);
     }
 

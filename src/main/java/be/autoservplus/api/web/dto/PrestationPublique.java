@@ -15,6 +15,9 @@ import java.util.UUID;
  *
  * <p>Aucune donnee de gestion : ni stock, ni marge, ni seuil d alerte. Seul ce qu un
  * visiteur voit deja sur la fiche publique est repris.</p>
+ *
+ * @param unite {@code FORFAIT} ou {@code HEURE} (V72) : le prix d'une prestation à l'heure est
+ *              un taux horaire, et sa durée vaut une heure
  */
 public record PrestationPublique(
         UUID reference,
@@ -24,11 +27,12 @@ public record PrestationPublique(
         String categorie,
         BigDecimal prixHtva,
         BigDecimal prixTvac,
-        Integer dureeMinutes) {
+        Integer dureeMinutes,
+        String unite) {
 
     public static PrestationPublique de(ArticleVue vue) {
         return new PrestationPublique(vue.reference(), vue.code(), vue.libelle(),
                 vue.description(), vue.categorie(), vue.prixHtva(), vue.prixTvac(),
-                vue.dureeMinutes());
+                vue.dureeMinutes(), vue.unite());
     }
 }

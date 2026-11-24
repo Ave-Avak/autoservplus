@@ -1,6 +1,7 @@
 package be.autoservplus.vente.web;
 
 import be.autoservplus.common.exception.ConflitConcurrenceException;
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.reservation.service.VehiculeService;
 import be.autoservplus.vente.service.PanierService;
@@ -136,6 +137,10 @@ public class PanierController {
             redirection.addFlashAttribute("erreur", msg("panier.erreur.quantite"));
         } catch (ConflitConcurrenceException e) {
             redirection.addFlashAttribute("erreur", msg("panier.erreur.conflit"));
+        } catch (RefusTraduit refus) {
+            // Refus du domaine qui porte sa clé, une prestation à l'heure par exemple (Q-H-36).
+            redirection.addFlashAttribute("erreur", messages.getMessage(refus.getCleMessage(),
+                    refus.getArguments(), LocaleContextHolder.getLocale()));
         }
         return "redirect:/panier";
     }

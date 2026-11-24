@@ -87,7 +87,8 @@ class AdminPrestationControllerTest {
         org.mockito.Mockito.reset(service);
         vueVidange = new ArticleVueAdmin(REF, "VID", "Vidange", "Huile et filtre",
                 "ENTRETIEN", "Entretien", new BigDecimal("75.00"), new BigDecimal("90.75"),
-                new BigDecimal("21.00"), 60, null, null, null, true);
+                new BigDecimal("21.00"), 60, null, null, null, true,
+                be.autoservplus.catalogue.domain.Traductions.aucune(), "FORFAIT");
     }
 
     @Nested
@@ -229,6 +230,27 @@ class AdminPrestationControllerTest {
                     .andExpect(flash().attributeExists("message"));
 
             verify(service).modifierPrestation(eq(REF), any());
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        @DisplayName("une unité changée est refusée sous le champ, le formulaire revient (V72)")
+        void uniteChangeeRefusee() throws Exception {
+            doThrow(new be.autoservplus.catalogue.domain.UnitePrestationFixeeException("VID"))
+                    .when(service).modifierPrestation(eq(REF), any());
+
+            mvc.perform(post("/admin/catalogue/prestations/{ref}/modifier", REF).with(csrf())
+                            .param("codeCategorie", "ENTRETIEN")
+                            .param("code", "VID")
+                            .param("libelle", "Vidange")
+                            .param("prixHtva", "75.00")
+                            .param("tauxTva", "21.00")
+                            .param("dureeMinutes", "60")
+                            .param("unite", "HEURE"))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name("admin/catalogue/prestation-formulaire"))
+                    .andExpect(model().attributeHasFieldErrorCode("formulaire", "unite",
+                            "admin.catalogue.erreur.unite-fixee"));
         }
     }
 

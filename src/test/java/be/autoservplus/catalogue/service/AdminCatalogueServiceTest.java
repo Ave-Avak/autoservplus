@@ -281,6 +281,21 @@ class AdminCatalogueServiceTest {
         }
 
         @Test
+        @DisplayName("refuse un changement d'unité avant toute modification (V72)")
+        void refuseUnChangementDUnite() {
+            Prestation prestation = vidangeExistante();
+
+            assertThatThrownBy(() -> service.modifierPrestation(prestation.getReference(),
+                    new DonneesPrestation("ENTRETIEN", "VID", "Vidange modifiée", null,
+                            new BigDecimal("75.00"), new BigDecimal("21.00"), 60, true, null,
+                            be.autoservplus.catalogue.domain.UnitePrestation.HEURE)))
+                    .isInstanceOf(be.autoservplus.catalogue.domain.UnitePrestationFixeeException.class);
+
+            assertThat(prestation.getLibelle()).isEqualTo("Vidange");
+            assertThat(prestation.getUnite()).isEqualTo(be.autoservplus.catalogue.domain.UnitePrestation.FORFAIT);
+        }
+
+        @Test
         @DisplayName("A1 : refuse le nom d une autre prestation")
         void refuseLeNomDUneAutre() {
             Prestation prestation = vidangeExistante();

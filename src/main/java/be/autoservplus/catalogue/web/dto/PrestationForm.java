@@ -1,6 +1,7 @@
 package be.autoservplus.catalogue.web.dto;
 
 import be.autoservplus.catalogue.domain.Traductions;
+import be.autoservplus.catalogue.domain.UnitePrestation;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.NotBlank;
@@ -58,6 +59,13 @@ public class PrestationForm {
 
     private boolean actif = true;
 
+    /**
+     * Choisie à la création, puis affichée en lecture seule et renvoyée telle quelle : le
+     * service refuse une unité différente de celle en place (V72).
+     */
+    @NotNull(message = "{admin.catalogue.validation.unite}")
+    private UnitePrestation unite = UnitePrestation.FORFAIT;
+
     public String getCodeCategorie() { return codeCategorie; }
     public void setCodeCategorie(String codeCategorie) { this.codeCategorie = codeCategorie; }
     public String getCode() { return code; }
@@ -93,5 +101,7 @@ public class PrestationForm {
     public Integer getDureeMinutes() { return dureeMinutes; }
     public void setDureeMinutes(Integer dureeMinutes) { this.dureeMinutes = dureeMinutes; }
     public boolean isActif() { return actif; }
+    public UnitePrestation getUnite() { return unite; }
+    public void setUnite(UnitePrestation unite) { this.unite = unite; }
     public void setActif(boolean actif) { this.actif = actif; }
 }
