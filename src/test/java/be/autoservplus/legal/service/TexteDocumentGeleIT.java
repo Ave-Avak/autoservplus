@@ -201,7 +201,7 @@ class TexteDocumentGeleIT extends SocleIntegration {
         });
 
         // Le texte accepte avant V35 annoncait sept ans. Ce controle porte sur le texte
-        // archive de CGV-2026-01, pas sur la regle de conservation en vigueur (dix ans).
+        // archive de CGV-2026-01, pas sur la regle de conservation en vigueur.
         assertThat(versions.findByTypeDocumentAndVersionOrderByLangue(TypeDocumentVersionne.CGV, "CGV-2026-01"))
                 .filteredOn(ligne -> ligne.getLangue() == Langue.fr)
                 .singleElement()

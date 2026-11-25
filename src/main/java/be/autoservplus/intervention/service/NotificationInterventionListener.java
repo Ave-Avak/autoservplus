@@ -2,10 +2,14 @@ package be.autoservplus.intervention.service;
 
 import be.autoservplus.communication.service.DetailsInterventionTerminee;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.facturation.domain.Facture;
+import be.autoservplus.facturation.repository.FactureRepository;
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.repository.InterventionRepository;
 import be.autoservplus.reservation.domain.Vehicule;
+import be.autoservplus.reservation.service.support.FormatageRdv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
@@ -34,11 +38,14 @@ public class NotificationInterventionListener {
     private static final Logger log = LoggerFactory.getLogger(NotificationInterventionListener.class);
 
     private final InterventionRepository interventions;
+    private final FactureRepository factures;
     private final ServiceCourriel courriel;
 
     public NotificationInterventionListener(InterventionRepository interventions,
+                                            FactureRepository factures,
                                             ServiceCourriel courriel) {
         this.interventions = interventions;
+        this.factures = factures;
         this.courriel = courriel;
     }
 
@@ -69,6 +76,8 @@ public class NotificationInterventionListener {
                 return;
             }
             Vehicule vehicule = it.getVehicule();
+            // Facture d'atelier émise à la clôture (A15, RM-17), s'il y en a une.
+            Facture facture = factures.findByIntervention(it).orElse(null);
             courriel.envoyerInterventionTerminee(new DetailsInterventionTerminee(
                     membre.getEmail(),
                     membre.getPrenom(),
@@ -78,7 +87,11 @@ public class NotificationInterventionListener {
                     vehicule.getPlaque(),
                     // BL-4 : le courriel invitait a deposer un avis alors qu aucun
                     // ecran ne le permettait. Il porte desormais le chemin reel.
-                    "/mes-avis/" + it.getReference() + "/nouveau"));
+                    "/mes-avis/" + it.getReference() + "/nouveau",
+                    // Montant rédigé dans la langue du compte, comme les autres courriels au membre.
+                    facture == null ? null : FormatageRdv.euros(facture.getMontantTvac(),
+                            LanguesSupportees.duCompte(membre.getLangue())),
+                    facture == null ? null : "/factures/" + facture.getReference() + "/pdf"));
         } catch (RuntimeException e) {
             log.warn("Envoi du courriel de cloture impossible pour l intervention {} : {}",
                     evenement.referenceIntervention(), e.getMessage());

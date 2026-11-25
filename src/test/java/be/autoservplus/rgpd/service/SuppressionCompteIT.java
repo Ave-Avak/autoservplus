@@ -9,6 +9,7 @@ import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
+import be.autoservplus.devis.service.DevisService;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.facturation.service.PdfFactureService;
@@ -17,6 +18,10 @@ import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
+import be.autoservplus.messagerie.service.MessagerieService;
+import be.autoservplus.notification.domain.Notification;
+import be.autoservplus.notification.domain.TypeNotification;
+import be.autoservplus.notification.repository.NotificationRepository;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.VehiculeRepository;
@@ -41,6 +46,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -91,6 +97,9 @@ class SuppressionCompteIT extends SocleIntegration {
     @Autowired private FactureService factures;
     @Autowired private PdfFactureService pdfFactures;
     @Autowired private SuppressionCompteService suppression;
+    @Autowired private DevisService devisService;
+    @Autowired private MessagerieService messagerie;
+    @Autowired private NotificationRepository notifications;
     @Autowired private PrestatairePaiementFictif prestataireFictif;
     @Autowired private PasswordEncoder encodeur;
     @Autowired private TransactionTemplate transactions;
@@ -459,6 +468,87 @@ class SuppressionCompteIT extends SocleIntegration {
         // La FK tient : l historique d atelier reste lisible pour le garage.
         assertThat(jdbc.queryForObject("SELECT count(*) FROM rdv WHERE vehicule_id = ?",
                 Integer.class, golf.getId())).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("les fils, leurs messages et les notifications du membre sont supprimés, ceux d'un autre restent")
+    void echangesSupprimes() {
+        Utilisateur marie = membre();
+        Utilisateur paul = membre();
+        for (Utilisateur titulaire : List.of(marie, paul)) {
+            executerEn(titulaire.getEmail(), () -> {
+                messagerie.ouvrir(titulaire.getEmail(), "Question", "Bonjour, une question.", null);
+                return notifications.save(new Notification(titulaire, TypeNotification.MESSAGE_RECU,
+                        "Nouveau message", "Question", Instant.parse("2026-11-20T09:00:00Z")));
+            });
+        }
+        Long filDeMarie = jdbc.queryForObject("SELECT id FROM conversation WHERE membre_id = ?",
+                Long.class, marie.getId());
+
+        supprimer(marie);
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM conversation WHERE membre_id = ?",
+                Integer.class, marie.getId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM message WHERE conversation_id = ?",
+                Integer.class, filDeMarie)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM notification WHERE membre_id = ?",
+                Integer.class, marie.getId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM conversation WHERE membre_id = ?",
+                Integer.class, paul.getId())).isEqualTo(1);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM notification WHERE membre_id = ?",
+                Integer.class, paul.getId())).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("après la suppression, la notification de l'administrateur ne garde que le numéro du fil")
+    void notificationAdministrateurSansTexteDuMembre() {
+        Utilisateur marie = membre();
+        String sujet = "Sujet confidentiel " + COMPTEUR.getAndIncrement();
+        Long administrateur = transactions.execute(statut -> {
+            Utilisateur compte = new Utilisateur("admin-" + COMPTEUR.getAndIncrement() + "@exemple.be",
+                    encodeur.encode(MOT_DE_PASSE), "Atelier", "Admin", TypeUtilisateur.ADMINISTRATEUR);
+            // Actif : seuls les administrateurs actifs reçoivent la notification.
+            compte.confirmerAdresseEmail();
+            return utilisateurs.save(compte).getId();
+        });
+        executerEn(marie.getEmail(), () ->
+                messagerie.ouvrir(marie.getEmail(), sujet, "Mon numéro de châssis est le suivant.", null));
+        String numero = jdbc.queryForObject("SELECT numero FROM conversation WHERE membre_id = ?",
+                String.class, marie.getId());
+
+        supprimer(marie);
+
+        assertThat(jdbc.queryForList("SELECT corps FROM notification WHERE membre_id = ?",
+                String.class, administrateur)).containsExactly(numero);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM notification WHERE corps LIKE ? OR titre LIKE ?",
+                Integer.class, "%" + sujet + "%", "%" + sujet + "%")).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM conversation WHERE numero = ?",
+                Integer.class, numero)).isZero();
+    }
+
+    @Test
+    @DisplayName("les devis du membre sont supprimés, lignes comprises, ceux d'un autre membre restent")
+    void devisSupprimes() {
+        Utilisateur marie = membre();
+        Utilisateur paul = membre();
+        for (Utilisateur titulaire : List.of(marie, paul)) {
+            Vehicule golf = vehicule(titulaire, "1-SUP-" + COMPTEUR.getAndIncrement());
+            Piece piece = piece();
+            executerEn(titulaire.getEmail(), () -> {
+                panierService.ajouterPiece(titulaire.getEmail(), piece.getReference(), 1);
+                return devisService.emettre(titulaire.getEmail(), golf.getReference());
+            });
+        }
+        Long devisDeMarie = jdbc.queryForObject("SELECT id FROM devis WHERE membre_id = ?", Long.class, marie.getId());
+
+        supprimer(marie);
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM devis WHERE membre_id = ?",
+                Integer.class, marie.getId())).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM ligne_devis WHERE devis_id = ?",
+                Integer.class, devisDeMarie)).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM devis WHERE membre_id = ?",
+                Integer.class, paul.getId())).isEqualTo(1);
     }
 
     @Test

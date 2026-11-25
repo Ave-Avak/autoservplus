@@ -12,6 +12,7 @@ import java.awt.Color;
 import java.math.BigDecimal;
 import java.text.NumberFormat;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.FormatStyle;
@@ -19,7 +20,7 @@ import java.util.Currency;
 import java.util.Locale;
 
 /**
- * Primitives de composition partagées par les documents comptables PDF : couleurs de
+ * Primitives de composition partagées par les documents PDF (facture, avoir, devis) : couleurs de
  * la charte, cellules, formatage des montants et des dates.
  *
  * <p>Extraites de {@code GenerateurPdfFacture} quand la note de crédit est arrivée.
@@ -33,40 +34,43 @@ import java.util.Locale;
  * documents : factoriser plus haut aurait produit un générateur unique paramétré par
  * des drapeaux, moins lisible que deux compositions explicites.</p>
  *
+ * <p>Publiques depuis le devis (F15), composé dans son propre module : un devis
+ * remis au client doit ressembler à la facture qui le suivra.</p>
+ *
  * <p><b>Écart de charte assumé</b> : les couleurs sont celles de la charte
  * (bleu marine {@code #1F3864}, gris), mais la typographie est Helvetica et non
  * Inter. Inter est une police web. L'embarquer dans un PDF suppose de livrer le
  * fichier de fonte dans le dépôt. Helvetica est une des quatorze polices garanties
  * par le format PDF, donc lisible partout sans embarquement.</p>
  */
-final class StylePdf {
+public final class StylePdf {
 
-    static final Color BLEU_MARINE = new Color(0x1F, 0x38, 0x64);
-    static final Color GRIS_TEXTE = new Color(0x37, 0x41, 0x51);
-    static final Color GRIS_FOND = new Color(0xF9, 0xFA, 0xFB);
-    static final Color GRIS_BORDURE = new Color(0xE5, 0xE7, 0xEB);
+    public static final Color BLEU_MARINE = new Color(0x1F, 0x38, 0x64);
+    public static final Color GRIS_TEXTE = new Color(0x37, 0x41, 0x51);
+    public static final Color GRIS_FOND = new Color(0xF9, 0xFA, 0xFB);
+    public static final Color GRIS_BORDURE = new Color(0xE5, 0xE7, 0xEB);
 
     /**
      * Fuseau des dates imprimées. En dur et non issu de l'horloge : un document
      * comptable belge daté en heure belge, quel que soit le fuseau du serveur qui
      * le compose.
      */
-    static final ZoneId BRUXELLES = ZoneId.of("Europe/Brussels");
+    public static final ZoneId BRUXELLES = ZoneId.of("Europe/Brussels");
 
     private StylePdf() {
     }
 
-    static Font police(float taille, int style, Color couleur) {
+    public static Font police(float taille, int style, Color couleur) {
         return FontFactory.getFont(FontFactory.HELVETICA, taille, style, couleur);
     }
 
-    static PdfPTable tableauInvisible(float[] largeurs) {
+    public static PdfPTable tableauInvisible(float[] largeurs) {
         PdfPTable table = new PdfPTable(largeurs);
         table.setWidthPercentage(100);
         return table;
     }
 
-    static PdfPCell celluleInvisible(Element contenu, int alignement) {
+    public static PdfPCell celluleInvisible(Element contenu, int alignement) {
         PdfPCell cellule = new PdfPCell();
         cellule.addElement(contenu);
         cellule.setBorder(Rectangle.NO_BORDER);
@@ -75,7 +79,7 @@ final class StylePdf {
         return cellule;
     }
 
-    static PdfPCell celluleEntete(String texte, int alignement) {
+    public static PdfPCell celluleEntete(String texte, int alignement) {
         PdfPCell cellule = new PdfPCell(new Phrase(texte, police(8, Font.BOLD, Color.WHITE)));
         cellule.setBackgroundColor(BLEU_MARINE);
         cellule.setHorizontalAlignment(alignement);
@@ -84,7 +88,7 @@ final class StylePdf {
         return cellule;
     }
 
-    static PdfPCell cellule(String texte, int alignement) {
+    public static PdfPCell cellule(String texte, int alignement) {
         PdfPCell cellule = new PdfPCell(new Phrase(texte, police(9, Font.NORMAL, GRIS_TEXTE)));
         cellule.setHorizontalAlignment(alignement);
         cellule.setPadding(6);
@@ -92,7 +96,7 @@ final class StylePdf {
         return cellule;
     }
 
-    static PdfPCell celluleTotal(String texte, boolean accentue) {
+    public static PdfPCell celluleTotal(String texte, boolean accentue) {
         PdfPCell cellule = new PdfPCell(new Phrase(texte,
                 police(accentue ? 11 : 9, accentue ? Font.BOLD : Font.NORMAL,
                         accentue ? BLEU_MARINE : GRIS_TEXTE)));
@@ -109,23 +113,33 @@ final class StylePdf {
      * Montant dans la locale du membre, devise forcée à l'euro : sans cette
      * contrainte, un document en anglais s'afficherait en dollars.
      */
-    static String montant(BigDecimal valeur, Locale locale) {
+    public static String montant(BigDecimal valeur, Locale locale) {
         NumberFormat format = NumberFormat.getCurrencyInstance(locale);
         format.setCurrency(Currency.getInstance("EUR"));
         return format.format(valeur);
     }
 
-    static String pourcentage(BigDecimal taux) {
+    public static String pourcentage(BigDecimal taux) {
         return taux.stripTrailingZeros().toPlainString() + " %";
     }
 
-    static String date(Instant instant, Locale locale) {
+    public static String date(Instant instant, Locale locale) {
         return DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG)
                 .withLocale(locale)
                 .format(instant.atZone(BRUXELLES));
     }
 
-    static String nonNul(String valeur) {
+    /** Un jour déjà au fuseau du garage, l'échéance d'une facture d'atelier par exemple. */
+    public static String date(LocalDate jour, Locale locale) {
+        return DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(locale).format(jour);
+    }
+
+    /** Date courte JJ/MM/AAAA, celle d'une référence citée dans une mention. */
+    public static String dateCourte(Instant instant) {
+        return DateTimeFormatter.ofPattern("dd/MM/yyyy").format(instant.atZone(BRUXELLES));
+    }
+
+    public static String nonNul(String valeur) {
         return valeur == null ? "" : valeur;
     }
 }

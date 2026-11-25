@@ -78,7 +78,7 @@ public class VehiculeController {
         try {
             service.ajouter(membre.getUsername(), formulaire.getPlaque(), formulaire.getMarque(),
                     formulaire.getModele(), formulaire.getMotorisation(),
-                    formulaire.getAnnee(), formulaire.getKilometrage());
+                    formulaire.getAnnee(), formulaire.getKilometrage(), formulaire.getNumeroChassis());
         } catch (RefusTraduit refus) {
             // Plaque déjà enregistrée (RM-12) ou parc complet (RM-13) : sous la plaque,
             // le champ qui identifie le véhicule refusé.

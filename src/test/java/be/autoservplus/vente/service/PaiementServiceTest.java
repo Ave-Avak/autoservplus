@@ -37,6 +37,8 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -69,6 +71,7 @@ class PaiementServiceTest {
     void setUp() {
         service = new PaiementService(paiements, commandes, pieces, prestataire, evenements,
                 TransactionOperations.withoutTransaction(),
+                () -> Optional.of("systeme"),
                 Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels")),
                 // Barre finale volontaire : elle verifie que le service la retire au
                 // lieu de produire une URL a double separateur.
@@ -112,12 +115,23 @@ class PaiementServiceTest {
                 .thenReturn(new EtatPaiement(statut, methode));
     }
 
-    /** Stubs du chemin « confirme » : verrou commande, lignes triees, verrous pieces. */
+    /**
+     * Stubs du chemin « confirme » : verrou commande, lignes triées, décompte. La doublure
+     * de {@code retirerAuPlus} fait ce que fait la base : plancher à zéro, stock d'avant
+     * rendu. Le stock se lit donc sur les pièces de test.
+     */
     private void cheminConfirmation() {
         when(commandes.verrouillerParId(10L)).thenReturn(Optional.of(commande));
         when(commandes.lignesDe(commande)).thenReturn(panier.getLignes());
-        when(pieces.verrouillerParId(1L)).thenReturn(Optional.of(plaquettes));
-        when(pieces.verrouillerParId(2L)).thenReturn(Optional.of(ampoule));
+        when(pieces.retirerAuPlus(anyLong(), anyInt(), eq("systeme"))).thenAnswer(appel -> {
+            Piece piece = appel.<Long>getArgument(0) == 1L ? plaquettes : ampoule;
+            int avant = piece.getQuantiteStock();
+            int servi = Math.min(avant, appel.<Integer>getArgument(1));
+            if (servi > 0) {
+                piece.retirerDuStock(servi);
+            }
+            return avant;
+        });
         when(paiements.saveAndFlush(any(Paiement.class))).thenAnswer(inv -> inv.getArgument(0));
         when(commandes.saveAndFlush(any(Commande.class))).thenAnswer(inv -> inv.getArgument(0));
     }

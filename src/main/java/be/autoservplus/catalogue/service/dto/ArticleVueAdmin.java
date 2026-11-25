@@ -15,7 +15,8 @@ import java.util.UUID;
  * commerciale), le stock et le seuil d alerte, ainsi que tous les champs necessaires
  * au pre-remplissage du formulaire de modification. Les champs sans objet pour un
  * type d article ({@code dureeMinutes} d une piece, {@code quantiteStock} d une
- * prestation) valent {@code null}.</p>
+ * prestation) valent {@code null}. {@code unite} vaut {@code FORFAIT} ou {@code HEURE} pour une
+ * prestation, {@code null} pour une pièce.</p>
  */
 public record ArticleVueAdmin(
         UUID reference,
@@ -32,7 +33,8 @@ public record ArticleVueAdmin(
         Integer quantiteStock,
         Integer seuilAlerte,
         boolean actif,
-        Traductions traductions) {
+        Traductions traductions,
+        String unite) {
 
     /** Un article sans aucune traduction. */
     public ArticleVueAdmin(UUID reference, String identifiant, String libelle, String description,
@@ -40,7 +42,12 @@ public record ArticleVueAdmin(
                            BigDecimal tauxTva, Integer dureeMinutes, String marque, Integer quantiteStock,
                            Integer seuilAlerte, boolean actif) {
         this(reference, identifiant, libelle, description, categorieCode, categorieLibelle, prixHtva, prixTvac,
-                tauxTva, dureeMinutes, marque, quantiteStock, seuilAlerte, actif, Traductions.aucune());
+                tauxTva, dureeMinutes, marque, quantiteStock, seuilAlerte, actif, Traductions.aucune(), null);
+    }
+
+    /** Prestation facturée à l'heure : « /h » au lieu d'une durée. */
+    public boolean aLHeure() {
+        return "HEURE".equals(unite);
     }
 
     /** Vrai quand le libellé existe en néerlandais et en anglais : sinon le site l'affiche en français. */
@@ -64,7 +71,8 @@ public record ArticleVueAdmin(
                 null,
                 null,
                 prestation.isActif(),
-                prestation.getTraductions());
+                prestation.getTraductions(),
+                prestation.getUnite().name());
     }
 
     public static ArticleVueAdmin de(Piece piece) {
@@ -83,6 +91,7 @@ public record ArticleVueAdmin(
                 piece.getQuantiteStock(),
                 piece.getSeuilAlerte(),
                 piece.isActif(),
-                piece.getTraductions());
+                piece.getTraductions(),
+                null);
     }
 }

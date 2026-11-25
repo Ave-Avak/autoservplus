@@ -104,13 +104,13 @@ class CatalogueTraitementsTest {
         }
 
         @Test
-        @DisplayName("mentionne la conservation comptable de 10 ans")
+        @DisplayName("mentionne la conservation comptable de 7 ans")
         void mentionneLaConservationComptable() {
             InformationsTraitement infos = catalogue.informationsTraitement(Locale.FRENCH);
 
             assertThat(infos.dureesConservation())
                     .extracting(InformationsTraitement.DureeConservation::duree)
-                    .anySatisfy(duree -> assertThat(duree).contains("10 ans"));
+                    .anySatisfy(duree -> assertThat(duree).contains("7 ans"));
         }
 
         @ParameterizedTest(name = "langue {0}")
@@ -121,7 +121,8 @@ class CatalogueTraitementsTest {
                     catalogue.informationsTraitement(Locale.forLanguageTag(langue));
 
             assertThat(infos.responsableTraitement()).isNotBlank();
-            assertThat(infos.finalites()).hasSize(8);
+            // Dix : le devis (F15) et la messagerie ont chacun leur finalité.
+            assertThat(infos.finalites()).hasSize(10);
             assertThat(infos.categoriesDonnees()).hasSize(7).allSatisfy(
                     categorie -> assertThat(categorie).isNotBlank());
             // Cinq depuis l ajout de Cloudflare (Turnstile) et de Have I Been Pwned.
@@ -133,7 +134,7 @@ class CatalogueTraitementsTest {
                 assertThat(destinataire.role()).isNotBlank().doesNotStartWith("??");
                 assertThat(destinataire.pays()).isNotBlank().doesNotStartWith("??");
             });
-            assertThat(infos.dureesConservation()).hasSize(5);
+            assertThat(infos.dureesConservation()).hasSize(7);
             assertThat(infos.droits()).hasSize(8);
         }
     }

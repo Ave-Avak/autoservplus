@@ -36,7 +36,7 @@ public class CatalogueTraitements {
      * legale de l article 6 qui l autorise.
      */
     private static final List<String> FINALITES = List.of(
-            "compte", "reservation", "intervention", "vente",
+            "compte", "reservation", "intervention", "vente", "devis", "messagerie",
             "comptabilite", "communication", "marketing", "securite");
 
     /** Categories de donnees traitees, alignees sur les sections de l export. */
@@ -61,7 +61,7 @@ public class CatalogueTraitements {
             List.of("mollie", "brevo", "hebergeur", "cloudflare", "hibp");
 
     private static final List<String> CONSERVATIONS = List.of(
-            "compte", "comptable", "atelier", "consentement", "connexion");
+            "compte", "comptable", "atelier", "devis", "messagerie", "consentement", "connexion");
 
     /**
      * Droits rappeles. Au-dela des cinq droits materiels, le retrait du

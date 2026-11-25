@@ -65,7 +65,8 @@ public class InternationalisationConfig implements WebMvcConfigurer {
      * page suivante.
      *
      * <p>{@code defaultLocale} n est deliberement pas renseigne : la valeur de repli
-     * est calculee par {@code ResolveurLangueSession.determineDefaultLocale}, qui
+     * est calculee par la fonction que pose le constructeur de
+     * {@code ResolveurLangueSession}, qui
      * consulte l en-tete du navigateur puis le ramene a l ensemble admis. Fixer ici
      * un defaut fige aurait servi du francais a un visiteur neerlandophone qui n a
      * encore rien choisi, alors que le comportement d avant F6 lui donnait du

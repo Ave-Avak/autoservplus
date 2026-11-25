@@ -135,6 +135,13 @@ public class JournalService {
             return messages.getMessage("admin.journal.remboursement", new Object[]{
                     FormatageRdv.eurosEcran(new java.math.BigDecimal(avant)), apres}, langue);
         }
+        if (EntreeJournal.TYPE_ENCAISSEMENT.equals(type)) {
+            String montant = FormatageRdv.eurosEcran(new java.math.BigDecimal(avant));
+            String moyen = messages.getMessage("encaissement.moyen." + apres, null, langue);
+            return "ANNULE".equals(champ)
+                    ? messages.getMessage("admin.journal.encaissement-annule", new Object[]{montant, moyen, motif}, langue)
+                    : messages.getMessage("admin.journal.encaissement", new Object[]{montant, moyen}, langue);
+        }
         if (EntreeJournal.TYPE_CATALOGUE.equals(type)) {
             return "%s : %s".formatted(champ, transition);
         }

@@ -1,6 +1,7 @@
 package be.autoservplus.comptabilite.service;
 
 import be.autoservplus.comptabilite.repository.ExportComptableRepository;
+import be.autoservplus.facturation.domain.Encaissement;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import org.springframework.context.MessageSource;
@@ -14,6 +15,8 @@ import java.util.Locale;
 import java.time.LocalDate;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 /**
  * Export comptable au format CSV (BL-3).
@@ -54,21 +57,64 @@ public class ExportComptableService {
         this.identite = identite;
     }
 
-    /** Journal des factures emises sur la periode. */
+    /**
+     * Journal des factures emises sur la periode. Les deux dernières colonnes donnent le
+     * règlement au comptoir d'une facture d'atelier (V75), vides pour une facture non réglée,
+     * dont le règlement est annulé, ou payée en ligne : elles servent au rapprochement de la
+     * caisse.
+     */
     public String facturesEnCsv(LocalDate depuis, LocalDate jusqua) {
         ZoneId zone = zone();
         RedacteurCsv csv = new RedacteurCsv(
                 entete("numero"), entete("date"), entete("client"), entete("commande"),
-                entete("htva"), entete("tva"), entete("tvac"), entete("taux"));
+                entete("intervention"), entete("htva"), entete("tva"), entete("tvac"), entete("taux"),
+                entete("reglement"), entete("moyen"));
 
-        pieces.facturesEmises(borneBasse(depuis, zone), borneHaute(jusqua, zone))
+        Instant debut = borneBasse(depuis, zone);
+        Instant fin = borneHaute(jusqua, zone);
+        Map<Long, Encaissement> reglements = pieces.reglementsDesFactures(debut, fin).stream()
+                .collect(Collectors.toMap(e -> e.getFacture().getId(), e -> e));
+        pieces.facturesEmises(debut, fin)
                 .forEach(f -> csv.ligne(
                         f.getNumero(),
                         jour(f.getDateEmission(), zone),
                         nom(f.getMembre()),
                         f.getCommande() == null ? null : f.getCommande().getNumero(),
+                        // Q-H-47 : colonne distincte, une facture d'atelier n'a pas de commande.
+                        f.getIntervention() == null ? null : f.getIntervention().getNumero(),
                         f.getMontantHtva(), f.getMontantTva(), f.getMontantTvac(),
-                        f.getTauxTvaApplique()));
+                        f.getTauxTvaApplique(),
+                        reglements.containsKey(f.getId())
+                                ? JOUR.format(reglements.get(f.getId()).getDateEncaissement()) : null,
+                        reglements.containsKey(f.getId())
+                                ? message("encaissement.moyen." + reglements.get(f.getId()).getMoyen().name()) : null));
+        return csv.texte();
+    }
+
+    /**
+     * Journal des notes de crédit émises sur la période (Q-H-53) : un comptable qui reçoit
+     * les factures sans les notes qui les annulent compte un chiffre d'affaires faux. Le
+     * motif est traduit comme les en-têtes, la précision d'une annulation d'atelier reste
+     * telle que saisie.
+     */
+    public String avoirsEnCsv(LocalDate depuis, LocalDate jusqua) {
+        ZoneId zone = zone();
+        RedacteurCsv csv = new RedacteurCsv(
+                entete("numero"), entete("date"), entete("client"), entete("facture"), entete("commande"),
+                entete("intervention"), entete("htva"), entete("tva"), entete("tvac"), entete("motif"),
+                entete("precision"));
+
+        pieces.avoirsEmis(borneBasse(depuis, zone), borneHaute(jusqua, zone))
+                .forEach(a -> csv.ligne(
+                        a.getNumero(),
+                        jour(a.getDateEmission(), zone),
+                        nom(a.getFacture().getMembre()),
+                        a.getFacture().getNumero(),
+                        a.getFacture().getCommande() == null ? null : a.getFacture().getCommande().getNumero(),
+                        a.getFacture().getIntervention() == null ? null : a.getFacture().getIntervention().getNumero(),
+                        a.getMontantHtva(), a.getMontantTva(), a.getMontantTvac(),
+                        message("avoir.motif." + a.getMotif()),
+                        a.getPrecision()));
         return csv.texte();
     }
 

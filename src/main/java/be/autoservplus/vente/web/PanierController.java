@@ -1,7 +1,9 @@
 package be.autoservplus.vente.web;
 
 import be.autoservplus.common.exception.ConflitConcurrenceException;
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.reservation.service.VehiculeService;
 import be.autoservplus.vente.service.PanierService;
 import be.autoservplus.vente.service.PieceInactiveException;
 import be.autoservplus.vente.service.StockInsuffisantException;
@@ -43,10 +45,12 @@ import java.util.UUID;
 public class PanierController {
 
     private final PanierService service;
+    private final VehiculeService vehicules;
     private final MessageSource messages;
 
-    public PanierController(PanierService service, MessageSource messages) {
+    public PanierController(PanierService service, VehiculeService vehicules, MessageSource messages) {
         this.service = service;
+        this.vehicules = vehicules;
         this.messages = messages;
     }
 
@@ -54,6 +58,8 @@ public class PanierController {
     public String panier(@AuthenticationPrincipal UserDetails membre, Model modele) {
         modele.addAttribute("titre", msg("panier.titre"));
         modele.addAttribute("panier", service.panierDuMembre(membre.getUsername()));
+        // Le devis (F15) se demande depuis le panier et nomme l'un de ces véhicules.
+        modele.addAttribute("vehicules", vehicules.vuesDuMembre(membre.getUsername()));
         return "vente/panier";
     }
 
@@ -131,6 +137,10 @@ public class PanierController {
             redirection.addFlashAttribute("erreur", msg("panier.erreur.quantite"));
         } catch (ConflitConcurrenceException e) {
             redirection.addFlashAttribute("erreur", msg("panier.erreur.conflit"));
+        } catch (RefusTraduit refus) {
+            // Refus du domaine qui porte sa clé, une prestation à l'heure par exemple (Q-H-36).
+            redirection.addFlashAttribute("erreur", messages.getMessage(refus.getCleMessage(),
+                    refus.getArguments(), LocaleContextHolder.getLocale()));
         }
         return "redirect:/panier";
     }

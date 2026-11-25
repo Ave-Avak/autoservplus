@@ -2,6 +2,7 @@ package be.autoservplus.reservation.service;
 
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PrestationRepository;
+import be.autoservplus.messagerie.service.MessagerieService;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.VehiculeRepository;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.test.context.support.WithMockUser;
 
 import javax.sql.DataSource;
 import java.time.Instant;
@@ -43,13 +45,18 @@ class NumerotationApresGraineIT extends SocleIntegration {
     @Autowired private RdvService reservations;
     @Autowired private VehiculeRepository vehicules;
     @Autowired private PrestationRepository prestations;
+    @Autowired private MessagerieService messagerie;
+
+    private void migrerAvecLesGraines() {
+        Flyway.configure().dataSource(source)
+                .locations("classpath:db/migration", "classpath:db/demo")
+                .load().migrate();
+    }
 
     @Test
     @DisplayName("base migrée avec les graines : une réservation passe du premier coup")
     void reservationApresGraine() {
-        Flyway.configure().dataSource(source)
-                .locations("classpath:db/migration", "classpath:db/demo")
-                .load().migrate();
+        migrerAvecLesGraines();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM rdv", Long.class))
                 .as("la graine porte des rendez-vous").isPositive();
 
@@ -62,6 +69,53 @@ class NumerotationApresGraineIT extends SocleIntegration {
 
         assertThat(jdbc.queryForObject("SELECT count(*) FROM rdv WHERE numero = ?", Long.class, rdv.getNumero()))
                 .isEqualTo(1L);
+    }
+
+    @Test
+    @WithMockUser(username = MARIE)
+    @DisplayName("base migrée avec les graines : le fil de la graine est numéroté, le suivant sans collision")
+    void filApresGraine() {
+        migrerAvecLesGraines();
+        List<String> numerosDeLaGraine = jdbc.queryForList(
+                "SELECT numero FROM conversation WHERE created_by = 'demo'", String.class);
+        assertThat(numerosDeLaGraine).isNotEmpty().allMatch(numero -> numero.matches("FIL-\\d{4}-\\d{4}"));
+
+        UUID fil = messagerie.ouvrir(MARIE, "Après la graine", "Bonjour, une question.", null);
+
+        String numero = jdbc.queryForObject("SELECT numero FROM conversation WHERE reference = ?",
+                String.class, fil);
+        assertThat(numero).isNotIn(numerosDeLaGraine);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM conversation WHERE numero = ?", Long.class, numero))
+                .isEqualTo(1L);
+    }
+
+    @Test
+    @DisplayName("base migrée avec les graines : les lignes de pièce de la graine sont en PIECE, les autres au forfait")
+    void unitesDesLignesDeLaGraine() {
+        migrerAvecLesGraines();
+
+        // V900 insère huit lignes : trois pièces (filtre, batterie, plaquettes) et cinq
+        // prestations (révision, vidange, deux plaquettes, diagnostic de l'intervention annulée).
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM ligne_intervention WHERE created_by = 'demo' "
+                + "AND piece_id IS NOT NULL AND unite = 'PIECE'", Long.class)).isEqualTo(3L);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM ligne_intervention WHERE created_by = 'demo' "
+                + "AND piece_id IS NULL AND unite = 'FORFAIT'", Long.class)).isEqualTo(5L);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM ligne_intervention WHERE created_by = 'demo'",
+                Long.class)).isEqualTo(8L);
+    }
+
+    @Test
+    @DisplayName("base migrée avec les graines : la main-d'œuvre de démonstration est à l'heure, 65,00 HTVA, une heure")
+    void prestationHoraireDeDemonstration() {
+        migrerAvecLesGraines();
+
+        var prestation = jdbc.queryForMap("SELECT unite, prix_htva, duree_minutes, actif FROM service "
+                + "WHERE code = 'MAIN_OEUVRE_HEURE'");
+        assertThat(prestation.get("unite")).isEqualTo("HEURE");
+        assertThat((java.math.BigDecimal) prestation.get("prix_htva")).isEqualByComparingTo("65.00");
+        assertThat(prestation.get("duree_minutes")).isEqualTo(60);
+        assertThat(prestation.get("actif")).isEqualTo(true);
     }
 
     private Instant premierCreneauLibre(List<UUID> choix) {

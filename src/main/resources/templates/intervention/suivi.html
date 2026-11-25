@@ -31,11 +31,12 @@
          tout le bloc, y compris son propre hx-get : le rafraîchissement suivant repart
          de la nouvelle version. Quand l'intervention est terminée ou annulée, les
          attributs hx-* sont omis (Thymeleaf ne rend pas un attribut de valeur nulle) :
-         plus de rafraîchissement, plus de trafic inutile. */-->
+         plus de rafraîchissement, plus de trafic inutile. Quinze minutes après l'affichage
+         de la page, le serveur répond 286 et HTMX cesse d'interroger. */-->
     <div th:fragment="blocStatut"
          id="statut-intervention"
          aria-live="polite"
-         th:hx-get="${intervention.estTerminale()} ? null : @{/mes-interventions/{ref}/statut(ref=${intervention.reference()})}"
+         th:hx-get="${intervention.estTerminale()} ? null : @{/mes-interventions/{ref}/statut(ref=${intervention.reference()},depuis=${instantPage})}"
          th:hx-trigger="${intervention.estTerminale()} ? null : 'every 10s'"
          th:hx-swap="${intervention.estTerminale()} ? null : 'outerHTML'">
 
@@ -126,6 +127,28 @@
             </tfoot>
         </table>
     </div>
+
+    <!--/* Q-H-48 : la facture d'atelier, son statut et son PDF. Le document est celui de
+         l'émission, le statut se lit ici. */-->
+    <section th:if="${facture != null}" aria-labelledby="titre-facture-atelier">
+        <h2 id="titre-facture-atelier" th:text="#{intervention.facture.titre}">Votre facture</h2>
+        <p>
+            <span th:text="#{intervention.facture.resume(${facture.numero()}, ${facture.montantTvac()})}">
+                Facture 2026-0042, 117,98 € TVAC</span>
+            <span th:unless="${facture.estAnnulee() or facture.estReglee()}" class="badge badge-en_attente"
+                  th:text="#{${facture.cleStatut()}}">À régler</span>
+            <span th:if="${facture.estReglee() and !facture.estAnnulee()}" class="badge badge-confirme"
+                  th:text="#{facture.statut.reglee(${#temporals.format(facture.regleeLe(), 'dd/MM/yyyy')}, ${#messages.msg('encaissement.moyen.' + facture.moyen())})}">Réglée le 25/11/2026 (Espèces)</span>
+            <span th:if="${facture.estAnnulee()}" class="badge badge-annule"
+                  th:text="#{facture.statut.annulee(${facture.numeroAvoir()})}">Annulée par la note de crédit AV-2026-0003</span>
+        </p>
+        <p th:unless="${facture.estAnnulee() or facture.estReglee()}" th:text="#{intervention.facture.a-regler}">
+            À régler à l'atelier, au retrait de votre véhicule.</p>
+        <p><a th:href="@{/factures/{ref}/pdf(ref=${facture.reference()})}"
+              th:text="#{intervention.facture.pdf}">Télécharger la facture</a></p>
+        <p th:if="${facture.estAnnulee()}"><a th:href="@{/avoirs/{ref}/pdf(ref=${facture.referenceAvoir()})}"
+              th:text="#{intervention.facture.avoir.pdf(${facture.numeroAvoir()})}">Télécharger la note de crédit AV-2026-0003 (PDF)</a></p>
+    </section>
 
     <!--/* BL-4 : proposé seulement si le dépôt aboutirait, travaux terminés et aucun avis
          déjà déposé (l'unicité en base refuserait le second). */-->

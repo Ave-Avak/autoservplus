@@ -1,6 +1,7 @@
 package be.autoservplus.notification.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.NumeroPage;
 import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -13,6 +14,9 @@ import be.autoservplus.notification.service.dto.NotificationVue;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -100,15 +104,22 @@ public class NotificationService {
 
     // --- lecture et marquage par le titulaire -----------------------------------------
 
-    /** Notifications du membre connecte, la plus recente d abord. */
+    /** Notifications par page dans l'espace membre. */
+    public static final int TAILLE_PAGE = 20;
+
+    /**
+     * Notifications du membre connecte, par page, la plus recente d abord.
+     *
+     * @param page numéro de page à partir de zéro, borné
+     */
     @PreAuthorize("isAuthenticated()")
-    public List<NotificationVue> mesNotifications(String email) {
+    public Page<NotificationVue> mesNotifications(String email, int page) {
         Utilisateur membre = membre(email);
         Locale langue = LocaleContextHolder.getLocale();
         ZoneId zone = parametres.courants().zone();
-        return notifications.findByMembreOrderByDateEnvoiDescIdDesc(membre).stream()
-                .map(notification -> vue(notification, langue, zone))
-                .toList();
+        return notifications.findByMembreOrderByDateEnvoiDescIdDesc(membre,
+                        PageRequest.of(NumeroPage.borne(page, TAILLE_PAGE), TAILLE_PAGE))
+                .map(notification -> vue(notification, membre.getTypeUtilisateur(), langue, zone));
     }
 
     /** Compteur affiche dans la navigation. */
@@ -148,12 +159,13 @@ public class NotificationService {
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
     }
 
-    private NotificationVue vue(Notification notification, Locale langue, ZoneId zone) {
+    private NotificationVue vue(Notification notification, TypeUtilisateur lecteur, Locale langue,
+                                ZoneId zone) {
         TypeNotification type = notification.getType();
         return new NotificationVue(
                 notification.getId(),
                 messages.getMessage(type.cleTitre(), null, langue),
-                messages.getMessage(type.cleCorps(), new Object[]{notification.getCorps()}, langue),
+                messages.getMessage(type.cleCorps(lecteur), new Object[]{notification.getCorps()}, langue),
                 !notification.estNonLue(),
                 LocalDateTime.ofInstant(notification.getDateEnvoi(), zone));
     }

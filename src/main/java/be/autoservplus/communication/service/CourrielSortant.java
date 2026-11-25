@@ -19,6 +19,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
@@ -316,10 +317,17 @@ public class CourrielSortant implements ServiceCourriel {
     @Override
     public void envoyerInterventionTerminee(DetailsInterventionTerminee details) {
         Locale langue = langue(details.langue());
+        String corps = corps("intervention-terminee", langue,
+                details.numeroIntervention(), details.libelleVehicule(),
+                details.immatriculation(), liens.vers(details.cheminDepotAvis()));
+        if (details.montantFacture() != null) {
+            // Q-H-48 : le montant à régler et le lien de la facture, sans pièce jointe.
+            corps += "\n\n" + messages.getMessage("courriel.intervention-terminee.facture",
+                    new Object[]{details.montantFacture(),
+                            liens.vers(details.cheminFacture())}, langue);
+        }
         partir("intervention-terminee", details.adresseEmail(), details.prenom(),
-                details.prenom(), langue, corps("intervention-terminee", langue,
-                        details.numeroIntervention(), details.libelleVehicule(),
-                        details.immatriculation(), liens.vers(details.cheminDepotAvis())), null);
+                details.prenom(), langue, corps, null);
     }
 
     // --- vente ----------------------------------------------------------------------
@@ -450,6 +458,19 @@ public class CourrielSortant implements ServiceCourriel {
                                                        String membre) {
         auGarage("paiement-a-rembourser", numeroCommande, Locale.FRENCH,
                 numeroCommande, montantTvac, membre);
+    }
+
+    @Override
+    public void envoyerAvisReponseGarage(Utilisateur destinataire, String numeroFil, String sujet,
+                                         UUID fil) {
+        auCompte("reponse-garage", destinataire, null, numeroFil, sujet,
+                liens.vers("/mes-messages/" + fil));
+    }
+
+    @Override
+    public void envoyerAvisMessageAuGarage(String numeroFil, String sujet, String membre, UUID fil) {
+        auGarage("message-au-garage", numeroFil, Locale.FRENCH, numeroFil, sujet, membre,
+                liens.vers("/admin/messages/" + fil));
     }
 
     // --- rédaction ------------------------------------------------------------------

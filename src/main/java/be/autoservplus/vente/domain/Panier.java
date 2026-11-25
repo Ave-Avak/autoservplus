@@ -3,6 +3,7 @@ package be.autoservplus.vente.domain;
 import be.autoservplus.common.montant.CalculTva;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.PrestationALHeureRefuseeException;
 import be.autoservplus.common.entity.BaseEntity;
 import be.autoservplus.vente.service.PanierDeNatureMixteException;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -97,9 +98,14 @@ public class Panier extends BaseEntity {
      * le même patron que {@link #ajouterPiece} : valeurs figées à la première entrée.
      *
      * @throws PanierDeNatureMixteException si le panier contient déjà des pièces
+     * @throws PrestationALHeureRefuseeException prestation à l'heure (Q-H-36) : le devis F15,
+     *                                           qui naît du panier, n'en porte donc jamais
      */
     public LignePanier ajouterService(Prestation prestation, int quantite) {
         Objects.requireNonNull(prestation, "prestation");
+        if (prestation.estALHeure()) {
+            throw new PrestationALHeureRefuseeException(prestation.getLibelle());
+        }
         exigerNatureCompatible(true);
         LignePanier existante = lignePour(prestation).orElse(null);
         if (existante != null) {

@@ -2,17 +2,18 @@ package be.autoservplus.galerie.service.dto;
 
 import be.autoservplus.galerie.domain.Photo;
 
+import java.util.UUID;
+
 /**
- * Une image telle qu elle s affiche (BL-9).
+ * Une image telle qu'elle s'affiche (BL-9).
  *
- * <p>{@code chemin} n est PAS une URL : c est le chemin relatif de stockage, que le
- * gabarit passe au controleur de service d images. Aucun gabarit ne connait donc
- * l emplacement reel des fichiers, et les changer de volume ne touche aucune vue.</p>
+ * <p>Ni clé séquentielle ni chemin de stockage : le gabarit ne reçoit que la référence,
+ * qu'il passe au contrôleur qui sert l'image. Aucune vue ne connaît donc l'emplacement
+ * réel des fichiers, et aucune ne publie un numéro qu'on pourrait incrémenter.</p>
  */
-public record PhotoVue(Long id, String chemin, String texteAlt, short ordre) {
+public record PhotoVue(UUID reference, String texteAlt, short ordre) {
 
     public static PhotoVue de(Photo photo) {
-        return new PhotoVue(photo.getId(), photo.getChemin(), photo.getTexteAlt(),
-                photo.getOrdre());
+        return new PhotoVue(photo.getReference(), photo.getTexteAlt(), photo.getOrdre());
     }
 }

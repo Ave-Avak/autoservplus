@@ -413,14 +413,14 @@ class InterventionTest {
             Intervention it = interventionDepuis(vidange);
 
             it.demarrer(DEBUT);
-            it.ajouterLigneMainOeuvre(freins, (short) 1, petitPrix, new BigDecimal("21.00"));
+            it.ajouterLigneMainOeuvre(freins, BigDecimal.valueOf(1), petitPrix, new BigDecimal("21.00"));
             assertThat(it.getLignes()).hasSize(2);
-            it.ajouterLigneMainOeuvre(freins, (short) 1, petitPrix, new BigDecimal("21.00"));
+            it.ajouterLigneMainOeuvre(freins, BigDecimal.valueOf(1), petitPrix, new BigDecimal("21.00"));
             assertThat(it.getLignes()).hasSize(3);
 
             // Le travail s arrete : l ajout s arrete avec lui. Le garage reprend d abord.
             it.suspendre();
-            assertThatThrownBy(() -> it.ajouterLigneMainOeuvre(freins, (short) 1,
+            assertThatThrownBy(() -> it.ajouterLigneMainOeuvre(freins, BigDecimal.valueOf(1),
                     petitPrix, new BigDecimal("21.00")))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("RM-14")
@@ -430,7 +430,7 @@ class InterventionTest {
                     .hasSize(3);
 
             it.reprendre();
-            it.ajouterLigneMainOeuvre(freins, (short) 1, petitPrix, new BigDecimal("21.00"));
+            it.ajouterLigneMainOeuvre(freins, BigDecimal.valueOf(1), petitPrix, new BigDecimal("21.00"));
             assertThat(it.getLignes()).hasSize(4);
         }
 
@@ -445,7 +445,7 @@ class InterventionTest {
         void ajouterLigneRefuseQuandPlanifiee() {
             Intervention it = interventionDepuis(vidange); // reste PLANIFIEE
 
-            assertThatThrownBy(() -> it.ajouterLigneMainOeuvre(freins, (short) 1,
+            assertThatThrownBy(() -> it.ajouterLigneMainOeuvre(freins, BigDecimal.valueOf(1),
                     new BigDecimal("500.00"), new BigDecimal("21.00")))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("RM-14")
@@ -467,7 +467,7 @@ class InterventionTest {
             it.demarrer(DEBUT);
             it.terminer(DEBUT.plus(Duration.ofHours(1)));
 
-            assertThatThrownBy(() -> it.ajouterLigneMainOeuvre(freins, (short) 1,
+            assertThatThrownBy(() -> it.ajouterLigneMainOeuvre(freins, BigDecimal.valueOf(1),
                     new BigDecimal("89.00"), new BigDecimal("21.00")))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("TERMINEE");
@@ -479,7 +479,7 @@ class InterventionTest {
             Intervention it = interventionDepuis(vidange);
             it.annuler();
 
-            assertThatThrownBy(() -> it.ajouterLigneMainOeuvre(freins, (short) 1,
+            assertThatThrownBy(() -> it.ajouterLigneMainOeuvre(freins, BigDecimal.valueOf(1),
                     new BigDecimal("89.00"), new BigDecimal("21.00")))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("ANNULEE");
@@ -522,7 +522,7 @@ class InterventionTest {
         }
 
         private LigneIntervention ajouter(Intervention it, String prixHtva) {
-            return it.ajouterLigneMainOeuvre(freins, (short) 1, new BigDecimal(prixHtva), TVA);
+            return it.ajouterLigneMainOeuvre(freins, BigDecimal.valueOf(1), new BigDecimal(prixHtva), TVA);
         }
 
         @Test
@@ -745,16 +745,16 @@ class InterventionTest {
             it.demarrer(DEBUT);
 
             // (true, true) : sous le seuil, accepte d office. 49 + 2 = 51,00 <= 53,90.
-            LigneIntervention acceptee = it.ajouterLigneMainOeuvre(freins, (short) 1,
+            LigneIntervention acceptee = it.ajouterLigneMainOeuvre(freins, BigDecimal.valueOf(1),
                     new BigDecimal("2.00"), tva);
 
             // (true, false) : franchit le seuil, le membre refuse.
-            LigneIntervention refusee = it.ajouterLigneMainOeuvre(freins, (short) 1,
+            LigneIntervention refusee = it.ajouterLigneMainOeuvre(freins, BigDecimal.valueOf(1),
                     new BigDecimal("89.00"), tva);
             it.refuserDepassement();
 
             // (true, null) : nouveau franchissement, sans reponse a ce jour.
-            LigneIntervention enAttente = it.ajouterLigneMainOeuvre(freins, (short) 1,
+            LigneIntervention enAttente = it.ajouterLigneMainOeuvre(freins, BigDecimal.valueOf(1),
                     new BigDecimal("89.00"), tva);
 
             LigneIntervention devisInitial = it.getLignes().get(0);
@@ -815,7 +815,7 @@ class InterventionTest {
             it.demarrer(DEBUT);
 
             // Montant sous le seuil RM-15 : on teste ici le marquage, pas la bascule.
-            LigneIntervention ajoutee = it.ajouterLigneMainOeuvre(freins, (short) 1,
+            LigneIntervention ajoutee = it.ajouterLigneMainOeuvre(freins, BigDecimal.valueOf(1),
                     new BigDecimal("2.00"), new BigDecimal("21.00"));
 
             assertThat(ajoutee.isAjouteeEnCours()).isTrue();
@@ -829,7 +829,7 @@ class InterventionTest {
         void devisInitialInsensibleAuxAjouts() {
             Intervention it = interventionDepuis(vidange);
             it.demarrer(DEBUT);
-            it.ajouterLigneMainOeuvre(freins, (short) 1,
+            it.ajouterLigneMainOeuvre(freins, BigDecimal.valueOf(1),
                     new BigDecimal("2.00"), new BigDecimal("21.00"));
 
             assertThat(it.devisReferenceHtva())

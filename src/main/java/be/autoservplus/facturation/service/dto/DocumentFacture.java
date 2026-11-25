@@ -4,6 +4,7 @@ import be.autoservplus.facturation.service.VentilationTva;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
 
@@ -29,7 +30,24 @@ public record DocumentFacture(
         BigDecimal totalHtva,
         BigDecimal totalTva,
         BigDecimal totalTvac,
-        Locale locale) {
+        Locale locale,
+        String numeroIntervention,
+        LocalDate echeance,
+        String factureCompletee,
+        Instant dateFactureCompletee) {
+
+    /** Facture d'une commande payée : ni intervention, ni échéance, ni facture complétée. */
+    public DocumentFacture(String numero, Instant dateEmission, String numeroCommande, Instant datePaiement,
+                           ClientFacture client, List<LigneFacture> lignes, VentilationTva ventilation,
+                           BigDecimal totalHtva, BigDecimal totalTva, BigDecimal totalTvac, Locale locale) {
+        this(numero, dateEmission, numeroCommande, datePaiement, client, lignes, ventilation, totalHtva,
+                totalTva, totalTvac, locale, null, null, null, null);
+    }
+
+    /** Facture d'atelier : à régler à l'atelier avant son échéance, rien n'est encore payé. */
+    public boolean estDAtelier() {
+        return numeroIntervention != null;
+    }
 
     /**
      * Coordonnées du client telles qu'elles étaient à l'émission.
@@ -66,11 +84,21 @@ public record DocumentFacture(
      * taux qu'exige la facture, et le total taxe comprise que le client a payé. La base
      * imposable n'existe que par taux, à la ventilation.
      */
+    /**
+     * @param quantite rédigée dans la langue du document : « 2 » pour une pièce ou un
+     *                 forfait, « 1,5 h » pour des heures de main-d'œuvre
+     */
     public record LigneFacture(
             String libelle,
-            int quantite,
+            String quantite,
             BigDecimal prixUnitaireHtva,
             BigDecimal tauxTva,
             BigDecimal totalTvac) {
+
+        /** Ligne à quantité entière, celle d'une commande. */
+        public LigneFacture(String libelle, int quantite, BigDecimal prixUnitaireHtva, BigDecimal tauxTva,
+                            BigDecimal totalTvac) {
+            this(libelle, String.valueOf(quantite), prixUnitaireHtva, tauxTva, totalTvac);
+        }
     }
 }

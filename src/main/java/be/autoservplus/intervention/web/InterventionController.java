@@ -2,10 +2,12 @@ package be.autoservplus.intervention.web;
 
 import be.autoservplus.avis.service.AvisService;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
+import be.autoservplus.common.web.Rafraichissement;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.service.InterventionService;
 import be.autoservplus.intervention.web.dto.DemandeValidationVue;
 import be.autoservplus.intervention.web.dto.InterventionVueMembre;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
@@ -16,8 +18,10 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.time.Clock;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -36,11 +40,14 @@ public class InterventionController {
     private final InterventionService service;
     private final AvisService avis;
     private final MessageSource messages;
+    private final Clock horloge;
 
-    public InterventionController(InterventionService service, AvisService avis, MessageSource messages) {
+    public InterventionController(InterventionService service, AvisService avis, MessageSource messages,
+                                  Clock horloge) {
         this.service = service;
         this.avis = avis;
         this.messages = messages;
+        this.horloge = horloge;
     }
 
     @GetMapping("/{reference}")
@@ -53,6 +60,9 @@ public class InterventionController {
         // un lien absent n etant pas une securite.
         modele.addAttribute("peutDeposerAvis", avis.peutDeposer(membre.getUsername(), reference));
         modele.addAttribute("intervention", vue);
+        // Facture d'atelier, son statut et son PDF au suivi (Q-H-48).
+        modele.addAttribute("facture",
+                service.factureAtelierDuMembre(reference, membre.getUsername()).orElse(null));
         return "intervention/suivi";
     }
 
@@ -64,9 +74,19 @@ public class InterventionController {
     @GetMapping("/{reference}/statut")
     public String blocStatut(@AuthenticationPrincipal UserDetails membre,
                              @PathVariable UUID reference,
-                             Model modele) {
+                             @RequestParam(required = false) Long depuis,
+                             Model modele,
+                             HttpServletResponse reponse) {
+        // Quinze minutes après l'affichage de la page, le rafraîchissement s'arrête.
+        if (Rafraichissement.expire(depuis, horloge.instant())) {
+            reponse.setStatus(Rafraichissement.ARRET);
+            return null;
+        }
         InterventionVueMembre vue = service.interventionDuMembre(reference, membre.getUsername());
         modele.addAttribute("intervention", vue);
+        if (depuis != null) {
+            modele.addAttribute("instantPage", depuis);
+        }
         return "intervention/suivi :: blocStatut";
     }
 

@@ -39,9 +39,18 @@ public class ConversationMapper {
 
     /** Vue de detail, messages compris. */
     public ConversationVue detail(Conversation fil, RoleExpediteur lecteur, ZoneId zone) {
+        return suite(fil, lecteur, zone, 0L);
+    }
+
+    /**
+     * Le fil et ses seuls messages postérieurs au curseur, pour le rafraîchissement. Avec un
+     * curseur nul, tous les messages.
+     */
+    public ConversationVue suite(Conversation fil, RoleExpediteur lecteur, ZoneId zone, long apres) {
         String libelleGarage = messages.getMessage("messagerie.garage", null,
                 LocaleContextHolder.getLocale());
         List<MessageVue> vues = fil.getMessages().stream()
+                .filter(m -> m.getId() != null && m.getId() > apres)
                 .map(m -> MessageVue.de(m, LocalDateTime.ofInstant(m.getDateEnvoi(), zone),
                         libelleGarage))
                 .toList();
@@ -52,6 +61,7 @@ public class ConversationMapper {
                                 List<MessageVue> messagesVus) {
         return new ConversationVue(
                 fil.getReference(),
+                fil.getNumero(),
                 fil.getSujet(),
                 fil.getMembre().getPrenom(),
                 fil.getIntervention() == null ? null : fil.getIntervention().getNumero(),

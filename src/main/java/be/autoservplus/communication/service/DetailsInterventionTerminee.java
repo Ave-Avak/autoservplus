@@ -28,5 +28,14 @@ public record DetailsInterventionTerminee(String adresseEmail,
                                           String numeroIntervention,
                                           String libelleVehicule,
                                           String immatriculation,
-                                          String cheminDepotAvis) {
+                                          String cheminDepotAvis,
+                                          String montantFacture,
+                                          String cheminFacture) {
+
+    /** Clôture sans facture d'atelier : le courriel ne parle d'aucun montant. */
+    public DetailsInterventionTerminee(String adresseEmail, String prenom, Langue langue, String numeroIntervention,
+                                       String libelleVehicule, String immatriculation, String cheminDepotAvis) {
+        this(adresseEmail, prenom, langue, numeroIntervention, libelleVehicule, immatriculation, cheminDepotAvis,
+                null, null);
+    }
 }

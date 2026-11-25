@@ -1,13 +1,23 @@
 package be.autoservplus.intervention.service;
 
 import be.autoservplus.config.IdentiteGarage;
+import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsDepassementCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.facturation.domain.Avoir;
+import be.autoservplus.facturation.domain.Encaissement;
+import be.autoservplus.facturation.domain.Facture;
+import be.autoservplus.facturation.domain.MoyenEncaissement;
+import be.autoservplus.facturation.service.AvoirService;
+import be.autoservplus.facturation.service.EncaissementService;
+import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.service.AuteurCourant;
@@ -17,6 +27,9 @@ import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.intervention.repository.HistoriqueStatutInterventionRepository;
 import be.autoservplus.intervention.repository.InterventionRepository;
+import be.autoservplus.intervention.service.dto.ClotureIntervention;
+import be.autoservplus.intervention.service.dto.FactureAtelierVue;
+import be.autoservplus.intervention.service.dto.PieceAjoutableVue;
 import be.autoservplus.intervention.web.dto.DemandeValidationVue;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
 import be.autoservplus.intervention.web.dto.InterventionVueMembre;
@@ -32,16 +45,26 @@ import be.autoservplus.reservation.service.support.FormatageRdv;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.data.domain.AuditorAware;
 import org.springframework.dao.OptimisticLockingFailureException;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
 import java.util.UUID;
 
 /**
@@ -64,10 +87,15 @@ public class InterventionService {
     private final InterventionRepository interventions;
     private final HistoriqueStatutInterventionRepository historiques;
     private final PrestationRepository prestations;
+    private final PieceRepository pieces;
+    private final FactureService factures;
+    private final AvoirService avoirs;
+    private final EncaissementService encaissements;
     private final CommandeRepository commandes;
     private final VehiculeRepository vehicules;
     private final ParametreAtelierRepository parametres;
     private final AuteurCourant auteurCourant;
+    private final AuditorAware<String> auditeur;
     private final GenerateurNumeroIntervention numeros;
     private final ServiceCourriel courriel;
     private final ApplicationEventPublisher evenements;
@@ -77,10 +105,15 @@ public class InterventionService {
     public InterventionService(InterventionRepository interventions,
                                HistoriqueStatutInterventionRepository historiques,
                                PrestationRepository prestations,
+                               PieceRepository pieces,
+                               FactureService factures,
+                               AvoirService avoirs,
+                               EncaissementService encaissements,
                                CommandeRepository commandes,
                                VehiculeRepository vehicules,
                                ParametreAtelierRepository parametres,
                                AuteurCourant auteurCourant,
+                               AuditorAware<String> auditeur,
                                GenerateurNumeroIntervention numeros,
                                ServiceCourriel courriel,
                                ApplicationEventPublisher evenements,
@@ -89,10 +122,15 @@ public class InterventionService {
         this.interventions = interventions;
         this.historiques = historiques;
         this.prestations = prestations;
+        this.pieces = pieces;
+        this.factures = factures;
+        this.avoirs = avoirs;
+        this.encaissements = encaissements;
         this.commandes = commandes;
         this.vehicules = vehicules;
         this.parametres = parametres;
         this.auteurCourant = auteurCourant;
+        this.auditeur = auditeur;
         this.numeros = numeros;
         this.courriel = courriel;
         this.evenements = evenements;
@@ -210,16 +248,162 @@ public class InterventionService {
      * {@code AFTER_COMMIT}, jamais pendant la transaction, ou un rollback annoncerait
      * une cloture qui n a pas eu lieu. Seule cette transition publie : c est la seule
      * qui appelle le membre a se deplacer.
+     *
+     * <p>Le stock des pièces posées se décompte ici, puis la facture d'atelier est émise
+     * (A15, RM-17), dans la même transaction : statut, stock et facture tiennent ou tombent
+     * ensemble, et une clôture annulée ne consomme aucun numéro de facture.</p>
+     *
+     * <p>Refusée avant toute écriture sans titulaire (Q-H-14), et sans son adresse quand une
+     * facture est à émettre (Q-H-23, art. 5 AR n° 1) : l'écran mène alors à la modification
+     * du compte.</p>
+     *
+     * @throws ClotureRefuseeException titulaire absent, ou adresse incomplète
      */
     @Transactional
-    public Intervention terminer(UUID reference) {
+    public ClotureIntervention terminer(UUID reference) {
         Intervention it = charger(reference);
+        if (!it.getStatut().peutPasserA(StatutIntervention.TERMINEE)) {
+            // La machine à états refuse d'abord : une intervention planifiée ne se clôt pas,
+            // quelle que soit l'adresse de son client.
+            it.terminer(horloge.instant());
+        }
+        Utilisateur titulaire = it.titulaire();
+        if (titulaire == null) {
+            throw ClotureRefuseeException.sansTitulaire();
+        }
+        if (!it.lignesAFacturer().isEmpty() && !titulaire.adressePostaleComplete()) {
+            throw ClotureRefuseeException.adresseIncomplete(titulaire.getReference());
+        }
         StatutIntervention avant = it.getStatut();
         it.terminer(horloge.instant());
         historiser(it, avant, it.getStatut(), null);
+        List<String> rameneesAZero = decompterLeStock(it);
+        Optional<Facture> facture = factures.emettrePourIntervention(it, titulaire);
         Intervention enregistre = ecrire(it);
         evenements.publishEvent(new InterventionTermineeEvent(enregistre.getReference()));
-        return enregistre;
+        return new ClotureIntervention(enregistre.getNumero(), rameneesAZero,
+                facture.map(Facture::getNumero).orElse(null), enregistre.getCommande() != null);
+    }
+
+    /** Facture d'atelier de l'intervention, pour son détail au back-office. */
+    public Optional<FactureAtelierVue> factureAtelier(UUID reference) {
+        return factures.factureDe(charger(reference)).map(this::vueFacture);
+    }
+
+    /**
+     * Facture d'atelier vue par le titulaire, au suivi de son intervention (Q-H-48). Même
+     * contrôle d'appartenance que le suivi : une intervention d'autrui répond 404.
+     */
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public Optional<FactureAtelierVue> factureAtelierDuMembre(UUID reference, String email) {
+        return factures.factureDe(chargerPourMembre(reference, email)).map(this::vueFacture);
+    }
+
+    /**
+     * Compte du titulaire à compléter quand son adresse manque : un avertissement à la
+     * réception (Q-H-42), avant que la clôture ne le refuse.
+     */
+    public Optional<UUID> compteSansAdresse(UUID reference) {
+        Utilisateur titulaire = charger(reference).titulaire();
+        if (titulaire == null || titulaire.adressePostaleComplete()) {
+            return Optional.empty();
+        }
+        return Optional.of(titulaire.getReference());
+    }
+
+    /**
+     * Annule la facture d'atelier de l'intervention par une note de crédit totale, avec la
+     * précision de l'administrateur (Q-H-14, Q-H-50). L'intervention ne change pas : elle reste
+     * terminée, seule sa facture est corrigée.
+     *
+     * @return numéro de la note de crédit
+     * @throws RefusTraduit sans facture, facture déjà annulée, ou précision invalide
+     */
+    @Transactional
+    public String annulerFactureAtelier(UUID reference, String precision) {
+        Facture facture = factures.factureDe(charger(reference))
+                .orElseThrow(() -> new RefusTraduit("admin.intervention.erreur.sans-facture-a-annuler",
+                        "L'intervention " + reference + " n'a pas de facture d'atelier."));
+        return avoirs.annulerFactureAtelier(facture, precision).getNumero();
+    }
+
+    /**
+     * Enregistre le règlement au comptoir de la facture d'atelier, pour son total TVAC
+     * (RM-20 révisée, Q-H-43).
+     *
+     * @return numéro de la facture réglée
+     * @throws RefusTraduit sans facture, ou refus de l'encaissement
+     */
+    @Transactional
+    public String encaisserFactureAtelier(UUID reference, MoyenEncaissement moyen, LocalDate date) {
+        Facture facture = factureAEncaisser(reference);
+        encaissements.enregistrer(facture, moyen, date);
+        return facture.getNumero();
+    }
+
+    /** Annule l'encaissement de la facture d'atelier, motif obligatoire, auteur lu du contexte. */
+    @Transactional
+    public String annulerEncaissement(UUID reference, String motif) {
+        Facture facture = factureAEncaisser(reference);
+        encaissements.annuler(facture, motif, auteurCourant.resoudre().getEmail());
+        return facture.getNumero();
+    }
+
+    private Facture factureAEncaisser(UUID reference) {
+        return factures.factureDe(charger(reference))
+                .orElseThrow(() -> new RefusTraduit("admin.intervention.erreur.sans-facture-a-regler",
+                        "L'intervention " + reference + " n'a pas de facture d'atelier."));
+    }
+
+    private FactureAtelierVue vueFacture(Facture facture) {
+        Optional<Avoir> avoir = avoirs.avoirDe(facture);
+        Optional<Encaissement> reglement = encaissements.actifDe(facture);
+        return new FactureAtelierVue(facture.getReference(), facture.getNumero(),
+                FormatageRdv.eurosEcran(facture.getMontantTvac()), facture.getDateEcheance(),
+                facture.getMontantTvac().signum() == 0 ? "facture.statut.rien-a-regler" : "facture.statut.a-regler",
+                avoir.map(Avoir::getReference).orElse(null), avoir.map(Avoir::getNumero).orElse(null),
+                reglement.map(Encaissement::getDateEncaissement).orElse(null),
+                reglement.map(e -> e.getMoyen().name()).orElse(null),
+                LocalDate.ofInstant(horloge.instant(), parametres.courants().zone()));
+    }
+
+    /**
+     * Retire du stock les pièces posées : les lignes facturables seules, devis initial et
+     * ajouts acceptés. Une ligne refusée par le membre n'a pas été posée, et une
+     * intervention annulée ne passe jamais ici : c'est pourquoi le stock se décompte à la
+     * clôture et non à l'ajout.
+     *
+     * <p>Une clôture n'est jamais refusée pour un stock insuffisant (Q-H-31) : une pièce
+     * commandée exprès et posée sans que sa réception ait été saisie est bien sortie, zéro
+     * est alors la valeur juste. Le stock descend au plus à zéro, comme au paiement d'une
+     * commande, et le manque s'écrit au journal. Les pièces sont traitées par identifiant
+     * croissant, pour que deux clôtures prennent leurs verrous dans le même ordre.</p>
+     *
+     * @return libellés, dans la langue de l'écran, des pièces dont le plancher a joué
+     */
+    private List<String> decompterLeStock(Intervention it) {
+        Map<Long, Integer> demandes = new TreeMap<>();
+        Map<Long, Piece> parIdentifiant = new HashMap<>();
+        for (LigneIntervention ligne : it.getLignes()) {
+            if (ligne.getPiece() == null || !ligne.estFacturable()) {
+                continue;
+            }
+            demandes.merge(ligne.getPiece().getId(), ligne.quantitePourLeStock(), Integer::sum);
+            parIdentifiant.put(ligne.getPiece().getId(), ligne.getPiece());
+        }
+        String auteur = auditeur.getCurrentAuditor().orElse(null);
+        Locale langue = LanguesSupportees.deLEcran();
+        List<String> rameneesAZero = new ArrayList<>();
+        demandes.forEach((pieceId, demande) -> {
+            int enStock = pieces.retirerAuPlus(pieceId, demande, auteur);
+            if (enStock < demande) {
+                Piece piece = parIdentifiant.get(pieceId);
+                log.warn("Stock insuffisant à la clôture de l'intervention {} : {} (posées {}, en stock {}), "
+                        + "ramené à zéro.", it.getNumero(), piece.getReferenceFabricant(), demande, enStock);
+                rameneesAZero.add(piece.libelle(langue).texte());
+            }
+        });
+        return rameneesAZero;
     }
 
     /**
@@ -262,16 +446,48 @@ public class InterventionService {
      * membre. La regle vit dans le domaine, pas ici.
      */
     @Transactional
-    public LigneIntervention ajouterLigneMainOeuvre(UUID interventionRef, UUID prestationRef, short quantite) {
+    public LigneIntervention ajouterLigneMainOeuvre(UUID interventionRef, UUID prestationRef, BigDecimal quantite) {
         Intervention it = charger(interventionRef);
         Prestation prestation = prestations.findByReference(prestationRef)
                 .orElseThrow(() -> new RessourceIntrouvableException("Prestation", prestationRef));
         StatutIntervention avant = it.getStatut();
         LigneIntervention ligne = it.ajouterLigneMainOeuvre(prestation, quantite,
                 prestation.getPrixHtva(), prestation.getTauxTva());
-        // La bascule RM-15 est une transition comme une autre : si l entite a change
-        // d etat d elle-meme, la chronologie (F17) le consigne, sinon l historique
-        // aurait des trous (un EN_COURS -> EN_COURS apparent) et perdrait sa coherence.
+        enregistrerAjout(it, avant);
+        return ligne;
+    }
+
+    /**
+     * Ajoute une pièce du catalogue au dossier (RM-14, cas 4 et 11). Mêmes gardes et même
+     * seuil RM-15 que la main-d'œuvre : une pièce peut, seule, déclencher la demande
+     * d'accord du membre.
+     *
+     * <p>Le stock n'est pas touché ici, une pièce absente du stock est admise : elle sera
+     * marquée « à commander » au détail (Q-H-30). Le stock se décompte à la clôture, quand
+     * on sait quelles lignes ont été posées (une ligne refusée par le membre ne l'est pas,
+     * une intervention annulée n'en pose aucune).</p>
+     *
+     * @throws RessourceIntrouvableException pièce inconnue, ou retirée de la vente : une
+     *                                       pièce désactivée n'est plus proposée (RM-28)
+     */
+    @Transactional
+    public LigneIntervention ajouterLignePiece(UUID interventionRef, UUID pieceRef, int quantite) {
+        Intervention it = charger(interventionRef);
+        Piece piece = pieces.findByReference(pieceRef)
+                .filter(Piece::isActif)
+                .orElseThrow(() -> new RessourceIntrouvableException("Piece", pieceRef));
+        StatutIntervention avant = it.getStatut();
+        LigneIntervention ligne = it.ajouterLignePiece(piece, quantite);
+        enregistrerAjout(it, avant);
+        return ligne;
+    }
+
+    /**
+     * Suite commune aux deux ajouts. La bascule RM-15 est une transition comme une autre :
+     * si l'entité a changé d'état d'elle-même, la chronologie (F17) le consigne, sinon
+     * l'historique aurait des trous (un EN_COURS vers EN_COURS apparent).
+     */
+    private void enregistrerAjout(Intervention it, StatutIntervention avant) {
         if (it.getStatut() != avant) {
             historiser(it, avant, it.getStatut(), null);
         }
@@ -281,7 +497,6 @@ public class InterventionService {
             notifierDepassementSansEchouer(enregistre);
             evenements.publishEvent(new DepassementSoumisEvent(enregistre.getReference()));
         }
-        return ligne;
     }
 
     @Transactional
@@ -314,12 +529,35 @@ public class InterventionService {
 
     public InterventionVueAdmin vueAdmin(UUID reference) {
         ZoneId zone = parametres.courants().zone();
-        return InterventionVueAdmin.de(charger(reference), zone);
+        Intervention it = charger(reference);
+        return InterventionVueAdmin.de(it, zone, piecesACommander(it));
     }
 
     /** Prestations actives, pour peupler le formulaire d ajout de ligne. */
     public List<Prestation> prestationsActives() {
         return prestations.findByActifTrueOrderByLibelleAsc();
+    }
+
+    /** Pièces en vente, libellé dans la langue de l'écran, pour le formulaire d'ajout. */
+    public List<PieceAjoutableVue> piecesAjoutables() {
+        Locale langue = LanguesSupportees.deLEcran();
+        return pieces.findByActifTrueOrderByLibelleAsc().stream()
+                .map(p -> new PieceAjoutableVue(p.getReference(), p.libelle(langue).texte(),
+                        p.getQuantiteStock()))
+                .toList();
+    }
+
+    /** Pièces de ce dossier que le stock ne couvre pas, une seule requête d'agrégat. */
+    private Set<Long> piecesACommander(Intervention it) {
+        Set<Long> pieceIds = new HashSet<>();
+        it.getLignes().stream()
+                .filter(l -> l.getPiece() != null)
+                .forEach(l -> pieceIds.add(l.getPiece().getId()));
+        if (pieceIds.isEmpty()) {
+            return Set.of();
+        }
+        return Set.copyOf(interventions.piecesACommander(pieceIds,
+                EnumSet.of(StatutIntervention.TERMINEE, StatutIntervention.ANNULEE)));
     }
 
     // --- vue membre (accessible a tout utilisateur authentifie, ownership verifie) ----
@@ -340,6 +578,15 @@ public class InterventionService {
         return InterventionVueMembre.de(it,
                 historiques.findByInterventionOrderByHorodatageAscIdAsc(it),
                 parametres.courants().zone());
+    }
+
+    /**
+     * Vérifie que le membre est le titulaire de l'intervention, pour un appelant qui sert
+     * une ressource rattachée (photo). Même réponse qu'une référence inconnue sinon.
+     */
+    @org.springframework.security.access.prepost.PreAuthorize("isAuthenticated()")
+    public void exigerTitulaire(UUID reference, String email) {
+        chargerPourMembre(reference, email);
     }
 
     // --- RM-15 : validation du depassement par le membre -----------------------------
@@ -458,8 +705,9 @@ public class InterventionService {
                             FormatageRdv.euros(it.totalProposeHtva(), langue),
                             FormatageRdv.euros(it.totalProposeTvac(), langue),
                             it.lignesEnAttente().stream()
-                                    .map(l -> "- %s x%d : %s"
-                                            .formatted(l.getLibelleFige(), l.getQuantite(),
+                                    .map(l -> "- %s x%s : %s"
+                                            .formatted(l.getLibelleFige(),
+                                                    FormatageQuantite.lisible(l.getQuantite(), l.getUnite(), langue),
                                                     FormatageRdv.euros(l.totalHtva(), langue)))
                                     .toList(),
                             "/mes-interventions/" + it.getReference() + "/validation"));

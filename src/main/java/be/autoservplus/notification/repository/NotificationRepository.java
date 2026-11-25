@@ -3,6 +3,8 @@ package be.autoservplus.notification.repository;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.notification.domain.Notification;
 import be.autoservplus.notification.domain.StatutNotification;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
@@ -12,6 +14,9 @@ public interface NotificationRepository extends JpaRepository<Notification, Long
 
     /** Notifications du membre, la plus recente d abord. */
     List<Notification> findByMembreOrderByDateEnvoiDescIdDesc(Utilisateur membre);
+
+    /** Notifications du membre, par page, la plus récente d'abord. */
+    Page<Notification> findByMembreOrderByDateEnvoiDescIdDesc(Utilisateur membre, Pageable page);
 
     long countByMembreAndStatut(Utilisateur membre, StatutNotification statut);
 

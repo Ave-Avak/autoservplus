@@ -106,4 +106,24 @@ class GenerateurPdfAvoirTest {
                 .contains("BCE : 0123.456.789 TVA : BE0123456789")
                 .doesNotContain("RPM");
     }
+
+    @Test
+    @DisplayName("note de crédit d'atelier : intervention, motif traduit, précision telle que saisie, remboursement à l'atelier")
+    void noteDeCreditDAtelier() throws Exception {
+        DocumentAvoir modele = avoir();
+        DocumentAvoir atelier = new DocumentAvoir(modele.numero(), modele.dateEmission(),
+                "2026-0050", modele.dateFactureOrigine(), null, "ANNULATION_ATELIER", modele.client(),
+                modele.lignes(), modele.ventilation(), modele.totalHtva(), modele.totalTva(), modele.totalTvac(),
+                Locale.FRENCH, "INT-2026-0012", "Quantité d'huile facturée deux fois");
+
+        String texte = texteDu(new GenerateurPdfAvoir(messageSourceReel(), GARAGE).engendrer(atelier));
+
+        assertThat(texte)
+                .contains("Intervention : INT-2026-0012")
+                .contains("Motif de la note de crédit : Annulation de la facture d'atelier")
+                .contains("Précision : Quantité d'huile facturée deux fois")
+                .contains("Si la facture a été réglée à l'atelier, le garage rembourse le montant crédité.")
+                .doesNotContain("Commande :")
+                .doesNotContain("moyen de paiement utilisé lors de la commande");
+    }
 }

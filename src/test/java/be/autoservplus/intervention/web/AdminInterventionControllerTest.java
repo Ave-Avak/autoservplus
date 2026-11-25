@@ -1,8 +1,10 @@
 package be.autoservplus.intervention.web;
 
 import be.autoservplus.common.exception.ConflitConcurrenceException;
+import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.service.InterventionService;
+import be.autoservplus.intervention.service.dto.ClotureIntervention;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -22,9 +24,12 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.web.servlet.ViewResolver;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -170,6 +175,31 @@ class AdminInterventionControllerTest {
 
         @Test
         @WithMockUser(roles = "ADMINISTRATEUR")
+        @DisplayName("clôture : la confirmation nomme les pièces ramenées à zéro (Q-H-31)")
+        void clotureAvecPlancher() throws Exception {
+            doReturn(new ClotureIntervention("INT-2026-0001", List.of("Plaquettes avant", "Disques")))
+                    .when(service).terminer(REF);
+
+            mvc.perform(post("/admin/interventions/{ref}/terminer", REF).with(csrf()))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(flash().attribute("message", containsString("INT-2026-0001")))
+                    .andExpect(flash().attribute("message", containsString("Plaquettes avant, Disques")));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        @DisplayName("clôture sans plancher : la confirmation ne parle pas du stock")
+        void clotureSansPlancher() throws Exception {
+            doReturn(new ClotureIntervention("INT-2026-0001", List.of())).when(service).terminer(REF);
+
+            mvc.perform(post("/admin/interventions/{ref}/terminer", REF).with(csrf()).locale(java.util.Locale.FRENCH))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(flash().attribute("message", containsString("INT-2026-0001")))
+                    .andExpect(flash().attribute("message", not(containsString("stock"))));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATEUR")
         @DisplayName("suspendre redirige avec flash message et appelle le service")
         void suspendre() throws Exception {
             doReturn(interventionMock).when(service).suspendre(REF);
@@ -228,7 +258,40 @@ class AdminInterventionControllerTest {
                             .with(csrf()))
                     .andExpect(status().is3xxRedirection());
 
-            verify(service).ajouterLigneMainOeuvre(REF, prestation, (short) 2);
+            verify(service).ajouterLigneMainOeuvre(REF, prestation, BigDecimal.valueOf(2));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        @DisplayName("POST ajouter une pièce appelle le service et confirme l'ajout (RM-14)")
+        void ajouterPiece() throws Exception {
+            UUID piece = UUID.fromString("44444444-4444-4444-4444-444444444444");
+
+            mvc.perform(post("/admin/interventions/{ref}/lignes/piece", REF)
+                            .param("piece", piece.toString())
+                            .param("quantite", "3")
+                            .with(csrf()))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(redirectedUrl("/admin/interventions/" + REF))
+                    .andExpect(flash().attributeExists("message"));
+
+            verify(service).ajouterLignePiece(REF, piece, (short) 3);
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        @DisplayName("une pièce retirée de la vente entre-temps : message d'erreur, retour au détail")
+        void pieceRetiree() throws Exception {
+            UUID piece = UUID.fromString("44444444-4444-4444-4444-444444444444");
+            doThrow(new RessourceIntrouvableException("Piece", piece))
+                    .when(service).ajouterLignePiece(REF, piece, (short) 1);
+
+            mvc.perform(post("/admin/interventions/{ref}/lignes/piece", REF)
+                            .param("piece", piece.toString())
+                            .param("quantite", "1")
+                            .with(csrf()))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(flash().attributeExists("erreur"));
         }
     }
 }

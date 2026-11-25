@@ -3,12 +3,16 @@ package be.autoservplus.importcsv.service;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.Traductions;
+import be.autoservplus.catalogue.domain.UnitePrestation;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.catalogue.service.AdminCatalogueService;
 import be.autoservplus.catalogue.service.dto.DonneesPiece;
 import be.autoservplus.catalogue.service.dto.DonneesPrestation;
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.importcsv.service.dto.RapportImport;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,6 +21,7 @@ import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Import du catalogue depuis un fichier CSV (BL-2).
@@ -62,19 +67,30 @@ public class ImportCatalogueService {
     private static final List<String> COLONNES_TRADUCTION =
             List.of("libelle_nl", "libelle_en", "description_nl", "description_en");
 
+    /**
+     * Colonne facultative des prestations (V72) : {@code FORFAIT} ou {@code HEURE}. Elle ne
+     * vaut que pour une prestation nouvelle, l'unité se choisissant à la création. Pour une
+     * prestation existante, une valeur égale est acceptée et une autre refusée. Colonne
+     * absente ou cellule vide : forfait à la création, unité en place à la mise à jour.
+     */
+    private static final String COLONNE_UNITE = "unite";
+
     /** Longueur des colonnes de libellé, en base comme au formulaire. */
     private static final int LONGUEUR_LIBELLE = 150;
 
     private final AdminCatalogueService catalogue;
     private final PrestationRepository prestations;
     private final PieceRepository pieces;
+    private final MessageSource messages;
 
     public ImportCatalogueService(AdminCatalogueService catalogue,
                                   PrestationRepository prestations,
-                                  PieceRepository pieces) {
+                                  PieceRepository pieces,
+                                  MessageSource messages) {
         this.catalogue = catalogue;
         this.prestations = prestations;
         this.pieces = pieces;
+        this.messages = messages;
     }
 
     /** En-tete a fournir pour un import de prestations, dans l ordre recommande. */
@@ -88,6 +104,10 @@ public class ImportCatalogueService {
 
     public static String colonnesFacultatives() {
         return String.join(";", COLONNES_TRADUCTION);
+    }
+
+    public static String colonneUnite() {
+        return COLONNE_UNITE;
     }
 
     @Transactional
@@ -134,6 +154,11 @@ public class ImportCatalogueService {
                 } else {
                     misAJour++;
                 }
+            } catch (RefusTraduit refus) {
+                // Un refus du domaine porte sa clé : le garage le lit dans la langue de l'écran.
+                erreurs.add(new RapportImport.LigneEnErreur(numeroDansLeFichier,
+                        messages.getMessage(refus.getCleMessage(), refus.getArguments(),
+                                LocaleContextHolder.getLocale())));
             } catch (RuntimeException e) {
                 erreurs.add(new RapportImport.LigneEnErreur(numeroDansLeFichier, e.getMessage()));
             }
@@ -161,7 +186,8 @@ public class ImportCatalogueService {
                 ligne.tauxTva("taux_tva"),
                 ligne.entier("duree_minutes"),
                 true,
-                ligne.traductions(existante.map(Prestation::getTraductions).orElse(null)));
+                ligne.traductions(existante.map(Prestation::getTraductions).orElse(null)),
+                ligne.unite());
 
         if (existante.isPresent()) {
             catalogue.modifierPrestation(existante.get().getReference(), donnees);
@@ -206,6 +232,20 @@ public class ImportCatalogueService {
      * rapport dans son navigateur, pas une trace technique.</p>
      */
     private record Ligne(List<String> entete, List<String> cellules) {
+
+        /** Unité lue dans la colonne facultative, {@code null} si absente ou vide. */
+        UnitePrestation unite() {
+            String valeur = texte(COLONNE_UNITE);
+            if (valeur == null) {
+                return null;
+            }
+            try {
+                return UnitePrestation.valueOf(valeur.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                throw new RefusTraduit(null, "admin.import.erreur.unite", new Object[]{valeur},
+                        "Colonne « unite » : FORFAIT ou HEURE attendu, « %s » reçu.".formatted(valeur));
+            }
+        }
 
         String texte(String colonne) {
             int index = entete.indexOf(colonne);

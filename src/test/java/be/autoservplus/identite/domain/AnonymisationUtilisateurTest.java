@@ -64,7 +64,7 @@ class AnonymisationUtilisateurTest {
         marie.anonymiser(JETON, HACHAGE, MAINTENANT);
 
         // Le @SQLRestriction de l entite masquerait la ligne, et une facture
-        // conservee dix ans ne pourrait plus resoudre son titulaire.
+        // conservee sept ans ne pourrait plus resoudre son titulaire.
         assertThat(marie.estSupprime()).isFalse();
         assertThat(marie.getDeletedAt()).isNull();
     }
@@ -94,16 +94,16 @@ class AnonymisationUtilisateurTest {
     void marqueurTraduit() {
         StaticMessageSource messages = new StaticMessageSource();
         messages.addMessage(Utilisateur.CLE_MARQUEUR_ANONYME, Locale.FRENCH, "Client supprimé");
-        messages.addMessage(Utilisateur.CLE_MARQUEUR_ANONYME, new Locale("nl"), "Verwijderde klant");
+        messages.addMessage(Utilisateur.CLE_MARQUEUR_ANONYME, Locale.of("nl"), "Verwijderde klant");
 
         // Avant anonymisation, le vrai nom : il ne se traduit pas.
-        assertThat(marie.nomComplet(messages, new Locale("nl"))).isEqualTo("Marie Dupont");
+        assertThat(marie.nomComplet(messages, Locale.of("nl"))).isEqualTo("Marie Dupont");
 
         marie.anonymiser(JETON, HACHAGE, MAINTENANT);
 
         // Apres, le marqueur dans la langue du document : une facture regeneree pour
         // un client neerlandophone ne doit pas afficher « Client supprime ».
-        assertThat(marie.nomComplet(messages, new Locale("nl"))).isEqualTo("Verwijderde klant");
+        assertThat(marie.nomComplet(messages, Locale.of("nl"))).isEqualTo("Verwijderde klant");
         assertThat(marie.nomComplet(messages, Locale.FRENCH)).isEqualTo("Client supprimé");
     }
 

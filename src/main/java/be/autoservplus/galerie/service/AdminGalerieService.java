@@ -118,10 +118,14 @@ public class AdminGalerieService {
         }
     }
 
-    /** Retire une image de la galerie et efface son fichier. */
-    public void supprimer(Long id) {
-        Photo photo = photos.findById(id)
-                .orElseThrow(() -> new RessourceIntrouvableException("Photo", id));
+    /**
+     * Retire une image de la galerie de cette fiche et efface son fichier. Une référence
+     * prise dans une autre galerie n'est pas trouvée : l'adresse nomme la fiche, la
+     * suppression ne doit pas toucher ailleurs.
+     */
+    public void supprimer(UUID fiche, UUID reference) {
+        Photo photo = photos.deLaFiche(fiche, reference)
+                .orElseThrow(() -> new RessourceIntrouvableException("Photo", reference));
         String chemin = photo.getChemin();
         photos.delete(photo);
         stockage.supprimer(chemin);

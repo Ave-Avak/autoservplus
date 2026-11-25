@@ -33,7 +33,7 @@ public class VehiculeForm {
     @PositiveOrZero(message = "{vehicule.validation.kilometrage}")
     private Integer kilometrage;
 
-    @Size(max = 20)
+    @Size(max = 20, message = "{vehicule.validation.chassis.longueur}")
     private String numeroChassis;
 
     public String getPlaque() { return plaque; }

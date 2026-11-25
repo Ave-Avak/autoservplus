@@ -122,6 +122,28 @@
             <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('tauxTva')}" th:errors="*{tauxTva}"></p>
         </div>
 
+        <!--/* L'unité se choisit à la création et ne se modifie plus (V72) : à la modification
+             elle s'affiche et repart telle quelle, le service refuse une autre valeur. */-->
+        <div class="champ" th:unless="${edition}">
+            <label for="unite" th:text="#{admin.catalogue.champ.unite}">Unité</label>
+            <select id="unite" th:field="*{unite}" required aria-describedby="aide-unite">
+                <option value="FORFAIT" th:text="#{admin.catalogue.unite.FORFAIT}">Au forfait</option>
+                <option value="HEURE" th:text="#{admin.catalogue.unite.HEURE}">À l'heure</option>
+            </select>
+            <p id="aide-unite" class="aide" th:text="#{admin.catalogue.unite.aide}">
+                Une prestation à l'heure dure 60 minutes, ne se réserve pas et ne s'achète pas en ligne.
+                L'unité ne se modifie plus après la création.
+            </p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('unite')}" th:errors="*{unite}"></p>
+        </div>
+        <div class="champ" th:if="${edition}">
+            <p th:text="#{admin.catalogue.unite.en-place(${#messages.msg('admin.catalogue.unite.' + formulaire.unite)})}">
+                Unité : au forfait. Elle ne se modifie plus.
+            </p>
+            <input type="hidden" th:field="*{unite}">
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('unite')}" th:errors="*{unite}"></p>
+        </div>
+
         <div class="champ">
             <label for="dureeMinutes" th:text="#{admin.catalogue.champ.duree}">Durée estimée (minutes)</label>
             <input type="number" id="dureeMinutes" th:field="*{dureeMinutes}" min="1" step="1" required>

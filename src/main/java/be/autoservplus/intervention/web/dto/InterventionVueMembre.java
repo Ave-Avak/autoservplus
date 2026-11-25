@@ -1,9 +1,11 @@
 package be.autoservplus.intervention.web.dto;
 
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
+import be.autoservplus.intervention.service.FormatageQuantite;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 
 import java.time.Instant;
@@ -112,9 +114,9 @@ public record InterventionVueMembre(
      * interventions, aucune transparence tarifaire perdue puisque {@code totalTvac}
      * reste expose au niveau intervention.
      */
-    public record LigneVue(String libelle, short quantite) {
+    public record LigneVue(String libelle, String quantite) {
         public static LigneVue de(LigneIntervention l) {
-            return new LigneVue(l.getLibelleFige(), l.getQuantite());
+            return new LigneVue(l.getLibelleFige(), FormatageQuantite.lisible(l.getQuantite(), l.getUnite(), LanguesSupportees.deLEcran()));
         }
     }
 

@@ -1,6 +1,8 @@
 package be.autoservplus.messagerie.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.NumeroPage;
+import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.messagerie.domain.Conversation;
@@ -10,6 +12,9 @@ import be.autoservplus.messagerie.service.dto.ConversationVue;
 import be.autoservplus.notification.domain.TypeNotification;
 import be.autoservplus.notification.service.NotificationService;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -44,6 +49,7 @@ public class AdminMessagerieService {
     private final ConversationMapper mapper;
     private final ParametreAtelierRepository parametres;
     private final NotificationService notifications;
+    private final ServiceCourriel courriels;
     private final Clock horloge;
 
     public AdminMessagerieService(ConversationRepository conversations,
@@ -51,29 +57,46 @@ public class AdminMessagerieService {
                                   ConversationMapper mapper,
                                   ParametreAtelierRepository parametres,
                                   NotificationService notifications,
+                                  ServiceCourriel courriels,
                                   Clock horloge) {
         this.conversations = conversations;
         this.membres = membres;
         this.mapper = mapper;
         this.parametres = parametres;
         this.notifications = notifications;
+        this.courriels = courriels;
         this.horloge = horloge;
     }
 
-    /** Tous les fils. Les ouverts avant les clos. */
-    public List<ConversationVue> tous() {
+    /**
+     * Tous les fils, par page. Les ouverts avant les clos.
+     *
+     * @param page numéro de page à partir de zéro, borné
+     */
+    public Page<ConversationVue> tous(int page) {
         ZoneId zone = parametres.courants().zone();
-        return conversations.tousPourLeGarage().stream()
-                .map(fil -> mapper.resume(fil, RoleExpediteur.ADMINISTRATEUR, zone))
-                .toList();
+        return conversations.tousPourLeGarage(
+                        PageRequest.of(NumeroPage.borne(page, TAILLE_PAGE), TAILLE_PAGE))
+                .map(fil -> mapper.resume(fil, RoleExpediteur.ADMINISTRATEUR, zone));
     }
+
+    /** Fils par page au back-office. */
+    public static final int TAILLE_PAGE = 50;
 
     /** Detail d un fil. Ouvrir vaut lecture, comme cote membre. */
     @Transactional
     public ConversationVue lire(UUID reference) {
         Conversation fil = charger(reference);
-        fil.marquerLuPar(RoleExpediteur.ADMINISTRATEUR);
+        fil.marquerLuPar(RoleExpediteur.ADMINISTRATEUR, horloge.instant());
         return mapper.detail(fil, RoleExpediteur.ADMINISTRATEUR, parametres.courants().zone());
+    }
+
+    /** Messages postérieurs au curseur, pour le rafraîchissement du fil ouvert au garage. */
+    @Transactional
+    public ConversationVue suite(UUID reference, long apres) {
+        Conversation fil = charger(reference);
+        fil.marquerLuPar(RoleExpediteur.ADMINISTRATEUR, horloge.instant());
+        return mapper.suite(fil, RoleExpediteur.ADMINISTRATEUR, parametres.courants().zone(), apres);
     }
 
     @Transactional
@@ -84,6 +107,9 @@ public class AdminMessagerieService {
                         "Utilisateur", emailAdministrateur));
         fil.ajouter(auteur, RoleExpediteur.ADMINISTRATEUR, corps, horloge.instant());
         notifications.deposer(fil.getMembre(), TypeNotification.MESSAGE_RECU, fil.getSujet());
+        // A26 : le membre est prévenu par courriel, sans le corps du message, après validation.
+        courriels.envoyerAvisReponseGarage(fil.getMembre(), fil.getNumero(), fil.getSujet(),
+                fil.getReference());
     }
 
     @Transactional

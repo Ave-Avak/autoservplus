@@ -1,13 +1,16 @@
 package be.autoservplus.intervention.web.dto;
 
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
+import be.autoservplus.intervention.service.FormatageQuantite;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -55,6 +58,15 @@ public record InterventionVueAdmin(
         String noteInterne) {
 
     public static InterventionVueAdmin de(Intervention it, ZoneId zone) {
+        return de(it, zone, Set.of());
+    }
+
+    /**
+     * @param piecesACommander identifiants des pièces dont le stock ne couvre pas les
+     *                         interventions ouvertes (Q-H-30) : leurs lignes portent la
+     *                         mention « à commander »
+     */
+    public static InterventionVueAdmin de(Intervention it, ZoneId zone, Set<Long> piecesACommander) {
         StatutIntervention s = it.getStatut();
         var rdv = it.getRdv();
         var commande = it.getCommande();
@@ -74,7 +86,7 @@ public record InterventionVueAdmin(
                 it.getCommentaireAdmin(),
                 it.getDebutReel() == null ? null : LocalDateTime.ofInstant(it.getDebutReel(), zone),
                 it.getFinReelle() == null ? null : LocalDateTime.ofInstant(it.getFinReelle(), zone),
-                it.getLignes().stream().map(LigneInterventionVue::de).toList(),
+                it.getLignes().stream().map(l -> LigneInterventionVue.de(l, piecesACommander)).toList(),
                 FormatageRdv.eurosEcran(it.totalFacturableHtva()),
                 FormatageRdv.eurosEcran(it.totalFacturableTvac()),
                 s == StatutIntervention.PLANIFIEE,
@@ -99,22 +111,26 @@ public record InterventionVueAdmin(
      * membre a refusees : c est son dossier de travail. {@code cleEtat} porte la clé de
      * la mention à afficher, {@code compteDansLeTotal} permet de griser celles qui n'y
      * entrent pas. Le type reste le nom de l'énumération, traduit par le gabarit.
+     * {@code aCommander} ne vaut que pour une pièce non refusée dont le stock ne couvre pas
+     * les interventions ouvertes : une ligne refusée ne sera pas posée.
      */
     public record LigneInterventionVue(
-            Long id, String type, String libelle, short quantite,
+            Long id, String type, String libelle, String quantite,
             String prixUnitaireHtva, String totalHtva,
-            String cleEtat, boolean compteDansLeTotal) {
+            String cleEtat, boolean compteDansLeTotal, boolean aCommander) {
 
-        public static LigneInterventionVue de(LigneIntervention l) {
+        public static LigneInterventionVue de(LigneIntervention l, Set<Long> piecesACommander) {
             return new LigneInterventionVue(
                     l.getId(),
                     l.getType().name(),
                     l.getLibelleFige(),
-                    l.getQuantite(),
+                    FormatageQuantite.lisible(l.getQuantite(), l.getUnite(), LanguesSupportees.deLEcran()),
                     FormatageRdv.eurosEcran(l.getPrixUnitaireHtva()),
                     FormatageRdv.eurosEcran(l.totalHtva()),
                     cleEtat(l),
-                    l.estFacturable());
+                    l.estFacturable(),
+                    l.getPiece() != null && !l.estRefusee()
+                            && piecesACommander.contains(l.getPiece().getId()));
         }
 
         private static String cleEtat(LigneIntervention l) {

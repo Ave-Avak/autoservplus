@@ -1,8 +1,10 @@
 package be.autoservplus.intervention.service.dto;
 
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
+import be.autoservplus.intervention.service.FormatageQuantite;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 
 import java.time.LocalDate;
@@ -62,10 +64,11 @@ public record HistoriqueVehiculeMembre(
     }
 
     /** Prestation ou pièce, sans prix unitaire, au même niveau de détail que le suivi. */
-    public record Ligne(String type, String libelle, short quantite) {
+    public record Ligne(String type, String libelle, String quantite) {
 
         static Ligne de(LigneIntervention l) {
-            return new Ligne(l.getType().name(), l.getLibelleFige(), l.getQuantite());
+            return new Ligne(l.getType().name(), l.getLibelleFige(),
+                    FormatageQuantite.lisible(l.getQuantite(), l.getUnite(), LanguesSupportees.deLEcran()));
         }
     }
 }

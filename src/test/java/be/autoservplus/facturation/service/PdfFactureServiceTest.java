@@ -85,7 +85,10 @@ class PdfFactureServiceTest {
     }
 
     private void generationAboutit() {
-        when(factureService.lignesDe(facture)).thenReturn(lignes);
+        when(factureService.lignesDuDocument(facture)).thenReturn(lignes.stream()
+                .map(l -> new DocumentFacture.LigneFacture(l.getLibelleFige(), l.getQuantite(),
+                        l.getPrixUnitaireHtva(), l.getTauxTva(), l.totalTvac()))
+                .toList());
         when(factureService.ventilationDe(facture)).thenReturn(VentilationTva.desLignes(lignes));
         when(generateur.engendrer(any(DocumentFacture.class))).thenReturn(PDF);
         when(archive.archiver(anyShort(), anyString(), any())).thenReturn("2026/2026-0042.pdf");
@@ -111,7 +114,7 @@ class PdfFactureServiceTest {
 
         assertThat(service.pdfDe(facture)).isEqualTo(PDF_ARCHIVE);
 
-        // Le document conserve dix ans doit rester celui qui a ete remis : une
+        // Le document conserve sept ans doit rester celui qui a ete remis : une
         // evolution du gabarit ne reecrit pas retroactivement une facture emise.
         verifyNoInteractions(generateur);
         verify(factures, never()).saveAndFlush(any());
@@ -148,7 +151,7 @@ class PdfFactureServiceTest {
         assertThat(document.totalTvac()).isEqualByComparingTo("48.38");
         assertThat(document.lignes()).singleElement().satisfies(ligne -> {
             assertThat(ligne.libelle()).isEqualTo("Plaquettes");
-            assertThat(ligne.quantite()).isEqualTo(2);
+            assertThat(ligne.quantite()).isEqualTo("2");
             assertThat(ligne.totalTvac()).isEqualByComparingTo("48.38");
         });
     }

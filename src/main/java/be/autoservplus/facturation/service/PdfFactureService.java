@@ -4,7 +4,6 @@ import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.repository.FactureRepository;
 import be.autoservplus.facturation.service.dto.DocumentFacture;
 import be.autoservplus.vente.domain.Commande;
-import be.autoservplus.vente.domain.LignePanier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
@@ -23,7 +22,7 @@ import java.util.Locale;
  * sur la facture. Toutes les demandes suivantes relisent ce fichier.</p>
  *
  * <p>Servir l'archive plutôt que régénérer n'est pas une optimisation mais une
- * exigence : la facture conservée dix ans doit rester le document remis au client,
+ * exigence : la facture conservée sept ans doit rester le document remis au client,
  * pas ce que le code produirait aujourd'hui. Une évolution du gabarit ne doit pas
  * réécrire rétroactivement des documents déjà transmis.</p>
  *
@@ -87,12 +86,29 @@ public class PdfFactureService {
      * la session : une facture est émise dans la langue du client.
      */
     private DocumentFacture documentDe(Facture facture) {
-        Commande commande = facture.getCommande();
         // Langue et client de l'instantané figé à l'émission (V61), jamais du compte vif.
         Locale langue = Locale.forLanguageTag(facture.getLangueDocument().name());
-        List<DocumentFacture.LigneFacture> lignes = factureService.lignesDe(facture).stream()
-                .map(PdfFactureService::ligneDe)
-                .toList();
+        List<DocumentFacture.LigneFacture> lignes = factureService.lignesDuDocument(facture);
+        if (facture.estDAtelier()) {
+            Facture completee = factureService.factureCompleteePar(facture).orElse(null);
+            return new DocumentFacture(
+                    facture.getNumero(),
+                    facture.getDateEmission(),
+                    null,
+                    null,
+                    clientDe(facture, messages, langue),
+                    lignes,
+                    factureService.ventilationDe(facture),
+                    facture.getMontantHtva(),
+                    facture.getMontantTva(),
+                    facture.getMontantTvac(),
+                    langue,
+                    factureService.interventionFacturee(facture).getNumero(),
+                    facture.getDateEcheance(),
+                    completee == null ? null : completee.getNumero(),
+                    completee == null ? null : completee.getDateEmission());
+        }
+        Commande commande = facture.getCommande();
         return new DocumentFacture(
                 facture.getNumero(),
                 facture.getDateEmission(),
@@ -117,12 +133,4 @@ public class PdfFactureService {
                 facture.getClientPays());
     }
 
-    private static DocumentFacture.LigneFacture ligneDe(LignePanier ligne) {
-        return new DocumentFacture.LigneFacture(
-                ligne.getLibelleFige(),
-                ligne.getQuantite(),
-                ligne.getPrixUnitaireHtva(),
-                ligne.getTauxTva(),
-                ligne.totalTvac());
-    }
 }

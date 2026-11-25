@@ -30,9 +30,18 @@ public record VentilationTva(List<TrancheTva> tranches) {
     }
 
     public static VentilationTva desLignes(List<LignePanier> lignes) {
-        return new VentilationTva(CalculTva.ventiler(lignes.stream()
-                        .map(ligne -> new CalculTva.MontantTaxe(ligne.getTauxTva(), ligne.totalTvac()))
-                        .toList()).stream()
+        return desMontants(lignes.stream()
+                .map(ligne -> new CalculTva.MontantTaxe(ligne.getTauxTva(), ligne.totalTvac()))
+                .toList());
+    }
+
+    /**
+     * Ventilation des totaux taxe comprise d'un document, quelle que soit l'origine de ses
+     * lignes : une commande, ou une intervention dont les heures se facturent en quantité
+     * décimale. Chaque total arrive déjà calculé par {@link CalculTva#totalTvac}.
+     */
+    public static VentilationTva desMontants(List<CalculTva.MontantTaxe> montants) {
+        return new VentilationTva(CalculTva.ventiler(montants).stream()
                 .map(tranche -> new TrancheTva(tranche.taux(), tranche.base(), tranche.tva()))
                 .toList());
     }

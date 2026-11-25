@@ -24,6 +24,34 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
 
     boolean existsByReferenceFabricant(String referenceFabricant);
 
+    /**
+     * Retire du stock au plus la quantité demandée, sans descendre sous zéro, et rend le
+     * stock d'avant : un résultat inférieur à la demande dit que le plancher a joué.
+     *
+     * <p>Seul mécanisme de décompte, pour la vente comme pour l'atelier. Une seule
+     * instruction verrouille la ligne, lit le stock à jour et l'écrit. Un verrou posé par
+     * une requête JPQL ne suffit pas quand la pièce est déjà chargée dans la transaction,
+     * ce qui est le cas des deux appelants (lignes d'une commande, lignes d'une
+     * intervention) : JPA rend l'instance déjà gérée sans relire son stock, et deux
+     * décomptes simultanés en perdaient un ({@code StockPaiementsConcurrenceIT},
+     * {@code StockClotureConcurrenceIT}).</p>
+     *
+     * <p>En retour, l'instance déjà chargée garde l'ancien stock jusqu'à la fin de la
+     * transaction. Aucun appelant ne modifie la pièce après le décompte : s'il le faisait,
+     * Hibernate réécrirait l'ancien stock avec le reste de la ligne.</p>
+     */
+    @Query(value = """
+            WITH avant AS (SELECT id, quantite_stock FROM piece WHERE id = :id FOR UPDATE)
+            UPDATE piece p
+            SET quantite_stock = GREATEST(avant.quantite_stock - :quantite, 0),
+                updated_at = now(), updated_by = :auteur
+            FROM avant
+            WHERE p.id = avant.id
+            RETURNING avant.quantite_stock
+            """, nativeQuery = true)
+    int retirerAuPlus(@Param("id") Long id, @Param("quantite") int quantite,
+                      @Param("auteur") String auteur);
+
     /** Catalogue complet pour le back-office, actifs et inactifs confondus. */
     @Query("SELECT p FROM Piece p JOIN FETCH p.categorie ORDER BY p.libelle")
     List<Piece> catalogueComplet();
@@ -65,16 +93,6 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
             ORDER BY p.libelle
             """)
     List<Piece> enAlerteDeStock();
-
-    /**
-     * Verrou pessimiste (SELECT FOR UPDATE) pour le decrement du stock au paiement
-     * confirme : la table piece n a pas de colonne version, et deux webhooks payes
-     * portant sur la meme piece doivent se serialiser plutot que se perdre. Verrouiller
-     * les pieces dans un ordre deterministe (id croissant) : voir CommandeRepository#lignesDe.
-     */
-    @org.springframework.data.jpa.repository.Lock(jakarta.persistence.LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT p FROM Piece p WHERE p.id = :id")
-    Optional<Piece> verrouillerParId(@Param("id") Long id);
 
     /**
      * Recherche sur le libellé, la description, la marque, la référence du fabricant et

@@ -119,8 +119,9 @@ public class GenerateurPdfAvoir {
                         document.numeroFactureOrigine(),
                         date(document.dateFactureOrigine(), document.locale()))),
                 police(9, Font.BOLD, GRIS_TEXTE)));
-        identite.add(new Phrase("%s %s".formatted(
-                        libelle(document, "facture.commande"), document.numeroCommande()),
+        identite.add(new Phrase(document.estDAtelier()
+                        ? "%s %s".formatted(libelle(document, "facture.intervention"), document.numeroIntervention())
+                        : "%s %s".formatted(libelle(document, "facture.commande"), document.numeroCommande()),
                 police(9, Font.NORMAL, GRIS_TEXTE)));
         entete.addCell(celluleInvisible(identite, Element.ALIGN_RIGHT));
         return entete;
@@ -164,7 +165,7 @@ public class GenerateurPdfAvoir {
         }
         for (DocumentFacture.LigneFacture ligne : document.lignes()) {
             table.addCell(cellule(ligne.libelle(), Element.ALIGN_LEFT));
-            table.addCell(cellule(String.valueOf(ligne.quantite()), Element.ALIGN_RIGHT));
+            table.addCell(cellule(ligne.quantite(), Element.ALIGN_RIGHT));
             table.addCell(cellule(montant(ligne.prixUnitaireHtva(), document.locale()),
                     Element.ALIGN_RIGHT));
             table.addCell(cellule(pourcentage(ligne.tauxTva()), Element.ALIGN_RIGHT));
@@ -212,7 +213,14 @@ public class GenerateurPdfAvoir {
         mentions.add(new Phrase(libelle(document, "avoir.mention.motif",
                         libelle(document, "avoir.motif." + document.cleMotif())) + "\n",
                 police(9, Font.BOLD, GRIS_TEXTE)));
-        mentions.add(new Phrase(libelle(document, "avoir.mention.remboursement") + "\n",
+        if (document.precision() != null) {
+            // Texte de l'administrateur, imprimé tel que saisi, comme une ligne libre de l'atelier.
+            mentions.add(new Phrase(libelle(document, "avoir.mention.precision", document.precision()) + "\n",
+                    police(9, Font.NORMAL, GRIS_TEXTE)));
+        }
+        // Une facture d'atelier se règle au comptoir : aucun moyen de paiement en ligne à recréditer.
+        mentions.add(new Phrase(libelle(document, document.estDAtelier()
+                        ? "avoir.mention.remboursement-atelier" : "avoir.mention.remboursement") + "\n",
                 police(8, Font.NORMAL, GRIS_TEXTE)));
         // Mention de restitution : c'est elle qui autorise l'émetteur à récupérer la
         // TVA déjà déclarée sur la facture d'origine.

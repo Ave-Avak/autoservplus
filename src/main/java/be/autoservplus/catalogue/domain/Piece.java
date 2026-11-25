@@ -15,8 +15,10 @@ import java.util.UUID;
 /**
  * Piece detachee proposee a la vente ou montee lors d une intervention.
  *
- * <p>Le stock est suivi ici, avec un seuil d alerte qui declenche un signalement au
- * gerant. La reservation de stock est traitee a la commande, dans le module vente.</p>
+ * <p>Le stock est suivi ici, avec un seuil d'alerte qui déclenche un signalement au
+ * gérant. Rien n'est réservé : le stock descend au paiement d'une commande (module vente)
+ * et à la clôture d'une intervention, pour les pièces réellement posées
+ * ({@code PieceRepository#retirerAuPlus}).</p>
  */
 @Entity
 @Table(name = "piece")

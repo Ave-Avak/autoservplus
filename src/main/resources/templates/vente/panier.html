@@ -96,6 +96,30 @@
             <a class="btn-cta" th:href="@{/commande}" th:text="#{panier.action.commander}">Passer commande</a>
             <a th:href="@{/panier/vider}" th:text="#{panier.action.vider}">Vider le panier</a>
         </p>
+
+        <!--/* Devis F15 : le panier tel qu'il est, pour un véhicule du membre. Le choix est
+             présélectionné quand le membre n'en a qu'un. */-->
+        <section aria-labelledby="titre-devis">
+            <h2 id="titre-devis" th:text="#{devis.panier.titre}">Obtenir un devis</h2>
+            <p th:text="#{devis.panier.explication}">Le devis reprend ce panier et ses prix. Il nomme le véhicule concerné.</p>
+            <form th:unless="${#lists.isEmpty(vehicules)}" class="formulaire" th:action="@{/mes-devis}" method="post">
+                <div class="champ">
+                    <label for="devis-vehicule" th:text="#{devis.panier.vehicule}">Véhicule</label>
+                    <select id="devis-vehicule" name="vehicule" required>
+                        <option th:if="${#lists.size(vehicules) > 1}" value=""
+                                th:text="#{rdv.formulaire.choisir}">Choisissez</option>
+                        <option th:each="v : ${vehicules}" th:value="${v.reference()}"
+                                th:selected="${#lists.size(vehicules) == 1}"
+                                th:text="${v.designation()}">Volkswagen Golf (1-ABC-123)</option>
+                    </select>
+                </div>
+                <button type="submit" class="lien-bouton" th:text="#{devis.panier.emettre}">Obtenir le devis</button>
+            </form>
+            <p th:if="${#lists.isEmpty(vehicules)}">
+                <span th:text="#{devis.panier.sans-vehicule}">Un devis nomme un véhicule.</span>
+                <a th:href="@{/mes-vehicules/nouveau}" th:text="#{devis.panier.ajouter-vehicule}">Ajouter un véhicule</a>
+            </p>
+        </section>
     </div>
 </main>
 

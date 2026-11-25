@@ -2,9 +2,16 @@ package be.autoservplus.facturation.service;
 
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.montant.CalculTva;
+import be.autoservplus.common.temps.FuseauGarage;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.repository.FactureRepository;
+import be.autoservplus.facturation.service.dto.DocumentFacture;
 import be.autoservplus.facturation.service.dto.FactureVue;
+import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.intervention.domain.Intervention;
+import be.autoservplus.intervention.domain.LigneIntervention;
+import be.autoservplus.intervention.service.FormatageQuantite;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.StatutCommande;
@@ -12,17 +19,20 @@ import be.autoservplus.vente.repository.CommandeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Émission des factures (F31). Ce bloc ne traite que la facture de <b>commande</b>.
- * La facturation d'intervention (RM-17) réutilisera l'entité sans la modifier.
+ * Émission des factures (F31) : celle d'une commande payée en ligne, et celle d'une
+ * intervention à sa clôture (A15, RM-17), à régler à l'atelier.
  *
  * <p>L'émission est le seul moment où un numéro est attribué : le compteur est
  * incrémenté dans cette transaction, si bien qu'une émission qui échoue ne consomme
@@ -49,14 +59,77 @@ public class FactureService {
     private final FactureRepository factures;
     private final CommandeRepository commandes;
     private final GenerateurNumeroFacture numeros;
+    private final FuseauGarage fuseau;
     private final Clock horloge;
 
     public FactureService(FactureRepository factures, CommandeRepository commandes,
-                          GenerateurNumeroFacture numeros, Clock horloge) {
+                          GenerateurNumeroFacture numeros, FuseauGarage fuseau, Clock horloge) {
         this.factures = factures;
         this.commandes = commandes;
         this.numeros = numeros;
+        this.fuseau = fuseau;
         this.horloge = horloge;
+    }
+
+    /**
+     * Émet la facture d'atelier d'une intervention qui se clôt (A15, RM-17), dans la
+     * transaction de la clôture : statut, stock et facture tiennent ou tombent ensemble, et
+     * une clôture annulée ne consomme aucun numéro.
+     *
+     * <p>Lignes : {@link Intervention#lignesAFacturer()}, les ajouts acceptés seuls pour une
+     * intervention née d'une commande payée (Q-H-41). Une facture est émise dès qu'une ligne
+     * est facturable, même à 0 €. Montants : la ventilation de ces lignes, par taux sur le
+     * total du document (règle du groupe G). Échéance : le jour d'émission au garage.</p>
+     *
+     * @param titulaire le client de la facture, vérifié par l'appelant (Q-H-14)
+     * @return la facture, ou vide quand aucune ligne n'est à facturer
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<Facture> emettrePourIntervention(Intervention intervention, Utilisateur titulaire) {
+        List<LigneIntervention> lignes = intervention.lignesAFacturer();
+        if (lignes.isEmpty()) {
+            return Optional.empty();
+        }
+        VentilationTva ventilation = ventilationDesLignes(lignes);
+        NumeroFacture numero = numeros.prochain();
+        Instant maintenant = horloge.instant();
+        Facture facture = factures.save(Facture.pourIntervention(
+                numero.valeur(), numero.exercice(), numero.sequenceAnnuelle(), intervention, titulaire,
+                ventilation.totalHtva(), ventilation.totalTva(), ventilation.totalTvac(),
+                ventilation.tauxUnique().orElse(null), maintenant, fuseau.jour(maintenant)));
+        log.info("Facture d'atelier {} emise pour l'intervention {} ({} EUR TVAC).",
+                facture.getNumero(), intervention.getNumero(), facture.getMontantTvac());
+        return Optional.of(facture);
+    }
+
+    /** Facture d'atelier d'une intervention, s'il y en a une. */
+    public Optional<Facture> factureDe(Intervention intervention) {
+        return factures.findByIntervention(intervention);
+    }
+
+    /** Facture de la commande dont naît l'intervention : celle que la facture d'atelier complète. */
+    public Optional<Facture> factureCompleteePar(Facture factureDAtelier) {
+        if (!factureDAtelier.estDAtelier()) {
+            return Optional.empty();
+        }
+        Intervention intervention = interventionFacturee(factureDAtelier);
+        if (intervention.getCommande() == null) {
+            return Optional.empty();
+        }
+        return factures.findByCommande(intervention.getCommande());
+    }
+
+    /** Intervention d'une facture d'atelier, relue avec ses lignes dans la transaction en cours. */
+    public Intervention interventionFacturee(Facture factureDAtelier) {
+        return factures.interventionFacturee(factureDAtelier.getId())
+                .orElseThrow(() -> new IllegalStateException(
+                        "La facture " + factureDAtelier.getNumero() + " ne vient d'aucune intervention."));
+    }
+
+    private static VentilationTva ventilationDesLignes(List<LigneIntervention> lignes) {
+        return VentilationTva.desMontants(lignes.stream()
+                .map(ligne -> new CalculTva.MontantTaxe(ligne.getTauxTva(), ligne.totalTvac()))
+                .toList());
     }
 
     /**
@@ -150,23 +223,36 @@ public class FactureService {
     }
 
     /**
-     * Ventilation TVA de la facture, recalculée des lignes figées de sa commande.
-     * Elle n'est pas stockée : les lignes étant immuables dès leur rattachement à
-     * une commande, la recalculer donne toujours le même résultat. Une table de
-     * lignes de facture serait une duplication exacte, avec le risque de divergence
-     * qui va avec.
+     * Ventilation TVA de la facture, recalculée de ses lignes figées : celles de la commande,
+     * ou les lignes facturées de l'intervention, figées elles aussi une fois l'intervention
+     * terminée. Elle n'est pas stockée : la recalculer donne toujours le même résultat, et
+     * une table de lignes de facture serait une duplication exacte, avec le risque de
+     * divergence qui va avec.
      */
     public VentilationTva ventilationDe(Facture facture) {
-        if (facture.getCommande() == null) {
-            // Source intervention : bloc RM-17, non branché ici.
-            throw new RegleMetierException(
-                    "La ventilation d une facture d intervention n est pas encore geree.");
+        if (facture.estDAtelier()) {
+            return ventilationDesLignes(interventionFacturee(facture).lignesAFacturer());
         }
         return VentilationTva.desLignes(commandes.lignesDe(facture.getCommande()));
     }
 
-    /** Lignes facturées, dans l'ordre stable de la commande. */
-    public List<LignePanier> lignesDe(Facture facture) {
-        return commandes.lignesDe(facture.getCommande());
+    /**
+     * Lignes imprimées sur la facture ou sur sa note de crédit, dans la langue du document :
+     * celles de la commande dans leur ordre stable, ou les lignes facturées de
+     * l'intervention, dont la quantité se lit « 1,5 h » pour des heures.
+     */
+    public List<DocumentFacture.LigneFacture> lignesDuDocument(Facture facture) {
+        Locale langue = Locale.forLanguageTag(facture.getLangueDocument().name());
+        if (facture.estDAtelier()) {
+            return interventionFacturee(facture).lignesAFacturer().stream()
+                    .map(ligne -> new DocumentFacture.LigneFacture(ligne.getLibelleFige(),
+                            FormatageQuantite.lisible(ligne.getQuantite(), ligne.getUnite(), langue),
+                            ligne.getPrixUnitaireHtva(), ligne.getTauxTva(), ligne.totalTvac()))
+                    .toList();
+        }
+        return commandes.lignesDe(facture.getCommande()).stream()
+                .map(ligne -> new DocumentFacture.LigneFacture(ligne.getLibelleFige(), ligne.getQuantite(),
+                        ligne.getPrixUnitaireHtva(), ligne.getTauxTva(), ligne.totalTvac()))
+                .toList();
     }
 }

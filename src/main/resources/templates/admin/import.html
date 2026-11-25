@@ -75,6 +75,11 @@
         <code th:text="${colonnesFacultatives}">libelle_nl;libelle_en</code>
     </p>
 
+    <p class="carte-meta">
+        <span th:text="#{admin.import.colonne-unite}">Colonne facultative des prestations, pour l'unité :</span>
+        <code th:text="${colonneUnite}">unite</code>
+    </p>
+
     <p class="carte-meta" th:text="#{admin.import.tout-ou-rien}">
         Une seule ligne invalide annule l'import entier : corrigez votre fichier et renvoyez-le.
     </p>

@@ -24,6 +24,18 @@
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
 
+    <!--/* Q-H-42 : la clôture refuse une facture sans adresse. Le lien mène à la modification
+         du compte, qui revient ici par la seule référence de l'intervention. */-->
+    <th:block th:with="compte=${compteACompleter != null ? compteACompleter : compteSansAdresse}">
+        <p th:if="${compte != null}" th:classappend="${compteACompleter != null} ? null : 'message'">
+            <span th:if="${compteACompleter == null}" th:text="#{admin.intervention.adresse.avertissement}">
+                L'adresse du client manque : la facture ne pourra pas être émise à la clôture.
+            </span>
+            <a th:href="@{/admin/comptes/{c}/modification(c=${compte},intervention=${intervention.reference()})}"
+               th:text="#{admin.intervention.adresse.completer}">Compléter l'adresse du client</a>
+        </p>
+    </th:block>
+
     <p>
         <span th:class="'badge badge-' + ${#strings.toLowerCase(intervention.statut())}"
               th:text="#{'admin.historique.statut.' + ${intervention.statut()}}">Planifiée</span>
@@ -111,6 +123,91 @@
         </form>
     </div>
 
+    <!--/* Facture d'atelier émise à la clôture (A15, RM-17). Le PDF est celui de l'émission,
+         le statut se lit ici (Q-H-49). */-->
+    <section th:if="${facture != null}" aria-labelledby="titre-admin-facture-atelier">
+        <h2 id="titre-admin-facture-atelier" th:text="#{admin.intervention.facture.titre}">Facture d'atelier</h2>
+        <p>
+            <span th:text="#{admin.intervention.facture.resume(${facture.numero()}, ${facture.montantTvac()})}">
+                Facture 2026-0042, 117,98 € TVAC</span>
+            <span th:unless="${facture.estAnnulee() or facture.estReglee()}" class="badge badge-en_attente"
+                  th:text="#{${facture.cleStatut()}}">À régler</span>
+            <span th:if="${facture.estReglee() and !facture.estAnnulee()}" class="badge badge-confirme"
+                  th:text="#{facture.statut.reglee(${#temporals.format(facture.regleeLe(), 'dd/MM/yyyy')}, ${#messages.msg('encaissement.moyen.' + facture.moyen())})}">Réglée le 25/11/2026 (Espèces)</span>
+            <span th:if="${facture.estAnnulee()}" class="badge badge-annule"
+                  th:text="#{facture.statut.annulee(${facture.numeroAvoir()})}">Annulée par la note de crédit AV-2026-0003</span>
+        </p>
+        <p th:unless="${facture.estAnnulee() or facture.estReglee()}"
+           th:text="#{admin.intervention.facture.echeance(${#temporals.format(facture.echeance(), 'd MMMM yyyy')})}">
+            Échéance : 24 novembre 2026</p>
+        <p><a th:href="@{/admin/factures/{ref}/pdf(ref=${facture.reference()})}"
+              th:text="#{admin.intervention.facture.pdf}">Télécharger la facture</a></p>
+        <p th:if="${facture.estAnnulee()}"><a th:href="@{/admin/avoirs/{ref}/pdf(ref=${facture.referenceAvoir()})}"
+              th:text="#{intervention.facture.avoir.pdf(${facture.numeroAvoir()})}">Télécharger la note de crédit AV-2026-0003 (PDF)</a></p>
+        <p th:if="${facture.remboursementHorsApplication()}" class="texte-info"
+           th:text="#{admin.intervention.facture.remboursement-hors-application(${#temporals.format(facture.regleeLe(), 'dd/MM/yyyy')})}">
+            Facture réglée le 25/11/2026, puis annulée : le remboursement au client se fait hors de l'application.</p>
+
+        <!--/* Q-H-43 à Q-H-45 : règlement au comptoir, total TVAC en une fois, un seul moyen. */-->
+        <form th:if="${facture.peutEtreEncaissee()}"
+              th:action="@{/admin/interventions/{ref}/facture/encaissement(ref=${intervention.reference()})}"
+              method="post" class="formulaire">
+            <h3 th:text="#{admin.intervention.encaissement.titre}">Enregistrer le règlement</h3>
+            <div class="champ">
+                <label for="moyen" th:text="#{admin.intervention.encaissement.moyen}">Moyen</label>
+                <select id="moyen" name="moyen" required>
+                    <option value="TERMINAL" th:text="#{encaissement.moyen.TERMINAL}">Terminal de paiement</option>
+                    <option value="ESPECES" th:text="#{encaissement.moyen.ESPECES}">Espèces</option>
+                    <option value="VIREMENT" th:text="#{encaissement.moyen.VIREMENT}">Virement</option>
+                </select>
+            </div>
+            <div class="champ">
+                <label for="date-reglement" th:text="#{admin.intervention.encaissement.date}">Date du règlement</label>
+                <input type="date" id="date-reglement" name="date" required aria-describedby="aide-encaissement"
+                       th:value="${#temporals.format(facture.aujourdHui(), 'yyyy-MM-dd')}"
+                       th:max="${#temporals.format(facture.aujourdHui(), 'yyyy-MM-dd')}">
+                <p id="aide-encaissement" class="texte-info" th:text="#{admin.intervention.encaissement.aide}">
+                    Le total TVAC de la facture, réglé en une fois, par un seul moyen.</p>
+            </div>
+            <button type="submit" class="btn-cta" th:text="#{admin.intervention.encaissement.bouton}">Enregistrer le règlement</button>
+        </form>
+
+        <!--/* Q-H-43 : une erreur de saisie s'annule, avec un motif, puis le bon règlement s'enregistre. */-->
+        <form th:if="${facture.estReglee() and !facture.estAnnulee()}"
+              th:action="@{/admin/interventions/{ref}/facture/encaissement/annulation(ref=${intervention.reference()})}"
+              method="post" class="formulaire formulaire-suppression"
+              th:data-message="#{admin.intervention.encaissement.annulation.confirmation(${facture.numero()})}">
+            <h3 th:text="#{admin.intervention.encaissement.annulation.titre}">Annuler le règlement</h3>
+            <div class="champ">
+                <label for="motif-encaissement" th:text="#{admin.intervention.encaissement.annulation.motif}">Motif</label>
+                <textarea id="motif-encaissement" name="motif" rows="2" maxlength="500" required
+                          th:text="${motifSaisi}"></textarea>
+            </div>
+            <button type="submit" class="lien-bouton texte-erreur"
+                    th:text="#{admin.intervention.encaissement.annulation.bouton}">Annuler le règlement</button>
+        </form>
+
+        <!--/* Q-H-50 : note de crédit totale, précision obligatoire, imprimée telle que saisie. */-->
+        <form th:unless="${facture.estAnnulee()}"
+              th:action="@{/admin/interventions/{ref}/facture/annulation(ref=${intervention.reference()})}"
+              method="post" class="formulaire formulaire-suppression"
+              th:data-message="#{admin.intervention.facture.annulation.confirmation(${facture.numero()})}">
+            <h3 th:text="#{admin.intervention.facture.annulation.titre}">Annuler la facture par une note de crédit</h3>
+            <div class="champ">
+                <label for="precision" th:text="#{admin.intervention.facture.annulation.precision}">Précision</label>
+                <textarea id="precision" name="precision" rows="3" maxlength="500" required
+                          aria-describedby="consigne-precision" th:text="${precisionSaisie}"></textarea>
+                <p id="consigne-precision" class="texte-info" th:text="#{admin.intervention.facture.annulation.consigne}">
+                    Pas de donnée personnelle : ce texte figure sur une pièce comptable conservée sept ans.</p>
+            </div>
+            <!--/* Q-H-46 : la note de crédit reste possible après le règlement, le remboursement se fait hors de l'application. */-->
+            <p th:if="${facture.estReglee()}" class="texte-info" th:text="#{admin.intervention.facture.rappel-avoir-reglee}">
+                La facture est réglée : après la note de crédit, le remboursement au client se fait hors de l'application.</p>
+            <button type="submit" class="lien-bouton texte-erreur"
+                    th:text="#{admin.intervention.facture.annulation.bouton}">Annuler la facture</button>
+        </form>
+    </section>
+
     <h2 id="titre-admin-intervention-detail" th:text="#{admin.intervention.lignes}">Lignes</h2>
     <div class="defilement" tabindex="0" role="region" aria-labelledby="titre-admin-intervention-detail">
         <table class="tableau">
@@ -129,7 +226,13 @@
                 <tr th:each="l : ${intervention.lignes()}"
                     th:classappend="${l.compteDansLeTotal()} ? null : 'ligne-hors-total'">
                     <td th:text="#{'historique.type.' + ${l.type()}}">Prestation</td>
-                    <td th:text="${l.libelle()}">Vidange</td>
+                    <td>
+                        <span th:text="${l.libelle()}">Vidange</span>
+                        <!--/* Calculée à l'affichage (Q-H-30) : elle disparaît quand le stock
+                             saisi couvre les interventions ouvertes. */-->
+                        <span th:if="${l.aCommander()}" class="badge badge-en_attente"
+                              th:text="#{admin.intervention.ligne.a-commander}">À commander</span>
+                    </td>
                     <td th:text="#{${l.cleEtat()}}">Devis initial</td>
                     <td th:text="${l.quantite()}">1</td>
                     <td th:text="${l.prixUnitaireHtva()}">49,00 €</td>
@@ -170,12 +273,37 @@
                 <select id="prestation" name="prestation" required>
                     <option value="" th:text="#{rdv.formulaire.choisir}">Choisissez</option>
                     <option th:each="p : ${prestations}" th:value="${p.reference}"
-                            th:text="#{admin.intervention.ajout.option(${p.libelle}, ${p.dureeMinutes})}">Vidange (30 min)</option>
+                            th:text="${p.estALHeure()} ? #{admin.intervention.ajout.option-heure(${p.libelle})} : #{admin.intervention.ajout.option(${p.libelle}, ${p.dureeMinutes})}">Vidange (30 min)</option>
                 </select>
             </div>
             <div class="champ">
                 <label for="quantite" th:text="#{intervention.suivi.quantite}">Quantité</label>
-                <input type="number" id="quantite" name="quantite" min="1" value="1" required>
+                <!--/* Décimale pour une prestation à l'heure, au centième (Q-H-37). Le domaine
+                     refuse une quantité décimale pour un forfait. */-->
+                <input type="number" id="quantite" name="quantite" min="0.01" step="0.01" value="1" required
+                       aria-describedby="aide-quantite">
+                <p id="aide-quantite" class="aide" th:text="#{admin.intervention.ajout.quantite-aide}">
+                    En unités entières pour un forfait, en heures pour une prestation à l'heure (1,5 pour une heure et demie).
+                </p>
+            </div>
+            <button type="submit" class="btn-cta" th:text="#{admin.intervention.ajout.bouton}">Ajouter</button>
+        </form>
+
+        <!--/* Une pièce sans stock est admise : la ligne portera « à commander ». */-->
+        <h3 th:text="#{admin.intervention.ajout-piece.titre}">Ajouter une pièce</h3>
+        <form th:action="@{/admin/interventions/{ref}/lignes/piece(ref=${intervention.reference()})}"
+              method="post" class="formulaire">
+            <div class="champ">
+                <label for="piece" th:text="#{admin.intervention.ajout-piece.champ}">Pièce</label>
+                <select id="piece" name="piece" required>
+                    <option value="" th:text="#{rdv.formulaire.choisir}">Choisissez</option>
+                    <option th:each="p : ${pieces}" th:value="${p.reference()}"
+                            th:text="#{admin.intervention.ajout-piece.option(${p.libelle()}, ${p.stock()})}">Filtre à huile (en stock : 3)</option>
+                </select>
+            </div>
+            <div class="champ">
+                <label for="quantite-piece" th:text="#{intervention.suivi.quantite}">Quantité</label>
+                <input type="number" id="quantite-piece" name="quantite" min="1" value="1" required>
             </div>
             <button type="submit" class="btn-cta" th:text="#{admin.intervention.ajout.bouton}">Ajouter</button>
         </form>

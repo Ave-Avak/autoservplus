@@ -1,7 +1,9 @@
 package be.autoservplus.intervention.web.dto;
 
+import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
+import be.autoservplus.intervention.service.FormatageQuantite;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 
 import java.math.BigDecimal;
@@ -50,9 +52,10 @@ public record DemandeValidationVue(
     }
 
     /** Une ligne soumise a l accord du membre, avec son prix : designation, quantite, total HTVA. */
-    public record LigneProposeeVue(String libelle, short quantite, String totalHtva) {
+    public record LigneProposeeVue(String libelle, String quantite, String totalHtva) {
         public static LigneProposeeVue de(LigneIntervention l) {
-            return new LigneProposeeVue(l.getLibelleFige(), l.getQuantite(),
+            return new LigneProposeeVue(l.getLibelleFige(),
+                    FormatageQuantite.lisible(l.getQuantite(), l.getUnite(), LanguesSupportees.deLEcran()),
                     FormatageRdv.eurosEcran(l.totalHtva()));
         }
     }

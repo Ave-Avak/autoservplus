@@ -110,5 +110,16 @@ class NotificationTest {
             assertThat(TypeNotification.AVOIR_EMIS.cleCorps())
                     .isEqualTo("notification.type.AVOIR_EMIS.corps");
         }
+
+        @Test
+        @DisplayName("un administrateur lit MESSAGE_RECU sous sa propre clé, le membre sous la clé commune")
+        void messageRecuSelonLeLecteur() {
+            assertThat(TypeNotification.MESSAGE_RECU.cleCorps(TypeUtilisateur.MEMBRE))
+                    .isEqualTo("notification.type.MESSAGE_RECU.corps");
+            assertThat(TypeNotification.MESSAGE_RECU.cleCorps(TypeUtilisateur.ADMINISTRATEUR))
+                    .isEqualTo("notification.type.MESSAGE_RECU.garage.corps");
+            assertThat(TypeNotification.AVIS_DEPOSE.cleCorps(TypeUtilisateur.ADMINISTRATEUR))
+                    .isEqualTo("notification.type.AVIS_DEPOSE.corps");
+        }
     }
 }

@@ -1,6 +1,9 @@
 package be.autoservplus.catalogue.web;
 
+import be.autoservplus.catalogue.domain.DureePrestationALHeureException;
 import be.autoservplus.catalogue.domain.TauxTvaBelge;
+import be.autoservplus.catalogue.domain.UnitePrestation;
+import be.autoservplus.catalogue.domain.UnitePrestationFixeeException;
 import be.autoservplus.catalogue.service.AdminCatalogueService;
 import be.autoservplus.catalogue.service.DoublonCatalogueException;
 import be.autoservplus.catalogue.service.SuppressionRefuseeException;
@@ -88,6 +91,8 @@ public class AdminPrestationController {
             return LISTE;
         } catch (DoublonCatalogueException e) {
             erreurs.rejectValue(e.getChamp(), "admin.catalogue.erreur.doublon");
+        } catch (DureePrestationALHeureException e) {
+            erreurs.rejectValue("dureeMinutes", e.getCleMessage());
         } catch (IllegalArgumentException e) {
             // garde du domaine : taux de TVA hors de la liste belge (POST forge)
             erreurs.rejectValue("tauxTva", "admin.catalogue.erreur.taux");
@@ -123,6 +128,11 @@ public class AdminPrestationController {
             return LISTE;
         } catch (DoublonCatalogueException e) {
             erreurs.rejectValue(e.getChamp(), "admin.catalogue.erreur.doublon");
+        } catch (UnitePrestationFixeeException e) {
+            // Champ en lecture seule : n'arrive que par un envoi forgé ou une page périmée.
+            erreurs.rejectValue("unite", e.getCleMessage());
+        } catch (DureePrestationALHeureException e) {
+            erreurs.rejectValue("dureeMinutes", e.getCleMessage());
         } catch (IllegalArgumentException e) {
             erreurs.rejectValue("tauxTva", "admin.catalogue.erreur.taux");
         } catch (RegleMetierException e) {
@@ -197,7 +207,7 @@ public class AdminPrestationController {
     private DonneesPrestation versDonnees(PrestationForm f) {
         return new DonneesPrestation(f.getCodeCategorie(), f.getCode(), f.getLibelle(),
                 f.getDescription(), f.getPrixHtva(), f.getTauxTva(), f.getDureeMinutes(),
-                f.isActif(), f.traductions());
+                f.isActif(), f.traductions(), f.getUnite());
     }
 
     private PrestationForm versFormulaire(ArticleVueAdmin vue) {
@@ -209,6 +219,7 @@ public class AdminPrestationController {
         f.setPrixHtva(vue.prixHtva());
         f.setTauxTva(vue.tauxTva());
         f.setDureeMinutes(vue.dureeMinutes());
+        f.setUnite(UnitePrestation.valueOf(vue.unite()));
         f.setActif(vue.actif());
         f.reprendre(vue.traductions());
         return f;

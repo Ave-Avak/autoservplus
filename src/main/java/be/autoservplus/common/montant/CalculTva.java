@@ -57,7 +57,21 @@ public final class CalculTva {
 
     /** Total taxe comprise d'une ligne : le prix unitaire affiché, multiplié par la quantité. */
     public static BigDecimal totalTvac(BigDecimal unitaireHtva, BigDecimal taux, int quantite) {
-        return unitaireTvac(unitaireHtva, taux).multiply(BigDecimal.valueOf(quantite));
+        return totalTvac(unitaireHtva, taux, BigDecimal.valueOf(quantite));
+    }
+
+    /**
+     * Total taxe comprise d'une ligne à quantité décimale (des heures de main-d'œuvre) : le
+     * prix unitaire affiché, multiplié par la quantité, arrondi au cent au demi supérieur.
+     * Pour une quantité entière le produit tombe juste et l'arrondi ne change rien.
+     *
+     * <p>Le prix annoncé reste le prix payé : le client refait le calcul depuis le taux
+     * horaire taxe comprise affiché. Écarté, l'arrondi du prix hors TVA multiplié par la
+     * quantité puis taxé : à 62,50 € HTVA de l'heure, 1,5 h donnerait 113,44 € au lieu des
+     * 113,45 € que donne le taux affiché de 75,63 €.</p>
+     */
+    public static BigDecimal totalTvac(BigDecimal unitaireHtva, BigDecimal taux, BigDecimal quantite) {
+        return unitaireTvac(unitaireHtva, taux).multiply(quantite).setScale(2, RoundingMode.HALF_UP);
     }
 
     /** Base imposable d'un total taxe comprise soumis à un seul taux. */

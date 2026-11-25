@@ -1,6 +1,10 @@
 package be.autoservplus.messagerie.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.numerotation.CompteurAnnuel;
+import be.autoservplus.common.numerotation.TypeCompteur;
+import be.autoservplus.common.web.NumeroPage;
+import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -16,11 +20,15 @@ import be.autoservplus.notification.service.NotificationService;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Duration;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.UUID;
@@ -50,12 +58,20 @@ public class MessagerieService {
 
     private static final Logger log = LoggerFactory.getLogger(MessagerieService.class);
 
+    /** Fils par page dans l'espace membre. */
+    public static final int TAILLE_PAGE = 20;
+
+    /** Délai minimal entre deux courriels au garage pour un même fil (Q-H-13). */
+    static final Duration INTERVALLE_AVIS_GARAGE = Duration.ofMinutes(15);
+
     private final ConversationRepository conversations;
     private final UtilisateurRepository membres;
     private final InterventionRepository interventions;
     private final ParametreAtelierRepository parametres;
     private final NotificationService notifications;
+    private final ServiceCourriel courriels;
     private final ConversationMapper mapper;
+    private final CompteurAnnuel compteur;
     private final Clock horloge;
 
     public MessagerieService(ConversationRepository conversations,
@@ -63,24 +79,29 @@ public class MessagerieService {
                              InterventionRepository interventions,
                              ParametreAtelierRepository parametres,
                              NotificationService notifications,
+                             ServiceCourriel courriels,
                              ConversationMapper mapper,
+                             CompteurAnnuel compteur,
                              Clock horloge) {
         this.conversations = conversations;
         this.membres = membres;
         this.interventions = interventions;
         this.parametres = parametres;
         this.notifications = notifications;
+        this.courriels = courriels;
         this.mapper = mapper;
+        this.compteur = compteur;
         this.horloge = horloge;
     }
 
     // --- lecture ------------------------------------------------------------------------
 
-    public List<ConversationVue> mesFils(String email) {
+    /** @param page numéro de page à partir de zéro, borné */
+    public Page<ConversationVue> mesFils(String email, int page) {
         ZoneId zone = parametres.courants().zone();
-        return conversations.duMembre(membre(email)).stream()
-                .map(fil -> mapper.resume(fil, RoleExpediteur.MEMBRE, zone))
-                .toList();
+        return conversations.duMembre(membre(email),
+                        PageRequest.of(NumeroPage.borne(page, TAILLE_PAGE), TAILLE_PAGE))
+                .map(fil -> mapper.resume(fil, RoleExpediteur.MEMBRE, zone));
     }
 
     public long nombreFilsNonLus(String email) {
@@ -97,8 +118,22 @@ public class MessagerieService {
     @Transactional
     public ConversationVue lire(String email, UUID reference) {
         Conversation fil = filDuMembre(email, reference);
-        fil.marquerLuPar(RoleExpediteur.MEMBRE);
+        fil.marquerLuPar(RoleExpediteur.MEMBRE, horloge.instant());
         return mapper.detail(fil, RoleExpediteur.MEMBRE, parametres.courants().zone());
+    }
+
+    /**
+     * Messages du fil postérieurs au curseur, pour le rafraîchissement du fil ouvert. Ceux du
+     * garage sont lus à leur affichage, comme à l'ouverture du fil.
+     *
+     * <p>L'appartenance est vérifiée avant que le curseur ne serve : un curseur ne désigne
+     * jamais un fil, il ne fait que filtrer celui que le membre a le droit de lire.</p>
+     */
+    @Transactional
+    public ConversationVue suite(String email, UUID reference, long apres) {
+        Conversation fil = filDuMembre(email, reference);
+        fil.marquerLuPar(RoleExpediteur.MEMBRE, horloge.instant());
+        return mapper.suite(fil, RoleExpediteur.MEMBRE, parametres.courants().zone(), apres);
     }
 
     // --- ecriture -----------------------------------------------------------------------
@@ -115,10 +150,11 @@ public class MessagerieService {
         Intervention intervention = referenceIntervention == null
                 ? null : interventionDuMembre(email, referenceIntervention);
 
-        Conversation fil = new Conversation(membre, intervention, sujet);
+        Conversation fil = new Conversation(compteur.prochainNumero(TypeCompteur.FIL), membre,
+                intervention, sujet);
         fil.ajouter(membre, RoleExpediteur.MEMBRE, corps, horloge.instant());
         conversations.save(fil);
-        prevenirLeGarage(fil.getSujet());
+        prevenirLeGarage(fil, membre);
         return fil.getReference();
     }
 
@@ -126,8 +162,9 @@ public class MessagerieService {
     @Transactional
     public void repondre(String email, UUID reference, String corps) {
         Conversation fil = filDuMembre(email, reference);
-        fil.ajouter(membre(email), RoleExpediteur.MEMBRE, corps, horloge.instant());
-        prevenirLeGarage(fil.getSujet());
+        Utilisateur membre = membre(email);
+        fil.ajouter(membre, RoleExpediteur.MEMBRE, corps, horloge.instant());
+        prevenirLeGarage(fil, membre);
     }
 
     // --- helpers privees -----------------------------------------------------------------
@@ -144,9 +181,10 @@ public class MessagerieService {
     private Intervention interventionDuMembre(String email, UUID reference) {
         Intervention intervention = interventions.findByReference(reference)
                 .orElseThrow(() -> new RessourceIntrouvableException("Intervention", reference));
-        boolean sienne = intervention.getRdv() != null
-                && intervention.getRdv().getMembre().getEmail().equals(email);
-        if (!sienne) {
+        // Le titulaire, et non le membre du rendez-vous : une intervention née d'une
+        // commande ou d'une entrée directe n'a pas de rendez-vous.
+        Utilisateur titulaire = intervention.titulaire();
+        if (titulaire == null || !titulaire.getEmail().equals(email)) {
             throw new RessourceIntrouvableException("Intervention", reference);
         }
         return intervention;
@@ -157,7 +195,23 @@ public class MessagerieService {
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
     }
 
-    private void prevenirLeGarage(String sujet) {
+    /**
+     * Avis au garage d'un message du membre : une notification à chaque administrateur, et un
+     * courriel à l'adresse de l'atelier, au plus un par fil et par quart d'heure (Q-H-13).
+     *
+     * <p>La notification ne porte que le numéro du fil (Q-H-27). Elle reste chez
+     * l'administrateur après la suppression du compte (F23), qui efface le fil : le sujet,
+     * écrit par le membre, y aurait survécu.</p>
+     */
+    private void prevenirLeGarage(Conversation fil, Utilisateur membre) {
+        if (fil.dernierMessageAppelleUnAvis(INTERVALLE_AVIS_GARAGE)) {
+            courriels.envoyerAvisMessageAuGarage(fil.getNumero(), fil.getSujet(), membre.nomComplet(),
+                    fil.getReference());
+        }
+        notifierLesAdministrateurs(fil.getNumero());
+    }
+
+    private void notifierLesAdministrateurs(String numeroFil) {
         List<Utilisateur> administrateurs = membres.findByTypeUtilisateurAndStatut(
                 TypeUtilisateur.ADMINISTRATEUR, StatutUtilisateur.ACTIF);
         if (administrateurs.isEmpty()) {
@@ -165,6 +219,6 @@ public class MessagerieService {
             return;
         }
         administrateurs.forEach(administrateur ->
-                notifications.deposer(administrateur, TypeNotification.MESSAGE_RECU, sujet));
+                notifications.deposer(administrateur, TypeNotification.MESSAGE_RECU, numeroFil));
     }
 }

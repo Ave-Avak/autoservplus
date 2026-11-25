@@ -81,7 +81,8 @@ public class VehiculeService {
      */
     @Transactional
     public Vehicule ajouter(String email, String plaque, String marque, String modele,
-                            Motorisation motorisation, Short annee, Integer kilometrage) {
+                            Motorisation motorisation, Short annee, Integer kilometrage,
+                            String numeroChassis) {
 
         String plaqueNormalisee = Vehicule.normaliserPlaque(plaque);
 
@@ -101,6 +102,7 @@ public class VehiculeService {
 
         Vehicule vehicule = new Vehicule(membre, plaqueNormalisee, marque, modele, motorisation);
         vehicule.setAnnee(annee);
+        vehicule.setNumeroChassis(numeroChassis);
         if (kilometrage != null) {
             vehicule.mettreAJourKilometrage(kilometrage);
         }

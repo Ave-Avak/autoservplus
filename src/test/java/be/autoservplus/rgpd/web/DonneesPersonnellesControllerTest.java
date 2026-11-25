@@ -115,18 +115,18 @@ class DonneesPersonnellesControllerTest {
     @WithMockUser(username = EMAIL)
     @DisplayName("POST /mes-donnees/export sert le fichier en piece jointe, nom date")
     void telechargement() throws Exception {
-        byte[] contenu = "{\"donnees_personnelles\":{}}".getBytes(StandardCharsets.UTF_8);
-        doReturn(new FichierExport("mes-donnees-2026-08-22.json", contenu))
+        byte[] contenu = "PK archive".getBytes(StandardCharsets.UTF_8);
+        doReturn(new FichierExport("mes-donnees-2026-08-22.zip", contenu))
                 .when(service).exporter(EMAIL, "MotDePasseDeMarie!");
 
         mvc.perform(post("/mes-donnees/export").with(csrf())
                         .param("motDePasse", "MotDePasseDeMarie!"))
                 .andExpect(status().isOk())
-                .andExpect(content().contentTypeCompatibleWith("application/json"))
+                .andExpect(content().contentTypeCompatibleWith("application/zip"))
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
                         org.hamcrest.Matchers.containsString("attachment")))
                 .andExpect(header().string(HttpHeaders.CONTENT_DISPOSITION,
-                        org.hamcrest.Matchers.containsString("mes-donnees-2026-08-22.json")))
+                        org.hamcrest.Matchers.containsString("mes-donnees-2026-08-22.zip")))
                 .andExpect(content().bytes(contenu));
 
         // L'identite vient du contexte de securite, jamais d'un parametre.

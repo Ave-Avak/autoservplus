@@ -65,21 +65,61 @@ public class Prestation extends BaseEntity {
     @Column(name = "duree_minutes", nullable = false)
     private int dureeMinutes;
 
+    /**
+     * Fixée à la création (V72) : aucune méthode ne la change. Une prestation au forfait
+     * déjà dans un panier, un rendez-vous ou un devis ne doit pas devenir une prestation
+     * que le domaine refuse, et la durée forcée à une heure fausserait des créneaux pris.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "unite", nullable = false, length = 10, updatable = false)
+    private UnitePrestation unite = UnitePrestation.FORFAIT;
+
     @Column(name = "actif", nullable = false)
     private boolean actif = true;
+
+    /** Durée d'une prestation à l'heure : celle d'une unité ({@code ck_service_duree_heure}). */
+    public static final int DUREE_UNITE_HEURE = 60;
 
     protected Prestation() {
         // requis par JPA
     }
 
+    /** Prestation au forfait. */
     public Prestation(Categorie categorie, String code, String libelle,
                       BigDecimal prixHtva, int dureeMinutes) {
+        this(categorie, code, libelle, prixHtva, dureeMinutes, UnitePrestation.FORFAIT);
+    }
+
+    /**
+     * @throws DureePrestationALHeureException une prestation à l'heure dont la durée n'est
+     *                                         pas celle d'une unité
+     */
+    public Prestation(Categorie categorie, String code, String libelle,
+                      BigDecimal prixHtva, int dureeMinutes, UnitePrestation unite) {
         this.reference = UUID.randomUUID();
         this.categorie = Objects.requireNonNull(categorie, "categorie");
         this.code = Objects.requireNonNull(code, "code");
         this.libelle = Objects.requireNonNull(libelle, "libelle");
         this.prixHtva = Objects.requireNonNull(prixHtva, "prixHtva");
-        this.dureeMinutes = dureeMinutes;
+        this.unite = Objects.requireNonNull(unite, "unite");
+        setDureeMinutes(dureeMinutes);
+    }
+
+    /** Main-d'œuvre au taux du garage : se compte en heures, ne se réserve ni ne s'achète en ligne. */
+    public boolean estALHeure() {
+        return unite == UnitePrestation.HEURE;
+    }
+
+    /**
+     * Refuse une unité différente de celle de la création, et accepte la même : un
+     * formulaire ou un import qui renvoie l'unité en place ne change rien.
+     *
+     * @throws UnitePrestationFixeeException unité différente
+     */
+    public void verifierUnite(UnitePrestation demandee) {
+        if (demandee != null && demandee != unite) {
+            throw new UnitePrestationFixeeException(code);
+        }
     }
 
     /**
@@ -158,7 +198,16 @@ public class Prestation extends BaseEntity {
     public BigDecimal getTauxTva() { return tauxTva; }
     public void setTauxTva(BigDecimal tauxTva) { this.tauxTva = TauxTvaBelge.verifier(tauxTva); }
     public int getDureeMinutes() { return dureeMinutes; }
-    public void setDureeMinutes(int dureeMinutes) { this.dureeMinutes = dureeMinutes; }
+
+    /** @throws DureePrestationALHeureException durée d'une prestation à l'heure autre qu'une heure */
+    public void setDureeMinutes(int dureeMinutes) {
+        if (estALHeure() && dureeMinutes != DUREE_UNITE_HEURE) {
+            throw new DureePrestationALHeureException();
+        }
+        this.dureeMinutes = dureeMinutes;
+    }
+
+    public UnitePrestation getUnite() { return unite; }
     public boolean isActif() { return actif; }
 
     @Override

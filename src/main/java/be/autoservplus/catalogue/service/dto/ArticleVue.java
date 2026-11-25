@@ -25,6 +25,8 @@ import java.util.UUID;
  * @param langueLibelle     langue à déclarer sur le libellé s'il est affiché en repli
  * @param langueDescription langue à déclarer sur la description affichée en repli
  * @param langueCategorie   langue à déclarer sur la catégorie affichée en repli
+ * @param unite             {@code FORFAIT} ou {@code HEURE} pour une prestation, {@code null}
+ *                          pour une pièce
  */
 public record ArticleVue(
         UUID reference,
@@ -39,14 +41,23 @@ public record ArticleVue(
         boolean disponible,
         String langueLibelle,
         String langueDescription,
-        String langueCategorie) {
+        String langueCategorie,
+        String unite) {
 
     /** Un article dont tous les textes sont dans la langue de la page. */
     public ArticleVue(UUID reference, String code, String libelle, String description, String categorie,
                       BigDecimal prixHtva, BigDecimal prixTvac, Integer dureeMinutes, String marque,
                       boolean disponible) {
         this(reference, code, libelle, description, categorie, prixHtva, prixTvac, dureeMinutes, marque,
-                disponible, null, null, null);
+                disponible, null, null, null, null);
+    }
+
+    /**
+     * Prestation facturée à l'heure par l'atelier : le prix est un taux horaire, sans durée
+     * affichée, ni réservation, ni ajout au panier (Q-H-36).
+     */
+    public boolean aLHeure() {
+        return "HEURE".equals(unite);
     }
 
     /** La prestation en français, langue d'origine du catalogue. */
@@ -71,7 +82,8 @@ public record ArticleVue(
                 prestation.isActif(),
                 libelle.langueSiRepli(langue),
                 description.langueSiRepli(langue),
-                categorie.langueSiRepli(langue));
+                categorie.langueSiRepli(langue),
+                prestation.getUnite().name());
     }
 
     /** La pièce en français, langue d'origine du catalogue. */
@@ -96,7 +108,8 @@ public record ArticleVue(
                 piece.estDisponible(),
                 libelle.langueSiRepli(langue),
                 description.langueSiRepli(langue),
-                categorie.langueSiRepli(langue));
+                categorie.langueSiRepli(langue),
+                null);
     }
 
     /** Duree formatee pour l affichage : « 1 h 30 » plutot que « 90 minutes ». */

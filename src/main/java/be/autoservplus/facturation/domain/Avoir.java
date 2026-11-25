@@ -61,6 +61,12 @@ public class Avoir {
     /** Motif légal d'un avoir de rétractation (CDE art. VI.47). Valeur stable, non traduite. */
     public static final String MOTIF_RETRACTATION = "RETRACTATION_F30";
 
+    /** Annulation d'une facture d'atelier par l'administrateur (Q-H-14, Q-H-50). Valeur stable. */
+    public static final String MOTIF_ANNULATION_ATELIER = "ANNULATION_ATELIER";
+
+    /** Longueur maximale de la précision, celle de la colonne (V74). */
+    public static final int PRECISION_MAX = 500;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -87,6 +93,13 @@ public class Avoir {
 
     @Column(name = "motif", nullable = false, updatable = false, columnDefinition = "text")
     private String motif;
+
+    /**
+     * Texte libre de l'administrateur sur une annulation d'atelier, imprimé tel que saisi,
+     * dans sa langue. Nul pour une rétractation ({@code ck_avoir_precision}, V74).
+     */
+    @Column(name = "precision", updatable = false, length = PRECISION_MAX)
+    private String precision;
 
     @Column(name = "date_emission", nullable = false, updatable = false)
     private Instant dateEmission;
@@ -125,6 +138,32 @@ public class Avoir {
      */
     public static Avoir contrePassant(String numero, Facture facture, String motif,
                                       Instant dateEmission) {
+        if (MOTIF_ANNULATION_ATELIER.equals(motif)) {
+            throw new IllegalArgumentException("Une annulation d'atelier passe par annulantFactureAtelier.");
+        }
+        return emis(numero, facture, motif, null, dateEmission);
+    }
+
+    /**
+     * Note de crédit totale d'une facture d'atelier, émise par l'administrateur avec une
+     * précision obligatoire (Q-H-14, Q-H-50). Elle n'annule que cette facture : celle de la
+     * commande dont l'intervention peut naître se corrige par la rétractation (Q-H-52).
+     */
+    public static Avoir annulantFactureAtelier(String numero, Facture facture, String precision,
+                                               Instant dateEmission) {
+        Objects.requireNonNull(facture, "facture");
+        if (!facture.estDAtelier()) {
+            throw new IllegalArgumentException("La facture " + facture.getNumero() + " n'est pas une facture d'atelier.");
+        }
+        String texte = precision == null ? "" : precision.strip();
+        if (texte.isEmpty() || texte.length() > PRECISION_MAX) {
+            throw new IllegalArgumentException("Précision obligatoire, de 500 caractères au plus.");
+        }
+        return emis(numero, facture, MOTIF_ANNULATION_ATELIER, texte, dateEmission);
+    }
+
+    private static Avoir emis(String numero, Facture facture, String motif, String precision,
+                              Instant dateEmission) {
         Objects.requireNonNull(facture, "facture");
         Avoir avoir = new Avoir();
         avoir.reference = UUID.randomUUID();
@@ -134,6 +173,7 @@ public class Avoir {
         avoir.montantTva = Objects.requireNonNull(facture.getMontantTva(), "montantTva");
         avoir.montantTvac = Objects.requireNonNull(facture.getMontantTvac(), "montantTvac");
         avoir.motif = Objects.requireNonNull(motif, "motif");
+        avoir.precision = precision;
         avoir.dateEmission = Objects.requireNonNull(dateEmission, "dateEmission");
         // Même invariant que sur la facture, défendu aux deux étages : l'entité avant
         // la base (ck_avoir_coherence), pour échouer là où l'erreur est compréhensible.
@@ -177,6 +217,7 @@ public class Avoir {
     public BigDecimal getMontantTva() { return montantTva; }
     public BigDecimal getMontantTvac() { return montantTvac; }
     public String getMotif() { return motif; }
+    public String getPrecision() { return precision; }
     public Instant getDateEmission() { return dateEmission; }
     public String getCheminPdf() { return cheminPdf; }
 

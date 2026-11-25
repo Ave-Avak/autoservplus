@@ -32,11 +32,13 @@
                 <span th:if="${f.cloturee()}" class="badge" th:text="#{messagerie.clos}">Clôturé</span>
             </p>
             <p class="carte-meta">
+                <span th:text="${f.numero()}">FIL-2026-0001</span>
                 <span th:if="${f.estRattachee()}" th:text="#{messagerie.rattache(${f.numeroIntervention()})}">Travaux ITV-2026-0011</span>
                 <span th:text="${#temporals.format(f.derniereActivite(), 'EEEE d MMMM yyyy')}">23 août 2026</span>
             </p>
         </li>
     </ul>
+    <nav th:replace="~{fragments/pagination :: liensSimples(${resultats}, '/mes-messages')}"></nav>
 </main>
 <div th:replace="~{fragments/pied :: pied}"></div>
 </body>

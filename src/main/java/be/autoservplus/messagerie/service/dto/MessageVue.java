@@ -13,6 +13,8 @@ import java.time.LocalDateTime;
  * exposerait le personnel. Cote garage, le prenom du membre suffit a situer le fil.</p>
  */
 public record MessageVue(
+        /** Identifiant du message, curseur du rafraîchissement : le fil ne rend que les suivants. */
+        Long id,
         String auteur,
         boolean duGarage,
         String corps,
@@ -22,6 +24,7 @@ public record MessageVue(
     public static MessageVue de(Message message, LocalDateTime date, String libelleGarage) {
         boolean duGarage = message.getRole() == RoleExpediteur.ADMINISTRATEUR;
         return new MessageVue(
+                message.getId(),
                 duGarage ? libelleGarage : message.getExpediteur().getPrenom(),
                 duGarage,
                 message.getCorps(),

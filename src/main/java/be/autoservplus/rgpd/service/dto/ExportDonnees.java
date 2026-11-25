@@ -1,13 +1,20 @@
 package be.autoservplus.rgpd.service.dto;
 
+import be.autoservplus.avis.domain.Avis;
+import be.autoservplus.devis.domain.Devis;
+import be.autoservplus.devis.domain.LigneDevis;
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.EvenementSecuriteCompte;
 import be.autoservplus.identite.domain.ModificationCompte;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
+import be.autoservplus.facturation.domain.Encaissement;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
+import be.autoservplus.messagerie.domain.Conversation;
+import be.autoservplus.messagerie.domain.Message;
+import be.autoservplus.notification.domain.Notification;
 import be.autoservplus.reservation.domain.LigneRdv;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.Vehicule;
@@ -17,6 +24,7 @@ import be.autoservplus.vente.domain.Panier;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
 
@@ -60,8 +68,12 @@ public record ExportDonnees(
             PanierExport panierEnCours,
             List<CommandeExport> commandes,
             List<FactureExport> factures,
+            List<DevisExport> devis,
             List<RdvExport> rendezVous,
             List<InterventionExport> interventions,
+            List<FilExport> messagerie,
+            List<NotificationExport> notifications,
+            List<AvisExport> avis,
             List<ConsentementExport> consentements,
             ConnexionExport connexionEtSecurite,
             List<ModificationCompteExport> modificationsDuCompte) {
@@ -300,6 +312,132 @@ public record ExportDonnees(
     }
 
     /**
+     * Devis émis par le membre depuis son panier (F15), tel qu'il a été figé : client et
+     * véhicule nommés, lignes et totaux. Le PDF n'est pas inclus, il se recompose depuis ces
+     * valeurs et se télécharge dans « Mes devis ».
+     */
+    public record DevisExport(
+            String numero,
+            Instant dateEmission,
+            LocalDate valableJusquAu,
+            String langueDocument,
+            String clientPrenom,
+            String clientNom,
+            String clientRue,
+            String clientNumeroRue,
+            String clientCodePostal,
+            String clientLocalite,
+            String clientPays,
+            String vehiculePlaque,
+            String vehiculeMarque,
+            String vehiculeModele,
+            BigDecimal montantHtva,
+            BigDecimal montantTva,
+            BigDecimal montantTvac,
+            List<LigneDevisExport> lignes) {
+
+        public static DevisExport de(Devis devis) {
+            return new DevisExport(
+                    devis.getNumero(),
+                    devis.getDateEmission(),
+                    devis.getValableJusquAu(),
+                    devis.getLangueDocument().name(),
+                    devis.getClientPrenom(),
+                    devis.getClientNom(),
+                    devis.getClientRue(),
+                    devis.getClientNumeroRue(),
+                    devis.getClientCodePostal(),
+                    devis.getClientLocalite(),
+                    devis.getClientPays(),
+                    devis.getVehiculePlaque(),
+                    devis.getVehiculeMarque(),
+                    devis.getVehiculeModele(),
+                    devis.getMontantHtva(),
+                    devis.getMontantTva(),
+                    devis.getMontantTvac(),
+                    devis.getLignes().stream().map(LigneDevisExport::de).toList());
+        }
+    }
+
+    public record LigneDevisExport(
+            String libelle,
+            short quantite,
+            BigDecimal prixUnitaireHtva,
+            BigDecimal tauxTva,
+            BigDecimal prixUnitaireTvac,
+            BigDecimal totalTvac) {
+
+        public static LigneDevisExport de(LigneDevis ligne) {
+            return new LigneDevisExport(
+                    ligne.getLibelle(),
+                    ligne.getQuantite(),
+                    ligne.getPrixUnitaireHtva(),
+                    ligne.getTauxTva(),
+                    ligne.prixUnitaireTvac(),
+                    ligne.totalTvac());
+        }
+    }
+
+    /**
+     * Fil de discussion avec le garage et ses messages, dans l'ordre d'envoi. L'expéditeur est
+     * désigné par son rôle : le membre lui-même ou le garage, qui parle d'une seule voix.
+     */
+    public record FilExport(
+            String numero,
+            String sujet,
+            String numeroIntervention,
+            boolean cloture,
+            List<MessageExport> messages) {
+
+        public static FilExport de(Conversation fil) {
+            return new FilExport(
+                    fil.getNumero(),
+                    fil.getSujet(),
+                    fil.getIntervention() == null ? null : fil.getIntervention().getNumero(),
+                    fil.isCloturee(),
+                    fil.getMessages().stream().map(MessageExport::de).toList());
+        }
+    }
+
+    /** {@code luLe} est nul pour un message non lu par son destinataire. */
+    public record MessageExport(String expediteur, String corps, Instant dateEnvoi, boolean lu,
+                                Instant luLe) {
+
+        public static MessageExport de(Message message) {
+            return new MessageExport(message.getRole().name(), message.getCorps(),
+                    message.getDateEnvoi(), message.isLu(), message.getLuLe());
+        }
+    }
+
+    /**
+     * Notification déposée dans l'espace du membre, telle qu'elle est conservée : son type, le
+     * texte d'origine en français et la valeur qu'elle porte (numéro de dossier, sujet d'un
+     * fil). L'écran compose le texte affiché dans la langue du lecteur.
+     */
+    public record NotificationExport(String type, String titre, String valeur, String statut,
+                                     String canal, Instant dateEnvoi, Instant dateLecture) {
+
+        public static NotificationExport de(Notification notification) {
+            return new NotificationExport(notification.getType().name(), notification.getTitre(),
+                    notification.getCorps(), notification.getStatut().name(),
+                    notification.getCanal().name(), notification.getDateEnvoi(),
+                    notification.getDateLecture());
+        }
+    }
+
+    /** Avis déposé par le membre, publié ou non, signalé ou non. */
+    public record AvisExport(String numeroIntervention, short note, String commentaire,
+                             Instant dateDepot, boolean publie, boolean signale) {
+
+        public static AvisExport de(Avis avis) {
+            return new AvisExport(
+                    avis.getIntervention() == null ? null : avis.getIntervention().getNumero(),
+                    avis.getNote(), avis.getCommentaire(), avis.getDateDepot(),
+                    avis.isPublie(), avis.isSignale());
+        }
+    }
+
+    /**
      * Facture émise au nom du membre (F31).
      *
      * <p>Section distincte des commandes, et non un doublon : une commande est un
@@ -337,17 +475,24 @@ public record ExportDonnees(
             BigDecimal montantTva,
             BigDecimal montantTvac,
             String numeroCommande,
+            String numeroIntervention,
             boolean pdfArchive,
             String clientPrenom,
             String clientNom,
-            AdresseExport adresseClient) {
+            AdresseExport adresseClient,
+            List<EncaissementExport> encaissements) {
+
+        /** Facture sans encaissement : toute facture de commande, payée en ligne. */
+        public static FactureExport de(Facture facture) {
+            return de(facture, List.of());
+        }
 
         /**
          * L'instantané du client (V61) est restitué tel que la facture le porte : c'est
-         * une donnée sur la personne, conservée dix ans même après la suppression du
+         * une donnée sur la personne, conservée sept ans même après la suppression du
          * compte, et que le membre doit pouvoir lire.
          */
-        public static FactureExport de(Facture facture) {
+        public static FactureExport de(Facture facture, List<EncaissementExport> encaissements) {
             return new FactureExport(
                     facture.getNumero(),
                     facture.getDateEmission(),
@@ -355,12 +500,32 @@ public record ExportDonnees(
                     facture.getMontantTva(),
                     facture.getMontantTvac(),
                     facture.getCommande() == null ? null : facture.getCommande().getNumero(),
+                    facture.getIntervention() == null ? null : facture.getIntervention().getNumero(),
                     facture.estArchivee(),
                     facture.getClientPrenom(),
                     facture.getClientNom(),
                     new AdresseExport(facture.getClientRue(), facture.getClientNumeroRue(),
                             facture.getClientCodePostal(), facture.getClientLocalite(),
-                            facture.getClientPays()));
+                            facture.getClientPays()),
+                    encaissements);
+        }
+    }
+
+    /**
+     * Règlement d'une facture d'atelier au comptoir (V75). L'auteur n'est pas restitué :
+     * c'est l'adresse d'un administrateur, non une donnée sur le membre.
+     */
+    public record EncaissementExport(
+            String moyen,
+            BigDecimal montant,
+            LocalDate dateEncaissement,
+            Instant annuleLe,
+            String motifAnnulation) {
+
+        public static EncaissementExport de(Encaissement encaissement) {
+            return new EncaissementExport(encaissement.getMoyen().name(), encaissement.getMontant(),
+                    encaissement.getDateEncaissement(), encaissement.getAnnuleLe(),
+                    encaissement.getMotifAnnulation());
         }
     }
 
@@ -435,6 +600,10 @@ public record ExportDonnees(
      * <p>La plaque arrive en argument, pour la même raison que dans
      * {@link RdvExport} : l'historique d'atelier d'un véhicule retiré du parc reste
      * détenu, il doit rester exporté.
+     *
+     * <p>Les photos de l'atelier arrivent aussi en argument : elles se rattachent au
+     * véhicule d'un membre identifié, l'article 15, § 3 impose d'en remettre une copie.
+     * Leurs fichiers sont joints à l'archive, cette section dit où les trouver.
      */
     public record InterventionExport(
             String numero,
@@ -448,9 +617,11 @@ public record ExportDonnees(
             BigDecimal montantDevisInitialHtva,
             BigDecimal totalFacturableHtva,
             BigDecimal totalFacturableTvac,
-            List<LigneInterventionExport> lignes) {
+            List<LigneInterventionExport> lignes,
+            List<PhotoExport> photos) {
 
-        public static InterventionExport de(Intervention intervention, String plaque) {
+        public static InterventionExport de(Intervention intervention, String plaque,
+                                            List<PhotoExport> photos) {
             return new InterventionExport(
                     intervention.getNumero(),
                     intervention.getStatut().percuLabel(),
@@ -463,20 +634,33 @@ public record ExportDonnees(
                     intervention.getMontantDevisInitialHtva(),
                     intervention.totalFacturableHtva(),
                     intervention.totalFacturableTvac(),
-                    intervention.getLignes().stream().map(LigneInterventionExport::de).toList());
+                    intervention.getLignes().stream().map(LigneInterventionExport::de).toList(),
+                    photos);
         }
+    }
+
+    /**
+     * Photo d'une intervention.
+     *
+     * @param fichier chemin du fichier dans l'archive, nul si le fichier manque sur le
+     *                disque du garage : la photo reste déclarée, sa copie ne peut pas
+     *                être jointe
+     */
+    public record PhotoExport(String fichier, String description) {
     }
 
     /**
      * Ligne d'intervention. {@code accordMembre} est restitué tel quel, y compris
      * {@code null} : c'est la réponse du membre à une demande de dépassement de
      * devis (RM-15), sa décision, donc sa donnée. {@code null} signifie qu'aucune
-     * réponse n'est attendue ni donnée.
+     * réponse n'est attendue ni donnée. {@code unite} vaut {@code PIECE}, {@code FORFAIT}
+     * ou {@code HEURE}, la seule dont la quantité peut être décimale (V73).
      */
     public record LigneInterventionExport(
             String type,
             String libelle,
-            short quantite,
+            BigDecimal quantite,
+            String unite,
             BigDecimal prixUnitaireHtva,
             BigDecimal tauxTva,
             BigDecimal totalHtva,
@@ -488,6 +672,7 @@ public record ExportDonnees(
                     ligne.getType().name(),
                     ligne.getLibelleFige(),
                     ligne.getQuantite(),
+                    ligne.getUnite().name(),
                     ligne.getPrixUnitaireHtva(),
                     ligne.getTauxTva(),
                     ligne.totalHtva(),

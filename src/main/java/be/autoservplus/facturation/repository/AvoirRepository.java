@@ -31,23 +31,25 @@ public interface AvoirRepository extends JpaRepository<Avoir, Long> {
             """)
     Optional<Avoir> findByReference(@Param("reference") UUID reference);
 
-    /** Avoirs du back-office sur une période, par numéro d'avoir ou de facture, ou adresse. */
+    /** Avoirs du back-office sur une période, par numéro d'avoir, de facture ou d'intervention, ou adresse. */
     @Query(value = """
             SELECT a FROM Avoir a
             JOIN FETCH a.facture f
             JOIN FETCH f.membre m
             LEFT JOIN FETCH f.commande c
+            LEFT JOIN FETCH f.intervention i
             WHERE a.dateEmission >= :debut AND a.dateEmission < :fin
               AND (lower(a.numero) LIKE :motif OR lower(f.numero) LIKE :motif
-                   OR lower(m.email) LIKE :motif)
+                   OR lower(m.email) LIKE :motif OR lower(i.numero) LIKE :motif)
             ORDER BY a.dateEmission DESC, a.id DESC
             """, countQuery = """
             SELECT count(a) FROM Avoir a
             JOIN a.facture f
             JOIN f.membre m
+            LEFT JOIN f.intervention i
             WHERE a.dateEmission >= :debut AND a.dateEmission < :fin
               AND (lower(a.numero) LIKE :motif OR lower(f.numero) LIKE :motif
-                   OR lower(m.email) LIKE :motif)
+                   OR lower(m.email) LIKE :motif OR lower(i.numero) LIKE :motif)
             """)
     Page<Avoir> rechercherAdmin(@Param("debut") Instant debut, @Param("fin") Instant fin,
                                 @Param("motif") String motif, Pageable pagination);

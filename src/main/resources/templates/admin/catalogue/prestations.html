@@ -58,7 +58,7 @@
                 <td th:text="${p.categorieLibelle()}">Entretien</td>
                 <td th:text="${p.prixHtva()} + ' €'">75,00 €</td>
                 <td th:text="${p.tauxTva()} + ' %'">21 %</td>
-                <td th:text="${p.dureeMinutes()} + ' min'">60 min</td>
+                <td th:text="${p.aLHeure()} ? #{catalogue.prix.par-heure} : ${p.dureeMinutes()} + ' min'">60 min</td>
                 <td>
                     <span th:if="${p.actif()}" class="badge badge-confirme"
                           th:text="#{admin.catalogue.statut.actif}">Actif</span>

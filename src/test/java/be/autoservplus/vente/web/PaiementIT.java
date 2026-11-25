@@ -24,6 +24,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -59,6 +60,7 @@ class PaiementIT extends SocleIntegration {
     @Autowired private CommandeRepository commandes;
     @Autowired private PaiementRepository paiements;
     @Autowired private PrestatairePaiementFictif prestataireFictif;
+    @Autowired private JdbcTemplate jdbc;
 
     private Piece plaquettes;
     private Piece ampoule;
@@ -99,6 +101,16 @@ class PaiementIT extends SocleIntegration {
         return redirection.substring(redirection.lastIndexOf('/') + 1);
     }
 
+    /**
+     * Stock lu en base. Le décompte passe par une instruction SQL
+     * ({@code PieceRepository.retirerAuPlus}) : la pièce déjà chargée dans la transaction
+     * du test garde l'ancien stock.
+     */
+    private int stock(Piece piece) {
+        return jdbc.queryForObject("SELECT quantite_stock FROM piece WHERE id = ?", Integer.class,
+                piece.getId());
+    }
+
     @Test
     @DisplayName("paye : webhook anonyme sans CSRF, statut relu, commande PAYEE, stock decremente, rejeu sans double effet")
     void parcoursPayeDeBoutEnBout() throws Exception {
@@ -118,15 +130,15 @@ class PaiementIT extends SocleIntegration {
         assertThat(commande.isRuptureAHonorer()).isFalse();
         Paiement paiement = paiements.findByReferenceMollie(referencePrestataire).orElseThrow();
         assertThat(paiement.getStatut()).isEqualTo(StatutPaiement.REUSSI);
-        assertThat(plaquettes.getQuantiteStock()).isEqualTo(8);
-        assertThat(ampoule.getQuantiteStock()).isEqualTo(2);
+        assertThat(stock(plaquettes)).isEqualTo(8);
+        assertThat(stock(ampoule)).isEqualTo(2);
 
         // Rejeu du meme webhook : idempotent, aucun double decrement.
         mvc.perform(post("/webhooks/paiement").with(anonymous())
                         .param("id", referencePrestataire))
                 .andExpect(status().isOk());
-        assertThat(plaquettes.getQuantiteStock()).isEqualTo(8);
-        assertThat(ampoule.getQuantiteStock()).isEqualTo(2);
+        assertThat(stock(plaquettes)).isEqualTo(8);
+        assertThat(stock(ampoule)).isEqualTo(2);
     }
 
     @Test
@@ -144,7 +156,7 @@ class PaiementIT extends SocleIntegration {
                 .isEqualTo(StatutCommande.EN_ATTENTE_PAIEMENT);
         assertThat(paiements.findByReferenceMollie(referencePrestataire).orElseThrow().getStatut())
                 .isEqualTo(StatutPaiement.ECHOUE);
-        assertThat(plaquettes.getQuantiteStock()).isEqualTo(10);
+        assertThat(stock(plaquettes)).isEqualTo(10);
     }
 
     @Test

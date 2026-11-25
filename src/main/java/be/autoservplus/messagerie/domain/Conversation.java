@@ -17,6 +17,7 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -61,6 +62,14 @@ public class Conversation extends BaseEntity {
     @Column(name = "reference", nullable = false, updatable = false)
     private UUID reference;
 
+    /**
+     * Désignation du fil hors de l'espace du membre (V71). La notification d'un
+     * administrateur ne cite que lui : le sujet, texte libre du membre, y survivrait à la
+     * suppression du compte.
+     */
+    @Column(name = "numero", length = 20, nullable = false, updatable = false)
+    private String numero;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(name = "membre_id", nullable = false, updatable = false)
     private Utilisateur membre;
@@ -87,10 +96,12 @@ public class Conversation extends BaseEntity {
     /**
      * Ouvre un fil au nom du membre.
      *
+     * @param numero       numéro {@code FIL-AAAA-NNNN} attribué par le compteur annuel
      * @param intervention travaux concernes, ou {@code null} pour un fil libre
      * @throws IllegalArgumentException sujet vide
      */
-    public Conversation(Utilisateur membre, Intervention intervention, String sujet) {
+    public Conversation(String numero, Utilisateur membre, Intervention intervention, String sujet) {
+        this.numero = Objects.requireNonNull(numero, "numero");
         this.membre = Objects.requireNonNull(membre, "membre");
         Objects.requireNonNull(sujet, "sujet");
         String titre = sujet.strip();
@@ -120,8 +131,33 @@ public class Conversation extends BaseEntity {
     }
 
     /** Marque lus les messages venus du camp oppose au lecteur. */
-    public void marquerLuPar(RoleExpediteur lecteur) {
-        messages.forEach(message -> message.marquerLuPar(lecteur));
+    public void marquerLuPar(RoleExpediteur lecteur, Instant maintenant) {
+        messages.forEach(message -> message.marquerLuPar(lecteur, maintenant));
+    }
+
+    /**
+     * Le dernier message du membre appelle-t-il un avis au garage ? Au plus un avis par
+     * intervalle : un membre qui écrit trois messages en cinq minutes ne produit qu'un
+     * courriel.
+     *
+     * <p>Les avis ne sont pas enregistrés, ils se rejouent : le premier message du membre en
+     * appelle un, puis chaque message écrit au moins un intervalle après le dernier avis.
+     * Le résultat est celui qu'aurait donné un horodatage conservé, sans colonne de plus.</p>
+     */
+    public boolean dernierMessageAppelleUnAvis(Duration intervalle) {
+        Instant dernierAvis = null;
+        boolean avis = false;
+        for (Message message : messages) {
+            if (message.getRole() != RoleExpediteur.MEMBRE) {
+                continue;
+            }
+            avis = dernierAvis == null
+                    || !message.getDateEnvoi().isBefore(dernierAvis.plus(intervalle));
+            if (avis) {
+                dernierAvis = message.getDateEnvoi();
+            }
+        }
+        return avis && !messages.isEmpty() && messages.get(messages.size() - 1).getRole() == RoleExpediteur.MEMBRE;
     }
 
     public long nombreNonLusPar(RoleExpediteur lecteur) {
@@ -142,6 +178,7 @@ public class Conversation extends BaseEntity {
 
     public Long getId() { return id; }
     public UUID getReference() { return reference; }
+    public String getNumero() { return numero; }
     public Utilisateur getMembre() { return membre; }
     public Intervention getIntervention() { return intervention; }
     public String getSujet() { return sujet; }

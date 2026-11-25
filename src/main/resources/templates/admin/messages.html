@@ -21,6 +21,7 @@
             <caption id="legende-admin-messages" th:text="#{admin.messagerie.legende}">Fils ouverts d'abord, puis les fils clôturés.</caption>
             <thead>
             <tr>
+                <th scope="col" th:text="#{admin.messagerie.colonne.numero}">Numéro</th>
                 <th scope="col" th:text="#{admin.messagerie.colonne.sujet}">Sujet</th>
                 <th scope="col" th:text="#{admin.messagerie.colonne.membre}">Client</th>
                 <th scope="col" th:text="#{admin.messagerie.colonne.rattachement}">Travaux</th>
@@ -31,6 +32,7 @@
             </thead>
             <tbody>
             <tr th:each="f : ${fils}">
+                <td th:text="${f.numero()}">FIL-2026-0001</td>
                 <td><a th:href="@{/admin/messages/{ref}(ref=${f.reference()})}" th:text="${f.sujet()}">Question</a></td>
                 <td th:text="${f.prenomMembre()}">Marie</td>
                 <td th:text="${f.estRattachee()} ? ${f.numeroIntervention()} : ''">ITV-2026-0011</td>
@@ -55,6 +57,7 @@
             </tbody>
         </table>
     </div>
+    <nav th:replace="~{fragments/pagination :: liensSimples(${resultats}, '/admin/messages')}"></nav>
 </main>
 <div th:replace="~{fragments/pied :: pied}"></div>
 </body>

@@ -16,6 +16,7 @@ import jakarta.persistence.Table;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.util.Objects;
+import java.util.UUID;
 
 /**
  * Une image de la galerie (BL-9). Table {@code photo} du socle V7, elargie par V30.
@@ -48,6 +49,13 @@ public class Photo extends BaseEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    /**
+     * Seule adresse qui sort de la base (V68). La clé séquentielle se devinait : compter
+     * de un en un suffisait à lire les photos d'intervention de tous les membres.
+     */
+    @Column(name = "reference", nullable = false, updatable = false)
+    private UUID reference;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "service_id", updatable = false)
     private Prestation prestation;
@@ -74,6 +82,7 @@ public class Photo extends BaseEntity {
     }
 
     private Photo(String chemin, String texteAlt, short ordre) {
+        this.reference = UUID.randomUUID();
         this.chemin = Objects.requireNonNull(chemin, "chemin");
         this.texteAlt = exigerTexteAlt(texteAlt);
         this.ordre = ordre;
@@ -118,6 +127,7 @@ public class Photo extends BaseEntity {
     }
 
     public Long getId() { return id; }
+    public UUID getReference() { return reference; }
     public Prestation getPrestation() { return prestation; }
     public Piece getPiece() { return piece; }
     public Intervention getIntervention() { return intervention; }

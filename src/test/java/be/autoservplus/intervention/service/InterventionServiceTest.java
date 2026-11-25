@@ -1,9 +1,17 @@
 package be.autoservplus.intervention.service;
 
 import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.common.exception.RefusTraduit;
+import be.autoservplus.facturation.domain.Avoir;
+import be.autoservplus.facturation.domain.Facture;
+import be.autoservplus.facturation.service.AvoirService;
+import be.autoservplus.facturation.service.EncaissementService;
+import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.support.GaragesDeTest;
+import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
+import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
@@ -15,6 +23,7 @@ import be.autoservplus.identite.service.AuteurCourant;
 import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
+import be.autoservplus.intervention.service.dto.ClotureIntervention;
 import be.autoservplus.intervention.repository.HistoriqueStatutInterventionRepository;
 import be.autoservplus.intervention.repository.InterventionRepository;
 import be.autoservplus.intervention.web.dto.InterventionVueMembre;
@@ -35,6 +44,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.AuditorAware;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -54,6 +64,7 @@ import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -66,10 +77,15 @@ class InterventionServiceTest {
     @Mock private InterventionRepository interventions;
     @Mock private HistoriqueStatutInterventionRepository historiques;
     @Mock private PrestationRepository prestations;
+    @Mock private PieceRepository pieces;
+    @Mock private FactureService factures;
+    @Mock private AvoirService avoirs;
+    @Mock private EncaissementService encaissements;
     @Mock private be.autoservplus.vente.repository.CommandeRepository commandes;
     @Mock private be.autoservplus.reservation.repository.VehiculeRepository vehicules;
     @Mock private ParametreAtelierRepository parametres;
     @Mock private AuteurCourant auteurCourant;
+    @Mock private AuditorAware<String> auditeur;
     @Mock private GenerateurNumeroIntervention numeros;
     @Mock private ServiceCourriel courriel;
     @Mock private ApplicationEventPublisher evenements;
@@ -86,11 +102,15 @@ class InterventionServiceTest {
     @BeforeEach
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
-        service = new InterventionService(interventions, historiques, prestations,
+        service = new InterventionService(interventions, historiques, prestations, pieces, factures, avoirs, encaissements,
                 commandes, vehicules, parametres,
-                auteurCourant, numeros, courriel, evenements, GaragesDeTest.bruxellois(), horloge);
+                auteurCourant, auditeur, numeros, courriel, evenements, GaragesDeTest.bruxellois(), horloge);
 
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
+        // Adresse complète : la clôture émet une facture, qui porte l'adresse du client (Q-H-23).
+        marie.setRue("Rue de la Loi");
+        marie.setCodePostal("1000");
+        marie.setLocalite("Bruxelles");
         golf = new Vehicule(marie, "1-ABC-123", "VW", "Golf", Motorisation.DIESEL);
         pont = new PosteAtelier("Pont 1");
         Categorie entretien = new Categorie("ENT", "Entretien", TypeCategorie.SERVICE);
@@ -243,7 +263,7 @@ class InterventionServiceTest {
             Intervention it = interventionEnCours();
             Prestation chere = prestationA("89.00");
 
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
             ArgumentCaptor<DetailsDepassementCourriel> details =
@@ -271,7 +291,7 @@ class InterventionServiceTest {
                     new BigDecimal("49.00"), new BigDecimal("10.29"), new BigDecimal("59.29"), MAINTENANT));
             Prestation chere = prestationA("89.00");
 
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
             verify(courriel).envoyerDemandeValidationDepassement(eq(paul), any(DetailsDepassementCourriel.class));
@@ -285,7 +305,7 @@ class InterventionServiceTest {
             ReflectionTestUtils.setField(it, "rdv", null);
             Prestation chere = prestationA("89.00");
 
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             verify(courriel).envoyerDemandeValidationDepassement(eq(marie), any(DetailsDepassementCourriel.class));
             verify(evenements).publishEvent(new DepassementSoumisEvent(it.getReference()));
@@ -299,11 +319,63 @@ class InterventionServiceTest {
             marie.anonymiser("jeton", "$2a$12$inerte", MAINTENANT);
             Prestation chere = prestationA("89.00");
 
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
             assertThat(it.titulaire()).isNull();
             verify(courriel, never()).envoyerDemandeValidationDepassement(any(), any());
+        }
+
+        private Piece pieceA(String prixHtva, int stock) {
+            Categorie c = new Categorie("FRE", "Freinage", TypeCategorie.PIECE);
+            Piece p = new Piece(c, "PL-1", "Plaquettes avant", new BigDecimal(prixHtva));
+            p.setQuantiteStock(stock);
+            when(pieces.findByReference(p.getReference())).thenReturn(Optional.of(p));
+            return p;
+        }
+
+        @Test
+        @DisplayName("une pièce au-delà du seuil fait basculer et prévient le membre (RM-14, RM-15)")
+        void pieceAuDelaDuSeuil() {
+            Intervention it = interventionEnCours();
+            Piece plaquettes = pieceA("89.00", 4);
+
+            service.ajouterLignePiece(it.getReference(), plaquettes.getReference(), (short) 1);
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+            assertThat(it.lignesEnAttente()).singleElement()
+                    .satisfies(l -> assertThat(l.getPiece()).isSameAs(plaquettes));
+            verify(courriel).envoyerDemandeValidationDepassement(eq(marie), any(DetailsDepassementCourriel.class));
+            verify(evenements).publishEvent(new DepassementSoumisEvent(it.getReference()));
+        }
+
+        @Test
+        @DisplayName("une pièce sans stock est admise, le stock n'est pas touché à l'ajout")
+        void pieceSansStockAdmise() {
+            Intervention it = interventionEnCours();
+            Piece plaquettes = pieceA("2.00", 0);
+
+            service.ajouterLignePiece(it.getReference(), plaquettes.getReference(), (short) 2);
+
+            assertThat(it.getLignes()).hasSize(2);
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+            assertThat(plaquettes.getQuantiteStock()).isZero();
+        }
+
+        @Test
+        @DisplayName("une pièce retirée de la vente est refusée, rien n'est écrit (RM-28)")
+        void pieceRetireeRefusee() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            it.demarrer(MAINTENANT);
+            when(interventions.findByReference(it.getReference())).thenReturn(Optional.of(it));
+            Piece plaquettes = pieceA("2.00", 5);
+            plaquettes.desactiver();
+
+            assertThatThrownBy(() -> service.ajouterLignePiece(
+                    it.getReference(), plaquettes.getReference(), (short) 1))
+                    .isInstanceOf(RessourceIntrouvableException.class);
+            assertThat(it.getLignes()).hasSize(1);
+            verify(interventions, never()).saveAndFlush(any());
         }
 
         @Test
@@ -312,7 +384,7 @@ class InterventionServiceTest {
             Intervention it = interventionEnCours();
             Prestation petite = prestationA("2.00");
 
-            service.ajouterLigneMainOeuvre(it.getReference(), petite.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), petite.getReference(), BigDecimal.valueOf(1));
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
             verify(courriel, never()).envoyerDemandeValidationDepassement(any(), any());
@@ -326,7 +398,7 @@ class InterventionServiceTest {
             doThrow(new RuntimeException("SMTP indisponible"))
                     .when(courriel).envoyerDemandeValidationDepassement(any(), any());
 
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
         }
@@ -336,7 +408,7 @@ class InterventionServiceTest {
         void validerParLeProprietaire() {
             Intervention it = interventionEnCours();
             Prestation chere = prestationA("89.00");
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             Intervention resultat = service.validerDepassement(it.getReference(), "marie@exemple.be");
 
@@ -349,7 +421,7 @@ class InterventionServiceTest {
         void refuserParLeProprietaire() {
             Intervention it = interventionEnCours();
             Prestation chere = prestationA("89.00");
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
 
             Intervention resultat = service.refuserDepassement(it.getReference(), "marie@exemple.be");
 
@@ -388,7 +460,7 @@ class InterventionServiceTest {
             Prestation chere = prestationA("500.00");
 
             assertThatThrownBy(() -> service.ajouterLigneMainOeuvre(
-                    it.getReference(), chere.getReference(), (short) 1))
+                    it.getReference(), chere.getReference(), BigDecimal.valueOf(1)))
                     .isInstanceOf(IllegalStateException.class)
                     .hasMessageContaining("RM-14");
 
@@ -537,7 +609,7 @@ class InterventionServiceTest {
             when(prestations.findByReference(chere.getReference())).thenReturn(Optional.of(chere));
 
             // L ajout au-dela du seuil bascule l entite : premiere entree historisee.
-            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), (short) 1);
+            service.ajouterLigneMainOeuvre(it.getReference(), chere.getReference(), BigDecimal.valueOf(1));
             // La reponse du membre fait repartir le travail : seconde entree.
             service.validerDepassement(it.getReference(), "marie@exemple.be");
 
@@ -691,5 +763,178 @@ class InterventionServiceTest {
         Intervention resultat = service.modifierCommentaireAdmin(ref, "  Piece commandee ");
 
         assertThat(resultat.getCommentaireAdmin()).isEqualTo("Piece commandee");
+    }
+
+    @Nested
+    @DisplayName("facture d'atelier à la clôture (A15, RM-17)")
+    class FactureALaCloture {
+
+        private Intervention enCours() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            it.demarrer(MAINTENANT);
+            doReturn(Optional.of(it)).when(interventions).findByReference(it.getReference());
+            return it;
+        }
+
+        @Test
+        @DisplayName("la clôture émet la facture et la confirmation porte son numéro")
+        void factureEmise() {
+            Intervention it = enCours();
+            doReturn(it).when(interventions).saveAndFlush(it);
+            Facture facture = org.mockito.Mockito.mock(Facture.class);
+            when(facture.getNumero()).thenReturn("2026-0050");
+            when(factures.emettrePourIntervention(it, marie)).thenReturn(Optional.of(facture));
+
+            ClotureIntervention cloture = service.terminer(it.getReference());
+
+            assertThat(cloture.numeroFacture()).isEqualTo("2026-0050");
+            assertThat(cloture.neeDUneCommande()).isFalse();
+        }
+
+        @Test
+        @DisplayName("sans titulaire : clôture refusée, rien d'écrit, aucune facture (Q-H-14)")
+        void sansTitulaire() {
+            Intervention it = enCours();
+            ReflectionTestUtils.setField(it, "rdv", null);
+            marie.anonymiser("jeton", "$2a$12$inerte", MAINTENANT);
+
+            assertThatThrownBy(() -> service.terminer(it.getReference()))
+                    .isInstanceOf(ClotureRefuseeException.class)
+                    .extracting(e -> ((ClotureRefuseeException) e).getCleMessage())
+                    .isEqualTo("admin.intervention.erreur.sans-titulaire");
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+            verifyNoInteractions(factures);
+            verify(interventions, never()).saveAndFlush(any());
+        }
+
+        @Test
+        @DisplayName("adresse du client incomplète : clôture refusée, le refus nomme le compte à compléter")
+        void sansAdresse() {
+            Intervention it = enCours();
+            marie.setRue(null);
+
+            assertThatThrownBy(() -> service.terminer(it.getReference()))
+                    .isInstanceOf(ClotureRefuseeException.class)
+                    .extracting(e -> ((ClotureRefuseeException) e).getCompteACompleter())
+                    .isEqualTo(marie.getReference());
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
+            verifyNoInteractions(factures);
+        }
+
+        @Test
+        @DisplayName("annulation de la facture : refusée sans facture, déléguée à la note de crédit sinon")
+        void annulationDeLaFacture() {
+            Intervention it = enCours();
+            when(factures.factureDe(it)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.annulerFactureAtelier(it.getReference(), "Erreur"))
+                    .isInstanceOf(RefusTraduit.class)
+                    .extracting(e -> ((RefusTraduit) e).getCleMessage())
+                    .isEqualTo("admin.intervention.erreur.sans-facture-a-annuler");
+            verifyNoInteractions(avoirs);
+
+            Facture facture = org.mockito.Mockito.mock(Facture.class);
+            Avoir avoir = org.mockito.Mockito.mock(Avoir.class);
+            when(avoir.getNumero()).thenReturn("AV-2026-0003");
+            when(factures.factureDe(it)).thenReturn(Optional.of(facture));
+            when(avoirs.annulerFactureAtelier(facture, "Erreur")).thenReturn(avoir);
+
+            assertThat(service.annulerFactureAtelier(it.getReference(), "Erreur")).isEqualTo("AV-2026-0003");
+        }
+
+        @Test
+        @DisplayName("une intervention planifiée est refusée par la machine à états, avant l'adresse")
+        void planifieeRefuseeParLaMachine() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            doReturn(Optional.of(it)).when(interventions).findByReference(it.getReference());
+            marie.setRue(null);
+
+            assertThatThrownBy(() -> service.terminer(it.getReference()))
+                    .isInstanceOf(IllegalStateException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("stock des pièces décompté à la clôture (Q-H-31)")
+    class StockALaCloture {
+
+        private Categorie freinage;
+
+        @BeforeEach
+        void categorie() {
+            freinage = new Categorie("FRE", "Freinage", TypeCategorie.PIECE);
+        }
+
+        private Piece piece(long id, String libelle, String prixHtva) {
+            Piece p = new Piece(freinage, "P-" + id, libelle, new BigDecimal(prixHtva));
+            ReflectionTestUtils.setField(p, "id", id);
+            return p;
+        }
+
+        /** Devis initial : la vidange seule, 49,00 € HTVA, seuil RM-15 à 53,90 €. */
+        private Intervention enCours() {
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            it.demarrer(MAINTENANT);
+            doReturn(Optional.of(it)).when(interventions).findByReference(it.getReference());
+            return it;
+        }
+
+        @Test
+        @DisplayName("les pièces posées sont décomptées, une ligne refusée par le membre ne l'est pas")
+        void decompteDesPiecesPosees() {
+            Intervention it = enCours();
+            doReturn(it).when(interventions).saveAndFlush(it);
+            Piece filtre = piece(7L, "Filtre", "1.00");
+            Piece disques = piece(3L, "Disques", "80.00");
+            it.ajouterLignePiece(filtre, (short) 1);
+            it.ajouterLignePiece(filtre, (short) 2);
+            it.ajouterLignePiece(disques, (short) 1);
+            it.refuserDepassement();
+            when(pieces.retirerAuPlus(7L, 3, null)).thenReturn(10);
+
+            ClotureIntervention cloture = service.terminer(it.getReference());
+
+            verify(pieces).retirerAuPlus(7L, 3, null);
+            verify(pieces, never()).retirerAuPlus(eq(3L), org.mockito.ArgumentMatchers.anyInt(), any());
+            assertThat(cloture.numero()).isEqualTo("INT-2026-0001");
+            assertThat(cloture.piecesRameneesAZero()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("un stock insuffisant ne refuse pas la clôture et nomme la pièce ramenée à zéro")
+        void plancherNommeLaPiece() {
+            Intervention it = enCours();
+            doReturn(it).when(interventions).saveAndFlush(it);
+            it.ajouterLignePiece(piece(7L, "Filtre", "1.00"), (short) 2);
+            when(pieces.retirerAuPlus(7L, 2, null)).thenReturn(1);
+
+            ClotureIntervention cloture = service.terminer(it.getReference());
+
+            assertThat(it.getStatut()).isEqualTo(StatutIntervention.TERMINEE);
+            assertThat(cloture.piecesRameneesAZero()).containsExactly("Filtre");
+        }
+
+        @Test
+        @DisplayName("un stock tout juste suffisant tombe à zéro sans être signalé : le plancher n'a pas joué")
+        void stockToutJusteSuffisant() {
+            Intervention it = enCours();
+            doReturn(it).when(interventions).saveAndFlush(it);
+            it.ajouterLignePiece(piece(7L, "Filtre", "1.00"), (short) 2);
+            when(pieces.retirerAuPlus(7L, 2, null)).thenReturn(2);
+
+            assertThat(service.terminer(it.getReference()).piecesRameneesAZero()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("une intervention annulée ne décompte rien")
+        void annulationSansDecompte() {
+            Intervention it = enCours();
+            doReturn(it).when(interventions).saveAndFlush(it);
+            it.ajouterLignePiece(piece(7L, "Filtre", "1.00"), (short) 2);
+
+            service.annuler(it.getReference());
+
+            verifyNoInteractions(pieces);
+        }
     }
 }

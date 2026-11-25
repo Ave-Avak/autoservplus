@@ -2,6 +2,7 @@ package be.autoservplus.facturation.domain;
 
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.vente.domain.Commande;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
@@ -24,7 +25,7 @@ import java.util.UUID;
  *
  * <p><b>Pas de suppression logique</b>, contrairement aux entités métier du socle :
  * une facture ne se supprime pas, même logiquement. La loi impose sa conservation
- * dix ans et sa seule correction légale est la note de crédit (table {@code avoir}).
+ * sept ans et sa seule correction légale est la note de crédit (table {@code avoir}).
  * Elle n'hérite donc pas de {@code BaseEntity}, qui porterait {@code deleted_at}.
  * Même précédent que les journaux append-only du projet.</p>
  *
@@ -36,14 +37,12 @@ import java.util.UUID;
  * après coup, sans que son contenu comptable bouge.</p>
  *
  * <p><b>Source</b> : une commande OU une intervention, jamais les deux (CHECK
- * {@code ck_facture_origine_unique}). Ce bloc ne livre que la facture de commande.
- * {@code interventionId} est mappé en identifiant brut plutôt qu'en association pour
- * que la colonne existe dès maintenant sans faire dépendre la facturation du module
- * intervention. Le bloc RM-17 futur promouvra l'association s'il en a besoin.</p>
+ * {@code ck_facture_origine_unique}). La facture d'une commande suit son paiement en
+ * ligne, celle d'une intervention naît à sa clôture (A15, RM-17), à régler à l'atelier.</p>
  *
- * <p><b>Montants figés</b> : recopiés de la commande à l'émission, jamais relus du
- * catalogue. Une modification de prix postérieure ne réécrit donc aucune facture,
- * comme les lignes figées ne réécrivent aucune commande.</p>
+ * <p><b>Montants figés</b> : ceux de la commande, ou la ventilation des lignes facturées
+ * de l'intervention, figées elles aussi. Jamais relus du catalogue : une modification de
+ * prix postérieure ne réécrit donc aucune facture.</p>
  */
 @Entity
 @Table(name = "facture")
@@ -70,8 +69,9 @@ public class Facture {
     @JoinColumn(name = "commande_id", updatable = false)
     private Commande commande;
 
-    @Column(name = "intervention_id", updatable = false)
-    private Long interventionId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "intervention_id", updatable = false)
+    private Intervention intervention;
 
     @NotNull
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
@@ -195,6 +195,52 @@ public class Facture {
     }
 
     /**
+     * Émet la facture d'atelier d'une intervention close (A15, RM-17). Le client est son
+     * titulaire, la langue celle de l'intervention (V66). À régler à l'atelier : l'échéance
+     * est le jour d'émission au garage, une facture d'atelier ne se vend pas à terme.
+     *
+     * @param montantHtva     total des bases de la ventilation des lignes facturées
+     * @param tauxTvaApplique le taux unique, ou {@code null} si la facture est multi-taux
+     */
+    public static Facture pourIntervention(String numero, short exercice, int sequenceAnnuelle,
+                                           Intervention intervention, Utilisateur titulaire,
+                                           BigDecimal montantHtva, BigDecimal montantTva, BigDecimal montantTvac,
+                                           BigDecimal tauxTvaApplique, Instant dateEmission,
+                                           LocalDate dateEcheance) {
+        Facture facture = new Facture();
+        facture.reference = UUID.randomUUID();
+        facture.numero = Objects.requireNonNull(numero, "numero");
+        facture.exercice = exercice;
+        facture.sequenceAnnuelle = sequenceAnnuelle;
+        facture.intervention = Objects.requireNonNull(intervention, "intervention");
+        facture.membre = Objects.requireNonNull(titulaire, "titulaire");
+        facture.clientPrenom = titulaire.getPrenom();
+        facture.clientNom = titulaire.getNom();
+        facture.clientRue = titulaire.getRue();
+        facture.clientNumeroRue = titulaire.getNumeroRue();
+        facture.clientCodePostal = titulaire.getCodePostal();
+        facture.clientLocalite = titulaire.getLocalite();
+        facture.clientPays = titulaire.getPays();
+        facture.langueDocument = intervention.getLangueDocument();
+        facture.montantHtva = Objects.requireNonNull(montantHtva, "montantHtva");
+        facture.montantTva = Objects.requireNonNull(montantTva, "montantTva");
+        facture.montantTvac = Objects.requireNonNull(montantTvac, "montantTvac");
+        facture.tauxTvaApplique = tauxTvaApplique;
+        facture.dateEmission = Objects.requireNonNull(dateEmission, "dateEmission");
+        facture.dateEcheance = Objects.requireNonNull(dateEcheance, "dateEcheance");
+        if (facture.montantHtva.add(facture.montantTva).compareTo(facture.montantTvac) != 0) {
+            throw new IllegalArgumentException(
+                    "Montants incoherents : HTVA + TVA doit valoir TVAC.");
+        }
+        return facture;
+    }
+
+    /** Facture d'atelier : elle se règle à l'atelier, contrairement à celle d'une commande déjà payée. */
+    public boolean estDAtelier() {
+        return intervention != null;
+    }
+
+    /**
      * Enregistre l'emplacement du PDF archivé. Seule mutation admise après émission :
      * elle ne touche aucune donnée comptable, et le trigger de la base l'autorise
      * pour cette raison précise.
@@ -233,7 +279,7 @@ public class Facture {
     public short getExercice() { return exercice; }
     public int getSequenceAnnuelle() { return sequenceAnnuelle; }
     public Commande getCommande() { return commande; }
-    public Long getInterventionId() { return interventionId; }
+    public Intervention getIntervention() { return intervention; }
     public Utilisateur getMembre() { return membre; }
     public BigDecimal getMontantHtva() { return montantHtva; }
     public BigDecimal getMontantTva() { return montantTva; }

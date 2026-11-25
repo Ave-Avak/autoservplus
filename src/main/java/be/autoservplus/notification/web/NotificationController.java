@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 /**
@@ -42,9 +43,13 @@ public class NotificationController {
     }
 
     @GetMapping
-    public String liste(@AuthenticationPrincipal UserDetails membre, Model modele) {
+    public String liste(@AuthenticationPrincipal UserDetails membre,
+                        @RequestParam(defaultValue = "1") int page,
+                        Model modele) {
+        var resultats = notifications.mesNotifications(membre.getUsername(), page - 1);
         modele.addAttribute("titre", msg("notifications.titre"));
-        modele.addAttribute("notifications", notifications.mesNotifications(membre.getUsername()));
+        modele.addAttribute("notifications", resultats.getContent());
+        modele.addAttribute("resultats", resultats);
         return "notification/notifications";
     }
 

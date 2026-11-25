@@ -1,5 +1,7 @@
 package be.autoservplus.messagerie.web;
 
+import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -9,6 +11,7 @@ import be.autoservplus.messagerie.service.AdminMessagerieService;
 import be.autoservplus.messagerie.service.MessagerieService;
 import be.autoservplus.notification.domain.StatutNotification;
 import be.autoservplus.notification.repository.NotificationRepository;
+import be.autoservplus.notification.service.NotificationService;
 import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -17,18 +20,36 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.TestingAuthenticationToken;
+import org.springframework.security.core.context.SecurityContext;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Clock;
+import java.time.Duration;
 import java.util.UUID;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -58,7 +79,12 @@ class MessagerieIT extends SocleIntegration {
     @Autowired private AdminMessagerieService adminMessagerie;
     @Autowired private ConversationRepository conversations;
     @Autowired private NotificationRepository notifications;
+    @Autowired private NotificationService notificationsService;
     @Autowired private UtilisateurRepository utilisateurs;
+    @Autowired private JdbcTemplate jdbc;
+    @Autowired private Clock horloge;
+    // Espion : les courriels partent réellement par le transport de test, l'appel est observé.
+    @MockitoSpyBean private ServiceCourriel courriels;
 
     private String marie;
     private String paul;
@@ -77,8 +103,23 @@ class MessagerieIT extends SocleIntegration {
                 "Test", prenom, type));
     }
 
+    /** Entrée directe au garage (V32) : ni rendez-vous ni commande, véhicule du membre. */
+    private UUID interventionDirecte(String email) {
+        Long membre = utilisateurs.findByEmail(email).orElseThrow().getId();
+        Long vehicule = jdbc.queryForObject("INSERT INTO vehicule (reference, membre_id, plaque, marque, "
+                        + "modele, motorisation) VALUES (gen_random_uuid(), ?, ?, 'VW', 'Golf', 'DIESEL') "
+                        + "RETURNING id", Long.class, membre, "MSG" + COMPTEUR.getAndIncrement());
+        return jdbc.queryForObject("INSERT INTO intervention (numero, vehicule_id, statut, "
+                        + "montant_devis_htva) VALUES (?, ?, 'PLANIFIEE', 0) RETURNING reference",
+                UUID.class, "INT-MSG-" + vehicule, vehicule);
+    }
+
     private UUID filDe(String email, String sujet) {
         return messagerie.ouvrir(email, sujet, "Bonjour, une question.", null);
+    }
+
+    private String numeroDe(UUID fil) {
+        return jdbc.queryForObject("SELECT numero FROM conversation WHERE reference = ?", String.class, fil);
     }
 
     @Nested
@@ -119,6 +160,38 @@ class MessagerieIT extends SocleIntegration {
 
         @Test
         @WithMockUser
+        @DisplayName("un fil se rattache à une intervention sans rendez-vous dont le membre est titulaire")
+        void interventionSansRendezVous() {
+            UUID intervention = interventionDirecte(marie);
+
+            UUID fil = messagerie.ouvrir(marie, "Ma révision", "Quand puis-je venir ?", intervention);
+
+            assertThat(jdbc.queryForObject("SELECT intervention_id IS NOT NULL FROM conversation "
+                    + "WHERE reference = ?", Boolean.class, fil)).isTrue();
+            assertThatThrownBy(() -> messagerie.ouvrir(paul, "Pas la mienne", "Bonjour", intervention))
+                    .isInstanceOf(RessourceIntrouvableException.class);
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("la liste des fils se pagine par vingt, le plus récent d'abord")
+        void pagination() throws Exception {
+            for (int i = 1; i <= MessagerieService.TAILLE_PAGE + 1; i++) {
+                filDe(marie, "Fil " + i);
+            }
+
+            mvc.perform(get("/mes-messages").with(user(marie)).locale(java.util.Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Fil 21")))
+                    .andExpect(content().string(not(containsString(">Fil 1<"))))
+                    .andExpect(content().string(containsString("/mes-messages?page=2")));
+            mvc.perform(get("/mes-messages").param("page", "2").with(user(marie)))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString(">Fil 1<")));
+        }
+
+        @Test
+        @WithMockUser
         @DisplayName("repondre dans le fil d autrui est refuse par un 404")
         void reponseDansLeFilDAutrui() throws Exception {
             UUID celuiDePaul = filDe(paul, "Fil de Paul");
@@ -146,6 +219,30 @@ class MessagerieIT extends SocleIntegration {
 
             assertThat(notifications.countByMembreAndStatut(membre, StatutNotification.NON_LUE))
                     .isGreaterThan(avant);
+        }
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("la réponse du garage part par courriel au membre, avec le sujet et sans le corps")
+        void courrielAuMembre() {
+            UUID reference = filDe(marie, "Ma facture");
+            adminMessagerie.repondre("admin@autoservplus.be", reference, "Texte confidentiel du garage.");
+
+            var membre = utilisateurs.findByEmail(marie).orElseThrow();
+            verify(courriels).envoyerAvisReponseGarage(
+                    argThat(destinataire -> destinataire.getEmail().equals(membre.getEmail())),
+                    eq(numeroDe(reference)), eq("Ma facture"), eq(reference));
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("deux messages du membre à la suite ne valent qu'un courriel au garage")
+        void unSeulAvisAuGarage() {
+            UUID reference = filDe(marie, "Deux messages");
+            messagerie.repondre(marie, reference, "Et une précision.");
+
+            verify(courriels, times(1)).envoyerAvisMessageAuGarage(eq(numeroDe(reference)), eq("Deux messages"), any(),
+                    eq(reference));
         }
 
         @Test
@@ -192,6 +289,167 @@ class MessagerieIT extends SocleIntegration {
     }
 
     @Nested
+    @DisplayName("Rafraichissement du fil et du compteur")
+    class Rafraichissement {
+
+        private long dernierId(UUID fil) {
+            return jdbc.queryForObject("SELECT max(m.id) FROM message m JOIN conversation c "
+                    + "ON c.id = m.conversation_id WHERE c.reference = ?", Long.class, fil);
+        }
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("le fil ne rend que les messages suivants, lus et datés à leur affichage")
+        void suiteDuFil() throws Exception {
+            UUID fil = filDe(marie, "Suite");
+            long curseur = dernierId(fil);
+            adminMessagerie.repondre("admin@autoservplus.be", fil, "Réponse du garage.");
+
+            mvc.perform(get("/mes-messages/{ref}/messages", fil).param("apres", String.valueOf(curseur))
+                            .with(user(marie)))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Réponse du garage.")))
+                    .andExpect(content().string(not(containsString("Bonjour, une question."))))
+                    .andExpect(content().string(containsString("apres=" + dernierId(fil))));
+
+            assertThat(jdbc.queryForObject("SELECT lu_le IS NOT NULL FROM message WHERE id = ?",
+                    Boolean.class, dernierId(fil))).isTrue();
+            mvc.perform(get("/mes-messages/{ref}/messages", fil).param("apres", String.valueOf(dernierId(fil)))
+                            .with(user(marie)))
+                    .andExpect(status().isNoContent());
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("le curseur ne sert qu'après le contrôle d'appartenance : le fil d'autrui répond 404")
+        void curseurSurLeFilDAutrui() throws Exception {
+            UUID fil = filDe(paul, "Fil de Paul");
+
+            mvc.perform(get("/mes-messages/{ref}/messages", fil).param("apres", "0").with(user(marie)))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @WithMockUser
+        @DisplayName("quinze minutes après l'affichage, le fil et le compteur répondent 286")
+        void arretApresInactivite() throws Exception {
+            UUID fil = filDe(marie, "Ancien");
+            String ancien = String.valueOf(horloge.millis() - Duration.ofMinutes(16).toMillis());
+
+            mvc.perform(get("/mes-messages/{ref}/messages", fil).param("apres", "0")
+                            .param("depuis", ancien).with(user(marie)))
+                    .andExpect(status().is(286));
+            mvc.perform(get("/mes-messages/compteur").param("actuel", "0")
+                            .param("depuis", ancien).with(user(marie)))
+                    .andExpect(status().is(286));
+        }
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("le compteur répond 204 tant qu'il ne change pas, puis rend le nouveau nombre")
+        void compteur() throws Exception {
+            UUID fil = filDe(marie, "Compteur de l'en-tête");
+            adminMessagerie.repondre("admin@autoservplus.be", fil, "Une réponse.");
+
+            mvc.perform(get("/mes-messages/compteur").param("actuel", "1").with(user(marie)))
+                    .andExpect(status().isNoContent());
+            mvc.perform(get("/mes-messages/compteur").param("actuel", "0").with(user(marie))
+                            .locale(java.util.Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("id=\"compteur-messages\"")))
+                    .andExpect(content().string(containsString("actuel=1")));
+        }
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("le fil ouvert au garage se complète des messages du membre")
+        void suiteCoteGarage() throws Exception {
+            UUID fil = filDe(marie, "Côté garage");
+            long curseur = dernierId(fil);
+            messagerie.repondre(marie, fil, "Une précision du membre.");
+
+            mvc.perform(get("/admin/messages/{ref}/messages", fil).param("apres", String.valueOf(curseur))
+                            .with(user("admin@autoservplus.be").roles("ADMINISTRATEUR")))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("Une précision du membre.")));
+        }
+    }
+
+    @Nested
+    @DisplayName("Numéro du fil (Q-H-27)")
+    class Numero {
+
+        @Test
+        @WithMockUser
+        @DisplayName("un fil ouvert reçoit le numéro suivant de la suite de l'année")
+        void numeroSuivant() {
+            String premier = numeroDe(filDe(marie, "Premier"));
+            String second = numeroDe(filDe(paul, "Second"));
+
+            assertThat(premier).matches("FIL-\\d{4}-\\d{4}");
+            assertThat(second.substring(0, 9)).isEqualTo(premier.substring(0, 9));
+            assertThat(Integer.parseInt(second.substring(9)))
+                    .isEqualTo(Integer.parseInt(premier.substring(9)) + 1);
+        }
+
+        @Test
+        @DisplayName("deux fils ouverts en même temps reçoivent deux numéros distincts")
+        void deuxFilsSimultanes() throws Exception {
+            ExecutorService pool = Executors.newFixedThreadPool(2);
+            CountDownLatch depart = new CountDownLatch(1);
+            Future<UUID> deMarie = pool.submit(() -> ouvrirEnTantQue(marie, depart));
+            Future<UUID> dePaul = pool.submit(() -> ouvrirEnTantQue(paul, depart));
+            depart.countDown();
+
+            String numeroDeMarie = numeroDe(deMarie.get(30, TimeUnit.SECONDS));
+            String numeroDePaul = numeroDe(dePaul.get(30, TimeUnit.SECONDS));
+            pool.shutdown();
+
+            assertThat(numeroDeMarie).isNotEqualTo(numeroDePaul);
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM conversation WHERE numero IN (?, ?)",
+                    Integer.class, numeroDeMarie, numeroDePaul)).isEqualTo(2);
+        }
+
+        @Test
+        @DisplayName("la notification de l'administrateur porte le numéro du fil, jamais son sujet")
+        void notificationAdministrateurSansSujet() {
+            String administrateur = "msg-admin" + COMPTEUR.getAndIncrement() + "@exemple.be";
+            Utilisateur compte = new Utilisateur(administrateur, "$2a$12$abcdefghijklmnopqrstuv", "Test",
+                    "Admin", TypeUtilisateur.ADMINISTRATEUR);
+            // Actif : seuls les administrateurs actifs reçoivent la notification.
+            compte.confirmerAdresseEmail();
+            utilisateurs.save(compte);
+            UUID reference = executerEn(marie, "MEMBRE", () -> filDe(marie, "Sujet personnel de Marie"));
+            String numero = numeroDe(reference);
+
+            Long idAdministrateur = utilisateurs.findByEmail(administrateur).orElseThrow().getId();
+            assertThat(jdbc.queryForList("SELECT corps FROM notification WHERE membre_id = ? "
+                    + "AND type = 'MESSAGE_RECU'", String.class, idAdministrateur))
+                    .containsExactly(numero);
+
+            String lu = executerEn(administrateur, "ADMINISTRATEUR",
+                    () -> notificationsService.mesNotifications(administrateur, 0).getContent().get(0).corps());
+            assertThat(lu).contains(numero).doesNotContain("Sujet personnel");
+        }
+
+        private UUID ouvrirEnTantQue(String email, CountDownLatch depart) throws InterruptedException {
+            depart.await(5, TimeUnit.SECONDS);
+            return executerEn(email, "MEMBRE", () -> filDe(email, "Simultané"));
+        }
+
+        private <T> T executerEn(String email, String role, Supplier<T> action) {
+            SecurityContext contexte = SecurityContextHolder.createEmptyContext();
+            contexte.setAuthentication(new TestingAuthenticationToken(email, "n/a", "ROLE_" + role));
+            SecurityContextHolder.setContext(contexte);
+            try {
+                return action.get();
+            } finally {
+                SecurityContextHolder.clearContext();
+            }
+        }
+    }
+
+    @Nested
     @DisplayName("Gardes de securite")
     class Gardes {
 
@@ -213,7 +471,7 @@ class MessagerieIT extends SocleIntegration {
         @WithMockUser(username = "membre@exemple.be", roles = "MEMBRE")
         @DisplayName("niveau methode : le service garage refuse meme sans passer par l URL")
         void serviceGarageRedouble() {
-            assertThatThrownBy(() -> adminMessagerie.tous())
+            assertThatThrownBy(() -> adminMessagerie.tous(0))
                     .isInstanceOf(AccessDeniedException.class);
         }
     }

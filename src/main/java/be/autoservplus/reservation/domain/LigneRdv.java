@@ -2,6 +2,7 @@ package be.autoservplus.reservation.domain;
 
 import be.autoservplus.common.montant.CalculTva;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.PrestationALHeureRefuseeException;
 import jakarta.persistence.*;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.data.annotation.CreatedBy;
@@ -75,9 +76,13 @@ public class LigneRdv {
         // requis par JPA
     }
 
+    /** @throws PrestationALHeureRefuseeException prestation à l'heure, qui ne se réserve pas (Q-H-36) */
     LigneRdv(Rdv rdv, Prestation prestation, short quantite) {
         this.rdv = Objects.requireNonNull(rdv, "rdv");
         this.prestation = Objects.requireNonNull(prestation, "prestation");
+        if (prestation.estALHeure()) {
+            throw new PrestationALHeureRefuseeException(prestation.getLibelle());
+        }
         if (quantite < 1) {
             throw new IllegalArgumentException("La quantite doit valoir au moins 1.");
         }

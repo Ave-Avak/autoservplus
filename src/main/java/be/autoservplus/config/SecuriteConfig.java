@@ -34,7 +34,6 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 import org.springframework.security.web.header.writers.ReferrerPolicyHeaderWriter;
 import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
 import org.springframework.security.web.util.matcher.RequestMatcher;
 
 import java.util.Optional;
@@ -310,8 +309,12 @@ public class SecuriteConfig {
                         .maximumSessions(-1)
                         .sessionRegistry(registreSessions)
                         .expiredUrl("/connexion"))
+                // POST seul : un lien, une image ou une prélecture du navigateur ne doit pas
+                // fermer la session (DeconnexionIT). PathPatternRequestMatcher remplace
+                // AntPathRequestMatcher, déprécié et promis au retrait.
                 .logout(deconnexion -> deconnexion
-                        .logoutRequestMatcher(new AntPathRequestMatcher("/deconnexion", "POST"))
+                        .logoutRequestMatcher(PathPatternRequestMatcher.withDefaults()
+                                .matcher(HttpMethod.POST, "/deconnexion"))
                         .logoutSuccessUrl("/?deconnecte")
                         .invalidateHttpSession(true)
                         .deleteCookies("JSESSIONID")

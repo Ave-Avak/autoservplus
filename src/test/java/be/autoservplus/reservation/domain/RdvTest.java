@@ -70,6 +70,16 @@ class RdvTest {
         }
 
         @Test
+        @DisplayName("refuse une prestation à l'heure, qui ne se réserve pas (Q-H-36)")
+        void refusePrestationALHeure() {
+            Prestation mainDOeuvre = new Prestation(entretien, "MO", "Main-d'œuvre",
+                    new BigDecimal("65.00"), 60, be.autoservplus.catalogue.domain.UnitePrestation.HEURE);
+
+            assertThatThrownBy(() -> rdvDe(vidange, mainDOeuvre))
+                    .isInstanceOf(be.autoservplus.catalogue.domain.PrestationALHeureRefuseeException.class);
+        }
+
+        @Test
         @DisplayName("refuse un rendez-vous sans prestation")
         void refuseSansPrestation() {
             assertThatThrownBy(() -> new Rdv("RDV-2026-0001", marie, golf, pont, DEBUT, PAS, List.of(), null))

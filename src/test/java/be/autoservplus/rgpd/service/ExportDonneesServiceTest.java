@@ -1,10 +1,12 @@
 package be.autoservplus.rgpd.service;
 
+import be.autoservplus.avis.domain.Avis;
 import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.devis.domain.Devis;
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
@@ -14,21 +16,31 @@ import be.autoservplus.identite.repository.EvenementSecuriteCompteRepository;
 import be.autoservplus.identite.repository.ModificationCompteRepository;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import be.autoservplus.intervention.domain.Intervention;
+import be.autoservplus.messagerie.domain.Conversation;
+import be.autoservplus.messagerie.domain.RoleExpediteur;
+import be.autoservplus.notification.domain.Notification;
+import be.autoservplus.notification.domain.TypeNotification;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.domain.PosteAtelier;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.rgpd.repository.AjoutAuPanier;
 import be.autoservplus.facturation.domain.Facture;
+import be.autoservplus.rgpd.repository.AvisExportRepository;
 import be.autoservplus.rgpd.repository.CommandeExportRepository;
+import be.autoservplus.rgpd.repository.ConversationExportRepository;
+import be.autoservplus.rgpd.repository.DevisExportRepository;
 import be.autoservplus.rgpd.repository.FactureExportRepository;
 import be.autoservplus.rgpd.repository.ConsentementExportRepository;
 import be.autoservplus.rgpd.repository.InterventionExportRepository;
+import be.autoservplus.rgpd.repository.NotificationExportRepository;
 import be.autoservplus.rgpd.repository.PanierExportRepository;
+import be.autoservplus.rgpd.repository.PhotoExportRepository;
 import be.autoservplus.rgpd.repository.RdvExportRepository;
 import be.autoservplus.rgpd.repository.VehiculeExportRepository;
 import be.autoservplus.rgpd.service.dto.ExportDonnees;
 import be.autoservplus.rgpd.service.dto.FichierExport;
+import be.autoservplus.stockage.service.StockageMedia;
 import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.vente.domain.LignePanier;
 import be.autoservplus.vente.domain.Panier;
@@ -49,6 +61,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 import java.util.Optional;
@@ -58,6 +71,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -90,9 +104,15 @@ class ExportDonneesServiceTest {
     @Mock private InterventionExportRepository interventions;
     @Mock private CommandeExportRepository commandes;
     @Mock private FactureExportRepository factures;
+    @Mock private DevisExportRepository devis;
+    @Mock private ConversationExportRepository fils;
+    @Mock private NotificationExportRepository notificationsExport;
+    @Mock private AvisExportRepository avisExport;
     @Mock private ConsentementExportRepository consentements;
     @Mock private PanierRepository paniers;
     @Mock private PanierExportRepository panierExport;
+    @Mock private PhotoExportRepository photos;
+    @Mock private StockageMedia stockage;
     @Mock private EvenementSecuriteCompteRepository evenementsSecurite;
     @Mock private ModificationCompteRepository modificationsCompte;
     @Mock private PasswordEncoder encodeur;
@@ -116,7 +136,7 @@ class ExportDonneesServiceTest {
         Clock horloge = Clock.fixed(MAINTENANT, ZoneId.of("Europe/Brussels"));
         registre = new RegistreExportsRecents(horloge);
         service = new ExportDonneesService(utilisateurs, vehicules, rendezVous, interventions,
-                commandes, factures, consentements, paniers, panierExport, evenementsSecurite,
+                commandes, factures, devis, fils, notificationsExport, avisExport, consentements, paniers, panierExport, photos, stockage, evenementsSecurite,
                 modificationsCompte, new CatalogueTraitements(messages), serialiseur, registre, encodeur, horloge);
 
         marie = new Utilisateur(EMAIL, EMPREINTE, "Dupont", "Marie", TypeUtilisateur.MEMBRE);
@@ -413,6 +433,62 @@ class ExportDonneesServiceTest {
             compteSansDonnees();
 
             assertThat(service.assembler(EMAIL).donneesPersonnelles().factures()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("restitue chaque fil et ses messages, avec la date de lecture, les notifications et les avis")
+        void echangesAvecLeGarage() {
+            compteSansDonnees();
+            Instant envoi = Instant.parse("2026-11-20T09:00:00Z");
+            Utilisateur garage = new Utilisateur("garage@exemple.be", EMPREINTE, "Garage", "Atelier",
+                    TypeUtilisateur.ADMINISTRATEUR);
+            Conversation fil = new Conversation("FIL-2026-0007", marie, null, "Ma vidange");
+            fil.ajouter(marie, RoleExpediteur.MEMBRE, "Quand puis-je venir ?", envoi);
+            fil.ajouter(garage, RoleExpediteur.ADMINISTRATEUR, "Mardi à 9 h.", envoi.plusSeconds(3600));
+            fil.marquerLuPar(RoleExpediteur.MEMBRE, envoi.plusSeconds(7200));
+            when(fils.pourMembre(EMAIL)).thenReturn(List.of(fil));
+            when(notificationsExport.pourMembre(EMAIL)).thenReturn(List.of(new Notification(marie,
+                    TypeNotification.MESSAGE_RECU, "Nouveau message", "Ma vidange", envoi)));
+            Avis avis = mock(Avis.class);
+            when(avis.getNote()).thenReturn((short) 4);
+            when(avis.getCommentaire()).thenReturn("Travail soigné.");
+            when(avis.isPublie()).thenReturn(true);
+            when(avisExport.pourMembre(EMAIL)).thenReturn(List.of(avis));
+
+            ExportDonnees.DonneesPersonnelles donnees = service.assembler(EMAIL).donneesPersonnelles();
+
+            ExportDonnees.FilExport exporte = donnees.messagerie().getFirst();
+            assertThat(exporte.numero()).isEqualTo("FIL-2026-0007");
+            assertThat(exporte.sujet()).isEqualTo("Ma vidange");
+            assertThat(exporte.messages()).extracting(ExportDonnees.MessageExport::expediteur)
+                    .containsExactly("MEMBRE", "ADMINISTRATEUR");
+            assertThat(exporte.messages().get(1).luLe()).isEqualTo(envoi.plusSeconds(7200));
+            assertThat(exporte.messages().get(0).luLe()).isNull();
+            assertThat(donnees.notifications()).singleElement()
+                    .satisfies(n -> assertThat(n.valeur()).isEqualTo("Ma vidange"));
+            assertThat(donnees.avis()).singleElement()
+                    .satisfies(a -> assertThat(a.commentaire()).isEqualTo("Travail soigné."));
+        }
+
+        @Test
+        @DisplayName("restitue les devis tels qu'ils ont été figés : client, véhicule, lignes et totaux")
+        void devisEmis() {
+            compteSansDonnees();
+            Panier panier = new Panier(marie);
+            panier.ajouterPiece(plaquettes, 2);
+            Devis emis = Devis.depuisLePanier("DEV-2026-0003", panier, golf,
+                    Instant.parse("2026-11-24T09:30:00Z"), LocalDate.of(2026, 11, 24), Langue.fr);
+            when(devis.pourMembre(EMAIL)).thenReturn(List.of(emis));
+
+            ExportDonnees.DevisExport exporte = service.assembler(EMAIL).donneesPersonnelles().devis().get(0);
+
+            assertThat(exporte.numero()).isEqualTo("DEV-2026-0003");
+            assertThat(exporte.valableJusquAu()).isEqualTo(LocalDate.of(2026, 12, 24));
+            assertThat(exporte.clientNom()).isEqualTo("Dupont");
+            assertThat(exporte.vehiculePlaque()).isEqualTo(golf.getPlaque());
+            assertThat(exporte.montantTvac()).isEqualByComparingTo(emis.getMontantTvac());
+            assertThat(exporte.lignes()).singleElement()
+                    .satisfies(ligne -> assertThat(ligne.quantite()).isEqualTo((short) 2));
         }
 
         @Test
@@ -765,15 +841,15 @@ class ExportDonneesServiceTest {
         }
 
         @Test
-        @DisplayName("produit un fichier JSON date du jour quand les deux gardes passent")
+        @DisplayName("produit une archive datée du jour, document JSON compris, quand les deux gardes passent")
         void exportNominal() {
             compteSansDonnees();
             motDePasseValide();
 
             FichierExport fichier = service.exporter(EMAIL, "MotDePasseDeMarie!");
 
-            assertThat(fichier.nom()).isEqualTo("mes-donnees-2026-08-22.json");
-            assertThat(new String(fichier.contenu(), StandardCharsets.UTF_8))
+            assertThat(fichier.nom()).isEqualTo("mes-donnees-2026-08-22.zip");
+            assertThat(LectureArchive.document(fichier.contenu()))
                     .contains("\"donnees_personnelles\"")
                     .contains("\"informations_traitement\"");
         }

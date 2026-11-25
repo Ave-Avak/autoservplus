@@ -5,6 +5,7 @@ import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.communication.service.DetailsInterventionTerminee;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.facturation.repository.FactureRepository;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.intervention.domain.Intervention;
@@ -43,6 +44,7 @@ class NotificationInterventionListenerTest {
 
     private static final Instant MAINTENANT = Instant.parse("2026-09-14T09:00:00Z");
 
+    @Mock private FactureRepository factures;
     @Mock private InterventionRepository interventions;
     @Mock private ServiceCourriel courriel;
 
@@ -51,7 +53,7 @@ class NotificationInterventionListenerTest {
 
     @BeforeEach
     void setUp() {
-        listener = new NotificationInterventionListener(interventions, courriel);
+        listener = new NotificationInterventionListener(interventions, factures, courriel);
 
         Utilisateur marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie",
                 TypeUtilisateur.MEMBRE);

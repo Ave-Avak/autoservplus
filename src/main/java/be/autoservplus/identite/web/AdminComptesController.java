@@ -120,12 +120,14 @@ public class AdminComptesController {
 
     /** Formulaire des coordonnées d'un membre, prérempli. */
     @GetMapping("/{reference}/modification")
-    public String formulaireModification(@PathVariable UUID reference, Model modele,
-                                         RedirectAttributes redirection) {
+    public String formulaireModification(@PathVariable UUID reference,
+                                         @RequestParam(name = "intervention", required = false) String intervention,
+                                         Model modele, RedirectAttributes redirection) {
         try {
             Utilisateur membre = service.membreModifiable(reference);
             modele.addAttribute("formulaire", ModificationCompteForm.de(membre));
             preparerModification(modele, membre);
+            modele.addAttribute("interventionDeRetour", interventionDeRetour(intervention));
             return "admin/compte-modification";
         } catch (RefusTraduit refus) {
             redirection.addFlashAttribute("erreur", msg(refus.getCleMessage()));
@@ -136,7 +138,10 @@ public class AdminComptesController {
     @PostMapping("/{reference}/modification")
     public String modifier(@PathVariable UUID reference,
                            @Valid @ModelAttribute("formulaire") ModificationCompteForm formulaire,
-                           BindingResult erreurs, Model modele, RedirectAttributes redirection) {
+                           BindingResult erreurs,
+                           @RequestParam(name = "intervention", required = false) String intervention,
+                           Model modele, RedirectAttributes redirection) {
+        UUID retour = interventionDeRetour(intervention);
         Utilisateur membre;
         try {
             membre = service.membreModifiable(reference);
@@ -158,7 +163,9 @@ public class AdminComptesController {
                 redirection.addFlashAttribute("message", msg(champs.isEmpty()
                         ? "admin.compte.modification.inchangee"
                         : "admin.compte.modification.enregistree"));
-                return "redirect:/admin/comptes/" + reference;
+                // Venue d'une clôture refusée faute d'adresse (Q-H-42) : retour à l'intervention.
+                return retour == null ? "redirect:/admin/comptes/" + reference
+                        : "redirect:/admin/interventions/" + retour;
             } catch (RefusTraduit refus) {
                 erreurs.reject("refus", msg(refus.getCleMessage()));
             } catch (RegleMetierException refus) {
@@ -167,7 +174,24 @@ public class AdminComptesController {
             }
         }
         preparerModification(modele, membre);
+        modele.addAttribute("interventionDeRetour", retour);
         return "admin/compte-modification";
+    }
+
+    /**
+     * Intervention vers laquelle revenir après la modification, ou {@code null}. Seule une
+     * référence est reçue, et seulement si elle se lit comme un UUID : l'adresse du retour se
+     * construit ici, si bien qu'aucun paramètre ne peut renvoyer vers une adresse extérieure.
+     */
+    private static UUID interventionDeRetour(String intervention) {
+        if (intervention == null || intervention.isBlank()) {
+            return null;
+        }
+        try {
+            return UUID.fromString(intervention.strip());
+        } catch (IllegalArgumentException e) {
+            return null;
+        }
     }
 
     private static void preparerModification(Model modele, Utilisateur membre) {
