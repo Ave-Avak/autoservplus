@@ -334,9 +334,11 @@ logging:
 # publies dans le depot.
 # =====================================================================================
 ---
-# Identité du garage de démonstration, pour le poste de développement, les tests, qui
-# tournent sous dev, et les déploiements de démonstration. C'est sa seule source : un test
-# qui en a besoin la lit d'ici. Une variable GARAGE_* définie l'emporte toujours.
+# Identité du garage de démonstration, Bielle Bleue, garage fictif, pour le poste de
+# développement, les tests, qui tournent sous dev, et les déploiements de démonstration.
+# C'est sa seule source : un test qui en a besoin la lit d'ici. Une variable GARAGE_*
+# définie l'emporte toujours. Le logiciel garde son nom, AutoServ+ : il signe le pied des
+# pages publiques et l'expéditeur des courriels.
 #
 # Le numéro d'entreprise est faux exprès : sa clé modulo 97 vaut 89 là où 49 est
 # attendu, et le numéro de TVA qui en dérive l'est donc aussi. Un numéro fictif qui
@@ -349,8 +351,8 @@ spring:
       on-profile: "dev | demo"
 autoservplus:
   garage:
-    nom-commercial: ${GARAGE_NOM_COMMERCIAL:Garage Démo}
-    raison-sociale: ${GARAGE_RAISON_SOCIALE:Garage de démonstration}
+    nom-commercial: ${GARAGE_NOM_COMMERCIAL:Bielle Bleue}
+    raison-sociale: ${GARAGE_RAISON_SOCIALE:Bielle Bleue}
     forme-juridique: ${GARAGE_FORME_JURIDIQUE:SRL}
     rue: ${GARAGE_RUE:Rue de l'Atelier}
     numero-rue: ${GARAGE_NUMERO_RUE:12}
@@ -362,7 +364,7 @@ autoservplus:
     numero-tva: ${GARAGE_TVA:BE0123456789}
     iban: ${GARAGE_IBAN:BE68 5390 0754 7034}
     telephone: ${GARAGE_TELEPHONE:+32 2 000 00 00}
-    courriel: ${GARAGE_COURRIEL:garage@demo.test}
+    courriel: ${GARAGE_COURRIEL:atelier@bielle-bleue.test}
     # Siège de démonstration à Bruxelles : les deux langues, le français par défaut.
     langues-documents: ${GARAGE_LANGUES_DOCUMENTS:fr,nl}
     nl:

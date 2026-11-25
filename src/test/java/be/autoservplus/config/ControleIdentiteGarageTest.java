@@ -155,7 +155,7 @@ class ControleIdentiteGarageTest {
                 assertThat(contexte).hasNotFailed();
                 assertThat(contexte).doesNotHaveBean(ControleIdentiteGarage.class);
                 IdentiteGarage identite = contexte.getBean(IdentiteGarage.class);
-                assertThat(identite.raisonSociale()).isEqualTo("Garage de démonstration");
+                assertThat(identite.raisonSociale()).isEqualTo("Bielle Bleue");
                 assertThat(identite.numeroBce()).isEqualTo("0123.456.789");
             });
         }
@@ -166,7 +166,7 @@ class ControleIdentiteGarageTest {
             sous("dev").run(contexte -> {
                 assertThat(contexte).hasNotFailed();
                 assertThat(contexte.getBean(IdentiteGarage.class).denomination())
-                        .isEqualTo("Garage de démonstration SRL");
+                        .isEqualTo("Bielle Bleue SRL");
             });
         }
     }

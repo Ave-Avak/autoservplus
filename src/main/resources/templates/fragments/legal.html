@@ -37,7 +37,7 @@
 <th:block th:fragment="identite">
     <dl class="identite-garage">
         <dt th:text="#{legal.garage.raison-sociale}">Dénomination</dt>
-        <dd th:text="${garage.raisonSociale()}">Garage de démonstration</dd>
+        <dd th:text="${garage.raisonSociale()}">Bielle Bleue</dd>
 
         <th:block th:if="${garage.aUneFormeJuridique()}">
             <dt th:text="#{legal.garage.forme-juridique}">Forme juridique</dt>
@@ -46,7 +46,7 @@
 
         <th:block th:if="${garage.aUnNomCommercial()}">
             <dt th:text="#{legal.garage.nom-commercial}">Nom commercial</dt>
-            <dd th:text="${garage.nomCommercial()}">Garage Démo</dd>
+            <dd th:text="${garage.nomCommercial()}">Bielle Bleue</dd>
         </th:block>
 
         <dt th:text="#{legal.garage.adresse}">Adresse</dt>
