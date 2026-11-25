@@ -1,0 +1,31 @@
+// Icônes des composants de Bootstrap, servies comme fichiers par l'application.
+//
+// Bootstrap 5.3 dessine ces icônes par des images data: écrites dans sa feuille. Elles
+// sont remplacées par des fichiers de static/images/icones, aux couleurs de la charte :
+// la politique de sécurité du contenu n'a pas à admettre data: pour elles, et un test
+// échoue si la feuille compilée en contient encore. Liste lue dans _variables.scss et
+// _variables-dark.scss de Bootstrap 5.3.9 : à relire à chaque montée de version.
+// Le chemin est relatif à la feuille, servie sous /css.
+
+$form-check-input-checked-bg-image: url("../images/icones/case-cochee.svg");
+$form-check-radio-checked-bg-image: url("../images/icones/bouton-radio-coche.svg");
+$form-check-input-indeterminate-bg-image: url("../images/icones/case-indeterminee.svg");
+$form-switch-bg-image: url("../images/icones/interrupteur.svg");
+$form-switch-focus-bg-image: url("../images/icones/interrupteur-focus.svg");
+$form-switch-checked-bg-image: url("../images/icones/interrupteur-active.svg");
+$form-select-indicator: url("../images/icones/fleche-liste.svg");
+$form-feedback-icon-valid: url("../images/icones/champ-valide.svg");
+$form-feedback-icon-invalid: url("../images/icones/champ-invalide.svg");
+$navbar-light-toggler-icon-bg: url("../images/icones/menu-replie.svg");
+$navbar-dark-toggler-icon-bg: url("../images/icones/menu-replie-clair.svg");
+$accordion-button-icon: url("../images/icones/accordeon.svg");
+$accordion-button-active-icon: url("../images/icones/accordeon-ouvert.svg");
+$carousel-control-prev-icon-bg: url("../images/icones/carrousel-precedent.svg");
+$carousel-control-next-icon-bg: url("../images/icones/carrousel-suivant.svg");
+$btn-close-bg: url("../images/icones/fermer.svg");
+
+// Variantes du mode sombre.
+$form-select-indicator-dark: url("../images/icones/fleche-liste-sombre.svg");
+$form-switch-bg-image-dark: url("../images/icones/interrupteur-sombre.svg");
+$accordion-button-icon-dark: url("../images/icones/accordeon-sombre.svg");
+$accordion-button-active-icon-dark: url("../images/icones/accordeon-ouvert-sombre.svg");

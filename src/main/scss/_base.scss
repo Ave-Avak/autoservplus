@@ -1,0 +1,19 @@
+// Règles communes posées après Bootstrap.
+
+// Anneau de focus (écart à la charte, inscrit au registre) : bleu secondaire de 3 px,
+// décalé de l'élément, visible au clavier seulement. Sur un fond bleu marine, il passe
+// au blanc pour garder 3:1 (WCAG 1.4.11).
+:focus-visible {
+  outline: 3px solid $bleu-secondaire;
+  outline-offset: 2px;
+}
+
+.fond-marine :focus-visible {
+  outline-color: $white;
+}
+
+// Numéros, montants et plaques en chiffres de largeur fixe (écart à la charte : Inter
+// seule, sans police à chasse fixe).
+.chiffres {
+  font-variant-numeric: tabular-nums;
+}

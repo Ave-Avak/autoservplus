@@ -94,3 +94,35 @@ empreintes des six fichiers sont vérifiées par `NoticeGarantieFichiersTest`.
 
 Usage : notice affichée sur la page « Garantie légale » et jointe au courriel de
 confirmation d'une commande de pièces (art. VI.45 § 1er, 12° du Code de droit économique).
+
+## Bootstrap 5.3.9
+
+Sources Sass prises au build dans le webjar `org.webjars.npm:bootstrap` (Maven
+Central), compilées avec le thème de la charte dans `static/css/site.css`. Le script
+`static/js/bootstrap.bundle.min.js` est copié du même webjar au build. Aucun des deux
+n'est versionné : ils sont produits par `src/build/java/CompilationFeuilleDeStyle.java`
+à la phase `generate-resources`, et la version se lit dans `pom.xml`
+(`bootstrap.version`).
+
+Les fichiers de `src/main/resources/static/images/icones` reprennent les tracés SVG que
+Bootstrap écrit en images `data:` dans `_variables.scss` et `_variables-dark.scss`, aux
+couleurs de la charte. Licence MIT, Copyright (c) 2011-2026 The Bootstrap Authors,
+https://github.com/twbs/bootstrap/blob/v5.3.9/LICENSE.
+
+Le compilateur Dart Sass (licence MIT), livré par `de.larsgrefer.sass:sass-embedded-host`
+(licence MIT), ne sert qu'au build et n'est pas dans l'archive.
+
+## Inter 4.1
+
+`src/main/resources/static/css/polices`, quatre graisses (400, 600, 700, 800) tirées de
+la publication 4.1 de https://github.com/rsms/inter, réduites au jeu latin du français,
+du néerlandais et de l'anglais (euro et espace fine compris), au format WOFF2. Licence
+SIL Open Font License 1.1, texte complet dans `OFL.txt` à côté des fichiers. La licence
+ne déclare aucun nom de police réservé : la version réduite garde le nom Inter.
+
+| Fichier | SHA-256 |
+|---|---|
+| `inter-regular.woff2` | `ae7955503fd68d8c4e0fd3bc4c8d197ae4004fdd8bcf0bb57e2c0279e5ca5f30` |
+| `inter-semibold.woff2` | `158818759adcbf2abe381d34a55de3fae9343a98e038df02d4b9f5582cb4bf37` |
+| `inter-bold.woff2` | `ba1e692269013df135b7e944f6ac93f0ee7b5e928499c7176879a465b1c8b79b` |
+| `inter-extrabold.woff2` | `89ddf2c94cc71fbcc1900edd9f53e3fc3b6f66b39e16fe1bf73f76aa5e6b829c` |

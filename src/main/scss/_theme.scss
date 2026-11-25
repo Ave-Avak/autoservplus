@@ -1,0 +1,67 @@
+// Thème de Bootstrap aux valeurs de la charte graphique (livrable 10).
+// Les variables de Bootstrap portent !default : celles-ci, posées avant son import,
+// l'emportent. Les écarts à la charte sont inscrits au registre.
+
+// Neutres de la charte.
+$white: #FFFFFF;
+$gray-100: #F9FAFB;
+$gray-200: #E5E7EB;
+$gray-300: #D1D5DB;
+$gray-400: #9CA3AF;
+$gray-500: #6B7280;
+$gray-600: #4B5563;
+$gray-700: #374151;
+$gray-800: #1F2937;
+$gray-900: #111827;
+$black: #000000;
+
+// Couleurs de la charte. Bleu marine dominant, orange réservé à l'action principale.
+$marine: #1F3864;
+$orange-action: #C2410C;
+$bleu-secondaire: #2E75B6;
+
+// Couleurs d'état : teintes foncées en texte (écart à la charte, contraste 4,5:1).
+$primary: $marine;
+$secondary: $gray-600;
+$success: #047857;
+$info: #1D4ED8;
+$warning: #F59E0B;
+$danger: #DC2626;
+$light: $gray-100;
+$dark: $gray-900;
+
+$body-color: $gray-700;
+$body-bg: $white;
+$headings-color: $marine;
+$link-color: $bleu-secondaire;
+$link-hover-color: $marine;
+$border-color: $gray-200;
+
+// Typographie : Inter seule, hébergée par l'application. Corps à 16 px au moins.
+$font-family-sans-serif: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+$font-size-base: 1rem;
+$line-height-base: 1.5;
+$headings-font-weight: 600;
+$h1-font-size: 2.25rem;
+$h2-font-size: 1.75rem;
+$h3-font-size: 1.375rem;
+$h4-font-size: 1.125rem;
+
+// Rayon de 8 px partout (boutons, champs, cartes).
+$border-radius: .5rem;
+$border-radius-sm: .375rem;
+$border-radius-lg: .5rem;
+
+// Boutons : 40 px de haut, libellé en 600, 48 px pour l'action principale.
+$btn-font-weight: 600;
+$input-btn-padding-y: .5rem;
+$input-btn-padding-y-lg: .75rem;
+
+// L'anneau de focus est dessiné par _base.scss (contour décalé), pas par l'ombre de
+// Bootstrap, qui n'a pas de décalage.
+$focus-ring-width: 0;
+$input-btn-focus-width: 0;
+$input-btn-focus-box-shadow: none;
+$input-focus-box-shadow: none;
+$btn-focus-box-shadow: none;
+$form-check-input-focus-box-shadow: none;

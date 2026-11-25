@@ -26,6 +26,10 @@
         <jacoco.version>0.8.12</jacoco.version>
         <playwright.version>1.65.1</playwright.version>
         <axe-playwright.version>4.14.0</axe-playwright.version>
+        <!-- Feuille du site : Bootstrap compilé au build par Dart Sass, sans Node. -->
+        <bootstrap.version>5.3.9</bootstrap.version>
+        <sass-embedded.version>4.7.0</sass-embedded.version>
+        <exec-plugin.version>3.7.0</exec-plugin.version>
         <mockito.agent>
             ${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
         </mockito.agent>
@@ -168,6 +172,21 @@
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Outils du build de la feuille de style, lus par CompilationFeuilleDeStyle.
+             Portée test : ils ne sont ni compilables depuis src/main ni livrés dans
+             l'archive. Le compilateur Dart Sass est embarqué pour chaque système. -->
+        <dependency>
+            <groupId>de.larsgrefer.sass</groupId>
+            <artifactId>sass-embedded-host</artifactId>
+            <version>${sass-embedded.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.webjars.npm</groupId>
+            <artifactId>bootstrap</artifactId>
+            <version>${bootstrap.version}</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
@@ -175,6 +194,37 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+            </plugin>
+            <!-- Feuille du site et script de Bootstrap, produits dans target/classes avant
+                 la copie des ressources. Un programme Java d'un seul fichier, lancé avec
+                 le classpath de test, qui porte le compilateur et le webjar. -->
+            <plugin>
+                <groupId>org.codehaus.mojo</groupId>
+                <artifactId>exec-maven-plugin</artifactId>
+                <version>${exec-plugin.version}</version>
+                <executions>
+                    <execution>
+                        <id>feuille-de-style</id>
+                        <phase>generate-resources</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>${java.home}/bin/java</executable>
+                            <classpathScope>test</classpathScope>
+                            <arguments>
+                                <argument>-classpath</argument>
+                                <classpath/>
+                                <argument>${project.basedir}/src/build/java/CompilationFeuilleDeStyle.java</argument>
+                                <argument>${project.basedir}/src/main/scss/site.scss</argument>
+                                <argument>${project.build.outputDirectory}/static/css/site.css</argument>
+                                <argument>${bootstrap.version}</argument>
+                                <argument>${project.build.directory}/bootstrap-scss</argument>
+                                <argument>${project.build.outputDirectory}/static/js/bootstrap.bundle.min.js</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+                </executions>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>

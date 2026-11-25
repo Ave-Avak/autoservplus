@@ -1,0 +1,20 @@
+// Inter 4.1 (licence SIL Open Font License 1.1, voir css/polices/OFL.txt), réduite au
+// jeu latin du français, du néerlandais et de l'anglais (euro et espace fine compris).
+// Hébergée par l'application : aucune requête vers un service de polices, et la
+// politique de sécurité du contenu reste à 'self'. swap affiche le texte dans la police
+// de repli pendant le chargement, sans attendre.
+
+@mixin police-inter($graisse, $fichier) {
+  @font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: $graisse;
+    font-display: swap;
+    src: url("polices/#{$fichier}.woff2") format("woff2");
+  }
+}
+
+@include police-inter(400, "inter-regular");
+@include police-inter(600, "inter-semibold");
+@include police-inter(700, "inter-bold");
+@include police-inter(800, "inter-extrabold");
