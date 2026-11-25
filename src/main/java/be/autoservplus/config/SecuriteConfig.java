@@ -171,7 +171,20 @@ public class SecuriteConfig {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         // /recherche : le formulaire de recherche est sur les pages du
                         // catalogue, publiques. La recherche l'est donc aussi (F5).
+                        // Les quatre onglets du catalogue et leurs fiches, publics comme
+                        // les prestations et les pièces. /catalogue redirige vers le
+                        // premier onglet.
+                        //
+                        // Plan du site et robots.txt : publics pour les moteurs de
+                        // recherche. Le plan se construit depuis une liste explicite
+                        // d'adresses publiques (accueil, quatre rayons, fiches actives,
+                        // pages légales), jamais en parcourant les routes, qui y ferait
+                        // entrer toute route future. Un test vérifie qu'aucune adresse du
+                        // back-office, de l'espace membre, de l'API ou de la connexion n'y
+                        // figure, et que robots.txt interdit ces mêmes préfixes.
                         .requestMatchers("/", "/accueil", "/services/**", "/pieces/**", "/recherche",
+                                "/catalogue", "/accessoires/**", "/entretien/**",
+                                "/sitemap.xml", "/robots.txt",
                                 "/inscription/**", "/connexion", "/mot-de-passe/**",
                                 "/cgv", "/mentions-legales", "/confidentialite", "/garantie-legale",
                                 // Texte gelé d'une version de document (F24). Public
@@ -234,14 +247,14 @@ public class SecuriteConfig {
                         // API publique en LECTURE SEULE (BL-8) et sa documentation.
                         // Anonyme par construction : elle n'expose que ce qui figure
                         // déjà sur le site public, à savoir le catalogue des prestations et
-                        // identité commerciale du garage. Aucun verbe d'écriture n'y
+                        // des produits, et l'identité commerciale du garage. Aucun verbe d'écriture n'y
                         // est déclaré, donc aucune authentification à exiger. La table
                         // clef_api du socle reste volontairement inexploitée : y
                         // adosser des jetons supposerait quotas et révocation, hors
                         // périmètre V1.
                         //
-                        // Les deux routes sont ÉNUMÉRÉES, et non couvertes par un joker
-                        // /api/v1/**. Le joker est fail-open : le troisième endpoint,
+                        // Les routes sont ÉNUMÉRÉES, et non couvertes par un joker
+                        // /api/v1/**. Le joker est fail-open : le prochain endpoint,
                         // quel qu'il soit, naîtrait public sans que personne ne l'ait
                         // décidé, y compris un endpoint qui exposerait des données de
                         // membre. L'énumération est fail-closed : ajouter une route
@@ -249,7 +262,8 @@ public class SecuriteConfig {
                         // ApiPubliqueIT.surfaceFermeeParDefaut verrouille l'écart entre
                         // les deux écritures (302 attendu, 404 avec le joker).
                         .requestMatchers(HttpMethod.GET,
-                                "/api/v1/prestations/**", "/api/v1/garages/**").permitAll()
+                                "/api/v1/prestations/**", "/api/v1/articles/**", "/api/v1/garages/**")
+                        .permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
                         .permitAll()
                         // Webhook du prestataire de paiement : appel serveur à serveur,
