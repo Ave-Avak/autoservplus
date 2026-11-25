@@ -126,3 +126,8 @@ ne déclare aucun nom de police réservé : la version réduite garde le nom Int
 | `inter-semibold.woff2` | `158818759adcbf2abe381d34a55de3fae9343a98e038df02d4b9f5582cb4bf37` |
 | `inter-bold.woff2` | `ba1e692269013df135b7e944f6ac93f0ee7b5e928499c7176879a465b1c8b79b` |
 | `inter-extrabold.woff2` | `89ddf2c94cc71fbcc1900edd9f53e3fc3b6f66b39e16fe1bf73f76aa5e6b829c` |
+
+Les lettres du logo AutoServ+ (`src/main/resources/static/images/logo`) sont les contours
+d'Inter ExtraBold (le A et le mot) et d'Inter Bold (le +), tirés des deux fichiers
+ci-dessus et convertis en tracés. L'OFL laisse libre l'emploi des glyphes dans une image
+produite avec la police, et le SVG ne dépend plus d'aucune police installée.
