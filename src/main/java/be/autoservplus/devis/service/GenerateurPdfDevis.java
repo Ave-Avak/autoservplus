@@ -156,7 +156,7 @@ public class GenerateurPdfDevis {
                     cle.endsWith("description") ? Element.ALIGN_LEFT : Element.ALIGN_RIGHT));
         }
         for (LigneDevis ligne : devis.getLignes()) {
-            table.addCell(cellule(ligne.getLibelle(), Element.ALIGN_LEFT));
+            table.addCell(cellule(avecMention(devis, ligne), Element.ALIGN_LEFT));
             table.addCell(cellule(String.valueOf(ligne.getQuantite()), Element.ALIGN_RIGHT));
             table.addCell(cellule(montant(ligne.prixUnitaireTvac(), langue), Element.ALIGN_RIGHT));
             table.addCell(cellule(pourcentage(ligne.getTauxTva()), Element.ALIGN_RIGHT));
@@ -213,6 +213,13 @@ public class GenerateurPdfDevis {
 
     private static String date(LocalDate jour, Locale langue) {
         return DateTimeFormatter.ofLocalizedDate(FormatStyle.LONG).withLocale(langue).format(jour);
+    }
+
+    /** Libellé de la ligne et mention du choix des pièces, dans la langue du devis. */
+    private String avecMention(Devis devis, LigneDevis ligne) {
+        return ligne.getChoixPieces()
+                .map(choix -> ligne.getLibelle() + "\n" + libelle(Locale.forLanguageTag(devis.getLangueDocument().name()), choix.cleMention()))
+                .orElse(ligne.getLibelle());
     }
 
     private String libelle(Locale langue, String cle, Object... arguments) {

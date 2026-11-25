@@ -1,9 +1,12 @@
 package be.autoservplus.vente.domain;
 
 import be.autoservplus.common.montant.CalculTva;
+import be.autoservplus.catalogue.domain.ChoixPieces;
+import be.autoservplus.catalogue.domain.ChoixPiecesRefuseException;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.PrestationALHeureRefuseeException;
+import be.autoservplus.common.ReserveAuxTests;
 import be.autoservplus.common.entity.BaseEntity;
 import be.autoservplus.vente.service.PanierDeNatureMixteException;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -93,26 +96,38 @@ public class Panier extends BaseEntity {
         return ligne;
     }
 
+    /** Pièces fournies par le garage quand la prestation propose le choix. */
+    @ReserveAuxTests
+    public LignePanier ajouterService(Prestation prestation, int quantite) {
+        Objects.requireNonNull(prestation, "prestation");
+        return ajouterService(prestation, quantite, prestation.choixParDefaut());
+    }
+
     /**
-     * Ajoute une prestation au panier, ou incrémente la ligne existante (F12), selon
-     * le même patron que {@link #ajouterPiece} : valeurs figées à la première entrée.
+     * Ajoute une prestation au panier, ou incrémente la ligne du même couple prestation et
+     * choix des pièces (F12), selon le même patron que {@link #ajouterPiece} : valeurs figées
+     * à la première entrée. Le même forfait pris une fois pièces fournies et une fois en pose
+     * seule donne deux lignes : le choix est figé sur la ligne avec son prix, et un membre qui
+     * change d'avis retire la ligne puis ajoute l'autre.
      *
+     * @param choix choix des pièces, {@code null} quand la prestation n'en propose pas
      * @throws PanierDeNatureMixteException si le panier contient déjà des pièces
      * @throws PrestationALHeureRefuseeException prestation à l'heure (Q-H-36) : le devis F15,
      *                                           qui naît du panier, n'en porte donc jamais
+     * @throws ChoixPiecesRefuseException choix absent alors qu'il est proposé, ou l'inverse
      */
-    public LignePanier ajouterService(Prestation prestation, int quantite) {
+    public LignePanier ajouterService(Prestation prestation, int quantite, ChoixPieces choix) {
         Objects.requireNonNull(prestation, "prestation");
         if (prestation.estALHeure()) {
             throw new PrestationALHeureRefuseeException(prestation.getLibelle());
         }
         exigerNatureCompatible(true);
-        LignePanier existante = lignePour(prestation).orElse(null);
+        LignePanier existante = lignePour(prestation, choix).orElse(null);
         if (existante != null) {
             existante.augmenterQuantite(quantite);
             return existante;
         }
-        LignePanier ligne = new LignePanier(this, prestation, quantite);
+        LignePanier ligne = new LignePanier(this, prestation, quantite, choix);
         this.lignes.add(ligne);
         return ligne;
     }
@@ -147,9 +162,13 @@ public class Panier extends BaseEntity {
         return !lignes.isEmpty() && lignes.stream().allMatch(LignePanier::estService);
     }
 
-    /** Quantité déjà au panier pour cette prestation. */
+    /** Quantité déjà au panier pour cette prestation, tous choix des pièces confondus. */
     public int quantitePour(Prestation prestation) {
-        return lignePour(prestation).map(ligne -> (int) ligne.getQuantite()).orElse(0);
+        return lignes.stream()
+                .filter(LignePanier::estService)
+                .filter(l -> l.getPrestation().getReference().equals(prestation.getReference()))
+                .mapToInt(LignePanier::getQuantite)
+                .sum();
     }
 
     /** Quantité déjà au panier pour cette pièce : sert au contrôle de stock cumulé. */
@@ -211,11 +230,12 @@ public class Panier extends BaseEntity {
                 .findFirst();
     }
 
-    /** Même recherche par référence pour une prestation (F12). */
-    private Optional<LignePanier> lignePour(Prestation prestation) {
+    /** Même recherche par référence pour une prestation (F12), sur le couple prestation et choix. */
+    private Optional<LignePanier> lignePour(Prestation prestation, ChoixPieces choix) {
         return lignes.stream()
                 .filter(LignePanier::estService)
                 .filter(l -> l.getPrestation().getReference().equals(prestation.getReference()))
+                .filter(l -> l.getChoixPieces().equals(Optional.ofNullable(choix)))
                 .findFirst();
     }
 

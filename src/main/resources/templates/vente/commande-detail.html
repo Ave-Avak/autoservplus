@@ -83,7 +83,8 @@
             </thead>
             <tbody>
             <tr th:each="ligne : ${commande.lignes()}">
-                <th scope="row" th:text="${ligne.libelle()}">Plaquettes de frein avant</th>
+                <th scope="row"><span th:text="${ligne.libelle()}">Plaquettes de frein avant</span>
+                    <small th:replace="~{fragments/choix-pieces :: mention(${ligne.mentionPieces()})}"></small></th>
                 <td th:text="${ligne.quantite()}">2</td>
                 <td th:text="${ligne.prixUnitaireTvac()}">24,20 €</td>
                 <td th:text="${ligne.totalTvac()}">48,40 €</td>

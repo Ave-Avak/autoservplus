@@ -1,5 +1,8 @@
 package be.autoservplus.vente.service;
 
+import be.autoservplus.catalogue.domain.ChoixPieces;
+import be.autoservplus.catalogue.domain.ChoixPiecesRefuseException;
+import be.autoservplus.common.ReserveAuxTests;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PieceRepository;
@@ -87,9 +90,25 @@ public class PanierService {
      * <p>Prestation inactive refusée, miroir exact de RM-28 pour les pièces : on ne
      * vend pas ce qui a été retiré du catalogue.</p>
      */
+    @ReserveAuxTests
     @Transactional
     @PreAuthorize("isAuthenticated()")
     public PanierVue ajouterService(String email, UUID referencePrestation, int quantite) {
+        ChoixPieces parDefaut = prestations.findByReference(referencePrestation)
+                .map(Prestation::choixParDefaut).orElse(null);
+        return ajouterService(email, referencePrestation, quantite, parDefaut);
+    }
+
+    /**
+     * Même ajout, avec le choix des pièces du membre. Aucun n'est déduit : la fiche ne
+     * présélectionne rien, et un forfait qui propose un prix pose seule sans choix est refusé.
+     *
+     * @param choix {@code null} quand la prestation ne propose pas de choix
+     * @throws ChoixPiecesRefuseException choix absent alors qu'il est proposé, ou l'inverse
+     */
+    @Transactional
+    @PreAuthorize("isAuthenticated()")
+    public PanierVue ajouterService(String email, UUID referencePrestation, int quantite, ChoixPieces choix) {
         exigerQuantitePositive(quantite);
         Prestation prestation = prestations.findByReference(referencePrestation)
                 .orElseThrow(() -> new RessourceIntrouvableException(
@@ -98,7 +117,7 @@ public class PanierService {
             throw new PrestationInactiveException(prestation.getLibelle());
         }
         Panier panier = trouveOuCree(email);
-        panier.ajouterService(prestation, quantite);
+        panier.ajouterService(prestation, quantite, choix);
         return PanierVue.de(paniers.saveAndFlush(panier));
     }
 

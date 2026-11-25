@@ -193,6 +193,34 @@ public class Prestation extends BaseEntity {
         return prixPoseSeuleHtva != null;
     }
 
+    /**
+     * Prix hors TVA qu'une ligne fige pour ce choix. Une prestation qui propose un prix pose
+     * seule exige un choix, une autre n'en admet aucun : la ligne garde ainsi ce qui a été
+     * proposé au client, et pas seulement ce qu'il a pris.
+     *
+     * @param choix {@code null} quand aucun choix n'est proposé
+     * @throws ChoixPiecesRefuseException choix absent alors qu'il est proposé, ou donné alors
+     *                                    qu'il ne l'est pas
+     */
+    public BigDecimal prixHtvaPour(ChoixPieces choix) {
+        if (proposePoseSeule() && choix == null) {
+            throw ChoixPiecesRefuseException.manquant(this);
+        }
+        if (!proposePoseSeule() && choix != null) {
+            throw ChoixPiecesRefuseException.nonPropose(this);
+        }
+        return choix == ChoixPieces.APPORTEES_PAR_CLIENT ? prixPoseSeuleHtva : prixHtva;
+    }
+
+    /**
+     * Choix appliqué quand l'appelant ne le demande pas : pièces fournies si la prestation
+     * propose le choix, aucun sinon. Présélection du back-office, et choix des surcharges
+     * réservées aux tests. Jamais appliqué au client, qui choisit lui-même.
+     */
+    public ChoixPieces choixParDefaut() {
+        return proposePoseSeule() ? ChoixPieces.FOURNIES_PAR_GARAGE : null;
+    }
+
     /** Prix pose seule affiché au client, taxe comprise, ou {@code null} sans ce choix. */
     public BigDecimal prixPoseSeuleTvac() {
         return prixPoseSeuleHtva == null ? null : CalculTva.unitaireTvac(prixPoseSeuleHtva, tauxTva);

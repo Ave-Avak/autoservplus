@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head><meta charset="UTF-8"><title>Fragment choix des pièces</title></head>
+<body>
+
+<!--/*
+  Choix des pièces sur un forfait qui propose un prix pose seule (V77) : deux boutons
+  radio dans un groupe nommé, visibles sans script.
+
+  Paramètres :
+    nom       nom du champ envoyé
+    idGroupe  identifiant du groupe, cible des liens du résumé des erreurs
+    legende   texte de la légende, qui nomme la prestation quand plusieurs groupes se suivent
+    article   ArticleVue de la prestation, pour les deux prix. Nul au back-office, où la
+              prestation se choisit dans une liste : les libellés vont alors sans prix.
+    choisi    nom du choix déjà fait (FOURNIES_PAR_GARAGE, APPORTEES_PAR_CLIENT) ou nul.
+              Le client part de nul, rien n'est présélectionné. Le back-office passe
+              FOURNIES_PAR_GARAGE.
+    erreur    message à montrer sous la légende, ou nul
+*/-->
+<fieldset th:fragment="boutons(nom, idGroupe, legende, article, choisi, erreur)"
+          class="choix-pieces" th:id="${idGroupe}"
+          th:attr="aria-describedby=${erreur != null} ? ${idGroupe + '-erreur'} : null">
+    <legend th:text="${legende}">Qui fournit les pièces ?</legend>
+    <p role="alert" class="texte-erreur" th:if="${erreur != null}"
+       th:id="${idGroupe + '-erreur'}" th:text="${erreur}">Choisissez qui fournit les pièces.</p>
+    <div class="choix-pieces-option">
+        <input type="radio" th:name="${nom}" th:id="${idGroupe + '-fournies'}" value="FOURNIES_PAR_GARAGE"
+               th:checked="${choisi == 'FOURNIES_PAR_GARAGE'}"
+               th:attr="aria-invalid=${erreur != null} ? 'true' : null">
+        <label th:for="${idGroupe + '-fournies'}" th:if="${article != null}"
+               th:text="#{choix-pieces.option.fournies(${#numbers.formatDecimal(article.prixTvac(), 1, 'DEFAULT', 2, 'DEFAULT')}, ${#numbers.formatDecimal(article.prixHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">
+            Pièces fournies par le garage : 59,29 € TVA comprise, soit 49,00 € hors TVA</label>
+        <label th:for="${idGroupe + '-fournies'}" th:unless="${article != null}"
+               th:text="#{choix-pieces.mention.fournies}">Pièces fournies par le garage</label>
+    </div>
+    <div class="choix-pieces-option">
+        <input type="radio" th:name="${nom}" th:id="${idGroupe + '-apportees'}" value="APPORTEES_PAR_CLIENT"
+               th:checked="${choisi == 'APPORTEES_PAR_CLIENT'}"
+               th:attr="aria-invalid=${erreur != null} ? 'true' : null">
+        <label th:for="${idGroupe + '-apportees'}" th:if="${article != null}"
+               th:text="#{choix-pieces.option.apportees(${#numbers.formatDecimal(article.prixPoseSeuleTvac(), 1, 'DEFAULT', 2, 'DEFAULT')}, ${#numbers.formatDecimal(article.prixPoseSeuleHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">
+            Pose seule, j'apporte mes pièces : 47,19 € TVA comprise, soit 39,00 € hors TVA</label>
+        <label th:for="${idGroupe + '-apportees'}" th:unless="${article != null}"
+               th:text="#{choix-pieces.mention.apportees}">Pose seule, pièces apportées par le client</label>
+    </div>
+</fieldset>
+
+<!--/*
+  Mention d'une ligne qui porte un choix, traduite dans la langue de la page. Rien pour une
+  ligne sans choix proposé.
+*/-->
+<small th:fragment="mention(cle)" class="mention-pieces" th:if="${cle != null}"
+       th:text="#{${cle}}">Pièces fournies par le garage</small>
+
+</body>
+</html>

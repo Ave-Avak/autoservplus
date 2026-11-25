@@ -1,5 +1,6 @@
 package be.autoservplus.vente.web.dto;
 
+import be.autoservplus.catalogue.domain.ChoixPieces;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.i18n.LanguesSupportees;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -73,7 +74,9 @@ public record PanierVue(
             /** Prix unitaire taxe comprise, au prix et au taux figés à l'ajout. */
             String prixUnitaireTvac,
             String totalTvac,
-            boolean pieceActive) {
+            boolean pieceActive,
+            /** Clé de la mention du choix des pièces, nulle sans choix. */
+            String mentionPieces) {
 
         public static LignePanierVue de(LignePanier ligne) {
             return new LignePanierVue(
@@ -90,7 +93,8 @@ public record PanierVue(
                     // colonne à l'écran, même sens pour le membre.
                     ligne.estService()
                             ? ligne.getPrestation().isActif()
-                            : ligne.getPiece().isActif());
+                            : ligne.getPiece().isActif(),
+                    ChoixPieces.cleMentionDe(ligne.getChoixPieces()));
         }
     }
 }

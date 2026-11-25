@@ -1,5 +1,6 @@
 package be.autoservplus.facturation.service;
 
+import be.autoservplus.catalogue.domain.ChoixPieces;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.common.montant.CalculTva;
@@ -247,12 +248,14 @@ public class FactureService {
             return interventionFacturee(facture).lignesAFacturer().stream()
                     .map(ligne -> new DocumentFacture.LigneFacture(ligne.getLibelleFige(),
                             FormatageQuantite.lisible(ligne.getQuantite(), ligne.getUnite(), langue),
-                            ligne.getPrixUnitaireHtva(), ligne.getTauxTva(), ligne.totalTvac()))
+                            ligne.getPrixUnitaireHtva(), ligne.getTauxTva(), ligne.totalTvac(),
+                            ChoixPieces.cleMentionDe(ligne.getChoixPieces())))
                     .toList();
         }
         return commandes.lignesDe(facture.getCommande()).stream()
                 .map(ligne -> new DocumentFacture.LigneFacture(ligne.getLibelleFige(), ligne.getQuantite(),
-                        ligne.getPrixUnitaireHtva(), ligne.getTauxTva(), ligne.totalTvac()))
+                        ligne.getPrixUnitaireHtva(), ligne.getTauxTva(), ligne.totalTvac(),
+                        ChoixPieces.cleMentionDe(ligne.getChoixPieces())))
                 .toList();
     }
 }

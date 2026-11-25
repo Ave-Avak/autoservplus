@@ -115,7 +115,8 @@
             </thead>
             <tbody>
                 <tr th:each="l : ${intervention.lignes()}">
-                    <td th:text="${l.libelle()}">Vidange</td>
+                    <td><span th:text="${l.libelle()}">Vidange</span>
+                        <small th:replace="~{fragments/choix-pieces :: mention(${l.mentionPieces()})}"></small></td>
                     <td th:text="${l.quantite()}">1</td>
                 </tr>
             </tbody>

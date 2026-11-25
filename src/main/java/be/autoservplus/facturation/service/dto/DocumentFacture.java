@@ -85,20 +85,23 @@ public record DocumentFacture(
      * imposable n'existe que par taux, à la ventilation.
      */
     /**
-     * @param quantite rédigée dans la langue du document : « 2 » pour une pièce ou un
-     *                 forfait, « 1,5 h » pour des heures de main-d'œuvre
+     * @param quantite      rédigée dans la langue du document : « 2 » pour une pièce ou un
+     *                      forfait, « 1,5 h » pour des heures de main-d'œuvre
+     * @param mentionPieces clé de la mention du choix des pièces, traduite dans la langue du
+     *                      document à l'impression, {@code null} sans choix proposé
      */
     public record LigneFacture(
             String libelle,
             String quantite,
             BigDecimal prixUnitaireHtva,
             BigDecimal tauxTva,
-            BigDecimal totalTvac) {
+            BigDecimal totalTvac,
+            String mentionPieces) {
 
         /** Ligne à quantité entière, celle d'une commande. */
         public LigneFacture(String libelle, int quantite, BigDecimal prixUnitaireHtva, BigDecimal tauxTva,
-                            BigDecimal totalTvac) {
-            this(libelle, String.valueOf(quantite), prixUnitaireHtva, tauxTva, totalTvac);
+                            BigDecimal totalTvac, String mentionPieces) {
+            this(libelle, String.valueOf(quantite), prixUnitaireHtva, tauxTva, totalTvac, mentionPieces);
         }
     }
 }

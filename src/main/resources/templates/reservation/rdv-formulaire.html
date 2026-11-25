@@ -48,6 +48,21 @@
         <p class="message message-erreur" role="alert" th:if="${#fields.hasGlobalErrors()}"
            th:each="erreur : ${#fields.globalErrors()}" th:text="${erreur}">Erreur</p>
 
+        <!--/* Résumé des erreurs de champ, chacune reliée au champ à corriger. Un choix des
+             pièces manquant y figure aussi : le prix retenu doit être celui que le membre a
+             choisi, et il doit voir ce qui l'arrête sans parcourir tout le formulaire. */-->
+        <div class="resume-erreurs" role="alert" th:if="${#fields.hasErrors('*')}">
+            <p th:text="#{formulaire.resume-erreurs.titre}">Corrigez les points suivants :</p>
+            <ul>
+                <li th:each="e : ${#fields.detailedErrors('*')}" th:unless="${e.global}">
+                    <a th:href="${#strings.startsWith(e.fieldName, 'choixPieces[')}
+                                ? '#choix-' + ${#strings.substringBefore(#strings.substringAfter(e.fieldName, '['), ']')}
+                                : '#' + ${e.fieldName} + '-erreur'"
+                       th:text="${e.message}">Choisissez qui fournit les pièces.</a>
+                </li>
+            </ul>
+        </div>
+
         <fieldset>
             <legend th:text="#{rdv.formulaire.etape.vehicule}">1. Votre véhicule</legend>
             <div class="champ">
@@ -80,6 +95,18 @@
                             <span th:text="${p.libelle()}" th:lang="${p.langueLibelle()}">Vidange</span>
                             <small th:text="#{rdv.formulaire.prestation.detail(${p.dureeMinutes()}, ${#numbers.formatDecimal(p.prixHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">30 min, 49,00 € HTVA</small>
                         </label>
+                        <!--/* Le choix n'est lu que pour une prestation cochée. Aucun bouton n'est
+                             coché d'avance : le membre choisit le prix qu'il paiera. */-->
+                        <th:block th:if="${p.proposePoseSeule()}"
+                                  th:with="champ='choixPieces[' + ${p.reference()} + ']'">
+                            <fieldset th:replace="~{fragments/choix-pieces :: boutons(
+                                    nom=${champ},
+                                    idGroupe='choix-' + ${p.reference()},
+                                    legende=#{choix-pieces.legende-prestation(${p.libelle()})},
+                                    article=${p},
+                                    choisi=${formulaire.choixPieces[p.reference()]?.name()},
+                                    erreur=${#fields.hasErrors(champ)} ? ${#strings.listJoin(#fields.errors(champ), ' ')} : null)}"></fieldset>
+                        </th:block>
                     </li>
                 </ul>
             </div>
@@ -93,6 +120,8 @@
                        th:value="${#temporals.format(formulaire.date, 'yyyy-MM-dd')}"
                        th:min="${#temporals.format(dateMin, 'yyyy-MM-dd')}"
                        th:max="${#temporals.format(dateMax, 'yyyy-MM-dd')}" required>
+                <p role="alert" id="date-erreur" class="texte-erreur" th:if="${#fields.hasErrors('date')}"
+                   th:errors="*{date}">Erreur</p>
                 <p class="aide" th:text="#{rdv.formulaire.jour.aide(${#temporals.format(dateMin, 'd MMMM yyyy')})}">
                     Réservation possible à partir du 15 septembre 2026.</p>
             </div>
@@ -130,7 +159,7 @@
                 <label for="commentaire" th:text="#{rdv.formulaire.commentaire}">Commentaire</label>
                 <textarea id="commentaire" th:field="*{commentaire}" rows="3" maxlength="2000"
                           th:placeholder="#{rdv.formulaire.commentaire.exemple}"></textarea>
-                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('commentaire')}" th:errors="*{commentaire}">Erreur</p>
+                <p role="alert" id="commentaire-erreur" class="texte-erreur" th:if="${#fields.hasErrors('commentaire')}" th:errors="*{commentaire}">Erreur</p>
             </div>
         </fieldset>
 

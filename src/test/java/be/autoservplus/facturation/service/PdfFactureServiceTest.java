@@ -87,7 +87,7 @@ class PdfFactureServiceTest {
     private void generationAboutit() {
         when(factureService.lignesDuDocument(facture)).thenReturn(lignes.stream()
                 .map(l -> new DocumentFacture.LigneFacture(l.getLibelleFige(), l.getQuantite(),
-                        l.getPrixUnitaireHtva(), l.getTauxTva(), l.totalTvac()))
+                        l.getPrixUnitaireHtva(), l.getTauxTva(), l.totalTvac(), null))
                 .toList());
         when(factureService.ventilationDe(facture)).thenReturn(VentilationTva.desLignes(lignes));
         when(generateur.engendrer(any(DocumentFacture.class))).thenReturn(PDF);

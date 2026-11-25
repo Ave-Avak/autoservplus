@@ -255,10 +255,12 @@ class AdminInterventionControllerTest {
             mvc.perform(post("/admin/interventions/{ref}/lignes", REF)
                             .param("prestation", prestation.toString())
                             .param("quantite", "2")
+                            .param("choix", "APPORTEES_PAR_CLIENT")
                             .with(csrf()))
                     .andExpect(status().is3xxRedirection());
 
-            verify(service).ajouterLigneMainOeuvre(REF, prestation, BigDecimal.valueOf(2));
+            verify(service).ajouterLigneMainOeuvre(REF, prestation, BigDecimal.valueOf(2),
+                    be.autoservplus.catalogue.domain.ChoixPieces.APPORTEES_PAR_CLIENT);
         }
 
         @Test

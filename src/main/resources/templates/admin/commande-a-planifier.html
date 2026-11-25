@@ -23,7 +23,8 @@
         <dt th:text="#{admin.planification.colonne.prestations}">Prestations</dt>
         <dd>
             <ul>
-                <li th:each="p : ${commande.prestations()}" th:text="${p}">Vidange</li>
+                <li th:each="p : ${commande.lignes()}"><span th:text="${p.libelle()}">Vidange</span>
+                    <small th:replace="~{fragments/choix-pieces :: mention(${p.mentionPieces()})}"></small></li>
             </ul>
         </dd>
     </dl>

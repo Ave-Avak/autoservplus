@@ -1,5 +1,6 @@
 package be.autoservplus.vente.service;
 
+import be.autoservplus.catalogue.domain.ChoixPieces;
 import be.autoservplus.communication.service.DetailsConfirmationCommande;
 import be.autoservplus.communication.service.DetailsConfirmationCommande.LigneCommandee;
 import be.autoservplus.communication.service.DetailsConfirmationCommande.RenonciationConfirmee;
@@ -150,6 +151,7 @@ public class ConfirmationCommande {
 
     private static LigneCommandee ligneCommandee(LignePanier ligne, Locale langue) {
         return new LigneCommandee(ligne.getLibelleFige(), ligne.getQuantite(),
-                FormatageRdv.euros(ligne.totalTvac(), langue), ligne.getTauxTva().stripTrailingZeros().toPlainString());
+                FormatageRdv.euros(ligne.totalTvac(), langue), ligne.getTauxTva().stripTrailingZeros().toPlainString(),
+                ChoixPieces.cleMentionDe(ligne.getChoixPieces()));
     }
 }

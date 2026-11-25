@@ -340,6 +340,7 @@ class GraineDemonstrationIT extends SocleIntegration {
         lignes.put("historique_modification_catalogue", 0L);
         lignes.put("historique_modification_commande", 0L);
         lignes.put("historique_modification_compte", 0L);
+        lignes.put("historique_piece_incluse", 0L);
         lignes.put("historique_statut_intervention", 13L);
         lignes.put("historique_statut_utilisateur", 2L);
         lignes.put("indisponibilite", 0L);
@@ -354,6 +355,7 @@ class GraineDemonstrationIT extends SocleIntegration {
         lignes.put("parametre_atelier", 1L);
         lignes.put("photo", 0L);
         lignes.put("piece", 6L);
+        lignes.put("piece_incluse", 0L);
         lignes.put("place_parking", 8L);
         lignes.put("plage_ouverture", 11L);
         lignes.put("poste_atelier", 3L);

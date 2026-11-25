@@ -1,5 +1,6 @@
 package be.autoservplus.intervention.web.dto;
 
+import be.autoservplus.catalogue.domain.ChoixPieces;
 import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
@@ -114,9 +115,11 @@ public record InterventionVueMembre(
      * interventions, aucune transparence tarifaire perdue puisque {@code totalTvac}
      * reste expose au niveau intervention.
      */
-    public record LigneVue(String libelle, String quantite) {
+    public record LigneVue(String libelle, String quantite, String mentionPieces) {
         public static LigneVue de(LigneIntervention l) {
-            return new LigneVue(l.getLibelleFige(), FormatageQuantite.lisible(l.getQuantite(), l.getUnite(), LanguesSupportees.deLEcran()));
+            return new LigneVue(l.getLibelleFige(),
+                    FormatageQuantite.lisible(l.getQuantite(), l.getUnite(), LanguesSupportees.deLEcran()),
+                    ChoixPieces.cleMentionDe(l.getChoixPieces()));
         }
     }
 

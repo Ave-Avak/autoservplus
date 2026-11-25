@@ -616,6 +616,21 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 .liste-cases li { display: flex; align-items: flex-start; gap: var(--espace-s); }
 .liste-cases label { display: flex; flex-direction: column; }
 .liste-cases small { color: var(--gris-500); }
+.liste-cases li:has(.choix-pieces) { flex-wrap: wrap; }
+
+/* Choix des pièces d'un forfait (V77) : sous la case de la prestation, sur toute la largeur. */
+.choix-pieces { flex-basis: 100%; border: 1px solid var(--gris-200); border-radius: var(--rayon); padding: var(--espace-s) var(--espace-m); margin: var(--espace-xs) 0 var(--espace-s); }
+.formulaire-rdv .choix-pieces { padding: var(--espace-s) var(--espace-m); margin: var(--espace-xs) 0 0; }
+.choix-pieces legend { font-weight: 600; font-size: 0.9375rem; padding: 0 var(--espace-xs); }
+.choix-pieces-option { display: flex; align-items: flex-start; gap: var(--espace-s); margin-top: var(--espace-xs); }
+.mention-pieces { display: block; color: var(--gris-700); font-size: 0.875rem; }
+.liste-simple { list-style: none; margin: 0; padding: 0; }
+
+/* Résumé des erreurs en tête de formulaire, mêmes couleurs que .message-erreur (6.80:1). */
+.resume-erreurs { border: 1px solid var(--erreur-texte); border-radius: var(--rayon); background: #FEE2E2; color: #991B1B; padding: var(--espace-s) var(--espace-m); margin-bottom: var(--espace-l); }
+.resume-erreurs p { margin: 0 0 var(--espace-xs); font-weight: 600; }
+.resume-erreurs ul { margin: 0; padding-left: 1.25rem; }
+.resume-erreurs a { color: #991B1B; }
 
 .grille-creneaux { list-style: none; padding: 0; margin: 0; display: grid; gap: var(--espace-s); grid-template-columns: repeat(auto-fill, minmax(9rem, 1fr)); }
 .grille-creneaux input[type="radio"] { position: absolute; opacity: 0; width: 0; height: 0; }

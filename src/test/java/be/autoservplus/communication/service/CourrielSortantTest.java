@@ -199,10 +199,10 @@ class CourrielSortantTest {
             boolean prestations, String versionCgv, DetailsConfirmationCommande.RenonciationConfirmee renonciation) {
         List<DetailsConfirmationCommande.LigneCommandee> lignes = new ArrayList<>();
         if (pieces) {
-            lignes.add(new DetailsConfirmationCommande.LigneCommandee("Filtre à huile", 2, "21,78 €", "21"));
+            lignes.add(new DetailsConfirmationCommande.LigneCommandee("Filtre à huile", 2, "21,78 €", "21", null));
         }
         if (prestations) {
-            lignes.add(new DetailsConfirmationCommande.LigneCommandee("Vidange", 1, "58,43 €", "21"));
+            lignes.add(new DetailsConfirmationCommande.LigneCommandee("Vidange", 1, "58,43 €", "21", null));
         }
         return new DetailsConfirmationCommande("marie@exemple.be", "Marie", langue, "CMD-2026-0007",
                 DIMANCHE.toInstant(), DIMANCHE.plusMinutes(5).toInstant(), lignes,

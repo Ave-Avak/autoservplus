@@ -228,6 +228,7 @@
                     <td th:text="#{'historique.type.' + ${l.type()}}">Prestation</td>
                     <td>
                         <span th:text="${l.libelle()}">Vidange</span>
+                        <small th:replace="~{fragments/choix-pieces :: mention(${l.mentionPieces()})}"></small>
                         <!--/* Calculée à l'affichage (Q-H-30) : elle disparaît quand le stock
                              saisi couvre les interventions ouvertes. */-->
                         <span th:if="${l.aCommander()}" class="badge badge-en_attente"
@@ -286,6 +287,10 @@
                     En unités entières pour un forfait, en heures pour une prestation à l'heure (1,5 pour une heure et demie).
                 </p>
             </div>
+            <!--/* Pièces fournies présélectionnées : le garage saisit ce qu'il a convenu avec le
+                 client. Le choix est ignoré pour une prestation qui ne propose pas la pose seule. */-->
+            <fieldset th:replace="~{fragments/choix-pieces :: boutons(nom='choix', idGroupe='choix-pieces',
+                    legende=#{choix-pieces.legende-admin}, article=null, choisi='FOURNIES_PAR_GARAGE', erreur=null)}"></fieldset>
             <button type="submit" class="btn-cta" th:text="#{admin.intervention.ajout.bouton}">Ajouter</button>
         </form>
 

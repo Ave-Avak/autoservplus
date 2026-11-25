@@ -1,6 +1,9 @@
 package be.autoservplus.reservation.domain;
 
 import be.autoservplus.common.montant.CalculTva;
+import be.autoservplus.catalogue.domain.ChoixPieces;
+import be.autoservplus.catalogue.domain.ChoixPiecesRefuseException;
+import be.autoservplus.catalogue.domain.ConvertisseurChoixPieces;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.PrestationALHeureRefuseeException;
 import jakarta.persistence.*;
@@ -15,6 +18,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Prestation retenue dans un rendez-vous, au prix en vigueur lors de la reservation.
@@ -56,6 +60,11 @@ public class LigneRdv {
     @Column(name = "taux_tva", nullable = false, precision = 5, scale = 2)
     private BigDecimal tauxTva;
 
+    /** Figé avec le prix, nul quand la prestation ne proposait pas de choix (V77). */
+    @Convert(converter = ConvertisseurChoixPieces.class)
+    @Column(name = "pieces_client", updatable = false)
+    private ChoixPieces choixPieces;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -76,8 +85,12 @@ public class LigneRdv {
         // requis par JPA
     }
 
-    /** @throws PrestationALHeureRefuseeException prestation à l'heure, qui ne se réserve pas (Q-H-36) */
-    LigneRdv(Rdv rdv, Prestation prestation, short quantite) {
+    /**
+     * @param choix choix des pièces, {@code null} quand la prestation n'en propose pas
+     * @throws PrestationALHeureRefuseeException prestation à l'heure, qui ne se réserve pas (Q-H-36)
+     * @throws ChoixPiecesRefuseException choix absent alors qu'il est proposé, ou l'inverse
+     */
+    LigneRdv(Rdv rdv, Prestation prestation, short quantite, ChoixPieces choix) {
         this.rdv = Objects.requireNonNull(rdv, "rdv");
         this.prestation = Objects.requireNonNull(prestation, "prestation");
         if (prestation.estALHeure()) {
@@ -87,7 +100,8 @@ public class LigneRdv {
             throw new IllegalArgumentException("La quantite doit valoir au moins 1.");
         }
         this.quantite = quantite;
-        this.prixUnitaireHtva = prestation.getPrixHtva();
+        this.prixUnitaireHtva = prestation.prixHtvaPour(choix);
+        this.choixPieces = choix;
         this.tauxTva = prestation.getTauxTva();
     }
 
@@ -110,6 +124,7 @@ public class LigneRdv {
     public short getQuantite() { return quantite; }
     public BigDecimal getPrixUnitaireHtva() { return prixUnitaireHtva; }
     public BigDecimal getTauxTva() { return tauxTva; }
+    public Optional<ChoixPieces> getChoixPieces() { return Optional.ofNullable(choixPieces); }
 
     @Override
     public boolean equals(Object autre) {

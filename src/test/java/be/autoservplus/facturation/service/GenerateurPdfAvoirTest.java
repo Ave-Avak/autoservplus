@@ -50,7 +50,7 @@ class GenerateurPdfAvoirTest {
     private static DocumentAvoir avoir() {
         List<DocumentFacture.LigneFacture> lignes = List.of(
                 new DocumentFacture.LigneFacture("Plaquettes de frein avant", 1,
-                        new BigDecimal("100.00"), new BigDecimal("21.00"), new BigDecimal("121.00")));
+                        new BigDecimal("100.00"), new BigDecimal("21.00"), new BigDecimal("121.00"), null));
         VentilationTva ventilation = new VentilationTva(List.of(
                 new VentilationTva.TrancheTva(new BigDecimal("21"),
                         new BigDecimal("100.00"), new BigDecimal("21.00"))));

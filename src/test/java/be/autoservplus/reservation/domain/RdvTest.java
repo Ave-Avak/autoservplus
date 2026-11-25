@@ -82,7 +82,7 @@ class RdvTest {
         @Test
         @DisplayName("refuse un rendez-vous sans prestation")
         void refuseSansPrestation() {
-            assertThatThrownBy(() -> new Rdv("RDV-2026-0001", marie, golf, pont, DEBUT, PAS, List.of(), null))
+            assertThatThrownBy(() -> new Rdv("RDV-2026-0001", marie, golf, pont, DEBUT, PAS, List.<Prestation>of(), null))
                     .isInstanceOf(IllegalArgumentException.class);
         }
 

@@ -48,6 +48,7 @@
             <tr th:each="l : ${panier.lignes()}">
                 <td>
                     <span th:text="${l.libelle()}">Plaquettes avant</span>
+                    <small th:replace="~{fragments/choix-pieces :: mention(${l.mentionPieces()})}"></small>
                     <span class="texte-erreur" th:unless="${l.pieceActive()}"
                           th:text="#{panier.piece-inactive}">N'est plus vendu</span>
                 </td>
