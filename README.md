@@ -48,6 +48,17 @@ démarrer, quel que soit le profil, car elle chiffre les secrets du second facte
 faut la générer une fois et la réutiliser à chaque démarrage. Une clé neuve rendrait
 illisibles les seconds facteurs déjà enrôlés. `openssl` est fourni avec Git pour Windows.
 
+La feuille du site (`static/css/site.css`) et le script de Bootstrap
+(`static/js/bootstrap.bundle.min.js`) ne sont pas dans le dépôt. Maven les produit dans
+`target/classes` à la phase `generate-resources`, depuis les sources Sass de
+`src/main/scss` et la version de Bootstrap du `pom.xml`. `spring-boot:run` et tout build
+Maven passent par cette phase. Lancée autrement, depuis IntelliJ IDEA par exemple,
+l'application les cherche sans les trouver et le site s'affiche sans style. Il suffit
+alors d'un `mvnw generate-resources` (`mvnw.cmd generate-resources` sous Windows) avant le
+premier lancement, puis après chaque modification d'un fichier `.scss`. Dans IntelliJ, la
+même commande peut s'ajouter à la configuration de lancement, en tâche « Run Maven Goal »
+de la liste « Before launch ».
+
 L'application écoute sur <http://localhost:8080>.
 
 Le profil `demo` charge un jeu de données qui couvre tous les parcours : rendez-vous

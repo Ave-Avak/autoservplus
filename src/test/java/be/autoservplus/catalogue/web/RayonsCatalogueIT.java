@@ -79,7 +79,7 @@ class RayonsCatalogueIT extends SocleIntegration {
     @DisplayName("le filtre d'un rayon ne propose que ses catégories, et ignore celle d'un autre")
     void filtreParCategorie() throws Exception {
         Document accessoires = Jsoup.parse(ouvrir("/accessoires", Locale.FRENCH));
-        assertThat(accessoires.select("nav.filtres").text()).contains("Intérieur zqy").doesNotContain("Freinage zqy");
+        assertThat(accessoires.select("nav.filtres-catalogue").text()).contains("Intérieur zqy").doesNotContain("Freinage zqy");
 
         Document intrus = Jsoup.parse(ouvrir("/accessoires?categorie=ZQY_PIECES", Locale.FRENCH));
         assertThat(intrus.select(".grille-articles")).isEmpty();

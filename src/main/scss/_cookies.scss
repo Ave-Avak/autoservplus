@@ -1,0 +1,171 @@
+// Bandeau de consentement aux cookies (F25), même balisage que sous l'ancienne feuille
+// (fragments/cookies.html), servi aux écrans migrés.
+//
+// Barre fixe en bas de fenêtre. Elle ne capture pas le focus et ne recouvre pas le
+// contenu principal : le visiteur lit et navigue sans y répondre (CdC P410). Le défilement
+// réserve sa hauteur, pour qu'un élément qui reçoit le focus ne passe jamais dessous
+// (WCAG 2.4.11).
+
+html:has(.bandeau-cookies) {
+  scroll-padding-bottom: 22rem;
+
+  @include media-breakpoint-up(md) {
+    scroll-padding-bottom: 10rem;
+  }
+}
+
+// Le pied s'allonge de la hauteur de la barre : sa dernière ligne reste lisible au bas
+// de la page, et le fond reste celui du pied.
+body:has(.bandeau-cookies) .pied-site {
+  padding-bottom: 22rem;
+
+  @include media-breakpoint-up(md) {
+    padding-bottom: 10rem;
+  }
+}
+
+.bandeau-cookies {
+  position: fixed;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  z-index: $zindex-fixed;
+  padding: 1rem 1.5rem;
+  background: $white;
+  border-top: 2px solid $marine;
+  box-shadow: 0 -.125rem .5rem rgba($gray-900, .15);
+}
+
+.bandeau-cookies__corps {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  max-width: 70rem;
+  margin: 0 auto;
+}
+
+.bandeau-cookies__texte {
+  flex: 1 1 20rem;
+
+  h2 {
+    margin: 0 0 .25rem;
+    color: $marine;
+    font-size: 1rem;
+  }
+
+  p {
+    margin: 0;
+    color: $gray-700;
+    font-size: .875rem;
+  }
+}
+
+.bandeau-cookies__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: stretch;
+  gap: .5rem;
+  width: 100%;
+
+  @include media-breakpoint-up(md) {
+    width: auto;
+  }
+}
+
+// Les trois actions partagent ce seul style : mêmes dimensions, même couleur, même
+// contraste (blanc sur bleu marine, 11,62:1). Refuser doit être aussi simple
+// qu'accepter (Autorité de protection des données) : aucune variante par action.
+.btn-cookies {
+  display: inline-flex;
+  flex: 1 1 100%;
+  align-items: center;
+  justify-content: center;
+  min-height: 2.75rem;
+  padding: .5rem 1.5rem;
+  background: $marine;
+  color: $white;
+  font: inherit;
+  font-weight: 600;
+  text-align: center;
+  list-style: none;
+  cursor: pointer;
+  border: 2px solid $marine;
+  border-radius: $border-radius;
+
+  // <summary> : sans cela le marqueur triangulaire distinguerait « Personnaliser ».
+  &::-webkit-details-marker {
+    display: none;
+  }
+
+  &:hover {
+    background: shade-color($marine, 25%);
+    border-color: shade-color($marine, 25%);
+  }
+
+  @include media-breakpoint-up(md) {
+    flex: 0 1 auto;
+  }
+}
+
+// Le bouton « Personnaliser » est le résumé d'un <details> : c'est le <details> qui
+// occupe la place dans la rangée, le résumé le remplit.
+.cookies-personnalisation {
+  display: flex;
+  flex: 1 1 100%;
+
+  .btn-cookies {
+    width: 100%;
+  }
+
+  @include media-breakpoint-up(md) {
+    flex: 0 1 auto;
+  }
+}
+
+// Le panneau s'ouvre au-dessus de la barre : vers le bas il sortirait de la fenêtre.
+.cookies-personnalisation__panneau {
+  position: absolute;
+  right: 0;
+  bottom: 100%;
+  left: 0;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 1.5rem;
+  background: $white;
+  text-align: left;
+  border-top: 1px solid $gray-200;
+  box-shadow: 0 -.125rem .5rem rgba($gray-900, .15);
+}
+
+.cookies-categorie {
+  margin: 0 0 1rem;
+  padding: 1rem;
+  border: 1px solid $gray-200;
+  border-radius: $border-radius;
+
+  legend {
+    float: none;
+    width: auto;
+    padding: 0 .5rem;
+    margin: 0;
+    color: $marine;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+
+  label {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    font-weight: 600;
+  }
+}
+
+.cookies-categorie__finalite,
+.cookies-categorie__duree {
+  margin: .5rem 0 0;
+  color: $gray-700;
+  font-size: .875rem;
+}

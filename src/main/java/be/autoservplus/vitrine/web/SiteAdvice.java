@@ -1,0 +1,61 @@
+package be.autoservplus.vitrine.web;
+
+import be.autoservplus.config.IdentiteGarage;
+import be.autoservplus.vitrine.service.HorairesOuvertureService;
+import be.autoservplus.vitrine.web.dto.HorairesGroupesVue;
+import org.springframework.beans.factory.ObjectProvider;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.ui.Model;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.thymeleaf.context.LazyContextVariable;
+
+import java.util.List;
+
+/**
+ * Ce que le gabarit du site public affiche sur chaque page : le garage, ses horaires en
+ * résumé et, sous les profils de démonstration, la mention qui dit que tout y est fictif.
+ *
+ * <p>Les horaires viennent de {@code plage_ouverture}, comme sur la page de contact, et
+ * sont rendus en variable paresseuse : la requête ne part que si la page affiche le
+ * bandeau ou le pied du site. Les réponses JSON, les redirections et les écrans encore
+ * sous l'ancien gabarit ne la paient pas.</p>
+ *
+ * <p>L'identité est celle de la configuration, dans la variante de la langue affichée
+ * (forme juridique, rue et localité en néerlandais quand elles sont renseignées).</p>
+ *
+ * <p>Injection par {@link ObjectProvider}, comme {@code PanierModelAdvice} : les tests
+ * {@code @WebMvcTest} instancient tous les advices sans fournir ces deux beans, et le
+ * gabarit commun n'y est pas rendu.</p>
+ */
+@ControllerAdvice
+public class SiteAdvice {
+
+    private final ObjectProvider<IdentiteGarage> garage;
+    private final ObjectProvider<HorairesOuvertureService> horaires;
+    private final boolean mentionDemonstration;
+
+    public SiteAdvice(ObjectProvider<IdentiteGarage> garage, ObjectProvider<HorairesOuvertureService> horaires,
+                      @Value("${autoservplus.vitrine.mention-demonstration:false}") boolean mentionDemonstration) {
+        this.garage = garage;
+        this.horaires = horaires;
+        this.mentionDemonstration = mentionDemonstration;
+    }
+
+    @ModelAttribute
+    public void exposerLeSite(Model modele) {
+        modele.addAttribute("mentionDemonstration", mentionDemonstration);
+        IdentiteGarage identite = garage.getIfAvailable();
+        if (identite != null) {
+            modele.addAttribute("garageSite", identite.pour(LocaleContextHolder.getLocale()));
+        }
+        HorairesOuvertureService service = horaires.getIfAvailable();
+        modele.addAttribute("horairesResume", new LazyContextVariable<List<HorairesGroupesVue>>() {
+            @Override
+            protected List<HorairesGroupesVue> loadValue() {
+                return service == null ? List.of() : service.resume();
+            }
+        });
+    }
+}

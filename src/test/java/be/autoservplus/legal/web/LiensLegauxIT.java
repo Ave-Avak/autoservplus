@@ -37,7 +37,7 @@ class LiensLegauxIT extends SocleIntegration {
 
     private static final String MEMBRE = "liens-legaux@exemple.be";
     private static final Pattern LIGNE_LEGALE =
-            Pattern.compile("<footer class=\"pied\">(.*?)</footer>", Pattern.DOTALL);
+            Pattern.compile("<nav class=\"liens-legaux[^\"]*\"[^>]*>(.*?)</nav>", Pattern.DOTALL);
     private static final Pattern LIEN = Pattern.compile("href=\"([^\"]+)\"");
     private static final List<String> ATTENDUS =
             List.of("/cgv", "/mentions-legales", "/confidentialite", "/garantie-legale",

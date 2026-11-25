@@ -131,3 +131,13 @@ Les lettres du logo AutoServ+ (`src/main/resources/static/images/logo`) sont les
 d'Inter ExtraBold (le A et le mot) et d'Inter Bold (le +), tirés des deux fichiers
 ci-dessus et convertis en tracés. L'OFL laisse libre l'emploi des glyphes dans une image
 produite avec la police, et le SVG ne dépend plus d'aucune police installée.
+
+## Heroicons 2.2.0
+
+`src/main/resources/templates/fragments/icones.html` : dix icônes (neuf en contour de 24 px,
+une étoile pleine) recopiées telles quelles, tracés compris, depuis le paquet `heroicons`
+2.2.0 de Tailwind Labs (https://github.com/tailwindlabs/heroicons), licence MIT. Archive
+lue : `heroicons-2.2.0.tgz` du registre npm, SHA-256
+`6c3e9d04b8495c9512a91b0b08804f2c3614a8e5d7df39bbfe02b6450fb7c640`. L'attribut `data-slot` est
+retiré, `class` et `focusable` sont ajoutés. Les icônes sont écrites dans la page, aucune
+requête ne part vers un service tiers.

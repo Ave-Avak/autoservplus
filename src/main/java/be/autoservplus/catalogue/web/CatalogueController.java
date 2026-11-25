@@ -53,9 +53,11 @@ public class CatalogueController {
 
     @GetMapping("/services")
     public String listerPrestations(@RequestParam(required = false) String categorie, Model modele) {
-        modele.addAttribute("articles", (categorie == null || categorie.isBlank())
+        List<ArticleVue> articles = (categorie == null || categorie.isBlank())
                 ? service.prestationsActives()
-                : service.prestationsDeCategorie(categorie));
+                : service.prestationsDeCategorie(categorie);
+        modele.addAttribute("articles", articles);
+        modele.addAttribute("vignettes", galerie.vignettesDePrestations(references(articles)));
         modele.addAttribute("categories", service.categoriesDePrestations());
         modele.addAttribute("categorieActive", categorie);
         modele.addAttribute("typeArticle", "service");
@@ -90,7 +92,9 @@ public class CatalogueController {
     }
 
     private String listerRayon(Rayon rayon, String categorie, Model modele) {
-        modele.addAttribute("articles", service.produitsDuRayon(rayon, categorie));
+        List<ArticleVue> articles = service.produitsDuRayon(rayon, categorie);
+        modele.addAttribute("articles", articles);
+        modele.addAttribute("vignettes", galerie.vignettesDePieces(references(articles)));
         modele.addAttribute("categories", service.categoriesDuRayon(rayon));
         modele.addAttribute("categorieActive", categorie);
         modele.addAttribute("typeArticle", "piece");
@@ -98,6 +102,10 @@ public class CatalogueController {
         modele.addAttribute("cleTitre", "catalogue.titre." + rayon.prefixe());
         modele.addAttribute("cleMeta", "catalogue.meta." + rayon.prefixe());
         return "catalogue/liste";
+    }
+
+    private static List<UUID> references(List<ArticleVue> articles) {
+        return articles.stream().map(ArticleVue::reference).toList();
     }
 
     @GetMapping("/services/{reference}")

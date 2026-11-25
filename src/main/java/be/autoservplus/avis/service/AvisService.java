@@ -18,6 +18,7 @@ import be.autoservplus.notification.service.NotificationService;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -82,6 +83,20 @@ public class AvisService {
     public List<AvisVue> publiesPour(UUID referencePrestation) {
         ZoneId zone = parametres.courants().zone();
         return avis.publiesPourPrestation(referencePrestation).stream()
+                .map(a -> AvisVue.de(a, a.getDateDepot().atZone(zone).toLocalDate()))
+                .toList();
+    }
+
+    /** Note moyenne et nombre de tous les avis publiés du garage. */
+    public SyntheseAvis syntheseGenerale() {
+        SyntheseAvis synthese = avis.syntheseGenerale();
+        return synthese == null ? SyntheseAvis.vide() : synthese;
+    }
+
+    /** Les derniers avis publiés avec un commentaire, du plus récent au plus ancien. */
+    public List<AvisVue> derniersPublies(int nombre) {
+        ZoneId zone = parametres.courants().zone();
+        return avis.derniersPubliesCommentes(PageRequest.of(0, nombre)).stream()
                 .map(a -> AvisVue.de(a, a.getDateDepot().atZone(zone).toLocalDate()))
                 .toList();
     }

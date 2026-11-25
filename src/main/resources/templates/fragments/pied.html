@@ -16,7 +16,7 @@
 */-->
 <th:block th:fragment="pied">
     <footer class="pied">
-        <nav th:attr="aria-label=#{pied.liens.aria}" aria-label="Liens légaux">
+        <nav class="liens-legaux" th:attr="aria-label=#{pied.liens.aria}" aria-label="Liens légaux">
             <ul>
                 <li><a th:href="@{/cgv}" th:text="#{legal.lien.cgv}">Conditions générales de vente</a></li>
                 <li><a th:href="@{/mentions-legales}" th:text="#{legal.lien.mentions}">Mentions légales</a></li>

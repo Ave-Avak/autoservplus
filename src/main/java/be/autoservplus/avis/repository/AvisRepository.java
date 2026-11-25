@@ -4,6 +4,7 @@ import be.autoservplus.avis.domain.Avis;
 import be.autoservplus.avis.service.dto.SyntheseAvis;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.intervention.domain.Intervention;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -59,6 +60,27 @@ public interface AvisRepository extends JpaRepository<Avis, Long> {
               AND a.publie = true
             """)
     SyntheseAvis syntheseParPrestation(@Param("reference") UUID reference);
+
+    /** Moyenne et nombre de tous les avis publiés, pour l'accueil. */
+    @Query("""
+            SELECT new be.autoservplus.avis.service.dto.SyntheseAvis(AVG(a.note), COUNT(a))
+            FROM Avis a
+            WHERE a.publie = true
+            """)
+    SyntheseAvis syntheseGenerale();
+
+    /**
+     * Derniers avis publiés qui portent un commentaire, pour l'accueil. Une note sans texte
+     * n'a rien à montrer dans une carte : elle compte dans la moyenne seulement.
+     */
+    @Query("""
+            SELECT a FROM Avis a
+            JOIN FETCH a.membre
+            JOIN FETCH a.intervention
+            WHERE a.publie = true AND a.commentaire IS NOT NULL AND TRIM(a.commentaire) <> ''
+            ORDER BY a.dateDepot DESC
+            """)
+    List<Avis> derniersPubliesCommentes(Pageable page);
 
     /** Tous les avis, du plus recent au plus ancien, pour l ecran de moderation. */
     @Query("""
