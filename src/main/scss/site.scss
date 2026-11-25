@@ -1,0 +1,9 @@
+// Feuille du site, compilée au build (CompilationFeuilleDeStyle) vers static/css/site.css.
+// Ordre imposé par Bootstrap 5.3 : les variables du thème avant son import, les règles
+// propres après.
+
+@import "theme";
+@import "icones";
+@import "bootstrap";
+@import "polices";
+@import "base";
