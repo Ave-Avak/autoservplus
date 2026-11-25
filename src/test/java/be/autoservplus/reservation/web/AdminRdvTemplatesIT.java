@@ -17,11 +17,16 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Primary;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.Clock;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -52,9 +57,30 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@Import(AdminRdvTemplatesIT.HorlogeFixe.class)
 @WithMockUser(username = "admin@garage.be", roles = "ADMINISTRATEUR")
 @DisplayName("Templates admin (integration)")
 class AdminRdvTemplatesIT extends SocleIntegration {
+
+    private static final ZoneId BRUXELLES = ZoneId.of("Europe/Brussels");
+
+    /**
+     * Mardi 24 novembre 2026, midi à Bruxelles. Les dates du test se comptent depuis cet
+     * instant, et non depuis l'horloge réelle : le rendez-vous à venir était fixé au
+     * 1er décembre 2026, et dès cette heure-là le lien de confirmation disparaissait du détail.
+     */
+    private static final Instant INSTANT_FIGE = LocalDate.of(2026, 11, 24).atTime(12, 0).atZone(BRUXELLES).toInstant();
+    private static final LocalDate JOUR_A_VENIR = INSTANT_FIGE.atZone(BRUXELLES).toLocalDate().plusWeeks(1);
+    private static final Instant PASSE = JOUR_A_VENIR.minusWeeks(4).atTime(10, 0).atZone(BRUXELLES).toInstant();
+
+    @TestConfiguration
+    static class HorlogeFixe {
+        @Bean
+        @Primary
+        Clock horlogeFigee() {
+            return Clock.fixed(INSTANT_FIGE, BRUXELLES);
+        }
+    }
 
     @Autowired private MockMvc mvc;
     @Autowired private UtilisateurRepository utilisateurs;
@@ -78,12 +104,12 @@ class AdminRdvTemplatesIT extends SocleIntegration {
         PosteAtelier pont = postes.save(new PosteAtelier("Pont de test"));
 
         Rdv rdv = new Rdv("RDV-TPL-0001", marie, golf, pont,
-                LocalDate.of(2026, 12, 1).atTime(10, 0).atZone(ZoneId.of("Europe/Brussels")).toInstant(),
+                JOUR_A_VENIR.atTime(10, 0).atZone(BRUXELLES).toInstant(),
                 Duration.ofMinutes(30), List.of(vidange), "Contrôle annuel");
         reference = rdvs.saveAndFlush(rdv).getReference();
 
-        // Début passé pour toute horloge réelle : seule la garde du début est en jeu.
-        Instant passe = LocalDate.of(2026, 1, 5).atTime(10, 0).atZone(ZoneId.of("Europe/Brussels")).toInstant();
+        // Début passé pour l'horloge figée : seule la garde du début est en jeu.
+        Instant passe = PASSE;
         passeEnAttente = rdvs.saveAndFlush(new Rdv("RDV-TPL-0002", marie, golf, pont, passe,
                 Duration.ofMinutes(30), List.of(vidange), null)).getReference();
         Rdv confirme = new Rdv("RDV-TPL-0003", marie, golf, pont, passe.plus(Duration.ofHours(1)),
@@ -134,10 +160,10 @@ class AdminRdvTemplatesIT extends SocleIntegration {
     @Test
     @DisplayName("GET /admin/rendez-vous/agenda rend la période et le lien vers le détail")
     void agenda() throws Exception {
-        mvc.perform(get("/admin/rendez-vous/agenda").param("du", "2026-12-01").param("au", "2026-12-01").locale(Locale.FRENCH))
+        mvc.perform(get("/admin/rendez-vous/agenda").param("du", JOUR_A_VENIR.toString()).param("au", JOUR_A_VENIR.toString()).locale(Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Agenda des rendez-vous")))
-                .andExpect(content().string(containsString("value=\"2026-12-01\"")))
+                .andExpect(content().string(containsString("value=\"" + JOUR_A_VENIR + "\"")))
                 .andExpect(content().string(containsString("RDV-TPL-0001")))
                 .andExpect(content().string(containsString("href=\"/admin/rendez-vous/" + reference + "\"")))
                 .andExpect(content().string(containsString("Pont de test")));
@@ -155,7 +181,7 @@ class AdminRdvTemplatesIT extends SocleIntegration {
     @Test
     @DisplayName("GET /admin/rendez-vous/agenda sur une période vide : message")
     void agendaVide() throws Exception {
-        mvc.perform(get("/admin/rendez-vous/agenda").param("du", "2026-11-30").param("au", "2026-11-30").locale(Locale.FRENCH))
+        mvc.perform(get("/admin/rendez-vous/agenda").param("du", JOUR_A_VENIR.minusDays(1).toString()).param("au", JOUR_A_VENIR.minusDays(1).toString()).locale(Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Aucun rendez-vous sur cette période.")));
     }
@@ -163,7 +189,7 @@ class AdminRdvTemplatesIT extends SocleIntegration {
     @Test
     @DisplayName("GET /admin/rendez-vous/agenda avec une fin avant le début : message, aucun tableau")
     void agendaPeriodeInversee() throws Exception {
-        mvc.perform(get("/admin/rendez-vous/agenda").param("du", "2026-12-02").param("au", "2026-12-01").locale(Locale.FRENCH))
+        mvc.perform(get("/admin/rendez-vous/agenda").param("du", JOUR_A_VENIR.plusDays(1).toString()).param("au", JOUR_A_VENIR.toString()).locale(Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("La date de fin précède la date de début.")))
                 .andExpect(content().string(not(containsString("RDV-TPL-0001"))));
