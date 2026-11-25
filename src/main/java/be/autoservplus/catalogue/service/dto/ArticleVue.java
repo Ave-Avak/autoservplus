@@ -27,6 +27,8 @@ import java.util.UUID;
  * @param langueCategorie   langue à déclarer sur la catégorie affichée en repli
  * @param unite             {@code FORFAIT} ou {@code HEURE} pour une prestation, {@code null}
  *                          pour une pièce
+ * @param prixPoseSeuleHtva prix quand le client apporte ses pièces (V76), {@code null} sans
+ *                          ce choix et pour une pièce
  */
 public record ArticleVue(
         UUID reference,
@@ -42,14 +44,16 @@ public record ArticleVue(
         String langueLibelle,
         String langueDescription,
         String langueCategorie,
-        String unite) {
+        String unite,
+        BigDecimal prixPoseSeuleHtva,
+        BigDecimal prixPoseSeuleTvac) {
 
     /** Un article dont tous les textes sont dans la langue de la page. */
     public ArticleVue(UUID reference, String code, String libelle, String description, String categorie,
                       BigDecimal prixHtva, BigDecimal prixTvac, Integer dureeMinutes, String marque,
                       boolean disponible) {
         this(reference, code, libelle, description, categorie, prixHtva, prixTvac, dureeMinutes, marque,
-                disponible, null, null, null, null);
+                disponible, null, null, null, null, null, null);
     }
 
     /**
@@ -58,6 +62,11 @@ public record ArticleVue(
      */
     public boolean aLHeure() {
         return "HEURE".equals(unite);
+    }
+
+    /** Le client peut choisir d'apporter ses pièces, au prix pose seule. */
+    public boolean proposePoseSeule() {
+        return prixPoseSeuleHtva != null;
     }
 
     /** La prestation en français, langue d'origine du catalogue. */
@@ -83,7 +92,9 @@ public record ArticleVue(
                 libelle.langueSiRepli(langue),
                 description.langueSiRepli(langue),
                 categorie.langueSiRepli(langue),
-                prestation.getUnite().name());
+                prestation.getUnite().name(),
+                prestation.getPrixPoseSeuleHtva(),
+                prestation.prixPoseSeuleTvac());
     }
 
     /** La pièce en français, langue d'origine du catalogue. */
@@ -109,6 +120,8 @@ public record ArticleVue(
                 libelle.langueSiRepli(langue),
                 description.langueSiRepli(langue),
                 categorie.langueSiRepli(langue),
+                null,
+                null,
                 null);
     }
 

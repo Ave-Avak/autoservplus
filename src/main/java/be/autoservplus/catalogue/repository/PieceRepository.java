@@ -65,10 +65,13 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
      * La table {@code photo}, en CASCADE, est une illustration propre a la piece et
      * ne bloque pas. Toute nouvelle table referencant {@code piece} doit s ajouter
      * ici : en cas d oubli, le RESTRICT en base refuse quand meme la suppression.
+     * Une pièce présente dans la composition d'une prestation compte aussi (V76) : la
+     * retirer changerait ce que la prestation consomme, elle se désactive.
      */
     @Query(value = """
             SELECT (SELECT count(*) FROM ligne_panier WHERE piece_id = :id)
                  + (SELECT count(*) FROM ligne_intervention WHERE piece_id = :id)
+                 + (SELECT count(*) FROM composition_prestation WHERE piece_id = :id)
             """, nativeQuery = true)
     long nombreReferencesHistoriques(@Param("id") Long id);
 

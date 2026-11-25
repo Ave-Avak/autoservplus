@@ -1,6 +1,8 @@
 package be.autoservplus.catalogue.web;
 
+import be.autoservplus.catalogue.domain.CompositionRefuseeException;
 import be.autoservplus.catalogue.domain.DureePrestationALHeureException;
+import be.autoservplus.catalogue.domain.PrixPoseSeuleRefuseException;
 import be.autoservplus.catalogue.domain.TauxTvaBelge;
 import be.autoservplus.catalogue.domain.UnitePrestation;
 import be.autoservplus.catalogue.domain.UnitePrestationFixeeException;
@@ -9,6 +11,7 @@ import be.autoservplus.catalogue.service.DoublonCatalogueException;
 import be.autoservplus.catalogue.service.SuppressionRefuseeException;
 import be.autoservplus.catalogue.service.dto.ArticleVueAdmin;
 import be.autoservplus.catalogue.service.dto.DonneesPrestation;
+import be.autoservplus.catalogue.service.dto.PrixPoseSeule;
 import be.autoservplus.catalogue.service.dto.PropositionSuppression;
 import be.autoservplus.catalogue.web.dto.PrestationForm;
 import be.autoservplus.common.exception.RegleMetierException;
@@ -24,6 +27,7 @@ import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.UUID;
@@ -93,6 +97,8 @@ public class AdminPrestationController {
             erreurs.rejectValue(e.getChamp(), "admin.catalogue.erreur.doublon");
         } catch (DureePrestationALHeureException e) {
             erreurs.rejectValue("dureeMinutes", e.getCleMessage());
+        } catch (PrixPoseSeuleRefuseException e) {
+            erreurs.rejectValue("prixPoseSeuleHtva", e.getCleMessage());
         } catch (IllegalArgumentException e) {
             // garde du domaine : taux de TVA hors de la liste belge (POST forge)
             erreurs.rejectValue("tauxTva", "admin.catalogue.erreur.taux");
@@ -133,12 +139,46 @@ public class AdminPrestationController {
             erreurs.rejectValue("unite", e.getCleMessage());
         } catch (DureePrestationALHeureException e) {
             erreurs.rejectValue("dureeMinutes", e.getCleMessage());
+        } catch (PrixPoseSeuleRefuseException e) {
+            erreurs.rejectValue("prixPoseSeuleHtva", e.getCleMessage());
         } catch (IllegalArgumentException e) {
             erreurs.rejectValue("tauxTva", "admin.catalogue.erreur.taux");
         } catch (RegleMetierException e) {
             erreurs.rejectValue("codeCategorie", "admin.catalogue.erreur.categorie");
         }
         return preparerFormulaire(formulaire, true, reference, modele);
+    }
+
+    // --- composition (V76) ------------------------------------------------------------
+
+    /**
+     * Ajoute une pièce à la composition, ou change sa quantité. Formulaire distinct de celui
+     * de la prestation : une composition se modifie pièce par pièce, et chaque changement
+     * s'écrit à l'historique.
+     */
+    @PostMapping("/{reference}/composition")
+    public String fixerComposant(@PathVariable UUID reference, @RequestParam UUID piece,
+                                 @RequestParam(required = false) Integer quantite,
+                                 RedirectAttributes redirection) {
+        try {
+            service.fixerComposant(reference, piece, quantite == null ? 0 : quantite);
+            redirection.addFlashAttribute("message", msg("admin.catalogue.composition.message.fixee"));
+        } catch (CompositionRefuseeException e) {
+            redirection.addFlashAttribute("erreur", msg(e.getCleMessage()));
+        }
+        return versComposition(reference);
+    }
+
+    @PostMapping("/{reference}/composition/{piece}/retirer")
+    public String retirerComposant(@PathVariable UUID reference, @PathVariable UUID piece,
+                                   RedirectAttributes redirection) {
+        service.retirerComposant(reference, piece);
+        redirection.addFlashAttribute("message", msg("admin.catalogue.composition.message.retiree"));
+        return versComposition(reference);
+    }
+
+    private static String versComposition(UUID reference) {
+        return "redirect:/admin/catalogue/prestations/" + reference + "/modifier#composition";
     }
 
     // --- retrait (A3, RM-29) ----------------------------------------------------------
@@ -200,6 +240,9 @@ public class AdminPrestationController {
         // qu elle sert, au plus pres de ce qu elle decrit.
         if (edition) {
             modele.addAttribute("historique", service.historiquePrestation(reference));
+            modele.addAttribute("composition", service.compositionDe(reference));
+            modele.addAttribute("piecesComposables", service.piecesPourAdmin().stream()
+                    .filter(ArticleVueAdmin::actif).toList());
         }
         return FORMULAIRE;
     }
@@ -207,7 +250,7 @@ public class AdminPrestationController {
     private DonneesPrestation versDonnees(PrestationForm f) {
         return new DonneesPrestation(f.getCodeCategorie(), f.getCode(), f.getLibelle(),
                 f.getDescription(), f.getPrixHtva(), f.getTauxTva(), f.getDureeMinutes(),
-                f.isActif(), f.traductions(), f.getUnite());
+                f.isActif(), f.traductions(), f.getUnite(), PrixPoseSeule.de(f.getPrixPoseSeuleHtva()));
     }
 
     private PrestationForm versFormulaire(ArticleVueAdmin vue) {
@@ -217,6 +260,7 @@ public class AdminPrestationController {
         f.setLibelle(vue.libelle());
         f.setDescription(vue.description());
         f.setPrixHtva(vue.prixHtva());
+        f.setPrixPoseSeuleHtva(vue.prixPoseSeuleHtva());
         f.setTauxTva(vue.tauxTva());
         f.setDureeMinutes(vue.dureeMinutes());
         f.setUnite(UnitePrestation.valueOf(vue.unite()));

@@ -53,6 +53,13 @@
             <p class="prix-htva"
                th:text="#{catalogue.fiche.hors-tva(${#numbers.formatDecimal(article.prixHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">
                 Soit 0,00 € hors TVA</p>
+            <!--/* Deux prix (V76) : le premier, pièces fournies par le garage, le second quand le
+                 client apporte ses pièces. Le choix se fait au rendez-vous et au panier. */-->
+            <p class="prix-mention" th:if="${article.proposePoseSeule()}"
+               th:text="#{catalogue.fiche.pieces-fournies}">Pièces fournies par le garage.</p>
+            <p class="prix-htva" th:if="${article.proposePoseSeule()}"
+               th:text="#{catalogue.fiche.pose-seule(${#numbers.formatDecimal(article.prixPoseSeuleTvac(), 1, 'DEFAULT', 2, 'DEFAULT')}, ${#numbers.formatDecimal(article.prixPoseSeuleHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">
+                Si vous apportez vos pièces : 0,00 € TVA comprise, soit 0,00 € hors TVA.</p>
         </div>
 
         <p class="message message-erreur" th:unless="${article.disponible()}" role="status"

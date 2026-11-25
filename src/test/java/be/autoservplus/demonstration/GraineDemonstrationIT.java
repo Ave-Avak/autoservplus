@@ -329,6 +329,7 @@ class GraineDemonstrationIT extends SocleIntegration {
         lignes.put("compteur_devis", 0L);
         lignes.put("compteur_facture", 1L);
         lignes.put("compteur_fil", 1L);
+        lignes.put("composition_prestation", 0L);
         lignes.put("consentement", 3L);
         lignes.put("conversation", 1L);
         lignes.put("demande_annulation", 0L);

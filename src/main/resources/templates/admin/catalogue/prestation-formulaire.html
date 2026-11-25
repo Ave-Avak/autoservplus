@@ -114,6 +114,22 @@
             <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('prixHtva')}" th:errors="*{prixHtva}"></p>
         </div>
 
+        <!--/* Prix quand le client apporte ses pièces (V76). Une prestation à l'heure n'en a
+             jamais : le champ ne s'affiche pas à sa modification, et le service le refuse
+             à sa création. */-->
+        <div class="champ" th:unless="${edition and formulaire.unite != null and formulaire.unite.name() == 'HEURE'}">
+            <label for="prixPoseSeuleHtva">
+                <span th:text="#{admin.catalogue.champ.prix-pose-seule}">Prix pose seule HTVA (€)</span>
+                <span class="champ-facultatif" th:text="#{admin.catalogue.champ.facultatif}">(facultatif)</span>
+            </label>
+            <input type="number" id="prixPoseSeuleHtva" th:field="*{prixPoseSeuleHtva}" min="0" step="0.01"
+                   inputmode="decimal" aria-describedby="aide-prix-pose-seule">
+            <p id="aide-prix-pose-seule" class="aide" th:text="#{admin.catalogue.champ.prix-pose-seule.aide}">
+                Prix quand le client apporte ses pièces. Laissez vide si le garage fournit toujours les pièces.
+            </p>
+            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('prixPoseSeuleHtva')}" th:errors="*{prixPoseSeuleHtva}"></p>
+        </div>
+
         <div class="champ">
             <label for="tauxTva" th:text="#{admin.catalogue.champ.taux}">Taux de TVA (%)</label>
             <select id="tauxTva" th:field="*{tauxTva}" required>
@@ -162,6 +178,77 @@
             <a th:href="@{/admin/catalogue/prestations}" th:text="#{admin.catalogue.retour}">Retour à la liste</a>
         </p>
     </form>
+
+    <!--/* Composition (V76) : pièces que la prestation consomme quand le garage les fournit.
+         Formulaires distincts de celui de la prestation, une pièce à la fois. Absente d'une
+         prestation à l'heure, dont les pièces se facturent en lignes de pièce. */-->
+    <section id="composition" th:if="${edition and formulaire.unite != null and formulaire.unite.name() != 'HEURE'}"
+             aria-labelledby="titre-composition">
+        <h2 id="titre-composition" th:text="#{admin.catalogue.composition.titre}">Composition</h2>
+        <p class="aide" th:text="#{admin.catalogue.composition.aide}">
+            Pièces sorties du stock à la clôture de l'intervention, quand le garage les fournit.
+        </p>
+        <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+        <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+        <p th:if="${#lists.isEmpty(composition)}" th:text="#{admin.catalogue.composition.vide}">
+            Aucune pièce : la prestation ne sort rien du stock.
+        </p>
+        <div class="defilement" tabindex="0" role="region" aria-labelledby="legende-composition"
+             th:unless="${#lists.isEmpty(composition)}">
+            <table class="tableau">
+                <caption id="legende-composition" th:text="#{admin.catalogue.composition.legende}">Pièces de la composition</caption>
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{admin.catalogue.colonne.reference}">Référence</th>
+                    <th scope="col" th:text="#{admin.catalogue.colonne.nom}">Nom</th>
+                    <th scope="col" th:text="#{admin.catalogue.composition.colonne.quantite}">Quantité</th>
+                    <th scope="col" th:text="#{admin.catalogue.colonne.actions}">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="c : ${composition}">
+                    <td th:text="${c.referenceFabricant()}">BT-7201</td>
+                    <td>
+                        <span th:text="${c.libelle()}">Filtre à huile</span>
+                        <span th:unless="${c.pieceActive()}" class="badge badge-annule"
+                              th:text="#{admin.catalogue.composition.piece-inactive}">Pièce désactivée</span>
+                    </td>
+                    <td th:text="${c.quantite()}">1</td>
+                    <td>
+                        <form method="post" class="formulaire-suppression"
+                              th:action="@{/admin/catalogue/prestations/{ref}/composition/{piece}/retirer(ref=${reference},piece=${c.pieceReference()})}"
+                              th:attr="data-message=#{admin.catalogue.composition.confirmer-retrait(${c.libelle()})}">
+                            <button type="submit" class="lien-bouton"
+                                    th:text="#{admin.catalogue.composition.retirer}">Retirer</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <form class="formulaire" method="post" novalidate
+              th:action="@{/admin/catalogue/prestations/{ref}/composition(ref=${reference})}">
+            <div class="champ">
+                <label for="composition-piece" th:text="#{admin.catalogue.composition.champ.piece}">Pièce</label>
+                <select id="composition-piece" name="piece" required>
+                    <option th:each="p : ${piecesComposables}" th:value="${p.reference()}"
+                            th:text="${p.libelle()} + ' (' + ${p.identifiant()} + ')'">Filtre à huile (BT-7201)</option>
+                </select>
+            </div>
+            <div class="champ">
+                <label for="composition-quantite" th:text="#{admin.catalogue.composition.champ.quantite}">Quantité</label>
+                <input type="number" id="composition-quantite" name="quantite" min="1" step="1" value="1"
+                       inputmode="numeric" required aria-describedby="aide-composition-quantite">
+                <p id="aide-composition-quantite" class="aide" th:text="#{admin.catalogue.composition.champ.quantite.aide}">
+                    Une pièce déjà présente prend la nouvelle quantité.
+                </p>
+            </div>
+            <p class="actions-page">
+                <button type="submit" th:text="#{admin.catalogue.composition.fixer}">Ajouter ou modifier la pièce</button>
+            </p>
+        </form>
+    </section>
 
     <!--/* BL-7 : historique des modifications de cet article, en consultation seule.
          Affiche uniquement en edition : un article qu'on cree n'a pas de passe. */-->

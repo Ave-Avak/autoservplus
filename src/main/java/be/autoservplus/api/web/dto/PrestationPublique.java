@@ -18,6 +18,8 @@ import java.util.UUID;
  *
  * @param unite {@code FORFAIT} ou {@code HEURE} (V72) : le prix d'une prestation à l'heure est
  *              un taux horaire, et sa durée vaut une heure
+ * @param prixPoseSeuleHtva prix quand le client apporte ses pièces (V76), {@code null} quand
+ *                          le garage ne propose pas ce choix
  */
 public record PrestationPublique(
         UUID reference,
@@ -28,11 +30,13 @@ public record PrestationPublique(
         BigDecimal prixHtva,
         BigDecimal prixTvac,
         Integer dureeMinutes,
-        String unite) {
+        String unite,
+        BigDecimal prixPoseSeuleHtva,
+        BigDecimal prixPoseSeuleTvac) {
 
     public static PrestationPublique de(ArticleVue vue) {
         return new PrestationPublique(vue.reference(), vue.code(), vue.libelle(),
                 vue.description(), vue.categorie(), vue.prixHtva(), vue.prixTvac(),
-                vue.dureeMinutes(), vue.unite());
+                vue.dureeMinutes(), vue.unite(), vue.prixPoseSeuleHtva(), vue.prixPoseSeuleTvac());
     }
 }

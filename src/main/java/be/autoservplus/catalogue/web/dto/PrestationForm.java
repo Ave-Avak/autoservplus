@@ -50,6 +50,14 @@ public class PrestationForm {
     @Digits(integer = 8, fraction = 2, message = "{admin.catalogue.validation.prix}")
     private BigDecimal prixHtva;
 
+    /**
+     * Facultatif : vide, le client ne peut pas choisir d'apporter ses pièces. Le domaine
+     * vérifie qu'il reste inférieur au prix pièces comprises (V76).
+     */
+    @DecimalMin(value = "0.00", message = "{admin.catalogue.validation.prix-pose-seule}")
+    @Digits(integer = 8, fraction = 2, message = "{admin.catalogue.validation.prix-pose-seule}")
+    private BigDecimal prixPoseSeuleHtva;
+
     @NotNull(message = "{admin.catalogue.validation.taux}")
     private BigDecimal tauxTva = new BigDecimal("21.00");
 
@@ -96,6 +104,8 @@ public class PrestationForm {
     }
     public BigDecimal getPrixHtva() { return prixHtva; }
     public void setPrixHtva(BigDecimal prixHtva) { this.prixHtva = prixHtva; }
+    public BigDecimal getPrixPoseSeuleHtva() { return prixPoseSeuleHtva; }
+    public void setPrixPoseSeuleHtva(BigDecimal prixPoseSeuleHtva) { this.prixPoseSeuleHtva = prixPoseSeuleHtva; }
     public BigDecimal getTauxTva() { return tauxTva; }
     public void setTauxTva(BigDecimal tauxTva) { this.tauxTva = tauxTva; }
     public Integer getDureeMinutes() { return dureeMinutes; }

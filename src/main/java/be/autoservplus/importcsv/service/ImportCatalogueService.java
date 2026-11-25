@@ -9,6 +9,7 @@ import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.catalogue.service.AdminCatalogueService;
 import be.autoservplus.catalogue.service.dto.DonneesPiece;
 import be.autoservplus.catalogue.service.dto.DonneesPrestation;
+import be.autoservplus.catalogue.service.dto.PrixPoseSeule;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.importcsv.service.dto.RapportImport;
 import org.springframework.context.MessageSource;
@@ -75,6 +76,14 @@ public class ImportCatalogueService {
      */
     private static final String COLONNE_UNITE = "unite";
 
+    /**
+     * Colonne facultative des prestations (V76) : prix hors TVA quand le client apporte ses
+     * pièces. Colonne absente : prix en place gardé, comme les traductions. Cellule vide :
+     * choix retiré. Le domaine refuse un prix égal ou supérieur au prix pièces comprises, ou
+     * posé sur une prestation à l'heure.
+     */
+    private static final String COLONNE_POSE_SEULE = "prix_pose_seule_htva";
+
     /** Longueur des colonnes de libellé, en base comme au formulaire. */
     private static final int LONGUEUR_LIBELLE = 150;
 
@@ -108,6 +117,10 @@ public class ImportCatalogueService {
 
     public static String colonneUnite() {
         return COLONNE_UNITE;
+    }
+
+    public static String colonnePoseSeule() {
+        return COLONNE_POSE_SEULE;
     }
 
     @Transactional
@@ -187,7 +200,8 @@ public class ImportCatalogueService {
                 ligne.entier("duree_minutes"),
                 true,
                 ligne.traductions(existante.map(Prestation::getTraductions).orElse(null)),
-                ligne.unite());
+                ligne.unite(),
+                ligne.poseSeule());
 
         if (existante.isPresent()) {
             catalogue.modifierPrestation(existante.get().getReference(), donnees);
@@ -245,6 +259,15 @@ public class ImportCatalogueService {
                 throw new RefusTraduit(null, "admin.import.erreur.unite", new Object[]{valeur},
                         "Colonne « unite » : FORFAIT ou HEURE attendu, « %s » reçu.".formatted(valeur));
             }
+        }
+
+        /** Prix pose seule lu dans la colonne facultative, {@code null} si elle est absente. */
+        PrixPoseSeule poseSeule() {
+            if (!entete.contains(COLONNE_POSE_SEULE)) {
+                return null;
+            }
+            return texte(COLONNE_POSE_SEULE) == null ? PrixPoseSeule.aucun()
+                    : PrixPoseSeule.de(montant(COLONNE_POSE_SEULE));
         }
 
         String texte(String colonne) {

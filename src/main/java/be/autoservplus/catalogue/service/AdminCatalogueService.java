@@ -13,6 +13,7 @@ import be.autoservplus.catalogue.repository.HistoriqueModificationCatalogueRepos
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.catalogue.service.dto.ArticleVueAdmin;
+import be.autoservplus.catalogue.service.dto.ComposantVue;
 import be.autoservplus.catalogue.service.dto.DonneesPiece;
 import be.autoservplus.catalogue.service.dto.DonneesPrestation;
 import be.autoservplus.catalogue.service.dto.ModificationCatalogueVue;
@@ -35,6 +36,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Administration du catalogue depuis le back-office : creation et modification
@@ -104,6 +106,11 @@ public class AdminCatalogueService {
         return ArticleVueAdmin.de(chargerPiece(reference));
     }
 
+    /** Pièces consommées par la prestation quand le garage les fournit (V76). */
+    public List<ComposantVue> compositionDe(UUID reference) {
+        return chargerPrestation(reference).getComposition().stream().map(ComposantVue::de).toList();
+    }
+
     public List<Categorie> categoriesDePrestations() {
         return categories.findByTypeAndActifTrueOrderByOrdreAsc(TypeCategorie.SERVICE);
     }
@@ -158,6 +165,9 @@ public class AdminCatalogueService {
             prestation.traduire(donnees.traductions());
         }
         prestation.setTauxTva(donnees.tauxTva());
+        if (donnees.poseSeule() != null) {
+            prestation.fixerPrix(donnees.prixHtva(), donnees.poseSeule().htva());
+        }
         if (!donnees.actif()) {
             prestation.desactiver();
         }
@@ -225,7 +235,10 @@ public class AdminCatalogueService {
         if (donnees.traductions() != null) {
             prestation.traduire(donnees.traductions());
         }
-        prestation.modifierPrix(donnees.prixHtva());
+        // Les deux prix ensemble : une baisse des deux ne doit pas buter sur l'ancien prix
+        // pose seule. Sans prix pose seule fourni, celui en place reste.
+        prestation.fixerPrix(donnees.prixHtva(), donnees.poseSeule() == null
+                ? prestation.getPrixPoseSeuleHtva() : donnees.poseSeule().htva());
         prestation.setTauxTva(donnees.tauxTva());
         prestation.setDureeMinutes(donnees.dureeMinutes());
         if (donnees.actif()) {
@@ -283,6 +296,57 @@ public class AdminCatalogueService {
         return historiques.historiqueDe(type, entiteId).stream()
                 .map(ModificationCatalogueVue::de)
                 .toList();
+    }
+
+    // --- composition d'une prestation (V76) ---------------------------------------------
+
+    /**
+     * Ajoute une pièce à la composition de la prestation, ou change sa quantité. Le
+     * changement s'écrit à l'historique du catalogue, composition avant et après.
+     *
+     * @throws be.autoservplus.catalogue.domain.CompositionRefuseeException prestation à
+     *         l'heure, ou quantité inférieure à un
+     */
+    @Transactional
+    public void fixerComposant(UUID prestationReference, UUID pieceReference, int quantite) {
+        Prestation prestation = chargerPrestation(prestationReference);
+        Piece piece = chargerPiece(pieceReference);
+        String avant = compositionLisible(prestation);
+        prestation.fixerComposant(piece, quantite);
+        historiserComposition(prestation, avant);
+    }
+
+    /** Retire une pièce de la composition. Une pièce absente ne change rien et n'écrit rien. */
+    @Transactional
+    public void retirerComposant(UUID prestationReference, UUID pieceReference) {
+        Prestation prestation = chargerPrestation(prestationReference);
+        Piece piece = chargerPiece(pieceReference);
+        String avant = compositionLisible(prestation);
+        if (prestation.retirerComposant(piece)) {
+            historiserComposition(prestation, avant);
+        }
+    }
+
+    private void historiserComposition(Prestation prestation, String avant) {
+        Map<String, String> etatAvant = new LinkedHashMap<>();
+        etatAvant.put("composition", avant);
+        Map<String, String> etatApres = new LinkedHashMap<>();
+        etatApres.put("composition", compositionLisible(prestation));
+        historiser(TypeEntiteCatalogue.PRESTATION, prestation.getId(), etatAvant, etatApres);
+    }
+
+    /**
+     * Composition en texte pour l'historique : référence constructeur et quantité de chaque
+     * pièce. La référence constructeur, et non le libellé, parce qu'elle ne change pas
+     * (A5) : une ligne d'historique doit rester lisible après un renommage.
+     */
+    private static String compositionLisible(Prestation prestation) {
+        if (prestation.getComposition().isEmpty()) {
+            return null;
+        }
+        return prestation.getComposition().stream()
+                .map(c -> c.getPiece().getReferenceFabricant() + " (" + c.getQuantite() + ")")
+                .collect(Collectors.joining(", "));
     }
 
     // --- suppression ou desactivation (A3, A6) -----------------------------------------
@@ -430,6 +494,7 @@ public class AdminCatalogueService {
         etat.put("libelle", prestation.getLibelle());
         etat.put("description", prestation.getDescription());
         etat.put("prixHtva", montant(prestation.getPrixHtva()));
+        etat.put("prixPoseSeuleHtva", montant(prestation.getPrixPoseSeuleHtva()));
         etat.put("tauxTva", montant(prestation.getTauxTva()));
         etat.put("dureeMinutes", String.valueOf(prestation.getDureeMinutes()));
         etat.put("actif", String.valueOf(prestation.isActif()));
