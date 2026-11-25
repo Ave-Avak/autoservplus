@@ -49,7 +49,11 @@ public final class DonneesStructurees {
         return ecrire(donnees);
     }
 
-    public static String dePiece(ArticleVue article) {
+    /**
+     * Produit du catalogue. {@code category} suit le chemin de la page, rayon puis
+     * catégorie, dans la langue affichée : « Accessoires > Intérieur ».
+     */
+    public static String dePiece(ArticleVue article, String nomDuRayon) {
         Map<String, Object> offre = new LinkedHashMap<>();
         offre.put("@type", "Offer");
         offre.put("price", article.prixTvac().toPlainString());
@@ -63,6 +67,7 @@ public final class DonneesStructurees {
         donnees.put("name", article.libelle());
         poser(donnees, "description", article.description());
         poser(donnees, "sku", article.code());
+        poser(donnees, "category", nomDuRayon + " > " + article.categorie());
         if (article.marque() != null && !article.marque().isBlank()) {
             donnees.put("brand", Map.of("@type", "Brand", "name", article.marque()));
         }

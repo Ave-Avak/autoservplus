@@ -8,6 +8,7 @@ import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.support.SocleIntegration;
 import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithAnonymousUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -249,6 +251,67 @@ class ApiPubliqueIT extends SocleIntegration {
                     .andExpect(content().string(not(containsString("iban"))))
                     .andExpect(content().string(not(containsString("BE68"))))
                     .andExpect(content().string(not(containsString("numeroBce"))));
+        }
+    }
+
+    @Nested
+    @DisplayName("Articles")
+    class Articles {
+
+        @Autowired private JdbcTemplate jdbc;
+
+        @BeforeEach
+        void semer() {
+            transactions.executeWithoutResult(etat -> {
+                jdbc.update("INSERT INTO categorie (code, libelle, libelle_nl, type, rayon) "
+                        + "VALUES ('API_ACC', 'Intérieur', 'Interieur', 'PIECE', 'ACCESSOIRES')");
+                jdbc.update("INSERT INTO piece (categorie_id, reference_fabricant, libelle, libelle_nl, prix_htva, "
+                        + "quantite_stock) SELECT id, 'API-TAPIS', 'Tapis de sol', 'Vloermatten', 33.00, 7 "
+                        + "FROM categorie WHERE code = 'API_ACC'");
+            });
+        }
+
+        // La classe ne tourne pas dans une transaction annulée : l'article semé est retiré,
+        // pour ne pas compter dans les listes d'autres classes du même conteneur.
+        @AfterEach
+        void retirer() {
+            jdbc.update("DELETE FROM piece WHERE reference_fabricant = 'API-TAPIS'");
+            jdbc.update("DELETE FROM categorie WHERE code = 'API_ACC'");
+        }
+
+        @Test
+        @DisplayName("filtre par rayon, rayon et catégorie exposés, disponibilité sans quantité")
+        void parRayon() throws Exception {
+            mvc.perform(get("/api/v1/articles").param("rayon", "ACCESSOIRES").param("taille", "100"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.contenu[*].rayon", everyItem(is("ACCESSOIRES"))))
+                    .andExpect(jsonPath("$.contenu[?(@.code == 'API-TAPIS')].categorie", hasItem("Intérieur")))
+                    .andExpect(jsonPath("$.contenu[?(@.code == 'API-TAPIS')].disponible", hasItem(true)))
+                    .andExpect(jsonPath("$.contenu[?(@.code == 'API-TAPIS')].prixTvac", hasItem(39.93)))
+                    .andExpect(content().string(not(containsString("quantiteStock"))))
+                    .andExpect(content().string(not(containsString("seuilAlerte"))));
+
+            mvc.perform(get("/api/v1/articles").param("rayon", "PIECES_AUTO").param("taille", "100"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(not(containsString("API-TAPIS"))));
+        }
+
+        @Test
+        @DisplayName("sans rayon, tous les produits, dans la langue négociée")
+        void tousLesRayons() throws Exception {
+            mvc.perform(get("/api/v1/articles").param("taille", "100").header("Accept-Language", "nl-BE"))
+                    .andExpect(status().isOk())
+                    .andExpect(header().string("Content-Language", "nl"))
+                    .andExpect(jsonPath("$.contenu[?(@.code == 'API-TAPIS')].libelle", hasItem("Vloermatten")))
+                    .andExpect(jsonPath("$.contenu[?(@.code == 'API-TAPIS')].categorie", hasItem("Interieur")));
+        }
+
+        @Test
+        @DisplayName("documentée dans OpenAPI")
+        void documentation() throws Exception {
+            mvc.perform(get("/v3/api-docs/public"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.paths./api/v1/articles").exists());
         }
     }
 

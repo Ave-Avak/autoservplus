@@ -97,6 +97,12 @@ public class TableFilAriane {
                 attribut("article", ArticleVue.class, ArticleVue::libelle));
         dynamique("/pieces/{reference}", "fil-ariane.libre", "/pieces",
                 attribut("article", ArticleVue.class, ArticleVue::libelle));
+        fixe("/accessoires", "catalogue.titre.accessoires", ACCUEIL);
+        dynamique("/accessoires/{reference}", "fil-ariane.libre", "/accessoires",
+                attribut("article", ArticleVue.class, ArticleVue::libelle));
+        fixe("/entretien", "catalogue.titre.entretien", ACCUEIL);
+        dynamique("/entretien/{reference}", "fil-ariane.libre", "/entretien",
+                attribut("article", ArticleVue.class, ArticleVue::libelle));
         fixe("/recherche", "fil-ariane.recherche", ACCUEIL);
         fixe("/contact", "vitrine.contact.titre", ACCUEIL);
         fixe("/cookies", "cookies.page.titre", ACCUEIL);

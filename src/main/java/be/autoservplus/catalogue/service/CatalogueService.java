@@ -2,6 +2,7 @@ package be.autoservplus.catalogue.service;
 
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
@@ -65,12 +66,6 @@ public class CatalogueService {
                 .map(categorie -> CategorieVue.de(categorie, langue)).toList();
     }
 
-    public List<CategorieVue> categoriesDePieces() {
-        Locale langue = langue();
-        return categories.findByTypeAndActifTrueOrderByOrdreAsc(TypeCategorie.PIECE).stream()
-                .map(categorie -> CategorieVue.de(categorie, langue)).toList();
-    }
-
     public List<ArticleVue> prestationsActives() {
         Locale langue = langue();
         return prestationsActives(langue);
@@ -94,10 +89,32 @@ public class CatalogueService {
                 .map(piece -> ArticleVue.de(piece, langue)), langue);
     }
 
-    public List<ArticleVue> piecesDeCategorie(String codeCategorie) {
+    /** Produits actifs dans une langue donnée, d'un rayon ou des trois, pour l'API publique. */
+    public List<ArticleVue> produitsActifs(Locale langue, Rayon rayonOuTous) {
+        List<Piece> trouves = rayonOuTous == null
+                ? pieces.findByActifTrueOrderByLibelleAsc()
+                : pieces.actifsDuRayon(rayonOuTous);
+        return triees(trouves.stream().map(piece -> ArticleVue.de(piece, langue)), langue);
+    }
+
+    /** Catégories actives d'un rayon, pour le filtre de sa liste. */
+    public List<CategorieVue> categoriesDuRayon(Rayon rayon) {
         Locale langue = langue();
-        return triees(pieces.findByCategorieCodeAndActifTrueOrderByLibelleAsc(codeCategorie).stream()
-                .map(piece -> ArticleVue.de(piece, langue)), langue);
+        return categories.findByRayonAndActifTrueOrderByOrdreAsc(rayon).stream()
+                .map(categorie -> CategorieVue.de(categorie, langue)).toList();
+    }
+
+    /**
+     * Produits actifs d'un rayon, d'une seule de ses catégories quand un code est donné. Un
+     * code qui appartient à un autre rayon ne rend rien : le filtre d'une liste ne montre
+     * jamais les articles d'une autre.
+     */
+    public List<ArticleVue> produitsDuRayon(Rayon rayon, String codeCategorie) {
+        Locale langue = langue();
+        List<Piece> trouves = (codeCategorie == null || codeCategorie.isBlank())
+                ? pieces.actifsDuRayon(rayon)
+                : pieces.actifsDuRayonEtDeCategorie(rayon, codeCategorie);
+        return triees(trouves.stream().map(piece -> ArticleVue.de(piece, langue)), langue);
     }
 
     public ArticleVue vuePrestation(UUID reference) {
@@ -130,16 +147,16 @@ public class CatalogueService {
         return page.map(prestation -> ArticleVue.de(prestation, langue));
     }
 
-    /** Recherche dans les pièces, aux mêmes règles que {@link #rechercherPrestations}. */
-    public Page<ArticleVue> rechercherPieces(String terme, int numeroPage) {
+    /** Recherche dans les produits d'un rayon, aux mêmes règles que {@link #rechercherPrestations}. */
+    public Page<ArticleVue> rechercherProduits(String terme, Rayon rayon, int numeroPage) {
         if (termeTropCourt(terme)) {
             return Page.empty();
         }
         String motif = MotifRecherche.de(terme);
         Locale langue = langue();
-        Page<Piece> page = pieces.rechercher(motif, langue.getLanguage(), pagination(numeroPage));
+        Page<Piece> page = pieces.rechercher(motif, rayon, langue.getLanguage(), pagination(numeroPage));
         if (page.isEmpty() && page.getTotalElements() > 0) {
-            page = pieces.rechercher(motif, langue.getLanguage(), pagination(page.getTotalPages() - 1));
+            page = pieces.rechercher(motif, rayon, langue.getLanguage(), pagination(page.getTotalPages() - 1));
         }
         return page.map(piece -> ArticleVue.de(piece, langue));
     }

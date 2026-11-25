@@ -1,7 +1,5 @@
 package be.autoservplus.catalogue.domain;
 
-import java.util.Locale;
-
 /**
  * Rayon du catalogue public, porté par une catégorie de produits (colonne
  * {@code categorie.rayon}, V78). Une catégorie de prestations n'en a pas.
@@ -26,8 +24,8 @@ public enum Rayon {
         return prefixe;
     }
 
-    /** Clé i18n du nom du rayon (onglet, fil d'Ariane, recherche). */
+    /** Clé i18n du nom du rayon, celui de son onglet. */
     public String cleLibelle() {
-        return "catalogue.rayon." + name().toLowerCase(Locale.ROOT);
+        return "catalogue.onglet." + prefixe;
     }
 }

@@ -4,9 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="(${typeArticle == 'service'} ? #{catalogue.titre.services} : #{catalogue.titre.pieces}) + ' | AutoServ+'">Catalogue | AutoServ+</title>
+    <title th:text="#{${cleTitre}} + ' | AutoServ+'">Catalogue | AutoServ+</title>
     <meta name="description"
-          th:content="${typeArticle == 'service'} ? #{catalogue.meta.services} : #{catalogue.meta.pieces}">
+          th:content="#{${cleMeta}}">
     <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
 </head>
 <body>
@@ -16,16 +16,28 @@
 <header th:replace="~{fragments/entete :: entete}"></header>
 
 <main id="contenu">
-    <h1 th:text="${typeArticle == 'service'} ? #{catalogue.titre.services} : #{catalogue.titre.pieces}">Nos prestations</h1>
+    <!--/* Onglets en liens, chacun vers sa liste : sans rôle tablist, qui supposerait un
+         script pour passer d'un onglet à l'autre au clavier. */-->
+    <nav class="onglets-catalogue" th:aria-label="#{catalogue.onglets.aria}">
+        <ul>
+            <li><a th:href="@{/services}" th:text="#{catalogue.onglet.services}"
+                   th:attr="aria-current=${rayon == null} ? 'page' : null">Prestations</a></li>
+            <li th:each="r : ${T(be.autoservplus.catalogue.domain.Rayon).values()}">
+                <a th:href="@{'/' + ${r.prefixe()}}" th:text="#{${r.cleLibelle()}}"
+                   th:attr="aria-current=${rayon == r} ? 'page' : null">Rayon</a></li>
+        </ul>
+    </nav>
+
+    <h1 th:text="#{${cleTitre}}">Nos prestations</h1>
 
     <p th:if="${typeArticle == 'piece'}"><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
 
     <nav class="filtres" th:aria-label="#{catalogue.filtres.aria}">
-        <a th:href="${typeArticle == 'service'} ? @{/services} : @{/pieces}"
+        <a th:href="${rayon == null} ? @{/services} : @{'/' + ${rayon.prefixe()}}"
            th:classappend="${categorieActive == null} ? 'filtre-actif' : ''"
            class="filtre" th:text="#{catalogue.filtres.toutes}">Toutes</a>
         <a th:each="cat : ${categories}"
-           th:href="${typeArticle == 'service'} ? @{/services(categorie=${cat.code})} : @{/pieces(categorie=${cat.code})}"
+           th:href="${rayon == null} ? @{/services(categorie=${cat.code})} : @{'/' + ${rayon.prefixe()}(categorie=${cat.code})}"
            th:classappend="${categorieActive == cat.code} ? 'filtre-actif' : ''"
            th:text="${cat.libelle}"
            th:lang="${cat.langueLibelle}"
@@ -39,9 +51,7 @@
     <ul class="grille-articles" th:unless="${articles.isEmpty()}">
         <li class="carte" th:each="article : ${articles}">
             <h2>
-                <a th:href="${typeArticle == 'service'}
-                        ? @{/services/{ref}(ref=${article.reference})}
-                        : @{/pieces/{ref}(ref=${article.reference})}"
+                <a th:href="@{${article.chemin()}}"
                    th:text="${article.libelle}" th:lang="${article.langueLibelle}">Libellé</a>
             </h2>
             <p class="carte-categorie" th:text="${article.categorie}" th:lang="${article.langueCategorie}">Catégorie</p>

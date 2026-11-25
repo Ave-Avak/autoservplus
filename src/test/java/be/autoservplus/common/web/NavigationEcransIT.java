@@ -101,6 +101,10 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/accueil", Acces.PUBLIC),
             ecran("/services", Acces.PUBLIC),
             ecran("/pieces", Acces.PUBLIC),
+            ecran("/accessoires", Acces.PUBLIC),
+            ecran("/entretien", Acces.PUBLIC),
+            // Ancienne adresse d'un catalogue unique, redirigée vers les prestations.
+            new Route("/catalogue", "/catalogue", Acces.PUBLIC, false, 302),
             ecran("/recherche", Acces.PUBLIC),
             ecran("/contact", Acces.PUBLIC),
             ecran("/cookies", Acces.PUBLIC),
@@ -125,6 +129,8 @@ class NavigationEcransIT extends SocleIntegration {
             new Route("/compte/definition", "/compte/definition?jeton=inconnu", Acces.PUBLIC, true, 404),
             variable("/services/{reference}", Acces.PUBLIC),
             variable("/pieces/{reference}", Acces.PUBLIC),
+            variable("/accessoires/{reference}", Acces.PUBLIC),
+            variable("/entretien/{reference}", Acces.PUBLIC),
             new Route("/documents/{type}/{version}", "/documents/CGV/inconnue", Acces.PUBLIC, true, 404),
             new Route("/retractation/formulaire/pdf", "/retractation/formulaire/pdf", Acces.PUBLIC, false, 200),
             new Route("/images/galerie/{reference}", "/images/galerie/" + REF, Acces.PUBLIC, false, 404),
@@ -285,6 +291,8 @@ class NavigationEcransIT extends SocleIntegration {
 
     static {
         ATTEINTS_DEPUIS.put("/recherche", new Atteinte("/services", Role.ANONYME));
+        ATTEINTS_DEPUIS.put("/accessoires", new Atteinte("/services", Role.ANONYME));
+        ATTEINTS_DEPUIS.put("/entretien", new Atteinte("/services", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/inscription/renvoyer-verification", new Atteinte("/connexion", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/mot-de-passe/oublie", new Atteinte("/connexion", Role.ANONYME));
         ATTEINTS_DEPUIS.put("/cookies", new Atteinte("/", Role.ANONYME));
@@ -492,8 +500,10 @@ class NavigationEcransIT extends SocleIntegration {
                         continue;
                     }
                     int attendu = attendu(route, role);
+                    // Une redirection d'anonyme mène à la connexion, sauf sur une route
+                    // publique qui redirige elle-même (/catalogue).
                     boolean conforme = reponse.getStatus() == attendu
-                            && (attendu != 302 || role != Role.ANONYME
+                            && (attendu != 302 || role != Role.ANONYME || route.acces() == Acces.PUBLIC
                                 || String.valueOf(reponse.getRedirectedUrl()).endsWith("/connexion"));
                     if (!conforme) {
                         ecarts.add(role + " " + route.appel() + " : " + reponse.getStatus()
