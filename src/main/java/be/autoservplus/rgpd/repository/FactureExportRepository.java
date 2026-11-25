@@ -1,5 +1,6 @@
 package be.autoservplus.rgpd.repository;
 
+import be.autoservplus.facturation.domain.Encaissement;
 import be.autoservplus.facturation.domain.Facture;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.Repository;
@@ -34,8 +35,21 @@ public interface FactureExportRepository extends Repository<Facture, Long> {
     @Query("""
             SELECT f FROM Facture f
             LEFT JOIN FETCH f.commande
+            LEFT JOIN FETCH f.intervention
             WHERE f.membre.email = :email
             ORDER BY f.dateEmission, f.id
             """)
     List<Facture> pourMembre(@Param("email") String email);
+
+    /**
+     * Encaissements des factures d'un membre, annulés compris : l'annulation et son motif
+     * sont aussi des données sur son dossier (Q-H-43).
+     */
+    @Query("""
+            SELECT e FROM Encaissement e
+            JOIN FETCH e.facture f
+            WHERE f.membre.email = :email
+            ORDER BY e.createdAt, e.id
+            """)
+    List<Encaissement> encaissementsPourMembre(@Param("email") String email);
 }

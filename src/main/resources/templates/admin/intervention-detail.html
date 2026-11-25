@@ -130,18 +130,62 @@
         <p>
             <span th:text="#{admin.intervention.facture.resume(${facture.numero()}, ${facture.montantTvac()})}">
                 Facture 2026-0042, 117,98 € TVAC</span>
-            <span th:unless="${facture.estAnnulee()}" class="badge badge-en_attente"
+            <span th:unless="${facture.estAnnulee() or facture.estReglee()}" class="badge badge-en_attente"
                   th:text="#{${facture.cleStatut()}}">À régler</span>
+            <span th:if="${facture.estReglee() and !facture.estAnnulee()}" class="badge badge-confirme"
+                  th:text="#{facture.statut.reglee(${#temporals.format(facture.regleeLe(), 'dd/MM/yyyy')}, ${#messages.msg('encaissement.moyen.' + facture.moyen())})}">Réglée le 25/11/2026 (Espèces)</span>
             <span th:if="${facture.estAnnulee()}" class="badge badge-annule"
                   th:text="#{facture.statut.annulee(${facture.numeroAvoir()})}">Annulée par la note de crédit AV-2026-0003</span>
         </p>
-        <p th:unless="${facture.estAnnulee()}"
+        <p th:unless="${facture.estAnnulee() or facture.estReglee()}"
            th:text="#{admin.intervention.facture.echeance(${#temporals.format(facture.echeance(), 'd MMMM yyyy')})}">
             Échéance : 24 novembre 2026</p>
         <p><a th:href="@{/admin/factures/{ref}/pdf(ref=${facture.reference()})}"
               th:text="#{admin.intervention.facture.pdf}">Télécharger la facture</a></p>
         <p th:if="${facture.estAnnulee()}"><a th:href="@{/admin/avoirs/{ref}/pdf(ref=${facture.referenceAvoir()})}"
               th:text="#{intervention.facture.avoir.pdf(${facture.numeroAvoir()})}">Télécharger la note de crédit AV-2026-0003 (PDF)</a></p>
+        <p th:if="${facture.remboursementHorsApplication()}" class="texte-info"
+           th:text="#{admin.intervention.facture.remboursement-hors-application(${#temporals.format(facture.regleeLe(), 'dd/MM/yyyy')})}">
+            Facture réglée le 25/11/2026, puis annulée : le remboursement au client se fait hors de l'application.</p>
+
+        <!--/* Q-H-43 à Q-H-45 : règlement au comptoir, total TVAC en une fois, un seul moyen. */-->
+        <form th:if="${facture.peutEtreEncaissee()}"
+              th:action="@{/admin/interventions/{ref}/facture/encaissement(ref=${intervention.reference()})}"
+              method="post" class="formulaire">
+            <h3 th:text="#{admin.intervention.encaissement.titre}">Enregistrer le règlement</h3>
+            <div class="champ">
+                <label for="moyen" th:text="#{admin.intervention.encaissement.moyen}">Moyen</label>
+                <select id="moyen" name="moyen" required>
+                    <option value="TERMINAL" th:text="#{encaissement.moyen.TERMINAL}">Terminal de paiement</option>
+                    <option value="ESPECES" th:text="#{encaissement.moyen.ESPECES}">Espèces</option>
+                    <option value="VIREMENT" th:text="#{encaissement.moyen.VIREMENT}">Virement</option>
+                </select>
+            </div>
+            <div class="champ">
+                <label for="date-reglement" th:text="#{admin.intervention.encaissement.date}">Date du règlement</label>
+                <input type="date" id="date-reglement" name="date" required aria-describedby="aide-encaissement"
+                       th:value="${#temporals.format(facture.aujourdHui(), 'yyyy-MM-dd')}"
+                       th:max="${#temporals.format(facture.aujourdHui(), 'yyyy-MM-dd')}">
+                <p id="aide-encaissement" class="texte-info" th:text="#{admin.intervention.encaissement.aide}">
+                    Le total TVAC de la facture, réglé en une fois, par un seul moyen.</p>
+            </div>
+            <button type="submit" class="btn-cta" th:text="#{admin.intervention.encaissement.bouton}">Enregistrer le règlement</button>
+        </form>
+
+        <!--/* Q-H-43 : une erreur de saisie s'annule, avec un motif, puis le bon règlement s'enregistre. */-->
+        <form th:if="${facture.estReglee() and !facture.estAnnulee()}"
+              th:action="@{/admin/interventions/{ref}/facture/encaissement/annulation(ref=${intervention.reference()})}"
+              method="post" class="formulaire formulaire-suppression"
+              th:data-message="#{admin.intervention.encaissement.annulation.confirmation(${facture.numero()})}">
+            <h3 th:text="#{admin.intervention.encaissement.annulation.titre}">Annuler le règlement</h3>
+            <div class="champ">
+                <label for="motif-encaissement" th:text="#{admin.intervention.encaissement.annulation.motif}">Motif</label>
+                <textarea id="motif-encaissement" name="motif" rows="2" maxlength="500" required
+                          th:text="${motifSaisi}"></textarea>
+            </div>
+            <button type="submit" class="lien-bouton texte-erreur"
+                    th:text="#{admin.intervention.encaissement.annulation.bouton}">Annuler le règlement</button>
+        </form>
 
         <!--/* Q-H-50 : note de crédit totale, précision obligatoire, imprimée telle que saisie. */-->
         <form th:unless="${facture.estAnnulee()}"
@@ -156,6 +200,9 @@
                 <p id="consigne-precision" class="texte-info" th:text="#{admin.intervention.facture.annulation.consigne}">
                     Pas de donnée personnelle : ce texte figure sur une pièce comptable conservée sept ans.</p>
             </div>
+            <!--/* Q-H-46 : la note de crédit reste possible après le règlement, le remboursement se fait hors de l'application. */-->
+            <p th:if="${facture.estReglee()}" class="texte-info" th:text="#{admin.intervention.facture.rappel-avoir-reglee}">
+                La facture est réglée : après la note de crédit, le remboursement au client se fait hors de l'application.</p>
             <button type="submit" class="lien-bouton texte-erreur"
                     th:text="#{admin.intervention.facture.annulation.bouton}">Annuler la facture</button>
         </form>

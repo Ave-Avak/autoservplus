@@ -41,8 +41,8 @@ public class JournalRepository {
      * (« could not determine data type of parameter »). Le cast rend le filtre
      * facultatif sans avoir a construire une variante de requete par combinaison.</p>
      *
-     * @param type   {@code CATALOGUE}, {@code INTERVENTION}, {@code REMBOURSEMENT}, ou
-     *               {@code null} pour tout
+     * @param type   {@code CATALOGUE}, {@code INTERVENTION}, {@code REMBOURSEMENT},
+     *               {@code ENCAISSEMENT}, ou {@code null} pour tout
      * @param limite plafond de lignes rendues
      */
     public List<Object[]> rechercher(String type, String acteur, Instant depuis, Instant jusqua,
@@ -111,6 +111,48 @@ public class JournalRepository {
                     WHERE p.rembourse_le IS NOT NULL
                       AND (CAST(:depuis AS timestamptz) IS NULL OR p.rembourse_le >= CAST(:depuis AS timestamptz))
                       AND (CAST(:jusqua AS timestamptz) IS NULL OR p.rembourse_le < CAST(:jusqua AS timestamptz))
+                      AND (CAST(:acteur AS text) IS NULL
+                           OR u.nom ILIKE CAST(:motif AS text)
+                           OR u.prenom ILIKE CAST(:motif AS text))
+                    """);
+        }
+        if (tousTypes || EntreeJournal.TYPE_ENCAISSEMENT.equals(type)) {
+            // Un encaissement donne deux entrées : son enregistrement, puis son annulation
+            // s'il y en a une. « champ » les distingue, le montant voyage dans « avant », le
+            // moyen dans « apres ».
+            morceaux.add("""
+                    SELECT e.created_at AS horodatage,
+                           'ENCAISSEMENT' AS type,
+                           u.prenom AS prenom, u.nom AS nom,
+                           f.numero AS cible,
+                           'ENREGISTRE' AS champ,
+                           CAST(e.montant AS text) AS avant,
+                           e.moyen AS apres,
+                           NULL AS motif
+                    FROM encaissement e
+                    JOIN facture f ON f.id = e.facture_id
+                    LEFT JOIN utilisateur u ON u.email = e.created_by
+                    WHERE (CAST(:depuis AS timestamptz) IS NULL OR e.created_at >= CAST(:depuis AS timestamptz))
+                      AND (CAST(:jusqua AS timestamptz) IS NULL OR e.created_at < CAST(:jusqua AS timestamptz))
+                      AND (CAST(:acteur AS text) IS NULL
+                           OR u.nom ILIKE CAST(:motif AS text)
+                           OR u.prenom ILIKE CAST(:motif AS text))
+                    """);
+            morceaux.add("""
+                    SELECT e.annule_le AS horodatage,
+                           'ENCAISSEMENT' AS type,
+                           u.prenom AS prenom, u.nom AS nom,
+                           f.numero AS cible,
+                           'ANNULE' AS champ,
+                           CAST(e.montant AS text) AS avant,
+                           e.moyen AS apres,
+                           e.motif_annulation AS motif
+                    FROM encaissement e
+                    JOIN facture f ON f.id = e.facture_id
+                    LEFT JOIN utilisateur u ON u.email = e.annule_par
+                    WHERE e.annule_le IS NOT NULL
+                      AND (CAST(:depuis AS timestamptz) IS NULL OR e.annule_le >= CAST(:depuis AS timestamptz))
+                      AND (CAST(:jusqua AS timestamptz) IS NULL OR e.annule_le < CAST(:jusqua AS timestamptz))
                       AND (CAST(:acteur AS text) IS NULL
                            OR u.nom ILIKE CAST(:motif AS text)
                            OR u.prenom ILIKE CAST(:motif AS text))

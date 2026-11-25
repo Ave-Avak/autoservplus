@@ -37,6 +37,13 @@ public record EntreeJournal(
      */
     public static final String TYPE_REMBOURSEMENT = "REMBOURSEMENT";
 
+    /**
+     * Type des encaissements d'une facture d'atelier et de leurs annulations, lus sur la
+     * ligne de l'encaissement (V75) : enregistrement par {@code created_at} et
+     * {@code created_by}, annulation par {@code annule_le} et {@code annule_par}.
+     */
+    public static final String TYPE_ENCAISSEMENT = "ENCAISSEMENT";
+
     public boolean acteurConnu() {
         return acteur != null && !acteur.isBlank();
     }

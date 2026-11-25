@@ -135,12 +135,14 @@
         <p>
             <span th:text="#{intervention.facture.resume(${facture.numero()}, ${facture.montantTvac()})}">
                 Facture 2026-0042, 117,98 € TVAC</span>
-            <span th:unless="${facture.estAnnulee()}" class="badge badge-en_attente"
+            <span th:unless="${facture.estAnnulee() or facture.estReglee()}" class="badge badge-en_attente"
                   th:text="#{${facture.cleStatut()}}">À régler</span>
+            <span th:if="${facture.estReglee() and !facture.estAnnulee()}" class="badge badge-confirme"
+                  th:text="#{facture.statut.reglee(${#temporals.format(facture.regleeLe(), 'dd/MM/yyyy')}, ${#messages.msg('encaissement.moyen.' + facture.moyen())})}">Réglée le 25/11/2026 (Espèces)</span>
             <span th:if="${facture.estAnnulee()}" class="badge badge-annule"
                   th:text="#{facture.statut.annulee(${facture.numeroAvoir()})}">Annulée par la note de crédit AV-2026-0003</span>
         </p>
-        <p th:unless="${facture.estAnnulee()}" th:text="#{intervention.facture.a-regler}">
+        <p th:unless="${facture.estAnnulee() or facture.estReglee()}" th:text="#{intervention.facture.a-regler}">
             À régler à l'atelier, au retrait de votre véhicule.</p>
         <p><a th:href="@{/factures/{ref}/pdf(ref=${facture.reference()})}"
               th:text="#{intervention.facture.pdf}">Télécharger la facture</a></p>

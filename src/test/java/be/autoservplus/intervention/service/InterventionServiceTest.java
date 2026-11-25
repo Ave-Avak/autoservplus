@@ -5,6 +5,7 @@ import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.facturation.domain.Avoir;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.service.AvoirService;
+import be.autoservplus.facturation.service.EncaissementService;
 import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.support.GaragesDeTest;
 import be.autoservplus.catalogue.domain.Piece;
@@ -79,6 +80,7 @@ class InterventionServiceTest {
     @Mock private PieceRepository pieces;
     @Mock private FactureService factures;
     @Mock private AvoirService avoirs;
+    @Mock private EncaissementService encaissements;
     @Mock private be.autoservplus.vente.repository.CommandeRepository commandes;
     @Mock private be.autoservplus.reservation.repository.VehiculeRepository vehicules;
     @Mock private ParametreAtelierRepository parametres;
@@ -100,7 +102,7 @@ class InterventionServiceTest {
     @BeforeEach
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
-        service = new InterventionService(interventions, historiques, prestations, pieces, factures, avoirs,
+        service = new InterventionService(interventions, historiques, prestations, pieces, factures, avoirs, encaissements,
                 commandes, vehicules, parametres,
                 auteurCourant, auditeur, numeros, courriel, evenements, GaragesDeTest.bruxellois(), horloge);
 

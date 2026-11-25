@@ -12,8 +12,11 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsDepassementCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.facturation.domain.Avoir;
+import be.autoservplus.facturation.domain.Encaissement;
 import be.autoservplus.facturation.domain.Facture;
+import be.autoservplus.facturation.domain.MoyenEncaissement;
 import be.autoservplus.facturation.service.AvoirService;
+import be.autoservplus.facturation.service.EncaissementService;
 import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -50,6 +53,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Clock;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -86,6 +90,7 @@ public class InterventionService {
     private final PieceRepository pieces;
     private final FactureService factures;
     private final AvoirService avoirs;
+    private final EncaissementService encaissements;
     private final CommandeRepository commandes;
     private final VehiculeRepository vehicules;
     private final ParametreAtelierRepository parametres;
@@ -103,6 +108,7 @@ public class InterventionService {
                                PieceRepository pieces,
                                FactureService factures,
                                AvoirService avoirs,
+                               EncaissementService encaissements,
                                CommandeRepository commandes,
                                VehiculeRepository vehicules,
                                ParametreAtelierRepository parametres,
@@ -119,6 +125,7 @@ public class InterventionService {
         this.pieces = pieces;
         this.factures = factures;
         this.avoirs = avoirs;
+        this.encaissements = encaissements;
         this.commandes = commandes;
         this.vehicules = vehicules;
         this.parametres = parametres;
@@ -320,12 +327,44 @@ public class InterventionService {
         return avoirs.annulerFactureAtelier(facture, precision).getNumero();
     }
 
+    /**
+     * Enregistre le règlement au comptoir de la facture d'atelier, pour son total TVAC
+     * (RM-20 révisée, Q-H-43).
+     *
+     * @return numéro de la facture réglée
+     * @throws RefusTraduit sans facture, ou refus de l'encaissement
+     */
+    @Transactional
+    public String encaisserFactureAtelier(UUID reference, MoyenEncaissement moyen, LocalDate date) {
+        Facture facture = factureAEncaisser(reference);
+        encaissements.enregistrer(facture, moyen, date);
+        return facture.getNumero();
+    }
+
+    /** Annule l'encaissement de la facture d'atelier, motif obligatoire, auteur lu du contexte. */
+    @Transactional
+    public String annulerEncaissement(UUID reference, String motif) {
+        Facture facture = factureAEncaisser(reference);
+        encaissements.annuler(facture, motif, auteurCourant.resoudre().getEmail());
+        return facture.getNumero();
+    }
+
+    private Facture factureAEncaisser(UUID reference) {
+        return factures.factureDe(charger(reference))
+                .orElseThrow(() -> new RefusTraduit("admin.intervention.erreur.sans-facture-a-regler",
+                        "L'intervention " + reference + " n'a pas de facture d'atelier."));
+    }
+
     private FactureAtelierVue vueFacture(Facture facture) {
         Optional<Avoir> avoir = avoirs.avoirDe(facture);
+        Optional<Encaissement> reglement = encaissements.actifDe(facture);
         return new FactureAtelierVue(facture.getReference(), facture.getNumero(),
                 FormatageRdv.eurosEcran(facture.getMontantTvac()), facture.getDateEcheance(),
                 facture.getMontantTvac().signum() == 0 ? "facture.statut.rien-a-regler" : "facture.statut.a-regler",
-                avoir.map(Avoir::getReference).orElse(null), avoir.map(Avoir::getNumero).orElse(null));
+                avoir.map(Avoir::getReference).orElse(null), avoir.map(Avoir::getNumero).orElse(null),
+                reglement.map(Encaissement::getDateEncaissement).orElse(null),
+                reglement.map(e -> e.getMoyen().name()).orElse(null),
+                LocalDate.ofInstant(horloge.instant(), parametres.courants().zone()));
     }
 
     /**

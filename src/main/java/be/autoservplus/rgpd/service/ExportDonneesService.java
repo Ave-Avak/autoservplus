@@ -297,9 +297,7 @@ public class ExportDonneesService {
                         parc.stream().map(ExportDonnees.VehiculeExport::de).toList(),
                         panierEnCours(email),
                         commandesAvecLignes(email),
-                        factures.pourMembre(email).stream()
-                                .map(ExportDonnees.FactureExport::de)
-                                .toList(),
+                        facturesAvecEncaissements(email),
                         devis.pourMembre(email).stream()
                                 .map(ExportDonnees.DevisExport::de)
                                 .toList(),
@@ -423,6 +421,17 @@ public class ExportDonneesService {
      * <p>Le cas « aucune commande » sort avant la seconde requête : un
      * {@code IN ()} vide n'a pas de sens et n'a pas à être soumis à la base.
      */
+    /** Factures du membre, chacune avec ses encaissements au comptoir (V75), annulés compris. */
+    private List<ExportDonnees.FactureExport> facturesAvecEncaissements(String email) {
+        Map<Long, List<ExportDonnees.EncaissementExport>> parFacture = factures.encaissementsPourMembre(email)
+                .stream()
+                .collect(Collectors.groupingBy(e -> e.getFacture().getId(),
+                        Collectors.mapping(ExportDonnees.EncaissementExport::de, Collectors.toList())));
+        return factures.pourMembre(email).stream()
+                .map(f -> ExportDonnees.FactureExport.de(f, parFacture.getOrDefault(f.getId(), List.of())))
+                .toList();
+    }
+
     private List<ExportDonnees.CommandeExport> commandesAvecLignes(String email) {
         List<Commande> commandesDuMembre = commandes.pourMembre(email);
         if (commandesDuMembre.isEmpty()) {

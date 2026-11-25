@@ -7,6 +7,7 @@ import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.EvenementSecuriteCompte;
 import be.autoservplus.identite.domain.ModificationCompte;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
+import be.autoservplus.facturation.domain.Encaissement;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.intervention.domain.Intervention;
@@ -478,14 +479,20 @@ public record ExportDonnees(
             boolean pdfArchive,
             String clientPrenom,
             String clientNom,
-            AdresseExport adresseClient) {
+            AdresseExport adresseClient,
+            List<EncaissementExport> encaissements) {
+
+        /** Facture sans encaissement : toute facture de commande, payée en ligne. */
+        public static FactureExport de(Facture facture) {
+            return de(facture, List.of());
+        }
 
         /**
          * L'instantané du client (V61) est restitué tel que la facture le porte : c'est
          * une donnée sur la personne, conservée sept ans même après la suppression du
          * compte, et que le membre doit pouvoir lire.
          */
-        public static FactureExport de(Facture facture) {
+        public static FactureExport de(Facture facture, List<EncaissementExport> encaissements) {
             return new FactureExport(
                     facture.getNumero(),
                     facture.getDateEmission(),
@@ -499,7 +506,26 @@ public record ExportDonnees(
                     facture.getClientNom(),
                     new AdresseExport(facture.getClientRue(), facture.getClientNumeroRue(),
                             facture.getClientCodePostal(), facture.getClientLocalite(),
-                            facture.getClientPays()));
+                            facture.getClientPays()),
+                    encaissements);
+        }
+    }
+
+    /**
+     * Règlement d'une facture d'atelier au comptoir (V75). L'auteur n'est pas restitué :
+     * c'est l'adresse d'un administrateur, non une donnée sur le membre.
+     */
+    public record EncaissementExport(
+            String moyen,
+            BigDecimal montant,
+            LocalDate dateEncaissement,
+            Instant annuleLe,
+            String motifAnnulation) {
+
+        public static EncaissementExport de(Encaissement encaissement) {
+            return new EncaissementExport(encaissement.getMoyen().name(), encaissement.getMontant(),
+                    encaissement.getDateEncaissement(), encaissement.getAnnuleLe(),
+                    encaissement.getMotifAnnulation());
         }
     }
 

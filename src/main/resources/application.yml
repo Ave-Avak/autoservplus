@@ -218,6 +218,10 @@ autoservplus:
     # En production : un volume sauvegarde, distinct du repertoire de deploiement.
     # Une archive legale ne peut pas disparaitre avec un redeploiement.
     archive: ${FACTURES_ARCHIVE:./data/factures}
+    # Total TVAC au-dela duquel une facture ne se regle pas en especes (art. 67 de la loi
+    # du 18 septembre 2017, le total de la facture faisant foi). Reglage et non constante :
+    # un changement du seuil legal ne demande pas de nouvelle version de l'application.
+    plafond-especes: ${FACTURATION_PLAFOND_ESPECES:3000.00}
   retractation:
     delai-jours: 14
   # Prestataire de paiement en ligne (F14). AUCUNE valeur n'est livree : sans

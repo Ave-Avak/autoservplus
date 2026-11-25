@@ -3,6 +3,7 @@ package be.autoservplus.intervention.web;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.facturation.domain.MoyenEncaissement;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.QuantiteLigneRefuseeException;
 import be.autoservplus.intervention.service.ClotureRefuseeException;
@@ -11,6 +12,7 @@ import be.autoservplus.intervention.service.dto.ClotureIntervention;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -19,6 +21,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.UUID;
 import java.util.function.Supplier;
 
@@ -133,6 +136,43 @@ public class AdminInterventionController {
         } catch (RefusTraduit refus) {
             redirection.addFlashAttribute("erreur", message(refus.getCleMessage()));
             redirection.addFlashAttribute("precisionSaisie", precision);
+        }
+        return "redirect:/admin/interventions/" + reference;
+    }
+
+    /** Règlement au comptoir de la facture d'atelier (RM-20 révisée, Q-H-43 à Q-H-45). */
+    @PostMapping("/{reference}/facture/encaissement")
+    public String encaisserFacture(@AuthenticationPrincipal UserDetails admin,
+                                   @PathVariable UUID reference,
+                                   @RequestParam(required = false) MoyenEncaissement moyen,
+                                   @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
+                                   LocalDate date,
+                                   RedirectAttributes redirection) {
+        if (moyen == null || date == null) {
+            redirection.addFlashAttribute("erreur", message("encaissement.erreur.champs"));
+            return "redirect:/admin/interventions/" + reference;
+        }
+        try {
+            String facture = service.encaisserFactureAtelier(reference, moyen, date);
+            redirection.addFlashAttribute("message", message("admin.intervention.message.encaissement", facture));
+        } catch (RefusTraduit refus) {
+            redirection.addFlashAttribute("erreur", message(refus.getCleMessage(), refus.getArguments()));
+        }
+        return "redirect:/admin/interventions/" + reference;
+    }
+
+    /** Annulation du règlement, motif obligatoire, rendu au formulaire quand il est refusé. */
+    @PostMapping("/{reference}/facture/encaissement/annulation")
+    public String annulerEncaissement(@AuthenticationPrincipal UserDetails admin,
+                                      @PathVariable UUID reference,
+                                      @RequestParam(required = false) String motif,
+                                      RedirectAttributes redirection) {
+        try {
+            String facture = service.annulerEncaissement(reference, motif);
+            redirection.addFlashAttribute("message", message("admin.intervention.message.encaissement-annule", facture));
+        } catch (RefusTraduit refus) {
+            redirection.addFlashAttribute("erreur", message(refus.getCleMessage(), refus.getArguments()));
+            redirection.addFlashAttribute("motifSaisi", motif);
         }
         return "redirect:/admin/interventions/" + reference;
     }

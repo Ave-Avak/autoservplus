@@ -79,6 +79,7 @@ class FactureAtelierIT extends SocleIntegration {
     @Autowired private CommandeService commandes;
     @Autowired private PrestatairePaiementFictif prestataire;
     @Autowired private JdbcTemplate jdbc;
+    @Autowired private be.autoservplus.rgpd.service.ExportDonneesService exportDonnees;
 
     private int n;
     private Categorie atelier;
@@ -99,6 +100,16 @@ class FactureAtelierIT extends SocleIntegration {
     @AfterEach
     void sansIdentite() {
         SecurityContextHolder.clearContext();
+    }
+
+    private <T> T enMembre(Utilisateur membre, Supplier<T> action) {
+        SecurityContextHolder.getContext().setAuthentication(UsernamePasswordAuthenticationToken.authenticated(
+                membre.getEmail(), null, List.of(new SimpleGrantedAuthority("ROLE_MEMBRE"))));
+        try {
+            return action.get();
+        } finally {
+            SecurityContextHolder.clearContext();
+        }
     }
 
     private <T> T enAdministrateur(Supplier<T> action) {
@@ -428,6 +439,189 @@ class FactureAtelierIT extends SocleIntegration {
                     avoirDe(dossier, "reference")))
                     .hasMessageContaining("immuable");
             assertThat(avoirDe(dossier, "precision")).isEqualTo("Erreur de quantité");
+        }
+    }
+
+    private org.springframework.test.web.servlet.ResultActions encaisser(UUID dossier, String moyen, LocalDate date)
+            throws Exception {
+        return mvc.perform(post("/admin/interventions/{ref}/facture/encaissement", dossier).with(admin).with(csrf())
+                .param("moyen", moyen).param("date", date.toString()).locale(Locale.FRENCH));
+    }
+
+    private org.springframework.test.web.servlet.ResultActions annulerReglement(UUID dossier, String motif)
+            throws Exception {
+        return mvc.perform(post("/admin/interventions/{ref}/facture/encaissement/annulation", dossier).with(admin)
+                .with(csrf()).param("motif", motif).locale(Locale.FRENCH));
+    }
+
+    /** Jour courant au fuseau du garage, celui que le domaine compare à la date saisie. */
+    private static LocalDate aujourdHui() {
+        return LocalDate.now(java.time.ZoneId.of("Europe/Brussels"));
+    }
+
+    private int encaissementsDe(UUID dossier, boolean annules) {
+        return jdbc.queryForObject("SELECT count(*) FROM encaissement e JOIN facture f ON f.id = e.facture_id "
+                + "JOIN intervention i ON i.id = f.intervention_id WHERE i.reference = ? AND (e.annule_le IS NOT NULL) = ?",
+                Integer.class, dossier, annules);
+    }
+
+    /** Entrée directe terminée sur une seule ligne au prix donné, devis assez large pour l'accepter (RM-15). */
+    private UUID factureAtelierDe(Utilisateur membre, String prixHtva) {
+        UUID dossier = entreeDirecteEnCours(vehicule(membre));
+        jdbc.update("UPDATE intervention SET montant_devis_htva = 10000 WHERE reference = ?", dossier);
+        ajouter(dossier, prestation(prixHtva, UnitePrestation.FORFAIT), "1");
+        enAdministrateur(() -> interventions.terminer(dossier));
+        return dossier;
+    }
+
+    @Nested
+    @DisplayName("règlement au comptoir d'une facture d'atelier (RM-20, Q-H-43 à Q-H-46)")
+    class Reglement {
+
+        @Test
+        @DisplayName("réglée au terminal : statut au back-office et au suivi, formulaire retiré, journal d'audit")
+        void reglement() throws Exception {
+            Utilisateur marie = membre(true);
+            UUID dossier = factureAtelierEmise(marie);
+            String facture = factureDe(dossier, "numero");
+
+            encaisser(dossier, "TERMINAL", aujourdHui())
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(flash().attribute("message", "Facture " + facture + " réglée."));
+
+            assertThat(jdbc.queryForObject("SELECT montant::text FROM encaissement e JOIN facture f ON f.id = e.facture_id "
+                    + "WHERE f.numero = ?", String.class, facture)).isEqualTo("59.29");
+            String date = aujourdHui().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+            mvc.perform(get("/admin/interventions/{ref}", dossier).with(admin).locale(Locale.FRENCH))
+                    .andExpect(content().string(containsString("Réglée le " + date + " (Terminal de paiement)")))
+                    .andExpect(content().string(org.hamcrest.Matchers.not(containsString("/facture/encaissement\""))))
+                    .andExpect(content().string(containsString("/facture/encaissement/annulation")));
+            mvc.perform(get("/mes-interventions/{ref}", dossier).with(user(marie.getEmail())).locale(Locale.FRENCH))
+                    .andExpect(content().string(containsString("Réglée le " + date)))
+                    .andExpect(content().string(org.hamcrest.Matchers.not(containsString("au retrait de votre véhicule"))));
+            mvc.perform(get("/admin/journal").with(admin).param("type", "ENCAISSEMENT").locale(Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString(facture)))
+                    .andExpect(content().string(containsString("Règlement de 59,29")));
+        }
+
+        @Test
+        @DisplayName("annulé avec motif, puis réglé à nouveau : deux lignes, une annulée, et le journal les montre")
+        void annulationPuisNouveauReglement() throws Exception {
+            UUID dossier = factureAtelierEmise(membre(true));
+            encaisser(dossier, "TERMINAL", aujourdHui());
+
+            annulerReglement(dossier, "  ")
+                    .andExpect(flash().attribute("erreur", "Le motif de l'annulation est obligatoire."))
+                    .andExpect(flash().attribute("motifSaisi", "  "));
+            annulerReglement(dossier, "Saisi sur la mauvaise facture")
+                    .andExpect(flash().attribute("message", containsString("de nouveau à régler")));
+            encaisser(dossier, "ESPECES", aujourdHui())
+                    .andExpect(flash().attribute("message", containsString("réglée")));
+
+            assertThat(encaissementsDe(dossier, true)).isEqualTo(1);
+            assertThat(encaissementsDe(dossier, false)).isEqualTo(1);
+            encaisser(dossier, "VIREMENT", aujourdHui())
+                    .andExpect(flash().attribute("erreur", "Cette facture est déjà réglée."));
+            mvc.perform(get("/admin/journal").with(admin).param("type", "ENCAISSEMENT").locale(Locale.FRENCH))
+                    .andExpect(content().string(containsString("Saisi sur la mauvaise facture")));
+        }
+
+        @Test
+        @DisplayName("dates hors bornes, champs manquants : refusés, rien d'écrit")
+        void datesEtChamps() throws Exception {
+            UUID dossier = factureAtelierEmise(membre(true));
+
+            encaisser(dossier, "TERMINAL", aujourdHui().plusDays(1))
+                    .andExpect(flash().attribute("erreur", "La date du règlement ne peut pas être future."));
+            encaisser(dossier, "TERMINAL", aujourdHui().minusDays(1))
+                    .andExpect(flash().attribute("erreur", containsString("précéder l'émission")));
+            mvc.perform(post("/admin/interventions/{ref}/facture/encaissement", dossier).with(admin).with(csrf())
+                            .param("moyen", "TERMINAL").locale(Locale.FRENCH))
+                    .andExpect(flash().attribute("erreur", "Choisissez le moyen et la date du règlement."));
+            assertThat(encaissementsDe(dossier, false)).isZero();
+        }
+
+        @Test
+        @DisplayName("espèces : 3000,00 € TVAC admis, 3000,01 € refusé avec le plafond dans la langue de l'écran")
+        void plafondDesEspeces() throws Exception {
+            // 2479,34 HTVA donne 3000,00 TVAC, 2479,35 HTVA donne 3000,01 (prix unitaire TVAC arrondi au cent).
+            UUID aLaLimite = factureAtelierDe(membre(true), "2479.34");
+            UUID auDela = factureAtelierDe(membre(true), "2479.35");
+            assertThat(factureDe(aLaLimite, "montant_tvac")).isEqualTo("3000.00");
+            assertThat(factureDe(auDela, "montant_tvac")).isEqualTo("3000.01");
+
+            encaisser(aLaLimite, "ESPECES", aujourdHui()).andExpect(flash().attribute("message", containsString("réglée")));
+            encaisser(auDela, "ESPECES", aujourdHui())
+                    .andExpect(flash().attribute("erreur", containsString("ne se règle pas en espèces")))
+                    .andExpect(flash().attribute("erreur", containsString("000,00 € TVAC")));
+            encaisser(auDela, "TERMINAL", aujourdHui()).andExpect(flash().attribute("message", containsString("réglée")));
+        }
+
+        @Test
+        @DisplayName("facture à 0 € sans formulaire, facture annulée qui ne se règle plus, rappel du remboursement")
+        void rienAReglerEtFactureAnnulee() throws Exception {
+            UUID gratuite = factureAtelierDe(membre(true), "0.00");
+            mvc.perform(get("/admin/interventions/{ref}", gratuite).with(admin).locale(Locale.FRENCH))
+                    .andExpect(content().string(containsString("Rien à régler")))
+                    .andExpect(content().string(org.hamcrest.Matchers.not(containsString("/facture/encaissement\""))));
+            encaisser(gratuite, "ESPECES", aujourdHui())
+                    .andExpect(flash().attribute("erreur", "Une facture à 0 € n'a rien à régler."));
+
+            UUID annulee = factureAtelierEmise(membre(true));
+            annuler(annulee, "Erreur de prestation");
+            encaisser(annulee, "TERMINAL", aujourdHui())
+                    .andExpect(flash().attribute("erreur", containsString("ne se règle plus")));
+
+            UUID regleePuisAnnulee = factureAtelierEmise(membre(true));
+            encaisser(regleePuisAnnulee, "TERMINAL", aujourdHui());
+            annuler(regleePuisAnnulee, "Prestation non réalisée").andExpect(flash().attribute("message", containsString("AV-")));
+            mvc.perform(get("/admin/interventions/{ref}", regleePuisAnnulee).with(admin).locale(Locale.FRENCH))
+                    .andExpect(content().string(containsString("puis annulée : le remboursement au client se fait hors de l&#39;application")));
+        }
+
+        @Test
+        @DisplayName("l'export F22 du membre restitue ses règlements, annulés compris, sans l'auteur")
+        void exportDesDonnees() throws Exception {
+            Utilisateur marie = membre(true);
+            UUID dossier = factureAtelierEmise(marie);
+            encaisser(dossier, "TERMINAL", aujourdHui());
+            annulerReglement(dossier, "Saisi deux fois");
+            encaisser(dossier, "VIREMENT", aujourdHui());
+
+            var factures = enMembre(marie, () -> exportDonnees.assembler(marie.getEmail())).donneesPersonnelles().factures();
+
+            assertThat(factures).singleElement().satisfies(f -> {
+                assertThat(f.numeroIntervention()).isNotNull();
+                assertThat(f.encaissements()).extracting(e -> e.moyen()).containsExactly("TERMINAL", "VIREMENT");
+                assertThat(f.encaissements().getFirst().motifAnnulation()).isEqualTo("Saisi deux fois");
+                assertThat(f.encaissements().getLast().annuleLe()).isNull();
+            });
+        }
+
+        @Test
+        @DisplayName("en base : un seul règlement non annulé, immuable, jamais supprimé, annulation complète ou absente")
+        void contraintesEnBase() throws Exception {
+            UUID dossier = factureAtelierEmise(membre(true));
+            encaisser(dossier, "TERMINAL", aujourdHui());
+            Long facture = jdbc.queryForObject("SELECT f.id FROM facture f JOIN intervention i "
+                    + "ON i.id = f.intervention_id WHERE i.reference = ?", Long.class, dossier);
+
+            assertThatThrownBy(() -> jdbc.update("INSERT INTO encaissement (facture_id, moyen, montant, date_encaissement) "
+                    + "VALUES (?, 'ESPECES', 59.29, CURRENT_DATE)", facture))
+                    .hasMessageContaining("uq_encaissement_facture_actif");
+            assertThatThrownBy(() -> jdbc.update("UPDATE encaissement SET montant = 1.00 WHERE facture_id = ?", facture))
+                    .hasMessageContaining("immuable");
+            assertThatThrownBy(() -> jdbc.update("UPDATE encaissement SET annule_le = now() WHERE facture_id = ?", facture))
+                    .hasMessageContaining("ck_encaissement_annulation");
+
+            annulerReglement(dossier, "Erreur");
+            assertThatThrownBy(() -> jdbc.update("UPDATE encaissement SET annule_le = NULL, annule_par = NULL, "
+                    + "motif_annulation = NULL WHERE facture_id = ?", facture))
+                    .hasMessageContaining("immuable");
+            assertThatThrownBy(() -> jdbc.update("DELETE FROM encaissement WHERE facture_id = ?", facture))
+                    .hasMessageContaining("immuable");
+            assertThat(encaissementsDe(dossier, true)).isEqualTo(1);
         }
     }
 
