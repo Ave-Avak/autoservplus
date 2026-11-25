@@ -51,14 +51,20 @@ class AccueilServiceTest {
         return new CreneauDisponible(debut, debut.plusSeconds(1800), null, 1);
     }
 
+    private static ArticleVue alHeure(String libelle) {
+        return new ArticleVue(UUID.randomUUID(), libelle, libelle, null, "Atelier", new BigDecimal("65.00"),
+                new BigDecimal("78.65"), null, null, true, null, null, null, "HEURE", null, null, null);
+    }
+
     @Test
-    @DisplayName("aperçu : une prestation par catégorie d'abord, puis les suivantes, six au plus")
+    @DisplayName("aperçu : une prestation par catégorie d'abord, puis les suivantes, six au plus, aucune à l'heure")
     void prestationsMontrees() {
         List<ArticleVue> toutes = List.of(
                 prestation("Vidange", "Entretien", 30), prestation("Révision", "Entretien", 120),
                 prestation("Plaquettes", "Freinage", 60), prestation("Disques", "Freinage", 90),
                 prestation("Pneus", "Pneumatique", 45), prestation("Recharge", "Climatisation", 45),
-                prestation("Diagnostic", "Diagnostic", 30), prestation("Courroie", "Moteur", 180));
+                prestation("Diagnostic", "Diagnostic", 30), alHeure("Main-d'œuvre"),
+                prestation("Courroie", "Moteur", 180));
         when(catalogue.prestationsActives()).thenReturn(toutes);
 
         assertThat(service.prestationsMontrees()).extracting(ArticleVue::libelle)
