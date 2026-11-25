@@ -2,6 +2,7 @@ package be.autoservplus.vitrine.service;
 
 import be.autoservplus.reservation.domain.PlageOuverture;
 import be.autoservplus.reservation.repository.PlageOuvertureRepository;
+import be.autoservplus.reservation.service.dto.PlageVue;
 import be.autoservplus.vitrine.web.dto.JourOuvertureVue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -110,5 +111,15 @@ class HorairesOuvertureServiceTest {
         List<JourOuvertureVue> semaine = semaineAvec(plage(DayOfWeek.FRIDAY, "08:00", "17:00"));
 
         assertThat(semaine.get(4).plages()).containsExactly("08:00 - 17:00");
+    }
+
+    @Test
+    @DisplayName("plages actives seules, pour les données structurées")
+    void plagesActives() {
+        PlageOuverture retiree = plage(DayOfWeek.TUESDAY, "08:00", "12:00");
+        retiree.desactiver();
+        semaineAvec(plage(DayOfWeek.MONDAY, "08:00", "12:00"), retiree);
+
+        assertThat(service.plagesActives()).extracting(PlageVue::jour).containsExactly(DayOfWeek.MONDAY);
     }
 }
