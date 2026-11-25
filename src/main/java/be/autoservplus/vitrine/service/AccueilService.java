@@ -51,10 +51,14 @@ public class AccueilService {
     /**
      * Un aperçu du catalogue : la première prestation de chaque catégorie, puis les
      * suivantes si les catégories sont moins nombreuses que les places. Six vidanges
-     * d'une même catégorie ne diraient rien de l'étendue de l'atelier.
+     * d'une même catégorie ne diraient rien de l'étendue de l'atelier. Les prestations à
+     * l'heure n'y sont pas : la section annonce des tarifs fixes, et un taux horaire ne dit
+     * pas ce que coûtera le travail.
      */
     public List<ArticleVue> prestationsMontrees() {
-        List<ArticleVue> toutes = catalogue.prestationsActives();
+        List<ArticleVue> toutes = catalogue.prestationsActives().stream()
+                .filter(prestation -> !prestation.aLHeure())
+                .toList();
         Map<String, ArticleVue> premiereParCategorie = new LinkedHashMap<>();
         toutes.forEach(prestation -> premiereParCategorie.putIfAbsent(prestation.categorie(), prestation));
         List<ArticleVue> montrees = new ArrayList<>(premiereParCategorie.values());

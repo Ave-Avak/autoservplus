@@ -118,7 +118,7 @@
                     </p>
                     <p class="tarif__prix">
                         <strong class="chiffres" th:text="${#numbers.formatDecimal(prestation.prixTvac(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">83,49 €</strong>
-                        <span th:text="${prestation.aLHeure()} ? #{accueil.tarifs.tvac-heure} : #{accueil.tarifs.tvac}">TVAC</span>
+                        <span th:text="#{accueil.tarifs.tvac}">TVAC</span>
                     </p>
                     </div>
                 </li>
