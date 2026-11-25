@@ -69,7 +69,7 @@ public class AdminGalerieService {
         int ajoutees = 0;
         for (MultipartFile fichier : nonVides(fichiers)) {
             String chemin = stockage.enregistrer(fichier, "prestations");
-            photos.save(Photo.pourPrestation(prestation, chemin, texteAlt, ordre++));
+            photos.save(avecDimensions(Photo.pourPrestation(prestation, chemin, texteAlt, ordre++), chemin));
             ajoutees++;
         }
         return ajoutees;
@@ -82,7 +82,7 @@ public class AdminGalerieService {
         int ajoutees = 0;
         for (MultipartFile fichier : nonVides(fichiers)) {
             String chemin = stockage.enregistrer(fichier, "pieces");
-            photos.save(Photo.pourPiece(piece, chemin, texteAlt, ordre++));
+            photos.save(avecDimensions(Photo.pourPiece(piece, chemin, texteAlt, ordre++), chemin));
             ajoutees++;
         }
         return ajoutees;
@@ -96,7 +96,7 @@ public class AdminGalerieService {
         int ajoutees = 0;
         for (MultipartFile fichier : nonVides(fichiers)) {
             String chemin = stockage.enregistrer(fichier, "interventions");
-            photos.save(Photo.pourIntervention(intervention, chemin, texteAlt, ordre++));
+            photos.save(avecDimensions(Photo.pourIntervention(intervention, chemin, texteAlt, ordre++), chemin));
             ajoutees++;
         }
         return ajoutees;
@@ -129,6 +129,16 @@ public class AdminGalerieService {
         String chemin = photo.getChemin();
         photos.delete(photo);
         stockage.supprimer(chemin);
+    }
+
+    /**
+     * Dimensions lues dans l'en-tête du fichier enregistré. Un en-tête illisible laisse la
+     * photo sans dimensions : elle reste affichable, sa place n'est simplement pas
+     * réservée.
+     */
+    private Photo avecDimensions(Photo photo, String chemin) {
+        stockage.dimensionsDe(chemin).ifPresent(d -> photo.poserDimensions(d.largeur(), d.hauteur()));
+        return photo;
     }
 
     private static List<MultipartFile> nonVides(List<MultipartFile> fichiers) {

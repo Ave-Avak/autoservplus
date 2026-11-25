@@ -6,6 +6,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.mock.web.MockMultipartFile;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -228,6 +231,47 @@ class StockageMediaTest {
         void enteteTropCourt() {
             assertThat(TypeMedia.reconnaitre(new byte[]{(byte) 0xFF})).isEmpty();
             assertThat(TypeMedia.reconnaitre(null)).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("Photos de démonstration et dimensions")
+    class DepotEtDimensions {
+
+        @Test
+        @DisplayName("un fichier déposé n'est jamais remplacé par un second dépôt")
+        void deposerSiAbsent() throws IOException {
+            StockageMedia s = stockage();
+
+            boolean premier = s.deposerSiAbsent("demonstration/a.webp",
+                    new ByteArrayInputStream(new byte[]{1, 2, 3}));
+            boolean second = s.deposerSiAbsent("demonstration/a.webp",
+                    new ByteArrayInputStream(new byte[]{9}));
+
+            assertThat(premier).isTrue();
+            assertThat(second).isFalse();
+            assertThat(s.lire("demonstration/a.webp")).containsExactly(1, 2, 3);
+        }
+
+        @Test
+        @DisplayName("un chemin qui sort de la racine est refusé, même pour un dépôt de l'application")
+        void evasionRefusee() {
+            assertThatThrownBy(() -> stockage().deposerSiAbsent("../dehors.webp",
+                    new ByteArrayInputStream(new byte[]{1})))
+                    .isInstanceOf(IllegalArgumentException.class);
+        }
+
+        @Test
+        @DisplayName("les dimensions d'un fichier enregistré sont lues, un fichier absent n'en a pas")
+        void dimensions() throws IOException {
+            StockageMedia s = stockage();
+            ByteArrayOutputStream png = new ByteArrayOutputStream();
+            ImageIO.write(new BufferedImage(20, 10, BufferedImage.TYPE_INT_RGB), "png", png);
+            String chemin = s.enregistrer(new MockMultipartFile("fichier", "v.png", "image/png",
+                    png.toByteArray()), "pieces");
+
+            assertThat(s.dimensionsDe(chemin)).contains(new DimensionsImage(20, 10));
+            assertThat(s.dimensionsDe("pieces/absent.png")).isEmpty();
         }
     }
 }

@@ -33,8 +33,16 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
             """)
     List<Photo> dIntervention(@Param("reference") UUID reference);
 
+    /** Visuel de la catégorie d'une pièce (V79), montré quand la pièce n'a pas de photo propre. */
+    @Query("""
+            SELECT p FROM Photo p
+            WHERE p.categorie = (SELECT pc.categorie FROM Piece pc WHERE pc.reference = :reference)
+            ORDER BY p.ordre ASC, p.id ASC
+            """)
+    List<Photo> deLaCategorieDeLaPiece(@Param("reference") UUID reference);
+
     /**
-     * Photo d'une prestation ou d'une pièce, seule servie à l'adresse publique. Une photo
+     * Photo d'une prestation, d'une pièce ou d'une catégorie, seule servie à l'adresse publique. Une photo
      * d'intervention n'y est pas trouvée, comme une référence inconnue.
      */
     @Query("""

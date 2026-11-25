@@ -49,4 +49,11 @@ public class ImageController {
         return ReponseImage.de(stockage, galerie.cheminPublic(reference), reference,
                 CacheControl.maxAge(Duration.ofDays(30)).cachePublic());
     }
+
+    /** Version de 480 pixels de large, proposée par {@code srcset} aux écrans étroits (V79). */
+    @GetMapping("/{reference}/vignette")
+    public ResponseEntity<byte[]> servirVignette(@PathVariable UUID reference) {
+        return ReponseImage.de(stockage, galerie.cheminVignettePublic(reference), reference,
+                CacheControl.maxAge(Duration.ofDays(30)).cachePublic());
+    }
 }
