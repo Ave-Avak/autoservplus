@@ -9,6 +9,7 @@ import org.hibernate.annotations.SQLRestriction;
 
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Regroupement de prestations ou de pieces detachees dans le catalogue.
@@ -48,6 +49,14 @@ public class Categorie extends BaseEntity {
     @Column(name = "type", nullable = false, length = 20)
     private TypeCategorie type;
 
+    /**
+     * Rayon du catalogue public, nul pour une catégorie de prestations
+     * ({@code ck_categorie_rayon}). Il ne change que le rangement des articles.
+     */
+    @Enumerated(EnumType.STRING)
+    @Column(name = "rayon", length = 20)
+    private Rayon rayon;
+
     @Column(name = "description", columnDefinition = "text")
     private String description;
 
@@ -61,10 +70,33 @@ public class Categorie extends BaseEntity {
         // requis par JPA
     }
 
+    /**
+     * Une catégorie de produits créée sans rayon va aux pièces auto, comme les catégories
+     * que V78 a rangées. {@link #ranger(Rayon)} la déplace.
+     */
     public Categorie(String code, String libelle, TypeCategorie type) {
         this.code = Objects.requireNonNull(code, "code");
         this.libelle = Objects.requireNonNull(libelle, "libelle");
         this.type = Objects.requireNonNull(type, "type");
+        this.rayon = type == TypeCategorie.PIECE ? Rayon.PIECES_AUTO : null;
+    }
+
+    /** Catégorie de produits rangée dans le rayon donné. */
+    public Categorie(String code, String libelle, Rayon rayon) {
+        this(code, libelle, TypeCategorie.PIECE);
+        ranger(rayon);
+    }
+
+    /**
+     * Change le rayon d'une catégorie de produits. Une catégorie de prestations n'a pas de
+     * rayon : la base le refuse aussi.
+     */
+    public void ranger(Rayon nouveauRayon) {
+        Objects.requireNonNull(nouveauRayon, "rayon");
+        if (type != TypeCategorie.PIECE) {
+            throw new IllegalStateException("Une catégorie de prestations n'a pas de rayon : " + code);
+        }
+        this.rayon = nouveauRayon;
     }
 
     public void renommer(String nouveauLibelle) {
@@ -92,6 +124,9 @@ public class Categorie extends BaseEntity {
     public String getLibelleNl() { return libelleNl; }
     public String getLibelleEn() { return libelleEn; }
     public TypeCategorie getType() { return type; }
+
+    /** Rayon d'une catégorie de produits, vide pour une catégorie de prestations. */
+    public Optional<Rayon> getRayon() { return Optional.ofNullable(rayon); }
     public String getDescription() { return description; }
     public void setDescription(String description) { this.description = description; }
     public short getOrdre() { return ordre; }

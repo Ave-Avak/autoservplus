@@ -235,8 +235,8 @@ class SchemaIT extends SocleIntegration {
     @Transactional
     @DisplayName("le balayage remplace l'adresse par le jeton, pas par NULL")
     void balayageDesTracesDAudit() {
-        jdbc.update("INSERT INTO categorie (code, libelle, type, created_by, updated_by) "
-                + "VALUES ('IT-ANON', 'Test', 'PIECE', 'cible@exemple.be', 'cible@exemple.be')");
+        jdbc.update("INSERT INTO categorie (code, libelle, type, rayon, created_by, updated_by) "
+                + "VALUES ('IT-ANON', 'Test', 'PIECE', 'PIECES_AUTO', 'cible@exemple.be', 'cible@exemple.be')");
 
         Integer modifiees = jdbc.queryForObject(
                 "SELECT fn_anonymiser_traces_audit('cible@exemple.be', 'anonyme-0@supprime.invalid')",
@@ -573,5 +573,76 @@ class SchemaIT extends SocleIntegration {
                 "SELECT count(*) FROM plage_ouverture WHERE jour_semaine = 7 AND deleted_at IS NULL",
                 Integer.class);
         assertThat(actives).isEqualTo(1);
+    }
+
+    // Un refus par méthode : après une erreur, PostgreSQL annule la transaction du test.
+    @Test
+    @Transactional
+    @DisplayName("une catégorie de produits exige un rayon")
+    void categorieDeProduitsSansRayon() {
+        assertThatThrownBy(() -> jdbc.update(
+                "INSERT INTO categorie (code, libelle, type) VALUES ('IT-SANS-RAYON', 'Test', 'PIECE')"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ck_categorie_rayon");
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("une catégorie de prestations refuse un rayon")
+    void categorieDePrestationsAvecRayon() {
+        assertThatThrownBy(() -> jdbc.update("INSERT INTO categorie (code, libelle, type, rayon) "
+                + "VALUES ('IT-SRV-RAYON', 'Test', 'SERVICE', 'ACCESSOIRES')"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ck_categorie_rayon");
+    }
+
+    @Test
+    @DisplayName("les catégories de produits de référence sont rangées aux pièces auto")
+    void rayonDesCategoriesDeReference() {
+        assertThat(jdbc.queryForList("SELECT DISTINCT rayon FROM categorie WHERE type = 'PIECE' "
+                + "AND code IN ('P_FILTRES', 'P_FREINAGE', 'P_PNEUS', 'P_BATTERIE', 'P_HUILE')", String.class))
+                .containsExactly("PIECES_AUTO");
+    }
+
+    private long devisDeTest() {
+        return jdbc.queryForObject("INSERT INTO devis (numero, membre_id, date_emission, valable_jusqu_au, "
+                + "langue_document, client_prenom, client_nom, vehicule_plaque, vehicule_marque, vehicule_modele, "
+                + "montant_htva, montant_tva, montant_tvac) SELECT 'DEV-IT-0001', id, now(), current_date, 'fr', "
+                + "'Marie', 'Dupont', '1-ABC-123', 'VW', 'Golf', 10.00, 2.10, 12.10 FROM utilisateur "
+                + "WHERE email = 'admin@autoservplus.be' RETURNING id", Long.class);
+    }
+
+    private static final String LIGNE_DEVIS = "INSERT INTO ligne_devis (devis_id, rang, nature, libelle, quantite, "
+            + "prix_unitaire_htva, taux_tva, pieces_client) VALUES (?, ?, ?, 'Article', 1, 10.00, 21.00, ?)";
+
+    @Test
+    @Transactional
+    @DisplayName("une ligne de devis exige sa nature")
+    void ligneDeDevisSansNature() {
+        long devis = devisDeTest();
+        assertThatThrownBy(() -> jdbc.update(LIGNE_DEVIS, devis, 0, null, null))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("nature");
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("le choix des pièces est refusé sur une ligne de devis qui porte une pièce")
+    void choixDesPiecesSurUneLigneDePiece() {
+        long devis = devisDeTest();
+        assertThatThrownBy(() -> jdbc.update(LIGNE_DEVIS, devis, 1, "PIECE", false))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ck_ligne_devis_pieces_client");
+    }
+
+    @Test
+    @Transactional
+    @DisplayName("une ligne de prestation porte un choix, une ligne de pièce n'en porte aucun")
+    void lignesDeDevisAdmises() {
+        long devis = devisDeTest();
+        jdbc.update(LIGNE_DEVIS, devis, 2, "PRESTATION", true);
+        jdbc.update(LIGNE_DEVIS, devis, 3, "PIECE", null);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM ligne_devis WHERE devis_id = ?", Integer.class, devis))
+                .isEqualTo(2);
     }
 }
