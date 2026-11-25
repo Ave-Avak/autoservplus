@@ -349,6 +349,21 @@ class GraineDemonstrationIT extends SocleIntegration {
     }
 
     @Test
+    @Order(11)
+    @DisplayName("le plan du quartier est livré en WebP, en deux tailles")
+    void planDuQuartier() throws IOException {
+        Map<String, DimensionsImage> attendus = Map.of(
+                "plan-quartier.webp", new DimensionsImage(1024, 768),
+                "plan-quartier-480.webp", new DimensionsImage(PhotoVue.LARGEUR_VIGNETTE, 360));
+        for (Map.Entry<String, DimensionsImage> attendu : attendus.entrySet()) {
+            Resource fichier = new PathMatchingResourcePatternResolver()
+                    .getResource("classpath:demonstration/plan/" + attendu.getKey());
+            assertThat(fichier.exists()).as(attendu.getKey()).isTrue();
+            assertThat(DimensionsImage.lire(fichier.getContentAsByteArray())).contains(attendu.getValue());
+        }
+    }
+
+    @Test
     @Order(10)
     @DisplayName("sous le profil demo, les mentions légales disent d'où viennent les photos")
     void mentionDesPhotos() throws Exception {

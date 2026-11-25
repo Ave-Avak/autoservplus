@@ -65,11 +65,10 @@ ni logo de marque mis en avant. Elles ne servent qu'au profil `demo`.
 
 ## Plan de la page contact
 
-`src/main/resources/demonstration/plan/plan-quartier.png` (1024 x 768) et sa version de
+`src/main/resources/demonstration/plan/plan-quartier.webp` (1024 x 768) et sa version de
 480 x 360 assemblent des tuiles de la carte d'openstreetmap.org au niveau de zoom 16, sur
 le centre de Bruxelles, sans marqueur. L'adresse du garage de démonstration est fictive :
 le plan ne la situe pas et s'affiche avec la mention « Plan fictif ».
 
 Attribution : © les contributeurs d'OpenStreetMap. Données sous licence Open Database
-License (https://www.openstreetmap.org/copyright), rendu de la carte sous licence
-CC BY-SA 2.0.
+License, voir https://www.openstreetmap.org/copyright.
