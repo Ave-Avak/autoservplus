@@ -119,6 +119,48 @@ class ImportCatalogueIT extends SocleIntegration {
     }
 
     @Nested
+    @DisplayName("Colonne rayon des pièces")
+    class ColonneRayon {
+
+        private static final String ENTETE =
+                "categorie;reference_fabricant;libelle;marque;description;prix_htva;taux_tva;stock;seuil_alerte;rayon\r\n";
+
+        private String ligne(String rayon) {
+            return "P_FILTRES;" + code() + ";Filtre importé;;Desc;10,00;21,00;5;1;" + rayon + "\r\n";
+        }
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("rayon égal à celui de la catégorie, ou cellule vide : la ligne passe")
+        void rayonConforme() {
+            RapportImport rapport = imports.importerPieces(csv(ENTETE + ligne("PIECES_AUTO") + ligne("")));
+
+            assertThat(rapport.crees()).isEqualTo(2);
+        }
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("rayon différent de celui de la catégorie : ligne refusée, avec son numéro")
+        void rayonDifferent() {
+            assertThatThrownBy(() -> imports.importerPieces(csv(ENTETE + ligne("ACCESSOIRES"))))
+                    .isInstanceOf(ImportRefuseException.class)
+                    .extracting(e -> ((ImportRefuseException) e).rapport().erreurs().get(0).toString())
+                    .isEqualTo("LigneEnErreur[ligne=2, motif=Colonne « rayon » : ACCESSOIRES indiqué, "
+                            + "la catégorie P_FILTRES est rangée en PIECES_AUTO.]");
+        }
+
+        @Test
+        @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
+        @DisplayName("rayon inconnu : ligne refusée")
+        void rayonInconnu() {
+            assertThatThrownBy(() -> imports.importerPieces(csv(ENTETE + ligne("JARDIN"))))
+                    .isInstanceOf(ImportRefuseException.class)
+                    .extracting(e -> ((ImportRefuseException) e).rapport().erreurs().get(0).toString())
+                    .asString().contains("PIECES_AUTO, ACCESSOIRES ou ENTRETIEN attendu, « JARDIN » reçu");
+        }
+    }
+
+    @Nested
     @DisplayName("Traductions, colonnes facultatives")
     @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
     class ColonnesDeTraduction {

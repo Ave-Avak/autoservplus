@@ -85,6 +85,11 @@
         <code th:text="${colonnePoseSeule}">prix_pose_seule_htva</code>
     </p>
 
+    <p class="carte-meta">
+        <span th:text="#{admin.import.colonne-rayon}">Colonne facultative des pièces, pour contrôler le rayon :</span>
+        <code th:text="${colonneRayon}">rayon</code>
+    </p>
+
     <p class="carte-meta" th:text="#{admin.import.tout-ou-rien}">
         Une seule ligne invalide annule l'import entier : corrigez votre fichier et renvoyez-le.
     </p>

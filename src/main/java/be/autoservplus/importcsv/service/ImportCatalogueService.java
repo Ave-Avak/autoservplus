@@ -10,6 +10,9 @@ import be.autoservplus.catalogue.service.AdminCatalogueService;
 import be.autoservplus.catalogue.service.dto.DonneesPiece;
 import be.autoservplus.catalogue.service.dto.DonneesPrestation;
 import be.autoservplus.catalogue.service.dto.PrixPoseSeule;
+import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.catalogue.domain.Rayon;
+import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.importcsv.service.dto.RapportImport;
 import org.springframework.context.MessageSource;
@@ -84,21 +87,32 @@ public class ImportCatalogueService {
      */
     private static final String COLONNE_POSE_SEULE = "prix_pose_seule_htva";
 
+    /**
+     * Colonne facultative des pièces (V78) : rayon attendu de la catégorie citée. Le rayon
+     * appartient à la catégorie, que l'import ne crée ni ne modifie : la colonne ne range
+     * rien, elle contrôle. Un fichier préparé pour un rayon ne range donc pas un article
+     * dans un autre en silence. Même patron que l'unité des prestations.
+     */
+    private static final String COLONNE_RAYON = "rayon";
+
     /** Longueur des colonnes de libellé, en base comme au formulaire. */
     private static final int LONGUEUR_LIBELLE = 150;
 
     private final AdminCatalogueService catalogue;
     private final PrestationRepository prestations;
     private final PieceRepository pieces;
+    private final CategorieRepository categories;
     private final MessageSource messages;
 
     public ImportCatalogueService(AdminCatalogueService catalogue,
                                   PrestationRepository prestations,
                                   PieceRepository pieces,
+                                  CategorieRepository categories,
                                   MessageSource messages) {
         this.catalogue = catalogue;
         this.prestations = prestations;
         this.pieces = pieces;
+        this.categories = categories;
         this.messages = messages;
     }
 
@@ -117,6 +131,10 @@ public class ImportCatalogueService {
 
     public static String colonneUnite() {
         return COLONNE_UNITE;
+    }
+
+    public static String colonneRayon() {
+        return COLONNE_RAYON;
     }
 
     public static String colonnePoseSeule() {
@@ -212,6 +230,7 @@ public class ImportCatalogueService {
     }
 
     private boolean traiterPiece(Ligne ligne) {
+        exigerLeRayonDeLaCategorie(ligne);
         var existante = pieces.findByReferenceFabricant(ligne.texteObligatoire("reference_fabricant"));
         DonneesPiece donnees = new DonneesPiece(
                 ligne.texteObligatoire("categorie"),
@@ -232,6 +251,26 @@ public class ImportCatalogueService {
         }
         catalogue.creerPiece(donnees);
         return true;
+    }
+
+    /**
+     * Refuse la ligne dont la colonne {@code rayon} contredit le rayon de la catégorie citée.
+     * Une catégorie inconnue est refusée plus loin, avec son propre motif.
+     */
+    private void exigerLeRayonDeLaCategorie(Ligne ligne) {
+        Rayon attendu = ligne.rayon();
+        if (attendu == null) {
+            return;
+        }
+        String code = ligne.texteObligatoire("categorie");
+        categories.findByCode(code).flatMap(Categorie::getRayon).ifPresent(rayon -> {
+            if (rayon != attendu) {
+                throw new RefusTraduit(null, "admin.import.erreur.rayon-different",
+                        new Object[]{attendu.name(), code, rayon.name()},
+                        "Colonne « rayon » : %s indiqué, la catégorie %s est rangée en %s."
+                                .formatted(attendu.name(), code, rayon.name()));
+            }
+        });
     }
 
     @FunctionalInterface
@@ -258,6 +297,21 @@ public class ImportCatalogueService {
             } catch (IllegalArgumentException e) {
                 throw new RefusTraduit(null, "admin.import.erreur.unite", new Object[]{valeur},
                         "Colonne « unite » : FORFAIT ou HEURE attendu, « %s » reçu.".formatted(valeur));
+            }
+        }
+
+        /** Rayon lu dans la colonne facultative, {@code null} si absente ou vide. */
+        Rayon rayon() {
+            String valeur = texte(COLONNE_RAYON);
+            if (valeur == null) {
+                return null;
+            }
+            try {
+                return Rayon.valueOf(valeur.trim().toUpperCase(Locale.ROOT));
+            } catch (IllegalArgumentException e) {
+                throw new RefusTraduit(null, "admin.import.erreur.rayon", new Object[]{valeur},
+                        "Colonne « rayon » : PIECES_AUTO, ACCESSOIRES ou ENTRETIEN attendu, « %s » reçu."
+                                .formatted(valeur));
             }
         }
 

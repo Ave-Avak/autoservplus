@@ -2,6 +2,7 @@ package be.autoservplus.catalogue.service.dto;
 
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.domain.Traductions;
 
 import java.math.BigDecimal;
@@ -36,7 +37,8 @@ public record ArticleVueAdmin(
         Traductions traductions,
         String unite,
         BigDecimal prixPoseSeuleHtva,
-        BigDecimal prixPoseSeuleTvac) {
+        BigDecimal prixPoseSeuleTvac,
+        Rayon rayon) {
 
     /** Un article sans aucune traduction. */
     public ArticleVueAdmin(UUID reference, String identifiant, String libelle, String description,
@@ -45,7 +47,7 @@ public record ArticleVueAdmin(
                            Integer seuilAlerte, boolean actif) {
         this(reference, identifiant, libelle, description, categorieCode, categorieLibelle, prixHtva, prixTvac,
                 tauxTva, dureeMinutes, marque, quantiteStock, seuilAlerte, actif, Traductions.aucune(), null,
-                null, null);
+                null, null, null);
     }
 
     /** Prestation facturée à l'heure : « /h » au lieu d'une durée. */
@@ -77,7 +79,8 @@ public record ArticleVueAdmin(
                 prestation.getTraductions(),
                 prestation.getUnite().name(),
                 prestation.getPrixPoseSeuleHtva(),
-                prestation.prixPoseSeuleTvac());
+                prestation.prixPoseSeuleTvac(),
+                null);
     }
 
     public static ArticleVueAdmin de(Piece piece) {
@@ -99,6 +102,7 @@ public record ArticleVueAdmin(
                 piece.getTraductions(),
                 null,
                 null,
-                null);
+                null,
+                piece.getCategorie().getRayon().orElseThrow());
     }
 }

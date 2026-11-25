@@ -30,6 +30,18 @@
            th:text="#{admin.catalogue.action.nouvelle-piece}">Nouvelle pièce</a>
     </p>
 
+    <form class="formulaire" th:action="@{/admin/catalogue/pieces}" method="get" role="search">
+        <div class="champ">
+            <label for="rayon" th:text="#{admin.catalogue.filtre.rayon}">Rayon</label>
+            <select id="rayon" name="rayon">
+                <option value="" th:text="#{admin.catalogue.filtre.tous-rayons}">Tous les rayons</option>
+                <option th:each="r : ${rayons}" th:value="${r}" th:selected="${r == rayonActif}"
+                        th:text="#{${r.cleLibelle()}}">Accessoires</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-cta" th:text="#{admin.ventes.filtre.appliquer}">Afficher</button>
+    </form>
+
     <p th:if="${pieces.isEmpty()}" class="message" th:text="#{admin.catalogue.vide}">
         Aucun élément dans le catalogue.
     </p>
@@ -40,6 +52,7 @@
             <tr>
                 <th scope="col" th:text="#{admin.catalogue.colonne.reference}">Réf. constructeur</th>
                 <th scope="col" th:text="#{admin.catalogue.colonne.nom}">Nom</th>
+                <th scope="col" th:text="#{admin.catalogue.colonne.rayon}">Rayon</th>
                 <th scope="col" th:text="#{admin.catalogue.colonne.categorie}">Catégorie</th>
                 <th scope="col" th:text="#{admin.catalogue.colonne.prix}">Prix HTVA</th>
                 <th scope="col" th:text="#{admin.catalogue.colonne.taux}">TVA</th>
@@ -55,6 +68,7 @@
                     <span th:unless="${p.traduit()}" class="badge badge-en_attente"
                           th:text="#{admin.catalogue.non-traduit}">Non traduit</span>
                 </td>
+                <td th:text="#{${p.rayon().cleLibelle()}}">Pièces auto</td>
                 <td th:text="${p.categorieLibelle()}">Filtres</td>
                 <td th:text="${p.prixHtva()} + ' €'">12,50 €</td>
                 <td th:text="${p.tauxTva()} + ' %'">21 %</td>
