@@ -17,6 +17,8 @@ import java.math.BigDecimal;
  * @param unite       unité choisie à la création, ou {@code null} : forfait pour une
  *                    création, unité en place pour une modification. Une unité différente
  *                    de celle en place est refusée (V72)
+ * @param poseSeule   prix quand le client apporte ses pièces, ou {@code null} pour laisser
+ *                    celui en place (V76)
  */
 public record DonneesPrestation(
         String codeCategorie,
@@ -28,7 +30,16 @@ public record DonneesPrestation(
         int dureeMinutes,
         boolean actif,
         Traductions traductions,
-        UnitePrestation unite) {
+        UnitePrestation unite,
+        PrixPoseSeule poseSeule) {
+
+    /** Sans prix pose seule : celui en place reste, aucun à la création. */
+    public DonneesPrestation(String codeCategorie, String code, String libelle, String description,
+                             BigDecimal prixHtva, BigDecimal tauxTva, int dureeMinutes, boolean actif,
+                             Traductions traductions, UnitePrestation unite) {
+        this(codeCategorie, code, libelle, description, prixHtva, tauxTva, dureeMinutes, actif,
+                traductions, unite, null);
+    }
 
     /** Sans unité : forfait à la création, unité en place à la modification. */
     public DonneesPrestation(String codeCategorie, String code, String libelle, String description,

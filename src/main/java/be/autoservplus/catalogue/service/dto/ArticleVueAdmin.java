@@ -34,7 +34,9 @@ public record ArticleVueAdmin(
         Integer seuilAlerte,
         boolean actif,
         Traductions traductions,
-        String unite) {
+        String unite,
+        BigDecimal prixPoseSeuleHtva,
+        BigDecimal prixPoseSeuleTvac) {
 
     /** Un article sans aucune traduction. */
     public ArticleVueAdmin(UUID reference, String identifiant, String libelle, String description,
@@ -42,7 +44,8 @@ public record ArticleVueAdmin(
                            BigDecimal tauxTva, Integer dureeMinutes, String marque, Integer quantiteStock,
                            Integer seuilAlerte, boolean actif) {
         this(reference, identifiant, libelle, description, categorieCode, categorieLibelle, prixHtva, prixTvac,
-                tauxTva, dureeMinutes, marque, quantiteStock, seuilAlerte, actif, Traductions.aucune(), null);
+                tauxTva, dureeMinutes, marque, quantiteStock, seuilAlerte, actif, Traductions.aucune(), null,
+                null, null);
     }
 
     /** Prestation facturée à l'heure : « /h » au lieu d'une durée. */
@@ -72,7 +75,9 @@ public record ArticleVueAdmin(
                 null,
                 prestation.isActif(),
                 prestation.getTraductions(),
-                prestation.getUnite().name());
+                prestation.getUnite().name(),
+                prestation.getPrixPoseSeuleHtva(),
+                prestation.prixPoseSeuleTvac());
     }
 
     public static ArticleVueAdmin de(Piece piece) {
@@ -92,6 +97,8 @@ public record ArticleVueAdmin(
                 piece.getSeuilAlerte(),
                 piece.isActif(),
                 piece.getTraductions(),
+                null,
+                null,
                 null);
     }
 }

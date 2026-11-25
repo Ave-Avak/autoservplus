@@ -8,6 +8,9 @@ import jakarta.validation.constraints.*;
 import org.hibernate.annotations.SQLRestriction;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
@@ -77,6 +80,19 @@ public class Prestation extends BaseEntity {
     @Column(name = "actif", nullable = false)
     private boolean actif = true;
 
+    /**
+     * Prix hors TVA quand le client apporte ses pièces (V76). Nul quand le garage ne
+     * propose pas ce choix, toujours nul pour une prestation à l'heure, et toujours
+     * inférieur au prix pièces comprises.
+     */
+    @Column(name = "prix_pose_seule_htva", precision = 10, scale = 2)
+    private BigDecimal prixPoseSeuleHtva;
+
+    /** Pièces consommées quand le garage les fournit (V76), dans l'ordre de leur ajout. */
+    @OneToMany(mappedBy = "prestation", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id")
+    private List<ComposantPrestation> composition = new ArrayList<>();
+
     /** Durée d'une prestation à l'heure : celle d'une unité ({@code ck_service_duree_heure}). */
     public static final int DUREE_UNITE_HEURE = 60;
 
@@ -138,11 +154,76 @@ public class Prestation extends BaseEntity {
         return prixTvac().subtract(prixHtva);
     }
 
+    /**
+     * Change le prix pièces comprises et garde le prix pose seule en place.
+     *
+     * @throws PrixPoseSeuleRefuseException le nouveau prix ne dépasse plus le prix pose seule
+     */
     public void modifierPrix(BigDecimal nouveauPrixHtva) {
+        fixerPrix(nouveauPrixHtva, prixPoseSeuleHtva);
+    }
+
+    /**
+     * Fixe les deux prix ensemble : les vérifier un à un refuserait une baisse simultanée
+     * des deux, le nouveau prix pièces comprises passant sous l'ancien prix pose seule.
+     *
+     * @param poseSeuleHtva prix quand le client apporte ses pièces, {@code null} pour ne pas
+     *                      proposer ce choix
+     * @throws PrixPoseSeuleRefuseException prix pose seule négatif, égal ou supérieur au prix
+     *                                      pièces comprises, ou posé sur une prestation à l'heure
+     */
+    public void fixerPrix(BigDecimal nouveauPrixHtva, BigDecimal poseSeuleHtva) {
         if (nouveauPrixHtva == null || nouveauPrixHtva.signum() < 0) {
             throw new IllegalArgumentException("Le prix ne peut pas etre negatif.");
         }
+        if (poseSeuleHtva != null) {
+            if (estALHeure()) {
+                throw PrixPoseSeuleRefuseException.aLHeure(code);
+            }
+            if (poseSeuleHtva.signum() < 0 || poseSeuleHtva.compareTo(nouveauPrixHtva) >= 0) {
+                throw PrixPoseSeuleRefuseException.pasInferieur(code);
+            }
+        }
         this.prixHtva = nouveauPrixHtva;
+        this.prixPoseSeuleHtva = poseSeuleHtva;
+    }
+
+    /** Le client peut choisir d'apporter ses pièces, à un prix plus bas. */
+    public boolean proposePoseSeule() {
+        return prixPoseSeuleHtva != null;
+    }
+
+    /** Prix pose seule affiché au client, taxe comprise, ou {@code null} sans ce choix. */
+    public BigDecimal prixPoseSeuleTvac() {
+        return prixPoseSeuleHtva == null ? null : CalculTva.unitaireTvac(prixPoseSeuleHtva, tauxTva);
+    }
+
+    /**
+     * Ajoute une pièce à la composition, ou change sa quantité si elle y est déjà. Une pièce
+     * désactivée est admise : le garage peut encore la poser, et le formulaire le signale.
+     *
+     * @throws CompositionRefuseeException prestation à l'heure, ou quantité inférieure à un
+     */
+    public void fixerComposant(Piece piece, int quantite) {
+        Objects.requireNonNull(piece, "piece");
+        if (estALHeure()) {
+            throw CompositionRefuseeException.aLHeure(code);
+        }
+        if (quantite < 1) {
+            throw CompositionRefuseeException.quantite(code);
+        }
+        composition.stream().filter(c -> c.porte(piece)).findFirst()
+                .ifPresentOrElse(c -> c.changerQuantite(quantite),
+                        () -> composition.add(new ComposantPrestation(this, piece, quantite)));
+    }
+
+    /** @return {@code false} si la pièce n'était pas dans la composition */
+    public boolean retirerComposant(Piece piece) {
+        return composition.removeIf(c -> c.porte(piece));
+    }
+
+    public List<ComposantPrestation> getComposition() {
+        return Collections.unmodifiableList(composition);
     }
 
     public void renommer(String nouveauLibelle) {
@@ -195,6 +276,7 @@ public class Prestation extends BaseEntity {
         this.traductions = Objects.requireNonNull(nouvelles, "traductions");
     }
     public BigDecimal getPrixHtva() { return prixHtva; }
+    public BigDecimal getPrixPoseSeuleHtva() { return prixPoseSeuleHtva; }
     public BigDecimal getTauxTva() { return tauxTva; }
     public void setTauxTva(BigDecimal tauxTva) { this.tauxTva = TauxTvaBelge.verifier(tauxTva); }
     public int getDureeMinutes() { return dureeMinutes; }

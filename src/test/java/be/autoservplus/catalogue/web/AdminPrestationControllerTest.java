@@ -88,7 +88,7 @@ class AdminPrestationControllerTest {
         vueVidange = new ArticleVueAdmin(REF, "VID", "Vidange", "Huile et filtre",
                 "ENTRETIEN", "Entretien", new BigDecimal("75.00"), new BigDecimal("90.75"),
                 new BigDecimal("21.00"), 60, null, null, null, true,
-                be.autoservplus.catalogue.domain.Traductions.aucune(), "FORFAIT");
+                be.autoservplus.catalogue.domain.Traductions.aucune(), "FORFAIT", null, null);
     }
 
     @Nested

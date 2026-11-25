@@ -80,6 +80,11 @@
         <code th:text="${colonneUnite}">unite</code>
     </p>
 
+    <p class="carte-meta">
+        <span th:text="#{admin.import.colonne-pose-seule}">Colonne facultative des prestations, pour le prix pose seule :</span>
+        <code th:text="${colonnePoseSeule}">prix_pose_seule_htva</code>
+    </p>
+
     <p class="carte-meta" th:text="#{admin.import.tout-ou-rien}">
         Une seule ligne invalide annule l'import entier : corrigez votre fichier et renvoyez-le.
     </p>
