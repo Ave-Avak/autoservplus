@@ -149,7 +149,7 @@ class VitrineIT extends SocleIntegration {
         void presentationTraduite() throws Exception {
             mvc.perform(get("/?lang=en").with(anonymous()))
                     .andExpect(content().string(containsString("lang=\"en\"")))
-                    .andExpect(content().string(containsString("What you can do here")));
+                    .andExpect(content().string(containsString("Your car service at the displayed price, booked online")));
         }
     }
 }

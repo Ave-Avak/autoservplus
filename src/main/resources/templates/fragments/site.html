@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<head><meta charset="UTF-8"><title>Fragment gabarit du site</title></head>
+<body>
+
+<!--/*
+  Gabarit du site public et de l'espace membre (groupe I, écrans migrés). Une page migrée
+  charge site.css par le fragment « ressources » et insère « entete » au début du corps,
+  « pied » à la fin. Les écrans pas encore migrés gardent fragments/entete et
+  fragments/pied avec autoservplus.css (Q-I-10) : les deux en-têtes coexistent jusqu'à la
+  fin de la migration, puis l'ancien disparaît.
+
+  Emplacements (consigne de I3) : enseigne en haut à gauche, navigation principale à sa
+  suite, zone utilitaire à droite dans l'ordre langue, recherche, compte, et le panier
+  tout à droite pour le membre. Téléphone et horaires dans un bandeau fin au-dessus de
+  l'en-tête, visibles sans défiler, et repris au pied.
+*/-->
+
+<th:block th:fragment="ressources">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/logo/monogramme-autoservplus.svg}">
+    <!--/* Les deux graisses du premier écran, préchargées : sans cela le texte s'affiche
+         d'abord dans la police de repli, puis change de largeur au chargement d'Inter. */-->
+    <link rel="preload" th:href="@{/css/polices/inter-regular.woff2}" as="font" type="font/woff2" crossorigin>
+    <link rel="preload" th:href="@{/css/polices/inter-semibold.woff2}" as="font" type="font/woff2" crossorigin>
+    <link rel="stylesheet" th:href="@{/css/site.css}">
+    <script th:src="@{/js/bootstrap.bundle.min.js}" defer></script>
+</th:block>
+
+<th:block th:fragment="entete">
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<p class="mention-demonstration" th:if="${mentionDemonstration}" th:text="#{site.mention.demonstration}">
+    Site de démonstration : garage, clients et avis fictifs.</p>
+
+<div class="bandeau-garage fond-marine" th:if="${garageSite != null}">
+    <div class="container">
+        <a class="bandeau-garage__telephone" th:href="'tel:' + ${#strings.replace(garageSite.telephone(), ' ', '')}">
+            <svg th:replace="~{fragments/icones :: telephone}"></svg>
+            <span class="visually-hidden" th:text="#{site.telephone}">Téléphone</span>
+            <span th:text="${garageSite.telephone()}">+32 2 000 00 00</span>
+        </a>
+        <!--/* Résumé sur grand écran. Sur téléphone il ne tiendrait pas sur une ligne : un
+             lien mène aux horaires complets de la page de contact. */-->
+        <ul class="horaires-resume d-none d-lg-flex" th:unless="${#lists.isEmpty(horairesResume)}"
+            th:attr="aria-label=#{site.horaires.aria}">
+            <li th:each="groupe : ${horairesResume}">
+                <span th:replace="~{fragments/site :: jours(${groupe})}"></span>
+                <span class="chiffres" th:text="${#strings.listJoin(groupe.plages(), ', ')}">08:00 - 12:00</span>
+            </li>
+        </ul>
+        <a class="d-lg-none" th:href="@{/contact}" th:text="#{site.horaires.lien}">Horaires et accès</a>
+    </div>
+</div>
+
+<header class="entete-site">
+    <nav class="navbar navbar-expand-lg" th:attr="aria-label=#{nav.principale}" aria-label="Navigation principale">
+        <div class="container">
+            <a class="enseigne" th:href="@{/}" th:text="${garageSite != null} ? ${garageSite.enseigne()} : 'AutoServ+'">Bielle Bleue</a>
+
+            <!--/* Tiroir sous le point de rupture lg, menu déplié au-dessus. Sans script, la
+                 feuille le déplie à toutes les largeurs (scripting: none) : aucun lien n'est
+                 alors hors d'atteinte. Le tiroir de Bootstrap ferme sur Échap et rend le
+                 focus au bouton qui l'a ouvert. */-->
+            <div class="offcanvas-lg offcanvas-end menu-site" id="menu-principal" tabindex="-1"
+                 aria-labelledby="menu-principal-titre">
+                <div class="offcanvas-header">
+                    <p class="offcanvas-title" id="menu-principal-titre" th:text="#{nav.menu}">Menu</p>
+                    <button type="button" class="btn-close" data-bs-dismiss="offcanvas" data-bs-target="#menu-principal"
+                            th:attr="aria-label=#{nav.menu.fermer}" aria-label="Fermer le menu"></button>
+                </div>
+                <div class="offcanvas-body">
+                    <ul class="navbar-nav navigation-principale"
+                        sec:authorize="!isAuthenticated() or !authentication.authorities.isEmpty()">
+                        <li class="nav-item"><a class="nav-link" th:href="@{/catalogue}" th:text="#{nav.catalogue}"
+                               th:attr="aria-current=${rubriqueCourante == 'catalogue'} ? 'true' : null">Catalogue</a></li>
+                        <li class="nav-item"><a class="nav-link" th:href="@{/mes-rendez-vous/nouveau}" th:text="#{nav.rendez-vous}"
+                               th:attr="aria-current=${cheminCourant == '/mes-rendez-vous/nouveau'} ? 'page' : null">Prendre rendez-vous</a></li>
+                        <li class="nav-item"><a class="nav-link" th:href="@{/contact}" th:text="#{nav.contact}"
+                               th:attr="aria-current=${cheminCourant == '/contact'} ? 'page' : null">Contact</a></li>
+                    </ul>
+
+                    <ul class="navbar-nav zone-utilitaire">
+                        <!--/* Code de la langue à l'écran, nom complet pour le lecteur d'écran. Le
+                             nom accessible commence par le texte visible (WCAG 2.5.3). */-->
+                        <li class="nav-item choix-langue">
+                            <a th:each="choix : ${languesDisponibles}" class="nav-link" th:href="${choix.adresse()}"
+                               th:attr="aria-current=${choix.active()} ? 'true' : null, lang=${choix.code()}, hreflang=${choix.code()}"><span
+                                    th:text="${#strings.toUpperCase(choix.code())}">FR</span><span class="visually-hidden"
+                                    th:text="' ' + #{__${choix.cle}__}"> Français</span></a>
+                        </li>
+                        <li class="nav-item" th:if="${cheminCourant != '/recherche'}"
+                            sec:authorize="!isAuthenticated() or !authentication.authorities.isEmpty()">
+                            <a class="nav-link lien-icone" th:href="@{/recherche}">
+                                <svg th:replace="~{fragments/icones :: loupe}"></svg>
+                                <span class="libelle-icone" th:text="#{catalogue.recherche.bouton}">Rechercher</span>
+                            </a>
+                        </li>
+
+                        <th:block sec:authorize="!isAuthenticated()">
+                            <li class="nav-item"><a class="nav-link" th:href="@{/connexion}" th:text="#{nav.connexion}"
+                                   th:attr="aria-current=${cheminCourant == '/connexion'} ? 'page' : null">Connexion</a></li>
+                            <li class="nav-item"><a class="btn btn-primary" th:href="@{/inscription}" th:text="#{nav.inscription}"
+                                   th:attr="aria-current=${cheminCourant == '/inscription'} ? 'page' : null">Créer un compte</a></li>
+                        </th:block>
+
+                        <th:block sec:authorize="isAuthenticated() and !authentication.authorities.isEmpty()">
+                            <!--/* Le rafraîchissement du nombre de messages non lus (HTMX) reste à
+                                 l'ancien en-tête, seul servi aux pages qui chargent HTMX : il passe
+                                 ici avec elles, et la route du compteur avec lui. */-->
+                            <li class="nav-item" sec:authorize="!hasRole('ADMINISTRATEUR')">
+                                <a class="nav-link lien-icone" th:href="@{/mes-messages}"
+                                   th:attr="aria-current=${cheminCourant == '/mes-messages'} ? 'page' : null">
+                                    <svg th:replace="~{fragments/icones :: enveloppe}"></svg>
+                                    <span class="libelle-icone" th:text="${nombreFilsNonLus != null} ? #{messagerie.nav(${nombreFilsNonLus})} : #{nav.messages}">Messages</span>
+                                    <span class="pastille-compteur chiffres" aria-hidden="true"
+                                          th:if="${nombreFilsNonLus != null and nombreFilsNonLus > 0}" th:text="${nombreFilsNonLus}">1</span>
+                                </a>
+                            </li>
+                            <!--/* L'exploitant n'est pas le garage : aucun avis ne lui est adressé. */-->
+                            <li class="nav-item" sec:authorize="!hasRole('SUPER_ADMINISTRATEUR')">
+                                <a class="nav-link lien-icone" th:href="@{/mes-notifications}"
+                                   th:attr="aria-current=${cheminCourant == '/mes-notifications'} ? 'page' : null">
+                                    <svg th:replace="~{fragments/icones :: cloche}"></svg>
+                                    <span class="libelle-icone" th:text="${nombreNotificationsNonLues != null} ? #{notifications.nav(${nombreNotificationsNonLues})} : #{nav.notifications}">Notifications</span>
+                                    <span class="pastille-compteur chiffres" aria-hidden="true"
+                                          th:if="${nombreNotificationsNonLues != null and nombreNotificationsNonLues > 0}"
+                                          th:text="${nombreNotificationsNonLues}">2</span>
+                                </a>
+                            </li>
+                            <li class="nav-item" sec:authorize="hasRole('ADMINISTRATEUR')">
+                                <a class="nav-link" th:href="@{/admin}" th:text="#{nav.back-office}">Back-office</a>
+                            </li>
+                            <!--/* Sans script, le lien ouvre la page Mon compte, qui porte les mêmes
+                                 entrées. Avec lui, Bootstrap ouvre la liste et retient la navigation. */-->
+                            <li class="nav-item dropdown">
+                                <a class="nav-link dropdown-toggle lien-icone" th:href="@{/mon-compte}" role="button"
+                                   data-bs-toggle="dropdown" aria-expanded="false"
+                                   th:classappend="${cheminCourant == '/mon-compte'} ? 'active'">
+                                    <svg th:replace="~{fragments/icones :: compte}"></svg>
+                                    <span th:text="#{nav.mon-compte}">Mon compte</span>
+                                </a>
+                                <ul class="dropdown-menu dropdown-menu-lg-end">
+                                    <li><a class="dropdown-item" th:href="@{/mon-compte}" th:text="#{compte.apercu}">Vue d'ensemble</a></li>
+                                    <li><a class="dropdown-item" th:href="@{/mon-profil}" th:text="#{profil.titre}">Mon profil</a></li>
+                                    <th:block sec:authorize="!hasRole('ADMINISTRATEUR')">
+                                        <li><a class="dropdown-item" th:href="@{/mes-vehicules}" th:text="#{compte.vehicules.titre}">Mes véhicules</a></li>
+                                        <li><a class="dropdown-item" th:href="@{/mes-rendez-vous}" th:text="#{compte.rdv.titre}">Mes rendez-vous</a></li>
+                                        <li><a class="dropdown-item" th:href="@{/commandes}" th:text="#{compte.commandes.titre}">Commandes et factures</a></li>
+                                        <li><a class="dropdown-item" th:href="@{/mes-devis}" th:text="#{compte.devis.titre}">Mes devis</a></li>
+                                    </th:block>
+                                    <li sec:authorize="hasRole('ADMINISTRATEUR')"><a class="dropdown-item" th:href="@{/mon-profil/securite}"
+                                           th:text="#{compte.securite.titre}">Sécurité</a></li>
+                                    <li><a class="dropdown-item" th:href="@{/mes-donnees}" th:text="#{rgpd.donnees.titre}">Mes données personnelles</a></li>
+                                    <li><hr class="dropdown-divider"></li>
+                                    <li>
+                                        <form th:action="@{/deconnexion}" method="post">
+                                            <button type="submit" class="dropdown-item" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                                        </form>
+                                    </li>
+                                </ul>
+                            </li>
+                        </th:block>
+
+                        <!--/* Connexion partielle : mot de passe vérifié, étape en attente. Le jeton
+                             n'a aucune autorité, seule la déconnexion est proposée. */-->
+                        <li class="nav-item" sec:authorize="isAuthenticated() and authentication.authorities.isEmpty()">
+                            <form th:action="@{/deconnexion}" method="post">
+                                <button type="submit" class="btn btn-link nav-link" th:text="#{nav.deconnexion}">Se déconnecter</button>
+                            </form>
+                        </li>
+                    </ul>
+                </div>
+            </div>
+
+            <!--/* Hors du tiroir, toujours visible : le panier du membre, tout à droite. Ni
+                 l'administrateur ni le compte en connexion partielle ne commandent. */-->
+            <a class="lien-icone lien-panier" th:href="@{/panier}"
+               sec:authorize="isAuthenticated() and !authentication.authorities.isEmpty() and !hasRole('ADMINISTRATEUR')"
+               th:attr="aria-current=${cheminCourant == '/panier'} ? 'page' : null">
+                <svg th:replace="~{fragments/icones :: panier}"></svg>
+                <span class="visually-hidden" th:text="${nombreArticlesPanier != null} ? #{panier.nav(${nombreArticlesPanier})} : #{nav.panier}">Panier</span>
+                <span class="pastille-compteur chiffres" aria-hidden="true"
+                      th:if="${nombreArticlesPanier != null and nombreArticlesPanier > 0}" th:text="${nombreArticlesPanier}">3</span>
+            </a>
+
+            <button type="button" class="navbar-toggler bouton-menu" data-bs-toggle="offcanvas"
+                    data-bs-target="#menu-principal" aria-controls="menu-principal">
+                <svg th:replace="~{fragments/icones :: menu}"></svg>
+                <span th:text="#{nav.menu}">Menu</span>
+            </button>
+        </div>
+    </nav>
+</header>
+<div class="container" th:if="${filAriane != null}">
+    <div th:replace="~{fragments/fil-ariane :: fil}"></div>
+</div>
+</th:block>
+
+<!--/* Un groupe de jours : « lun. au ven. », ou le jour seul. */-->
+<th:block th:fragment="jours(groupe)">
+    <span class="horaires-resume__jours" th:if="${groupe.unSeulJour()}"
+          th:text="${#strings.capitalize(#messages.msg('vitrine.jour.court.' + #strings.substringAfter(groupe.cleDebut(), 'vitrine.jour.')))}">Sam.</span>
+    <span class="horaires-resume__jours" th:unless="${groupe.unSeulJour()}"
+          th:text="${#strings.capitalize(#messages.msg('vitrine.horaires.groupe',
+                     #messages.msg('vitrine.jour.court.' + #strings.substringAfter(groupe.cleDebut(), 'vitrine.jour.')),
+                     #messages.msg('vitrine.jour.court.' + #strings.substringAfter(groupe.cleFin(), 'vitrine.jour.'))))}">Lun. au ven.</span>
+</th:block>
+
+<th:block th:fragment="pied">
+<footer class="pied-site fond-marine">
+    <div class="container">
+        <div class="row g-4 pied-site__colonnes">
+            <section class="col-12 col-md-6 col-lg-4" th:if="${garageSite != null}"
+                     aria-labelledby="pied-coordonnees">
+                <h2 id="pied-coordonnees" class="pied-site__titre" th:text="${garageSite.enseigne()}">Bielle Bleue</h2>
+                <address class="pied-site__adresse">
+                    <span th:text="${garageSite.rue()} + ' ' + ${garageSite.numeroRue()}">Rue de l'Atelier 12</span><br>
+                    <span th:text="${garageSite.codePostal()} + ' ' + ${garageSite.localite()}">1000 Bruxelles</span><br>
+                    <a th:href="'tel:' + ${#strings.replace(garageSite.telephone(), ' ', '')}"
+                       th:text="${garageSite.telephone()}">+32 2 000 00 00</a><br>
+                    <a th:href="'mailto:' + ${garageSite.courriel()}" th:text="${garageSite.courriel()}">atelier@bielle-bleue.test</a>
+                </address>
+            </section>
+            <section class="col-12 col-md-6 col-lg-4" aria-labelledby="pied-horaires">
+                <h2 id="pied-horaires" class="pied-site__titre" th:text="#{site.horaires.titre}">Horaires</h2>
+                <ul class="pied-site__liste" th:unless="${#lists.isEmpty(horairesResume)}">
+                    <li th:each="groupe : ${horairesResume}">
+                        <span th:replace="~{fragments/site :: jours(${groupe})}"></span>
+                        <span class="chiffres" th:text="${#strings.listJoin(groupe.plages(), ', ')}">08:00 - 12:00</span>
+                    </li>
+                </ul>
+                <p><a th:href="@{/contact}" th:text="#{site.horaires.complets}">Horaires complets et accès</a></p>
+            </section>
+            <nav class="liens-legaux col-12 col-lg-4" aria-labelledby="pied-informations">
+                <h2 id="pied-informations" class="pied-site__titre" th:text="#{site.informations.titre}">Informations</h2>
+                <ul class="pied-site__liste">
+                    <li><a th:href="@{/cgv}" th:text="#{legal.lien.cgv}">Conditions générales de vente</a></li>
+                    <li><a th:href="@{/mentions-legales}" th:text="#{legal.lien.mentions}">Mentions légales</a></li>
+                    <li><a th:href="@{/confidentialite}" th:text="#{legal.lien.confidentialite}">Politique de confidentialité</a></li>
+                    <li><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.titre}">Garantie légale</a></li>
+                    <li><a th:href="@{/retractation/formulaire}" th:text="#{retractation.formulaire.lien}">Formulaire de rétractation</a></li>
+                    <li><a th:href="@{/contact}" th:text="#{nav.contact}">Contact</a></li>
+                    <li><a th:href="@{/cookies}" th:text="#{cookies.gerer}">Gérer mes cookies</a></li>
+                </ul>
+            </nav>
+        </div>
+        <div class="pied-site__bas">
+            <div th:replace="~{fragments/langue :: selecteur}"></div>
+            <p class="pied-site__propulse">
+                <span th:text="#{site.propulse}">Propulsé par</span>
+                <img th:src="@{/images/logo/logo-autoservplus-blanc.svg}" src="/images/logo/logo-autoservplus-blanc.svg"
+                     alt="AutoServ+" width="160" height="33">
+            </p>
+        </div>
+    </div>
+</footer>
+
+<div th:replace="~{fragments/cookies :: bandeau}"></div>
+</th:block>
+
+</body>
+</html>

@@ -618,13 +618,22 @@ class NavigationEcransIT extends SocleIntegration {
                 Element bouton = page.selectFirst("header button.bouton-menu");
                 assertThat(bouton).as(role.name()).isNotNull();
                 assertThat(bouton.attr("type")).isEqualTo("button");
-                assertThat(bouton.hasAttr("hidden")).as("caché tant que le script ne l'a pas révélé").isTrue();
-                assertThat(bouton.attr("aria-expanded")).isEqualTo("false");
                 assertThat(bouton.text()).isEqualTo("Menu");
                 Element panneau = page.getElementById(bouton.attr("aria-controls"));
                 assertThat(panneau).as("panneau désigné par aria-controls").isNotNull();
                 assertThat(panneau.select("a[href=/mon-compte], a[href=/connexion]")).as(role.name()).isNotEmpty();
-                assertThat(page.select("header script[src=/js/menu.js]")).hasSize(1);
+                if (page.selectFirst("header.entete-site") != null) {
+                    // Gabarit du site : tiroir de Bootstrap, script servi par l'application.
+                    // Sans script, la feuille déplie le menu et cache le bouton (scripting:
+                    // none), ce que le passage sans script vérifie dans le navigateur.
+                    assertThat(bouton.attr("data-bs-toggle")).isEqualTo("offcanvas");
+                    assertThat(panneau.hasClass("offcanvas-lg")).isTrue();
+                    assertThat(page.select("head script[src=/js/bootstrap.bundle.min.js]")).hasSize(1);
+                } else {
+                    assertThat(bouton.hasAttr("hidden")).as("caché tant que le script ne l'a pas révélé").isTrue();
+                    assertThat(bouton.attr("aria-expanded")).isEqualTo("false");
+                    assertThat(page.select("header script[src=/js/menu.js]")).hasSize(1);
+                }
                 assertThat(page.select("script:not([src])").stream()
                         .filter(s -> !"application/ld+json".equals(s.attr("type")))).as("script en ligne").isEmpty();
             }

@@ -1,0 +1,51 @@
+// Composants communs à toutes les pages migrées.
+
+// Action principale de l'écran, orange de la charte, une seule par écran. Blanc sur
+// orange : 5,2:1. Le survol fonce le fond, il ne l'éclaircit pas (contraste gardé).
+.btn-action {
+  @include button-variant(
+    $orange-action,
+    $orange-action,
+    $color: $white,
+    $hover-background: shade-color($orange-action, 15%),
+    $hover-border: shade-color($orange-action, 15%),
+    $hover-color: $white,
+    $active-background: shade-color($orange-action, 25%),
+    $active-border: shade-color($orange-action, 25%),
+    $active-color: $white,
+    $disabled-background: $orange-action,
+    $disabled-border: $orange-action,
+    $disabled-color: $white
+  );
+}
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: .5rem;
+}
+
+// Charte : 40 px pour un bouton normal, 48 px pour l'action principale.
+.btn-lg {
+  min-height: 3rem;
+}
+
+// Lien vers la suite d'une section, suivi d'un chevron.
+.lien-suite {
+  display: inline-flex;
+  align-items: center;
+  gap: .25rem;
+  min-height: 2.75rem;
+  font-weight: 600;
+
+  .icone {
+    width: 1rem;
+    height: 1rem;
+    transition: transform .2s ease-out;
+  }
+
+  &:hover .icone {
+    transform: translateX(.1875rem);
+  }
+}

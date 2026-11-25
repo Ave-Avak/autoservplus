@@ -9,8 +9,11 @@ import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -52,6 +55,37 @@ public class GalerieService {
     public List<PhotoVue> illustrationsDePiece(UUID reference) {
         List<Photo> propres = photos.dePiece(reference);
         return vues(propres.isEmpty() ? photos.deLaCategorieDeLaPiece(reference) : propres);
+    }
+
+    /**
+     * Vignette de chaque prestation d'une liste : sa première photo, à défaut le visuel de
+     * sa catégorie. Deux requêtes pour toute la liste, et non deux par carte.
+     */
+    public Map<UUID, PhotoVue> vignettesDePrestations(Collection<UUID> references) {
+        if (references.isEmpty()) {
+            return Map.of();
+        }
+        return premieres(photos.desPrestations(references), photos.visuelsDesCategoriesDePrestations(references));
+    }
+
+    /** Vignette de chaque pièce d'une liste, sur la même règle que la fiche. */
+    public Map<UUID, PhotoVue> vignettesDePieces(Collection<UUID> references) {
+        if (references.isEmpty()) {
+            return Map.of();
+        }
+        return premieres(photos.desPieces(references), photos.visuelsDesCategoriesDePieces(references));
+    }
+
+    /** La première photo propre de chaque fiche, puis le visuel de catégorie des autres. */
+    private static Map<UUID, PhotoVue> premieres(List<Object[]> propres, List<Object[]> deCategorie) {
+        Locale langue = LanguesSupportees.plusProche(LocaleContextHolder.getLocale());
+        Map<UUID, PhotoVue> vignettes = new HashMap<>();
+        for (List<Object[]> lignes : List.of(propres, deCategorie)) {
+            for (Object[] ligne : lignes) {
+                vignettes.putIfAbsent((UUID) ligne[0], PhotoVue.de((Photo) ligne[1], langue));
+            }
+        }
+        return vignettes;
     }
 
     /** Photos avant / après d'une intervention. L'appelant a vérifié l'appartenance. */

@@ -350,6 +350,10 @@ spring:
     activate:
       on-profile: "dev | demo"
 autoservplus:
+  # Bandeau qui dit au visiteur que le garage, les clients et les avis sont fictifs.
+  # Absent sous tout autre profil : faux par défaut.
+  vitrine:
+    mention-demonstration: true
   garage:
     nom-commercial: ${GARAGE_NOM_COMMERCIAL:Bielle Bleue}
     raison-sociale: ${GARAGE_RAISON_SOCIALE:Bielle Bleue}

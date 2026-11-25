@@ -1,0 +1,395 @@
+// Page d'accueil (maquette validée le 2026-11-25, couleurs et typographie de la charte).
+
+$fond-doux: tint-color($marine, 93%);
+$bordure-douce: tint-color($marine, 78%);
+
+.accueil-ouverture {
+  padding-block: 3rem;
+  background: $fond-doux;
+
+  @include media-breakpoint-up(lg) {
+    padding-block: 4.5rem;
+  }
+}
+
+.accueil-ouverture__titre {
+  max-width: 18ch;
+  margin-bottom: 1.25rem;
+  color: $marine;
+  font-size: clamp(2rem, 1.4rem + 2.4vw, 3rem);
+  font-weight: 700;
+  line-height: 1.12;
+  letter-spacing: -.02em;
+  text-wrap: balance;
+}
+
+.accueil-ouverture__accroche {
+  max-width: 52ch;
+  margin-bottom: 2rem;
+  color: $gray-700;
+  font-size: 1.125rem;
+  line-height: 1.6;
+}
+
+.accueil-ouverture__actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+}
+
+.carte-creneaux {
+  padding: 1.5rem;
+  background: $white;
+  border: 1px solid $bordure-douce;
+  border-radius: $border-radius;
+  box-shadow: 0 .5rem 1.5rem rgba($marine, .08);
+}
+
+.carte-creneaux__titre {
+  margin-bottom: .25rem;
+  font-size: 1.25rem;
+}
+
+.carte-creneaux__prestation {
+  margin-bottom: 1rem;
+  color: $gray-600;
+  font-size: .9375rem;
+}
+
+.carte-creneaux__jours {
+  margin: 0 0 .75rem;
+  padding: 0;
+  list-style: none;
+
+  > li {
+    padding-block: .75rem;
+    border-top: 1px solid $gray-200;
+  }
+}
+
+.carte-creneaux__jour {
+  display: block;
+  margin-bottom: .5rem;
+  color: $gray-900;
+  font-weight: 600;
+}
+
+// Heures montrées, pas des boutons : un fond teinté sans bordure d'action.
+.carte-creneaux__heures {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    padding: .25rem .75rem;
+    background: tint-color($success, 90%);
+    color: $success;
+    font-weight: 600;
+    border-radius: $border-radius-sm;
+  }
+}
+
+// Bandeau des engagements, sur le bleu marine.
+.accueil-garanties {
+  padding-block: 2rem;
+  background: $marine;
+  color: $white;
+}
+
+.accueil-garanties__liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: 1.5rem 2.5rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  strong {
+    display: block;
+    font-size: 1.25rem;
+    font-weight: 700;
+  }
+
+  span {
+    color: $pied-texte;
+    font-size: .9375rem;
+  }
+}
+
+.accueil-section {
+  padding-block: 3.5rem;
+
+  @include media-breakpoint-up(lg) {
+    padding-block: 4.5rem;
+  }
+}
+
+.accueil-section__entete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: .5rem 1.5rem;
+  margin-bottom: 1.75rem;
+
+  h2 {
+    margin: 0;
+    font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+    font-weight: 700;
+  }
+}
+
+.grille-tarifs,
+.grille-avis {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(17rem, 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tarif {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid $gray-200;
+  border-radius: $border-radius;
+  transition: border-color .2s ease-out, box-shadow .2s ease-out;
+
+  // Toute la carte mène à la fiche : le lien du nom couvre la carte.
+  &:hover {
+    border-color: $bordure-douce;
+    box-shadow: 0 .5rem 1.25rem rgba($marine, .08);
+  }
+}
+
+.tarif__image {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  background: $gray-100;
+}
+
+.tarif__corps {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  padding: 1.25rem;
+}
+
+.tarif__nom {
+  margin-bottom: .25rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+
+  a {
+    color: $marine;
+    text-decoration: none;
+
+    &::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+    }
+
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
+.tarif__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 .75rem;
+  margin-bottom: 1rem;
+  color: $gray-600;
+  font-size: .9375rem;
+
+  span + span::before {
+    content: "";
+    display: inline-block;
+    width: .25rem;
+    height: .25rem;
+    margin-right: .75rem;
+    vertical-align: middle;
+    background: $gray-400;
+    border-radius: 50%;
+  }
+}
+
+.tarif__prix {
+  margin: auto 0 0;
+  color: $gray-600;
+  font-size: .875rem;
+
+  strong {
+    margin-right: .25rem;
+    color: $gray-900;
+    font-size: 1.375rem;
+  }
+}
+
+.accueil-etapes {
+  padding-block: 3rem;
+  background: $fond-doux;
+}
+
+.accueil-etapes__liste {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr));
+  gap: 2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: etape;
+
+  li {
+    position: relative;
+    padding-left: 3.75rem;
+    counter-increment: etape;
+
+    &::before {
+      content: counter(etape);
+      position: absolute;
+      top: 0;
+      left: 0;
+      display: grid;
+      place-items: center;
+      width: 2.75rem;
+      height: 2.75rem;
+      background: $marine;
+      color: $white;
+      font-weight: 700;
+      border-radius: $border-radius;
+    }
+  }
+
+  h3 {
+    margin-bottom: .25rem;
+    font-size: 1.125rem;
+  }
+
+  p {
+    margin: 0;
+    color: $gray-600;
+  }
+}
+
+.accueil-avis__regle {
+  max-width: 48ch;
+  margin: 0;
+  color: $gray-600;
+}
+
+.avis-client {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  padding: 1.5rem;
+  border: 1px solid $gray-200;
+  border-radius: $border-radius;
+}
+
+.avis-client__note {
+  margin: 0;
+}
+
+.etoiles {
+  display: inline-flex;
+  gap: .125rem;
+  color: $marine;
+
+  .icone {
+    width: 1.125rem;
+    height: 1.125rem;
+  }
+}
+
+.avis-client__texte {
+  margin: 0;
+
+  p {
+    margin: 0;
+    color: $gray-800;
+  }
+}
+
+.avis-client__auteur {
+  margin: auto 0 0;
+  color: $gray-600;
+  font-size: .9375rem;
+
+  strong {
+    margin-right: .5rem;
+    color: $gray-900;
+  }
+}
+
+.accueil-contact {
+  padding-block: 3.5rem;
+  background: $fond-doux;
+  border-top: 1px solid $bordure-douce;
+
+  h2 {
+    font-size: clamp(1.5rem, 1.2rem + 1.2vw, 2rem);
+    font-weight: 700;
+  }
+}
+
+.accueil-contact__adresse {
+  margin-bottom: 1.25rem;
+  font-size: 1.0625rem;
+}
+
+// Sur le fond teinté, le bleu secondaire des liens tombe sous 4,5:1 : bleu marine.
+.accueil-contact__liens {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem 1.5rem;
+
+  a {
+    color: $marine;
+  }
+}
+
+.carte-horaires {
+  padding: 1.5rem;
+  background: $white;
+  border: 1px solid $bordure-douce;
+  border-radius: $border-radius;
+
+  h3 {
+    font-size: 1.25rem;
+  }
+}
+
+.carte-horaires__jours {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: .5rem 1.5rem;
+  margin: 0;
+
+  dt {
+    font-weight: 400;
+  }
+
+  dd {
+    margin: 0;
+    color: $gray-900;
+    font-weight: 600;
+    text-align: right;
+  }
+}
+
+// Le pied n'a pas de marge haute quand la dernière section est déjà teintée.
+main:has(> .accueil-contact:last-child) + .pied-site {
+  margin-top: 0;
+}

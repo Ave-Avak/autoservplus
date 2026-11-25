@@ -94,14 +94,14 @@ class CatalogueMultilingueIT extends SocleIntegration {
         assertThat(lienFrancais.text()).isEqualTo("Alpha joint zqx");
         assertThat(lienFrancais.attr("lang")).isEqualTo("fr");
 
-        assertThat(page.select(".carte-description").eachText())
+        assertThat(page.select(".carte-article__description").eachText())
                 .containsExactly("Patroon voor dieselmotor", "Joint de bouchon");
-        assertThat(page.select(".carte-description").get(1).attr("lang")).isEqualTo("fr");
+        assertThat(page.select(".carte-article__description").get(1).attr("lang")).isEqualTo("fr");
         assertThat(page.html().indexOf("Aanbod oliefilter zqx"))
                 .as("« Aanbod » avant « Alpha » : tri sur le libellé affiché")
                 .isLessThan(page.html().indexOf("Alpha joint zqx"));
 
-        Element filtre = page.selectFirst("a.filtre[href*=ZQX_ML]");
+        Element filtre = page.selectFirst(".filtres-catalogue a[href*=ZQX_ML]");
         assertThat(filtre.text()).isEqualTo("Filtratie zqx");
         assertThat(filtre.hasAttr("lang")).isFalse();
     }
@@ -111,10 +111,10 @@ class CatalogueMultilingueIT extends SocleIntegration {
     void listeFrancaise() throws Exception {
         Document page = ouvrir("/pieces?categorie=ZQX_ML", Locale.FRENCH);
 
-        assertThat(page.select(".carte a[href*=/pieces/]").eachText())
+        assertThat(page.select(".carte-article a[href*=/pieces/]").eachText())
                 .containsExactly("Alpha joint zqx", "Zeta filtre zqx");
-        assertThat(page.select(".carte [lang]")).isEmpty();
-        assertThat(page.selectFirst("a.filtre[href*=ZQX_ML]").text()).isEqualTo("Filtration zqx");
+        assertThat(page.select(".carte-article [lang]")).isEmpty();
+        assertThat(page.selectFirst(".filtres-catalogue a[href*=ZQX_ML]").text()).isEqualTo("Filtration zqx");
     }
 
     @Test

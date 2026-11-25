@@ -45,6 +45,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
@@ -418,8 +419,13 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
             page.navigate(role == Role.ADMINISTRATEUR ? "/admin" : "/services");
             Locator bouton = page.locator(".bouton-menu");
             Locator panneau = page.locator("#" + bouton.getAttribute("aria-controls"));
-            assertThat(bouton.isVisible()).as("le script révèle le bouton").isTrue();
-            assertThat(bouton.getAttribute("aria-expanded")).isEqualTo("false");
+            // Gabarit du site : tiroir de Bootstrap, une fenêtre modale qui piège le focus.
+            // Ancien en-tête (écrans pas encore migrés) : panneau à déplier, aria-expanded.
+            boolean tiroir = panneau.getAttribute("class").contains("offcanvas");
+            assertThat(bouton.isVisible()).as("le bouton est affiché").isTrue();
+            if (!tiroir) {
+                assertThat(bouton.getAttribute("aria-expanded")).isEqualTo("false");
+            }
             assertThat(panneau.isVisible()).as("panneau replié à l'ouverture").isFalse();
 
             for (int i = 0; i < 20 && !estActif(bouton); i++) {
@@ -427,15 +433,113 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
             }
             attendreLeFocus(bouton, "le bouton s'atteint à la tabulation");
             page.keyboard().press("Enter");
-            assertThat(bouton.getAttribute("aria-expanded")).isEqualTo("true");
-            assertThat(panneau.isVisible()).isTrue();
+            panneau.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.VISIBLE));
+            if (tiroir) {
+                // Bootstrap n'active le piège du focus qu'à la fin de la transition d'ouverture.
+                page.locator("#" + bouton.getAttribute("aria-controls") + ".show:not(.showing)").waitFor();
+                assertThat(panneau.getAttribute("role")).isEqualTo("dialog");
+                assertThat(panneau.getAttribute("aria-modal")).isEqualTo("true");
+            } else {
+                assertThat(bouton.getAttribute("aria-expanded")).isEqualTo("true");
+            }
 
             page.keyboard().press("Tab");
             attendreLeFocus(panneau.locator(":focus"), "la tabulation suivante entre dans le panneau");
             page.keyboard().press("Escape");
-            assertThat(bouton.getAttribute("aria-expanded")).isEqualTo("false");
-            assertThat(panneau.isVisible()).isFalse();
+            panneau.waitFor(new Locator.WaitForOptions().setState(WaitForSelectorState.HIDDEN));
+            if (!tiroir) {
+                assertThat(bouton.getAttribute("aria-expanded")).isEqualTo("false");
+            }
             attendreLeFocus(bouton, "Échap rend le focus au bouton");
+        });
+    }
+
+    /**
+     * Emplacements du gabarit du site (consigne de I3), mesurés sur la page rendue. À
+     * 1280 px : enseigne à gauche de la navigation principale, zone utilitaire centrée dans
+     * le tiers droit, ses éléments dans l'ordre langue, recherche, compte, panier. À 320 px :
+     * chaque entrée du menu s'atteint dans le tiroir, sans sortir de la fenêtre.
+     */
+    @ParameterizedTest(name = "{0} sur {1}")
+    @MethodSource("rolesEtEcransTemoins")
+    @DisplayName("emplacements du gabarit du site à 1280 et 320 px")
+    void emplacementsDuGabarit(Role role, String ecran) {
+        navigateur.parcourir("emplacements-" + role + "-large", LARGE, session(role), contexte -> {
+            Page page = contexte.newPage();
+            page.navigate(ecran);
+            double enseigne = page.locator(".enseigne").boundingBox().x;
+            double navigation = page.locator(".navigation-principale").boundingBox().x;
+            assertThat(enseigne).as("enseigne à gauche de la navigation").isLessThan(navigation);
+
+            var zone = page.locator(".zone-utilitaire").boundingBox();
+            assertThat(zone.x + zone.width / 2).as("zone utilitaire dans le tiers droit").isGreaterThan(LARGE * 2.0 / 3);
+
+            List<String> ordre = new ArrayList<>(List.of(".choix-langue", ".zone-utilitaire a[href='/recherche']"));
+            ordre.add(role == Role.ANONYME ? ".zone-utilitaire a[href='/connexion']" : ".zone-utilitaire .dropdown-toggle");
+            if (role == Role.ANONYME) {
+                ordre.add(".zone-utilitaire a[href='/inscription']");
+            }
+            if (role == Role.MEMBRE) {
+                ordre.add(".lien-panier");
+            }
+            double precedent = -1;
+            for (String selecteur : ordre) {
+                double x = page.locator(selecteur).boundingBox().x;
+                assertThat(x).as(selecteur + " après l'élément précédent").isGreaterThan(precedent);
+                precedent = x;
+            }
+        });
+        navigateur.parcourir("emplacements-" + role + "-etroit", ETROIT, session(role), contexte -> {
+            Page page = contexte.newPage();
+            page.navigate(ecran);
+            page.locator(".bouton-menu").click();
+            Locator panneau = page.locator("#menu-principal");
+            // Mesures prises tiroir ouvert, transition terminée : pendant le glissement, les
+            // entrées sont encore à droite de la fenêtre.
+            page.locator("#menu-principal.show:not(.showing)").waitFor();
+            Locator liens = panneau.locator(".navigation-principale a, .zone-utilitaire a:not(.dropdown-item), "
+                    + ".zone-utilitaire button:not(.dropdown-item)");
+            assertThat(liens.count()).isGreaterThan(3);
+            dansLaFenetre(liens);
+            // Les entrées de « Mon compte » sont dans une liste repliée : ouverte, elles
+            // s'affichent dans le tiroir.
+            Locator compte = panneau.locator(".dropdown-toggle");
+            if (compte.count() > 0) {
+                compte.click();
+                dansLaFenetre(panneau.locator(".dropdown-item"));
+            }
+        });
+    }
+
+    private static void dansLaFenetre(Locator entrees) {
+        for (int i = 0; i < entrees.count(); i++) {
+            var cadre = entrees.nth(i).boundingBox();
+            assertThat(cadre).as("entrée " + entrees.nth(i).textContent().strip() + " affichée").isNotNull();
+            assertThat(cadre.x + cadre.width).as("entrée dans la fenêtre").isLessThanOrEqualTo(ETROIT);
+        }
+    }
+
+    static Stream<Arguments> rolesEtEcransTemoins() {
+        return Stream.of(Role.ANONYME, Role.MEMBRE)
+                .flatMap(role -> Stream.of("/", "/services").map(ecran -> Arguments.of(role, ecran)));
+    }
+
+    /**
+     * Amélioration progressive : sans script, le tiroir ne s'ouvrirait jamais. La feuille
+     * déplie alors le menu à toutes les largeurs (media scripting: none) : chaque entrée est
+     * affichée, rien ne déborde.
+     */
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"/", "/services"})
+    @DisplayName("sans script, à 320 px, le menu est déplié et la page ne déborde pas")
+    void sansScript(String ecran) {
+        navigateur.parcourir("sans-script", ETROIT, null, false, contexte -> {
+            Page page = contexte.newPage();
+            page.navigate(ecran);
+            assertThat(page.locator(".bouton-menu").isVisible()).as("bouton sans effet, caché").isFalse();
+            assertThat(page.locator(".navigation-principale a[href='/catalogue']").isVisible()).isTrue();
+            assertThat(page.locator(".zone-utilitaire a[href='/connexion']").isVisible()).isTrue();
+            assertThat(debordement(page)).isNull();
         });
     }
 

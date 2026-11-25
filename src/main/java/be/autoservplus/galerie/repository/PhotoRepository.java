@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -40,6 +41,41 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
             ORDER BY p.ordre ASC, p.id ASC
             """)
     List<Photo> deLaCategorieDeLaPiece(@Param("reference") UUID reference);
+
+    /**
+     * Photos propres des prestations d'une liste, avec la référence de leur prestation, pour
+     * la vignette de chaque carte en une requête.
+     */
+    @Query("""
+            SELECT s.reference, p FROM Photo p JOIN p.prestation s
+            WHERE s.reference IN :references
+            ORDER BY p.ordre ASC, p.id ASC
+            """)
+    List<Object[]> desPrestations(@Param("references") Collection<UUID> references);
+
+    /** Visuels de catégorie des prestations d'une liste, avec la référence de la prestation. */
+    @Query("""
+            SELECT s.reference, p FROM Prestation s, Photo p
+            WHERE p.categorie = s.categorie AND s.reference IN :references
+            ORDER BY p.ordre ASC, p.id ASC
+            """)
+    List<Object[]> visuelsDesCategoriesDePrestations(@Param("references") Collection<UUID> references);
+
+    /** Photos propres des pièces d'une liste, avec la référence de leur pièce. */
+    @Query("""
+            SELECT pc.reference, p FROM Photo p JOIN p.piece pc
+            WHERE pc.reference IN :references
+            ORDER BY p.ordre ASC, p.id ASC
+            """)
+    List<Object[]> desPieces(@Param("references") Collection<UUID> references);
+
+    /** Visuels de catégorie des pièces d'une liste, avec la référence de la pièce. */
+    @Query("""
+            SELECT pc.reference, p FROM Piece pc, Photo p
+            WHERE p.categorie = pc.categorie AND pc.reference IN :references
+            ORDER BY p.ordre ASC, p.id ASC
+            """)
+    List<Object[]> visuelsDesCategoriesDePieces(@Param("references") Collection<UUID> references);
 
     /**
      * Photo d'une prestation, d'une pièce ou d'une catégorie, seule servie à l'adresse publique. Une photo

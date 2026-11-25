@@ -61,9 +61,19 @@ public final class Navigateur implements AutoCloseable {
      *                     visiteur sans session
      */
     public void parcourir(String nom, int largeur, String etatSession, Consumer<BrowserContext> parcours) {
+        parcourir(nom, largeur, etatSession, true, parcours);
+    }
+
+    /**
+     * Le même parcours, script désactivé ou non : l'amélioration progressive se vérifie en
+     * ouvrant la page sans script, comme le fait un navigateur qui l'a coupé.
+     */
+    public void parcourir(String nom, int largeur, String etatSession, boolean script,
+                          Consumer<BrowserContext> parcours) {
         Browser.NewContextOptions options = new Browser.NewContextOptions()
                 .setBaseURL(racine)
                 .setLocale("fr-BE")
+                .setJavaScriptEnabled(script)
                 .setViewportSize(largeur, HAUTEUR);
         if (etatSession != null) {
             options.setStorageState(etatSession);

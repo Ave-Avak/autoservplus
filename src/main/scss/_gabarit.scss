@@ -1,0 +1,440 @@
+// Gabarit du site public et de l'espace membre : bandeaux, en-tête, pied.
+// Mobile d'abord : les requêtes n'emploient que media-breakpoint-up. Tailles en rem,
+// pixels pour les seules bordures.
+
+$pied-texte: #D5DDEB; // 8,6:1 sur le bleu marine
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba($bleu-secondaire, .22);
+  color: $gray-900;
+}
+
+a {
+  text-underline-offset: .18em;
+}
+
+// Lien d'évitement : hors de l'écran jusqu'à ce qu'il reçoive le focus, puis posé en
+// haut à gauche, au-dessus de tout.
+.lien-evitement {
+  position: absolute;
+  top: -10rem;
+  left: 1rem;
+  z-index: $zindex-offcanvas + 10;
+  padding: .75rem 1rem;
+  background: $white;
+  color: $marine;
+  font-weight: 600;
+  border: 2px solid $marine;
+  border-radius: $border-radius;
+
+  &:focus {
+    top: 1rem;
+  }
+}
+
+// Mention des profils de démonstration, ambre de la charte foncé pour le texte (6,4:1).
+.mention-demonstration {
+  margin: 0;
+  padding: .375rem 1rem;
+  background: #FEF3C7;
+  color: #92400E;
+  font-size: .875rem;
+  text-align: center;
+}
+
+// Bandeau du téléphone et des horaires, au-dessus de l'en-tête.
+.bandeau-garage {
+  background: $marine;
+  color: $white;
+  font-size: .875rem;
+
+  .container {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: .25rem 1.5rem;
+    padding-block: .5rem;
+  }
+
+  a {
+    color: $white;
+    text-decoration-color: rgba($white, .55);
+
+    &:hover {
+      text-decoration-color: $white;
+    }
+  }
+}
+
+.bandeau-garage__telephone {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.horaires-resume {
+  gap: .25rem 1.25rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: $pied-texte;
+}
+
+.horaires-resume li {
+  white-space: nowrap;
+}
+
+.horaires-resume__jours {
+  margin-right: .375rem;
+  color: $white;
+  font-weight: 600;
+}
+
+.icone {
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+}
+
+// En-tête.
+.entete-site {
+  background: $white;
+  border-bottom: 1px solid $gray-200;
+
+  .navbar {
+    padding-block: .75rem;
+  }
+
+  // Une seule ligne à 320 px, panier du membre compris : l'enseigne se coupe plutôt que
+  // de renvoyer le bouton du menu à la ligne.
+  .navbar > .container {
+    flex-wrap: nowrap;
+    gap: .5rem;
+  }
+
+  .nav-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    color: $gray-700;
+    font-weight: 600;
+
+    &:hover {
+      color: $marine;
+    }
+
+    // Page ou rubrique en cours : couleur et soulignement, jamais la couleur seule
+    // (WCAG 1.4.1).
+    &[aria-current],
+    &.active {
+      color: $marine;
+      text-decoration: underline;
+      text-decoration-thickness: .1875rem;
+      text-underline-offset: .5rem;
+    }
+  }
+}
+
+// L'enseigne du garage en texte : Bielle Bleue n'a pas de logo (Q-I-2).
+.enseigne {
+  min-width: 0;
+  margin-right: auto;
+  overflow-wrap: anywhere;
+  color: $marine;
+  font-size: 1.25rem;
+  line-height: 1.2;
+  font-weight: 800;
+  letter-spacing: -.01em;
+  text-decoration: none;
+
+  &:hover {
+    color: $marine;
+  }
+}
+
+.lien-icone {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  color: $gray-700;
+  text-decoration: none;
+
+  &:hover {
+    color: $marine;
+  }
+}
+
+.lien-panier {
+  flex: none;
+  justify-content: center;
+  border-radius: $border-radius;
+
+  &[aria-current] {
+    color: $marine;
+    background: $gray-100;
+  }
+}
+
+// Nombre d'éléments non lus ou d'articles, posé sur l'icône. Le texte qui le dit au
+// lecteur d'écran est dans le lien : la pastille est aria-hidden.
+.pastille-compteur {
+  min-width: 1.25rem;
+  padding: 0 .3125rem;
+  border-radius: 50rem;
+  background: $marine;
+  color: $white;
+  font-size: .75rem;
+  font-weight: 600;
+  line-height: 1.25rem;
+  text-align: center;
+}
+
+.lien-panier .pastille-compteur {
+  position: absolute;
+  top: .125rem;
+  right: 0;
+}
+
+.bouton-menu {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+  min-height: 2.75rem;
+  color: $marine;
+  font-weight: 600;
+  border-color: $gray-300;
+}
+
+.menu-site {
+  .offcanvas-title {
+    margin: 0;
+    color: $marine;
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+
+  .offcanvas-header {
+    border-bottom: 1px solid $gray-200;
+  }
+
+  .offcanvas-body {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+}
+
+.zone-utilitaire {
+  gap: .25rem;
+
+  .btn {
+    align-self: flex-start;
+  }
+}
+
+.choix-langue {
+  display: flex;
+  gap: .25rem;
+  margin-left: -.5rem;
+
+  .nav-link {
+    padding-inline: .5rem;
+    font-size: .875rem;
+  }
+}
+
+// Grand écran : menu déplié sur une ligne, zone utilitaire poussée à droite, libellés
+// des icônes réservés au lecteur d'écran.
+@include media-breakpoint-up(sm) {
+  .enseigne {
+    font-size: 1.375rem;
+  }
+}
+
+@include media-breakpoint-up(lg) {
+  .enseigne {
+    margin-right: 1.5rem;
+  }
+
+  .menu-site {
+    flex-grow: 1;
+
+    .offcanvas-body {
+      flex-direction: row;
+      align-items: center;
+      gap: 1.5rem;
+    }
+  }
+
+  .navigation-principale {
+    gap: .5rem;
+  }
+
+  .zone-utilitaire {
+    align-items: center;
+    margin-left: auto;
+
+    .btn {
+      align-self: center;
+    }
+  }
+
+  .choix-langue {
+    margin-left: 0;
+    padding-right: .5rem;
+    border-right: 1px solid $gray-200;
+  }
+
+  .libelle-icone {
+    position: absolute;
+    width: .0625rem;
+    height: .0625rem;
+    padding: 0;
+    margin: -.0625rem;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .zone-utilitaire .lien-icone .pastille-compteur {
+    position: absolute;
+    top: .125rem;
+    right: -.125rem;
+  }
+}
+
+// Sans script, le tiroir ne s'ouvrirait jamais : le menu est déplié à toutes les
+// largeurs et le bouton n'est pas affiché.
+@media (scripting: none) {
+  .entete-site .bouton-menu {
+    display: none;
+  }
+
+  .entete-site .offcanvas-lg {
+    position: static;
+    z-index: auto;
+    flex-basis: 100%;
+    width: auto;
+    visibility: visible;
+    background: transparent;
+    border: 0;
+    transform: none;
+  }
+
+  .entete-site .offcanvas-header {
+    display: none;
+  }
+}
+
+// Fil d'Ariane, sous l'en-tête.
+.fil-ariane-page {
+  padding-block: .75rem;
+  font-size: .875rem;
+
+  ol {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  li + li::before {
+    content: "/";
+    margin-right: .25rem;
+    color: $gray-500;
+  }
+
+  [aria-current] {
+    color: $gray-700;
+  }
+}
+
+// Pied.
+.pied-site {
+  margin-top: 4rem;
+  padding-block: 3rem 1.5rem;
+  background: $marine;
+  color: $pied-texte;
+  font-size: .9375rem;
+
+  a {
+    color: $white;
+    text-decoration-color: rgba($white, .45);
+
+    &:hover {
+      text-decoration-color: $white;
+    }
+  }
+}
+
+.pied-site__titre {
+  margin-bottom: .75rem;
+  color: $white;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.pied-site__adresse {
+  margin: 0;
+  line-height: 1.75;
+}
+
+.pied-site__liste {
+  margin: 0 0 1rem;
+  padding: 0;
+  list-style: none;
+  line-height: 1.9;
+}
+
+.pied-site__bas {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem 2rem;
+  margin-top: 2.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid rgba($white, .2);
+
+  .selecteur-langue ul {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem 1rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .selecteur-langue .est-active {
+    font-weight: 700;
+    text-decoration: underline;
+  }
+}
+
+.pied-site__propulse {
+  display: flex;
+  align-items: center;
+  gap: .75rem;
+  margin: 0;
+  font-size: .875rem;
+
+  img {
+    width: 10rem;
+    height: auto;
+  }
+}

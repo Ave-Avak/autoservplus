@@ -1,67 +1,221 @@
 <!DOCTYPE html>
-<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{accueil.titre} + ' | AutoServ+'">Votre garage en quelques clics | AutoServ+</title>
+    <title th:text="#{accueil.titre} + ' | ' + ${garageSite.enseigne()}">Votre entretien au prix affiché | Bielle Bleue</title>
     <meta name="description" th:attr="content=#{accueil.meta.description}"
           content="Réservez votre entretien automobile en ligne, suivez votre intervention et recevez votre facture. Garage indépendant en Belgique.">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
+    <!--/* Le garage pour les moteurs de recherche (F40), sérialisé côté serveur. */-->
+    <script type="application/ld+json" th:utext="${donneesGarage}"></script>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
+<!--/*
+  Accueil (maquette validée le 2026-11-25 : structure de la variante, couleurs et
+  typographie de la charte). Un seul bouton orange, l'action principale : la prise de
+  rendez-vous. L'appel au garage est un bouton secondaire.
+*/-->
+<main id="contenu" tabindex="-1">
 
-<main id="contenu">
-    <h1 th:text="#{accueil.titre}">Votre garage en quelques clics</h1>
-    <p th:text="#{accueil.accroche}">
-        Réservez votre entretien en ligne, suivez l'avancement de l'intervention
-        et recevez votre facture sans vous déplacer.
-    </p>
+    <section class="accueil-ouverture">
+        <div class="container">
+            <div class="row g-4 g-lg-5 align-items-center">
+                <div class="col-12" th:classappend="${creneaux != null} ? 'col-lg-7'">
+                    <h1 class="accueil-ouverture__titre" th:text="#{accueil.titre}">Votre entretien au prix affiché, réservé en ligne</h1>
+                    <p class="accueil-ouverture__accroche" th:text="#{accueil.accroche}">
+                        Choisissez un créneau réellement libre à l'atelier.</p>
+                    <div class="accueil-ouverture__actions">
+                        <a class="btn btn-action btn-lg" th:href="@{/mes-rendez-vous/nouveau}"
+                           th:text="#{accueil.action.reserver}">Prendre rendez-vous</a>
+                        <a class="btn btn-outline-primary btn-lg" th:href="'tel:' + ${#strings.replace(garageSite.telephone(), ' ', '')}">
+                            <svg th:replace="~{fragments/icones :: telephone}"></svg>
+                            <span th:text="#{accueil.action.appeler}">Appeler le garage</span>
+                        </a>
+                    </div>
+                </div>
 
-    <p class="actions-page">
-        <!--/*
-          Un seul bouton orange par écran : la charte réserve l'orange à l'appel à
-          l'action principal, et deux boutons de même poids ne hiérarchisent plus rien.
-          Le second chemin est donc un lien, pas un bouton.
-        */-->
-        <a class="btn-cta" sec:authorize="isAuthenticated()"
-           th:href="@{/mes-rendez-vous/nouveau}" th:text="#{accueil.action.reserver}">Prendre rendez-vous</a>
-        <a class="btn-cta" sec:authorize="!isAuthenticated()"
-           th:href="@{/inscription}" th:text="#{accueil.action.compte}">Créer mon compte</a>
-        <a th:href="@{/services}" th:text="#{accueil.action.catalogue}">Voir les prestations</a>
-    </p>
-
-    <section>
-        <h2 th:text="#{accueil.atouts.titre}">Ce que vous pouvez faire ici</h2>
-        <ul class="grille-articles">
-            <li class="carte">
-                <h3 th:text="#{accueil.atout.rdv.titre}">Réserver un créneau</h3>
-                <p th:text="#{accueil.atout.rdv.corps}">Choisissez votre prestation et l'heure qui vous arrange.</p>
-            </li>
-            <li class="carte">
-                <h3 th:text="#{accueil.atout.suivi.titre}">Suivre votre véhicule</h3>
-                <p th:text="#{accueil.atout.suivi.corps}">L'avancement des travaux est visible depuis votre espace membre.</p>
-            </li>
-            <li class="carte">
-                <h3 th:text="#{accueil.atout.facture.titre}">Retrouver vos documents</h3>
-                <p th:text="#{accueil.atout.facture.corps}">Factures et historique restent accessibles depuis votre compte.</p>
-            </li>
-        </ul>
+                <!--/* Créneaux calculés comme au formulaire de réservation : ils se lisent ici
+                     et se réservent là, après connexion. Les heures ne sont donc pas des
+                     liens, qui promettraient une heure que le formulaire ne retient pas. */-->
+                <div class="col-12 col-lg-5" th:if="${creneaux != null}">
+                    <section class="carte-creneaux" aria-labelledby="titre-creneaux">
+                        <h2 id="titre-creneaux" class="carte-creneaux__titre" th:text="#{accueil.creneaux.titre}">Prochains créneaux libres</h2>
+                        <p class="carte-creneaux__prestation"
+                           th:text="#{accueil.creneaux.prestation(${creneaux.prestation().libelle()}, ${creneaux.prestation().dureeLisible()})}">
+                            Vidange, 30 min</p>
+                        <ul class="carte-creneaux__jours">
+                            <li th:each="jour : ${creneaux.jours()}">
+                                <span class="carte-creneaux__jour" th:text="${#strings.capitalize(#temporals.format(jour.date(), 'EEEE d MMMM'))}">Jeudi 26 novembre</span>
+                                <ul class="carte-creneaux__heures">
+                                    <li class="chiffres" th:each="heure : ${jour.heures()}" th:text="${#temporals.format(heure, 'HH:mm')}">08:30</li>
+                                </ul>
+                            </li>
+                        </ul>
+                        <a class="lien-suite" th:href="@{/mes-rendez-vous/nouveau(prestation=${creneaux.prestation().reference()})}">
+                            <span th:text="#{accueil.creneaux.tous}">Choisir mon créneau</span>
+                            <svg th:replace="~{fragments/icones :: chevron}"></svg>
+                        </a>
+                    </section>
+                </div>
+            </div>
+        </div>
     </section>
 
-    <section>
-        <h2 th:text="#{accueil.venir.titre}">Nous rendre visite</h2>
-        <p th:text="#{accueil.venir.corps}">
-            Horaires, adresse et coordonnées du garage sont repris sur la page de contact.
-        </p>
-        <p><a th:href="@{/contact}" th:text="#{accueil.venir.lien}">Horaires et contact</a></p>
+    <section class="accueil-garanties fond-marine" th:attr="aria-label=#{accueil.garanties.aria}">
+        <div class="container">
+            <ul class="accueil-garanties__liste">
+                <li th:if="${syntheseAvis.aDesAvis()}">
+                    <strong th:text="#{accueil.avis.moyenne(${syntheseAvis.moyenneAffichee()})}">4,3 sur 5</strong>
+                    <span th:text="#{accueil.garantie.note.texte(${syntheseAvis.nombre()})}">25 avis de clients, après intervention</span>
+                </li>
+                <li>
+                    <strong th:text="#{accueil.garantie.prix.titre}">Prix TVAC</strong>
+                    <span th:text="#{accueil.garantie.prix.texte}">Affichés avant toute réservation</span>
+                </li>
+                <li>
+                    <strong th:text="#{accueil.garantie.accord.titre}">Votre accord d'abord</strong>
+                    <span th:text="#{accueil.garantie.accord.texte}">Aucun travail ajouté sans votre réponse</span>
+                </li>
+                <li>
+                    <strong th:text="#{accueil.garantie.facture.titre}">Facture en ligne</strong>
+                    <span th:text="#{accueil.garantie.facture.texte}">Dans votre espace dès la fin des travaux</span>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="accueil-section" aria-labelledby="titre-tarifs" th:unless="${#lists.isEmpty(prestations)}">
+        <div class="container">
+            <div class="accueil-section__entete">
+                <h2 id="titre-tarifs" th:text="#{accueil.tarifs.titre}">Nos tarifs, sans surprise</h2>
+                <a class="lien-suite" th:href="@{/services}">
+                    <span th:text="#{accueil.tarifs.tous}">Toutes les prestations</span>
+                    <svg th:replace="~{fragments/icones :: chevron}"></svg>
+                </a>
+            </div>
+            <ul class="grille-tarifs">
+                <li class="tarif" th:each="prestation : ${prestations}"
+                    th:with="photo=${vignettes.get(prestation.reference())}">
+                    <!--/* Vignette décorative : le nom de la prestation suit, et le texte
+                         alternatif de la photo se lit sur la fiche. Sous le premier écran,
+                         chargée au défilement. */-->
+                    <img th:if="${photo != null}" class="tarif__image" alt="" loading="lazy" decoding="async"
+                         th:src="${photo.vignette()} ? @{/images/galerie/{p}/vignette(p=${photo.reference()})} : @{/images/galerie/{p}(p=${photo.reference()})}"
+                         th:width="${photo.dimensionsConnues()} ? ${photo.largeur()} : null"
+                         th:height="${photo.dimensionsConnues()} ? ${photo.hauteur()} : null">
+                    <div class="tarif__corps">
+                    <h3 class="tarif__nom">
+                        <a th:href="@{${prestation.chemin()}}" th:text="${prestation.libelle()}"
+                           th:lang="${prestation.langueLibelle()}">Vidange et filtre à huile</a>
+                    </h3>
+                    <p class="tarif__meta">
+                        <span th:if="${prestation.dureeMinutes() != null and !prestation.aLHeure()}"
+                              th:text="${prestation.dureeLisible()}">30 min</span>
+                        <span th:text="${prestation.categorie()}" th:lang="${prestation.langueCategorie()}">Entretien</span>
+                    </p>
+                    <p class="tarif__prix">
+                        <strong class="chiffres" th:text="${#numbers.formatDecimal(prestation.prixTvac(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">83,49 €</strong>
+                        <span th:text="${prestation.aLHeure()} ? #{accueil.tarifs.tvac-heure} : #{accueil.tarifs.tvac}">TVAC</span>
+                    </p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="accueil-etapes" aria-labelledby="titre-etapes">
+        <div class="container">
+            <h2 id="titre-etapes" class="visually-hidden" th:text="#{accueil.etapes.titre}">Comment ça se passe</h2>
+            <ol class="accueil-etapes__liste">
+                <li>
+                    <h3 th:text="#{accueil.etape.reserver.titre}">Vous réservez</h3>
+                    <p th:text="#{accueil.etape.reserver.texte}">Prestation, véhicule et créneau libre, en deux minutes.</p>
+                </li>
+                <li>
+                    <h3 th:text="#{accueil.etape.suivre.titre}">Vous suivez</h3>
+                    <p th:text="#{accueil.etape.suivre.texte}">Avancement des travaux visible dans votre espace.</p>
+                </li>
+                <li>
+                    <h3 th:text="#{accueil.etape.recuperer.titre}">Vous récupérez</h3>
+                    <p th:text="#{accueil.etape.recuperer.texte}">Courriel de fin de travaux, facture dans votre espace.</p>
+                </li>
+            </ol>
+        </div>
+    </section>
+
+    <section class="accueil-section" aria-labelledby="titre-avis">
+        <div class="container">
+            <div class="accueil-section__entete">
+                <h2 id="titre-avis" th:text="${syntheseAvis.aDesAvis()}
+                        ? #{accueil.avis.moyenne(${syntheseAvis.moyenneAffichee()})} : #{accueil.avis.titre}">4,3 sur 5</h2>
+                <p class="accueil-avis__regle">
+                    <span th:if="${syntheseAvis.aDesAvis()}" th:text="#{accueil.avis.nombre(${syntheseAvis.nombre()})}">25 avis publiés.</span>
+                    <span th:text="#{accueil.avis.regle}">Seuls les clients dont l'intervention est terminée peuvent publier un avis.</span>
+                </p>
+            </div>
+            <p th:if="${#lists.isEmpty(derniersAvis)}" th:text="#{accueil.avis.aucun}">Aucun avis commenté pour l'instant.</p>
+            <ul class="grille-avis" th:unless="${#lists.isEmpty(derniersAvis)}">
+                <li class="avis-client" th:each="a : ${derniersAvis}">
+                    <p class="avis-client__note">
+                        <span class="etoiles" aria-hidden="true">
+                            <th:block th:each="rang : ${#numbers.sequence(1, 5)}">
+                                <svg th:replace="${rang <= a.note()} ? ~{fragments/icones :: etoile-pleine} : ~{fragments/icones :: etoile}"></svg>
+                            </th:block>
+                        </span>
+                        <span class="visually-hidden" th:text="#{avis.note(${a.note()})}">5 sur 5</span>
+                    </p>
+                    <blockquote class="avis-client__texte">
+                        <p th:text="${a.commentaire()}">Créneau trouvé en deux minutes, voiture prête à l'heure.</p>
+                    </blockquote>
+                    <p class="avis-client__auteur">
+                        <strong th:text="${a.prenomAuteur()}">Sophie</strong>
+                        <span th:text="${#temporals.format(a.date(), 'MMMM yyyy')}">octobre 2026</span>
+                    </p>
+                </li>
+            </ul>
+        </div>
+    </section>
+
+    <section class="accueil-contact" aria-labelledby="titre-contact">
+        <div class="container">
+            <div class="row g-4">
+                <div class="col-12 col-lg-6">
+                    <h2 id="titre-contact" th:text="#{accueil.venir.titre}">Nous rendre visite</h2>
+                    <address class="accueil-contact__adresse">
+                        <span th:text="${garageSite.enseigne()}">Bielle Bleue</span><br>
+                        <span th:text="${garageSite.adresseLisible()}">Rue de l'Atelier 12, 1000 Bruxelles</span>
+                    </address>
+                    <p>
+                        <a class="btn btn-primary btn-lg" th:href="'tel:' + ${#strings.replace(garageSite.telephone(), ' ', '')}">
+                            <svg th:replace="~{fragments/icones :: telephone}"></svg>
+                            <span class="chiffres" th:text="${garageSite.telephone()}">+32 2 000 00 00</span>
+                        </a>
+                    </p>
+                    <p class="accueil-contact__liens">
+                        <a th:href="'mailto:' + ${garageSite.courriel()}" th:text="${garageSite.courriel()}">atelier@bielle-bleue.test</a>
+                        <a th:href="@{/contact}" th:text="#{accueil.venir.lien}">Plan et itinéraire</a>
+                    </p>
+                </div>
+                <div class="col-12 col-lg-6">
+                    <!--/* Pas une région : le pied en porte déjà une nommée « Horaires ». */-->
+                    <div class="carte-horaires">
+                        <h3 th:text="#{site.horaires.titre}">Horaires</h3>
+                        <dl class="carte-horaires__jours">
+                            <th:block th:each="jour : ${horaires}">
+                                <dt th:text="#{${jour.cleJour()}}">Lundi</dt>
+                                <dd class="chiffres" th:text="${jour.ferme()} ? #{vitrine.horaires.ferme} : ${#strings.listJoin(jour.plages(), ', ')}">08:00 - 12:00, 13:00 - 18:00</dd>
+                            </th:block>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
     </section>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

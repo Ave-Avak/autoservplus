@@ -3,6 +3,7 @@ package be.autoservplus.vitrine.service;
 import be.autoservplus.reservation.domain.PlageOuverture;
 import be.autoservplus.reservation.repository.PlageOuvertureRepository;
 import be.autoservplus.reservation.service.dto.PlageVue;
+import be.autoservplus.vitrine.web.dto.HorairesGroupesVue;
 import be.autoservplus.vitrine.web.dto.JourOuvertureVue;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -111,6 +112,35 @@ class HorairesOuvertureServiceTest {
         List<JourOuvertureVue> semaine = semaineAvec(plage(DayOfWeek.FRIDAY, "08:00", "17:00"));
 
         assertThat(semaine.get(4).plages()).containsExactly("08:00 - 17:00");
+    }
+
+    @Test
+    @DisplayName("résumé : jours consécutifs aux mêmes heures regroupés, un jour fermé coupe le groupe")
+    void resumeRegroupe() {
+        semaineAvec(
+                plage(DayOfWeek.MONDAY, "08:00", "12:00"), plage(DayOfWeek.MONDAY, "13:00", "18:00"),
+                plage(DayOfWeek.TUESDAY, "08:00", "12:00"), plage(DayOfWeek.TUESDAY, "13:00", "18:00"),
+                plage(DayOfWeek.THURSDAY, "08:00", "12:00"), plage(DayOfWeek.THURSDAY, "13:00", "18:00"),
+                plage(DayOfWeek.FRIDAY, "08:00", "12:00"), plage(DayOfWeek.FRIDAY, "13:00", "18:00"),
+                plage(DayOfWeek.SATURDAY, "09:00", "12:00"));
+
+        assertThat(service.resume()).containsExactly(
+                new HorairesGroupesVue("vitrine.jour.lundi", "vitrine.jour.mardi",
+                        List.of("08:00 - 12:00", "13:00 - 18:00")),
+                new HorairesGroupesVue("vitrine.jour.jeudi", "vitrine.jour.vendredi",
+                        List.of("08:00 - 12:00", "13:00 - 18:00")),
+                new HorairesGroupesVue("vitrine.jour.samedi", "vitrine.jour.samedi", List.of("09:00 - 12:00")));
+        assertThat(service.resume().get(2).unSeulJour()).isTrue();
+    }
+
+    @Test
+    @DisplayName("résumé vide pour un garage sans plage active")
+    void resumeVide() {
+        PlageOuverture retiree = plage(DayOfWeek.MONDAY, "08:00", "12:00");
+        retiree.desactiver();
+        semaineAvec(retiree);
+
+        assertThat(service.resume()).isEmpty();
     }
 
     @Test

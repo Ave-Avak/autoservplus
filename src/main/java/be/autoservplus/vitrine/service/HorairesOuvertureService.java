@@ -3,6 +3,7 @@ package be.autoservplus.vitrine.service;
 import be.autoservplus.reservation.domain.PlageOuverture;
 import be.autoservplus.reservation.repository.PlageOuvertureRepository;
 import be.autoservplus.reservation.service.dto.PlageVue;
+import be.autoservplus.vitrine.web.dto.HorairesGroupesVue;
 import be.autoservplus.vitrine.web.dto.JourOuvertureVue;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -81,5 +82,33 @@ public class HorairesOuvertureService {
             semaine.add(new JourOuvertureVue(PlageVue.cleJour(jour), List.copyOf(horaires), horaires.isEmpty()));
         }
         return semaine;
+    }
+
+    /**
+     * Les jours ouverts, regroupés quand des jours qui se suivent ont les mêmes heures.
+     * Un jour fermé coupe le groupe : « lundi au samedi » ne peut pas cacher un mercredi
+     * fermé. Les fermetures ne sont pas reprises, la page de contact donne la semaine
+     * entière.
+     */
+    public List<HorairesGroupesVue> resume() {
+        List<HorairesGroupesVue> groupes = new ArrayList<>();
+        JourOuvertureVue debut = null;
+        JourOuvertureVue fin = null;
+        for (JourOuvertureVue jour : semaine()) {
+            if (debut != null && (jour.ferme() || !jour.plages().equals(debut.plages()))) {
+                groupes.add(new HorairesGroupesVue(debut.cleJour(), fin.cleJour(), debut.plages()));
+                debut = null;
+            }
+            if (!jour.ferme()) {
+                if (debut == null) {
+                    debut = jour;
+                }
+                fin = jour;
+            }
+        }
+        if (debut != null) {
+            groupes.add(new HorairesGroupesVue(debut.cleJour(), fin.cleJour(), debut.plages()));
+        }
+        return groupes;
     }
 }

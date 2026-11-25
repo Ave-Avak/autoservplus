@@ -1,80 +1,106 @@
 <!DOCTYPE html>
-<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org"
-      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{${cleTitre}} + ' | AutoServ+'">Catalogue | AutoServ+</title>
-    <meta name="description"
-          th:content="#{${cleMeta}}">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <title th:text="#{${cleTitre}} + ' | ' + ${garageSite.enseigne()}">Catalogue | Bielle Bleue</title>
+    <meta name="description" th:content="#{${cleMeta}}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
+<main id="contenu" class="container catalogue" tabindex="-1">
+    <h1 class="catalogue__titre" th:text="#{${cleTitre}}">Nos prestations</h1>
 
-<main id="contenu">
     <!--/* Onglets en liens, chacun vers sa liste : sans rôle tablist, qui supposerait un
          script pour passer d'un onglet à l'autre au clavier. */-->
-    <nav class="onglets-catalogue" th:aria-label="#{catalogue.onglets.aria}">
-        <ul>
-            <li><a th:href="@{/services}" th:text="#{catalogue.onglet.services}"
+    <nav class="onglets-catalogue" th:attr="aria-label=#{catalogue.onglets.aria}">
+        <ul class="nav nav-underline">
+            <li class="nav-item"><a class="nav-link" th:href="@{/services}" th:text="#{catalogue.onglet.services}"
                    th:attr="aria-current=${rayon == null} ? 'page' : null">Prestations</a></li>
-            <li th:each="r : ${T(be.autoservplus.catalogue.domain.Rayon).values()}">
-                <a th:href="@{'/' + ${r.prefixe()}}" th:text="#{${r.cleLibelle()}}"
-                   th:attr="aria-current=${rayon == r} ? 'page' : null">Rayon</a></li>
+            <li class="nav-item" th:each="r : ${T(be.autoservplus.catalogue.domain.Rayon).values()}">
+                <a class="nav-link" th:href="@{'/' + ${r.prefixe()}}" th:text="#{${r.cleLibelle()}}"
+                   th:attr="aria-current=${rayon != null and rayon.name() == r.name()} ? 'page' : null">Rayon</a></li>
         </ul>
     </nav>
 
-    <h1 th:text="#{${cleTitre}}">Nos prestations</h1>
+    <p th:if="${typeArticle == 'piece'}" class="catalogue__garantie">
+        <a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
 
-    <p th:if="${typeArticle == 'piece'}"><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
+    <div class="row g-4">
+        <!--/* Catégories à gauche sur grand écran, en pastilles au-dessus de la grille sur
+             téléphone. Un lien par catégorie, l'état dans l'adresse : le bouton Retour du
+             navigateur rend le filtre précédent. */-->
+        <div class="col-12 col-lg-3">
+            <nav class="filtres-catalogue" th:attr="aria-label=#{catalogue.filtres.aria}">
+                <h2 class="filtres-catalogue__titre" th:text="#{catalogue.filtres.titre}">Catégories</h2>
+                <ul>
+                    <li><a th:href="${rayon == null} ? @{/services} : @{'/' + ${rayon.prefixe()}}"
+                           th:attr="aria-current=${categorieActive == null} ? 'true' : null"
+                           th:text="#{catalogue.filtres.toutes}">Toutes</a></li>
+                    <li th:each="cat : ${categories}">
+                        <a th:href="${rayon == null} ? @{/services(categorie=${cat.code})} : @{'/' + ${rayon.prefixe()}(categorie=${cat.code})}"
+                           th:attr="aria-current=${categorieActive == cat.code} ? 'true' : null"
+                           th:text="${cat.libelle}" th:lang="${cat.langueLibelle}">Catégorie</a></li>
+                </ul>
+            </nav>
+        </div>
 
-    <nav class="filtres" th:aria-label="#{catalogue.filtres.aria}">
-        <a th:href="${rayon == null} ? @{/services} : @{'/' + ${rayon.prefixe()}}"
-           th:classappend="${categorieActive == null} ? 'filtre-actif' : ''"
-           class="filtre" th:text="#{catalogue.filtres.toutes}">Toutes</a>
-        <a th:each="cat : ${categories}"
-           th:href="${rayon == null} ? @{/services(categorie=${cat.code})} : @{'/' + ${rayon.prefixe()}(categorie=${cat.code})}"
-           th:classappend="${categorieActive == cat.code} ? 'filtre-actif' : ''"
-           th:text="${cat.libelle}"
-           th:lang="${cat.langueLibelle}"
-           class="filtre">Catégorie</a>
-    </nav>
+        <div class="col-12 col-lg-9">
+            <p th:if="${articles.isEmpty()}" class="catalogue__vide" th:text="#{catalogue.vide}">
+                Aucun élément dans cette catégorie pour le moment.</p>
 
-    <p th:if="${articles.isEmpty()}" class="message" th:text="#{catalogue.vide}">
-        Aucun élément dans cette catégorie pour le moment.
-    </p>
-
-    <ul class="grille-articles" th:unless="${articles.isEmpty()}">
-        <li class="carte" th:each="article : ${articles}">
-            <h2>
-                <a th:href="@{${article.chemin()}}"
-                   th:text="${article.libelle}" th:lang="${article.langueLibelle}">Libellé</a>
-            </h2>
-            <p class="carte-categorie" th:text="${article.categorie}" th:lang="${article.langueCategorie}">Catégorie</p>
-            <p class="carte-description" th:text="${article.description}" th:lang="${article.langueDescription}">Description</p>
-
-            <p class="carte-meta" th:if="${article.dureeMinutes != null and !article.aLHeure()}">
-                <span th:text="#{catalogue.duree}">Durée :</span> <span th:text="${article.dureeLisible()}">1 h</span>
-            </p>
-            <p class="carte-meta" th:if="${article.marque != null}" th:text="${article.marque}">Marque</p>
-
-            <p class="carte-prix">
-                <strong th:text="${#numbers.formatDecimal(article.prixTvac, 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">0,00 €</strong>
-                <span th:if="${article.aLHeure()}" th:text="#{catalogue.prix.par-heure}">/ h</span>
-                <span class="carte-htva"
-                      th:text="#{catalogue.prix.htva(${#numbers.formatDecimal(article.prixHtva, 1, 'DEFAULT', 2, 'DEFAULT')})}">
-                    (0,00 € HTVA)</span>
-            </p>
-
-            <p class="texte-erreur" th:if="${!article.disponible}" th:text="#{catalogue.indisponible}">Momentanément indisponible</p>
-        </li>
-    </ul>
+            <ul class="grille-articles" th:unless="${articles.isEmpty()}">
+                <li class="carte-article" th:each="article, etat : ${articles}"
+                    th:with="photo=${vignettes.get(article.reference())}">
+                    <!--/* La vignette illustre la carte, dont le nom suit : texte alternatif vide,
+                         pour que le lecteur d'écran n'annonce pas deux fois chaque carte. Le texte
+                         alternatif de la photo est lu sur la fiche. Les trois premières se chargent
+                         tout de suite, les autres au défilement. */-->
+                    <img th:if="${photo != null}" class="carte-article__image" alt=""
+                         th:with="url=@{/images/galerie/{p}(p=${photo.reference()})},
+                                  urlVignette=@{/images/galerie/{p}/vignette(p=${photo.reference()})}"
+                         th:src="${photo.vignette()} ? ${urlVignette} : ${url}"
+                         th:srcset="${photo.vignette() and photo.dimensionsConnues()}
+                                    ? ${urlVignette + ' 480w, ' + url + ' ' + photo.largeur() + 'w'} : null"
+                         th:sizes="${photo.vignette() and photo.dimensionsConnues()}
+                                   ? '(min-width: 1200px) 280px, (min-width: 768px) 45vw, 100vw' : null"
+                         th:width="${photo.dimensionsConnues()} ? ${photo.largeur()} : null"
+                         th:height="${photo.dimensionsConnues()} ? ${photo.hauteur()} : null"
+                         th:attr="loading=${etat.index >= 3} ? 'lazy' : null"
+                         decoding="async">
+                    <div class="carte-article__corps">
+                        <!--/* Catégorie tue quand elle répète le nom (« Diagnostic électronique »
+                             sous « Diagnostic électronique », constat U3 de l'étape 0). */-->
+                        <p class="carte-article__categorie" th:unless="${#strings.equalsIgnoreCase(article.categorie, article.libelle)}"
+                           th:text="${article.categorie}" th:lang="${article.langueCategorie}">Catégorie</p>
+                        <h2 class="carte-article__nom">
+                            <a th:href="@{${article.chemin()}}" th:text="${article.libelle}"
+                               th:lang="${article.langueLibelle}">Libellé</a>
+                        </h2>
+                        <p class="carte-article__description" th:text="${article.description}"
+                           th:lang="${article.langueDescription}">Description</p>
+                        <p class="carte-article__meta" th:if="${(article.dureeMinutes != null and !article.aLHeure()) or article.marque != null}">
+                            <span th:if="${article.dureeMinutes != null and !article.aLHeure()}">
+                                <span th:text="#{catalogue.duree}">Durée :</span> <span th:text="${article.dureeLisible()}">1 h</span></span>
+                            <span th:if="${article.marque != null}" th:text="${article.marque}">Marque</span>
+                        </p>
+                        <p class="carte-article__prix">
+                            <strong class="chiffres" th:text="${#numbers.formatDecimal(article.prixTvac, 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">0,00 €</strong>
+                            <span th:if="${article.aLHeure()}" th:text="#{catalogue.prix.par-heure}">/ h</span>
+                            <span class="carte-article__htva"
+                                  th:text="#{catalogue.prix.htva(${#numbers.formatDecimal(article.prixHtva, 1, 'DEFAULT', 2, 'DEFAULT')})}">(0,00 € HTVA)</span>
+                        </p>
+                        <p class="carte-article__indisponible" th:if="${!article.disponible}" th:text="#{catalogue.indisponible}">
+                            Momentanément indisponible</p>
+                    </div>
+                </li>
+            </ul>
+        </div>
+    </div>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>
