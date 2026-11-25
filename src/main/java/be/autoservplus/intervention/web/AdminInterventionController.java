@@ -1,6 +1,7 @@
 package be.autoservplus.intervention.web;
 
 import be.autoservplus.catalogue.domain.ChoixPieces;
+import be.autoservplus.catalogue.domain.ChoixPiecesRefuseException;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
@@ -237,6 +238,10 @@ public class AdminInterventionController {
         } catch (QuantiteLigneRefuseeException e) {
             // Décimale pour un forfait, nulle, ou trop précise pour des heures (Q-H-37).
             redirection.addFlashAttribute("erreur", message(e.getCleMessage()));
+        } catch (ChoixPiecesRefuseException e) {
+            // Choix des pièces absent sur un forfait qui propose la pose seule : le formulaire
+            // présélectionne les pièces fournies, seul un envoi sans le champ arrive ici.
+            redirection.addFlashAttribute("erreur", message(e.getCleMessage(), e.getArguments()));
         } catch (ConflitConcurrenceException e) {
             redirection.addFlashAttribute("erreur", message("erreur.409.message"));
         } catch (IllegalArgumentException e) {
