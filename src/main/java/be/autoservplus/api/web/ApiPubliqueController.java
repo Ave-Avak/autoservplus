@@ -1,9 +1,11 @@
 package be.autoservplus.api.web;
 
+import be.autoservplus.api.web.dto.ArticlePublic;
 import be.autoservplus.api.web.dto.GaragePublic;
 import be.autoservplus.api.web.dto.Lien;
 import be.autoservplus.api.web.dto.PagePublique;
 import be.autoservplus.api.web.dto.PrestationPublique;
+import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.service.CatalogueService;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
 import be.autoservplus.config.IdentiteGarage;
@@ -33,7 +35,7 @@ import java.util.Locale;
 /**
  * API REST publique en lecture seule (BL-8), sous {@code /api/v1}.
  *
- * <p><b>Deux endpoints, aucun verbe d ecriture.</b> Ce n est pas une restriction
+ * <p><b>Trois endpoints, aucun verbe d ecriture.</b> Ce n est pas une restriction
  * provisoire : l API sert a faire connaitre l offre du garage a des tiers
  * (agregateurs, comparateurs, site vitrine), pas a piloter le systeme. Ouvrir une
  * ecriture demanderait une authentification, une gestion de quotas et un modele
@@ -41,8 +43,8 @@ import java.util.Locale;
  * volontairement inexploitee.</p>
  *
  * <p><b>Aucune authentification, donc aucune donnee privee.</b> Les deux ressources
- * exposees sont deja publiques sur le site : le catalogue des prestations et
- * l identite commerciale du garage. Aucun membre, aucune commande, aucun rendez-vous
+ * exposees sont deja publiques sur le site : le catalogue des prestations et des
+ * produits, et l identite commerciale du garage. Aucun membre, aucune commande, aucun rendez-vous
  * n est joignable par cette API, et les DTO lui sont propres pour qu un champ ajoute
  * a un ecran ne fuite pas ici par accident.</p>
  *
@@ -112,6 +114,42 @@ public class ApiPubliqueController {
                 .header(HttpHeaders.CONTENT_LANGUAGE, langue.getLanguage())
                 .varyBy(HttpHeaders.ACCEPT_LANGUAGE)
                 .body(paginer(toutes, page, taille));
+    }
+
+    @Operation(summary = "Liste les produits du catalogue",
+            description = "Pièces auto, accessoires et produits d'entretien actifs, paginés, "
+                    + "filtrables par rayon. La quantité en stock n'est pas exposée : "
+                    + "« disponible » dit seulement si l'article peut être commandé. Textes rendus "
+                    + "dans la langue négociée par Accept-Language, comme pour les prestations.")
+    @ApiResponse(responseCode = "200", description = "Page de produits, triée sur le libellé rendu",
+            headers = {
+                    @Header(name = HttpHeaders.CONTENT_LANGUAGE,
+                            description = "Langue négociée : fr, nl ou en.",
+                            schema = @Schema(type = "string", allowableValues = {"fr", "nl", "en"})),
+                    @Header(name = HttpHeaders.VARY,
+                            description = "Accept-Language : la réponse dépend de la langue demandée.",
+                            schema = @Schema(type = "string"))})
+    @GetMapping("/articles")
+    public ResponseEntity<PagePublique<ArticlePublic>> articles(
+            @Parameter(description = "Rayon : PIECES_AUTO, ACCESSOIRES ou ENTRETIEN. Sans rayon, les trois.")
+            @RequestParam(required = false) Rayon rayon,
+            @Parameter(description = "Index de page, à partir de zéro")
+            @RequestParam(defaultValue = "0") int page,
+            @Parameter(description = "Éléments par page, 100 au maximum")
+            @RequestParam(defaultValue = "" + TAILLE_DEFAUT) int taille,
+            @Parameter(description = "Langues préférées du client. Admises : fr, nl, en.",
+                    example = "nl-BE, fr;q=0.8")
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        Locale langue = LanguesSupportees.negociee(acceptLanguage);
+        List<ArticlePublic> tous = catalogue.produitsActifs(langue, rayon).stream()
+                .map(ArticlePublic::de)
+                .toList();
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(1)).cachePublic())
+                .header(HttpHeaders.CONTENT_LANGUAGE, langue.getLanguage())
+                .varyBy(HttpHeaders.ACCEPT_LANGUAGE)
+                .body(paginer(tous, page, taille));
     }
 
     @Operation(summary = "Liste les garages",

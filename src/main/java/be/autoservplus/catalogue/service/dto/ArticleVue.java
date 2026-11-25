@@ -2,6 +2,7 @@ package be.autoservplus.catalogue.service.dto;
 
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.domain.TexteLocalise;
 import be.autoservplus.i18n.LanguesSupportees;
 
@@ -29,6 +30,7 @@ import java.util.UUID;
  *                          pour une pièce
  * @param prixPoseSeuleHtva prix quand le client apporte ses pièces (V76), {@code null} sans
  *                          ce choix et pour une pièce
+ * @param rayon             rayon de la catégorie d'un produit, {@code null} pour une prestation
  */
 public record ArticleVue(
         UUID reference,
@@ -46,14 +48,28 @@ public record ArticleVue(
         String langueCategorie,
         String unite,
         BigDecimal prixPoseSeuleHtva,
-        BigDecimal prixPoseSeuleTvac) {
+        BigDecimal prixPoseSeuleTvac,
+        Rayon rayon) {
 
     /** Un article dont tous les textes sont dans la langue de la page. */
     public ArticleVue(UUID reference, String code, String libelle, String description, String categorie,
                       BigDecimal prixHtva, BigDecimal prixTvac, Integer dureeMinutes, String marque,
                       boolean disponible) {
         this(reference, code, libelle, description, categorie, prixHtva, prixTvac, dureeMinutes, marque,
-                disponible, null, null, null, null, null, null);
+                disponible, null, null, null, null, null, null, null);
+    }
+
+    /**
+     * Adresse de la fiche. Celle d'un produit suit le rayon de sa catégorie : une adresse
+     * sous un autre préfixe y renvoie de façon permanente.
+     */
+    public String chemin() {
+        return liste() + "/" + reference;
+    }
+
+    /** Adresse de la liste qui contient l'article. */
+    public String liste() {
+        return rayon == null ? "/services" : "/" + rayon.prefixe();
     }
 
     /**
@@ -94,7 +110,8 @@ public record ArticleVue(
                 categorie.langueSiRepli(langue),
                 prestation.getUnite().name(),
                 prestation.getPrixPoseSeuleHtva(),
-                prestation.prixPoseSeuleTvac());
+                prestation.prixPoseSeuleTvac(),
+                null);
     }
 
     /** La pièce en français, langue d'origine du catalogue. */
@@ -122,7 +139,8 @@ public record ArticleVue(
                 categorie.langueSiRepli(langue),
                 null,
                 null,
-                null);
+                null,
+                piece.getCategorie().getRayon().orElseThrow());
     }
 
     /** Duree formatee pour l affichage : « 1 h 30 » plutot que « 90 minutes ». */

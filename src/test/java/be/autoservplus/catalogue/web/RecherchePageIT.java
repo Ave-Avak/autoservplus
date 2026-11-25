@@ -80,18 +80,18 @@ class RecherchePageIT extends SocleIntegration {
     }
 
     @Test
-    @DisplayName("chaque section a ses liens de page, qui gardent le terme et la page de l'autre section")
+    @DisplayName("chaque section a ses liens de page, qui gardent le terme et la page des autres sections")
     void paginationParSection() throws Exception {
         String premiere = ouvrir("/recherche?q=zqx", Locale.FRENCH);
         assertThat(premiere).contains("Page 1 sur 2");
-        assertThat(premiere).contains("href=\"/recherche?q=zqx&amp;pagePrestations=1&amp;pagePieces=2#pieces\"");
+        assertThat(premiere).contains("href=\"/recherche?q=zqx&amp;pagePrestations=1&amp;pagePieces=2&amp;pageAccessoires=1&amp;pageEntretien=1#pieces\"");
         assertThat(premiere).doesNotContain("rel=\"prev\"");
         assertThat(premiere).doesNotContain("Pages des prestations trouvées");
 
         String seconde = ouvrir("/recherche?q=zqx&pagePieces=2", Locale.FRENCH);
         assertThat(seconde).contains("Page 2 sur 2");
         assertThat(seconde).contains("Écrou zqx 13").contains("Écrou zqx 14").doesNotContain("Écrou zqx 12");
-        assertThat(seconde).contains("href=\"/recherche?q=zqx&amp;pagePrestations=1&amp;pagePieces=1#pieces\"");
+        assertThat(seconde).contains("href=\"/recherche?q=zqx&amp;pagePrestations=1&amp;pagePieces=1&amp;pageAccessoires=1&amp;pageEntretien=1#pieces\"");
         assertThat(seconde).doesNotContain("rel=\"next\"");
         assertThat(seconde).as("la prestation reste sur sa première page").contains("Serrage zqx au couple");
     }

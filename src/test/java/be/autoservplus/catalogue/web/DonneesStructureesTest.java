@@ -26,7 +26,7 @@ class DonneesStructureesTest {
     @DisplayName("guillemet, barre oblique inverse et </script> : JSON valide, valeur intacte, bloc jamais fermé")
     void valeurHostile() throws Exception {
         for (String json : new String[]{
-                DonneesStructurees.dePiece(article(HOSTILE, HOSTILE, HOSTILE, true)),
+                DonneesStructurees.dePiece(article(HOSTILE, HOSTILE, HOSTILE, true), HOSTILE),
                 DonneesStructurees.dePrestation(article(HOSTILE, HOSTILE, null, true))}) {
             assertThat(json).doesNotContain("<").doesNotContain(">").doesNotContain("&");
             assertThat(json.toLowerCase()).doesNotContain("</script");
@@ -41,15 +41,16 @@ class DonneesStructureesTest {
     @DisplayName("pièce : produit, prix TVAC, disponibilité selon le stock, marque seulement si elle existe")
     void piece() throws Exception {
         JsonNode enStock = new ObjectMapper().readTree(
-                DonneesStructurees.dePiece(article("Filtre à huile", "Pour moteur diesel", "Bosch", true)));
+                DonneesStructurees.dePiece(article("Filtre à huile", "Pour moteur diesel", "Bosch", true), "Pièces auto"));
         assertThat(enStock.get("@type").asText()).isEqualTo("Product");
         assertThat(enStock.get("sku").asText()).isEqualTo("REF-1");
+        assertThat(enStock.get("category").asText()).isEqualTo("Pièces auto > Filtration");
         assertThat(enStock.get("brand").get("name").asText()).isEqualTo("Bosch");
         assertThat(enStock.get("offers").get("price").asText()).isEqualTo("19.99");
         assertThat(enStock.get("offers").get("availability").asText()).isEqualTo("https://schema.org/InStock");
 
         JsonNode epuisee = new ObjectMapper().readTree(
-                DonneesStructurees.dePiece(article("Filtre à huile", null, null, false)));
+                DonneesStructurees.dePiece(article("Filtre à huile", null, null, false), "Pièces auto"));
         assertThat(epuisee.get("offers").get("availability").asText()).isEqualTo("https://schema.org/OutOfStock");
         assertThat(epuisee.has("brand")).isFalse();
         assertThat(epuisee.has("description")).isFalse();

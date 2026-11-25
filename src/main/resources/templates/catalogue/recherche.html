@@ -42,12 +42,13 @@
         </p>
     </th:block>
 
-    <section id="prestations" th:if="${prestations.totalElements > 0}">
-        <h2 th:text="#{recherche.section.prestations(${prestations.totalElements})}">Prestations (3)</h2>
+    <section th:each="section : ${sections}" th:id="${section.ancre()}"
+             th:if="${section.resultats().totalElements > 0}">
+        <h2 th:text="#{${section.cleTitre()}(${section.resultats().totalElements})}">Prestations (3)</h2>
         <ul class="grille-articles">
-            <li class="carte" th:each="article : ${prestations.content}">
+            <li class="carte" th:each="article : ${section.resultats().content}">
                 <h3>
-                    <a th:href="@{/services/{ref}(ref=${article.reference()})}"
+                    <a th:href="@{${article.chemin()}}"
                        th:text="${article.libelle()}" th:lang="${article.langueLibelle()}">Libellé</a>
                 </h3>
                 <p class="carte-categorie" th:text="${article.categorie()}" th:lang="${article.langueCategorie()}">Catégorie</p>
@@ -55,34 +56,6 @@
                 <p class="carte-meta" th:if="${article.dureeMinutes() != null and !article.aLHeure()}">
                     <span th:text="#{catalogue.duree}">Durée :</span> <span th:text="${article.dureeLisible()}">1 h</span>
                 </p>
-                <p class="carte-prix">
-                    <strong th:text="${#numbers.formatDecimal(article.prixTvac(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">0,00 €</strong>
-                    <span th:if="${article.aLHeure()}" th:text="#{catalogue.prix.par-heure}">/ h</span>
-                    <span class="carte-htva"
-                          th:text="#{catalogue.prix.htva(${#numbers.formatDecimal(article.prixHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">
-                        (0,00 € HTVA)</span>
-                </p>
-            </li>
-        </ul>
-        <nav class="pagination" th:if="${prestations.totalPages > 1}" th:attr="aria-label=#{recherche.pagination.prestations}">
-            <a th:if="${prestations.hasPrevious()}" rel="prev" th:text="#{pagination.precedente}"
-               th:href="@{/recherche#prestations(q=${terme},pagePrestations=${prestations.number},pagePieces=${pieces.number + 1})}">Page précédente</a>
-            <span th:text="#{pagination.position(${prestations.number + 1}, ${prestations.totalPages})}">Page 1 sur 3</span>
-            <a th:if="${prestations.hasNext()}" rel="next" th:text="#{pagination.suivante}"
-               th:href="@{/recherche#prestations(q=${terme},pagePrestations=${prestations.number + 2},pagePieces=${pieces.number + 1})}">Page suivante</a>
-        </nav>
-    </section>
-
-    <section id="pieces" th:if="${pieces.totalElements > 0}">
-        <h2 th:text="#{recherche.section.pieces(${pieces.totalElements})}">Pièces détachées (3)</h2>
-        <ul class="grille-articles">
-            <li class="carte" th:each="article : ${pieces.content}">
-                <h3>
-                    <a th:href="@{/pieces/{ref}(ref=${article.reference()})}"
-                       th:text="${article.libelle()}" th:lang="${article.langueLibelle()}">Libellé</a>
-                </h3>
-                <p class="carte-categorie" th:text="${article.categorie()}" th:lang="${article.langueCategorie()}">Catégorie</p>
-                <p class="carte-description" th:text="${article.description()}" th:lang="${article.langueDescription()}">Description</p>
                 <p class="carte-meta" th:if="${article.marque() != null}" th:text="${article.marque()}">Marque</p>
                 <p class="carte-prix">
                     <strong th:text="${#numbers.formatDecimal(article.prixTvac(), 1, 'DEFAULT', 2, 'DEFAULT')} + ' €'">0,00 €</strong>
@@ -91,15 +64,16 @@
                           th:text="#{catalogue.prix.htva(${#numbers.formatDecimal(article.prixHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">
                         (0,00 € HTVA)</span>
                 </p>
-                <p class="texte-erreur" th:unless="${article.disponible()}" th:text="#{catalogue.indisponible}">Momentanément indisponible</p>
+                <p class="texte-erreur" th:if="${article.rayon() != null and !article.disponible()}"
+                   th:text="#{catalogue.indisponible}">Momentanément indisponible</p>
             </li>
         </ul>
-        <nav class="pagination" th:if="${pieces.totalPages > 1}" th:attr="aria-label=#{recherche.pagination.pieces}">
-            <a th:if="${pieces.hasPrevious()}" rel="prev" th:text="#{pagination.precedente}"
-               th:href="@{/recherche#pieces(q=${terme},pagePrestations=${prestations.number + 1},pagePieces=${pieces.number})}">Page précédente</a>
-            <span th:text="#{pagination.position(${pieces.number + 1}, ${pieces.totalPages})}">Page 1 sur 3</span>
-            <a th:if="${pieces.hasNext()}" rel="next" th:text="#{pagination.suivante}"
-               th:href="@{/recherche#pieces(q=${terme},pagePrestations=${prestations.number + 1},pagePieces=${pieces.number + 2})}">Page suivante</a>
+        <nav class="pagination" th:if="${section.resultats().totalPages > 1}" th:attr="aria-label=#{${section.clePagination()}}">
+            <a th:if="${section.precedente() != null}" rel="prev" th:text="#{pagination.precedente}"
+               th:href="@{${section.precedente()}}">Page précédente</a>
+            <span th:text="#{pagination.position(${section.resultats().number + 1}, ${section.resultats().totalPages})}">Page 1 sur 3</span>
+            <a th:if="${section.suivante() != null}" rel="next" th:text="#{pagination.suivante}"
+               th:href="@{${section.suivante()}}">Page suivante</a>
         </nav>
     </section>
 </main>

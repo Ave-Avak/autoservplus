@@ -1,5 +1,6 @@
 package be.autoservplus.catalogue.service;
 
+import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.service.dto.CategorieVue;
 import be.autoservplus.catalogue.domain.TypeCategorie;
@@ -50,7 +51,7 @@ class CatalogueServiceTest {
         @DisplayName("renvoie une page vide pour un terme trop court")
         void refuseUnTermeTropCourt() {
             assertThat(service.rechercherPrestations("a", 0)).isEmpty();
-            assertThat(service.rechercherPieces("a", 0)).isEmpty();
+            assertThat(service.rechercherProduits("a", Rayon.PIECES_AUTO, 0)).isEmpty();
 
             verifyNoInteractions(prestations, pieces);
         }
@@ -59,7 +60,7 @@ class CatalogueServiceTest {
         @DisplayName("renvoie une page vide pour un terme nul ou blanc")
         void refuseUnTermeVide() {
             assertThat(service.rechercherPrestations(null, 0)).isEmpty();
-            assertThat(service.rechercherPieces("   ", 0)).isEmpty();
+            assertThat(service.rechercherProduits("   ", Rayon.PIECES_AUTO, 0)).isEmpty();
 
             verifyNoInteractions(prestations, pieces);
         }

@@ -1,5 +1,6 @@
 package be.autoservplus.catalogue.service;
 
+import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
 import be.autoservplus.support.SocleIntegration;
 import org.junit.jupiter.api.BeforeEach;
@@ -62,14 +63,14 @@ class RechercheCatalogueIT extends SocleIntegration {
                 .containsExactly("Réglage zqx du parallélisme");
         assertThat(libelles(catalogue.rechercherPrestations("PARALLELISME", 0)))
                 .containsExactly("Réglage zqx du parallélisme");
-        assertThat(libelles(catalogue.rechercherPieces("àmpoule zqx", 0)))
+        assertThat(libelles(catalogue.rechercherProduits("àmpoule zqx", Rayon.PIECES_AUTO, 0)))
                 .containsExactly("Ampoule zqx");
     }
 
     @Test
     @DisplayName("la description d'une pièce est cherchée, comme celle d'une prestation")
     void descriptionDesPieces() {
-        assertThat(libelles(catalogue.rechercherPieces("antibrouillard a reflecteur", 0)))
+        assertThat(libelles(catalogue.rechercherProduits("antibrouillard a reflecteur", Rayon.PIECES_AUTO, 0)))
                 .containsExactly("Ampoule zqx");
         assertThat(libelles(catalogue.rechercherPrestations("trains roulants", 0)))
                 .containsExactly("Réglage zqx du parallélisme");
@@ -78,7 +79,7 @@ class RechercheCatalogueIT extends SocleIntegration {
     @Test
     @DisplayName("le libellé de la catégorie ramène ses articles actifs")
     void libelleDeLaCategorie() {
-        assertThat(libelles(catalogue.rechercherPieces("eclairage zqx", 0)))
+        assertThat(libelles(catalogue.rechercherProduits("eclairage zqx", Rayon.PIECES_AUTO, 0)))
                 .containsExactly("Additif zqx 100% synthèse", "Ampoule zqx");
         assertThat(libelles(catalogue.rechercherPrestations("geometrie zqx", 0)))
                 .containsExactly("Réglage zqx du parallélisme");
@@ -87,24 +88,24 @@ class RechercheCatalogueIT extends SocleIntegration {
     @Test
     @DisplayName("la marque et la référence du fabricant restent cherchées")
     void marqueEtReference() {
-        assertThat(libelles(catalogue.rechercherPieces("lumiere doree", 0))).containsExactly("Ampoule zqx");
-        assertThat(libelles(catalogue.rechercherPieces("zqx-001", 0))).containsExactly("Ampoule zqx");
+        assertThat(libelles(catalogue.rechercherProduits("lumiere doree", Rayon.PIECES_AUTO, 0))).containsExactly("Ampoule zqx");
+        assertThat(libelles(catalogue.rechercherProduits("zqx-001", Rayon.PIECES_AUTO, 0))).containsExactly("Ampoule zqx");
     }
 
     @Test
     @DisplayName("un joker saisi est cherché comme un caractère")
     void jokersNeutralises() {
-        assertThat(libelles(catalogue.rechercherPieces("zqx 100%", 0)))
+        assertThat(libelles(catalogue.rechercherProduits("zqx 100%", Rayon.PIECES_AUTO, 0)))
                 .containsExactly("Additif zqx 100% synthèse");
-        assertThat(catalogue.rechercherPieces("zqx 1_0", 0)).isEmpty();
-        assertThat(catalogue.rechercherPieces("%%", 0)).isEmpty();
-        assertThat(catalogue.rechercherPieces("z!x", 0)).isEmpty();
+        assertThat(catalogue.rechercherProduits("zqx 1_0", Rayon.PIECES_AUTO, 0)).isEmpty();
+        assertThat(catalogue.rechercherProduits("%%", Rayon.PIECES_AUTO, 0)).isEmpty();
+        assertThat(catalogue.rechercherProduits("z!x", Rayon.PIECES_AUTO, 0)).isEmpty();
     }
 
     @Test
     @DisplayName("une page demandée après la dernière rend la dernière, avec le bon total")
     void pageAuDelaDeLaDerniere() {
-        Page<ArticleVue> page = catalogue.rechercherPieces("zqx", 7);
+        Page<ArticleVue> page = catalogue.rechercherProduits("zqx", Rayon.PIECES_AUTO, 7);
 
         assertThat(page.getTotalElements()).isEqualTo(2);
         assertThat(page.getNumber()).isZero();

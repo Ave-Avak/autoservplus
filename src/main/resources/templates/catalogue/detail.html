@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title th:text="${article.libelle()} + ' | AutoServ+'">Article | AutoServ+</title>
     <meta name="description" th:content="${article.description()}">
+    <!--/* Adresse canonique : celle du rayon de l'article, la seule qui ne redirige pas. */-->
+    <link rel="canonical" th:href="@{${article.chemin()}}">
 
     <!--/* Données structurées schema.org en JSON-LD, sérialisées par DonneesStructurees.
          th:utext et non th:text : le bloc est déjà du JSON, et ses chevrons y sont
@@ -154,7 +156,7 @@
         </ol>
     </section>
 
-    <p><a th:href="${typeArticle == 'service'} ? @{/services} : @{/pieces}" th:text="#{catalogue.fiche.retour}">Retour au catalogue</a></p>
+    <p><a th:href="@{${article.liste()}}" th:text="#{catalogue.fiche.retour}">Retour au catalogue</a></p>
 </main>
 
 <div th:replace="~{fragments/pied :: pied}"></div>

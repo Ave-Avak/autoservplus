@@ -1,6 +1,7 @@
 package be.autoservplus.catalogue.repository;
 
 import be.autoservplus.catalogue.domain.Piece;
+import be.autoservplus.catalogue.domain.Rayon;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -86,6 +87,21 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
 
     @Query("""
             SELECT p FROM Piece p JOIN FETCH p.categorie c
+            WHERE c.rayon = :rayon AND p.actif = true
+            ORDER BY p.libelle
+            """)
+    List<Piece> actifsDuRayon(@Param("rayon") Rayon rayon);
+
+    @Query("""
+            SELECT p FROM Piece p JOIN FETCH p.categorie c
+            WHERE c.rayon = :rayon AND c.code = :codeCategorie AND p.actif = true
+            ORDER BY p.libelle
+            """)
+    List<Piece> actifsDuRayonEtDeCategorie(@Param("rayon") Rayon rayon,
+                                           @Param("codeCategorie") String codeCategorie);
+
+    @Query("""
+            SELECT p FROM Piece p JOIN FETCH p.categorie c
             WHERE c.code = :codeCategorie AND p.actif = true
             ORDER BY p.libelle
             """)
@@ -119,7 +135,7 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
      */
     @Query(value = """
             SELECT p FROM Piece p JOIN FETCH p.categorie c
-            WHERE p.actif = true
+            WHERE p.actif = true AND c.rayon = :rayon
               AND ( cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
                  OR cast(function('unaccent', LOWER(p.traductions.libelleNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
                  OR cast(function('unaccent', LOWER(p.traductions.libelleEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
@@ -137,7 +153,7 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
             """,
             countQuery = """
             SELECT COUNT(p) FROM Piece p JOIN p.categorie c
-            WHERE p.actif = true
+            WHERE p.actif = true AND c.rayon = :rayon
               AND ( cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
                  OR cast(function('unaccent', LOWER(p.traductions.libelleNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
                  OR cast(function('unaccent', LOWER(p.traductions.libelleEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
@@ -150,6 +166,6 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
                  OR cast(function('unaccent', LOWER(c.libelleNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
                  OR cast(function('unaccent', LOWER(c.libelleEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!')
             """)
-    Page<Piece> rechercher(@Param("motif") String motif, @Param("langue") String langue,
-                           Pageable pagination);
+    Page<Piece> rechercher(@Param("motif") String motif, @Param("rayon") Rayon rayon,
+                           @Param("langue") String langue, Pageable pagination);
 }
