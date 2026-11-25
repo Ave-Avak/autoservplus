@@ -44,6 +44,13 @@ public record EntreeJournal(
      */
     public static final String TYPE_ENCAISSEMENT = "ENCAISSEMENT";
 
+    /**
+     * Type des changements de pièces incluses d'une intervention (table
+     * {@code historique_piece_incluse}, V77) : copie de la composition, ajout, modification
+     * et retrait.
+     */
+    public static final String TYPE_PIECE_INCLUSE = "PIECE_INCLUSE";
+
     public boolean acteurConnu() {
         return acteur != null && !acteur.isBlank();
     }

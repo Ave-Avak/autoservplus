@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -115,11 +116,17 @@ public record InterventionVueMembre(
      * interventions, aucune transparence tarifaire perdue puisque {@code totalTvac}
      * reste expose au niveau intervention.
      */
-    public record LigneVue(String libelle, String quantite, String mentionPieces) {
+    /**
+     * @param piecesIncluses pièces comprises dans un forfait (V77), en lecture seule : le membre
+     *                       voit ce qui est posé, jamais sur la facture
+     */
+    public record LigneVue(String libelle, String quantite, String mentionPieces,
+                           List<PieceIncluseVue> piecesIncluses) {
         public static LigneVue de(LigneIntervention l) {
             return new LigneVue(l.getLibelleFige(),
                     FormatageQuantite.lisible(l.getQuantite(), l.getUnite(), LanguesSupportees.deLEcran()),
-                    ChoixPieces.cleMentionDe(l.getChoixPieces()));
+                    ChoixPieces.cleMentionDe(l.getChoixPieces()),
+                    l.getPiecesIncluses().stream().map(i -> PieceIncluseVue.de(i, Set.of())).toList());
         }
     }
 

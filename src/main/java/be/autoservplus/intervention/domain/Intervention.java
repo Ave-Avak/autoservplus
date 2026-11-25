@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -493,6 +494,47 @@ public class Intervention extends BaseEntity {
     public boolean retirerLigne(Long ligneId) {
         exigerEditable();
         return this.lignes.removeIf(l -> ligneId.equals(l.getId()));
+    }
+
+    // --- pièces incluses (V77) -------------------------------------------------------
+
+    public Optional<LigneIntervention> ligne(Long ligneId) {
+        Objects.requireNonNull(ligneId, "ligneId");
+        return lignes.stream().filter(l -> ligneId.equals(l.getId())).findFirst();
+    }
+
+    /**
+     * Ajoute une pièce incluse à une ligne de forfait, ou change sa quantité. Ouvert tant que
+     * l'intervention n'est ni terminée ni annulée, comme le retrait d'une ligne : les pièces
+     * incluses ne changent pas le prix, elles n'ont pas la garde de RM-14, qui protège le devis.
+     * Le garage les ajuste au travail réellement fait, jusqu'à la clôture qui les sort du stock.
+     *
+     * @throws PieceIncluseRefuseeException intervention close, ligne qui ne porte pas de pièces
+     *                                      incluses, ou quantité inférieure à un
+     */
+    public ChangementPieceIncluse fixerPieceIncluse(LigneIntervention ligne, be.autoservplus.catalogue.domain.Piece piece,
+                                                    int quantite) {
+        return exigerLigneModifiable(ligne).fixerPieceIncluse(piece, quantite);
+    }
+
+    /** @throws PieceIncluseRefuseeException intervention close, ou pièce absente de la ligne */
+    public ChangementPieceIncluse retirerPieceIncluse(LigneIntervention ligne, be.autoservplus.catalogue.domain.Piece piece) {
+        return exigerLigneModifiable(ligne).retirerPieceIncluse(piece);
+    }
+
+    /** Copies de la composition sur toutes les lignes, pour le journal de la création. */
+    public List<ChangementPieceIncluse> copieDesPiecesIncluses() {
+        return lignes.stream().flatMap(l -> l.copie().stream()).toList();
+    }
+
+    private LigneIntervention exigerLigneModifiable(LigneIntervention ligne) {
+        if (!statut.estEditable()) {
+            throw PieceIncluseRefuseeException.close();
+        }
+        if (!lignes.contains(ligne)) {
+            throw new IllegalArgumentException("La ligne n'appartient pas à cette intervention.");
+        }
+        return ligne;
     }
 
     private void exigerEditable() {

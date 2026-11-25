@@ -1,5 +1,8 @@
 package be.autoservplus.intervention.service;
 
+import be.autoservplus.intervention.repository.LigneInterventionRepository;
+import be.autoservplus.intervention.domain.ChangementPieceIncluse;
+import be.autoservplus.intervention.domain.PieceIncluse;
 import be.autoservplus.catalogue.domain.ChoixPieces;
 import be.autoservplus.common.ReserveAuxTests;
 import be.autoservplus.config.IdentiteGarage;
@@ -87,6 +90,7 @@ public class InterventionService {
     private static final Logger log = LoggerFactory.getLogger(InterventionService.class);
 
     private final InterventionRepository interventions;
+    private final LigneInterventionRepository lignes;
     private final HistoriqueStatutInterventionRepository historiques;
     private final PrestationRepository prestations;
     private final PieceRepository pieces;
@@ -97,6 +101,7 @@ public class InterventionService {
     private final VehiculeRepository vehicules;
     private final ParametreAtelierRepository parametres;
     private final AuteurCourant auteurCourant;
+    private final JournalPiecesIncluses journalPiecesIncluses;
     private final AuditorAware<String> auditeur;
     private final GenerateurNumeroIntervention numeros;
     private final ServiceCourriel courriel;
@@ -105,6 +110,7 @@ public class InterventionService {
     private final Clock horloge;
 
     public InterventionService(InterventionRepository interventions,
+                               LigneInterventionRepository lignes,
                                HistoriqueStatutInterventionRepository historiques,
                                PrestationRepository prestations,
                                PieceRepository pieces,
@@ -115,6 +121,7 @@ public class InterventionService {
                                VehiculeRepository vehicules,
                                ParametreAtelierRepository parametres,
                                AuteurCourant auteurCourant,
+                               JournalPiecesIncluses journalPiecesIncluses,
                                AuditorAware<String> auditeur,
                                GenerateurNumeroIntervention numeros,
                                ServiceCourriel courriel,
@@ -122,6 +129,7 @@ public class InterventionService {
                                IdentiteGarage identite,
                                Clock horloge) {
         this.interventions = interventions;
+        this.lignes = lignes;
         this.historiques = historiques;
         this.prestations = prestations;
         this.pieces = pieces;
@@ -132,6 +140,7 @@ public class InterventionService {
         this.vehicules = vehicules;
         this.parametres = parametres;
         this.auteurCourant = auteurCourant;
+        this.journalPiecesIncluses = journalPiecesIncluses;
         this.auditeur = auditeur;
         this.numeros = numeros;
         this.courriel = courriel;
@@ -157,6 +166,7 @@ public class InterventionService {
                     // Dans la branche orElseGet uniquement : un second appel idempotent
                     // ne doit pas inventer une seconde naissance.
                     historiser(creee, null, StatutIntervention.PLANIFIEE, null);
+                    journalPiecesIncluses.ecrire(creee, creee.copieDesPiecesIncluses());
                     return creee;
                 });
     }
@@ -213,6 +223,7 @@ public class InterventionService {
             Intervention creee = ecrire(
                     Intervention.pourCommande(numeros.prochain(), commande, vehicule, services));
             historiser(creee, null, StatutIntervention.PLANIFIEE, null);
+            journalPiecesIncluses.ecrire(creee, creee.copieDesPiecesIncluses());
             return creee;
         });
     }
@@ -397,11 +408,19 @@ public class InterventionService {
         Map<Long, Integer> demandes = new TreeMap<>();
         Map<Long, Piece> parIdentifiant = new HashMap<>();
         for (LigneIntervention ligne : it.getLignes()) {
-            if (ligne.getPiece() == null || !ligne.estFacturable()) {
+            if (!ligne.estFacturable()) {
                 continue;
             }
-            demandes.merge(ligne.getPiece().getId(), ligne.quantitePourLeStock(), Integer::sum);
-            parIdentifiant.put(ligne.getPiece().getId(), ligne.getPiece());
+            if (ligne.getPiece() != null) {
+                demandes.merge(ligne.getPiece().getId(), ligne.quantitePourLeStock(), Integer::sum);
+                parIdentifiant.put(ligne.getPiece().getId(), ligne.getPiece());
+            }
+            // Les pièces incluses d'un forfait sortent du stock comme une ligne de pièce : même
+            // table de demandes, donc même ordre des verrous et même plancher à zéro (V77).
+            for (PieceIncluse incluse : ligne.getPiecesIncluses()) {
+                demandes.merge(incluse.getPiece().getId(), incluse.getQuantite(), Integer::sum);
+                parIdentifiant.put(incluse.getPiece().getId(), incluse.getPiece());
+            }
         }
         String auteur = auditeur.getCurrentAuditor().orElse(null);
         Locale langue = LanguesSupportees.deLEcran();
@@ -469,6 +488,14 @@ public class InterventionService {
     /**
      * Même ajout, avec le choix des pièces du formulaire.
      *
+     * <p>La ligne nouvelle est enregistrée elle-même avant l'écriture du dossier. Le dossier
+     * existant s'écrit par {@code saveAndFlush}, donc par {@code merge} : sur une entité gérée,
+     * {@code merge} se propage aux enfants, et pour un enfant encore transitoire il en crée une
+     * copie gérée, qu'il range dans la collection à la place de l'instance du domaine. Cette
+     * instance restait transitoire, et la trace de la copie des pièces incluses, qui pointait
+     * vers elle, faisait échouer l'écriture. Enregistrée d'abord, la ligne est gérée, et
+     * {@code merge} la laisse telle quelle.</p>
+     *
      * @param choix choix des pièces du formulaire, qui présélectionne les pièces fournies. Il est
      *              ignoré pour une prestation qui ne propose pas de prix pose seule, où le même
      *              formulaire l'envoie aussi.
@@ -484,8 +511,9 @@ public class InterventionService {
                 .orElseThrow(() -> new RessourceIntrouvableException("Prestation", prestationRef));
         ChoixPieces retenu = prestation.proposePoseSeule() ? choix : null;
         StatutIntervention avant = it.getStatut();
-        LigneIntervention ligne = it.ajouterLigneMainOeuvre(prestation, quantite, retenu);
+        LigneIntervention ligne = lignes.save(it.ajouterLigneMainOeuvre(prestation, quantite, retenu));
         enregistrerAjout(it, avant);
+        journalPiecesIncluses.ecrire(it, ligne.copie());
         return ligne;
     }
 
@@ -531,12 +559,59 @@ public class InterventionService {
         }
     }
 
+    /** Retire la ligne et ses pièces incluses, que le journal garde comme retirées. */
     @Transactional
     public void retirerLigne(UUID interventionRef, Long ligneId) {
         Intervention it = verrouiller(interventionRef);
+        List<ChangementPieceIncluse> retraits = it.ligne(ligneId)
+                .map(LigneIntervention::retraitAvecLaLigne).orElse(List.of());
         if (!it.retirerLigne(ligneId)) {
             throw new RessourceIntrouvableException("LigneIntervention", ligneId);
         }
+        journalPiecesIncluses.ecrire(it, retraits);
+        ecrire(it);
+    }
+
+    /**
+     * Ajoute une pièce incluse à une ligne de forfait, ou change sa quantité (V77). Même verrou
+     * que l'ajout de ligne et la clôture : deux administrateurs qui ajustent le même dossier en
+     * même temps passent l'un après l'autre, la version monte pour chacun, et une modification
+     * tenue au-delà du délai donne au second un conflit à recharger.
+     *
+     * @throws RessourceIntrouvableException ligne inconnue, ou pièce inconnue, ou pièce retirée de
+     *                                       la vente que la ligne ne portait pas encore (RM-28)
+     * @throws PieceIncluseRefuseeException  intervention close, ligne sans pièces incluses, ou
+     *                                       quantité inférieure à un
+     */
+    @Transactional
+    public void fixerPieceIncluse(UUID interventionRef, Long ligneId, UUID pieceRef, int quantite) {
+        Intervention it = verrouiller(interventionRef);
+        LigneIntervention ligne = it.ligne(ligneId)
+                .orElseThrow(() -> new RessourceIntrouvableException("LigneIntervention", ligneId));
+        Piece piece = pieces.findByReference(pieceRef)
+                .orElseThrow(() -> new RessourceIntrouvableException("Piece", pieceRef));
+        boolean dejaIncluse = ligne.getPiecesIncluses().stream()
+                .anyMatch(incluse -> incluse.getPiece().equals(piece));
+        if (!dejaIncluse && !piece.isActif()) {
+            // Une pièce retirée de la vente ne s'ajoute plus (RM-28). Celle qu'une ligne porte
+            // déjà garde sa quantité corrigeable : le garage la pose encore.
+            throw new RessourceIntrouvableException("Piece", pieceRef);
+        }
+        ChangementPieceIncluse changement = it.fixerPieceIncluse(ligne, piece, quantite);
+        ecrire(it);
+        journalPiecesIncluses.ecrire(it, List.of(changement));
+    }
+
+    /** @throws PieceIncluseRefuseeException intervention close, ou pièce absente de la ligne */
+    @Transactional
+    public void retirerPieceIncluse(UUID interventionRef, Long ligneId, UUID pieceRef) {
+        Intervention it = verrouiller(interventionRef);
+        LigneIntervention ligne = it.ligne(ligneId)
+                .orElseThrow(() -> new RessourceIntrouvableException("LigneIntervention", ligneId));
+        Piece piece = pieces.findByReference(pieceRef)
+                .orElseThrow(() -> new RessourceIntrouvableException("Piece", pieceRef));
+        ChangementPieceIncluse changement = it.retirerPieceIncluse(ligne, piece);
+        journalPiecesIncluses.ecrire(it, List.of(changement));
         ecrire(it);
     }
 
@@ -579,17 +654,22 @@ public class InterventionService {
                 .toList();
     }
 
-    /** Pièces de ce dossier que le stock ne couvre pas, une seule requête d'agrégat. */
+    /**
+     * Pièces de ce dossier, lignes de pièce et pièces incluses, que le stock ne couvre pas :
+     * une seule requête d'agrégat sur les trois sources.
+     */
     private Set<Long> piecesACommander(Intervention it) {
         Set<Long> pieceIds = new HashSet<>();
-        it.getLignes().stream()
-                .filter(l -> l.getPiece() != null)
-                .forEach(l -> pieceIds.add(l.getPiece().getId()));
+        for (LigneIntervention ligne : it.getLignes()) {
+            if (ligne.getPiece() != null) {
+                pieceIds.add(ligne.getPiece().getId());
+            }
+            ligne.getPiecesIncluses().forEach(incluse -> pieceIds.add(incluse.getPiece().getId()));
+        }
         if (pieceIds.isEmpty()) {
             return Set.of();
         }
-        return Set.copyOf(interventions.piecesACommander(pieceIds,
-                EnumSet.of(StatutIntervention.TERMINEE, StatutIntervention.ANNULEE)));
+        return Set.copyOf(interventions.piecesACommander(pieceIds));
     }
 
     // --- vue membre (accessible a tout utilisateur authentifie, ownership verifie) ----
@@ -687,7 +767,7 @@ public class InterventionService {
 
     /**
      * L'intervention, ligne verrouillée et version montée, pour une écriture qui change ses
-     * lignes ou les décompte : ajout et retrait de ligne, clôture. Un ajout de ligne ne modifie
+     * lignes ou les décompte : ajout et retrait de ligne, pièces incluses, clôture. Un ajout de ligne ne modifie
      * pas la ligne de l'intervention elle-même : sans ce verrou, il passait à côté d'une clôture
      * en cours, et la ligne ajoutée restait sur une intervention close, ni décomptée ni facturée.
      *

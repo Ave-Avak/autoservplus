@@ -16,6 +16,9 @@ import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -110,6 +113,14 @@ public class LigneIntervention {
     @Column(name = "accord_membre")
     private Boolean accordMembre;
 
+    /**
+     * Pièces comprises dans le prix d'un forfait dont le garage fournit les pièces (V77). Vide
+     * pour toute autre ligne.
+     */
+    @OneToMany(mappedBy = "ligne", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id")
+    private List<PieceIncluse> piecesIncluses = new ArrayList<>();
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -156,6 +167,83 @@ public class LigneIntervention {
         this.prixUnitaireHtva = Objects.requireNonNull(prixUnitaireHtva, "prixUnitaireHtva");
         this.tauxTva = Objects.requireNonNull(tauxTva, "tauxTva");
         this.ajouteeEnCours = ajouteeEnCours;
+        copierLaComposition(prestation);
+    }
+
+    /**
+     * Les pièces que la prestation consomme deviennent les pièces incluses de la ligne, fois sa
+     * quantité : deux vidanges consomment deux filtres. Copiées ici plutôt que relues au
+     * catalogue à la clôture : le garage les ajuste au travail réellement fait, et une
+     * composition changée après coup ne touche pas un dossier ouvert.
+     */
+    private void copierLaComposition(Prestation prestation) {
+        if (!porteDesPiecesIncluses()) {
+            return;
+        }
+        int fois = quantite.intValueExact();
+        prestation.getComposition().forEach(composant -> piecesIncluses.add(
+                new PieceIncluse(this, composant.getPiece(), composant.getQuantite() * fois)));
+    }
+
+    /**
+     * Un forfait dont le garage fournit les pièces, choix proposé ou non. Une prestation à
+     * l'heure se facture au temps passé, une pose seule consomme les pièces du client.
+     */
+    public boolean porteDesPiecesIncluses() {
+        return unite == UniteLigne.FORFAIT && choixPieces != ChoixPieces.APPORTEES_PAR_CLIENT;
+    }
+
+    /**
+     * Ajoute une pièce incluse, ou change sa quantité si la ligne la porte déjà.
+     *
+     * @throws PieceIncluseRefuseeException ligne sans pièces incluses, ou quantité inférieure à un
+     */
+    ChangementPieceIncluse fixerPieceIncluse(Piece pieceIncluse, int nouvelleQuantite) {
+        Objects.requireNonNull(pieceIncluse, "pieceIncluse");
+        if (!porteDesPiecesIncluses()) {
+            throw PieceIncluseRefuseeException.horsForfaitFourni();
+        }
+        if (nouvelleQuantite < 1) {
+            throw PieceIncluseRefuseeException.quantite();
+        }
+        for (PieceIncluse incluse : piecesIncluses) {
+            if (incluse.porte(pieceIncluse)) {
+                int avant = incluse.getQuantite();
+                incluse.changerQuantite(nouvelleQuantite);
+                return new ChangementPieceIncluse(this, pieceIncluse, EvenementPieceIncluse.MODIFICATION,
+                        avant, nouvelleQuantite);
+            }
+        }
+        piecesIncluses.add(new PieceIncluse(this, pieceIncluse, nouvelleQuantite));
+        return new ChangementPieceIncluse(this, pieceIncluse, EvenementPieceIncluse.AJOUT, null, nouvelleQuantite);
+    }
+
+    /** @throws PieceIncluseRefuseeException la ligne ne porte pas cette pièce */
+    ChangementPieceIncluse retirerPieceIncluse(Piece pieceIncluse) {
+        PieceIncluse retiree = piecesIncluses.stream().filter(i -> i.porte(pieceIncluse)).findFirst()
+                .orElseThrow(PieceIncluseRefuseeException::absente);
+        piecesIncluses.remove(retiree);
+        return new ChangementPieceIncluse(this, retiree.getPiece(), EvenementPieceIncluse.RETRAIT,
+                retiree.getQuantite(), null);
+    }
+
+    /** Copie de la composition, telle que la ligne la porte à sa création. */
+    public List<ChangementPieceIncluse> copie() {
+        return piecesIncluses.stream()
+                .map(i -> new ChangementPieceIncluse(this, i.getPiece(), EvenementPieceIncluse.COPIE,
+                        null, i.getQuantite()))
+                .toList();
+    }
+
+    /**
+     * Retrait de toutes les pièces avec la ligne. La trace ne pointe pas vers la ligne, qui
+     * disparaît dans la même écriture.
+     */
+    public List<ChangementPieceIncluse> retraitAvecLaLigne() {
+        return piecesIncluses.stream()
+                .map(i -> new ChangementPieceIncluse(null, i.getPiece(), EvenementPieceIncluse.RETRAIT,
+                        i.getQuantite(), null))
+                .toList();
     }
 
     /** Ligne de piece detachee prelevee du catalogue. Les prix figent ceux du catalogue. */
@@ -299,6 +387,7 @@ public class LigneIntervention {
     public boolean isAjouteeEnCours() { return ajouteeEnCours; }
     public Boolean getAccordMembre() { return accordMembre; }
     public Optional<ChoixPieces> getChoixPieces() { return Optional.ofNullable(choixPieces); }
+    public List<PieceIncluse> getPiecesIncluses() { return Collections.unmodifiableList(piecesIncluses); }
 
     @Override
     public boolean equals(Object autre) {

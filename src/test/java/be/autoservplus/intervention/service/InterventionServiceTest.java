@@ -1,5 +1,6 @@
 package be.autoservplus.intervention.service;
 
+import be.autoservplus.intervention.repository.LigneInterventionRepository;
 import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.facturation.domain.Avoir;
@@ -76,6 +77,7 @@ class InterventionServiceTest {
     private static final Instant MAINTENANT = Instant.parse("2026-09-14T09:00:00Z");
 
     @Mock private InterventionRepository interventions;
+    @Mock private LigneInterventionRepository lignes;
     @Mock private HistoriqueStatutInterventionRepository historiques;
     @Mock private PrestationRepository prestations;
     @Mock private PieceRepository pieces;
@@ -90,6 +92,7 @@ class InterventionServiceTest {
     @Mock private GenerateurNumeroIntervention numeros;
     @Mock private ServiceCourriel courriel;
     @Mock private ApplicationEventPublisher evenements;
+    @Mock private JournalPiecesIncluses journalPiecesIncluses;
 
     private Clock horloge;
     private InterventionService service;
@@ -103,14 +106,17 @@ class InterventionServiceTest {
     @BeforeEach
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
+        // La ligne nouvelle est enregistrée telle quelle, comme le fait persist.
+        org.mockito.Mockito.lenient().when(lignes.save(any())).thenAnswer(appel -> appel.getArgument(0));
         // La clôture lit par le verrou du dépôt : il rend ce que la lecture préparée par le test
         // rend, comme le dépôt réel rend la même ligne, verrouillée. Lenient parce que la plupart
         // des cas ne clôturent pas.
         org.mockito.Mockito.lenient().when(interventions.verrouiller(any()))
                 .thenAnswer(appel -> interventions.findByReference(appel.getArgument(0)));
-        service = new InterventionService(interventions, historiques, prestations, pieces, factures, avoirs, encaissements,
+        service = new InterventionService(interventions, lignes, historiques, prestations, pieces, factures, avoirs, encaissements,
                 commandes, vehicules, parametres,
-                auteurCourant, auditeur, numeros, courriel, evenements, GaragesDeTest.bruxellois(), horloge);
+                auteurCourant, journalPiecesIncluses, auditeur, numeros, courriel, evenements,
+                GaragesDeTest.bruxellois(), horloge);
 
         marie = new Utilisateur("marie@exemple.be", "$2a$12$h", "Dupont", "Marie", TypeUtilisateur.MEMBRE);
         // Adresse complète : la clôture émet une facture, qui porte l'adresse du client (Q-H-23).

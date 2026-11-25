@@ -63,19 +63,45 @@ public interface InterventionRepository extends JpaRepository<Intervention, Long
 
     /**
      * Parmi ces pièces, celles à commander : leur stock est inférieur à la quantité que
-     * réclament les interventions ouvertes (Q-H-30). Sont comptées les lignes non refusées
-     * des interventions ni terminées ni annulées, celles qui attendent la réponse du membre
-     * (RM-15) comprises. Comparer chaque ligne seule au stock laisserait deux dossiers qui
-     * demandent la même pièce unique se croire servis l'un et l'autre.
+     * réclament les travaux à venir (Q-H-30). Trois sources, toutes non refusées :
+     * les lignes de pièce des interventions ni terminées ni annulées, celles qui attendent la
+     * réponse du membre (RM-15) comprises, les pièces incluses des lignes de forfait de ces
+     * mêmes interventions (V77), et la composition des forfaits des rendez-vous en attente ou
+     * confirmés qui n'ont pas encore d'intervention, sauf pose seule. Comparer chaque source
+     * seule au stock laisserait deux dossiers qui demandent la même pièce unique se croire
+     * servis l'un et l'autre.
+     *
+     * <p>SQL natif : les trois sources n'ont pas de racine commune, et le cumul ne se calcule
+     * qu'après leur union.</p>
      */
-    @Query("""
-            SELECT l.piece.id FROM LigneIntervention l
-            WHERE l.piece.id IN :pieces
-              AND l.intervention.statut NOT IN :closes
-              AND (l.accordMembre IS NULL OR l.accordMembre = true)
-            GROUP BY l.piece.id, l.piece.quantiteStock
-            HAVING l.piece.quantiteStock < SUM(l.quantite)
+    @Query(nativeQuery = true, value = """
+            SELECT d.piece_id FROM (
+                SELECT l.piece_id, l.quantite
+                FROM ligne_intervention l JOIN intervention i ON i.id = l.intervention_id
+                WHERE l.piece_id IS NOT NULL AND i.deleted_at IS NULL
+                  AND i.statut NOT IN ('TERMINEE', 'ANNULEE')
+                  AND (l.accord_membre IS NULL OR l.accord_membre)
+                UNION ALL
+                SELECT pi.piece_id, pi.quantite
+                FROM piece_incluse pi
+                JOIN ligne_intervention l ON l.id = pi.ligne_intervention_id
+                JOIN intervention i ON i.id = l.intervention_id
+                WHERE i.deleted_at IS NULL AND i.statut NOT IN ('TERMINEE', 'ANNULEE')
+                  AND (l.accord_membre IS NULL OR l.accord_membre)
+                UNION ALL
+                SELECT c.piece_id, c.quantite * rs.quantite
+                FROM rdv_service rs
+                JOIN rdv r ON r.id = rs.rdv_id
+                JOIN composition_prestation c ON c.service_id = rs.service_id
+                WHERE r.deleted_at IS NULL AND r.statut IN ('EN_ATTENTE', 'CONFIRME')
+                  AND (rs.pieces_client IS NULL OR NOT rs.pieces_client)
+                  AND NOT EXISTS (SELECT 1 FROM intervention i
+                                  WHERE i.rdv_id = r.id AND i.deleted_at IS NULL)
+            ) d
+            JOIN piece p ON p.id = d.piece_id
+            WHERE d.piece_id IN (:pieces)
+            GROUP BY d.piece_id, p.quantite_stock
+            HAVING p.quantite_stock < SUM(d.quantite)
             """)
-    List<Long> piecesACommander(@Param("pieces") Collection<Long> pieces,
-                                @Param("closes") Collection<StatutIntervention> closes);
+    List<Long> piecesACommander(@Param("pieces") Collection<Long> pieces);
 }

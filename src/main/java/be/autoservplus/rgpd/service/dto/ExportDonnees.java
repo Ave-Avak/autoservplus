@@ -1,5 +1,6 @@
 package be.autoservplus.rgpd.service.dto;
 
+import be.autoservplus.intervention.domain.PieceIncluse;
 import be.autoservplus.avis.domain.Avis;
 import be.autoservplus.devis.domain.Devis;
 import be.autoservplus.devis.domain.LigneDevis;
@@ -665,7 +666,8 @@ public record ExportDonnees(
      * ou {@code HEURE}, la seule dont la quantité peut être décimale (V73). {@code choixPieces}
      * vaut {@code FOURNIES_PAR_GARAGE} ou {@code APPORTEES_PAR_CLIENT} sur un forfait qui
      * proposait le choix, {@code null} ailleurs, comme sur les lignes de rendez-vous, de panier,
-     * de commande et de devis (V77).
+     * de commande et de devis (V77). {@code piecesIncluses} restitue les pièces comprises dans
+     * un forfait, vide pour toute autre ligne.
      */
     public record LigneInterventionExport(
             String type,
@@ -677,7 +679,8 @@ public record ExportDonnees(
             BigDecimal totalHtva,
             BigDecimal totalTvac,
             Boolean accordMembre,
-            String choixPieces) {
+            String choixPieces,
+            List<PieceIncluseExport> piecesIncluses) {
 
         public static LigneInterventionExport de(LigneIntervention ligne) {
             return new LigneInterventionExport(
@@ -690,7 +693,19 @@ public record ExportDonnees(
                     ligne.totalHtva(),
                     ligne.totalTvac(),
                     ligne.getAccordMembre(),
-                    ligne.getChoixPieces().map(Enum::name).orElse(null));
+                    ligne.getChoixPieces().map(Enum::name).orElse(null),
+                    ligne.getPiecesIncluses().stream().map(PieceIncluseExport::de).toList());
+        }
+    }
+
+    /**
+     * Pièce comprise dans le prix d'un forfait (V77), libellé du catalogue en français, langue
+     * d'origine des articles. Elle n'a pas de prix : celui du forfait la couvre.
+     */
+    public record PieceIncluseExport(String libelle, int quantite) {
+
+        public static PieceIncluseExport de(PieceIncluse incluse) {
+            return new PieceIncluseExport(incluse.getPiece().getLibelle(), incluse.getQuantite());
         }
     }
 

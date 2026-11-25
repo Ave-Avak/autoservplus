@@ -625,6 +625,8 @@ input[readonly] { background: var(--gris-50); color: var(--gris-700); }
 .choix-pieces-option { display: flex; align-items: flex-start; gap: var(--espace-s); margin-top: var(--espace-xs); }
 .mention-pieces { display: block; color: var(--gris-700); font-size: 0.875rem; }
 .liste-simple { list-style: none; margin: 0; padding: 0; }
+.champ-court { width: 5rem; }
+.ligne-incluses td { border-top: none; padding-top: 0; }
 
 /* Résumé des erreurs en tête de formulaire, mêmes couleurs que .message-erreur (6.80:1). */
 .resume-erreurs { border: 1px solid var(--erreur-texte); border-radius: var(--rayon); background: #FEE2E2; color: #991B1B; padding: var(--espace-s) var(--espace-m); margin-bottom: var(--espace-l); }

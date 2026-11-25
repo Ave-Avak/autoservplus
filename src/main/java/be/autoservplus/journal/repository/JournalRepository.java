@@ -42,7 +42,7 @@ public class JournalRepository {
      * facultatif sans avoir a construire une variante de requete par combinaison.</p>
      *
      * @param type   {@code CATALOGUE}, {@code INTERVENTION}, {@code REMBOURSEMENT},
-     *               {@code ENCAISSEMENT}, ou {@code null} pour tout
+     *               {@code ENCAISSEMENT}, {@code PIECE_INCLUSE}, ou {@code null} pour tout
      * @param limite plafond de lignes rendues
      */
     public List<Object[]> rechercher(String type, String acteur, Instant depuis, Instant jusqua,
@@ -153,6 +153,29 @@ public class JournalRepository {
                     WHERE e.annule_le IS NOT NULL
                       AND (CAST(:depuis AS timestamptz) IS NULL OR e.annule_le >= CAST(:depuis AS timestamptz))
                       AND (CAST(:jusqua AS timestamptz) IS NULL OR e.annule_le < CAST(:jusqua AS timestamptz))
+                      AND (CAST(:acteur AS text) IS NULL
+                           OR u.nom ILIKE CAST(:motif AS text)
+                           OR u.prenom ILIKE CAST(:motif AS text))
+                    """);
+        }
+        if (tousTypes || EntreeJournal.TYPE_PIECE_INCLUSE.equals(type)) {
+            // Une pièce incluse a sa propre trace (V77). L'événement voyage dans « champ », les
+            // quantités dans « avant » et « apres », la pièce dans « motif ».
+            morceaux.add("""
+                    SELECT h.horodatage AS horodatage,
+                           'PIECE_INCLUSE' AS type,
+                           u.prenom AS prenom, u.nom AS nom,
+                           i.numero AS cible,
+                           h.evenement AS champ,
+                           CAST(h.quantite_avant AS text) AS avant,
+                           CAST(h.quantite_apres AS text) AS apres,
+                           p.libelle AS motif
+                    FROM historique_piece_incluse h
+                    JOIN intervention i ON i.id = h.intervention_id
+                    JOIN piece p ON p.id = h.piece_id
+                    LEFT JOIN utilisateur u ON u.id = h.auteur_id
+                    WHERE (CAST(:depuis AS timestamptz) IS NULL OR h.horodatage >= CAST(:depuis AS timestamptz))
+                      AND (CAST(:jusqua AS timestamptz) IS NULL OR h.horodatage < CAST(:jusqua AS timestamptz))
                       AND (CAST(:acteur AS text) IS NULL
                            OR u.nom ILIKE CAST(:motif AS text)
                            OR u.prenom ILIKE CAST(:motif AS text))

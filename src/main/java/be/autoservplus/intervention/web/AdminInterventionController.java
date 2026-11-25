@@ -2,6 +2,8 @@ package be.autoservplus.intervention.web;
 
 import be.autoservplus.catalogue.domain.ChoixPieces;
 import be.autoservplus.catalogue.domain.ChoixPiecesRefuseException;
+import be.autoservplus.intervention.domain.PieceIncluseRefuseeException;
+import be.autoservplus.intervention.domain.PieceIncluseRefuseeException;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
@@ -291,6 +293,42 @@ public class AdminInterventionController {
             redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.etat"));
         }
         return "redirect:/admin/interventions/" + reference;
+    }
+
+    /** Ajoute une pièce incluse à une ligne de forfait, ou change sa quantité (V77). */
+    @PostMapping("/{reference}/lignes/{ligneId}/pieces-incluses")
+    public String fixerPieceIncluse(@PathVariable UUID reference,
+                                    @PathVariable Long ligneId,
+                                    @RequestParam UUID piece,
+                                    @RequestParam int quantite,
+                                    RedirectAttributes redirection) {
+        return modifierPiecesIncluses(reference, ligneId, redirection,
+                () -> service.fixerPieceIncluse(reference, ligneId, piece, quantite));
+    }
+
+    @PostMapping("/{reference}/lignes/{ligneId}/pieces-incluses/{piece}/retirer")
+    public String retirerPieceIncluse(@PathVariable UUID reference,
+                                      @PathVariable Long ligneId,
+                                      @PathVariable UUID piece,
+                                      RedirectAttributes redirection) {
+        return modifierPiecesIncluses(reference, ligneId, redirection,
+                () -> service.retirerPieceIncluse(reference, ligneId, piece));
+    }
+
+    /** Retour sur la ligne modifiée, dont la liste des pièces incluses porte l'ancre. */
+    private String modifierPiecesIncluses(UUID reference, Long ligneId, RedirectAttributes redirection,
+                                          Runnable action) {
+        try {
+            action.run();
+            redirection.addFlashAttribute("message", message("admin.intervention.incluses.message"));
+        } catch (RessourceIntrouvableException e) {
+            redirection.addFlashAttribute("erreur", message("admin.intervention.erreur.piece"));
+        } catch (PieceIncluseRefuseeException e) {
+            redirection.addFlashAttribute("erreur", message(e.getCleMessage()));
+        } catch (ConflitConcurrenceException e) {
+            redirection.addFlashAttribute("erreur", message("erreur.409.message"));
+        }
+        return "redirect:/admin/interventions/" + reference + "#incluses-" + ligneId;
     }
 
     // --- helpers privees ------------------------------------------------------------
