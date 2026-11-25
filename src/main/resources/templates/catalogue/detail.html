@@ -121,8 +121,18 @@
     <section th:unless="${#lists.isEmpty(photos)}" class="galerie">
         <h2 th:text="#{galerie.titre}">Photos</h2>
         <ul>
-            <li th:each="p : ${photos}">
-                <img th:src="@{/images/galerie/{p}(p=${p.reference()})}" th:alt="${p.texteAlt()}"
+            <!--/* Largeur affichée de 300 pixels, hauteur déduite des dimensions lues au dépôt :
+                 la place de l'image est réservée avant son chargement. La vignette de 480 pixels
+                 suffit à cette largeur, l'original sert aux écrans à forte densité. */-->
+            <li th:each="p : ${photos}"
+                th:with="url=@{/images/galerie/{p}(p=${p.reference()})},
+                         urlVignette=@{/images/galerie/{p}/vignette(p=${p.reference()})}">
+                <img th:src="${url}" th:alt="${p.texteAlt()}"
+                     th:lang="${p.alternative().langueSiRepli(#locale)}"
+                     th:srcset="${p.vignette() and p.dimensionsConnues()}
+                                ? ${urlVignette + ' 480w, ' + url + ' ' + p.largeur() + 'w'} : null"
+                     th:sizes="${p.vignette() and p.dimensionsConnues()} ? '300px' : null"
+                     th:height="${p.dimensionsConnues()} ? ${p.hauteur() * 300 / p.largeur()} : null"
                      loading="lazy" width="300" alt="">
             </li>
         </ul>

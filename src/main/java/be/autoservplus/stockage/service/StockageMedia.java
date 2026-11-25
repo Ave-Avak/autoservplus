@@ -12,6 +12,7 @@ import java.io.UncheckedIOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -95,6 +96,38 @@ public class StockageMedia {
         } catch (IOException e) {
             throw new UncheckedIOException("Lecture du media impossible", e);
         }
+    }
+
+    /**
+     * Dimensions d'un fichier déjà enregistré, lues dans son en-tête. Rien si le fichier
+     * manque ou si son en-tête est illisible : la photo reste affichable sans elles.
+     */
+    public Optional<DimensionsImage> dimensionsDe(String cheminRelatif) {
+        if (!existe(cheminRelatif)) {
+            return Optional.empty();
+        }
+        return DimensionsImage.lire(lire(cheminRelatif));
+    }
+
+    /**
+     * Dépose un fichier fourni par l'application elle-même sous le chemin donné, s'il n'y
+     * est pas déjà. Réservé aux photos de démonstration : un fichier présent n'est jamais
+     * remplacé, pour qu'un redémarrage n'efface rien de ce que le volume porte.
+     *
+     * @return vrai si le fichier a été écrit
+     */
+    public boolean deposerSiAbsent(String cheminRelatif, InputStream contenu) {
+        Path cible = cheminSur(cheminRelatif);
+        if (Files.exists(cible)) {
+            return false;
+        }
+        try {
+            Files.createDirectories(cible.getParent());
+            Files.copy(contenu, cible);
+        } catch (IOException e) {
+            throw new UncheckedIOException("Dépôt du média " + cheminRelatif + " impossible", e);
+        }
+        return true;
     }
 
     public boolean existe(String cheminRelatif) {

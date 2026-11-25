@@ -134,6 +134,7 @@ class NavigationEcransIT extends SocleIntegration {
             new Route("/documents/{type}/{version}", "/documents/CGV/inconnue", Acces.PUBLIC, true, 404),
             new Route("/retractation/formulaire/pdf", "/retractation/formulaire/pdf", Acces.PUBLIC, false, 200),
             new Route("/images/galerie/{reference}", "/images/galerie/" + REF, Acces.PUBLIC, false, 404),
+            new Route("/images/galerie/{reference}/vignette", "/images/galerie/" + REF + "/vignette", Acces.PUBLIC, false, 404),
             // --- etapes de connexion : une connexion aboutie est renvoyee a sa page d arrivee
             ecran("/connexion/etape", Acces.ETAPE),
             ecran("/connexion/etape/second-facteur", Acces.ETAPE),

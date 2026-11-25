@@ -152,7 +152,7 @@ public class CatalogueController {
         modele.addAttribute("rayon", demande);
         modele.addAttribute("donneesStructurees", DonneesStructurees.dePiece(article, nomDuRayon));
         // BL-9 : illustrations de la piece.
-        modele.addAttribute("photos", galerie.dePiece(reference));
+        modele.addAttribute("photos", galerie.illustrationsDePiece(reference));
         return new ModelAndView("catalogue/detail");
     }
 

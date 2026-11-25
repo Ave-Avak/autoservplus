@@ -2,11 +2,15 @@ package be.autoservplus.galerie.service;
 
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.galerie.repository.PhotoRepository;
+import be.autoservplus.galerie.domain.Photo;
 import be.autoservplus.galerie.service.dto.PhotoVue;
+import be.autoservplus.i18n.LanguesSupportees;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -32,16 +36,32 @@ public class GalerieService {
     }
 
     public List<PhotoVue> dePrestation(UUID reference) {
-        return photos.dePrestation(reference).stream().map(PhotoVue::de).toList();
+        return vues(photos.dePrestation(reference));
     }
 
+    /** Photos propres d'une pièce, telles que le back-office les gère. */
     public List<PhotoVue> dePiece(UUID reference) {
-        return photos.dePiece(reference).stream().map(PhotoVue::de).toList();
+        return vues(photos.dePiece(reference));
+    }
+
+    /**
+     * Illustrations de la fiche publique d'une pièce : ses photos propres, ou, à défaut, le
+     * visuel de sa catégorie (V79). Un visuel commun évite une ligne de photo par article
+     * qui pointerait le même fichier, et qu'un retrait au back-office effacerait pour tous.
+     */
+    public List<PhotoVue> illustrationsDePiece(UUID reference) {
+        List<Photo> propres = photos.dePiece(reference);
+        return vues(propres.isEmpty() ? photos.deLaCategorieDeLaPiece(reference) : propres);
     }
 
     /** Photos avant / après d'une intervention. L'appelant a vérifié l'appartenance. */
     public List<PhotoVue> dIntervention(UUID reference) {
-        return photos.dIntervention(reference).stream().map(PhotoVue::de).toList();
+        return vues(photos.dIntervention(reference));
+    }
+
+    private static List<PhotoVue> vues(List<Photo> liste) {
+        Locale langue = LanguesSupportees.plusProche(LocaleContextHolder.getLocale());
+        return liste.stream().map(photo -> PhotoVue.de(photo, langue)).toList();
     }
 
     /**
@@ -53,6 +73,20 @@ public class GalerieService {
         return photos.duCatalogue(photo)
                 .orElseThrow(() -> new RessourceIntrouvableException("Photo", photo))
                 .getChemin();
+    }
+
+    /**
+     * Chemin de la vignette d'une photo du catalogue. Une photo sans vignette répond comme
+     * une référence inconnue : le gabarit ne propose la vignette que si elle existe.
+     */
+    public String cheminVignettePublic(UUID photo) {
+        String vignette = photos.duCatalogue(photo)
+                .orElseThrow(() -> new RessourceIntrouvableException("Photo", photo))
+                .getCheminVignette();
+        if (vignette == null) {
+            throw new RessourceIntrouvableException("Photo", photo);
+        }
+        return vignette;
     }
 
     /**

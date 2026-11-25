@@ -1,7 +1,9 @@
 package be.autoservplus.galerie.domain;
 
+import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.TexteLocalise;
 import be.autoservplus.common.entity.BaseEntity;
 import be.autoservplus.intervention.domain.Intervention;
 import jakarta.persistence.Column;
@@ -15,15 +17,16 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
 /**
  * Une image de la galerie (BL-9). Table {@code photo} du socle V7, elargie par V30.
  *
- * <p><b>Exactement une origine</b> parmi prestation, piece et intervention : invariant
- * porte par le CHECK {@code ck_photo_origine_unique} et redouble ici par des fabriques
- * nommees. Sans lui, une photo sans origine serait orpheline (invisible partout,
+ * <p><b>Exactement une origine</b> parmi prestation, piece, intervention et catégorie
+ * (V79) : invariant porte par le CHECK {@code ck_photo_origine_unique} et redouble ici par
+ * des fabriques nommees. Sans lui, une photo sans origine serait orpheline (invisible partout,
  * jamais nettoyee) et une photo a deux origines s afficherait a deux endroits sans
  * qu on sache lequel fait foi.</p>
  *
@@ -68,14 +71,39 @@ public class Photo extends BaseEntity {
     @JoinColumn(name = "intervention_id", updatable = false)
     private Intervention intervention;
 
+    /** Visuel commun aux articles de la catégorie qui n'ont pas de photo propre (V79). */
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "categorie_id", updatable = false)
+    private Categorie categorie;
+
     @Column(name = "chemin", length = 255, nullable = false, updatable = false)
     private String chemin;
+
+    /**
+     * Version de 480 pixels de large du même fichier (V79), servie aux écrans étroits.
+     * Nulle pour une photo déposée au back-office : le JDK n'écrit pas le WebP.
+     */
+    @Column(name = "chemin_vignette", length = 255, updatable = false)
+    private String cheminVignette;
 
     @Column(name = "texte_alt", length = LONGUEUR_TEXTE_ALT, nullable = false)
     private String texteAlt;
 
+    @Column(name = "texte_alt_nl", length = LONGUEUR_TEXTE_ALT)
+    private String texteAltNl;
+
+    @Column(name = "texte_alt_en", length = LONGUEUR_TEXTE_ALT)
+    private String texteAltEn;
+
     @Column(name = "ordre", nullable = false)
     private short ordre;
+
+    /** Dimensions lues au dépôt (V79), nulles quand l'en-tête n'a pas pu être lu. */
+    @Column(name = "largeur")
+    private Integer largeur;
+
+    @Column(name = "hauteur")
+    private Integer hauteur;
 
     protected Photo() {
         // requis par JPA
@@ -111,6 +139,30 @@ public class Photo extends BaseEntity {
         return photo;
     }
 
+    /** Visuel d'une catégorie, montré sur la fiche d'un article qui n'a pas de photo propre (V79). */
+    public static Photo pourCategorie(Categorie categorie, String chemin, String texteAlt, short ordre) {
+        Photo photo = new Photo(chemin, texteAlt, ordre);
+        photo.categorie = Objects.requireNonNull(categorie, "categorie");
+        return photo;
+    }
+
+    /**
+     * Pose les dimensions lues dans l'en-tête du fichier. Les deux vont ensemble, comme
+     * le veut {@code ck_photo_dimensions} : une largeur seule ne réserve aucune place.
+     */
+    public void poserDimensions(int largeur, int hauteur) {
+        if (largeur <= 0 || hauteur <= 0) {
+            throw new IllegalArgumentException("Dimensions d'image strictement positives attendues.");
+        }
+        this.largeur = largeur;
+        this.hauteur = hauteur;
+    }
+
+    /** Texte alternatif dans la langue demandée, ou en français s'il n'y est pas traduit. */
+    public TexteLocalise texteAlt(Locale langue) {
+        return TexteLocalise.choisir(langue, texteAlt, texteAltNl, texteAltEn);
+    }
+
     public void renommer(String texteAlt) {
         this.texteAlt = exigerTexteAlt(texteAlt);
     }
@@ -132,6 +184,10 @@ public class Photo extends BaseEntity {
     public Piece getPiece() { return piece; }
     public Intervention getIntervention() { return intervention; }
     public String getChemin() { return chemin; }
+    public Categorie getCategorie() { return categorie; }
     public String getTexteAlt() { return texteAlt; }
     public short getOrdre() { return ordre; }
+    public String getCheminVignette() { return cheminVignette; }
+    public Integer getLargeur() { return largeur; }
+    public Integer getHauteur() { return hauteur; }
 }
