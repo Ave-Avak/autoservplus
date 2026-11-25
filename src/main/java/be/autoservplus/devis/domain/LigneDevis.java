@@ -6,6 +6,8 @@ import be.autoservplus.common.montant.CalculTva;
 import jakarta.persistence.Column;
 import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
@@ -49,6 +51,10 @@ public class LigneDevis {
     @Column(name = "taux_tva", nullable = false, updatable = false, precision = 5, scale = 2)
     private BigDecimal tauxTva;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "nature", nullable = false, updatable = false, length = 20)
+    private NatureLigneDevis nature;
+
     /**
      * Repris de la ligne du panier. La ligne de devis n'a aucune clé vers la prestation : sans
      * ce champ, rien ne dirait plus quel choix le prix suppose.
@@ -61,8 +67,12 @@ public class LigneDevis {
         // requis par JPA
     }
 
-    LigneDevis(Devis devis, short rang, String libelle, short quantite,
+    LigneDevis(Devis devis, short rang, NatureLigneDevis nature, String libelle, short quantite,
                BigDecimal prixUnitaireHtva, BigDecimal tauxTva, ChoixPieces choixPieces) {
+        if (choixPieces != null && nature != NatureLigneDevis.PRESTATION) {
+            throw new IllegalArgumentException("Le choix des pièces ne vaut que pour une prestation.");
+        }
+        this.nature = Objects.requireNonNull(nature, "nature");
         this.devis = Objects.requireNonNull(devis, "devis");
         this.rang = rang;
         this.libelle = Objects.requireNonNull(libelle, "libelle");
@@ -88,6 +98,7 @@ public class LigneDevis {
     public short getQuantite() { return quantite; }
     public BigDecimal getPrixUnitaireHtva() { return prixUnitaireHtva; }
     public BigDecimal getTauxTva() { return tauxTva; }
+    public NatureLigneDevis getNature() { return nature; }
     public Optional<ChoixPieces> getChoixPieces() { return Optional.ofNullable(choixPieces); }
 
     @Override

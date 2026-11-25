@@ -1,7 +1,9 @@
 package be.autoservplus.devis.domain;
 
 import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.catalogue.domain.ChoixPieces;
 import be.autoservplus.catalogue.domain.Piece;
+import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.Traductions;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.identite.domain.Langue;
@@ -55,6 +57,7 @@ class DevisTest {
         assertThat(devis.getLignes()).extracting(LigneDevis::getLibelle)
                 .containsExactly("Filtre à huile", "Huile 5W30");
         assertThat(devis.getLignes()).extracting(LigneDevis::getRang).containsExactly((short) 0, (short) 1);
+        assertThat(devis.getLignes()).extracting(LigneDevis::getNature).containsOnly(NatureLigneDevis.PIECE);
         assertThat(devis.getLignes().get(0).totalTvac()).isEqualByComparingTo("24.18");
         assertThat(devis.getMontantTvac()).isEqualByComparingTo(panier.totalTvac());
         assertThat(devis.getMontantHtva()).isEqualByComparingTo(panier.totalHtva());
@@ -98,6 +101,22 @@ class DevisTest {
         assertThat(devis.getLangueDocument()).isEqualTo(Langue.nl);
         assertThat(devis.getLignes()).extracting(LigneDevis::getLibelle)
                 .containsExactly("Oliefilter", "Huile 5W30");
+    }
+
+    @Test
+    @DisplayName("note une ligne de prestation comme telle, avec le choix des pièces repris du panier")
+    void natureDUneLigneDePrestation() {
+        Categorie entretien = new Categorie("ENTRETIEN", "Entretien", TypeCategorie.SERVICE);
+        Prestation vidange = new Prestation(entretien, "VID", "Vidange", new BigDecimal("69.00"), 30);
+        vidange.fixerPrix(new BigDecimal("69.00"), new BigDecimal("39.00"));
+        Panier panier = new Panier(marie);
+        panier.ajouterService(vidange, 1, ChoixPieces.APPORTEES_PAR_CLIENT);
+
+        LigneDevis ligne = Devis.depuisLePanier("DEV-2026-0001", panier, golf, EMISSION, JOUR, Langue.fr)
+                .getLignes().get(0);
+
+        assertThat(ligne.getNature()).isEqualTo(NatureLigneDevis.PRESTATION);
+        assertThat(ligne.getChoixPieces()).contains(ChoixPieces.APPORTEES_PAR_CLIENT);
     }
 
     @Test

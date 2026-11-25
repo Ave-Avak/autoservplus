@@ -190,7 +190,8 @@ public class Devis {
         Locale langueDuDocument = Locale.forLanguageTag(langue.name());
         short rang = 0;
         for (LignePanier ligne : panier.getLignes()) {
-            devis.lignes.add(new LigneDevis(devis, rang++, ligne.libelleAffiche(langueDuDocument),
+            NatureLigneDevis nature = ligne.estService() ? NatureLigneDevis.PRESTATION : NatureLigneDevis.PIECE;
+            devis.lignes.add(new LigneDevis(devis, rang++, nature, ligne.libelleAffiche(langueDuDocument),
                     ligne.getQuantite(), ligne.getPrixUnitaireHtva(), ligne.getTauxTva(),
                     ligne.getChoixPieces().orElse(null)));
         }

@@ -36,7 +36,7 @@ class RecherchePageIT extends SocleIntegration {
 
     @BeforeEach
     void semer() {
-        jdbc.update("INSERT INTO categorie (code, libelle, type) VALUES ('ZQX_PIECES', 'Visserie zqx', 'PIECE')");
+        jdbc.update("INSERT INTO categorie (code, libelle, type, rayon) VALUES ('ZQX_PIECES', 'Visserie zqx', 'PIECE', 'PIECES_AUTO')");
         jdbc.update("INSERT INTO categorie (code, libelle, type) VALUES ('ZQX_SERVICES', 'Contrôle zqx', 'SERVICE')");
         for (int i = 1; i <= 14; i++) {
             jdbc.update("""

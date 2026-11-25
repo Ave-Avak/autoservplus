@@ -31,7 +31,7 @@ class RechercheCatalogueIT extends SocleIntegration {
 
     @BeforeEach
     void semer() {
-        jdbc.update("INSERT INTO categorie (code, libelle, type) VALUES ('ZQX_PIECES', 'Éclairage zqx', 'PIECE')");
+        jdbc.update("INSERT INTO categorie (code, libelle, type, rayon) VALUES ('ZQX_PIECES', 'Éclairage zqx', 'PIECE', 'PIECES_AUTO')");
         jdbc.update("INSERT INTO categorie (code, libelle, type) VALUES ('ZQX_SERVICES', 'Géométrie zqx', 'SERVICE')");
         jdbc.update("""
                 INSERT INTO piece (categorie_id, reference_fabricant, libelle, description, marque, prix_htva, quantite_stock)
