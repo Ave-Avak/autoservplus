@@ -11,7 +11,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
-public interface InterventionRepository extends JpaRepository<Intervention, Long> {
+public interface InterventionRepository extends JpaRepository<Intervention, Long>, VerrouIntervention {
 
     @Query("""
             SELECT DISTINCT i FROM Intervention i
