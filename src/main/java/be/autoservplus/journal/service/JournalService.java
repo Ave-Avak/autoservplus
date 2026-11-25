@@ -142,6 +142,10 @@ public class JournalService {
                     ? messages.getMessage("admin.journal.encaissement-annule", new Object[]{montant, moyen, motif}, langue)
                     : messages.getMessage("admin.journal.encaissement", new Object[]{montant, moyen}, langue);
         }
+        if (EntreeJournal.TYPE_PIECE_INCLUSE.equals(type)) {
+            String evenement = messages.getMessage("admin.journal.piece-incluse." + champ, null, langue);
+            return messages.getMessage("admin.journal.piece-incluse", new Object[]{evenement, motif, transition}, langue);
+        }
         if (EntreeJournal.TYPE_CATALOGUE.equals(type)) {
             return "%s : %s".formatted(champ, transition);
         }

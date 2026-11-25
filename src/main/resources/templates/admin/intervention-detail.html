@@ -223,8 +223,8 @@
             <tbody>
                 <!--/* Une ligne hors total (en attente ou refusée) reste affichée : c'est le
                      dossier de travail du garage, pas la facture. La classe la distingue. */-->
-                <tr th:each="l : ${intervention.lignes()}"
-                    th:classappend="${l.compteDansLeTotal()} ? null : 'ligne-hors-total'">
+                <th:block th:each="l : ${intervention.lignes()}">
+                <tr th:classappend="${l.compteDansLeTotal()} ? null : 'ligne-hors-total'">
                     <td th:text="#{'historique.type.' + ${l.type()}}">Prestation</td>
                     <td>
                         <span th:text="${l.libelle()}">Vidange</span>
@@ -246,6 +246,54 @@
                         </form>
                     </td>
                 </tr>
+                <!--/* Pièces comprises dans le prix d'un forfait dont le garage fournit les pièces
+                     (V77). Non facturées et absentes de la facture, elles sortent du stock à la
+                     clôture. Le garage les ajuste jusque-là au travail réellement fait. */-->
+                <tr th:if="${l.porteDesPiecesIncluses()}" class="ligne-incluses" th:id="'incluses-' + ${l.id()}">
+                    <td></td>
+                    <td colspan="6">
+                        <p class="mention-pieces" th:text="#{admin.intervention.incluses.titre}">Pièces incluses, non facturées</p>
+                        <p th:if="${#lists.isEmpty(l.piecesIncluses())}" class="aide"
+                           th:text="#{admin.intervention.incluses.aucune}">Aucune pièce incluse.</p>
+                        <ul class="liste-simple" th:unless="${#lists.isEmpty(l.piecesIncluses())}">
+                            <li th:each="p : ${l.piecesIncluses()}">
+                                <span th:text="#{admin.intervention.incluses.ligne(${p.libelle()}, ${p.quantite()})}">Filtre à huile : 1</span>
+                                <span th:if="${p.aCommander()}" class="badge badge-en_attente"
+                                      th:text="#{admin.intervention.ligne.a-commander}">À commander</span>
+                                <form th:if="${intervention.estEditable()}" class="formulaire-en-ligne" method="post"
+                                      th:action="@{/admin/interventions/{ref}/lignes/{id}/pieces-incluses(ref=${intervention.reference()},id=${l.id()})}">
+                                    <input type="hidden" name="piece" th:value="${p.referencePiece()}">
+                                    <label class="visuellement-cache" th:for="'quantite-' + ${l.id()} + '-' + ${p.referencePiece()}"
+                                           th:text="#{admin.intervention.incluses.quantite(${p.libelle()})}">Quantité de Filtre à huile</label>
+                                    <input type="number" name="quantite" min="1" required class="champ-court"
+                                           th:id="'quantite-' + ${l.id()} + '-' + ${p.referencePiece()}" th:value="${p.quantite()}">
+                                    <button type="submit" class="lien-bouton" th:text="#{admin.intervention.incluses.modifier}">Modifier</button>
+                                </form>
+                                <form th:if="${intervention.estEditable()}" class="formulaire-en-ligne" method="post"
+                                      th:action="@{/admin/interventions/{ref}/lignes/{id}/pieces-incluses/{piece}/retirer(ref=${intervention.reference()},id=${l.id()},piece=${p.referencePiece()})}">
+                                    <button type="submit" class="lien-bouton texte-erreur"
+                                            th:attr="aria-label=#{admin.intervention.incluses.retirer.aria(${p.libelle()})}"
+                                            th:text="#{admin.intervention.ligne.retirer}">Retirer</button>
+                                </form>
+                            </li>
+                        </ul>
+                        <form th:if="${intervention.estEditable()}" class="formulaire-en-ligne" method="post"
+                              th:action="@{/admin/interventions/{ref}/lignes/{id}/pieces-incluses(ref=${intervention.reference()},id=${l.id()})}">
+                            <label th:for="'incluse-piece-' + ${l.id()}" th:text="#{admin.intervention.incluses.ajout}">Ajouter une pièce incluse</label>
+                            <select name="piece" required th:id="'incluse-piece-' + ${l.id()}">
+                                <option value="" th:text="#{rdv.formulaire.choisir}">Choisissez</option>
+                                <option th:each="p : ${pieces}" th:value="${p.reference()}"
+                                        th:text="#{admin.intervention.ajout-piece.option(${p.libelle()}, ${p.stock()})}">Filtre à huile (en stock : 3)</option>
+                            </select>
+                            <label class="visuellement-cache" th:for="'incluse-quantite-' + ${l.id()}"
+                                   th:text="#{intervention.suivi.quantite}">Quantité</label>
+                            <input type="number" name="quantite" min="1" value="1" required class="champ-court"
+                                   th:id="'incluse-quantite-' + ${l.id()}">
+                            <button type="submit" class="lien-bouton" th:text="#{admin.intervention.ajout.bouton}">Ajouter</button>
+                        </form>
+                    </td>
+                </tr>
+                </th:block>
             </tbody>
             <tfoot>
                 <tr>

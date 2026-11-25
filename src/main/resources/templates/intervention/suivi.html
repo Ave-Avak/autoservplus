@@ -116,7 +116,14 @@
             <tbody>
                 <tr th:each="l : ${intervention.lignes()}">
                     <td><span th:text="${l.libelle()}">Vidange</span>
-                        <small th:replace="~{fragments/choix-pieces :: mention(${l.mentionPieces()})}"></small></td>
+                        <small th:replace="~{fragments/choix-pieces :: mention(${l.mentionPieces()})}"></small>
+                        <!--/* Pièces comprises dans le forfait, en lecture seule : le membre voit ce qui
+                             est posé. Elles ne figurent jamais sur la facture. */-->
+                        <ul class="liste-simple mention-pieces" th:unless="${#lists.isEmpty(l.piecesIncluses())}"
+                            th:attr="aria-label=#{intervention.suivi.incluses}">
+                            <li th:each="p : ${l.piecesIncluses()}"
+                                th:text="#{intervention.suivi.incluse(${p.libelle()}, ${p.quantite()})}">Comprise : filtre à huile (1)</li>
+                        </ul></td>
                     <td th:text="${l.quantite()}">1</td>
                 </tr>
             </tbody>

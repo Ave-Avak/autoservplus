@@ -115,11 +115,14 @@ public record InterventionVueAdmin(
      * {@code aCommander} ne vaut que pour une pièce non refusée dont le stock ne couvre pas
      * les interventions ouvertes : une ligne refusée ne sera pas posée.
      * {@code mentionPieces} est la clé de la mention du choix des pièces, nulle sans choix.
+     * {@code porteDesPiecesIncluses} ouvre le formulaire des pièces incluses d'un forfait dont le
+     * garage fournit les pièces (V77), même quand la composition est vide.
      */
     public record LigneInterventionVue(
             Long id, String type, String libelle, String quantite,
             String prixUnitaireHtva, String totalHtva,
-            String cleEtat, boolean compteDansLeTotal, boolean aCommander, String mentionPieces) {
+            String cleEtat, boolean compteDansLeTotal, boolean aCommander, String mentionPieces,
+            boolean porteDesPiecesIncluses, List<PieceIncluseVue> piecesIncluses) {
 
         public static LigneInterventionVue de(LigneIntervention l, Set<Long> piecesACommander) {
             return new LigneInterventionVue(
@@ -133,7 +136,9 @@ public record InterventionVueAdmin(
                     l.estFacturable(),
                     l.getPiece() != null && !l.estRefusee()
                             && piecesACommander.contains(l.getPiece().getId()),
-                    ChoixPieces.cleMentionDe(l.getChoixPieces()));
+                    ChoixPieces.cleMentionDe(l.getChoixPieces()),
+                    l.porteDesPiecesIncluses(),
+                    l.getPiecesIncluses().stream().map(i -> PieceIncluseVue.de(i, piecesACommander)).toList());
         }
 
         private static String cleEtat(LigneIntervention l) {
