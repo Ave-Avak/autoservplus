@@ -1,11 +1,13 @@
 package be.autoservplus.facturation.service;
 
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.facturation.domain.Avoir;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.repository.AvoirRepository;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.support.FacturesDeTest;
 import be.autoservplus.vente.domain.Commande;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -26,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -120,11 +123,39 @@ class AvoirServiceTest {
     }
 
     @Test
-    @DisplayName("remonte a la commande par la facture")
-    void commandeDeLAvoir() {
-        Avoir avoir = Avoir.contrePassant("AV-2026-0001", facture,
-                Avoir.MOTIF_RETRACTATION, MAINTENANT);
+    @DisplayName("annulation d'atelier : numéro de la suite des avoirs, précision gardée")
+    void annulationDAtelier() {
+        Facture atelier = FacturesDeTest.factureDAtelier(EMISSION);
+        when(avoirs.findByFacture(atelier)).thenReturn(Optional.empty());
+        when(numeros.prochain()).thenReturn(new NumeroAvoir((short) 2026, 3, "AV-2026-0003"));
+        when(avoirs.save(any(Avoir.class))).thenAnswer(i -> i.getArgument(0));
 
-        assertThat(service.commandeDe(avoir)).isSameAs(commande);
+        Avoir avoir = service.annulerFactureAtelier(atelier, "Erreur de quantité");
+
+        assertThat(avoir.getNumero()).isEqualTo("AV-2026-0003");
+        assertThat(avoir.getMotif()).isEqualTo(Avoir.MOTIF_ANNULATION_ATELIER);
+        assertThat(avoir.getPrecision()).isEqualTo("Erreur de quantité");
+        assertThat(avoir.getDateEmission()).isEqualTo(MAINTENANT);
+    }
+
+    @Test
+    @DisplayName("annulation d'atelier refusée sans précision, ou sur une facture déjà annulée, sans numéro consommé")
+    void annulationRefusee() {
+        Facture atelier = FacturesDeTest.factureDAtelier(EMISSION);
+
+        assertThatThrownBy(() -> service.annulerFactureAtelier(atelier, " "))
+                .isInstanceOf(RefusTraduit.class)
+                .extracting(e -> ((RefusTraduit) e).getCleMessage())
+                .isEqualTo("admin.intervention.erreur.precision-obligatoire");
+        assertThatThrownBy(() -> service.annulerFactureAtelier(atelier, "x".repeat(501)))
+                .extracting(e -> ((RefusTraduit) e).getCleMessage())
+                .isEqualTo("admin.intervention.erreur.precision-longueur");
+
+        when(avoirs.findByFacture(atelier)).thenReturn(Optional.of(
+                Avoir.annulantFactureAtelier("AV-2026-0002", atelier, "Erreur", MAINTENANT)));
+        assertThatThrownBy(() -> service.annulerFactureAtelier(atelier, "Erreur"))
+                .extracting(e -> ((RefusTraduit) e).getCleMessage())
+                .isEqualTo("admin.intervention.erreur.facture-deja-annulee");
+        verifyNoInteractions(numeros);
     }
 }

@@ -5,7 +5,6 @@ import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.repository.AvoirRepository;
 import be.autoservplus.facturation.service.dto.DocumentAvoir;
 import be.autoservplus.facturation.service.dto.DocumentFacture;
-import be.autoservplus.vente.domain.Commande;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.MessageSource;
@@ -42,17 +41,15 @@ public class PdfAvoirService {
     private static final Logger log = LoggerFactory.getLogger(PdfAvoirService.class);
 
     private final AvoirRepository avoirs;
-    private final AvoirService avoirService;
     private final FactureService factureService;
     private final GenerateurPdfAvoir generateur;
     private final ArchiveComptable archive;
     private final MessageSource messages;
 
-    public PdfAvoirService(AvoirRepository avoirs, AvoirService avoirService,
+    public PdfAvoirService(AvoirRepository avoirs,
                            FactureService factureService, GenerateurPdfAvoir generateur,
                            ArchiveComptable archive, MessageSource messages) {
         this.avoirs = avoirs;
-        this.avoirService = avoirService;
         this.factureService = factureService;
         this.generateur = generateur;
         this.archive = archive;
@@ -96,7 +93,6 @@ public class PdfAvoirService {
      */
     private DocumentAvoir documentDe(Avoir avoir) {
         Facture facture = avoir.getFacture();
-        Commande commande = avoirService.commandeDe(avoir);
         // Instantané de la facture corrigée : la note de crédit vise le même client,
         // dans la même langue.
         Locale langue = Locale.forLanguageTag(facture.getLangueDocument().name());
@@ -106,7 +102,7 @@ public class PdfAvoirService {
                 avoir.getDateEmission(),
                 facture.getNumero(),
                 facture.getDateEmission(),
-                commande.getNumero(),
+                facture.estDAtelier() ? null : facture.getCommande().getNumero(),
                 avoir.getMotif(),
                 PdfFactureService.clientDe(facture, messages, langue),
                 lignes,
@@ -114,7 +110,9 @@ public class PdfAvoirService {
                 avoir.getMontantHtva(),
                 avoir.getMontantTva(),
                 avoir.getMontantTvac(),
-                langue);
+                langue,
+                facture.estDAtelier() ? factureService.interventionFacturee(facture).getNumero() : null,
+                avoir.getPrecision());
     }
 
 }

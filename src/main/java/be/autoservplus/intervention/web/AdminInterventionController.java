@@ -1,6 +1,7 @@
 package be.autoservplus.intervention.web;
 
 import be.autoservplus.common.exception.ConflitConcurrenceException;
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.QuantiteLigneRefuseeException;
@@ -115,6 +116,25 @@ public class AdminInterventionController {
                     String.join(", ", cloture.piecesRameneesAZero())));
         }
         return confirmation.toString();
+    }
+
+    /**
+     * Note de crédit totale de la facture d'atelier (Q-H-14, Q-H-50). La précision saisie
+     * revient dans le formulaire quand elle est refusée.
+     */
+    @PostMapping("/{reference}/facture/annulation")
+    public String annulerFacture(@AuthenticationPrincipal UserDetails admin,
+                                 @PathVariable UUID reference,
+                                 @RequestParam(required = false) String precision,
+                                 RedirectAttributes redirection) {
+        try {
+            String avoir = service.annulerFactureAtelier(reference, precision);
+            redirection.addFlashAttribute("message", message("admin.intervention.message.facture-annulee", avoir));
+        } catch (RefusTraduit refus) {
+            redirection.addFlashAttribute("erreur", message(refus.getCleMessage()));
+            redirection.addFlashAttribute("precisionSaisie", precision);
+        }
+        return "redirect:/admin/interventions/" + reference;
     }
 
     @PostMapping("/{reference}/annuler")

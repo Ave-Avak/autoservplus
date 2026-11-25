@@ -15,13 +15,15 @@ import java.util.UUID;
  * <p>Une seule forme pour les deux pièces : le garage y cherche les mêmes choses, le
  * numéro, la date, le client, la commande et le montant. {@code numeroFacture} n'est
  * renseigné que pour un avoir, qui renvoie à la facture qu'il corrige, et {@code motif}
- * aussi. Une pièce d'atelier renvoie à son intervention, une pièce de vente à sa commande.</p>
+ * aussi, sous sa forme stable, avec {@code precision} pour une annulation d'atelier. Une pièce
+ * d'atelier renvoie à son intervention, une pièce de vente à sa commande.</p>
  */
 public record PieceComptableLigne(UUID reference, String numero, LocalDateTime dateEmission,
                                   String client, String email, UUID referenceCommande,
                                   String numeroCommande, String totalTvac,
                                   String numeroFacture, String motif,
-                                  UUID referenceIntervention, String numeroIntervention) {
+                                  UUID referenceIntervention, String numeroIntervention,
+                                  String precision) {
 
     public static PieceComptableLigne deFacture(Facture facture, ZoneId zone) {
         Commande commande = facture.getCommande();
@@ -37,7 +39,8 @@ public record PieceComptableLigne(UUID reference, String numero, LocalDateTime d
                 null,
                 null,
                 facture.getIntervention() == null ? null : facture.getIntervention().getReference(),
-                facture.getIntervention() == null ? null : facture.getIntervention().getNumero());
+                facture.getIntervention() == null ? null : facture.getIntervention().getNumero(),
+                null);
     }
 
     public static PieceComptableLigne deAvoir(Avoir avoir, ZoneId zone) {
@@ -55,6 +58,7 @@ public record PieceComptableLigne(UUID reference, String numero, LocalDateTime d
                 facture.getNumero(),
                 avoir.getMotif(),
                 facture.getIntervention() == null ? null : facture.getIntervention().getReference(),
-                facture.getIntervention() == null ? null : facture.getIntervention().getNumero());
+                facture.getIntervention() == null ? null : facture.getIntervention().getNumero(),
+                avoir.getPrecision());
     }
 }

@@ -6,11 +6,14 @@ import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsDepassementCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.facturation.domain.Avoir;
 import be.autoservplus.facturation.domain.Facture;
+import be.autoservplus.facturation.service.AvoirService;
 import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -82,6 +85,7 @@ public class InterventionService {
     private final PrestationRepository prestations;
     private final PieceRepository pieces;
     private final FactureService factures;
+    private final AvoirService avoirs;
     private final CommandeRepository commandes;
     private final VehiculeRepository vehicules;
     private final ParametreAtelierRepository parametres;
@@ -98,6 +102,7 @@ public class InterventionService {
                                PrestationRepository prestations,
                                PieceRepository pieces,
                                FactureService factures,
+                               AvoirService avoirs,
                                CommandeRepository commandes,
                                VehiculeRepository vehicules,
                                ParametreAtelierRepository parametres,
@@ -113,6 +118,7 @@ public class InterventionService {
         this.prestations = prestations;
         this.pieces = pieces;
         this.factures = factures;
+        this.avoirs = avoirs;
         this.commandes = commandes;
         this.vehicules = vehicules;
         this.parametres = parametres;
@@ -298,10 +304,28 @@ public class InterventionService {
         return Optional.of(titulaire.getReference());
     }
 
+    /**
+     * Annule la facture d'atelier de l'intervention par une note de crédit totale, avec la
+     * précision de l'administrateur (Q-H-14, Q-H-50). L'intervention ne change pas : elle reste
+     * terminée, seule sa facture est corrigée.
+     *
+     * @return numéro de la note de crédit
+     * @throws RefusTraduit sans facture, facture déjà annulée, ou précision invalide
+     */
+    @Transactional
+    public String annulerFactureAtelier(UUID reference, String precision) {
+        Facture facture = factures.factureDe(charger(reference))
+                .orElseThrow(() -> new RefusTraduit("admin.intervention.erreur.sans-facture-a-annuler",
+                        "L'intervention " + reference + " n'a pas de facture d'atelier."));
+        return avoirs.annulerFactureAtelier(facture, precision).getNumero();
+    }
+
     private FactureAtelierVue vueFacture(Facture facture) {
+        Optional<Avoir> avoir = avoirs.avoirDe(facture);
         return new FactureAtelierVue(facture.getReference(), facture.getNumero(),
                 FormatageRdv.eurosEcran(facture.getMontantTvac()), facture.getDateEcheance(),
-                facture.getMontantTvac().signum() == 0 ? "facture.statut.rien-a-regler" : "facture.statut.a-regler");
+                facture.getMontantTvac().signum() == 0 ? "facture.statut.rien-a-regler" : "facture.statut.a-regler",
+                avoir.map(Avoir::getReference).orElse(null), avoir.map(Avoir::getNumero).orElse(null));
     }
 
     /**

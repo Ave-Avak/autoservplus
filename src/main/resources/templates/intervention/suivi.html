@@ -135,11 +135,17 @@
         <p>
             <span th:text="#{intervention.facture.resume(${facture.numero()}, ${facture.montantTvac()})}">
                 Facture 2026-0042, 117,98 € TVAC</span>
-            <span class="badge badge-en_attente" th:text="#{${facture.cleStatut()}}">À régler</span>
+            <span th:unless="${facture.estAnnulee()}" class="badge badge-en_attente"
+                  th:text="#{${facture.cleStatut()}}">À régler</span>
+            <span th:if="${facture.estAnnulee()}" class="badge badge-annule"
+                  th:text="#{facture.statut.annulee(${facture.numeroAvoir()})}">Annulée par la note de crédit AV-2026-0003</span>
         </p>
-        <p th:text="#{intervention.facture.a-regler}">À régler à l'atelier, au retrait de votre véhicule.</p>
+        <p th:unless="${facture.estAnnulee()}" th:text="#{intervention.facture.a-regler}">
+            À régler à l'atelier, au retrait de votre véhicule.</p>
         <p><a th:href="@{/factures/{ref}/pdf(ref=${facture.reference()})}"
               th:text="#{intervention.facture.pdf}">Télécharger la facture</a></p>
+        <p th:if="${facture.estAnnulee()}"><a th:href="@{/avoirs/{ref}/pdf(ref=${facture.referenceAvoir()})}"
+              th:text="#{intervention.facture.avoir.pdf(${facture.numeroAvoir()})}">Télécharger la note de crédit AV-2026-0003 (PDF)</a></p>
     </section>
 
     <!--/* BL-4 : proposé seulement si le dépôt aboutirait, travaux terminés et aucun avis

@@ -25,7 +25,7 @@
     <form class="formulaire" th:action="@{/admin/factures}" method="get" role="search">
         <div th:replace="~{fragments/pagination :: periode}"></div>
         <div class="champ">
-            <label for="recherche" th:text="#{admin.ventes.filtre.recherche.factures}">Numéro de facture ou de commande, ou adresse du membre</label>
+            <label for="recherche" th:text="#{admin.ventes.filtre.recherche.factures}">Numéro de facture, de commande ou d'intervention, ou adresse du membre</label>
             <input type="search" id="recherche" name="recherche" th:value="${recherche}">
         </div>
         <button type="submit" class="btn-cta" th:text="#{admin.ventes.filtre.appliquer}">Afficher</button>

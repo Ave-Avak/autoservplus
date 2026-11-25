@@ -9,7 +9,12 @@ import java.util.UUID;
  * statut se lit ici, jamais sur le document (Q-H-49).
  *
  * @param cleStatut clé i18n du statut : à régler, ou rien à régler pour une facture à 0 €
+ * @param referenceAvoir note de crédit qui annule la facture, nulle sinon (Q-H-51)
  */
 public record FactureAtelierVue(UUID reference, String numero, String montantTvac, LocalDate echeance,
-                                String cleStatut) {
+                                String cleStatut, UUID referenceAvoir, String numeroAvoir) {
+
+    public boolean estAnnulee() {
+        return referenceAvoir != null;
+    }
 }

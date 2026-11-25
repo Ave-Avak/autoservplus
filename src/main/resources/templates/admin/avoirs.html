@@ -25,7 +25,7 @@
     <form class="formulaire" th:action="@{/admin/avoirs}" method="get" role="search">
         <div th:replace="~{fragments/pagination :: periode}"></div>
         <div class="champ">
-            <label for="recherche" th:text="#{admin.ventes.filtre.recherche.avoirs}">Numéro d'avoir ou de facture, ou adresse du membre</label>
+            <label for="recherche" th:text="#{admin.ventes.filtre.recherche.avoirs}">Numéro d'avoir, de facture ou d'intervention, ou adresse du membre</label>
             <input type="search" id="recherche" name="recherche" th:value="${recherche}">
         </div>
         <button type="submit" class="btn-cta" th:text="#{admin.ventes.filtre.appliquer}">Afficher</button>
@@ -73,7 +73,9 @@
                        th:text="${a.numeroIntervention()}">INT-2026-0001</a>
                 </td>
                 <td th:text="${a.totalTvac()}">48,38 €</td>
-                <td th:text="${a.motif()}">Rétractation</td>
+                <td><span th:text="#{'avoir.motif.' + ${a.motif()}}">Rétractation du client</span>
+                    <th:block th:if="${a.precision() != null}"><br><span th:text="${a.precision()}">Erreur de quantité</span></th:block>
+                </td>
                 <td><a th:href="@{/admin/avoirs/{ref}/pdf(ref=${a.reference()})}"
                        th:text="#{admin.ventes.telecharger.avoir(${a.numero()})}">Télécharger NC-2026-0001 (PDF)</a></td>
             </tr>

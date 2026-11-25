@@ -28,6 +28,9 @@ import java.util.Locale;
  * <p>{@code locale} est celle du <b>membre</b>, comme pour la facture : la note de
  * crédit est émise dans la langue du client, pas dans celle de la session qui la
  * télécharge, et surtout dans la même langue que la facture qu'elle corrige.</p>
+ *
+ * <p>Une note de crédit d'atelier renvoie à l'intervention et non à une commande, et porte
+ * la précision de l'administrateur, imprimée telle que saisie (Q-H-50).</p>
  */
 public record DocumentAvoir(
         String numero,
@@ -42,5 +45,21 @@ public record DocumentAvoir(
         BigDecimal totalHtva,
         BigDecimal totalTva,
         BigDecimal totalTvac,
-        Locale locale) {
+        Locale locale,
+        String numeroIntervention,
+        String precision) {
+
+    /** Note de crédit d'une facture de commande (F30) : ni intervention ni précision. */
+    public DocumentAvoir(String numero, Instant dateEmission, String numeroFactureOrigine,
+                         Instant dateFactureOrigine, String numeroCommande, String cleMotif,
+                         DocumentFacture.ClientFacture client, List<DocumentFacture.LigneFacture> lignes,
+                         VentilationTva ventilation, BigDecimal totalHtva, BigDecimal totalTva,
+                         BigDecimal totalTvac, Locale locale) {
+        this(numero, dateEmission, numeroFactureOrigine, dateFactureOrigine, numeroCommande, cleMotif,
+                client, lignes, ventilation, totalHtva, totalTva, totalTvac, locale, null, null);
+    }
+
+    public boolean estDAtelier() {
+        return numeroIntervention != null;
+    }
 }

@@ -1,11 +1,10 @@
 package be.autoservplus.facturation.service;
 
-import be.autoservplus.common.exception.RegleMetierException;
+import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.facturation.domain.Avoir;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.repository.AvoirRepository;
-import be.autoservplus.vente.domain.Commande;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -79,6 +78,38 @@ public class AvoirService {
                 .orElseGet(() -> emettre(facture, motif));
     }
 
+    /**
+     * Annule une facture d'atelier par une note de crédit totale (Q-H-14, Q-H-50). La
+     * précision est obligatoire et s'imprime telle que saisie. Une facture déjà annulée est
+     * refusée, à l'écran comme en base ({@code uq_avoir_facture}) : deux annulations
+     * simultanées ne donnent qu'un avoir.
+     *
+     * @throws RefusTraduit si la précision manque, dépasse 500 caractères, ou si la facture
+     *         a déjà sa note de crédit
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Avoir annulerFactureAtelier(Facture facture, String precision) {
+        String texte = precision == null ? "" : precision.strip();
+        if (texte.isEmpty()) {
+            throw new RefusTraduit("admin.intervention.erreur.precision-obligatoire",
+                    "La précision de l'annulation est obligatoire.");
+        }
+        if (texte.length() > Avoir.PRECISION_MAX) {
+            throw new RefusTraduit("admin.intervention.erreur.precision-longueur",
+                    "La précision de l'annulation dépasse 500 caractères.");
+        }
+        if (avoirs.findByFacture(facture).isPresent()) {
+            throw new RefusTraduit("admin.intervention.erreur.facture-deja-annulee",
+                    "La facture " + facture.getNumero() + " a déjà sa note de crédit.");
+        }
+        NumeroAvoir numero = numeros.prochain();
+        Avoir avoir = avoirs.save(Avoir.annulantFactureAtelier(
+                numero.valeur(), facture, texte, horloge.instant()));
+        log.info("Avoir {} emis en annulation de la facture d'atelier {} ({} EUR TVAC).",
+                avoir.getNumero(), facture.getNumero(), avoir.getMontantTvac());
+        return avoir;
+    }
+
     private Avoir emettre(Facture facture, String motif) {
         NumeroAvoir numero = numeros.prochain();
         Avoir avoir = avoirs.save(Avoir.contrePassant(
@@ -107,21 +138,5 @@ public class AvoirService {
             throw new RessourceIntrouvableException("Avoir", reference);
         }
         return avoir;
-    }
-
-    /**
-     * Commande à l'origine de l'avoir, en remontant par la facture.
-     *
-     * @throws RegleMetierException si la facture corrigée vient d'une intervention
-     *         (RM-17) : le bloc n'est pas branché, et le document d'avoir affiche le
-     *         numéro de commande
-     */
-    public Commande commandeDe(Avoir avoir) {
-        Commande commande = avoir.getFacture().getCommande();
-        if (commande == null) {
-            throw new RegleMetierException(
-                    "L avoir d une facture d intervention n est pas encore gere.");
-        }
-        return commande;
     }
 }

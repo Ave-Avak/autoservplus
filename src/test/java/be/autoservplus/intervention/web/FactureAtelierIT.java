@@ -23,6 +23,7 @@ import be.autoservplus.vente.service.PrestatairePaiementFictif;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -43,6 +44,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -302,6 +304,131 @@ class FactureAtelierIT extends SocleIntegration {
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Intervention")))
                 .andExpect(content().string(containsString(numeroIntervention)));
+    }
+
+    /** Entrée directe terminée, une ligne à 49,00 HTVA : sa facture d'atelier est émise. */
+    private UUID factureAtelierEmise(Utilisateur membre) {
+        UUID dossier = entreeDirecteEnCours(vehicule(membre));
+        ajouter(dossier, prestation("49.00", UnitePrestation.FORFAIT), "1");
+        enAdministrateur(() -> interventions.terminer(dossier));
+        return dossier;
+    }
+
+    private org.springframework.test.web.servlet.ResultActions annuler(UUID dossier, String precision) throws Exception {
+        return mvc.perform(post("/admin/interventions/{ref}/facture/annulation", dossier).with(admin).with(csrf())
+                .param("precision", precision).locale(Locale.FRENCH));
+    }
+
+    private String avoirDe(UUID dossier, String colonne) {
+        List<String> valeurs = jdbc.queryForList("SELECT a." + colonne + "::text FROM avoir a JOIN facture f "
+                + "ON f.id = a.facture_id JOIN intervention i ON i.id = f.intervention_id WHERE i.reference = ?",
+                String.class, dossier);
+        return valeurs.isEmpty() ? null : valeurs.getFirst();
+    }
+
+    @Nested
+    @DisplayName("note de crédit d'une facture d'atelier (Q-H-50, Q-H-51, Q-H-52)")
+    class NoteDeCredit {
+
+        @Test
+        @DisplayName("l'administrateur annule la facture : statut, liens vers le PDF, liste des avoirs")
+        void annulation() throws Exception {
+            Utilisateur marie = membre(true);
+            UUID dossier = factureAtelierEmise(marie);
+
+            annuler(dossier, "  Vidange facturée deux fois  ")
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(flash().attribute("message", containsString("Note de crédit AV-")));
+
+            assertThat(avoirDe(dossier, "motif")).isEqualTo("ANNULATION_ATELIER");
+            assertThat(avoirDe(dossier, "precision")).isEqualTo("Vidange facturée deux fois");
+            String avoir = avoirDe(dossier, "reference");
+            String numero = avoirDe(dossier, "numero");
+
+            mvc.perform(get("/admin/interventions/{ref}", dossier).with(admin).locale(Locale.FRENCH))
+                    .andExpect(content().string(containsString("Annulée par la note de crédit " + numero)))
+                    .andExpect(content().string(containsString("/admin/avoirs/" + avoir + "/pdf")))
+                    .andExpect(content().string(org.hamcrest.Matchers.not(containsString("/facture/annulation"))));
+            mvc.perform(get("/mes-interventions/{ref}", dossier).with(user(marie.getEmail())).locale(Locale.FRENCH))
+                    .andExpect(content().string(containsString("Annulée par la note de crédit " + numero)))
+                    .andExpect(content().string(containsString("/avoirs/" + avoir + "/pdf")))
+                    .andExpect(content().string(org.hamcrest.Matchers.not(containsString("au retrait de votre véhicule"))));
+
+            byte[] pdf = mvc.perform(get("/avoirs/{ref}/pdf", avoir).with(user(marie.getEmail())))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsByteArray();
+            String texte = new com.lowagie.text.pdf.parser.PdfTextExtractor(new com.lowagie.text.pdf.PdfReader(pdf))
+                    .getTextFromPage(1).replaceAll("\\s+", " ");
+            String numeroIntervention = jdbc.queryForObject("SELECT numero FROM intervention WHERE reference = ?",
+                    String.class, dossier);
+            assertThat(texte).contains(numeroIntervention, "Vidange facturée deux fois",
+                    "Annulation de la facture d'atelier");
+
+            mvc.perform(get("/admin/avoirs").with(admin).param("recherche", numeroIntervention).locale(Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("/admin/interventions/" + dossier)))
+                    .andExpect(content().string(containsString("Annulation de la facture d&#39;atelier")))
+                    .andExpect(content().string(containsString("Vidange facturée deux fois")));
+        }
+
+        @Test
+        @DisplayName("précision blanche refusée et rendue au formulaire, seconde annulation refusée")
+        void refus() throws Exception {
+            UUID dossier = factureAtelierEmise(membre(true));
+
+            annuler(dossier, "   ")
+                    .andExpect(flash().attribute("erreur", containsString("précision de l'annulation est obligatoire")))
+                    .andExpect(flash().attribute("precisionSaisie", "   "));
+            assertThat(avoirDe(dossier, "numero")).isNull();
+
+            annuler(dossier, "Erreur de quantité").andExpect(flash().attribute("message", containsString("AV-")));
+            annuler(dossier, "Encore")
+                    .andExpect(flash().attribute("erreur", containsString("déjà sa note de crédit")));
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM avoir a JOIN facture f ON f.id = a.facture_id "
+                    + "JOIN intervention i ON i.id = f.intervention_id WHERE i.reference = ?", Integer.class, dossier))
+                    .isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("la note de crédit d'une facture complémentaire laisse intacte la facture de la commande")
+        void factureComplementaire() throws Exception {
+            Utilisateur marie = membre(true);
+            Vehicule golf = vehicule(marie);
+            UUID commande = commandePayee(marie);
+            UUID dossier = enAdministrateur(() -> interventions.creerDepuisCommande(commande, golf.getReference()))
+                    .getReference();
+            enAdministrateur(() -> interventions.demarrer(dossier));
+            ajouter(dossier, prestation("1.00", UnitePrestation.HEURE), "1");
+            enAdministrateur(() -> interventions.terminer(dossier));
+
+            annuler(dossier, "Ajout facturé par erreur").andExpect(flash().attribute("message", containsString("AV-")));
+
+            assertThat(jdbc.queryForObject("SELECT count(*) FROM avoir a JOIN facture f ON f.id = a.facture_id "
+                    + "JOIN commande c ON c.id = f.commande_id WHERE c.reference = ?", Integer.class, commande))
+                    .isZero();
+        }
+
+        @Test
+        @DisplayName("en base : précision exigée pour une annulation d'atelier, interdite sinon, immuable après émission")
+        void contraintesEnBase() throws Exception {
+            UUID dossier = factureAtelierEmise(membre(true));
+            Long facture = jdbc.queryForObject("SELECT f.id FROM facture f JOIN intervention i "
+                    + "ON i.id = f.intervention_id WHERE i.reference = ?", Long.class, dossier);
+            String insertion = "INSERT INTO avoir (numero, facture_id, montant_htva, montant_tva, montant_tvac, "
+                    + "motif, precision) VALUES (?, ?, 1.00, 0.00, 1.00, ?, ?)";
+
+            assertThatThrownBy(() -> jdbc.update(insertion, "AV-IT-" + n + "-1", facture, "ANNULATION_ATELIER", null))
+                    .hasMessageContaining("ck_avoir_precision");
+            assertThatThrownBy(() -> jdbc.update(insertion, "AV-IT-" + n + "-2", facture, "ANNULATION_ATELIER", " \t "))
+                    .hasMessageContaining("ck_avoir_precision");
+            assertThatThrownBy(() -> jdbc.update(insertion, "AV-IT-" + n + "-3", facture, "RETRACTATION_F30", "Texte"))
+                    .hasMessageContaining("ck_avoir_precision");
+
+            annuler(dossier, "Erreur de quantité");
+            assertThatThrownBy(() -> jdbc.update("UPDATE avoir SET precision = 'Réécrite' WHERE reference = ?::uuid",
+                    avoirDe(dossier, "reference")))
+                    .hasMessageContaining("immuable");
+            assertThat(avoirDe(dossier, "precision")).isEqualTo("Erreur de quantité");
+        }
     }
 
     /** Commande d'une prestation payée par la vraie chaîne : la facture de commande naît du listener. */

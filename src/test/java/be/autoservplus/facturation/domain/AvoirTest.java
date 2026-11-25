@@ -2,6 +2,7 @@ package be.autoservplus.facturation.domain;
 
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
+import be.autoservplus.support.FacturesDeTest;
 import be.autoservplus.vente.domain.Commande;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -100,5 +101,42 @@ class AvoirTest {
         assertThatThrownBy(() -> Avoir.contrePassant("AV-2026-0001", facture,
                 Avoir.MOTIF_RETRACTATION, null))
                 .isInstanceOf(NullPointerException.class);
+    }
+
+    @Test
+    @DisplayName("annulation d'atelier : montants de la facture, motif stable, précision nettoyée")
+    void annulationDAtelier() {
+        Facture atelier = FacturesDeTest.factureDAtelier(EMISSION);
+
+        Avoir avoir = Avoir.annulantFactureAtelier("AV-2026-0003", atelier, "  Erreur de quantité  ",
+                CONTRE_PASSATION);
+
+        assertThat(avoir.getMotif()).isEqualTo("ANNULATION_ATELIER");
+        assertThat(avoir.getPrecision()).isEqualTo("Erreur de quantité");
+        assertThat(avoir.getMontantTvac()).isEqualByComparingTo("121.00");
+    }
+
+    @Test
+    @DisplayName("annulation d'atelier : précision blanche ou trop longue refusée")
+    void precisionInvalide() {
+        Facture atelier = FacturesDeTest.factureDAtelier(EMISSION);
+
+        assertThatThrownBy(() -> Avoir.annulantFactureAtelier("AV-2026-0003", atelier, "   ", CONTRE_PASSATION))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Avoir.annulantFactureAtelier("AV-2026-0003", atelier, "x".repeat(501),
+                CONTRE_PASSATION)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(Avoir.annulantFactureAtelier("AV-2026-0003", atelier, "x".repeat(500), CONTRE_PASSATION)
+                .getPrecision()).hasSize(500);
+    }
+
+    @Test
+    @DisplayName("une facture de commande ne s'annule pas comme une facture d'atelier, et inversement")
+    void naturesSeparees() {
+        assertThatThrownBy(() -> Avoir.annulantFactureAtelier("AV-2026-0003", facture, "Erreur", CONTRE_PASSATION))
+                .isInstanceOf(IllegalArgumentException.class);
+        assertThatThrownBy(() -> Avoir.contrePassant("AV-2026-0003", facture, Avoir.MOTIF_ANNULATION_ATELIER,
+                CONTRE_PASSATION)).isInstanceOf(IllegalArgumentException.class);
+        assertThat(Avoir.contrePassant("AV-2026-0001", facture, Avoir.MOTIF_RETRACTATION, CONTRE_PASSATION)
+                .getPrecision()).isNull();
     }
 }

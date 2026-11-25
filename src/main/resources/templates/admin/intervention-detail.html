@@ -130,12 +130,35 @@
         <p>
             <span th:text="#{admin.intervention.facture.resume(${facture.numero()}, ${facture.montantTvac()})}">
                 Facture 2026-0042, 117,98 € TVAC</span>
-            <span class="badge badge-en_attente" th:text="#{${facture.cleStatut()}}">À régler</span>
+            <span th:unless="${facture.estAnnulee()}" class="badge badge-en_attente"
+                  th:text="#{${facture.cleStatut()}}">À régler</span>
+            <span th:if="${facture.estAnnulee()}" class="badge badge-annule"
+                  th:text="#{facture.statut.annulee(${facture.numeroAvoir()})}">Annulée par la note de crédit AV-2026-0003</span>
         </p>
-        <p th:text="#{admin.intervention.facture.echeance(${#temporals.format(facture.echeance(), 'd MMMM yyyy')})}">
+        <p th:unless="${facture.estAnnulee()}"
+           th:text="#{admin.intervention.facture.echeance(${#temporals.format(facture.echeance(), 'd MMMM yyyy')})}">
             Échéance : 24 novembre 2026</p>
         <p><a th:href="@{/admin/factures/{ref}/pdf(ref=${facture.reference()})}"
               th:text="#{admin.intervention.facture.pdf}">Télécharger la facture</a></p>
+        <p th:if="${facture.estAnnulee()}"><a th:href="@{/admin/avoirs/{ref}/pdf(ref=${facture.referenceAvoir()})}"
+              th:text="#{intervention.facture.avoir.pdf(${facture.numeroAvoir()})}">Télécharger la note de crédit AV-2026-0003 (PDF)</a></p>
+
+        <!--/* Q-H-50 : note de crédit totale, précision obligatoire, imprimée telle que saisie. */-->
+        <form th:unless="${facture.estAnnulee()}"
+              th:action="@{/admin/interventions/{ref}/facture/annulation(ref=${intervention.reference()})}"
+              method="post" class="formulaire formulaire-suppression"
+              th:data-message="#{admin.intervention.facture.annulation.confirmation(${facture.numero()})}">
+            <h3 th:text="#{admin.intervention.facture.annulation.titre}">Annuler la facture par une note de crédit</h3>
+            <div class="champ">
+                <label for="precision" th:text="#{admin.intervention.facture.annulation.precision}">Précision</label>
+                <textarea id="precision" name="precision" rows="3" maxlength="500" required
+                          aria-describedby="consigne-precision" th:text="${precisionSaisie}"></textarea>
+                <p id="consigne-precision" class="texte-info" th:text="#{admin.intervention.facture.annulation.consigne}">
+                    Pas de donnée personnelle : ce texte figure sur une pièce comptable conservée sept ans.</p>
+            </div>
+            <button type="submit" class="lien-bouton texte-erreur"
+                    th:text="#{admin.intervention.facture.annulation.bouton}">Annuler la facture</button>
+        </form>
     </section>
 
     <h2 id="titre-admin-intervention-detail" th:text="#{admin.intervention.lignes}">Lignes</h2>

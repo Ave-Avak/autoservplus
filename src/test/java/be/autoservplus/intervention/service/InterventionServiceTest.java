@@ -1,7 +1,10 @@
 package be.autoservplus.intervention.service;
 
 import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.common.exception.RefusTraduit;
+import be.autoservplus.facturation.domain.Avoir;
 import be.autoservplus.facturation.domain.Facture;
+import be.autoservplus.facturation.service.AvoirService;
 import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.support.GaragesDeTest;
 import be.autoservplus.catalogue.domain.Piece;
@@ -75,6 +78,7 @@ class InterventionServiceTest {
     @Mock private PrestationRepository prestations;
     @Mock private PieceRepository pieces;
     @Mock private FactureService factures;
+    @Mock private AvoirService avoirs;
     @Mock private be.autoservplus.vente.repository.CommandeRepository commandes;
     @Mock private be.autoservplus.reservation.repository.VehiculeRepository vehicules;
     @Mock private ParametreAtelierRepository parametres;
@@ -96,7 +100,7 @@ class InterventionServiceTest {
     @BeforeEach
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
-        service = new InterventionService(interventions, historiques, prestations, pieces, factures,
+        service = new InterventionService(interventions, historiques, prestations, pieces, factures, avoirs,
                 commandes, vehicules, parametres,
                 auteurCourant, auditeur, numeros, courriel, evenements, GaragesDeTest.bruxellois(), horloge);
 
@@ -813,6 +817,27 @@ class InterventionServiceTest {
                     .isEqualTo(marie.getReference());
             assertThat(it.getStatut()).isEqualTo(StatutIntervention.EN_COURS);
             verifyNoInteractions(factures);
+        }
+
+        @Test
+        @DisplayName("annulation de la facture : refusée sans facture, déléguée à la note de crédit sinon")
+        void annulationDeLaFacture() {
+            Intervention it = enCours();
+            when(factures.factureDe(it)).thenReturn(Optional.empty());
+
+            assertThatThrownBy(() -> service.annulerFactureAtelier(it.getReference(), "Erreur"))
+                    .isInstanceOf(RefusTraduit.class)
+                    .extracting(e -> ((RefusTraduit) e).getCleMessage())
+                    .isEqualTo("admin.intervention.erreur.sans-facture-a-annuler");
+            verifyNoInteractions(avoirs);
+
+            Facture facture = org.mockito.Mockito.mock(Facture.class);
+            Avoir avoir = org.mockito.Mockito.mock(Avoir.class);
+            when(avoir.getNumero()).thenReturn("AV-2026-0003");
+            when(factures.factureDe(it)).thenReturn(Optional.of(facture));
+            when(avoirs.annulerFactureAtelier(facture, "Erreur")).thenReturn(avoir);
+
+            assertThat(service.annulerFactureAtelier(it.getReference(), "Erreur")).isEqualTo("AV-2026-0003");
         }
 
         @Test
