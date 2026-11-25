@@ -8,11 +8,13 @@ import be.autoservplus.facturation.service.GenerateurNumeroAvoir;
 import be.autoservplus.facturation.service.GenerateurNumeroFacture;
 import be.autoservplus.facturation.service.PdfAvoirService;
 import be.autoservplus.facturation.service.PdfFactureService;
+import be.autoservplus.galerie.service.dto.PhotoVue;
 import be.autoservplus.identite.mfa.Base32;
 import be.autoservplus.identite.mfa.Totp;
 import be.autoservplus.identite.web.PageArrivee;
 import be.autoservplus.intervention.service.GenerateurNumeroIntervention;
 import be.autoservplus.reservation.service.GenerateurNumeroRdv;
+import be.autoservplus.stockage.service.DimensionsImage;
 import be.autoservplus.support.SocleIntegration;
 import be.autoservplus.vente.service.GenerateurNumeroCommande;
 import org.junit.jupiter.api.AfterAll;
@@ -48,6 +50,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
@@ -301,13 +304,58 @@ class GraineDemonstrationIT extends SocleIntegration {
 
     @Test
     @Order(4)
-    @DisplayName("chaque photo de la graine a son fichier sous la racine des médias")
+    @DisplayName("chaque photo de la graine a ses deux fichiers, aux dimensions déclarées, et ses trois textes")
     void photosAvecLeurFichier() {
         Path racine = DOSSIER.resolve("medias");
-        List<String> chemins = jdbc.queryForList("SELECT chemin FROM photo", String.class);
+        List<Map<String, Object>> photos = jdbc.queryForList("""
+                SELECT chemin, chemin_vignette, largeur, hauteur, texte_alt_nl, texte_alt_en FROM photo
+                """);
 
-        assertThat(chemins).hasSize(Math.toIntExact(LIGNES_ATTENDUES.get("photo")));
-        assertThat(chemins).allSatisfy(chemin -> assertThat(racine.resolve(chemin)).isRegularFile());
+        assertThat(photos).hasSize(Math.toIntExact(LIGNES_ATTENDUES.get("photo")));
+        assertThat(photos).allSatisfy(photo -> {
+            Path original = racine.resolve((String) photo.get("chemin"));
+            Path vignette = racine.resolve((String) photo.get("chemin_vignette"));
+            assertThat(original).isRegularFile();
+            assertThat(vignette).isRegularFile();
+            assertThat(DimensionsImage.lire(Files.readAllBytes(original)))
+                    .as("dimensions déclarées de %s", original.getFileName())
+                    .contains(new DimensionsImage((Integer) photo.get("largeur"), (Integer) photo.get("hauteur")));
+            assertThat(DimensionsImage.lire(Files.readAllBytes(vignette)))
+                    .contains(new DimensionsImage(PhotoVue.LARGEUR_VIGNETTE, 360));
+            assertThat((String) photo.get("texte_alt_nl")).isNotBlank();
+            assertThat((String) photo.get("texte_alt_en")).isNotBlank();
+        });
+    }
+
+    @Test
+    @Order(9)
+    @DisplayName("une pièce sans photo propre montre le visuel de sa catégorie, servi avec sa vignette")
+    void visuelDeCategorieSurLaFiche() throws Exception {
+        String piece = jdbc.queryForObject("""
+                SELECT p.reference::text FROM piece p JOIN categorie c ON c.id = p.categorie_id
+                 WHERE p.reference_fabricant = 'BB-P020' AND c.code = 'P_BATTERIE'
+                """, String.class);
+        String visuel = jdbc.queryForObject("""
+                SELECT ph.reference::text FROM photo ph JOIN categorie c ON c.id = ph.categorie_id
+                 WHERE c.code = 'P_BATTERIE'
+                """, String.class);
+
+        String fiche = mvc.perform(get("/pieces/{r}", piece)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+
+        assertThat(fiche).contains("/images/galerie/" + visuel + "/vignette 480w");
+        mvc.perform(get("/images/galerie/{p}", visuel)).andExpect(status().isOk());
+        mvc.perform(get("/images/galerie/{p}/vignette", visuel)).andExpect(status().isOk());
+    }
+
+    @Test
+    @Order(10)
+    @DisplayName("sous le profil demo, les mentions légales disent d'où viennent les photos")
+    void mentionDesPhotos() throws Exception {
+        String page = mvc.perform(get("/mentions-legales").locale(Locale.FRENCH)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+
+        assertThat(page).contains("licence Unsplash").contains("docs/credits-photos.md");
     }
 
     @Test
@@ -398,7 +446,7 @@ class GraineDemonstrationIT extends SocleIntegration {
         lignes.put("paiement", 1L);
         lignes.put("panier", 1L);
         lignes.put("parametre_atelier", 1L);
-        lignes.put("photo", 0L);
+        lignes.put("photo", 50L);
         lignes.put("piece", 99L);
         lignes.put("piece_incluse", 0L);
         lignes.put("place_parking", 8L);

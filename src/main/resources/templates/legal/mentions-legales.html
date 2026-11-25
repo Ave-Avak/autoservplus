@@ -41,6 +41,7 @@
     <section>
         <h2 th:text="#{legal.mentions.propriete.titre}">Propriété intellectuelle</h2>
         <p th:text="#{legal.mentions.propriete.completer}">Les éléments du site sont protégés par le droit de la propriété intellectuelle.</p>
+        <p th:if="${photosDeDemonstration}" th:text="#{legal.mentions.propriete.photos-demonstration}">Photos de démonstration sous licence Unsplash.</p>
     </section>
 
     <section>
