@@ -48,12 +48,15 @@ class ExportComptableIT extends SocleIntegration {
 
         @Test
         @WithMockUser(username = "admin@autoservplus.be", roles = "ADMINISTRATEUR")
-        @DisplayName("les deux exports s executent et portent leur ligne d en-tete")
+        @DisplayName("les trois exports s executent et portent leur ligne d en-tete")
         void entetes() {
             String factures = export.facturesEnCsv(DEBUT, FIN);
             String commandes = export.commandesEnCsv(DEBUT, FIN);
+            String avoirs = export.avoirsEnCsv(DEBUT, FIN);
 
             assertThat(factures).startsWith("﻿").contains(";").contains("\r\n");
+            assertThat(avoirs).startsWith("﻿").contains(";").contains("\r\n")
+                    .contains("Facture d'origine").contains("Précision");
             assertThat(commandes).startsWith("﻿").contains(";").contains("\r\n");
         }
 

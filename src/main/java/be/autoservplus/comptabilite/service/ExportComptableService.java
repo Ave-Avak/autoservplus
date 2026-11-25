@@ -74,6 +74,33 @@ public class ExportComptableService {
         return csv.texte();
     }
 
+    /**
+     * Journal des notes de crédit émises sur la période (Q-H-53) : un comptable qui reçoit
+     * les factures sans les notes qui les annulent compte un chiffre d'affaires faux. Le
+     * motif est traduit comme les en-têtes, la précision d'une annulation d'atelier reste
+     * telle que saisie.
+     */
+    public String avoirsEnCsv(LocalDate depuis, LocalDate jusqua) {
+        ZoneId zone = zone();
+        RedacteurCsv csv = new RedacteurCsv(
+                entete("numero"), entete("date"), entete("client"), entete("facture"), entete("commande"),
+                entete("intervention"), entete("htva"), entete("tva"), entete("tvac"), entete("motif"),
+                entete("precision"));
+
+        pieces.avoirsEmis(borneBasse(depuis, zone), borneHaute(jusqua, zone))
+                .forEach(a -> csv.ligne(
+                        a.getNumero(),
+                        jour(a.getDateEmission(), zone),
+                        nom(a.getFacture().getMembre()),
+                        a.getFacture().getNumero(),
+                        a.getFacture().getCommande() == null ? null : a.getFacture().getCommande().getNumero(),
+                        a.getFacture().getIntervention() == null ? null : a.getFacture().getIntervention().getNumero(),
+                        a.getMontantHtva(), a.getMontantTva(), a.getMontantTvac(),
+                        message("avoir.motif." + a.getMotif()),
+                        a.getPrecision()));
+        return csv.texte();
+    }
+
     /** Journal des commandes conclues sur la periode, annulations comprises. */
     public String commandesEnCsv(LocalDate depuis, LocalDate jusqua) {
         ZoneId zone = zone();

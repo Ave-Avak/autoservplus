@@ -382,6 +382,31 @@ class FactureAtelierIT extends SocleIntegration {
         }
 
         @Test
+        @DisplayName("avoirs.csv : facture d'origine, intervention, montants, motif traduit et précision (Q-H-53)")
+        void exportDesAvoirs() throws Exception {
+            UUID dossier = factureAtelierEmise(membre(true));
+            annuler(dossier, "Vidange facturée deux fois");
+            String numeroIntervention = jdbc.queryForObject("SELECT numero FROM intervention WHERE reference = ?",
+                    String.class, dossier);
+            String ligne = String.join(";", avoirDe(dossier, "numero"),
+                    java.time.LocalDate.now(java.time.ZoneId.of("Europe/Brussels"))
+                            .format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")),
+                    "Marie Dupont", factureDe(dossier, "numero"), "", numeroIntervention,
+                    "49,00", "10,29", "59,29", "Annulation de la facture d'atelier", "Vidange facturée deux fois");
+
+            LocalDate aujourdHui = LocalDate.now();
+            String csv = mvc.perform(get("/admin/export/avoirs.csv").with(admin)
+                            .param("depuis", aujourdHui.minusDays(1).toString())
+                            .param("jusqua", aujourdHui.plusDays(1).toString()))
+                    .andExpect(status().isOk())
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                            .string("Content-Disposition", containsString("avoirs-")))
+                    .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+
+            assertThat(csv.lines()).contains(ligne);
+        }
+
+        @Test
         @DisplayName("précision blanche refusée et rendue au formulaire, seconde annulation refusée")
         void refus() throws Exception {
             UUID dossier = factureAtelierEmise(membre(true));

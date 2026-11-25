@@ -235,6 +235,8 @@ class NavigationEcransIT extends SocleIntegration {
             ecran("/admin/export", Acces.BACK_OFFICE),
             new Route("/admin/export/factures.csv", "/admin/export/factures.csv" + PERIODE,
                     Acces.BACK_OFFICE, false, 200),
+            new Route("/admin/export/avoirs.csv", "/admin/export/avoirs.csv" + PERIODE,
+                    Acces.BACK_OFFICE, false, 200),
             new Route("/admin/export/commandes.csv", "/admin/export/commandes.csv" + PERIODE,
                     Acces.BACK_OFFICE, false, 200),
             new Route("/admin/tableau-de-bord/indicateurs.csv", "/admin/tableau-de-bord/indicateurs.csv",

@@ -1,5 +1,6 @@
 package be.autoservplus.comptabilite.repository;
 
+import be.autoservplus.facturation.domain.Avoir;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.vente.domain.Commande;
 import jakarta.persistence.EntityManager;
@@ -35,6 +36,25 @@ public class ExportComptableRepository {
                         WHERE f.dateEmission >= :debut AND f.dateEmission < :fin
                         ORDER BY f.dateEmission ASC, f.id ASC
                         """, Facture.class)
+                .setParameter("debut", debut)
+                .setParameter("fin", fin)
+                .getResultList();
+    }
+
+    /**
+     * Notes de crédit émises sur la période, de la plus ancienne à la plus récente, avec la
+     * facture qu'elles corrigent et son origine.
+     */
+    public List<Avoir> avoirsEmis(Instant debut, Instant fin) {
+        return em.createQuery("""
+                        SELECT a FROM Avoir a
+                        JOIN FETCH a.facture f
+                        JOIN FETCH f.membre
+                        LEFT JOIN FETCH f.commande
+                        LEFT JOIN FETCH f.intervention
+                        WHERE a.dateEmission >= :debut AND a.dateEmission < :fin
+                        ORDER BY a.dateEmission ASC, a.id ASC
+                        """, Avoir.class)
                 .setParameter("debut", debut)
                 .setParameter("fin", fin)
                 .getResultList();

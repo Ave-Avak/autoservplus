@@ -57,6 +57,14 @@ public class ExportComptableController {
                 "factures-%s-%s.csv".formatted(depuis, jusqua));
     }
 
+    @GetMapping("/avoirs.csv")
+    public ResponseEntity<byte[]> avoirs(
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate depuis,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate jusqua) {
+        return fichier(export.avoirsEnCsv(depuis, jusqua),
+                "avoirs-%s-%s.csv".formatted(depuis, jusqua));
+    }
+
     @GetMapping("/commandes.csv")
     public ResponseEntity<byte[]> commandes(
             @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate depuis,

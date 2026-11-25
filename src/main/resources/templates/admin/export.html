@@ -13,7 +13,7 @@
 <main id="contenu">
     <h1 th:text="#{admin.export.titre}">Export comptable</h1>
     <p th:text="#{admin.export.intro}">
-        Journal des factures et des commandes sur une période, au format CSV, pour votre comptable.
+        Journal des factures, des notes de crédit et des commandes sur une période, au format CSV, pour votre comptable.
     </p>
 
     <!--/* GET : un export est une lecture, l'URL doit pouvoir être remise en favori.
@@ -29,6 +29,8 @@
         <p>
             <button type="submit" th:formaction="@{/admin/export/factures.csv}"
                     th:text="#{admin.export.factures}">Exporter les factures</button>
+            <button type="submit" th:formaction="@{/admin/export/avoirs.csv}"
+                    th:text="#{admin.export.avoirs}">Exporter les notes de crédit</button>
             <button type="submit" th:formaction="@{/admin/export/commandes.csv}"
                     th:text="#{admin.export.commandes}">Exporter les commandes</button>
         </p>
