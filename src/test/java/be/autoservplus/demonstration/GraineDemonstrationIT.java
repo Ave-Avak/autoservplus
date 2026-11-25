@@ -105,10 +105,13 @@ class GraineDemonstrationIT extends SocleIntegration {
     private static final String DOMAINE_RESERVE = ".test";
 
     /**
-     * Seule exception au domaine réservé : l'administrateur de V10, publié au README et
-     * suspendu par V45 hors du profil {@code demo}.
+     * Seule exception au domaine réservé : l'administrateur de V10, suspendu par V45 hors
+     * du profil {@code demo} et par V910 sous ce profil.
      */
     private static final String ADMINISTRATEUR_DE_V10 = "admin@autoservplus.be";
+
+    /** Administrateur de la démonstration (V910), publié au README. */
+    private static final String ADMINISTRATEUR_DE_LA_GRAINE = "admin@bielle-bleue.test";
 
     private static final Pattern LIGNE_DE_COMPTE =
             Pattern.compile("^\\| [^|]+ \\| `([^`]+)` \\| `([^`]+)` \\|$");
@@ -271,7 +274,9 @@ class GraineDemonstrationIT extends SocleIntegration {
         List<String> readme = Files.readAllLines(Path.of("README.md"), StandardCharsets.UTF_8);
         Map<String, String> comptes = comptesPublies(readme);
         byte[] secret = Base32.decoder(clePubliee(readme).replace(" ", ""));
-        assertThat(comptes).containsKeys(ADMINISTRATEUR_DE_V10);
+        assertThat(comptes).containsKey(ADMINISTRATEUR_DE_LA_GRAINE).doesNotContainKey(ADMINISTRATEUR_DE_V10);
+        assertThat(jdbc.queryForObject("SELECT statut FROM utilisateur WHERE email = ?", String.class,
+                ADMINISTRATEUR_DE_V10)).as("administrateur de V10 suspendu sous la graine").isEqualTo("SUSPENDU");
 
         for (Map.Entry<String, String> compte : comptes.entrySet()) {
             MvcResult motDePasse = mvc.perform(post("/connexion").with(csrf())
@@ -382,7 +387,7 @@ class GraineDemonstrationIT extends SocleIntegration {
         lignes.put("historique_modification_compte", 0L);
         lignes.put("historique_piece_incluse", 0L);
         lignes.put("historique_statut_intervention", 13L);
-        lignes.put("historique_statut_utilisateur", 2L);
+        lignes.put("historique_statut_utilisateur", 3L);
         lignes.put("indisponibilite", 0L);
         lignes.put("intervention", 6L);
         lignes.put("ligne_devis", 0L);
@@ -403,7 +408,7 @@ class GraineDemonstrationIT extends SocleIntegration {
         lignes.put("rdv_service", 2L);
         lignes.put("reservation_parking", 0L);
         lignes.put("service", 31L);
-        lignes.put("utilisateur", 2L);
+        lignes.put("utilisateur", 3L);
         lignes.put("vehicule", 2L);
         lignes.put("version_document", 24L);
         return Collections.unmodifiableMap(lignes);

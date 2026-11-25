@@ -25,12 +25,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Le compte administrateur de V10, dont le mot de passe est publié, n'ouvre pas le
- * back-office d'une base installée sans graine de démonstration.
+ * back-office, ni sur une base installée sans graine de démonstration, ni sous la graine,
+ * qui le remplace par un administrateur à une adresse en {@code .test} (V910).
  *
  * <p>La connexion est rejouée par le vrai formulaire : une suspension écrite en base ne
  * protège que si {@code UtilisateurDetailsService} en tire bien un compte désactivé. La
  * graine V902 n'est jouée par aucun démarrage de test (elle vit dans {@code db/demo}),
- * elle est donc appliquée ici à la main, en dernier, sur la base propre à cette classe.</p>
+ * elle est donc appliquée ici à la main, en dernier, sur la base propre à cette classe, comme
+ * V910 après elle.</p>
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -46,9 +48,16 @@ class CompteDemonstrationIT extends SocleIntegration {
     @Autowired private JdbcTemplate jdbc;
     @Autowired private DataSource source;
 
+    private static final String ADRESSE_DE_LA_GRAINE = "admin@bielle-bleue.test";
+    private static final String MOT_DE_PASSE_DE_LA_GRAINE = "bielle-bleue-atelier-2026";
+
     private String connexion() throws Exception {
+        return connexion(ADRESSE, MOT_DE_PASSE_PUBLIE);
+    }
+
+    private String connexion(String adresse, String motDePasse) throws Exception {
         return mvc.perform(post("/connexion").with(csrf())
-                        .param("email", ADRESSE).param("password", MOT_DE_PASSE_PUBLIE))
+                        .param("email", adresse).param("password", motDePasse))
                 .andExpect(status().is3xxRedirection())
                 .andReturn().getResponse().getRedirectedUrl();
     }
@@ -68,6 +77,11 @@ class CompteDemonstrationIT extends SocleIntegration {
     private void appliquerGraineV902() {
         new ResourceDatabasePopulator(new ClassPathResource(
                 "db/demo/V902__reactivation_administrateur_demonstration.sql")).execute(source);
+    }
+
+    private void appliquerGraineV910() {
+        new ResourceDatabasePopulator(new ClassPathResource(
+                "db/demo/V910__administrateur_de_demonstration_en_test.sql")).execute(source);
     }
 
     @Test
@@ -94,5 +108,26 @@ class CompteDemonstrationIT extends SocleIntegration {
         assertThat(lignesDeJournal())
                 .as("un compte déjà actif n'est pas réactivé une seconde fois")
                 .isEqualTo(2);
+    }
+
+    @Test
+    @Order(3)
+    @DisplayName("la graine suspend de nouveau l'administrateur de V10 et ouvre celui en .test, une seule fois")
+    void administrateurDeLaGraine() throws Exception {
+        appliquerGraineV910();
+
+        assertThat(statut()).isEqualTo(StatutUtilisateur.SUSPENDU);
+        assertThat(lignesDeJournal()).isEqualTo(3);
+        assertThat(connexion()).contains("erreur");
+        assertThat(utilisateurs.findByEmail(ADRESSE_DE_LA_GRAINE).orElseThrow().getStatut())
+                .isEqualTo(StatutUtilisateur.ACTIF);
+        assertThat(connexion(ADRESSE_DE_LA_GRAINE, MOT_DE_PASSE_DE_LA_GRAINE))
+                .as("le mot de passe passe, le second facteur reste à franchir")
+                .doesNotContain("erreur");
+
+        appliquerGraineV910();
+        assertThat(lignesDeJournal()).as("un compte déjà suspendu ne l'est pas une seconde fois").isEqualTo(3);
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM utilisateur WHERE email = ?", Integer.class,
+                ADRESSE_DE_LA_GRAINE)).isEqualTo(1);
     }
 }

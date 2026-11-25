@@ -45,7 +45,7 @@ public class SecondFacteurDemonstration implements ApplicationRunner {
 
     private static final Logger JOURNAL = LoggerFactory.getLogger(SecondFacteurDemonstration.class);
 
-    static final String ADRESSE_ADMIN_DEMO = "admin@autoservplus.be";
+    static final String ADRESSE_ADMIN_DEMO = "admin@bielle-bleue.test";
 
     /** Publié au README. À saisir tel quel dans une application d'authentification. */
     public static final String SECRET_PUBLIE = "IF2XI32TMVZHMK2EMVWW6LKUJ5KFAMRW";

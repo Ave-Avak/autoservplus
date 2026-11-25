@@ -56,12 +56,17 @@ sa facture, avis, messagerie et notifications.
 
 | Rôle | Adresse | Mot de passe |
 |---|---|---|
-| Administrateur | `admin@autoservplus.be` | `atelier-demonstration-2026` |
+| Administrateur | `admin@bielle-bleue.test` | `bielle-bleue-atelier-2026` |
 | Membre | `marie.dupont@demo.test` | `marie-conduit-une-golf-bleue` |
 
-Le compte administrateur n'est utilisable que sous le profil `demo`. Son mot de passe
-étant publié ici, la migration V45 le suspend sur toute autre base, production comprise,
-et il ne se réactive pas. Un administrateur d'exploitation se crée par lien de
+Les données de démonstration sont fictives : garage, clients, véhicules, articles et
+prix. Les adresses de courriel sont en `.test`, un domaine réservé aux essais qui ne
+joint personne.
+
+Le compte administrateur n'existe que sous le profil `demo`, créé par la graine V910.
+L'administrateur d'origine de V10 (`admin@autoservplus.be`), dont le mot de passe a été
+publié, est suspendu sur toute base, par V45 hors du profil `demo` et par V910 sous ce
+profil, et il ne se réactive pas. Un administrateur d'exploitation se crée par lien de
 définition, depuis l'écran des comptes du back-office.
 
 ### Second facteur de l'administrateur de démonstration
