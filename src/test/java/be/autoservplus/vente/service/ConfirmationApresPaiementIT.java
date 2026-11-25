@@ -125,7 +125,7 @@ class ConfirmationApresPaiementIT extends SocleIntegration {
         assertThat(texte(courriel.piecesJointes().get(0).contenu()))
                 .contains("Versie " + version)
                 .contains("voor bestelling " + numero)
-                .contains("Handelsnaam: Garage Démo");
+                .contains("Handelsnaam: Bielle Bleue");
         assertThat(texte(courriel.piecesJointes().get(1).contenu()))
                 .contains("Modelformulier voor herroeping");
         assertThat(texte(courriel.piecesJointes().get(2).contenu()))
