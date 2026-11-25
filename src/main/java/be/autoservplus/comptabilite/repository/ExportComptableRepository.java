@@ -1,6 +1,7 @@
 package be.autoservplus.comptabilite.repository;
 
 import be.autoservplus.facturation.domain.Avoir;
+import be.autoservplus.facturation.domain.Encaissement;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.vente.domain.Commande;
 import jakarta.persistence.EntityManager;
@@ -36,6 +37,23 @@ public class ExportComptableRepository {
                         WHERE f.dateEmission >= :debut AND f.dateEmission < :fin
                         ORDER BY f.dateEmission ASC, f.id ASC
                         """, Facture.class)
+                .setParameter("debut", debut)
+                .setParameter("fin", fin)
+                .getResultList();
+    }
+
+    /**
+     * Règlements au comptoir non annulés des factures émises sur la période (V75), pour le
+     * rapprochement de la caisse. Un règlement annulé ne compte plus : la facture redevient à
+     * régler.
+     */
+    public List<Encaissement> reglementsDesFactures(Instant debut, Instant fin) {
+        return em.createQuery("""
+                        SELECT e FROM Encaissement e
+                        JOIN FETCH e.facture f
+                        WHERE e.annuleLe IS NULL
+                          AND f.dateEmission >= :debut AND f.dateEmission < :fin
+                        """, Encaissement.class)
                 .setParameter("debut", debut)
                 .setParameter("fin", fin)
                 .getResultList();

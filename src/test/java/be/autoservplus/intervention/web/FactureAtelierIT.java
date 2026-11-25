@@ -531,6 +531,32 @@ class FactureAtelierIT extends SocleIntegration {
         }
 
         @Test
+        @DisplayName("factures.csv : date et moyen du règlement, vides avant le règlement et après son annulation")
+        void exportDesFactures() throws Exception {
+            UUID dossier = factureAtelierEmise(membre(true));
+            String facture = factureDe(dossier, "numero");
+            String jour = aujourdHui().format(java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy"));
+
+            assertThat(ligneDeFacture(facture)).endsWith(";;");
+            encaisser(dossier, "TERMINAL", aujourdHui());
+            assertThat(ligneDeFacture(facture)).endsWith(";" + jour + ";Terminal de paiement");
+            annulerReglement(dossier, "Mauvais moyen");
+            assertThat(ligneDeFacture(facture)).endsWith(";;");
+            encaisser(dossier, "ESPECES", aujourdHui());
+            assertThat(ligneDeFacture(facture)).endsWith(";" + jour + ";Espèces");
+        }
+
+        private String ligneDeFacture(String numero) throws Exception {
+            LocalDate jour = LocalDate.now();
+            String csv = mvc.perform(get("/admin/export/factures.csv").with(admin)
+                            .param("depuis", jour.minusDays(1).toString()).param("jusqua", jour.plusDays(1).toString()))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString(java.nio.charset.StandardCharsets.UTF_8);
+            assertThat(csv.lines().findFirst().orElseThrow()).endsWith(";Date du règlement;Moyen du règlement");
+            return csv.lines().filter(l -> l.startsWith(numero + ";")).findFirst().orElseThrow();
+        }
+
+        @Test
         @DisplayName("annulé avec motif, puis réglé à nouveau : deux lignes, une annulée, et le journal les montre")
         void annulationPuisNouveauReglement() throws Exception {
             UUID dossier = factureAtelierEmise(membre(true));
