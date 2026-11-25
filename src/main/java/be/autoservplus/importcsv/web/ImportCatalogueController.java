@@ -86,6 +86,7 @@ public class ImportCatalogueController {
         modele.addAttribute("colonnesFacultatives", ImportCatalogueService.colonnesFacultatives());
         modele.addAttribute("colonneUnite", ImportCatalogueService.colonneUnite());
         modele.addAttribute("colonnePoseSeule", ImportCatalogueService.colonnePoseSeule());
+        modele.addAttribute("colonneRayon", ImportCatalogueService.colonneRayon());
     }
 
     private String msg(String cle) {

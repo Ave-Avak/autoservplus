@@ -1,5 +1,6 @@
 package be.autoservplus.catalogue.web;
 
+import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.service.AdminCatalogueService;
 import be.autoservplus.catalogue.service.DoublonCatalogueException;
 import be.autoservplus.catalogue.service.SuppressionRefuseeException;
@@ -85,14 +86,15 @@ class AdminPieceControllerTest {
         org.mockito.Mockito.reset(service);
         vueFiltre = new ArticleVueAdmin(REF, "F-001", "Filtre à huile", null,
                 "P_FILTRES", "Filtres", new BigDecimal("12.50"), new BigDecimal("15.13"),
-                new BigDecimal("21.00"), null, "Bosch", 8, 2, true);
+                new BigDecimal("21.00"), null, "Bosch", 8, 2, true,
+                be.autoservplus.catalogue.domain.Traductions.aucune(), null, null, null, Rayon.PIECES_AUTO);
     }
 
     @Test
     @WithMockUser(roles = "ADMINISTRATEUR")
     @DisplayName("la liste expose le catalogue complet des pieces")
     void afficheListe() throws Exception {
-        doReturn(List.of(vueFiltre)).when(service).piecesPourAdmin();
+        doReturn(List.of(vueFiltre)).when(service).piecesPourAdmin((Rayon) null);
 
         mvc.perform(get("/admin/catalogue/pieces"))
                 .andExpect(status().isOk())

@@ -3,6 +3,7 @@ package be.autoservplus.catalogue.web;
 import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
@@ -183,6 +184,25 @@ class AdminCatalogueTemplatesIT extends SocleIntegration {
         mvc.perform(get("/pieces").locale(Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(not(containsString("Plaquettes avant"))));
+    }
+
+    @Test
+    @DisplayName("la liste des pièces se filtre par rayon et montre le rayon de chaque pièce")
+    void filtreParRayon() throws Exception {
+        Categorie interieur = categories.save(new Categorie("IT-TPL-INT", "Intérieur", Rayon.ACCESSOIRES));
+        Piece tapis = new Piece(interieur, "IT-TPL-002", "Tapis de sol", new BigDecimal("29.00"));
+        pieces.save(tapis);
+
+        mvc.perform(get("/admin/catalogue/pieces").param("rayon", "ACCESSOIRES").locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Tapis de sol")))
+                .andExpect(content().string(not(containsString("Plaquettes avant"))))
+                .andExpect(content().string(containsString("<option value=\"ACCESSOIRES\" selected=\"selected\">")));
+        mvc.perform(get("/admin/catalogue/pieces").locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Tapis de sol")))
+                .andExpect(content().string(containsString("Plaquettes avant")))
+                .andExpect(content().string(containsString("<td>Accessoires</td>")));
     }
 
     @Test

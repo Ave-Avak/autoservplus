@@ -4,6 +4,7 @@ import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.HistoriqueModificationCatalogue;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.domain.Traductions;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.domain.UnitePrestation;
@@ -95,7 +96,14 @@ public class AdminCatalogueService {
 
     /** Catalogue complet des pieces, actives et inactives confondues. */
     public List<ArticleVueAdmin> piecesPourAdmin() {
-        return pieces.catalogueComplet().stream().map(ArticleVueAdmin::de).toList();
+        return piecesPourAdmin(null);
+    }
+
+    /** Pièces d'un rayon, ou de tous quand {@code rayonOuTous} est nul. */
+    public List<ArticleVueAdmin> piecesPourAdmin(Rayon rayonOuTous) {
+        return pieces.catalogueComplet().stream()
+                .filter(piece -> rayonOuTous == null || piece.getCategorie().getRayon().orElseThrow() == rayonOuTous)
+                .map(ArticleVueAdmin::de).toList();
     }
 
     public ArticleVueAdmin vuePrestation(UUID reference) {

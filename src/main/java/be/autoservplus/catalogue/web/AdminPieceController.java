@@ -1,6 +1,7 @@
 package be.autoservplus.catalogue.web;
 
 import be.autoservplus.catalogue.domain.TauxTvaBelge;
+import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.service.AdminCatalogueService;
 import be.autoservplus.catalogue.service.DoublonCatalogueException;
 import be.autoservplus.catalogue.service.SuppressionRefuseeException;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -51,9 +53,11 @@ public class AdminPieceController {
     // --- liste ------------------------------------------------------------------------
 
     @GetMapping
-    public String liste(Model modele) {
+    public String liste(@RequestParam(required = false) Rayon rayon, Model modele) {
         modele.addAttribute("titre", msg("admin.catalogue.pieces.titre"));
-        modele.addAttribute("pieces", service.piecesPourAdmin());
+        modele.addAttribute("pieces", service.piecesPourAdmin(rayon));
+        modele.addAttribute("rayons", Rayon.values());
+        modele.addAttribute("rayonActif", rayon);
         return "admin/catalogue/pieces";
     }
 
