@@ -76,7 +76,7 @@ class VehiculeServiceTest {
             when(vehicules.save(any(Vehicule.class))).thenAnswer(i -> i.getArgument(0));
 
             Vehicule vehicule = service.ajouter(MARIE, "1-ABC-123", "Volkswagen", "Golf",
-                    Motorisation.DIESEL, (short) 2018, 85_000);
+                    Motorisation.DIESEL, (short) 2018, 85_000, null);
 
             assertThat(vehicule.getPlaque()).isEqualTo("1-ABC-123");
             assertThat(vehicule.getMarque()).isEqualTo("Volkswagen");
@@ -93,9 +93,23 @@ class VehiculeServiceTest {
             when(vehicules.save(any(Vehicule.class))).thenAnswer(i -> i.getArgument(0));
 
             Vehicule vehicule = service.ajouter(MARIE, "  1-abc-123 ", "Volkswagen", "Golf",
-                    Motorisation.DIESEL, null, null);
+                    Motorisation.DIESEL, null, null, null);
 
             assertThat(vehicule.getPlaque()).isEqualTo("1-ABC-123");
+        }
+
+        @Test
+        @DisplayName("enregistre le numéro de châssis saisi, sans espace et en majuscules (M68, Q-H-54)")
+        void enregistreLeChassis() {
+            when(vehicules.existsByPlaque("1-ABC-123")).thenReturn(false);
+            when(vehicules.countByMembreEmailAndActifTrue(MARIE)).thenReturn(0L);
+            when(membres.findByEmail(MARIE)).thenReturn(Optional.of(membre(MARIE)));
+            when(vehicules.save(any(Vehicule.class))).thenAnswer(i -> i.getArgument(0));
+
+            Vehicule vehicule = service.ajouter(MARIE, "1-ABC-123", "Volkswagen", "Golf",
+                    Motorisation.DIESEL, null, null, " wvw zzz1kzaw000003 ");
+
+            assertThat(vehicule.getNumeroChassis()).isEqualTo("WVWZZZ1KZAW000003");
         }
 
         @Test
@@ -104,7 +118,7 @@ class VehiculeServiceTest {
             when(vehicules.existsByPlaque("1-ABC-123")).thenReturn(true);
 
             assertThatThrownBy(() -> service.ajouter(MARIE, "1-ABC-123", "Volkswagen", "Golf",
-                    Motorisation.DIESEL, null, null))
+                    Motorisation.DIESEL, null, null, null))
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-12");
 
@@ -118,7 +132,7 @@ class VehiculeServiceTest {
             when(vehicules.countByMembreEmailAndActifTrue(MARIE)).thenReturn(20L);
 
             assertThatThrownBy(() -> service.ajouter(MARIE, "1-ABC-123", "Volkswagen", "Golf",
-                    Motorisation.DIESEL, null, null))
+                    Motorisation.DIESEL, null, null, null))
                     .isInstanceOf(RegleMetierException.class)
                     .hasFieldOrPropertyWithValue("codeRegle", "RM-13");
         }
@@ -131,7 +145,7 @@ class VehiculeServiceTest {
             when(membres.findByEmail("inconnu@exemple.be")).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> service.ajouter("inconnu@exemple.be", "1-ABC-123",
-                    "Volkswagen", "Golf", Motorisation.DIESEL, null, null))
+                    "Volkswagen", "Golf", Motorisation.DIESEL, null, null, null))
                     .isInstanceOf(RessourceIntrouvableException.class);
         }
     }

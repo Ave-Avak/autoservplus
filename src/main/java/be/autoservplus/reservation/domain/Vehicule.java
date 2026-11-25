@@ -6,6 +6,7 @@ import jakarta.persistence.*;
 import jakarta.validation.constraints.*;
 import org.hibernate.annotations.SQLRestriction;
 
+import java.util.Locale;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -94,6 +95,21 @@ public class Vehicule extends BaseEntity {
     }
 
     /**
+     * Numéro de châssis sans aucun espace et en majuscules, saisie vide ramenée à NULL
+     * (Q-H-54) : un VIN ne contient jamais d'espace, et une chaîne vide enregistrée se lirait
+     * comme un numéro connu. Aucun contrôle du format ISO 3779 (Q-H-55) : les véhicules
+     * d'avant 1981 et certains véhicules importés ont un numéro hors norme, seule la longueur
+     * de la colonne (20) borne la saisie.
+     */
+    public static String normaliserChassis(String saisie) {
+        if (saisie == null) {
+            return null;
+        }
+        String chassis = saisie.replaceAll("\\s", "").toUpperCase(Locale.ROOT);
+        return chassis.isEmpty() ? null : chassis;
+    }
+
+    /**
      * Verifie que le membre indique est bien le proprietaire.
      *
      * <p>La comparaison porte sur l adresse et non sur l identifiant technique : deux
@@ -133,7 +149,7 @@ public class Vehicule extends BaseEntity {
         this.modele = Objects.requireNonNull(modele, "modele").trim();
         this.motorisation = Objects.requireNonNull(motorisation, "motorisation");
         this.annee = annee;
-        this.numeroChassis = numeroChassis;
+        this.numeroChassis = normaliserChassis(numeroChassis);
     }
 
     /**
@@ -182,7 +198,7 @@ public class Vehicule extends BaseEntity {
     public void setAnnee(Short annee) { this.annee = annee; }
     public Integer getKilometrage() { return kilometrage; }
     public String getNumeroChassis() { return numeroChassis; }
-    public void setNumeroChassis(String numeroChassis) { this.numeroChassis = numeroChassis; }
+    public void setNumeroChassis(String numeroChassis) { this.numeroChassis = normaliserChassis(numeroChassis); }
     public boolean isActif() { return actif; }
 
     @Override
