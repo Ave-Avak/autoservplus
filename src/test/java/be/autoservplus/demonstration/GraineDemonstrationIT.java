@@ -15,8 +15,12 @@ import be.autoservplus.intervention.service.GenerateurNumeroIntervention;
 import be.autoservplus.reservation.service.GenerateurNumeroRdv;
 import be.autoservplus.support.SocleIntegration;
 import be.autoservplus.vente.service.GenerateurNumeroCommande;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.MethodOrderer;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestMethodOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,6 +34,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.PlatformTransactionManager;
 import org.springframework.transaction.support.TransactionTemplate;
+import org.springframework.util.FileSystemUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -71,10 +76,17 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * démonstration ne fait jamais.</p>
  *
  * <p>L'archive des factures et la racine des médias pointent vers un dossier temporaire :
- * les PDF composés ici n'arrivent pas dans le {@code ./data} du dossier de travail.</p>
+ * les PDF composés ici n'arrivent pas dans le {@code ./data} du dossier de travail. Il est
+ * supprimé après la classe.</p>
+ *
+ * <p>L'ordre des cas est fixé, le compte des lignes en premier. Les cas suivants se
+ * connectent, tirent des numéros et composent des PDF : une connexion peut écrire au
+ * journal de sécurité, et le compte doit lire la graine seule, quel que soit l'ordre
+ * que JUnit choisirait.</p>
  */
 @SpringBootTest(properties = "spring.profiles.active=demo")
 @AutoConfigureMockMvc
+@TestMethodOrder(MethodOrderer.OrderAnnotation.class)
 @DisplayName("Graine de démonstration sur une base vierge, sous le profil demo (intégration)")
 class GraineDemonstrationIT extends SocleIntegration {
 
@@ -117,6 +129,11 @@ class GraineDemonstrationIT extends SocleIntegration {
     @Autowired private GenerateurNumeroAvoir numerosAvoir;
     @Autowired private CompteurAnnuel compteurs;
 
+    @AfterAll
+    static void supprimerLeDossierTemporaire() throws IOException {
+        FileSystemUtils.deleteRecursively(DOSSIER);
+    }
+
     @DynamicPropertySource
     static void dossiersTemporaires(DynamicPropertyRegistry registre) {
         registre.add("autoservplus.facturation.archive", () -> DOSSIER.resolve("factures").toString());
@@ -124,6 +141,7 @@ class GraineDemonstrationIT extends SocleIntegration {
     }
 
     @Test
+    @Order(2)
     @DisplayName("chaque fichier de db/migration et de db/demo est appliqué, sans échec")
     void toutesLesMigrationsSontAppliquees() throws IOException {
         Set<String> fichiers = new TreeSet<>();
@@ -139,6 +157,7 @@ class GraineDemonstrationIT extends SocleIntegration {
     }
 
     @Test
+    @Order(1)
     @DisplayName("chaque table porte le nombre de lignes attendu, et aucune table n'est oubliée")
     void lignesParTable() {
         List<String> tables = jdbc.queryForList("""
@@ -155,6 +174,7 @@ class GraineDemonstrationIT extends SocleIntegration {
     }
 
     @Test
+    @Order(5)
     @DisplayName("le prochain numéro de chaque document est libre après la graine")
     void numerosLibresApresLaGraine() {
         Map<String, String> prochains = new LinkedHashMap<>();
@@ -180,6 +200,7 @@ class GraineDemonstrationIT extends SocleIntegration {
     }
 
     @Test
+    @Order(6)
     @DisplayName("chaque facture et chaque note de crédit de la graine se compose en PDF")
     void documentsDeLaGraineEnPdf() {
         List<String> composes = new ArrayList<>();
@@ -204,6 +225,7 @@ class GraineDemonstrationIT extends SocleIntegration {
     }
 
     @Test
+    @Order(7)
     @DisplayName("chaque compte publié au README se connecte, second facteur compris")
     void comptesDuReadmeSeConnectent() throws Exception {
         List<String> readme = Files.readAllLines(Path.of("README.md"), StandardCharsets.UTF_8);
@@ -233,6 +255,7 @@ class GraineDemonstrationIT extends SocleIntegration {
     }
 
     @Test
+    @Order(4)
     @DisplayName("chaque photo de la graine a son fichier sous la racine des médias")
     void photosAvecLeurFichier() {
         Path racine = DOSSIER.resolve("medias");
@@ -243,6 +266,7 @@ class GraineDemonstrationIT extends SocleIntegration {
     }
 
     @Test
+    @Order(3)
     @DisplayName("comptes de la graine : adresses dans un domaine réservé, empreintes BCrypt de coût 12")
     void comptesSansAdresseReelle() {
         Map<String, String> empreintes = new HashMap<>();
