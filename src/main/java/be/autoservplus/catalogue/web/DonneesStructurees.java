@@ -1,10 +1,17 @@
 package be.autoservplus.catalogue.web;
 
 import be.autoservplus.catalogue.service.dto.ArticleVue;
+import be.autoservplus.config.IdentiteGarage;
+import be.autoservplus.reservation.service.dto.PlageVue;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
+import java.time.DayOfWeek;
+import java.time.LocalTime;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -19,6 +26,11 @@ import java.util.Map;
  * Jackson échappe ce que JSON exige. Les chevrons et l'esperluette sont en plus écrits en
  * {@code \\uXXXX}, forme que JSON admet dans une chaîne : aucune valeur ne peut plus
  * contenir la séquence qui ferme une balise {@code script}.</p>
+ *
+ * <p>Le prestataire d'une prestation et le vendeur d'un produit sont le garage, lu dans sa
+ * configuration comme l'en-tête des factures. Le nom du logiciel y figurait en dur : un
+ * moteur de recherche attribuait alors les offres de Bielle Bleue à AutoServ+, qui ne vend
+ * rien.</p>
  */
 public final class DonneesStructurees {
 
@@ -28,7 +40,7 @@ public final class DonneesStructurees {
     private DonneesStructurees() {
     }
 
-    public static String dePrestation(ArticleVue article) {
+    public static String dePrestation(ArticleVue article, IdentiteGarage garage) {
         Map<String, Object> offre = new LinkedHashMap<>();
         offre.put("@type", "Offer");
         offre.put("price", article.prixTvac().toPlainString());
@@ -41,10 +53,7 @@ public final class DonneesStructurees {
         donnees.put("name", article.libelle());
         poser(donnees, "description", article.description());
         poser(donnees, "serviceType", article.categorie());
-        donnees.put("provider", Map.of(
-                "@type", "AutoRepair",
-                "name", "AutoServ+",
-                "address", Map.of("@type", "PostalAddress", "addressCountry", "BE")));
+        donnees.put("provider", garage(garage));
         donnees.put("offers", offre);
         return ecrire(donnees);
     }
@@ -53,13 +62,13 @@ public final class DonneesStructurees {
      * Produit du catalogue. {@code category} suit le chemin de la page, rayon puis
      * catégorie, dans la langue affichée : « Accessoires > Intérieur ».
      */
-    public static String dePiece(ArticleVue article, String nomDuRayon) {
+    public static String dePiece(ArticleVue article, String nomDuRayon, IdentiteGarage garage) {
         Map<String, Object> offre = new LinkedHashMap<>();
         offre.put("@type", "Offer");
         offre.put("price", article.prixTvac().toPlainString());
         offre.put("priceCurrency", "EUR");
         offre.put("availability", SCHEMA + (article.disponible() ? "/InStock" : "/OutOfStock"));
-        offre.put("seller", Map.of("@type", "AutoRepair", "name", "AutoServ+"));
+        offre.put("seller", garage(garage));
 
         Map<String, Object> donnees = new LinkedHashMap<>();
         donnees.put("@context", SCHEMA);
@@ -73,6 +82,81 @@ public final class DonneesStructurees {
         }
         donnees.put("offers", offre);
         return ecrire(donnees);
+    }
+
+    /**
+     * Le garage lui-même, pour l'accueil et la page de contact : coordonnées et horaires
+     * d'ouverture. Les horaires viennent des plages actives, celles dont sont tirés les
+     * créneaux réservables. Les jours qui partagent les mêmes heures sont regroupés en une
+     * seule spécification, comme schema.org le permet. Sans note moyenne : un
+     * {@code aggregateRating} sur sa propre page n'est pas retenu par les moteurs pour
+     * une entreprise locale, et il n'est pas demandé.
+     *
+     * @param adresse adresse absolue de la page d'accueil du site
+     */
+    public static String duGarage(IdentiteGarage garage, List<PlageVue> plagesActives, String adresse) {
+        Map<String, Object> donnees = new LinkedHashMap<>();
+        donnees.put("@context", SCHEMA);
+        donnees.putAll(garage(garage));
+        poser(donnees, "url", adresse);
+        List<Map<String, Object>> horaires = horaires(plagesActives);
+        if (!horaires.isEmpty()) {
+            donnees.put("openingHoursSpecification", horaires);
+        }
+        return ecrire(donnees);
+    }
+
+    /**
+     * Le pays est écrit en code ISO et non repris de la configuration, qui le porte en
+     * toutes lettres pour la facture : la V1 ne sert que des garages belges.
+     */
+    private static Map<String, Object> garage(IdentiteGarage garage) {
+        Map<String, Object> adresse = new LinkedHashMap<>();
+        adresse.put("@type", "PostalAddress");
+        poser(adresse, "streetAddress", joindre(garage.rue(), garage.numeroRue()));
+        poser(adresse, "postalCode", garage.codePostal());
+        poser(adresse, "addressLocality", garage.localite());
+        adresse.put("addressCountry", "BE");
+
+        Map<String, Object> organisation = new LinkedHashMap<>();
+        organisation.put("@type", "AutoRepair");
+        organisation.put("name", garage.enseigne());
+        organisation.put("address", adresse);
+        poser(organisation, "telephone", garage.telephone());
+        poser(organisation, "email", garage.courriel());
+        return organisation;
+    }
+
+    private static List<Map<String, Object>> horaires(List<PlageVue> plages) {
+        Map<List<LocalTime>, List<DayOfWeek>> joursParHeures = new LinkedHashMap<>();
+        for (PlageVue plage : plages) {
+            joursParHeures.computeIfAbsent(List.of(plage.heureDebut(), plage.heureFin()), h -> new ArrayList<>())
+                    .add(plage.jour());
+        }
+        List<Map<String, Object>> specifications = new ArrayList<>();
+        joursParHeures.forEach((heures, jours) -> {
+            Map<String, Object> specification = new LinkedHashMap<>();
+            specification.put("@type", "OpeningHoursSpecification");
+            specification.put("dayOfWeek", jours.stream().distinct()
+                    .map(jour -> SCHEMA + "/" + nomAnglais(jour)).toList());
+            specification.put("opens", heures.get(0).toString());
+            specification.put("closes", heures.get(1).toString());
+            specifications.add(specification);
+        });
+        return specifications;
+    }
+
+    /** schema.org nomme les jours en anglais, avec une capitale : « Monday ». */
+    private static String nomAnglais(DayOfWeek jour) {
+        String nom = jour.name().toLowerCase(Locale.ROOT);
+        return Character.toUpperCase(nom.charAt(0)) + nom.substring(1);
+    }
+
+    private static String joindre(String rue, String numero) {
+        if (rue == null || rue.isBlank()) {
+            return null;
+        }
+        return numero == null || numero.isBlank() ? rue : rue + " " + numero;
     }
 
     /** Une propriété absente vaut mieux qu'une propriété vide ou écrite « null ». */

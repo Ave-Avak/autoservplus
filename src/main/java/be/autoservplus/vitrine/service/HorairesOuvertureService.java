@@ -47,6 +47,14 @@ public class HorairesOuvertureService {
         this.plages = plages;
     }
 
+    /** Plages actives, du lundi au dimanche, pour les données structurées du garage. */
+    public List<PlageVue> plagesActives() {
+        return plages.findAllByOrderByJourSemaineAscHeureDebutAsc().stream()
+                .filter(PlageOuverture::isActif)
+                .map(PlageVue::de)
+                .toList();
+    }
+
     /**
      * Les sept jours dans l ordre ISO (lundi ... dimanche), fermetures comprises.
      *

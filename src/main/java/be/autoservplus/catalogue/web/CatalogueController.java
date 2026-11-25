@@ -2,6 +2,7 @@ package be.autoservplus.catalogue.web;
 
 import be.autoservplus.avis.service.AvisService;
 import be.autoservplus.common.web.FormulairePublic;
+import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.galerie.service.GalerieService;
 import be.autoservplus.catalogue.service.CatalogueService;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
@@ -39,13 +40,15 @@ public class CatalogueController {
     private final AvisService avis;
     private final GalerieService galerie;
     private final MessageSource messages;
+    private final IdentiteGarage garage;
 
     public CatalogueController(CatalogueService service, AvisService avis,
-                               GalerieService galerie, MessageSource messages) {
+                               GalerieService galerie, MessageSource messages, IdentiteGarage garage) {
         this.service = service;
         this.avis = avis;
         this.galerie = galerie;
         this.messages = messages;
+        this.garage = garage;
     }
 
     @GetMapping("/services")
@@ -103,7 +106,8 @@ public class CatalogueController {
         modele.addAttribute("titre", article.libelle());
         modele.addAttribute("article", article);
         modele.addAttribute("typeArticle", "service");
-        modele.addAttribute("donneesStructurees", DonneesStructurees.dePrestation(article));
+        modele.addAttribute("donneesStructurees", DonneesStructurees.dePrestation(article,
+                garage.pour(LocaleContextHolder.getLocale())));
         // BL-4 : la note moyenne et les avis publies font partie de la fiche.
         // Les pieces n en ont pas : un avis porte sur un travail effectue, pas sur
         // un article de stock.
@@ -150,7 +154,8 @@ public class CatalogueController {
         modele.addAttribute("article", article);
         modele.addAttribute("typeArticle", "piece");
         modele.addAttribute("rayon", demande);
-        modele.addAttribute("donneesStructurees", DonneesStructurees.dePiece(article, nomDuRayon));
+        modele.addAttribute("donneesStructurees", DonneesStructurees.dePiece(article, nomDuRayon,
+                garage.pour(LocaleContextHolder.getLocale())));
         // BL-9 : illustrations de la piece.
         modele.addAttribute("photos", galerie.illustrationsDePiece(reference));
         return new ModelAndView("catalogue/detail");
