@@ -1,5 +1,6 @@
 package be.autoservplus.reservation.web.dto;
 
+import be.autoservplus.catalogue.service.dto.PrestationRetenueVue;
 import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.reservation.domain.JoursFeries;
 import be.autoservplus.reservation.domain.Rdv;
@@ -40,6 +41,7 @@ public record RdvVueAdmin(
         String membreEmail,
         String vehicule,
         List<String> prestations,
+        List<PrestationRetenueVue> lignes,
         String montantTvac,
         String commentaire,
         String motifRefus,
@@ -70,6 +72,9 @@ public record RdvVueAdmin(
                 rdv.getVehicule().getMarque() + " " + rdv.getVehicule().getModele()
                         + " (" + rdv.getVehicule().getPlaque() + ")",
                 rdv.getLignes().stream().map(l -> l.getPrestation().libelle(langue).texte()).toList(),
+                rdv.getLignes().stream()
+                        .map(l -> PrestationRetenueVue.de(l.getPrestation().libelle(langue).texte(), l.getChoixPieces()))
+                        .toList(),
                 FormatageRdv.eurosEcran(rdv.montantTvac()),
                 rdv.getCommentaire(),
                 rdv.getMotifRefus(),

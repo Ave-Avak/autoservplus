@@ -1,6 +1,8 @@
 package be.autoservplus.vente.domain;
 
 import be.autoservplus.common.montant.CalculTva;
+import be.autoservplus.catalogue.domain.ChoixPieces;
+import be.autoservplus.catalogue.domain.ConvertisseurChoixPieces;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import jakarta.persistence.*;
@@ -15,6 +17,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.Locale;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Ligne d'un panier : une pièce détachée et sa quantité, aux conditions <b>figées
@@ -84,6 +87,14 @@ public class LignePanier {
     @Column(name = "taux_tva", nullable = false, precision = 5, scale = 2)
     private BigDecimal tauxTva;
 
+    /**
+     * Figé avec le prix à l'ajout, et voyage tel quel à la commande. Toujours nul pour une
+     * pièce ({@code ck_ligne_pieces_client}, V77) et pour un forfait sans prix pose seule.
+     */
+    @Convert(converter = ConvertisseurChoixPieces.class)
+    @Column(name = "pieces_client", updatable = false)
+    private ChoixPieces choixPieces;
+
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
@@ -124,13 +135,16 @@ public class LignePanier {
      * provisoire : la conclusion de la commande le refige dans la langue de ses
      * documents ({@link #rattacherA}), et le panier affiche d'ici là celui de la langue
      * de l'écran ({@link #libelleAffiche}).</p>
+     *
+     * @param choix choix des pièces, {@code null} quand la prestation n'en propose pas
      */
-    LignePanier(Panier panier, Prestation prestation, int quantite) {
+    LignePanier(Panier panier, Prestation prestation, int quantite, ChoixPieces choix) {
         this.panier = Objects.requireNonNull(panier, "panier");
         this.prestation = Objects.requireNonNull(prestation, "prestation");
         exigerQuantiteValide(quantite);
         this.libelleFige = prestation.getLibelle();
-        this.prixUnitaireHtva = prestation.getPrixHtva();
+        this.prixUnitaireHtva = prestation.prixHtvaPour(choix);
+        this.choixPieces = choix;
         this.tauxTva = prestation.getTauxTva();
         this.quantite = (short) quantite;
     }
@@ -239,6 +253,7 @@ public class LignePanier {
     public short getQuantite() { return quantite; }
     public BigDecimal getPrixUnitaireHtva() { return prixUnitaireHtva; }
     public BigDecimal getTauxTva() { return tauxTva; }
+    public Optional<ChoixPieces> getChoixPieces() { return Optional.ofNullable(choixPieces); }
 
     @Override
     public boolean equals(Object autre) {

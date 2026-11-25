@@ -1,5 +1,8 @@
 package be.autoservplus.intervention.domain;
 
+import be.autoservplus.catalogue.domain.ChoixPieces;
+import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.common.ReserveAuxTests;
 import be.autoservplus.common.entity.BaseEntity;
 import be.autoservplus.reservation.domain.LigneRdv;
 import be.autoservplus.identite.domain.Langue;
@@ -160,6 +163,7 @@ public class Intervention extends BaseEntity {
      * compare. Le figer dans l entite plutot que dans le service garantit qu aucun
      * chemin de creation ne puisse produire une intervention sans devis de reference.</p>
      */
+    @ReserveAuxTests
     public Intervention(String numero, Rdv rdv) {
         this(numero, rdv, Langue.fr);
     }
@@ -177,7 +181,8 @@ public class Intervention extends BaseEntity {
         this.vehicule = Objects.requireNonNull(rdv.getVehicule(), "rdv.vehicule");
         for (LigneRdv l : rdv.getLignes()) {
             this.lignes.add(new LigneIntervention(this, l.getPrestation(),
-                    BigDecimal.valueOf(l.getQuantite()), l.getPrixUnitaireHtva(), l.getTauxTva(), false));
+                    BigDecimal.valueOf(l.getQuantite()), l.getPrixUnitaireHtva(), l.getTauxTva(), false,
+                    l.getChoixPieces().orElse(null)));
         }
         this.montantDevisInitialHtva = totalDevisInitialHtva();
     }
@@ -222,7 +227,7 @@ public class Intervention extends BaseEntity {
             }
             it.lignes.add(new LigneIntervention(it, ligne.getPrestation(),
                     BigDecimal.valueOf(ligne.getQuantite()), ligne.getPrixUnitaireHtva(), ligne.getTauxTva(),
-                    false));
+                    false, ligne.getChoixPieces().orElse(null)));
         }
         it.montantDevisInitialHtva = it.totalDevisInitialHtva();
         return it;
@@ -334,16 +339,30 @@ public class Intervention extends BaseEntity {
     }
 
     /**
-     * Ajoute une prestation au dossier. Refuse hors EN_COURS (RM-14) : voir
-     * {@link #exigerAjoutEnCours()}.
+     * Ajoute une prestation au dossier, au prix du catalogue pour le choix des pièces retenu
+     * par le garage. Refuse hors EN_COURS (RM-14) : voir {@link #exigerAjoutEnCours()}.
+     *
+     * @param choix choix des pièces, {@code null} quand la prestation n'en propose pas
+     * @throws be.autoservplus.catalogue.domain.ChoixPiecesRefuseException choix absent alors
+     *         qu'il est proposé, ou l'inverse
      */
-    public LigneIntervention ajouterLigneMainOeuvre(be.autoservplus.catalogue.domain.Prestation prestation,
-                                                    BigDecimal quantite,
-                                                    BigDecimal prixUnitaireHtva,
-                                                    BigDecimal tauxTva) {
+    public LigneIntervention ajouterLigneMainOeuvre(Prestation prestation, BigDecimal quantite,
+                                                    ChoixPieces choix) {
         exigerAjoutEnCours();
-        LigneIntervention ligne = new LigneIntervention(this, prestation, quantite,
-                prixUnitaireHtva, tauxTva, true);
+        return ajouter(new LigneIntervention(this, prestation, quantite,
+                prestation.prixHtvaPour(choix), prestation.getTauxTva(), true, choix));
+    }
+
+    /** Prix fourni par l'appelant, pièces fournies par le garage si la prestation propose le choix. */
+    @ReserveAuxTests
+    public LigneIntervention ajouterLigneMainOeuvre(Prestation prestation, BigDecimal quantite,
+                                                    BigDecimal prixUnitaireHtva, BigDecimal tauxTva) {
+        exigerAjoutEnCours();
+        return ajouter(new LigneIntervention(this, prestation, quantite,
+                prixUnitaireHtva, tauxTva, true, prestation.choixParDefaut()));
+    }
+
+    private LigneIntervention ajouter(LigneIntervention ligne) {
         this.lignes.add(ligne);
         appliquerSeuilDepassement(ligne);
         return ligne;

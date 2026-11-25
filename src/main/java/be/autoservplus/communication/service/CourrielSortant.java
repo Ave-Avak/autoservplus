@@ -357,6 +357,10 @@ public class CourrielSortant implements ServiceCourriel {
         for (DetailsConfirmationCommande.LigneCommandee ligne : details.lignes()) {
             commande.add(message(cle + "ligne", langue, ligne.libelle(),
                     String.valueOf(ligne.quantite()), ligne.totalTvac(), ligne.tauxTva()));
+            if (ligne.mentionPieces() != null) {
+                // Sous la ligne, dans la langue du courriel : le libellé figé reste le nom de l'article.
+                commande.add("  " + texte(ligne.mentionPieces(), langue));
+            }
         }
         commande.add(message(cle + "total-htva", langue, details.totalHtva()));
         commande.add(message(cle + "total-tva", langue, details.totalTva()));

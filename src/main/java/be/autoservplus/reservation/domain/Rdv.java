@@ -1,6 +1,8 @@
 package be.autoservplus.reservation.domain;
 
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.PrestationChoisie;
+import be.autoservplus.common.ReserveAuxTests;
 import be.autoservplus.common.entity.BaseEntity;
 import be.autoservplus.common.exception.TransitionRefusee;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -121,8 +123,24 @@ public class Rdv extends BaseEntity {
         // requis par JPA
     }
 
+    /** Pièces fournies par le garage partout où le choix existe. */
+    @ReserveAuxTests
     public Rdv(String numero, Utilisateur membre, Vehicule vehicule, PosteAtelier poste,
                Instant debut, Duration pas, Collection<Prestation> prestations,
+               String commentaire) {
+        this(numero, membre, vehicule, poste, debut, pas,
+                prestations == null ? null : prestations.stream().distinct().map(PrestationChoisie::parDefaut).toList(),
+                commentaire);
+    }
+
+    /**
+     * @param prestations une entrée par prestation, avec le choix des pièces que la ligne fige
+     *                    avec son prix
+     * @throws be.autoservplus.catalogue.domain.ChoixPiecesRefuseException choix absent alors
+     *         qu'une prestation le propose, ou donné alors qu'elle ne le propose pas
+     */
+    public Rdv(String numero, Utilisateur membre, Vehicule vehicule, PosteAtelier poste,
+               Instant debut, Duration pas, List<PrestationChoisie> prestations,
                String commentaire) {
         this.reference = UUID.randomUUID();
         this.numero = Objects.requireNonNull(numero, "numero");
@@ -136,8 +154,11 @@ public class Rdv extends BaseEntity {
         if (prestations == null || prestations.isEmpty()) {
             throw new IllegalArgumentException("Un rendez-vous porte sur au moins une prestation.");
         }
-        prestations.stream().distinct()
-                .forEach(p -> this.lignes.add(new LigneRdv(this, p, (short) 1)));
+        if (prestations.stream().map(PrestationChoisie::prestation).distinct().count() != prestations.size()) {
+            // uq_rdv_service : une ligne par prestation, donc un seul choix pour chacune.
+            throw new IllegalArgumentException("Une prestation figure deux fois dans le rendez-vous.");
+        }
+        prestations.forEach(p -> this.lignes.add(new LigneRdv(this, p.prestation(), (short) 1, p.choix())));
         this.fin = debut.plus(dureeArrondie(dureeEstimeeMinutes(), pas));
         this.commentaire = (commentaire == null || commentaire.isBlank()) ? null : commentaire.trim();
     }

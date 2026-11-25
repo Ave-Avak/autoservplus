@@ -6,8 +6,12 @@ import jakarta.validation.constraints.Size;
 import org.springframework.format.annotation.DateTimeFormat;
 
 import java.time.LocalDate;
+import be.autoservplus.catalogue.domain.ChoixPieces;
+
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 public class RdvForm {
@@ -17,6 +21,13 @@ public class RdvForm {
 
     @NotEmpty(message = "{rdv.formulaire.prestations.obligatoire}")
     private List<UUID> prestations = new ArrayList<>();
+
+    /**
+     * Choix des pièces par prestation, envoyé sous {@code choixPieces[référence]}. Rien n'est
+     * présélectionné : une prestation cochée qui propose un prix pose seule sans entrée ici
+     * est signalée sous son groupe de boutons et dans le résumé des erreurs.
+     */
+    private Map<UUID, ChoixPieces> choixPieces = new HashMap<>();
 
     @DateTimeFormat(iso = DateTimeFormat.ISO.DATE)
     @NotNull(message = "{rdv.formulaire.date.obligatoire}")
@@ -32,6 +43,8 @@ public class RdvForm {
     public void setVehicule(UUID vehicule) { this.vehicule = vehicule; }
     public List<UUID> getPrestations() { return prestations; }
     public void setPrestations(List<UUID> prestations) { this.prestations = prestations; }
+    public Map<UUID, ChoixPieces> getChoixPieces() { return choixPieces; }
+    public void setChoixPieces(Map<UUID, ChoixPieces> choixPieces) { this.choixPieces = choixPieces; }
     public LocalDate getDate() { return date; }
     public void setDate(LocalDate date) { this.date = date; }
     public String getDebut() { return debut; }

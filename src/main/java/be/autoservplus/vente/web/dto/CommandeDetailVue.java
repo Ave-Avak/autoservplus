@@ -1,5 +1,6 @@
 package be.autoservplus.vente.web.dto;
 
+import be.autoservplus.catalogue.domain.ChoixPieces;
 import be.autoservplus.common.montant.CalculTva;
 import be.autoservplus.reservation.service.support.FormatageRdv;
 import be.autoservplus.vente.domain.Commande;
@@ -68,7 +69,9 @@ public record CommandeDetailVue(
             String prixUnitaireHtva,
             String tauxTva,
             String prixUnitaireTvac,
-            String totalTvac) {
+            String totalTvac,
+            /** Clé de la mention du choix des pièces, nulle sans choix. */
+            String mentionPieces) {
 
         static LigneVue de(LignePanier ligne) {
             return new LigneVue(
@@ -77,7 +80,8 @@ public record CommandeDetailVue(
                     FormatageRdv.eurosEcran(ligne.getPrixUnitaireHtva()),
                     pourcentage(ligne.getTauxTva()),
                     FormatageRdv.eurosEcran(ligne.prixUnitaireTvac()),
-                    FormatageRdv.eurosEcran(ligne.totalTvac()));
+                    FormatageRdv.eurosEcran(ligne.totalTvac()),
+                    ChoixPieces.cleMentionDe(ligne.getChoixPieces()));
         }
 
         /** 21.00 s'affiche « 21 % » : les décimales nulles d'un taux belge sont du bruit. */

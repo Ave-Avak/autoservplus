@@ -1,7 +1,10 @@
 package be.autoservplus.devis.domain;
 
+import be.autoservplus.catalogue.domain.ChoixPieces;
+import be.autoservplus.catalogue.domain.ConvertisseurChoixPieces;
 import be.autoservplus.common.montant.CalculTva;
 import jakarta.persistence.Column;
+import jakarta.persistence.Convert;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
@@ -13,6 +16,7 @@ import jakarta.persistence.Table;
 
 import java.math.BigDecimal;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Ligne d'un devis, recopiée d'une ligne du panier à l'émission. Elle naît avec son
@@ -45,18 +49,27 @@ public class LigneDevis {
     @Column(name = "taux_tva", nullable = false, updatable = false, precision = 5, scale = 2)
     private BigDecimal tauxTva;
 
+    /**
+     * Repris de la ligne du panier. La ligne de devis n'a aucune clé vers la prestation : sans
+     * ce champ, rien ne dirait plus quel choix le prix suppose.
+     */
+    @Convert(converter = ConvertisseurChoixPieces.class)
+    @Column(name = "pieces_client", updatable = false)
+    private ChoixPieces choixPieces;
+
     protected LigneDevis() {
         // requis par JPA
     }
 
     LigneDevis(Devis devis, short rang, String libelle, short quantite,
-               BigDecimal prixUnitaireHtva, BigDecimal tauxTva) {
+               BigDecimal prixUnitaireHtva, BigDecimal tauxTva, ChoixPieces choixPieces) {
         this.devis = Objects.requireNonNull(devis, "devis");
         this.rang = rang;
         this.libelle = Objects.requireNonNull(libelle, "libelle");
         this.quantite = quantite;
         this.prixUnitaireHtva = Objects.requireNonNull(prixUnitaireHtva, "prixUnitaireHtva");
         this.tauxTva = Objects.requireNonNull(tauxTva, "tauxTva");
+        this.choixPieces = choixPieces;
     }
 
     /** Prix unitaire taxe comprise, celui que le panier affichait. */
@@ -75,6 +88,7 @@ public class LigneDevis {
     public short getQuantite() { return quantite; }
     public BigDecimal getPrixUnitaireHtva() { return prixUnitaireHtva; }
     public BigDecimal getTauxTva() { return tauxTva; }
+    public Optional<ChoixPieces> getChoixPieces() { return Optional.ofNullable(choixPieces); }
 
     @Override
     public boolean equals(Object autre) {

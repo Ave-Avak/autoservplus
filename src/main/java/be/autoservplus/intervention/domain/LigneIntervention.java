@@ -1,6 +1,8 @@
 package be.autoservplus.intervention.domain;
 
 import be.autoservplus.common.montant.CalculTva;
+import be.autoservplus.catalogue.domain.ChoixPieces;
+import be.autoservplus.catalogue.domain.ConvertisseurChoixPieces;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import jakarta.persistence.*;
@@ -15,6 +17,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Article facturable d une intervention : main d oeuvre (prestation du catalogue)
@@ -84,6 +87,14 @@ public class LigneIntervention {
     @Column(name = "taux_tva", nullable = false, precision = 5, scale = 2)
     private BigDecimal tauxTva;
 
+    /**
+     * Repris de la ligne d'origine, ou fixé à l'ajout par le garage (V77). Nul hors forfait
+     * ({@code ck_ligne_interv_pieces_client}) et pour un forfait sans prix pose seule.
+     */
+    @Convert(converter = ConvertisseurChoixPieces.class)
+    @Column(name = "pieces_client", updatable = false)
+    private ChoixPieces choixPieces;
+
     @Column(name = "ajoutee_en_cours", nullable = false)
     private boolean ajouteeEnCours;
 
@@ -124,14 +135,22 @@ public class LigneIntervention {
      *
      * @param ajouteeEnCours {@code false} pour une ligne issue du RDV (devis initial),
      *                       {@code true} pour un ajout du garage pendant l intervention.
+     * @param choixPieces    choix figé avec le prix, {@code null} quand aucun choix n'a été
+     *                       proposé. Le prix est déjà celui de ce choix : il n'est pas relu
+     *                       au catalogue.
      * @throws QuantiteLigneRefuseeException quantité nulle, négative, décimale pour un
      *                                       forfait ou trop précise pour des heures
      */
     LigneIntervention(Intervention intervention, Prestation prestation, BigDecimal quantite,
-                      BigDecimal prixUnitaireHtva, BigDecimal tauxTva, boolean ajouteeEnCours) {
+                      BigDecimal prixUnitaireHtva, BigDecimal tauxTva, boolean ajouteeEnCours,
+                      ChoixPieces choixPieces) {
         this.intervention = Objects.requireNonNull(intervention, "intervention");
         this.prestation = Objects.requireNonNull(prestation, "prestation");
         this.unite = UniteLigne.de(prestation);
+        if (choixPieces != null && unite != UniteLigne.FORFAIT) {
+            throw new IllegalArgumentException("Seul un forfait porte un choix des pièces.");
+        }
+        this.choixPieces = choixPieces;
         this.quantite = quantiteValide(quantite, unite);
         this.libelleFige = prestation.libelle(intervention.langueDesLibelles()).texte();
         this.prixUnitaireHtva = Objects.requireNonNull(prixUnitaireHtva, "prixUnitaireHtva");
@@ -279,6 +298,7 @@ public class LigneIntervention {
     public BigDecimal getTauxTva() { return tauxTva; }
     public boolean isAjouteeEnCours() { return ajouteeEnCours; }
     public Boolean getAccordMembre() { return accordMembre; }
+    public Optional<ChoixPieces> getChoixPieces() { return Optional.ofNullable(choixPieces); }
 
     @Override
     public boolean equals(Object autre) {

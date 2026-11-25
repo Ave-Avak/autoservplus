@@ -55,7 +55,12 @@
         </div>
         <div>
             <dt th:text="#{admin.rdv.colonne.prestations}">Prestations</dt>
-            <dd th:text="${#strings.listJoin(rdv.prestations(), ', ')}">Vidange</dd>
+            <dd>
+                <ul class="liste-simple">
+                    <li th:each="p : ${rdv.lignes()}"><span th:text="${p.libelle()}">Vidange</span>
+                        <small th:replace="~{fragments/choix-pieces :: mention(${p.mentionPieces()})}"></small></li>
+                </ul>
+            </dd>
         </div>
         <div>
             <dt th:text="#{admin.rdv.detail.montant}">Montant TVAC</dt>

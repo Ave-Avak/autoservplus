@@ -152,7 +152,7 @@ public class GenerateurPdfFacture {
                     cle.endsWith("description") ? Element.ALIGN_LEFT : Element.ALIGN_RIGHT));
         }
         for (DocumentFacture.LigneFacture ligne : document.lignes()) {
-            table.addCell(cellule(ligne.libelle(), Element.ALIGN_LEFT));
+            table.addCell(cellule(avecMention(document, ligne.libelle(), ligne.mentionPieces()), Element.ALIGN_LEFT));
             table.addCell(cellule(ligne.quantite(), Element.ALIGN_RIGHT));
             table.addCell(cellule(montant(ligne.prixUnitaireHtva(), document.locale()),
                     Element.ALIGN_RIGHT));
@@ -232,6 +232,14 @@ public class GenerateurPdfFacture {
     /** L'émetteur tel qu'il s'écrit dans la langue du document. */
     private IdentiteGarage garage(DocumentFacture document) {
         return garage.pour(document.locale());
+    }
+
+    /**
+     * Libellé de la ligne, suivi à la ligne de la mention du choix des pièces dans la langue du
+     * document. Le libellé figé reste le nom de l'article : la mention ne le rallonge pas.
+     */
+    private String avecMention(DocumentFacture document, String libelleLigne, String mentionPieces) {
+        return mentionPieces == null ? libelleLigne : libelleLigne + "\n" + libelle(document, mentionPieces);
     }
 
     private String libelle(DocumentFacture document, String cle, Object... arguments) {

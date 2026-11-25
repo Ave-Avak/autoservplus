@@ -191,7 +191,8 @@ public class Devis {
         short rang = 0;
         for (LignePanier ligne : panier.getLignes()) {
             devis.lignes.add(new LigneDevis(devis, rang++, ligne.libelleAffiche(langueDuDocument),
-                    ligne.getQuantite(), ligne.getPrixUnitaireHtva(), ligne.getTauxTva()));
+                    ligne.getQuantite(), ligne.getPrixUnitaireHtva(), ligne.getTauxTva(),
+                    ligne.getChoixPieces().orElse(null)));
         }
         devis.montantHtva = panier.totalHtva();
         devis.montantTva = panier.totalTva();

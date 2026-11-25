@@ -1,5 +1,6 @@
 package be.autoservplus.intervention.service;
 
+import be.autoservplus.catalogue.service.dto.PrestationRetenueVue;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.intervention.repository.InterventionRepository;
 import be.autoservplus.intervention.service.dto.CommandeAPlanifierVue;
@@ -81,6 +82,9 @@ public class PlanificationCommandeService {
                 commande.getMembre().getPrenom() + " " + commande.getMembre().getNom(),
                 commandes.lignesServiceDe(commande).stream()
                         .map(LignePanier::getLibelleFige)
+                        .toList(),
+                commandes.lignesServiceDe(commande).stream()
+                        .map(l -> PrestationRetenueVue.de(l.getLibelleFige(), l.getChoixPieces()))
                         .toList(),
                 vehicules.findByMembre(commande.getMembre().getEmail()).stream()
                         .map(v -> new CommandeAPlanifierVue.VehiculeChoisissable(

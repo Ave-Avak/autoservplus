@@ -61,9 +61,9 @@ class GenerateurPdfFactureTest {
     private static DocumentFacture factureMultiTaux(Locale locale) {
         List<DocumentFacture.LigneFacture> lignes = List.of(
                 new DocumentFacture.LigneFacture("Plaquettes de frein avant", 1,
-                        new BigDecimal("100.00"), new BigDecimal("21.00"), new BigDecimal("121.00")),
+                        new BigDecimal("100.00"), new BigDecimal("21.00"), new BigDecimal("121.00"), null),
                 new DocumentFacture.LigneFacture("Recyclage huile usagee", 1,
-                        new BigDecimal("50.00"), new BigDecimal("6.00"), new BigDecimal("53.00")));
+                        new BigDecimal("50.00"), new BigDecimal("6.00"), new BigDecimal("53.00"), null));
         VentilationTva ventilation = new VentilationTva(List.of(
                 new VentilationTva.TrancheTva(new BigDecimal("6"),
                         new BigDecimal("50.00"), new BigDecimal("3.00")),
@@ -208,7 +208,7 @@ class GenerateurPdfFactureTest {
                 new DocumentFacture.ClientFacture("Jean Sansadresse", null, null, null, null,
                         "Belgique"),
                 List.of(new DocumentFacture.LigneFacture("Ampoule H7", 2,
-                        new BigDecimal("9.90"), new BigDecimal("21.00"), new BigDecimal("23.96"))),
+                        new BigDecimal("9.90"), new BigDecimal("21.00"), new BigDecimal("23.96"), null)),
                 new VentilationTva(List.of(new VentilationTva.TrancheTva(
                         new BigDecimal("21"), new BigDecimal("19.80"), new BigDecimal("4.16")))),
                 new BigDecimal("19.80"), new BigDecimal("4.16"), new BigDecimal("23.96"),
@@ -225,7 +225,7 @@ class GenerateurPdfFactureTest {
         DocumentFacture atelier = new DocumentFacture("2026-0050", Instant.parse("2026-11-24T15:00:00Z"),
                 null, null, marie(),
                 List.of(new DocumentFacture.LigneFacture("Main-d'œuvre (heure)", "1,5 h",
-                        new BigDecimal("65.00"), new BigDecimal("21.00"), new BigDecimal("117.98"))),
+                        new BigDecimal("65.00"), new BigDecimal("21.00"), new BigDecimal("117.98"), null)),
                 new VentilationTva(List.of(new VentilationTva.TrancheTva(new BigDecimal("21"),
                         new BigDecimal("97.50"), new BigDecimal("20.48")))),
                 new BigDecimal("97.50"), new BigDecimal("20.48"), new BigDecimal("117.98"),

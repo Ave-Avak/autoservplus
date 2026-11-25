@@ -1,5 +1,7 @@
 package be.autoservplus.intervention.service;
 
+import be.autoservplus.catalogue.domain.ChoixPieces;
+import be.autoservplus.common.ReserveAuxTests;
 import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
@@ -445,14 +447,28 @@ public class InterventionService {
      * (RM-15). Le service se contente de constater la bascule et de prevenir le
      * membre. La regle vit dans le domaine, pas ici.
      */
+    @ReserveAuxTests
     @Transactional
     public LigneIntervention ajouterLigneMainOeuvre(UUID interventionRef, UUID prestationRef, BigDecimal quantite) {
+        return ajouterLigneMainOeuvre(interventionRef, prestationRef, quantite, null);
+    }
+
+    /**
+     * @param choix choix des pièces du formulaire. Le back-office présélectionne les pièces
+     *              fournies : sans choix, c'est celui-là qui s'applique. Il est ignoré pour une
+     *              prestation qui ne propose pas de prix pose seule, où le même formulaire
+     *              l'envoie aussi.
+     */
+    @Transactional
+    public LigneIntervention ajouterLigneMainOeuvre(UUID interventionRef, UUID prestationRef, BigDecimal quantite,
+                                                    ChoixPieces choix) {
         Intervention it = charger(interventionRef);
         Prestation prestation = prestations.findByReference(prestationRef)
                 .orElseThrow(() -> new RessourceIntrouvableException("Prestation", prestationRef));
+        ChoixPieces retenu = !prestation.proposePoseSeule() ? null
+                : choix != null ? choix : ChoixPieces.FOURNIES_PAR_GARAGE;
         StatutIntervention avant = it.getStatut();
-        LigneIntervention ligne = it.ajouterLigneMainOeuvre(prestation, quantite,
-                prestation.getPrixHtva(), prestation.getTauxTva());
+        LigneIntervention ligne = it.ajouterLigneMainOeuvre(prestation, quantite, retenu);
         enregistrerAjout(it, avant);
         return ligne;
     }

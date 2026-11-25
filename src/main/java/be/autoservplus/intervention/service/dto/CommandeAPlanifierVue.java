@@ -1,5 +1,6 @@
 package be.autoservplus.intervention.service.dto;
 
+import be.autoservplus.catalogue.service.dto.PrestationRetenueVue;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.UUID;
@@ -11,6 +12,7 @@ import java.util.UUID;
  *                  quel véhicule il travaille, la colonne {@code vehicule_id} de
  *                  l'intervention étant {@code NOT NULL} et une prestation achetée en
  *                  ligne n'étant rattachée à aucun véhicule
+ * @param lignes    les mêmes prestations avec la mention du choix des pièces, pour le détail
  */
 public record CommandeAPlanifierVue(
         UUID reference,
@@ -18,6 +20,7 @@ public record CommandeAPlanifierVue(
         LocalDateTime date,
         String client,
         List<String> prestations,
+        List<PrestationRetenueVue> lignes,
         List<VehiculeChoisissable> vehicules,
         boolean dejaPlanifiee,
         String numeroIntervention) {

@@ -114,7 +114,7 @@ class ConfirmationCommandeTest {
         assertThat(details.payeeLe()).isEqualTo(PAIEMENT);
         assertThat(details.lignes()).containsExactly(
                 new DetailsConfirmationCommande.LigneCommandee("Filtre à huile", 2,
-                        FormatageRdv.euros(new BigDecimal("21.78")), "21"));
+                        FormatageRdv.euros(new BigDecimal("21.78")), "21", null));
         assertThat(details.totalHtva()).contains("66,29");
         assertThat(details.totalTva()).contains("13,92");
         assertThat(details.totalTvac()).contains("80,21");

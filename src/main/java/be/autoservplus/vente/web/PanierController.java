@@ -1,5 +1,7 @@
 package be.autoservplus.vente.web;
 
+import be.autoservplus.catalogue.domain.ChoixPieces;
+import be.autoservplus.catalogue.domain.ChoixPiecesRefuseException;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
@@ -82,9 +84,18 @@ public class PanierController {
     public String ajouterService(@AuthenticationPrincipal UserDetails membre,
                                  @RequestParam UUID reference,
                                  @RequestParam int quantite,
+                                 @RequestParam(required = false) ChoixPieces choix,
                                  RedirectAttributes redirection) {
-        return executer(redirection, "panier.message.ajout",
-                () -> service.ajouterService(membre.getUsername(), reference, quantite));
+        try {
+            return executer(redirection, "panier.message.ajout",
+                    () -> service.ajouterService(membre.getUsername(), reference, quantite, choix));
+        } catch (ChoixPiecesRefuseException refus) {
+            // Retour à la fiche, où le groupe de boutons porte l'erreur et le résumé la reprend :
+            // le panier ne montre pas le formulaire à corriger.
+            redirection.addFlashAttribute("erreurChoixPieces", messages.getMessage(refus.getCleMessage(),
+                    refus.getArguments(), LocaleContextHolder.getLocale()));
+            return "redirect:/services/" + reference;
+        }
     }
 
     @PostMapping("/lignes/{id}/quantite")
@@ -137,6 +148,9 @@ public class PanierController {
             redirection.addFlashAttribute("erreur", msg("panier.erreur.quantite"));
         } catch (ConflitConcurrenceException e) {
             redirection.addFlashAttribute("erreur", msg("panier.erreur.conflit"));
+        } catch (ChoixPiecesRefuseException refus) {
+            // Rendu à l'appelant, qui renvoie à la fiche plutôt qu'au panier.
+            throw refus;
         } catch (RefusTraduit refus) {
             // Refus du domaine qui porte sa clé, une prestation à l'heure par exemple (Q-H-36).
             redirection.addFlashAttribute("erreur", messages.getMessage(refus.getCleMessage(),

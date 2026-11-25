@@ -110,6 +110,7 @@ class AdminRdvControllerTest {
                 "Marie Dupont", "marie@exemple.be",
                 "VW Golf (1-ABC-123)",
                 List.of("Vidange"),
+                List.of(new be.autoservplus.catalogue.service.dto.PrestationRetenueVue("Vidange", null)),
                 "49,00 €", null, null,
                 true, true, true, false, false, true, false);
         rdvMock = mock(Rdv.class);

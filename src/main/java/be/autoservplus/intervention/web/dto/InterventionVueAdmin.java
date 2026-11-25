@@ -1,5 +1,6 @@
 package be.autoservplus.intervention.web.dto;
 
+import be.autoservplus.catalogue.domain.ChoixPieces;
 import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
@@ -113,11 +114,12 @@ public record InterventionVueAdmin(
      * entrent pas. Le type reste le nom de l'énumération, traduit par le gabarit.
      * {@code aCommander} ne vaut que pour une pièce non refusée dont le stock ne couvre pas
      * les interventions ouvertes : une ligne refusée ne sera pas posée.
+     * {@code mentionPieces} est la clé de la mention du choix des pièces, nulle sans choix.
      */
     public record LigneInterventionVue(
             Long id, String type, String libelle, String quantite,
             String prixUnitaireHtva, String totalHtva,
-            String cleEtat, boolean compteDansLeTotal, boolean aCommander) {
+            String cleEtat, boolean compteDansLeTotal, boolean aCommander, String mentionPieces) {
 
         public static LigneInterventionVue de(LigneIntervention l, Set<Long> piecesACommander) {
             return new LigneInterventionVue(
@@ -130,7 +132,8 @@ public record InterventionVueAdmin(
                     cleEtat(l),
                     l.estFacturable(),
                     l.getPiece() != null && !l.estRefusee()
-                            && piecesACommander.contains(l.getPiece().getId()));
+                            && piecesACommander.contains(l.getPiece().getId()),
+                    ChoixPieces.cleMentionDe(l.getChoixPieces()));
         }
 
         private static String cleEtat(LigneIntervention l) {

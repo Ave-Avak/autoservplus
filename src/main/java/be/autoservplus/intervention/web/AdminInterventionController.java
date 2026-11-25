@@ -1,5 +1,6 @@
 package be.autoservplus.intervention.web;
 
+import be.autoservplus.catalogue.domain.ChoixPieces;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
@@ -225,9 +226,10 @@ public class AdminInterventionController {
                                @PathVariable UUID reference,
                                @RequestParam UUID prestation,
                                @RequestParam BigDecimal quantite,
+                               @RequestParam(required = false) ChoixPieces choix,
                                RedirectAttributes redirection) {
         try {
-            service.ajouterLigneMainOeuvre(reference, prestation, quantite);
+            service.ajouterLigneMainOeuvre(reference, prestation, quantite, choix);
             redirection.addFlashAttribute("message", message("admin.intervention.message.ligne-ajoutee"));
         } catch (RessourceIntrouvableException e) {
             // La prestation choisie dans la liste a disparu du catalogue entre-temps.

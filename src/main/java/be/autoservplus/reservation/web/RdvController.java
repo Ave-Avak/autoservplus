@@ -1,5 +1,6 @@
 package be.autoservplus.reservation.web;
 
+import be.autoservplus.catalogue.domain.ChoixPiecesRefuseException;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.service.AucunePrestationChoisieException;
@@ -100,6 +101,7 @@ public class RdvController {
                            Model modele,
                            RedirectAttributes redirection) {
 
+        exigerLesChoixDesPieces(formulaire, erreurs);
         if (erreurs.hasErrors()) {
             return retourFormulaire(membre, formulaire, modele);
         }
@@ -114,7 +116,7 @@ public class RdvController {
 
         try {
             var rdv = rdvs.reserver(membre.getUsername(), formulaire.getVehicule(),
-                    formulaire.getPrestations(), debut, formulaire.getCommentaire());
+                    formulaire.getPrestations(), formulaire.getChoixPieces(), debut, formulaire.getCommentaire());
             // Le statut, et non le réglage lu à part : une demande confirmée d'office
             // n'attend plus le garage, une demande en attente l'attend.
             String cle = rdv.getStatut() == StatutRdv.CONFIRME
@@ -130,6 +132,10 @@ public class RdvController {
             // choix qui n est pas en cause, et changer ce choix n aurait rien change.
             erreurs.reject(e.getCleMessage(), e.getArguments(), e.getMessage());
             return retourFormulaire(membre, formulaire, modele);
+        } catch (ChoixPiecesRefuseException e) {
+            // La prestation a changé entre l'affichage et l'envoi : l'erreur va sous son groupe.
+            erreurs.rejectValue(champChoix(e.getPrestation()), e.getCleMessage(), e.getArguments(), e.getMessage());
+            return retourFormulaire(membre, formulaire, modele);
         } catch (PrestationIndisponibleException | AucunePrestationChoisieException e) {
             // Ces deux-la visent bien le choix de prestations : l erreur s ancre sous
             // ce champ, ou le membre peut agir.
@@ -141,6 +147,24 @@ public class RdvController {
             erreurs.rejectValue("debut", e.getCleMessage(), e.getArguments(), e.getMessage());
             return retourFormulaire(membre, formulaire, modele);
         }
+    }
+
+    /**
+     * Un forfait coché qui propose un prix pose seule attend la réponse du membre : rien n'est
+     * présélectionné, pour que le prix retenu soit celui qu'il a choisi. Chaque choix manquant
+     * s'ancre sous son groupe de boutons, et le résumé en tête du formulaire les reprend.
+     */
+    private void exigerLesChoixDesPieces(RdvForm formulaire, BindingResult erreurs) {
+        rdvs.prestationsAvecChoixDesPieces(formulaire.getPrestations()).forEach((reference, libelle) -> {
+            if (formulaire.getChoixPieces().get(reference) == null) {
+                erreurs.rejectValue(champChoix(reference), "choix-pieces.erreur.manquant",
+                        new Object[]{libelle}, "Choisissez qui fournit les pièces.");
+            }
+        });
+    }
+
+    private static String champChoix(UUID prestation) {
+        return "choixPieces[" + prestation + "]";
     }
 
     @GetMapping("/{reference}")

@@ -43,7 +43,8 @@
             <dt th:text="#{rdv.detail.prestations}">Prestations</dt>
             <dd>
                 <ul>
-                    <li th:each="p : ${rdv.prestations()}" th:text="${p}">Vidange</li>
+                    <li th:each="p : ${rdv.lignes()}"><span th:text="${p.libelle()}">Vidange</span>
+                        <small th:replace="~{fragments/choix-pieces :: mention(${p.mentionPieces()})}"></small></li>
                 </ul>
             </dd>
         </div>

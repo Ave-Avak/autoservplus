@@ -249,7 +249,8 @@ public record ExportDonnees(
             BigDecimal tauxTva,
             BigDecimal prixUnitaireTvac,
             BigDecimal totalTvac,
-            Instant dateAjout) {
+            Instant dateAjout,
+            String choixPieces) {
 
         public static LignePanierExport de(LignePanier ligne, Instant dateAjout) {
             return new LignePanierExport(
@@ -259,7 +260,8 @@ public record ExportDonnees(
                     ligne.getTauxTva(),
                     ligne.prixUnitaireTvac(),
                     ligne.totalTvac(),
-                    dateAjout);
+                    dateAjout,
+                    ligne.getChoixPieces().map(Enum::name).orElse(null));
         }
     }
 
@@ -298,7 +300,8 @@ public record ExportDonnees(
             BigDecimal prixUnitaireHtva,
             BigDecimal tauxTva,
             BigDecimal prixUnitaireTvac,
-            BigDecimal totalTvac) {
+            BigDecimal totalTvac,
+            String choixPieces) {
 
         public static LigneCommandeExport de(LignePanier ligne) {
             return new LigneCommandeExport(
@@ -307,7 +310,8 @@ public record ExportDonnees(
                     ligne.getPrixUnitaireHtva(),
                     ligne.getTauxTva(),
                     ligne.prixUnitaireTvac(),
-                    ligne.totalTvac());
+                    ligne.totalTvac(),
+                    ligne.getChoixPieces().map(Enum::name).orElse(null));
         }
     }
 
@@ -365,7 +369,8 @@ public record ExportDonnees(
             BigDecimal prixUnitaireHtva,
             BigDecimal tauxTva,
             BigDecimal prixUnitaireTvac,
-            BigDecimal totalTvac) {
+            BigDecimal totalTvac,
+            String choixPieces) {
 
         public static LigneDevisExport de(LigneDevis ligne) {
             return new LigneDevisExport(
@@ -374,7 +379,8 @@ public record ExportDonnees(
                     ligne.getPrixUnitaireHtva(),
                     ligne.getTauxTva(),
                     ligne.prixUnitaireTvac(),
-                    ligne.totalTvac());
+                    ligne.totalTvac(),
+                    ligne.getChoixPieces().map(Enum::name).orElse(null));
         }
     }
 
@@ -571,14 +577,16 @@ public record ExportDonnees(
             String libelle,
             short quantite,
             BigDecimal prixUnitaireHtva,
-            BigDecimal tauxTva) {
+            BigDecimal tauxTva,
+            String choixPieces) {
 
         public static PrestationRdvExport de(LigneRdv ligne) {
             return new PrestationRdvExport(
                     ligne.getPrestation().getLibelle(),
                     ligne.getQuantite(),
                     ligne.getPrixUnitaireHtva(),
-                    ligne.getTauxTva());
+                    ligne.getTauxTva(),
+                    ligne.getChoixPieces().map(Enum::name).orElse(null));
         }
     }
 
@@ -654,7 +662,10 @@ public record ExportDonnees(
      * {@code null} : c'est la réponse du membre à une demande de dépassement de
      * devis (RM-15), sa décision, donc sa donnée. {@code null} signifie qu'aucune
      * réponse n'est attendue ni donnée. {@code unite} vaut {@code PIECE}, {@code FORFAIT}
-     * ou {@code HEURE}, la seule dont la quantité peut être décimale (V73).
+     * ou {@code HEURE}, la seule dont la quantité peut être décimale (V73). {@code choixPieces}
+     * vaut {@code FOURNIES_PAR_GARAGE} ou {@code APPORTEES_PAR_CLIENT} sur un forfait qui
+     * proposait le choix, {@code null} ailleurs, comme sur les lignes de rendez-vous, de panier,
+     * de commande et de devis (V77).
      */
     public record LigneInterventionExport(
             String type,
@@ -665,7 +676,8 @@ public record ExportDonnees(
             BigDecimal tauxTva,
             BigDecimal totalHtva,
             BigDecimal totalTvac,
-            Boolean accordMembre) {
+            Boolean accordMembre,
+            String choixPieces) {
 
         public static LigneInterventionExport de(LigneIntervention ligne) {
             return new LigneInterventionExport(
@@ -677,7 +689,8 @@ public record ExportDonnees(
                     ligne.getTauxTva(),
                     ligne.totalHtva(),
                     ligne.totalTvac(),
-                    ligne.getAccordMembre());
+                    ligne.getAccordMembre(),
+                    ligne.getChoixPieces().map(Enum::name).orElse(null));
         }
     }
 

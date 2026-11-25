@@ -81,7 +81,19 @@
                  Réservé aux membres connectés, comme le panier. */-->
             <form th:action="@{/panier/ajouter-service}" method="post"
                   th:if="${typeArticle == 'service'}" sec:authorize="isAuthenticated()">
+                <!--/* Un choix des pièces manquant revient ici, et non au panier : sous le groupe de
+                     boutons, et dans le résumé qui y renvoie. */-->
+                <div class="resume-erreurs" role="alert" th:if="${erreurChoixPieces != null}">
+                    <p th:text="#{formulaire.resume-erreurs.titre}">Corrigez les points suivants :</p>
+                    <ul>
+                        <li><a href="#choix-pieces" th:text="${erreurChoixPieces}">Choisissez qui fournit les pièces.</a></li>
+                    </ul>
+                </div>
                 <input type="hidden" name="reference" th:value="${article.reference()}">
+                <fieldset th:if="${article.proposePoseSeule()}"
+                          th:replace="~{fragments/choix-pieces :: boutons(nom='choix', idGroupe='choix-pieces',
+                                  legende=#{choix-pieces.legende}, article=${article}, choisi=null,
+                                  erreur=${erreurChoixPieces})}"></fieldset>
                 <label for="quantite-service" th:text="#{panier.ajout.quantite}">Quantité</label>
                 <input type="number" id="quantite-service" name="quantite" value="1"
                        min="1" max="32767" required>

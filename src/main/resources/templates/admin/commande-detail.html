@@ -132,7 +132,8 @@
             </thead>
             <tbody>
             <tr th:each="l : ${commande.lignes()}">
-                <td th:text="${l.libelle()}">Plaquettes avant</td>
+                <td><span th:text="${l.libelle()}">Plaquettes avant</span>
+                    <small th:replace="~{fragments/choix-pieces :: mention(${l.mentionPieces()})}"></small></td>
                 <td th:text="${l.quantite()}">2</td>
                 <td th:text="${l.prixUnitaireHtva()}">19,99 €</td>
                 <td th:text="${l.tauxTva()}">21 %</td>

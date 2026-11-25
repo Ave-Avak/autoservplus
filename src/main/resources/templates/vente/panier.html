@@ -49,6 +49,7 @@
                 <tr th:each="l : ${panier.lignes()}">
                     <td>
                         <a th:href="@{/pieces/{ref}(ref=${l.referencePiece()})}" th:text="${l.libelle()}">Plaquettes avant</a>
+                        <small th:replace="~{fragments/choix-pieces :: mention(${l.mentionPieces()})}"></small>
                         <span class="texte-erreur" th:unless="${l.pieceActive()}"
                               th:text="#{panier.piece-inactive}">N'est plus vendu</span>
                     </td>

@@ -164,7 +164,7 @@ public class GenerateurPdfAvoir {
                     cle.endsWith("description") ? Element.ALIGN_LEFT : Element.ALIGN_RIGHT));
         }
         for (DocumentFacture.LigneFacture ligne : document.lignes()) {
-            table.addCell(cellule(ligne.libelle(), Element.ALIGN_LEFT));
+            table.addCell(cellule(avecMention(document, ligne.libelle(), ligne.mentionPieces()), Element.ALIGN_LEFT));
             table.addCell(cellule(ligne.quantite(), Element.ALIGN_RIGHT));
             table.addCell(cellule(montant(ligne.prixUnitaireHtva(), document.locale()),
                     Element.ALIGN_RIGHT));
@@ -241,6 +241,11 @@ public class GenerateurPdfAvoir {
     /** L'émetteur tel qu'il s'écrit dans la langue du document. */
     private IdentiteGarage garage(DocumentAvoir document) {
         return garage.pour(document.locale());
+    }
+
+    /** Libellé de la ligne et mention du choix des pièces, comme sur la facture annulée. */
+    private String avecMention(DocumentAvoir document, String libelleLigne, String mentionPieces) {
+        return mentionPieces == null ? libelleLigne : libelleLigne + "\n" + libelle(document, mentionPieces);
     }
 
     private String libelle(DocumentAvoir document, String cle, Object... arguments) {

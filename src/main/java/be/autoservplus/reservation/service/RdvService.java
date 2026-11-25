@@ -1,9 +1,14 @@
 package be.autoservplus.reservation.service;
 
+import be.autoservplus.catalogue.service.dto.PrestationRetenueVue;
 import be.autoservplus.catalogue.service.dto.CategorieVue;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
 import be.autoservplus.i18n.LanguesSupportees;
+import be.autoservplus.catalogue.domain.ChoixPieces;
+import be.autoservplus.catalogue.domain.ChoixPiecesRefuseException;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.PrestationChoisie;
+import be.autoservplus.common.ReserveAuxTests;
 import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
@@ -30,6 +35,7 @@ import be.autoservplus.reservation.web.dto.RdvVue;
 import java.text.Collator;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.Map;
 
@@ -107,9 +113,31 @@ public class RdvService {
 
     // --- reservation -----------------------------------------------------------------
 
+    /** Pièces fournies par le garage pour chaque prestation qui propose le choix. */
+    @ReserveAuxTests
     @Transactional
     public Rdv reserver(String email, UUID vehiculeReference, List<UUID> prestationReferences,
                         Instant debut, String commentaire) {
+        Map<UUID, ChoixPieces> parDefaut = new HashMap<>();
+        if (prestationReferences != null) {
+            prestationReferences.stream().distinct()
+                    .forEach(ref -> prestations.findByReference(ref)
+                            .map(Prestation::choixParDefaut)
+                            .ifPresent(choix -> parDefaut.put(ref, choix)));
+        }
+        return reserver(email, vehiculeReference, prestationReferences, parDefaut, debut, commentaire);
+    }
+
+    /**
+     * @param choixPieces choix des pièces par référence de prestation. Aucun n'est déduit :
+     *                    une prestation qui propose un prix pose seule sans choix dans la
+     *                    table est refusée.
+     * @throws ChoixPiecesRefuseException choix absent alors qu'une prestation le propose, ou
+     *                                    donné alors qu'elle ne le propose pas
+     */
+    @Transactional
+    public Rdv reserver(String email, UUID vehiculeReference, List<UUID> prestationReferences,
+                        Map<UUID, ChoixPieces> choixPieces, Instant debut, String commentaire) {
 
         ParametreAtelier p = parametres.courants();
 
@@ -117,6 +145,10 @@ public class RdvService {
                 .orElseThrow(() -> new RessourceIntrouvableException("Utilisateur", email));
         Vehicule vehicule = vehicules.vehiculeDuMembre(vehiculeReference, email);
         List<Prestation> choisies = prestationsActives(prestationReferences);
+        Map<UUID, ChoixPieces> choix = choixPieces == null ? Map.of() : choixPieces;
+        List<PrestationChoisie> retenues = choisies.stream()
+                .map(prestation -> new PrestationChoisie(prestation, choix.get(prestation.getReference())))
+                .toList();
 
         long enAttente = rdvs.countByMembreEmailAndStatut(email, StatutRdv.EN_ATTENTE);
         if (enAttente >= p.getMaxRdvEnAttenteParMembre()) {
@@ -134,7 +166,7 @@ public class RdvService {
                 .orElseThrow(() -> new CreneauIndisponibleException(CreneauIndisponibleException.PRIS,
                         "Ce créneau vient d'être pris. Choisissez-en un autre."));
 
-        Rdv rdv = new Rdv(numeros.prochain(), membre, vehicule, poste, debut, p.pas(), choisies, commentaire);
+        Rdv rdv = new Rdv(numeros.prochain(), membre, vehicule, poste, debut, p.pas(), retenues, commentaire);
         if (p.isConfirmationAutomatique()) {
             rdv.confirmer(horloge.instant());
         } else {
@@ -207,6 +239,23 @@ public class RdvService {
     }
 
     // --- vues pour l interface -------------------------------------------------------
+
+    /**
+     * Prestations, parmi les références données, qui proposent le choix des pièces, avec leur
+     * libellé dans la langue de l'écran. Le formulaire signale d'un coup tous les choix
+     * manquants, là où le domaine s'arrête au premier.
+     */
+    public Map<UUID, String> prestationsAvecChoixDesPieces(List<UUID> references) {
+        Locale langue = LanguesSupportees.deLEcran();
+        Map<UUID, String> avecChoix = new LinkedHashMap<>();
+        if (references != null) {
+            references.stream().distinct()
+                    .forEach(ref -> prestations.findByReference(ref)
+                            .filter(Prestation::proposePoseSeule)
+                            .ifPresent(p -> avecChoix.put(ref, p.libelle(langue).texte())));
+        }
+        return avecChoix;
+    }
 
     /**
      * Prestations réservables, groupées par catégorie, dans la langue de l'écran et
@@ -311,6 +360,9 @@ public class RdvService {
                 FormatageRdv.heureLisible(rdv.getFin(), zone),
                 rdv.getVehicule().getMarque() + " " + rdv.getVehicule().getModele() + " (" + rdv.getVehicule().getPlaque() + ")",
                 rdv.getLignes().stream().map(l -> l.getPrestation().libelle(langue).texte()).toList(),
+                rdv.getLignes().stream()
+                        .map(l -> PrestationRetenueVue.de(l.getPrestation().libelle(langue).texte(), l.getChoixPieces()))
+                        .toList(),
                 FormatageRdv.eurosEcran(rdv.montantTvac()),
                 rdv.getCommentaire(),
                 rdv.getMotifRefus(),

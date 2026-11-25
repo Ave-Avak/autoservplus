@@ -39,8 +39,13 @@ public record DetailsConfirmationCommande(String adresseEmail,
         piecesJointes = List.copyOf(piecesJointes);
     }
 
-    /** Une ligne de la commande, prix figés à l'ajout au panier (RM-30). */
-    public record LigneCommandee(String libelle, int quantite, String totalTvac, String tauxTva) {
+    /**
+     * Une ligne de la commande, prix figés à l'ajout au panier (RM-30).
+     *
+     * @param mentionPieces clé de la mention du choix des pièces, {@code null} sans choix proposé
+     */
+    public record LigneCommandee(String libelle, int quantite, String totalTvac, String tauxTva,
+                                 String mentionPieces) {
     }
 
     /**

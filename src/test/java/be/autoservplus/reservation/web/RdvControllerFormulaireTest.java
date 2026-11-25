@@ -144,7 +144,7 @@ class RdvControllerFormulaireTest {
     @DisplayName("prestation indisponible : erreur sous « prestations », message sans prefixe [RM-...]")
     void prestationIndisponibleSousLeChampPrestations() throws Exception {
         stubsFormulaire();
-        when(rdvs.reserver(any(), any(), any(), any(), any()))
+        when(rdvs.reserver(any(), any(), any(), any(), any(), any()))
                 .thenThrow(new PrestationIndisponibleException("Vidange"));
 
         mvc.perform(postReservation())
@@ -159,7 +159,7 @@ class RdvControllerFormulaireTest {
     @DisplayName("plafond de demandes : erreur GLOBALE, pas sous « prestations »")
     void plafondDemandesEnErreurGlobale() throws Exception {
         stubsFormulaire();
-        when(rdvs.reserver(any(), any(), any(), any(), any()))
+        when(rdvs.reserver(any(), any(), any(), any(), any(), any()))
                 .thenThrow(new LimiteDemandesEnAttenteException(3));
 
         mvc.perform(postReservation())
@@ -183,7 +183,7 @@ class RdvControllerFormulaireTest {
     @DisplayName("confirmé d'office : le message dit que le rendez-vous est confirmé")
     void messageRendezVousConfirme() throws Exception {
         Rdv cree = rdv(StatutRdv.CONFIRME);
-        when(rdvs.reserver(any(), any(), any(), any(), any())).thenReturn(cree);
+        when(rdvs.reserver(any(), any(), any(), any(), any(), any())).thenReturn(cree);
 
         mvc.perform(postReservation().locale(Locale.FRENCH))
                 .andExpect(status().is3xxRedirection())
@@ -197,7 +197,7 @@ class RdvControllerFormulaireTest {
     @DisplayName("en attente : le message annonce la confirmation du garage")
     void messageDemandeEnAttente() throws Exception {
         Rdv cree = rdv(StatutRdv.EN_ATTENTE);
-        when(rdvs.reserver(any(), any(), any(), any(), any())).thenReturn(cree);
+        when(rdvs.reserver(any(), any(), any(), any(), any(), any())).thenReturn(cree);
 
         mvc.perform(postReservation().locale(Locale.FRENCH))
                 .andExpect(status().is3xxRedirection())
@@ -217,7 +217,7 @@ class RdvControllerFormulaireTest {
     @DisplayName("creneau indisponible : erreur sous « debut », message sans prefixe [RM-...]")
     void creneauIndisponibleSousLeChampDebut() throws Exception {
         stubsFormulaire();
-        when(rdvs.reserver(any(), any(), any(), any(), any()))
+        when(rdvs.reserver(any(), any(), any(), any(), any(), any()))
                 .thenThrow(new CreneauIndisponibleException(CreneauIndisponibleException.PRIS,
                         "Ce créneau vient d'être pris. Choisissez-en un autre."));
 
