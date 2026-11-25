@@ -103,6 +103,11 @@ class InterventionServiceTest {
     @BeforeEach
     void setUp() {
         horloge = Clock.fixed(MAINTENANT, BRUXELLES);
+        // La clôture lit par le verrou du dépôt : il rend ce que la lecture préparée par le test
+        // rend, comme le dépôt réel rend la même ligne, verrouillée. Lenient parce que la plupart
+        // des cas ne clôturent pas.
+        org.mockito.Mockito.lenient().when(interventions.verrouiller(any()))
+                .thenAnswer(appel -> interventions.findByReference(appel.getArgument(0)));
         service = new InterventionService(interventions, historiques, prestations, pieces, factures, avoirs, encaissements,
                 commandes, vehicules, parametres,
                 auteurCourant, auditeur, numeros, courriel, evenements, GaragesDeTest.bruxellois(), horloge);

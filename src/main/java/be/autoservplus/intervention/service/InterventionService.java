@@ -259,11 +259,20 @@ public class InterventionService {
      * facture est à émettre (Q-H-23, art. 5 AR n° 1) : l'écran mène alors à la modification
      * du compte.</p>
      *
-     * @throws ClotureRefuseeException titulaire absent, ou adresse incomplète
+     * <p>Ordre des verrous : l'intervention d'abord, prise avant toute lecture et attendue au
+     * plus le délai configuré, puis les pièces, par identifiant croissant au décompte. La
+     * transition est écrite avant le décompte, dans {@link #ecrire}, où un conflit de version se
+     * traduit. Écrite après, elle partait au vidage automatique que déclenche la première
+     * requête du décompte, hors de cette traduction : une écriture concurrente du dossier
+     * finissait en page d'erreur, et le décompte avait lu des lignes déjà périmées.</p>
+     *
+     * @throws ClotureRefuseeException     titulaire absent, ou adresse incomplète
+     * @throws ConflitConcurrenceException dossier verrouillé au-delà du délai, ou modifié depuis
+     *                                     sa lecture dans la transaction
      */
     @Transactional
     public ClotureIntervention terminer(UUID reference) {
-        Intervention it = charger(reference);
+        Intervention it = verrouiller(reference);
         if (!it.getStatut().peutPasserA(StatutIntervention.TERMINEE)) {
             // La machine à états refuse d'abord : une intervention planifiée ne se clôt pas,
             // quelle que soit l'adresse de son client.
@@ -279,6 +288,7 @@ public class InterventionService {
         StatutIntervention avant = it.getStatut();
         it.terminer(horloge.instant());
         historiser(it, avant, it.getStatut(), null);
+        ecrire(it);
         List<String> rameneesAZero = decompterLeStock(it);
         Optional<Facture> facture = factures.emettrePourIntervention(it, titulaire);
         Intervention enregistre = ecrire(it);
@@ -469,7 +479,7 @@ public class InterventionService {
     @Transactional
     public LigneIntervention ajouterLigneMainOeuvre(UUID interventionRef, UUID prestationRef, BigDecimal quantite,
                                                     ChoixPieces choix) {
-        Intervention it = charger(interventionRef);
+        Intervention it = verrouiller(interventionRef);
         Prestation prestation = prestations.findByReference(prestationRef)
                 .orElseThrow(() -> new RessourceIntrouvableException("Prestation", prestationRef));
         ChoixPieces retenu = prestation.proposePoseSeule() ? choix : null;
@@ -494,7 +504,7 @@ public class InterventionService {
      */
     @Transactional
     public LigneIntervention ajouterLignePiece(UUID interventionRef, UUID pieceRef, int quantite) {
-        Intervention it = charger(interventionRef);
+        Intervention it = verrouiller(interventionRef);
         Piece piece = pieces.findByReference(pieceRef)
                 .filter(Piece::isActif)
                 .orElseThrow(() -> new RessourceIntrouvableException("Piece", pieceRef));
@@ -523,7 +533,7 @@ public class InterventionService {
 
     @Transactional
     public void retirerLigne(UUID interventionRef, Long ligneId) {
-        Intervention it = charger(interventionRef);
+        Intervention it = verrouiller(interventionRef);
         if (!it.retirerLigne(ligneId)) {
             throw new RessourceIntrouvableException("LigneIntervention", ligneId);
         }
@@ -673,6 +683,19 @@ public class InterventionService {
                             StatutIntervention apres, String motif) {
         historiques.save(new HistoriqueStatutIntervention(
                 it, avant, apres, horloge.instant(), auteurCourant.resoudre(), motif));
+    }
+
+    /**
+     * L'intervention, ligne verrouillée et version montée, pour une écriture qui change ses
+     * lignes ou les décompte : ajout et retrait de ligne, clôture. Un ajout de ligne ne modifie
+     * pas la ligne de l'intervention elle-même : sans ce verrou, il passait à côté d'une clôture
+     * en cours, et la ligne ajoutée restait sur une intervention close, ni décomptée ni facturée.
+     *
+     * @throws ConflitConcurrenceException dossier tenu au-delà du délai, ou périmé
+     */
+    private Intervention verrouiller(UUID reference) {
+        return interventions.verrouiller(reference)
+                .orElseThrow(() -> new RessourceIntrouvableException("Intervention", reference));
     }
 
     private Intervention charger(UUID reference) {

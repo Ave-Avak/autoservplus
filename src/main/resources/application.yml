@@ -109,6 +109,11 @@ autoservplus:
   tva:
     taux-standard: 21.00
 
+  # Attente bornée du verrou d'une intervention, pris par la clôture : au-delà, la seconde
+  # écriture reçoit un conflit à recharger, et non une page d'erreur.
+  interventions:
+    attente-verrou: 3s
+
   # Compte super-administrateur d'exploitation (CdC 5.2.3), cree au demarrage s'il
   # n'existe pas deja. Les deux valeurs vont ENSEMBLE : n'en renseigner qu'une fait
   # echouer le demarrage, plutot que de creer un compte privilegie bancal ou de se
