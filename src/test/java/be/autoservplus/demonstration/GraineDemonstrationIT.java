@@ -38,6 +38,7 @@ import org.springframework.util.FileSystemUtils;
 
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -171,6 +172,45 @@ class GraineDemonstrationIT extends SocleIntegration {
                 jdbc.queryForObject("SELECT count(*) FROM \"" + table + "\"", Long.class)));
 
         assertThat(lues).isEqualTo(LIGNES_ATTENDUES);
+    }
+
+    /**
+     * Règle des prix de la démonstration : les pièces de la composition achetées au catalogue
+     * plus la pose seule coûtent plus que le forfait, qui coûte plus que la pose seule. La pose
+     * seule n'est proposée que lorsque les pièces de la composition dépassent 20,00 €. Prix
+     * comparés TVA comprise, tels que le site les affiche.
+     */
+    @Test
+    @Order(8)
+    @DisplayName("pièces plus pose seule, puis forfait, puis pose seule : ordre strict sur chaque prestation")
+    void ordreDesPrixDesForfaits() {
+        List<Map<String, Object>> forfaits = jdbc.queryForList("""
+                SELECT s.code,
+                       round(s.prix_htva * (1 + s.taux_tva / 100), 2) AS forfait,
+                       round(s.prix_pose_seule_htva * (1 + s.taux_tva / 100), 2) AS pose_seule,
+                       coalesce(sum(cp.quantite * round(p.prix_htva * (1 + p.taux_tva / 100), 2)), 0) AS pieces
+                FROM service s
+                LEFT JOIN composition_prestation cp ON cp.service_id = s.id
+                LEFT JOIN piece p ON p.id = cp.piece_id
+                WHERE s.actif AND s.unite = 'FORFAIT'
+                GROUP BY s.code, s.prix_htva, s.prix_pose_seule_htva, s.taux_tva
+                """);
+        assertThat(forfaits).isNotEmpty();
+        List<String> ecarts = new ArrayList<>();
+        for (Map<String, Object> ligne : forfaits) {
+            BigDecimal forfait = (BigDecimal) ligne.get("forfait");
+            BigDecimal poseSeule = (BigDecimal) ligne.get("pose_seule");
+            BigDecimal pieces = (BigDecimal) ligne.get("pieces");
+            boolean proposable = pieces.compareTo(new BigDecimal("20.00")) > 0;
+            if ((poseSeule != null) != proposable) {
+                ecarts.add(ligne.get("code") + " : pose seule " + poseSeule + " pour " + pieces + " € de pièces");
+            } else if (poseSeule != null && !(pieces.add(poseSeule).compareTo(forfait) > 0
+                    && forfait.compareTo(poseSeule) > 0)) {
+                ecarts.add(ligne.get("code") + " : pièces " + pieces + ", pose seule " + poseSeule
+                        + ", forfait " + forfait);
+            }
+        }
+        assertThat(ecarts).isEmpty();
     }
 
     @Test
@@ -321,7 +361,7 @@ class GraineDemonstrationIT extends SocleIntegration {
         Map<String, Long> lignes = new LinkedHashMap<>();
         lignes.put("avis", 1L);
         lignes.put("avoir", 0L);
-        lignes.put("categorie", 11L);
+        lignes.put("categorie", 24L);
         lignes.put("clef_api", 0L);
         lignes.put("code_secours", 0L);
         lignes.put("commande", 1L);
@@ -329,7 +369,7 @@ class GraineDemonstrationIT extends SocleIntegration {
         lignes.put("compteur_devis", 0L);
         lignes.put("compteur_facture", 1L);
         lignes.put("compteur_fil", 1L);
-        lignes.put("composition_prestation", 0L);
+        lignes.put("composition_prestation", 32L);
         lignes.put("consentement", 3L);
         lignes.put("conversation", 1L);
         lignes.put("demande_annulation", 0L);
@@ -354,7 +394,7 @@ class GraineDemonstrationIT extends SocleIntegration {
         lignes.put("panier", 1L);
         lignes.put("parametre_atelier", 1L);
         lignes.put("photo", 0L);
-        lignes.put("piece", 6L);
+        lignes.put("piece", 99L);
         lignes.put("piece_incluse", 0L);
         lignes.put("place_parking", 8L);
         lignes.put("plage_ouverture", 11L);
@@ -362,7 +402,7 @@ class GraineDemonstrationIT extends SocleIntegration {
         lignes.put("rdv", 6L);
         lignes.put("rdv_service", 2L);
         lignes.put("reservation_parking", 0L);
-        lignes.put("service", 10L);
+        lignes.put("service", 31L);
         lignes.put("utilisateur", 2L);
         lignes.put("vehicule", 2L);
         lignes.put("version_document", 24L);
