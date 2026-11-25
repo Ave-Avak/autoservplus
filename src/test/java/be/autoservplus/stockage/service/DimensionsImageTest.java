@@ -9,6 +9,7 @@ import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -68,6 +69,15 @@ class DimensionsImageTest {
         suite[10] = (byte) (640 & 0xFF); suite[11] = (byte) (640 >> 8);
         suite[12] = (byte) (480 & 0xFF); suite[13] = (byte) (480 >> 8);
         assertThat(DimensionsImage.lire(webp("VP8 ", suite))).contains(new DimensionsImage(640, 480));
+    }
+
+    @Test
+    @DisplayName("une photo de démonstration livrée donne ses 1024 x 768 pixels")
+    void photoDeDemonstration() throws IOException {
+        try (InputStream flux = getClass().getResourceAsStream("/demonstration/photos/bougies.webp")) {
+            assertThat(flux).isNotNull();
+            assertThat(DimensionsImage.lire(flux.readAllBytes())).contains(new DimensionsImage(1024, 768));
+        }
     }
 
     @Test

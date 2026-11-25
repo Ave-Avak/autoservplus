@@ -7,6 +7,7 @@ import be.autoservplus.legal.service.VersionsDocumentsService;
 import be.autoservplus.rgpd.service.CatalogueTraitements;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Controller;
+import org.springframework.core.env.Environment;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -52,12 +53,15 @@ public class DocumentsLegauxController {
     private final IdentiteGarage garage;
     private final CatalogueTraitements traitements;
     private final VersionsDocumentsService versionsDocuments;
+    private final Environment environnement;
 
     public DocumentsLegauxController(IdentiteGarage garage, CatalogueTraitements traitements,
-                                     VersionsDocumentsService versionsDocuments) {
+                                     VersionsDocumentsService versionsDocuments,
+                                     Environment environnement) {
         this.garage = garage;
         this.traitements = traitements;
         this.versionsDocuments = versionsDocuments;
+        this.environnement = environnement;
     }
 
     @GetMapping("/cgv")
@@ -75,6 +79,10 @@ public class DocumentsLegauxController {
     @GetMapping("/mentions-legales")
     public String mentionsLegales(Model modele) {
         modele.addAttribute("garage", garage);
+        // Les photos de la graine ne sont pas la propriété du garage : sous le profil demo,
+        // la page dit d'où elles viennent et sous quelle licence (crédits complets dans
+        // docs/credits-photos.md). Hors de ce profil, aucune de ces photos n'est servie.
+        modele.addAttribute("photosDeDemonstration", environnement.matchesProfiles("demo"));
         return "legal/mentions-legales";
     }
 
