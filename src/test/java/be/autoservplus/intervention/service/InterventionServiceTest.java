@@ -22,6 +22,7 @@ import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.service.AuteurCourant;
 import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
+import be.autoservplus.intervention.domain.LigneIntervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.intervention.service.dto.ClotureIntervention;
 import be.autoservplus.intervention.repository.HistoriqueStatutInterventionRepository;
@@ -255,6 +256,38 @@ class InterventionServiceTest {
             Prestation p = new Prestation(c, "REP-1", "Plaquettes", new BigDecimal(prixHtva), 60);
             when(prestations.findByReference(p.getReference())).thenReturn(Optional.of(p));
             return p;
+        }
+
+        @Test
+        @DisplayName("choix des pièces absent sur un forfait qui propose la pose seule : refus traduit, rien n'est ajouté")
+        void choixAbsentRefuse() {
+            // Dossier propre, sans écriture préparée : le refus ne doit jamais l'atteindre.
+            Intervention it = new Intervention("INT-2026-0001", rdv);
+            it.demarrer(MAINTENANT);
+            when(interventions.findByReference(it.getReference())).thenReturn(Optional.of(it));
+            Prestation vidange = prestationA("89.00");
+            vidange.fixerPrix(new BigDecimal("89.00"), new BigDecimal("49.00"));
+            int lignesAvant = it.getLignes().size();
+
+            assertThatThrownBy(() -> service.ajouterLigneMainOeuvre(it.getReference(), vidange.getReference(),
+                    BigDecimal.ONE, null))
+                    .isInstanceOfSatisfying(be.autoservplus.catalogue.domain.ChoixPiecesRefuseException.class,
+                            refus -> assertThat(refus.getCleMessage()).isEqualTo("choix-pieces.erreur.manquant"));
+            assertThat(it.getLignes()).hasSize(lignesAvant);
+            verify(interventions, never()).saveAndFlush(any());
+        }
+
+        @Test
+        @DisplayName("choix des pièces donné sur un forfait sans pose seule : ignoré")
+        void choixIgnoreSansPoseSeule() {
+            Intervention it = interventionEnCours();
+            Prestation sansChoix = prestationA("20.00");
+
+            LigneIntervention ligne = service.ajouterLigneMainOeuvre(it.getReference(), sansChoix.getReference(),
+                    BigDecimal.ONE, be.autoservplus.catalogue.domain.ChoixPieces.APPORTEES_PAR_CLIENT);
+
+            assertThat(ligne.getChoixPieces()).isEmpty();
+            assertThat(ligne.getPrixUnitaireHtva()).isEqualByComparingTo("20.00");
         }
 
         @Test

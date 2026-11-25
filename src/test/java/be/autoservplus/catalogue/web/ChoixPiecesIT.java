@@ -323,15 +323,32 @@ class ChoixPiecesIT extends SocleIntegration {
         }
 
         @Test
-        @DisplayName("sans choix envoyé, les pièces fournies au prix pièces comprises")
-        void parDefaut() throws Exception {
+        @DisplayName("pièces fournies, choix présélectionné du formulaire : prix pièces comprises")
+        void piecesFournies() throws Exception {
             UUID dossier = interventionEnCours();
             Prestation vidange = vidange(true);
 
-            ajouter(dossier, vidange, null);
+            ajouter(dossier, vidange, "FOURNIES_PAR_GARAGE");
 
             assertThat(ligne(dossier, vidange).get("pieces_client")).isEqualTo(false);
             assertThat((BigDecimal) ligne(dossier, vidange).get("prix_unitaire_htva")).isEqualByComparingTo("69.00");
+        }
+
+        @Test
+        @DisplayName("sans choix envoyé sur un forfait qui propose la pose seule : refus traduit, rien n'est ajouté")
+        void sansChoixRefuse() throws Exception {
+            UUID dossier = interventionEnCours();
+            Prestation vidange = vidange(true);
+
+            mvc.perform(post("/admin/interventions/{ref}/lignes", dossier).with(csrf()).locale(Locale.FRENCH)
+                            .param("prestation", vidange.getReference().toString()).param("quantite", "1"))
+                    .andExpect(status().is3xxRedirection())
+                    .andExpect(flash().attribute("erreur", containsString("Choisissez qui fournit les pièces")));
+
+            assertThat(base().queryForObject("""
+                    SELECT count(*) FROM ligne_intervention l JOIN intervention i ON i.id = l.intervention_id
+                    WHERE i.reference = ?
+                    """, Integer.class, dossier)).isZero();
         }
 
         @Test

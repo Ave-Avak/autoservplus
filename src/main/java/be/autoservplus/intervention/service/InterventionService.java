@@ -447,17 +447,24 @@ public class InterventionService {
      * (RM-15). Le service se contente de constater la bascule et de prevenir le
      * membre. La regle vit dans le domaine, pas ici.
      */
+    /** Pièces fournies par le garage quand la prestation propose le choix. */
     @ReserveAuxTests
     @Transactional
     public LigneIntervention ajouterLigneMainOeuvre(UUID interventionRef, UUID prestationRef, BigDecimal quantite) {
-        return ajouterLigneMainOeuvre(interventionRef, prestationRef, quantite, null);
+        ChoixPieces parDefaut = prestations.findByReference(prestationRef)
+                .map(Prestation::choixParDefaut).orElse(null);
+        return ajouterLigneMainOeuvre(interventionRef, prestationRef, quantite, parDefaut);
     }
 
     /**
-     * @param choix choix des pièces du formulaire. Le back-office présélectionne les pièces
-     *              fournies : sans choix, c'est celui-là qui s'applique. Il est ignoré pour une
-     *              prestation qui ne propose pas de prix pose seule, où le même formulaire
-     *              l'envoie aussi.
+     * Même ajout, avec le choix des pièces du formulaire.
+     *
+     * @param choix choix des pièces du formulaire, qui présélectionne les pièces fournies. Il est
+     *              ignoré pour une prestation qui ne propose pas de prix pose seule, où le même
+     *              formulaire l'envoie aussi.
+     * @throws be.autoservplus.catalogue.domain.ChoixPiecesRefuseException choix absent sur un
+     *         forfait qui propose un prix pose seule : rien n'est déduit ici, la présélection
+     *         reste au formulaire
      */
     @Transactional
     public LigneIntervention ajouterLigneMainOeuvre(UUID interventionRef, UUID prestationRef, BigDecimal quantite,
@@ -465,8 +472,7 @@ public class InterventionService {
         Intervention it = charger(interventionRef);
         Prestation prestation = prestations.findByReference(prestationRef)
                 .orElseThrow(() -> new RessourceIntrouvableException("Prestation", prestationRef));
-        ChoixPieces retenu = !prestation.proposePoseSeule() ? null
-                : choix != null ? choix : ChoixPieces.FOURNIES_PAR_GARAGE;
+        ChoixPieces retenu = prestation.proposePoseSeule() ? choix : null;
         StatutIntervention avant = it.getStatut();
         LigneIntervention ligne = it.ajouterLigneMainOeuvre(prestation, quantite, retenu);
         enregistrerAjout(it, avant);
