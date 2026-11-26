@@ -3,11 +3,11 @@ package be.autoservplus.stockage.service;
 /**
  * Levee quand un fichier depasse le plafond applicatif (fondation upload).
  *
- * <p>Doublon <b>voulu</b> du plafond de Spring ({@code spring.servlet.multipart}) : le
- * conteneur coupe la requete avant le controleur et rend une erreur technique, alors
- * que ce controle-ci se produit dans le service et peut etre rejoue par un test sans
- * requete HTTP. Les deux plafonds sont alignes, celui de Spring restant la vraie
- * protection contre la saturation.</p>
+ * <p>Ce plafond est le seul que l'administrateur voit : celui du conteneur
+ * ({@code spring.servlet.multipart}) est porté à la taille de la requête entière, parce
+ * qu'une requête qu'il coupe perd son jeton CSRF et reçoit un 403 sans rapport avec la
+ * taille. Le conteneur reste la protection contre la saturation, ce contrôle-ci donne le
+ * message et se rejoue par un test sans requête HTTP.</p>
  */
 public class FichierTropVolumineuxException extends RuntimeException {
 

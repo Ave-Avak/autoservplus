@@ -1,10 +1,12 @@
 spring:
   servlet:
     multipart:
-      # Plafond du conteneur : il coupe la requete AVANT le controleur, c est la
-      # vraie protection contre la saturation. Le controle applicatif de
-      # StockageMedia est aligne dessus et sert aux tests hors requete HTTP.
-      max-file-size: ${MEDIAS_TAILLE_MAX_HTTP:5MB}
+      # Plafond du conteneur : il coupe la requête AVANT le contrôleur, c'est la
+      # vraie protection contre la saturation. Il est porté à celui de la requête et
+      # non à celui d'une photo (5 Mo, StockageMedia) : une requête coupée par le
+      # conteneur perd son jeton CSRF et reçoit un 403 sans rapport avec la taille,
+      # alors qu'un fichier refusé par StockageMedia reçoit son message à l'écran.
+      max-file-size: ${MEDIAS_TAILLE_MAX_HTTP:25MB}
       max-request-size: ${MEDIAS_REQUETE_MAX:25MB}
   application:
     name: autoservplus
