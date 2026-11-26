@@ -82,10 +82,10 @@ class AccueilServiceTest {
     }
 
     @Test
-    @DisplayName("créneaux : la plus courte prestation au forfait, trois jours qui en ont, quatre heures par jour")
+    @DisplayName("créneaux : la première prestation de l'accueil, trois jours qui en ont, quatre heures par jour")
     void prochainsCreneaux() {
         ArticleVue courte = prestation("Contrôle", "Diagnostic", 15);
-        when(catalogue.prestationsActives()).thenReturn(List.of(prestation("Vidange", "Entretien", 30), courte));
+        when(catalogue.prestationsDeLaVitrine()).thenReturn(List.of(courte, prestation("Vidange", "Entretien", 30)));
         LocalDate jeudi = LocalDate.of(2026, 11, 26);
         when(disponibilites.creneauxDuJour(any(), eq(15))).thenReturn(List.of());
         when(disponibilites.creneauxDuJour(eq(jeudi.plusDays(1)), eq(15))).thenReturn(

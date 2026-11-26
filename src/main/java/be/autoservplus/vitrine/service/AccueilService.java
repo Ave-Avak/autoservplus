@@ -14,7 +14,6 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -75,15 +74,16 @@ public class AccueilService {
     }
 
     /**
-     * Prochains créneaux libres pour la plus courte des prestations au forfait, sur les
-     * mêmes règles que le formulaire de réservation du membre (plages, jours fériés,
-     * délai minimal, postes occupés). Vide quand le catalogue n'a aucune prestation au
-     * forfait ou qu'aucun créneau ne se libère dans les deux semaines.
+     * Prochains créneaux libres pour la première prestation de l'accueil, celle que le
+     * visiteur lit juste en dessous, sur les mêmes règles que le formulaire de réservation
+     * du membre (plages, jours fériés, délai minimal, postes occupés). La plus courte des
+     * prestations aurait annoncé des créneaux de quinze minutes que presque personne ne
+     * cherche. Vide sans prestation au forfait, ou sans créneau dans les deux semaines.
      */
     public Optional<CreneauxAccueilVue> prochainsCreneaux() {
-        Optional<ArticleVue> reference = catalogue.prestationsActives().stream()
+        Optional<ArticleVue> reference = prestationsMontrees().stream()
                 .filter(prestation -> !prestation.aLHeure() && prestation.dureeMinutes() != null)
-                .min(Comparator.comparing(ArticleVue::dureeMinutes));
+                .findFirst();
         if (reference.isEmpty()) {
             return Optional.empty();
         }
