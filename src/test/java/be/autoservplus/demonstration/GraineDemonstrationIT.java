@@ -349,6 +349,19 @@ class GraineDemonstrationIT extends SocleIntegration {
     }
 
     @Test
+    @Order(13)
+    @DisplayName("articles rangés : joint et bouchon de vidange au moteur, chaînes à neige à l'hiver")
+    void articlesRanges() {
+        assertThat(jdbc.queryForList("""
+                SELECT c.code FROM piece p JOIN categorie c ON c.id = p.categorie_id
+                WHERE p.reference_fabricant IN ('BB-P005', 'BB-P006') ORDER BY p.reference_fabricant""", String.class))
+                .containsExactly("P_MOTEUR", "P_MOTEUR");
+        assertThat(jdbc.queryForObject("""
+                SELECT c.code FROM piece p JOIN categorie c ON c.id = p.categorie_id
+                WHERE p.reference_fabricant = 'BB-A025'""", String.class)).isEqualTo("A_HIVER");
+    }
+
+    @Test
     @Order(12)
     @DisplayName("tarifs de l'accueil : six forfaits rangés de 1 à 6, la vidange en premier")
     void prestationsDeLAccueil() {
