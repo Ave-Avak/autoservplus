@@ -148,9 +148,11 @@ public class InscriptionService {
     /**
      * Courriel au titulaire d'une adresse qui a déjà un compte, selon son statut. Le
      * limiteur en borne la fréquence : refusé, rien ne part, et la page reste la même.
+     * Seul le budget de l'adresse est consommé ici. Celui de l'IP l'a été avant la recherche
+     * du compte, pour toute adresse.
      */
     private void prevenirTitulaire(Utilisateur titulaire, String ip) {
-        if (!limiteur.autoriser(titulaire.getEmail(), ip)) {
+        if (!limiteur.autoriserAdresse(titulaire.getEmail())) {
             return;
         }
         switch (titulaire.getStatut()) {

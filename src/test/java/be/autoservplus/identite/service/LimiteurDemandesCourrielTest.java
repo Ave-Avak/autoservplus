@@ -111,4 +111,34 @@ class LimiteurDemandesCourrielTest {
         assertThat(limiteur.autoriserParIp("2001:db8:1:2:abcd::1")).isFalse();
         assertThat(limiteur.autoriserParIp("2001:db8:1:3::1")).isTrue();
     }
+
+    @Test
+    @DisplayName("l'avis au titulaire ne consomme que le budget de l'adresse (AUD-69)")
+    void avisSansBudgetIp() {
+        for (int i = 0; i < 5; i++) {
+            assertThat(limiteur.autoriserAdresse("alex@exemple.be")).isTrue();
+        }
+        assertThat(limiteur.autoriserAdresse("alex@exemple.be")).isFalse();
+        for (int i = 0; i < 20; i++) {
+            assertThat(limiteur.autoriserParIp(IP)).isTrue();
+        }
+    }
+
+    @Test
+    @DisplayName("carte des IP pleine : la demande est refusée (AUD-70)")
+    void carteDesIpPleine() {
+        LimiteurDemandesCourriel petit = new LimiteurDemandesCourriel(horloge, 5, 20, 15, 2);
+        assertThat(petit.autoriserParIp("203.0.113.1")).isTrue();
+        assertThat(petit.autoriserParIp("203.0.113.2")).isTrue();
+        assertThat(petit.autoriserParIp("203.0.113.3")).isFalse();
+    }
+
+    @Test
+    @DisplayName("carte des adresses pleine : le plafond par IP décide seul")
+    void carteDesAdressesPleine() {
+        LimiteurDemandesCourriel petit = new LimiteurDemandesCourriel(horloge, 5, 20, 15, 2);
+        assertThat(petit.autoriser("a@exemple.be", IP)).isTrue();
+        assertThat(petit.autoriser("b@exemple.be", "198.51.100.1")).isTrue();
+        assertThat(petit.autoriser("c@exemple.be", IP)).isTrue();
+    }
 }

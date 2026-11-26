@@ -5,6 +5,7 @@ import be.autoservplus.common.debit.SeauxParCle.Decision;
 import be.autoservplus.common.debit.SeauxParCle.Limite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -64,15 +65,14 @@ import java.util.Locale;
  * des adresses toutes differentes feraient enfler la carte sans fin. D ou un plafond
  * dur, et surtout le choix de ce qui arrive une fois atteint.</p>
  *
- * <p>Refuser toute nouvelle cle bloquerait les visiteurs legitimes. Les accepter
- * toutes rendrait la limite contournable en saturant la carte. <b>Retenu : la carte
- * des adresses sature en silence et le plafond par IP continue seul de s appliquer.</b>
- * Aucun visiteur legitime n est bloque, et rien n est contourne, parce que la carte
- * des adresses ne peut pas etre saturee sans epuiser d abord des budgets d IP : avec
- * vingt demandes par IP et par fenetre, atteindre cent mille adresses distinctes exige
- * cinq mille IP sources dans le meme quart d heure. Les deux cartes sont separees,
- * donc saturer celle des adresses ne peut pas evincer une entree d IP. Le plafond est
- * un garde-fou contre la pathologie, pas la defense principale.</p>
+ * <p>Carte des adresses pleine : elle sature en silence et le plafond par IP continue
+ * seul de s'appliquer. Aucun visiteur légitime n'est bloqué, et rien n'est contourné, parce
+ * que remplir cette carte exige d'épuiser d'abord des budgets d'IP : avec vingt demandes par
+ * IP et par fenêtre, cent mille adresses distinctes demandent cinq mille réseaux sources
+ * dans le même quart d'heure. Carte des IP pleine : la demande est refusée. Plus rien ne
+ * plafonnerait derrière elle, et la remplir demande cent mille réseaux /64 dans le quart
+ * d'heure. Les deux cartes sont séparées, saturer l'une n'évince aucune entrée de l'autre.
+ * Le plafond de clés est un garde-fou contre la pathologie, pas la défense principale.</p>
  *
  * <h2>Comptage</h2>
  *
@@ -103,14 +103,20 @@ public class LimiteurDemandesCourriel {
     private final SeauxParCle parAdresse;
     private final SeauxParCle parIp;
 
+    @Autowired
     public LimiteurDemandesCourriel(
             Clock horloge,
             @Value("${autoservplus.securite.debit.demandes-max-par-adresse:5}") int maxParAdresse,
             @Value("${autoservplus.securite.debit.demandes-max-par-ip:20}") int maxParIp,
             @Value("${autoservplus.securite.debit.fenetre-minutes:15}") long fenetreMinutes) {
+        this(horloge, maxParAdresse, maxParIp, fenetreMinutes, ENTREES_MAX);
+    }
+
+    LimiteurDemandesCourriel(Clock horloge, int maxParAdresse, int maxParIp, long fenetreMinutes,
+                             int entreesMax) {
         Duration fenetre = Duration.ofMinutes(fenetreMinutes);
-        this.parAdresse = new SeauxParCle(List.of(new Limite(maxParAdresse, fenetre)), ENTREES_MAX, horloge);
-        this.parIp = new SeauxParCle(List.of(new Limite(maxParIp, fenetre)), ENTREES_MAX, horloge);
+        this.parAdresse = new SeauxParCle(List.of(new Limite(maxParAdresse, fenetre)), entreesMax, horloge);
+        this.parIp = new SeauxParCle(List.of(new Limite(maxParIp, fenetre)), entreesMax, horloge);
     }
 
     /**
@@ -125,8 +131,8 @@ public class LimiteurDemandesCourriel {
      *                ({@code server.forward-headers-strategy: native})
      */
     public boolean autoriser(String adresse, String ip) {
-        boolean adresseSousPlafond = consommer(parAdresse, empreinte(adresse));
-        boolean ipSousPlafond = consommer(parIp, GardeConnexion.cleIp(ip));
+        boolean adresseSousPlafond = consommer(parAdresse, empreinte(adresse), true);
+        boolean ipSousPlafond = consommer(parIp, GardeConnexion.cleIp(ip), false);
         if (!adresseSousPlafond || !ipSousPlafond) {
             // Ni l adresse ni son empreinte : une trace d exploitation n a pas besoin
             // de porter une donnee personnelle pour etre utile.
@@ -146,17 +152,34 @@ public class LimiteurDemandesCourriel {
      * balayage d adresses depuis une meme source reste borne par le plafond d IP.</p>
      */
     public boolean autoriserParIp(String ip) {
-        boolean sousPlafond = consommer(parIp, GardeConnexion.cleIp(ip));
+        boolean sousPlafond = consommer(parIp, GardeConnexion.cleIp(ip), false);
         if (!sousPlafond) {
             JOURNAL.info("Inscription refusee, plafond d inscriptions par IP atteint.");
         }
         return sousPlafond;
     }
 
-    private static boolean consommer(SeauxParCle compteurs, String cle) {
+    /**
+     * Plafond sur la seule adresse, pour une adresse dont le compte existe, quand l'appelant
+     * a déjà consommé le budget de l'IP (l'inscription). Le consommer une seconde fois
+     * l'épuiserait deux fois plus vite pour une adresse connue que pour une inconnue :
+     * l'oracle que ce limiteur doit fermer.
+     */
+    public boolean autoriserAdresse(String adresse) {
+        boolean sousPlafond = consommer(parAdresse, empreinte(adresse), true);
+        if (!sousPlafond) {
+            JOURNAL.info("Avis au titulaire refusé, plafond de l'adresse atteint.");
+        }
+        return sousPlafond;
+    }
+
+    /**
+     * Voir « Saturation de la carte » : la carte des adresses pleine laisse l'IP décider,
+     * la carte des IP pleine refuse, faute d'un autre plafond derrière elle.
+     */
+    private static boolean consommer(SeauxParCle compteurs, String cle, boolean passeSiSaturee) {
         Decision decision = compteurs.consommer(cle);
-        // Voir « Saturation de la carte » : l'autre plafond prend le relais.
-        return decision.acceptee() || decision.saturee();
+        return decision.acceptee() || (decision.saturee() && passeSiSaturee);
     }
 
     /**
