@@ -472,6 +472,18 @@ class GraineDemonstrationIT extends SocleIntegration {
     }
 
     @Test
+    @Order(10)
+    @DisplayName("sous le profil demo, la page de contact montre le plan fictif, servi par l'application")
+    void planDeLaPageDeContact() throws Exception {
+        String page = mvc.perform(get("/contact").locale(Locale.FRENCH)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertThat(page).contains("src=\"/images/plan/plan-quartier.webp\"").contains("Plan fictif")
+                .contains("contributeurs d&#39;OpenStreetMap");
+
+        mvc.perform(get("/images/plan/plan-quartier-480.webp")).andExpect(status().isOk());
+    }
+
+    @Test
     @Order(3)
     @DisplayName("comptes de la graine : adresses dans un domaine réservé, empreintes BCrypt de coût 12")
     void comptesSansAdresseReelle() {

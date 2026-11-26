@@ -115,7 +115,7 @@ class RecherchePageIT extends SocleIntegration {
 
         // Champ de l'ancien en-tête, servi aux écrans pas encore migrés : le gabarit du
         // site n'a plus de champ, un lien mène à cette page.
-        assertThat(ouvrir("/contact", Locale.FRENCH))
+        assertThat(ouvrir("/mentions-legales", Locale.FRENCH))
                 .contains("id=\"recherche-entete\" name=\"q\" maxlength=\"100\"");
         assertThat(page).contains("id=\"q\" name=\"q\" maxlength=\"100\"");
         assertThat(page).contains("value=\"" + trop.substring(0, 100) + "\"");
@@ -173,9 +173,10 @@ class RecherchePageIT extends SocleIntegration {
         String lien = "class=\"nav-link lien-icone\" href=\"/recherche\"";
 
         assertThat(ouvrir("/services", Locale.FRENCH)).contains(lien).doesNotContain(barre);
-        assertThat(ouvrir("/contact", Locale.FRENCH)).contains(barre)
+        assertThat(ouvrir("/contact", Locale.FRENCH)).contains(lien).doesNotContain(barre);
+        assertThat(ouvrir("/mentions-legales", Locale.FRENCH)).contains(barre)
                 .contains("<form class=\"recherche-entete\" action=\"/recherche\" method=\"get\" role=\"search\"");
-        assertThat(ouvrir("/contact", Locale.of("nl"))).contains("placeholder=\"Een dienst of onderdeel zoeken\"");
+        assertThat(ouvrir("/mentions-legales", Locale.of("nl"))).contains("placeholder=\"Een dienst of onderdeel zoeken\"");
         assertThat(ouvrir("/recherche?q=zqx", Locale.FRENCH)).doesNotContain(barre).doesNotContain(lien);
 
         String membre = mvc.perform(get("/pieces").with(user("membre@exemple.be").roles("MEMBRE")))

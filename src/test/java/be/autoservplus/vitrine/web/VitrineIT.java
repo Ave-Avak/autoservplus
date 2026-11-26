@@ -124,6 +124,32 @@ class VitrineIT extends SocleIntegration {
                     .doesNotContain("<script src=\"http")
                     .doesNotContain("<iframe");
         }
+
+        @Test
+        @DisplayName("trois itinéraires en liens sortants, adresse encodée, nouvel onglet annoncé, plan servi par le site")
+        void troisItineraires() throws Exception {
+            org.jsoup.nodes.Document page = org.jsoup.Jsoup.parse(mvc.perform(get("/contact").with(anonymous())
+                    .header("Accept-Language", "fr")).andReturn().getResponse().getContentAsString());
+
+            var liens = page.select(".contact-itineraires a");
+            org.assertj.core.api.Assertions.assertThat(liens).hasSize(3);
+            org.assertj.core.api.Assertions.assertThat(liens.eachAttr("href")).satisfiesExactly(
+                    google -> org.assertj.core.api.Assertions.assertThat(google)
+                            .startsWith("https://www.google.com/maps/dir/?api=1&destination=").doesNotContain(" "),
+                    waze -> org.assertj.core.api.Assertions.assertThat(waze)
+                            .startsWith("https://waze.com/ul?q=").endsWith("&navigate=yes").doesNotContain(" "),
+                    osm -> org.assertj.core.api.Assertions.assertThat(osm)
+                            .startsWith("https://www.openstreetmap.org/search?query=").doesNotContain(" "));
+            org.assertj.core.api.Assertions.assertThat(liens).allSatisfy(lien -> {
+                org.assertj.core.api.Assertions.assertThat(lien.attr("rel")).isEqualTo("noopener noreferrer");
+                org.assertj.core.api.Assertions.assertThat(lien.select(".visually-hidden").text())
+                        .isEqualTo("(s'ouvre dans un nouvel onglet)");
+            });
+            // Profil dev des tests : la mention de démonstration est active, le plan fictif aussi.
+            org.assertj.core.api.Assertions.assertThat(page.select(".contact-plan img").attr("src"))
+                    .isEqualTo("/images/plan/plan-quartier.webp");
+            org.assertj.core.api.Assertions.assertThat(page.select("a[href^=tel:]")).isNotEmpty();
+        }
     }
 
     @Nested
