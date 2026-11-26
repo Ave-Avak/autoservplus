@@ -104,4 +104,23 @@ public interface InterventionRepository extends JpaRepository<Intervention, Long
             HAVING p.quantite_stock < SUM(d.quantite)
             """)
     List<Long> piecesACommander(@Param("pieces") Collection<Long> pieces);
+
+    /**
+     * Interventions dont le membre est titulaire, avec la plaque, la marque et le modèle
+     * du véhicule ({@code [id, plaque, marque, modele]}). Le titulaire suit
+     * {@link be.autoservplus.intervention.domain.Intervention#titulaire()} : membre du
+     * rendez-vous, sinon de la commande, sinon propriétaire du véhicule. La jointure SQL
+     * sur {@code vehicule} ignore sa suppression logique : un véhicule retiré du parc
+     * garde ses dossiers dans l'espace documents, comme dans son historique.
+     */
+    @Query(nativeQuery = true, value = """
+            SELECT i.id, v.plaque, v.marque, v.modele
+            FROM intervention i
+            JOIN vehicule v ON v.id = i.vehicule_id
+            LEFT JOIN rdv r ON r.id = i.rdv_id
+            LEFT JOIN commande c ON c.id = i.commande_id
+            JOIN utilisateur u ON u.id = COALESCE(r.membre_id, c.membre_id, v.membre_id)
+            WHERE u.email = :email AND u.anonymise_le IS NULL AND i.deleted_at IS NULL
+            """)
+    List<Object[]> dossiersDuTitulaire(@Param("email") String email);
 }

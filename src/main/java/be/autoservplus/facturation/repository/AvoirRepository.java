@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,6 +31,15 @@ public interface AvoirRepository extends JpaRepository<Avoir, Long> {
             WHERE a.reference = :reference
             """)
     Optional<Avoir> findByReference(@Param("reference") UUID reference);
+
+    /** Notes de crédit d'un membre, la plus récente d'abord, pour son espace documents. */
+    @Query("""
+            SELECT a FROM Avoir a
+            JOIN FETCH a.facture f
+            WHERE f.membre.email = :email
+            ORDER BY a.dateEmission DESC, a.id DESC
+            """)
+    List<Avoir> avoirsDuMembre(@Param("email") String email);
 
     /** Avoirs du back-office sur une période, par numéro d'avoir, de facture ou d'intervention, ou adresse. */
     @Query(value = """

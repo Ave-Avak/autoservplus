@@ -62,6 +62,19 @@ public interface FactureRepository extends JpaRepository<Facture, Long> {
     List<Facture> facturesDuMembre(@Param("email") String email);
 
     /**
+     * Toutes les factures d'un membre, de commande et d'atelier, pour son espace
+     * documents. Le destinataire est le membre de la facture, figé à l'émission.
+     */
+    @Query("""
+            SELECT f FROM Facture f
+            LEFT JOIN FETCH f.commande
+            LEFT JOIN FETCH f.intervention
+            WHERE f.membre.email = :email
+            ORDER BY f.dateEmission DESC, f.id DESC
+            """)
+    List<Facture> documentsDuMembre(@Param("email") String email);
+
+    /**
      * Compte sans charger : sert à refuser qu'un membre vide son adresse postale alors
      * qu'une facture reste à générer. Charger la liste pour n'en regarder que la
      * taille coûterait les lignes et leurs relations.

@@ -151,6 +151,7 @@
                                         <li><a class="dropdown-item" th:href="@{/mes-rendez-vous}" th:text="#{compte.rdv.titre}">Mes rendez-vous</a></li>
                                         <li><a class="dropdown-item" th:href="@{/commandes}" th:text="#{compte.commandes.titre}">Commandes et factures</a></li>
                                         <li><a class="dropdown-item" th:href="@{/mes-devis}" th:text="#{compte.devis.titre}">Mes devis</a></li>
+                                        <li><a class="dropdown-item" th:href="@{/mes-documents}" th:text="#{compte.documents.titre}">Mes documents</a></li>
                                     </th:block>
                                     <li sec:authorize="hasRole('ADMINISTRATEUR')"><a class="dropdown-item" th:href="@{/mon-profil/securite}"
                                            th:text="#{compte.securite.titre}">Sécurité</a></li>

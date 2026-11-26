@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <title th:text="#{documents.titre} + ' | ' + ${garageSite.enseigne()}">Mes documents | Bielle Bleue</title>
+    <meta name="robots" content="noindex, nofollow">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
+</head>
+<body>
+
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
+
+<main id="contenu" class="container" tabindex="-1">
+    <h1 th:text="#{documents.titre}">Mes documents</h1>
+    <p th:text="#{documents.intro}">Vos factures, vos notes de crédit et vos interventions, du plus récent au plus ancien.</p>
+
+    <!--/* Filtre en GET : l'adresse se partage et se met en favori, et le bouton retour
+         du navigateur revient à l'année précédente. */-->
+    <form th:if="${documents.annees().size() > 1}" class="row g-2 align-items-end mb-4" method="get"
+          th:action="@{/mes-documents}">
+        <div class="col-auto">
+            <label class="form-label" for="annee" th:text="#{documents.filtre.annee}">Année</label>
+            <select class="form-select" id="annee" name="annee">
+                <option value="" th:text="#{documents.filtre.toutes}">Toutes</option>
+                <option th:each="a : ${documents.annees()}" th:value="${a}" th:text="${a}"
+                        th:selected="${a == documents.annee()}">2026</option>
+            </select>
+        </div>
+        <div class="col-auto">
+            <button type="submit" class="btn btn-outline-primary" th:text="#{documents.filtre.appliquer}">Afficher</button>
+        </div>
+    </form>
+
+    <p th:if="${documents.estVide()}" th:text="#{documents.aucun}">Vous n'avez encore aucun document.</p>
+
+    <section class="mb-5" aria-labelledby="titre-factures" th:unless="${#lists.isEmpty(documents.factures())}">
+        <h2 id="titre-factures" th:text="#{documents.factures.titre}">Factures</h2>
+        <div class="table-responsive" tabindex="0" role="region" aria-labelledby="titre-factures">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{documents.colonne.numero}">Numéro</th>
+                    <th scope="col" th:text="#{documents.colonne.date}">Émise le</th>
+                    <th scope="col" th:text="#{documents.colonne.objet}">Objet</th>
+                    <th scope="col" class="text-end" th:text="#{documents.colonne.montant}">Montant TVAC</th>
+                    <th scope="col" th:text="#{documents.colonne.document}">Document</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="f : ${documents.factures()}">
+                    <th scope="row">
+                        <span th:text="${f.numero()}">2026-0042</span>
+                        <span th:if="${f.estAnnulee()}" class="badge text-bg-secondary"
+                              th:text="#{documents.facture.annulee(${f.numeroAvoir()})}">Annulée par la note de crédit NC-2026-0001</span>
+                    </th>
+                    <td th:text="${#temporals.format(f.dateEmission(), 'd MMMM yyyy')}">25 novembre 2026</td>
+                    <td th:text="#{${f.cleOrigine()}(${f.numeroOrigine()})}">Intervention INT-2026-0007</td>
+                    <td class="text-end" th:text="${f.montantTvac()}">117,98 €</td>
+                    <td><a th:href="@{/factures/{ref}/pdf(ref=${f.reference()})}"
+                           th:text="#{documents.facture.telecharger(${f.numero()})}">Télécharger la facture 2026-0042</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="mb-5" aria-labelledby="titre-avoirs" th:unless="${#lists.isEmpty(documents.avoirs())}">
+        <h2 id="titre-avoirs" th:text="#{documents.avoirs.titre}">Notes de crédit</h2>
+        <div class="table-responsive" tabindex="0" role="region" aria-labelledby="titre-avoirs">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{documents.colonne.numero}">Numéro</th>
+                    <th scope="col" th:text="#{documents.colonne.date}">Émise le</th>
+                    <th scope="col" th:text="#{documents.colonne.facture}">Facture annulée</th>
+                    <th scope="col" class="text-end" th:text="#{documents.colonne.montant}">Montant TVAC</th>
+                    <th scope="col" th:text="#{documents.colonne.document}">Document</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="a : ${documents.avoirs()}">
+                    <th scope="row" th:text="${a.numero()}">NC-2026-0001</th>
+                    <td th:text="${#temporals.format(a.dateEmission(), 'd MMMM yyyy')}">26 novembre 2026</td>
+                    <td th:text="${a.numeroFacture()}">2026-0042</td>
+                    <td class="text-end" th:text="${a.montantTvac()}">117,98 €</td>
+                    <td><a th:href="@{/avoirs/{ref}/pdf(ref=${a.reference()})}"
+                           th:text="#{documents.avoir.telecharger(${a.numero()})}">Télécharger la note de crédit NC-2026-0001</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <section class="mb-5" aria-labelledby="titre-dossiers" th:unless="${#lists.isEmpty(documents.dossiers())}">
+        <h2 id="titre-dossiers" th:text="#{documents.dossiers.titre}">Interventions</h2>
+        <div class="table-responsive" tabindex="0" role="region" aria-labelledby="titre-dossiers">
+            <table class="table">
+                <thead>
+                <tr>
+                    <th scope="col" th:text="#{documents.colonne.numero}">Numéro</th>
+                    <th scope="col" th:text="#{documents.colonne.date-dossier}">Date</th>
+                    <th scope="col" th:text="#{documents.colonne.vehicule}">Véhicule</th>
+                    <th scope="col" th:text="#{documents.colonne.statut}">Statut</th>
+                    <th scope="col" th:text="#{documents.colonne.suivi}">Suivi</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="d : ${documents.dossiers()}">
+                    <th scope="row" th:text="${d.numero()}">INT-2026-0007</th>
+                    <td th:text="${#temporals.format(d.date(), 'd MMMM yyyy')}">24 novembre 2026</td>
+                    <td th:text="${d.vehicule()}">Volkswagen Golf (1-ABC-123)</td>
+                    <td th:text="#{${d.cleStatut()}}">Terminée</td>
+                    <td><a th:href="@{/mes-interventions/{ref}(ref=${d.reference()})}"
+                           th:text="#{documents.dossier.suivre(${d.numero()})}">Voir le suivi de l'intervention INT-2026-0007</a></td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </section>
+
+    <p>
+        <span th:text="#{documents.devis.texte}">Vos devis se trouvent dans une page à part.</span>
+        <a th:href="@{/mes-devis}" th:text="#{documents.devis.lien}">Voir mes devis</a>
+    </p>
+</main>
+
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
+</body>
+</html>

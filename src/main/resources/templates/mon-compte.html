@@ -43,6 +43,11 @@
             <p th:text="#{compte.devis.description}">Retrouvez les devis demandés depuis
                 votre panier.</p>
         </a>
+        <a class="carte carte-lien" sec:authorize="!hasRole('ADMINISTRATEUR')" th:href="@{/mes-documents}">
+            <h2 th:text="#{compte.documents.titre}">Mes documents</h2>
+            <p th:text="#{compte.documents.description}">Retrouvez vos factures, vos notes de
+                crédit et vos interventions.</p>
+        </a>
         <a class="carte carte-lien" sec:authorize="!hasRole('ADMINISTRATEUR')" th:href="@{/mes-messages}">
             <h2 th:text="#{compte.messages.titre}">Messages</h2>
             <p th:text="#{compte.messages.description}">Écrivez au garage et lisez ses

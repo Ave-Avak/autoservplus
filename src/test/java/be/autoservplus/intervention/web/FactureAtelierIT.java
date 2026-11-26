@@ -194,6 +194,34 @@ class FactureAtelierIT extends SocleIntegration {
     }
 
     @Test
+    @DisplayName("espace documents : la facture et l'intervention du titulaire, rien pour un autre membre")
+    void espaceDocuments() throws Exception {
+        Utilisateur marie = membre(true);
+        Utilisateur autre = membre(true);
+        mvc.perform(get("/mes-documents").with(user(marie.getEmail())).locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("encore aucun document.")));
+
+        UUID dossier = entreeDirecteEnCours(vehicule(marie));
+        ajouter(dossier, prestation("12.40", UnitePrestation.FORFAIT), "1");
+        mvc.perform(post("/admin/interventions/{ref}/terminer", dossier).with(admin).with(csrf())
+                        .locale(Locale.FRENCH))
+                .andExpect(status().is3xxRedirection());
+        String referenceFacture = factureDe(dossier, "reference");
+        String numeroFacture = factureDe(dossier, "numero");
+
+        mvc.perform(get("/mes-documents").with(user(marie.getEmail())).locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("/factures/" + referenceFacture + "/pdf")))
+                .andExpect(content().string(containsString("Télécharger la facture " + numeroFacture)))
+                .andExpect(content().string(containsString("/mes-interventions/" + dossier)));
+        mvc.perform(get("/mes-documents").with(user(autre.getEmail())).locale(Locale.FRENCH))
+                .andExpect(status().isOk())
+                .andExpect(content().string(not(containsString(referenceFacture))))
+                .andExpect(content().string(not(containsString(dossier.toString()))));
+    }
+
+    @Test
     @DisplayName("une intervention annulée n'a jamais de facture")
     void annuleeSansFacture() throws Exception {
         UUID dossier = entreeDirecteEnCours(vehicule(membre(true)));
