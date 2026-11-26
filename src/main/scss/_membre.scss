@@ -1,0 +1,53 @@
+// Écrans de l'espace membre qui listent ou résument (véhicules, rendez-vous, commandes,
+// interventions). Les formulaires de cet espace prennent la colonne de _formulaires.scss.
+
+.page-membre {
+  padding-top: 1rem;
+  padding-bottom: 3rem;
+}
+
+// Titre à gauche, action principale à droite sur la même ligne, puis sous le titre dès
+// que la largeur manque.
+.page-membre__tete {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.page-membre__titre {
+  margin: 0;
+  font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.25rem);
+  font-weight: 700;
+}
+
+.page-membre__vide {
+  max-width: 65ch;
+  padding: 1.5rem;
+  border: 1px dashed $gray-300;
+  border-radius: $border-radius;
+  color: $gray-600;
+}
+
+.page-membre__retour {
+  margin-top: 2rem;
+}
+
+// Action destructive en lien : rouge foncé sur blanc, 6,9:1, plus foncé au survol.
+.lien-danger {
+  padding-inline: 0;
+  color: shade-color($danger, 20%);
+  font-weight: 600;
+
+  &:hover,
+  &:focus-visible {
+    color: shade-color($danger, 40%);
+  }
+}
+
+.champ-facultatif {
+  color: $gray-600;
+  font-weight: 400;
+}

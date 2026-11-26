@@ -1,0 +1,87 @@
+// Parc du membre : une carte par véhicule, la plaque en évidence.
+
+.liste-vehicules {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 18rem), 1fr));
+  gap: 1rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.carte-vehicule {
+  display: flex;
+  flex-direction: column;
+  gap: .75rem;
+  padding: 1.25rem;
+  border: 1px solid $gray-200;
+  border-radius: $border-radius;
+  background: $white;
+}
+
+.carte-vehicule__nom {
+  margin: 0;
+  font-size: $h4-font-size;
+}
+
+.carte-vehicule__details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(6.5rem, 1fr));
+  gap: .5rem 1rem;
+  margin: 0;
+
+  dt {
+    color: $gray-600;
+    font-size: .875rem;
+    font-weight: 400;
+  }
+
+  dd {
+    margin: 0;
+    color: $gray-800;
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+}
+
+.carte-vehicule__actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem 1.25rem;
+  margin-top: auto;
+  padding-top: .75rem;
+  border-top: 1px solid $gray-200;
+
+  a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    font-weight: 600;
+  }
+
+  form {
+    margin: 0;
+  }
+}
+
+// Plaque belge : caractères rouge foncé sur fond blanc, filet de la même couleur.
+// #9B1C1C sur blanc : 8,1:1.
+.plaque {
+  align-self: flex-start;
+  margin: 0;
+  padding: .125rem .625rem;
+  border: 2px solid #9B1C1C;
+  border-radius: .25rem;
+  color: #9B1C1C;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: .06em;
+}
+
+// La plaque saisie en capitales, comme elle s'écrit sur le véhicule.
+.champ-plaque {
+  max-width: 14rem;
+  text-transform: uppercase;
+  letter-spacing: .06em;
+}

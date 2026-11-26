@@ -58,7 +58,8 @@ class ClassesDuSiteTest {
      */
     private static final Map<String, String> SANS_STYLE = Map.of(
             "fil-ariane", "repère de FilArianeIT et de RayonsCatalogueIT, la mise en forme est sur fil-ariane-page",
-            "liens-legaux", "repère de LiensLegauxIT, commun au pied du site et à l'ancien pied");
+            "liens-legaux", "repère de LiensLegauxIT, commun au pied du site et à l'ancien pied",
+            "formulaire-suppression", "repère de confirmation.js, qui demande l'accord avant l'envoi, et de EcransDansLeNavigateurIT");
 
     @Test
     @DisplayName("chaque classe d'une page migrée ou d'un fragment qu'elle insère est dans site.css")

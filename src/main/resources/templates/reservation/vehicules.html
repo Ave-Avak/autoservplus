@@ -2,62 +2,60 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{vehicule.liste.titre} + ' | AutoServ+'">Mes véhicules | AutoServ+</title>
+    <title th:text="#{vehicule.liste.titre} + ' | ' + ${garageSite.enseigne()}">Mes véhicules | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
-
-<main id="contenu">
-    <h1 th:text="#{vehicule.liste.titre}">Mes véhicules</h1>
-
-    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">
-        Message
+<main id="contenu" class="container page-membre" tabindex="-1">
+    <div class="page-membre__tete">
+        <h1 class="page-membre__titre" th:text="#{vehicule.liste.titre}">Mes véhicules</h1>
+        <a class="btn btn-action" th:href="@{/mes-vehicules/nouveau}" th:text="#{vehicule.liste.ajouter}">Ajouter un véhicule</a>
     </div>
 
-    <p th:if="${vehicules.isEmpty()}" class="message" th:text="#{vehicule.liste.vide}">
-        Vous n'avez pas encore enregistré de véhicule.
-    </p>
+    <div class="alert alert-success" th:if="${message}" role="status" th:text="${message}">Message</div>
 
-    <ul class="grille-articles" th:unless="${vehicules.isEmpty()}">
-        <li class="carte" th:each="v : ${vehicules}">
-            <h2 th:text="${v.marque()} + ' ' + ${v.modele()}">Marque Modèle</h2>
-            <p class="carte-categorie" th:text="${v.plaque()}">1-ABC-123</p>
+    <p th:if="${vehicules.isEmpty()}" class="page-membre__vide" th:text="#{vehicule.liste.vide}">
+        Vous n'avez pas encore enregistré de véhicule.</p>
 
-            <dl class="vehicule-details">
+    <ul class="liste-vehicules" th:unless="${vehicules.isEmpty()}">
+        <li class="carte-vehicule" th:each="v : ${vehicules}">
+            <h2 class="carte-vehicule__nom" th:text="${v.marque()} + ' ' + ${v.modele()}">Marque Modèle</h2>
+            <!--/* La plaque dans les couleurs de la plaque belge, lettres rouges sur fond blanc :
+                 c'est à elle que le membre reconnaît sa voiture avant la marque. */-->
+            <p class="plaque" th:text="${v.plaque()}">1-ABC-123</p>
+
+            <dl class="carte-vehicule__details">
                 <div>
                     <dt th:text="#{vehicule.motorisation}">Motorisation</dt>
                     <dd th:text="#{'vehicule.motorisation.' + ${v.motorisation()}}">Diesel</dd>
                 </div>
                 <div th:if="${v.annee() != null}">
                     <dt th:text="#{vehicule.annee}">Année</dt>
-                    <dd th:text="${v.annee()}">2018</dd>
+                    <dd class="chiffres" th:text="${v.annee()}">2018</dd>
                 </div>
                 <div>
                     <dt th:text="#{vehicule.kilometrage}">Kilométrage</dt>
-                    <dd th:text="${v.kilometrage() == null} ? #{vehicule.kilometrage.non-renseigne}
+                    <dd class="chiffres" th:text="${v.kilometrage() == null} ? #{vehicule.kilometrage.non-renseigne}
                                  : #{vehicule.kilometrage.valeur(${v.kilometrage()})}">85 000 km</dd>
                 </div>
             </dl>
 
-            <div class="carte-actions">
+            <div class="carte-vehicule__actions">
                 <a th:href="@{/mes-vehicules/{ref}/historique(ref=${v.reference()})}"
                    th:aria-label="#{vehicule.historique.lien.aria(${v.designation()})}"
                    th:text="#{vehicule.historique.lien}">Historique d'entretien</a>
                 <a th:href="@{/mes-vehicules/{ref}/modifier(ref=${v.reference()})}"
                    th:aria-label="#{vehicule.modifier.aria(${v.designation()})}"
                    th:text="#{vehicule.modifier}">Modifier</a>
-
                 <form th:action="@{/mes-vehicules/{ref}/supprimer(ref=${v.reference()})}"
                       method="post"
                       class="formulaire-suppression"
                       th:data-message="#{vehicule.retirer.confirmation(${v.designation()})}">
-                    <button type="submit" class="lien-bouton texte-erreur"
+                    <button type="submit" class="btn btn-link lien-danger"
                             th:aria-label="#{vehicule.retirer.aria(${v.designation()})}"
                             th:text="#{vehicule.retirer}">Retirer</button>
                 </form>
@@ -65,14 +63,10 @@
         </li>
     </ul>
 
-    <p class="actions-page">
-        <a class="btn-cta" th:href="@{/mes-vehicules/nouveau}" th:text="#{vehicule.liste.ajouter}">Ajouter un véhicule</a>
-    </p>
-
-    <p><a th:href="@{/mon-compte}" th:text="#{erreur.retour-compte}">Retour à mon compte</a></p>
+    <p class="page-membre__retour"><a th:href="@{/mon-compte}" th:text="#{erreur.retour-compte}">Retour à mon compte</a></p>
 </main>
 
 <script th:src="@{/js/confirmation.js}"></script>
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

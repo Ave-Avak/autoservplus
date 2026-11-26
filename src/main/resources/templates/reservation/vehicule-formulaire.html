@@ -2,95 +2,109 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="(${modeAjout} ? #{vehicule.formulaire.titre.ajout} : #{vehicule.formulaire.titre.modification}) + ' | AutoServ+'">Véhicule | AutoServ+</title>
+    <title th:text="(${modeAjout} ? #{vehicule.formulaire.titre.ajout} : #{vehicule.formulaire.titre.modification}) + ' | ' + ${garageSite.enseigne()}">Ajouter un véhicule | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
+<main id="contenu" class="container page-formulaire" tabindex="-1">
+    <h1 class="page-formulaire__titre" th:text="${modeAjout} ? #{vehicule.formulaire.titre.ajout} : #{vehicule.formulaire.titre.modification}">Ajouter un véhicule</h1>
 
-<main id="contenu">
-    <h1 th:text="${modeAjout} ? #{vehicule.formulaire.titre.ajout} : #{vehicule.formulaire.titre.modification}">Ajouter un véhicule</h1>
-
-    <form class="formulaire"
-          th:action="${modeAjout}
+    <form th:action="${modeAjout}
               ? @{/mes-vehicules/nouveau}
               : @{/mes-vehicules/{ref}/modifier(ref=${reference})}"
           th:object="${formulaire}" method="post" novalidate>
         <input type="hidden" name="retour" th:if="${retour != null}" th:value="${retour}">
 
-        <div class="champ">
-            <label for="plaque" th:text="#{vehicule.formulaire.plaque}">Plaque d'immatriculation</label>
-            <input type="text" id="plaque" th:field="*{plaque}"
-                   th:readonly="${!modeAjout}"
-                   required
-                   aria-describedby="aide-plaque">
+        <div class="champ-site">
+            <label class="form-label" for="plaque" th:text="#{vehicule.formulaire.plaque}">Plaque d'immatriculation</label>
             <!--/* Une seule aide porte l'identifiant visé par aria-describedby, selon le mode :
-                 la plaque se saisit à l'ajout et ne se modifie plus ensuite. */-->
-            <p id="aide-plaque" class="texte-info"
+                 la plaque se saisit à l'ajout et ne se modifie plus ensuite. Le format se lit
+                 avant le champ. */-->
+            <p id="aide-plaque" class="form-text mt-0 mb-2"
                th:text="${modeAjout} ? #{vehicule.formulaire.plaque.aide} : #{vehicule.formulaire.plaque.fixe}">
-                Format belge : 1-ABC-123
-            </p>
-            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('plaque')}" th:errors="*{plaque}"></p>
+                Format belge : 1-ABC-123</p>
+            <input class="form-control champ-plaque" th:errorclass="is-invalid" type="text" id="plaque" th:field="*{plaque}"
+                   th:readonly="${!modeAjout}" required autocapitalize="characters" spellcheck="false"
+                   th:aria-invalid="${#fields.hasErrors('plaque')} ? 'true'"
+                   th:aria-describedby="${#fields.hasErrors('plaque')} ? 'aide-plaque erreur-plaque' : 'aide-plaque'">
+            <p id="erreur-plaque" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('plaque')}" th:errors="*{plaque}"></p>
         </div>
 
-        <div class="champ">
-            <label for="marque" th:text="#{vehicule.formulaire.marque}">Marque</label>
-            <input type="text" id="marque" th:field="*{marque}" required>
-            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('marque')}" th:errors="*{marque}"></p>
+        <div class="row g-3">
+            <div class="col-12 col-sm-6 champ-site">
+                <label class="form-label" for="marque" th:text="#{vehicule.formulaire.marque}">Marque</label>
+                <input class="form-control" th:errorclass="is-invalid" type="text" id="marque" th:field="*{marque}" required
+                       th:aria-invalid="${#fields.hasErrors('marque')} ? 'true'"
+                       th:aria-describedby="${#fields.hasErrors('marque')} ? 'erreur-marque'">
+                <p id="erreur-marque" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('marque')}" th:errors="*{marque}"></p>
+            </div>
+
+            <div class="col-12 col-sm-6 champ-site">
+                <label class="form-label" for="modele" th:text="#{vehicule.formulaire.modele}">Modèle</label>
+                <input class="form-control" th:errorclass="is-invalid" type="text" id="modele" th:field="*{modele}" required
+                       th:aria-invalid="${#fields.hasErrors('modele')} ? 'true'"
+                       th:aria-describedby="${#fields.hasErrors('modele')} ? 'erreur-modele'">
+                <p id="erreur-modele" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('modele')}" th:errors="*{modele}"></p>
+            </div>
         </div>
 
-        <div class="champ">
-            <label for="modele" th:text="#{vehicule.formulaire.modele}">Modèle</label>
-            <input type="text" id="modele" th:field="*{modele}" required>
-            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('modele')}" th:errors="*{modele}"></p>
-        </div>
-
-        <div class="champ">
-            <label for="motorisation" th:text="#{vehicule.motorisation}">Motorisation</label>
-            <select id="motorisation" th:field="*{motorisation}" required>
+        <div class="champ-site">
+            <label class="form-label" for="motorisation" th:text="#{vehicule.motorisation}">Motorisation</label>
+            <select class="form-select" th:errorclass="is-invalid" id="motorisation" th:field="*{motorisation}" required
+                    th:aria-invalid="${#fields.hasErrors('motorisation')} ? 'true'"
+                    th:aria-describedby="${#fields.hasErrors('motorisation')} ? 'erreur-motorisation'">
                 <option value="" th:text="#{rdv.formulaire.choisir}">Choisissez</option>
                 <option th:each="m : ${motorisations}" th:value="${m}"
                         th:text="#{'vehicule.motorisation.' + ${m}}">Diesel</option>
             </select>
-            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motorisation')}" th:errors="*{motorisation}"></p>
+            <p id="erreur-motorisation" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('motorisation')}" th:errors="*{motorisation}"></p>
         </div>
 
-        <div class="champ">
-            <label for="annee" th:text="#{vehicule.formulaire.annee}">Année de mise en circulation</label>
-            <input type="number" id="annee" th:field="*{annee}" min="1900" max="2100">
-            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('annee')}" th:errors="*{annee}"></p>
+        <div class="row g-3">
+            <div class="col-12 col-sm-6 champ-site">
+                <label class="form-label" for="annee" th:text="#{vehicule.formulaire.annee}">Année de mise en circulation</label>
+                <input class="form-control" th:errorclass="is-invalid" type="number" id="annee" th:field="*{annee}" min="1900" max="2100"
+                       inputmode="numeric"
+                       th:aria-invalid="${#fields.hasErrors('annee')} ? 'true'"
+                       th:aria-describedby="${#fields.hasErrors('annee')} ? 'erreur-annee'">
+                <p id="erreur-annee" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('annee')}" th:errors="*{annee}"></p>
+            </div>
+
+            <div class="col-12 col-sm-6 champ-site">
+                <label class="form-label" for="kilometrage" th:text="#{vehicule.kilometrage}">Kilométrage</label>
+                <input class="form-control" th:errorclass="is-invalid" type="number" id="kilometrage" th:field="*{kilometrage}" min="0"
+                       inputmode="numeric"
+                       th:aria-invalid="${#fields.hasErrors('kilometrage')} ? 'true'"
+                       th:aria-describedby="${#fields.hasErrors('kilometrage')} ? 'aide-kilometrage erreur-kilometrage' : 'aide-kilometrage'">
+                <p id="aide-kilometrage" class="form-text" th:text="#{vehicule.formulaire.kilometrage.aide}">
+                    Le kilométrage ne peut pas diminuer d'un relevé à l'autre.</p>
+                <p id="erreur-kilometrage" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('kilometrage')}" th:errors="*{kilometrage}"></p>
+            </div>
         </div>
 
-        <div class="champ">
-            <label for="kilometrage" th:text="#{vehicule.kilometrage}">Kilométrage</label>
-            <input type="number" id="kilometrage" th:field="*{kilometrage}" min="0"
-                   aria-describedby="aide-kilometrage">
-            <p id="aide-kilometrage" class="texte-info" th:text="#{vehicule.formulaire.kilometrage.aide}">
-                Le kilométrage ne peut pas diminuer d'un relevé à l'autre.
-            </p>
-            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('kilometrage')}" th:errors="*{kilometrage}"></p>
-        </div>
-
-        <div class="champ">
-            <label for="numeroChassis"><span th:text="#{vehicule.formulaire.chassis}">Numéro de châssis</span>
+        <div class="champ-site">
+            <label class="form-label" for="numeroChassis"><span th:text="#{vehicule.formulaire.chassis}">Numéro de châssis</span>
                 <span class="champ-facultatif" th:text="#{vehicule.formulaire.facultatif}">(facultatif)</span></label>
-            <input type="text" id="numeroChassis" th:field="*{numeroChassis}" maxlength="20">
-            <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('numeroChassis')}" th:errors="*{numeroChassis}"></p>
+            <input class="form-control" th:errorclass="is-invalid" type="text" id="numeroChassis" th:field="*{numeroChassis}" maxlength="20"
+                   autocapitalize="characters" spellcheck="false"
+                   th:aria-invalid="${#fields.hasErrors('numeroChassis')} ? 'true'"
+                   th:aria-describedby="${#fields.hasErrors('numeroChassis')} ? 'erreur-chassis'">
+            <p id="erreur-chassis" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('numeroChassis')}" th:errors="*{numeroChassis}"></p>
         </div>
 
-        <button type="submit" class="btn-cta"
-                th:text="${modeAjout} ? #{vehicule.formulaire.ajouter} : #{vehicule.formulaire.enregistrer}">
-            Enregistrer</button>
+        <div class="actions-formulaire">
+            <button type="submit" class="btn btn-action btn-lg"
+                    th:text="${modeAjout} ? #{vehicule.formulaire.ajouter} : #{vehicule.formulaire.enregistrer}">
+                Enregistrer</button>
+            <a class="btn btn-outline-primary btn-lg" th:href="@{/mes-vehicules}" th:text="#{rdv.formulaire.annuler}">Annuler</a>
+        </div>
     </form>
-
-    <p><a th:href="@{/mes-vehicules}" th:text="#{rdv.formulaire.annuler}">Annuler</a></p>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>
