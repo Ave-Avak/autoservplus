@@ -27,7 +27,7 @@
          est refusée au serveur, et l'écran le dit avant l'envoi. */-->
     <div class="message message-erreur" th:if="${adresseIncomplete}" role="alert">
         <p th:text="${erreurAdresse} ?: #{commande.recap.adresse-incomplete}">Renseignez votre adresse avant de commander.</p>
-        <p><a th:href="@{/mon-profil}" th:text="#{commande.recap.adresse-lien}">Compléter mon adresse</a></p>
+        <p><a th:href="@{/mon-profil(retour='/commande')}" th:text="#{commande.recap.adresse-lien}">Compléter mon adresse</a></p>
     </div>
 
     <div class="message message-erreur" th:if="${panier.contientPieceInactive()}" role="alert"

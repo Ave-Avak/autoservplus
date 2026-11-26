@@ -118,7 +118,7 @@
             </form>
             <p th:if="${#lists.isEmpty(vehicules)}">
                 <span th:text="#{devis.panier.sans-vehicule}">Un devis nomme un véhicule.</span>
-                <a th:href="@{/mes-vehicules/nouveau}" th:text="#{devis.panier.ajouter-vehicule}">Ajouter un véhicule</a>
+                <a th:href="@{/mes-vehicules/nouveau(retour='/panier')}" th:text="#{devis.panier.ajouter-vehicule}">Ajouter un véhicule</a>
             </p>
         </section>
     </div>

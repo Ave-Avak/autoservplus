@@ -21,6 +21,7 @@
               ? @{/mes-vehicules/nouveau}
               : @{/mes-vehicules/{ref}/modifier(ref=${reference})}"
           th:object="${formulaire}" method="post" novalidate>
+        <input type="hidden" name="retour" th:if="${retour != null}" th:value="${retour}">
 
         <div class="champ">
             <label for="plaque" th:text="#{vehicule.formulaire.plaque}">Plaque d'immatriculation</label>

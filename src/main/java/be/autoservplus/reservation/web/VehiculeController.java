@@ -1,6 +1,7 @@
 package be.autoservplus.reservation.web;
 
 import be.autoservplus.common.exception.RefusTraduit;
+import be.autoservplus.common.web.RetourInterne;
 import be.autoservplus.intervention.service.HistoriqueEntretienService;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.service.VehiculeService;
@@ -57,7 +58,8 @@ public class VehiculeController {
     }
 
     @GetMapping("/nouveau")
-    public String afficherAjout(Model modele) {
+    public String afficherAjout(@RequestParam(required = false) String retour, Model modele) {
+        RetourInterne.permis(retour).ifPresent(adresse -> modele.addAttribute("retour", adresse));
         modele.addAttribute("formulaire", new VehiculeForm());
         modele.addAttribute("motorisations", Motorisation.values());
         modele.addAttribute("modeAjout", true);
@@ -68,9 +70,11 @@ public class VehiculeController {
     public String ajouter(@AuthenticationPrincipal UserDetails membre,
                           @Valid @ModelAttribute("formulaire") VehiculeForm formulaire,
                           BindingResult erreurs,
+                          @RequestParam(required = false) String retour,
                           Model modele,
                           RedirectAttributes redirection) {
 
+        RetourInterne.permis(retour).ifPresent(adresse -> modele.addAttribute("retour", adresse));
         if (erreurs.hasErrors()) {
             return retourFormulaire(modele, true);
         }
@@ -87,7 +91,8 @@ public class VehiculeController {
         }
 
         redirection.addFlashAttribute("message", msg("vehicule.message.ajoute"));
-        return "redirect:/mes-vehicules";
+        // Ajout fait en plein rendez-vous ou en plein devis : retour au parcours quitté.
+        return "redirect:" + RetourInterne.permis(retour).orElse("/mes-vehicules");
     }
 
     @GetMapping("/{reference}/modifier")
