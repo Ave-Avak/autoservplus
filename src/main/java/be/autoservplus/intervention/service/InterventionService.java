@@ -1,21 +1,18 @@
 package be.autoservplus.intervention.service;
 
-import be.autoservplus.intervention.repository.LigneInterventionRepository;
-import be.autoservplus.intervention.domain.ChangementPieceIncluse;
-import be.autoservplus.intervention.domain.PieceIncluse;
 import be.autoservplus.catalogue.domain.ChoixPieces;
-import be.autoservplus.common.ReserveAuxTests;
-import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.catalogue.repository.PrestationRepository;
+import be.autoservplus.common.ReserveAuxTests;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.communication.service.DetailsDepassementCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
+import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.facturation.domain.Avoir;
 import be.autoservplus.facturation.domain.Encaissement;
 import be.autoservplus.facturation.domain.Facture;
@@ -26,12 +23,15 @@ import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.i18n.LanguesSupportees;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.service.AuteurCourant;
+import be.autoservplus.intervention.domain.ChangementPieceIncluse;
 import be.autoservplus.intervention.domain.HistoriqueStatutIntervention;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.LigneIntervention;
+import be.autoservplus.intervention.domain.PieceIncluse;
 import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.intervention.repository.HistoriqueStatutInterventionRepository;
 import be.autoservplus.intervention.repository.InterventionRepository;
+import be.autoservplus.intervention.repository.LigneInterventionRepository;
 import be.autoservplus.intervention.service.dto.ClotureIntervention;
 import be.autoservplus.intervention.service.dto.FactureAtelierVue;
 import be.autoservplus.intervention.service.dto.PieceAjoutableVue;
@@ -39,19 +39,21 @@ import be.autoservplus.intervention.web.dto.DemandeValidationVue;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
 import be.autoservplus.intervention.web.dto.InterventionVueMembre;
 import be.autoservplus.reservation.domain.Rdv;
-import be.autoservplus.reservation.repository.VehiculeRepository;
 import be.autoservplus.reservation.domain.Vehicule;
-import be.autoservplus.vente.repository.CommandeRepository;
-import be.autoservplus.vente.domain.StatutCommande;
-import be.autoservplus.vente.domain.LignePanier;
-import be.autoservplus.vente.domain.Commande;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
+import be.autoservplus.reservation.repository.VehiculeRepository;
 import be.autoservplus.reservation.service.support.FormatageRdv;
+import be.autoservplus.vente.domain.Commande;
+import be.autoservplus.vente.domain.LignePanier;
+import be.autoservplus.vente.domain.StatutCommande;
+import be.autoservplus.vente.repository.CommandeRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.data.domain.AuditorAware;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.AuditorAware;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -617,21 +619,23 @@ public class InterventionService {
 
     // --- vues ------------------------------------------------------------------------
 
+    /** Statuts de l'écran actif, lus quand aucun statut n'est demandé. */
+    private static final Set<StatutIntervention> OUVERTES = EnumSet.of(
+            StatutIntervention.PLANIFIEE,
+            StatutIntervention.EN_COURS,
+            StatutIntervention.SUSPENDUE,
+            StatutIntervention.ATTENTE_VALIDATION_MEMBRE);
+
     /**
-     * Interventions ouvertes (non terminales) pour le tableau de bord admin :
-     * PLANIFIEE, EN_COURS, SUSPENDUE et ATTENTE_VALIDATION_MEMBRE. Les TERMINEE
-     * et ANNULEE sortent de l ecran actif.
+     * Interventions du back-office, par page. Sans statut, les interventions ouvertes
+     * (PLANIFIEE, EN_COURS, SUSPENDUE et ATTENTE_VALIDATION_MEMBRE), l'écran de travail
+     * de l'atelier. Un statut demandé ouvre aussi l'historique des terminées et des
+     * annulées.
      */
-    public List<InterventionVueAdmin> interventionsEnCours() {
+    public Page<InterventionVueAdmin> interventions(StatutIntervention statut, Pageable pagination) {
         ZoneId zone = parametres.courants().zone();
-        return interventions.findByStatutIn(EnumSet.of(
-                        StatutIntervention.PLANIFIEE,
-                        StatutIntervention.EN_COURS,
-                        StatutIntervention.SUSPENDUE,
-                        StatutIntervention.ATTENTE_VALIDATION_MEMBRE))
-                .stream()
-                .map(i -> InterventionVueAdmin.de(i, zone))
-                .toList();
+        return interventions.parStatuts(statut == null ? OUVERTES : EnumSet.of(statut), pagination)
+                .map(i -> InterventionVueAdmin.de(i, zone));
     }
 
     public InterventionVueAdmin vueAdmin(UUID reference) {

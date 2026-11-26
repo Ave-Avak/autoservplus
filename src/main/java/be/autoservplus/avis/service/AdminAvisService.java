@@ -5,6 +5,8 @@ import be.autoservplus.avis.repository.AvisRepository;
 import be.autoservplus.avis.service.dto.AvisVue;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -50,11 +52,11 @@ public class AdminAvisService {
     }
 
     /** Tous les avis, masques compris : la moderation doit voir ce qu elle a retire. */
-    public List<AvisVue> tous() {
+    /** Avis de la modération, par page, filtrés sur leur état ou tous. */
+    public Page<AvisVue> pourModeration(FiltreAvis filtre, Pageable pagination) {
         ZoneId zone = parametres.courants().zone();
-        return avis.tousPourModeration().stream()
-                .map(a -> AvisVue.de(a, a.getDateDepot().atZone(zone).toLocalDate()))
-                .toList();
+        return avis.pourModeration(FiltreAvis.publies(filtre), FiltreAvis.signales(filtre), pagination)
+                .map(a -> AvisVue.de(a, a.getDateDepot().atZone(zone).toLocalDate()));
     }
 
     @Transactional

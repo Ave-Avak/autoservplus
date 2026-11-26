@@ -18,6 +18,18 @@
 
     <p role="status" class="message" th:if="${message}" th:text="${message}">Avis masqué.</p>
 
+    <form class="formulaire" th:action="@{/admin/avis}" method="get">
+        <div class="champ">
+            <label for="etat" th:text="#{admin.avis.filtre.etat}">État</label>
+            <select id="etat" name="etat">
+                <option value="" th:text="#{admin.avis.filtre.tous}">Tous les avis</option>
+                <option th:each="e : ${etats}" th:value="${e}" th:selected="${e == etat}"
+                        th:text="#{'admin.avis.etat.' + ${#strings.toLowerCase(e)}}">Publié</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-cta" th:text="#{admin.avis.filtre.appliquer}">Filtrer</button>
+    </form>
+
     <p th:if="${#lists.isEmpty(avis)}" th:text="#{admin.avis.aucun}">Aucun avis déposé.</p>
 
     <div class="defilement" th:unless="${#lists.isEmpty(avis)}" tabindex="0" role="region" aria-labelledby="legende-admin-avis">
@@ -75,6 +87,7 @@
             </tbody>
         </table>
     </div>
+    <nav th:replace="~{fragments/pagination :: liensCalcules(${pagination})}"></nav>
 </main>
 
 <div th:replace="~{fragments/pied :: pied}"></div>

@@ -2,26 +2,31 @@ package be.autoservplus.intervention.web;
 
 import be.autoservplus.catalogue.domain.ChoixPieces;
 import be.autoservplus.catalogue.domain.ChoixPiecesRefuseException;
-import be.autoservplus.intervention.domain.PieceIncluseRefuseeException;
-import be.autoservplus.intervention.domain.PieceIncluseRefuseeException;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.PagesBackOffice;
+import be.autoservplus.common.web.PaginationVue;
 import be.autoservplus.facturation.domain.MoyenEncaissement;
 import be.autoservplus.intervention.domain.Intervention;
+import be.autoservplus.intervention.domain.PieceIncluseRefuseeException;
 import be.autoservplus.intervention.domain.QuantiteLigneRefuseeException;
+import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.intervention.service.ClotureRefuseeException;
 import be.autoservplus.intervention.service.InterventionService;
 import be.autoservplus.intervention.service.dto.ClotureIntervention;
 import be.autoservplus.intervention.web.dto.InterventionVueAdmin;
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.math.BigDecimal;
@@ -43,15 +48,24 @@ public class AdminInterventionController {
 
     private final InterventionService service;
     private final MessageSource messages;
+    private final PagesBackOffice pages;
 
-    public AdminInterventionController(InterventionService service, MessageSource messages) {
+    public AdminInterventionController(InterventionService service, MessageSource messages,
+                                       PagesBackOffice pages) {
         this.service = service;
         this.messages = messages;
+        this.pages = pages;
     }
 
     @GetMapping
-    public String liste(Model modele) {
-        modele.addAttribute("interventions", service.interventionsEnCours());
+    public String liste(@RequestParam(required = false) StatutIntervention statut,
+                        @RequestParam(defaultValue = "1") int page,
+                        HttpServletRequest requete, Model modele) {
+        Page<InterventionVueAdmin> resultats = service.interventions(statut, pages.demande(page));
+        modele.addAttribute("interventions", resultats.getContent());
+        modele.addAttribute("pagination", PaginationVue.de(resultats, requete));
+        modele.addAttribute("statut", statut);
+        modele.addAttribute("statuts", StatutIntervention.values());
         return "admin/interventions";
     }
 

@@ -16,12 +16,15 @@ import be.autoservplus.identite.repository.HistoriqueStatutUtilisateurRepository
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -91,13 +94,18 @@ public class GestionComptesService {
 
     // --- lectures ---------------------------------------------------------------------
 
-    public List<Utilisateur> membres(String filtre) {
+    /**
+     * Membres dont le nom, le prénom ou l'adresse contient le filtre, dans le statut
+     * demandé ou dans tous les statuts.
+     */
+    public Page<Utilisateur> membres(String filtre, StatutUtilisateur statut, Pageable pagination) {
         // Motif compose ICI : sans recherche il vaut simplement %, ce qui rend tout le
         // monde sans qu aucun parametre nul n ait a etre type par la base.
         String motif = filtre == null || filtre.isBlank()
                 ? "%"
                 : "%" + filtre.strip().toLowerCase(Locale.ROOT) + "%";
-        return utilisateurs.rechercherMembres(motif);
+        return utilisateurs.rechercherMembres(motif,
+                statut == null ? EnumSet.allOf(StatutUtilisateur.class) : EnumSet.of(statut), pagination);
     }
 
     /** Comptes du back-office : les deux natures privilegiees, jamais les membres. */

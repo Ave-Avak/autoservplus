@@ -4,6 +4,8 @@ import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Modifying;
@@ -119,7 +121,10 @@ public interface UtilisateurRepository extends JpaRepository<Utilisateur, Long> 
              and (lower(u.nom) like :motif
                   or lower(u.prenom) like :motif
                   or u.email like :motif)
-           order by u.nom asc, u.prenom asc
+             and u.statut in :statuts
+           order by u.nom asc, u.prenom asc, u.id asc
            """)
-    List<Utilisateur> rechercherMembres(@Param("motif") String motif);
+    Page<Utilisateur> rechercherMembres(@Param("motif") String motif,
+                                        @Param("statuts") Collection<StatutUtilisateur> statuts,
+                                        Pageable pagination);
 }

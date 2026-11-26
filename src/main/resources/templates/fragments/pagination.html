@@ -24,6 +24,16 @@
     <a th:if="${resultats.hasNext()}" th:href="@{${chemin}(page=${resultats.number + 2})}"
        th:text="#{pagination.suivante}" rel="next">Page suivante</a>
 </nav>
+<!--/* Liens calculés par PaginationVue, qui reprend tous les filtres de l'adresse. */-->
+<nav th:fragment="liensCalcules(pagination)" class="pagination"
+     th:if="${pagination.total() > 1}" th:attr="aria-label=#{pagination.aria}">
+    <a th:if="${pagination.precedente() != null}" th:href="${pagination.precedente()}"
+       th:text="#{pagination.precedente}" rel="prev">Page précédente</a>
+    <span th:text="#{pagination.position(${pagination.numero()}, ${pagination.total()})}">Page 1 sur 3</span>
+    <a th:if="${pagination.suivante() != null}" th:href="${pagination.suivante()}"
+       th:text="#{pagination.suivante}" rel="next">Page suivante</a>
+</nav>
+
 <!--/* Filtre commun des listes : période du / au, recherche libre. Les dates sont rendues
      au format ISO, jamais par th:field, qui appliquerait le format belge. */-->
 <div th:fragment="periode" class="filtre-periode">

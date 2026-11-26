@@ -2,6 +2,8 @@ package be.autoservplus.intervention.repository;
 
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.domain.StatutIntervention;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -36,13 +38,19 @@ public interface InterventionRepository extends JpaRepository<Intervention, Long
             """)
     Optional<Intervention> findByRdvReference(@Param("rdvReference") UUID rdvReference);
 
-    @Query("""
-            SELECT DISTINCT i FROM Intervention i
+    /**
+     * Interventions dans les statuts demandés, par page, de la plus récente à la plus
+     * ancienne. La requête de comptage est écrite à part : Spring Data ne sait pas dériver
+     * un comptage d'une requête qui charge ses associations.
+     */
+    @Query(value = """
+            SELECT i FROM Intervention i
             LEFT JOIN FETCH i.rdv JOIN FETCH i.vehicule
             WHERE i.statut IN :statuts
-            ORDER BY i.createdAt DESC
-            """)
-    List<Intervention> findByStatutIn(@Param("statuts") Collection<StatutIntervention> statuts);
+            ORDER BY i.createdAt DESC, i.id DESC
+            """,
+            countQuery = "SELECT count(i) FROM Intervention i WHERE i.statut IN :statuts")
+    Page<Intervention> parStatuts(@Param("statuts") Collection<StatutIntervention> statuts, Pageable pagination);
 
     /**
      * Interventions d'un véhicule, pour son historique d'entretien (F21).

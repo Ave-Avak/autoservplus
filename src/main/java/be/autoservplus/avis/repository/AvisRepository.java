@@ -5,6 +5,7 @@ import be.autoservplus.avis.service.dto.NotePrestation;
 import be.autoservplus.avis.service.dto.SyntheseAvis;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.intervention.domain.Intervention;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -104,14 +105,17 @@ public interface AvisRepository extends JpaRepository<Avis, Long> {
             """)
     List<Avis> derniersPubliesCommentes(Pageable page);
 
-    /** Tous les avis, du plus recent au plus ancien, pour l ecran de moderation. */
-    @Query("""
+    /** Avis de l'écran de modération, par page, du plus récent au plus ancien, dans les états demandés. */
+    @Query(value = """
             SELECT a FROM Avis a
             JOIN FETCH a.membre
             JOIN FETCH a.intervention
-            ORDER BY a.dateDepot DESC
-            """)
-    List<Avis> tousPourModeration();
+            WHERE a.publie IN :publies AND a.signale IN :signales
+            ORDER BY a.dateDepot DESC, a.id DESC
+            """,
+            countQuery = "SELECT count(a) FROM Avis a WHERE a.publie IN :publies AND a.signale IN :signales")
+    Page<Avis> pourModeration(@Param("publies") Collection<Boolean> publies,
+                              @Param("signales") Collection<Boolean> signales, Pageable pagination);
 
     /**
      * Avis dont l auteur est le compte anonymise (F23). Charge par identifiant de

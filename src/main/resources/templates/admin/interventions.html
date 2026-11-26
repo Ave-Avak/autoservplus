@@ -20,6 +20,18 @@
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
 
+    <form class="formulaire" th:action="@{/admin/interventions}" method="get">
+        <div class="champ">
+            <label for="statut" th:text="#{admin.interventions.filtre.statut}">Statut</label>
+            <select id="statut" name="statut">
+                <option value="" th:text="#{admin.interventions.filtre.ouvertes}">Interventions ouvertes</option>
+                <option th:each="s : ${statuts}" th:value="${s}" th:selected="${s == statut}"
+                        th:text="#{'admin.historique.statut.' + ${s}}">Terminée</option>
+            </select>
+        </div>
+        <button type="submit" class="btn-cta" th:text="#{admin.interventions.filtre.appliquer}">Filtrer</button>
+    </form>
+
     <p th:if="${interventions.isEmpty()}" class="message" th:text="#{admin.interventions.vide}">
         Aucune intervention en cours.
     </p>
@@ -58,6 +70,7 @@
             </div>
         </li>
     </ul>
+    <nav th:replace="~{fragments/pagination :: liensCalcules(${pagination})}"></nav>
 
     <p><a th:href="@{/mon-compte}" th:text="#{erreur.retour-compte}">Retour à mon compte</a></p>
 </main>

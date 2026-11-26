@@ -2,6 +2,7 @@ package be.autoservplus.intervention.web;
 
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.PagesBackOffice;
 import be.autoservplus.intervention.domain.Intervention;
 import be.autoservplus.intervention.service.InterventionService;
 import be.autoservplus.intervention.service.dto.ClotureIntervention;
@@ -16,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -30,6 +32,8 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -53,7 +57,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(controllers = AdminInterventionController.class,
         excludeAutoConfiguration = ThymeleafAutoConfiguration.class)
-@Import({AdminInterventionControllerTest.SecuriteTest.class, AdminInterventionControllerTest.StubViewResolver.class})
+@Import({AdminInterventionControllerTest.SecuriteTest.class, AdminInterventionControllerTest.StubViewResolver.class,
+        PagesBackOffice.class})
 @DisplayName("AdminInterventionController")
 class AdminInterventionControllerTest {
 
@@ -114,7 +119,7 @@ class AdminInterventionControllerTest {
         @WithMockUser(roles = "ADMINISTRATEUR")
         @DisplayName("expose les interventions en cours dans le modele")
         void afficheListe() throws Exception {
-            when(service.interventionsEnCours()).thenReturn(List.of(vueDemo));
+            when(service.interventions(isNull(), any())).thenReturn(new PageImpl<>(List.of(vueDemo)));
 
             mvc.perform(get("/admin/interventions"))
                     .andExpect(status().isOk())

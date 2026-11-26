@@ -21,6 +21,14 @@
             <label for="recherche" th:text="#{admin.comptes.recherche}">Rechercher</label>
             <input type="search" id="recherche" name="recherche" th:value="${recherche}">
         </div>
+        <div class="champ">
+            <label for="statut" th:text="#{admin.comptes.filtre.statut}">Statut</label>
+            <select id="statut" name="statut">
+                <option value="" th:text="#{admin.comptes.filtre.tous}">Tous les statuts</option>
+                <option th:each="s : ${statuts}" th:value="${s}" th:selected="${s == statut}"
+                        th:text="#{'admin.comptes.statut.' + ${s}}">Actif</option>
+            </select>
+        </div>
         <button type="submit" class="btn-cta" th:text="#{admin.comptes.rechercher}">Rechercher</button>
     </form>
 
@@ -54,6 +62,7 @@
             </tbody>
         </table>
     </div>
+    <nav th:replace="~{fragments/pagination :: liensCalcules(${pagination})}"></nav>
 </main>
 
 <div th:replace="~{fragments/pied :: pied}"></div>

@@ -2,8 +2,11 @@ package be.autoservplus.identite.web;
 
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
+import be.autoservplus.common.web.PagesBackOffice;
+import be.autoservplus.common.web.PaginationVue;
 import be.autoservplus.identite.domain.ChampCompte;
 import be.autoservplus.identite.domain.Langue;
+import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.service.ComptesAdministrateursService;
@@ -17,9 +20,11 @@ import be.autoservplus.identite.web.dto.ModificationCompteForm;
 import be.autoservplus.identite.web.dto.ModificationCompteVue;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.vente.service.AdminCommandeService;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -53,6 +58,7 @@ import java.util.UUID;
 public class AdminComptesController {
 
     private final GestionComptesService service;
+    private final PagesBackOffice pages;
     private final ComptesAdministrateursService administrateurs;
     private final JournalSecuriteCompte journalSecurite;
     private final AdminCommandeService commandes;
@@ -64,8 +70,9 @@ public class AdminComptesController {
                                   JournalSecuriteCompte journalSecurite,
                                   AdminCommandeService commandes,
                                   ParametreAtelierRepository parametres,
-                                  MessageSource messages) {
+                                  MessageSource messages, PagesBackOffice pages) {
         this.service = service;
+        this.pages = pages;
         this.administrateurs = administrateurs;
         this.journalSecurite = journalSecurite;
         this.commandes = commandes;
@@ -78,11 +85,16 @@ public class AdminComptesController {
     }
 
     @GetMapping
-    public String liste(@RequestParam(required = false) String recherche, Model modele) {
-        modele.addAttribute("comptes", service.membres(recherche).stream()
-                .map(CompteVue::de)
-                .toList());
+    public String liste(@RequestParam(required = false) String recherche,
+                        @RequestParam(required = false) StatutUtilisateur statut,
+                        @RequestParam(defaultValue = "1") int page,
+                        HttpServletRequest requete, Model modele) {
+        Page<CompteVue> comptes = service.membres(recherche, statut, pages.demande(page)).map(CompteVue::de);
+        modele.addAttribute("comptes", comptes.getContent());
+        modele.addAttribute("pagination", PaginationVue.de(comptes, requete));
         modele.addAttribute("recherche", recherche);
+        modele.addAttribute("statut", statut);
+        modele.addAttribute("statuts", StatutUtilisateur.values());
         return "admin/comptes";
     }
 
