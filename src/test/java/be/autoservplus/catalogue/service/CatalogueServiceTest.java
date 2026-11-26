@@ -2,6 +2,8 @@ package be.autoservplus.catalogue.service;
 
 import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.domain.Categorie;
+import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.service.dto.ArticleVue;
 import be.autoservplus.catalogue.service.dto.CategorieVue;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.CategorieRepository;
@@ -17,6 +19,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -98,6 +101,22 @@ class CatalogueServiceTest {
                     .first()
                     .extracting(CategorieVue::code)
                     .isEqualTo("ENTRETIEN");
+        }
+
+        @Test
+        @DisplayName("liste des prestations : rang de la catégorie d'abord, puis le libellé")
+        void prestationsRangeesParCategorie() {
+            Categorie freinage = new Categorie("FREINAGE", "Freinage", TypeCategorie.SERVICE);
+            freinage.setOrdre((short) 2);
+            Categorie entretien = new Categorie("ENTRETIEN", "Entretien", TypeCategorie.SERVICE);
+            entretien.setOrdre((short) 1);
+            when(prestations.findByActifTrueOrderByLibelleAsc()).thenReturn(List.of(
+                    new Prestation(freinage, "PLAQ", "Plaquettes avant", new BigDecimal("90.00"), 45),
+                    new Prestation(entretien, "VID", "Vidange", new BigDecimal("69.00"), 30),
+                    new Prestation(entretien, "REV", "Révision annuelle", new BigDecimal("150.00"), 90)));
+
+            assertThat(service.prestationsActives()).extracting(ArticleVue::libelle)
+                    .containsExactly("Révision annuelle", "Vidange", "Plaquettes avant");
         }
 
         @Test
