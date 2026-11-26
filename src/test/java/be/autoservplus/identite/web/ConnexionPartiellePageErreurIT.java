@@ -118,14 +118,14 @@ class ConnexionPartiellePageErreurIT extends SocleIntegration {
         // Référence inconnue : le conteneur rend la page d'erreur au dispatch ERROR.
         HttpResponse<String> introuvable = lire("/pieces/" + UUID.randomUUID());
         assertThat(introuvable.statusCode()).isEqualTo(404);
-        assertThat(introuvable.body()).contains("<main id=\"contenu\">");
+        assertThat(introuvable.body()).contains("<main id=\"contenu\"");
         sansTraceDeConnexion(introuvable);
 
         // Paramètre mal formé : même chemin, sous le même contexte anonyme, avec un autre
         // statut. La session partielle survit : l'étape aboutit ensuite.
         HttpResponse<String> conteneur = lire("/recherche?q=filtre&pagePieces=pas-un-nombre");
         assertThat(conteneur.statusCode()).isEqualTo(400);
-        assertThat(conteneur.body()).contains("<main id=\"contenu\">");
+        assertThat(conteneur.body()).contains("<main id=\"contenu\"");
         sansTraceDeConnexion(conteneur);
 
         // Contre-epreuve : la connexion aboutie, l en-tete montre bien ces liens.
