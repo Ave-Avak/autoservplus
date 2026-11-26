@@ -1,0 +1,165 @@
+// Page de contact : moyens de joindre le garage et horaires à gauche, plan et itinéraires
+// à droite, identité légale en bas.
+
+.contact {
+  padding-top: 1rem;
+  padding-bottom: 2rem;
+}
+
+.contact__titre {
+  margin-bottom: .5rem;
+  font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.25rem);
+  font-weight: 700;
+}
+
+.contact__intro {
+  max-width: 65ch;
+  margin-bottom: 1.5rem;
+}
+
+.contact__note {
+  margin: .75rem 0 0;
+  color: $gray-600;
+  font-size: .875rem;
+}
+
+.contact-bloc {
+  margin-bottom: 2rem;
+
+  h2 {
+    margin-bottom: 1rem;
+    font-size: 1.375rem;
+  }
+}
+
+.contact-moyens {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  li {
+    display: flex;
+    flex-direction: column;
+    padding: .75rem 0;
+    border-top: 1px solid $gray-200;
+  }
+}
+
+.contact-moyens__libelle {
+  color: $gray-600;
+  font-size: .875rem;
+  font-weight: 500;
+}
+
+// Un lien de 44 px de haut au moins : le numéro se touche du pouce sur téléphone.
+.contact-moyens__valeur {
+  display: inline-flex;
+  align-items: center;
+  min-height: 2.75rem;
+  color: $gray-900;
+  font-size: 1.125rem;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+a.contact-moyens__valeur {
+  color: $bleu-secondaire;
+}
+
+// Les sept jours en deux colonnes, fermetures comprises.
+.horaires-semaine {
+  margin: 0;
+
+  div {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: .5rem 0;
+    border-top: 1px solid $gray-200;
+  }
+
+  dt {
+    color: $gray-900;
+    font-weight: 600;
+  }
+
+  dd {
+    margin: 0;
+    text-align: right;
+  }
+}
+
+.horaires-semaine__ferme {
+  color: $gray-600;
+}
+
+.contact-plan {
+  margin: 0 0 1rem;
+
+  img {
+    display: block;
+    width: 100%;
+    height: auto;
+    border: 1px solid $gray-200;
+    border-radius: $border-radius;
+  }
+
+  figcaption {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .25rem 1rem;
+    margin-top: .5rem;
+    color: $gray-600;
+    font-size: .875rem;
+  }
+}
+
+.contact-itineraires {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  .btn {
+    min-height: 2.75rem;
+  }
+
+  .icone {
+    width: 1rem;
+    height: 1rem;
+  }
+}
+
+.contact-identite {
+  padding-top: 1.5rem;
+  border-top: 1px solid $gray-200;
+}
+
+// Fragment de l'identité, partagé avec les pages légales encore à l'ancien style.
+.identite-garage {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: .25rem 1.5rem;
+  margin: 0;
+
+  @include media-breakpoint-up(md) {
+    grid-template-columns: max-content minmax(0, 1fr);
+  }
+
+  dt {
+    color: $gray-600;
+    font-weight: 500;
+  }
+
+  dd {
+    margin: 0 0 .5rem;
+    color: $gray-900;
+    overflow-wrap: anywhere;
+
+    @include media-breakpoint-up(md) {
+      margin-bottom: 0;
+    }
+  }
+}
