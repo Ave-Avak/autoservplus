@@ -3,6 +3,7 @@ package be.autoservplus.reservation.domain;
 import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
+import be.autoservplus.common.exception.TransitionRefusee;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import org.junit.jupiter.api.DisplayName;
@@ -641,6 +642,18 @@ class RdvTest {
             rdv.confirmer(AVANT_LE_DEBUT);
             rdv.annulerParLeMembre(DEBUT.minus(Duration.ofDays(1)), DELAI_24H);
             assertThat(rdv.getStatut()).isEqualTo(StatutRdv.ANNULE);
+        }
+
+        @Test
+        @DisplayName("un rendez-vous deja annule est refuse par sa propre cle, pas par celle du delai")
+        void dejaAnnule() {
+            Rdv rdv = rdvDe(vidange);
+            Instant deuxJoursAvant = DEBUT.minus(Duration.ofDays(2));
+            rdv.annulerParLeMembre(deuxJoursAvant, DELAI_24H);
+
+            assertThatThrownBy(() -> rdv.annulerParLeMembre(deuxJoursAvant, DELAI_24H))
+                    .isInstanceOfSatisfying(TransitionRefusee.class,
+                            refus -> assertThat(refus.getCleMessage()).isEqualTo("rdv.annulation.terminee"));
         }
     }
 

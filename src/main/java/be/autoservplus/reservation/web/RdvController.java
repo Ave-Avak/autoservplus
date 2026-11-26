@@ -2,6 +2,7 @@ package be.autoservplus.reservation.web;
 
 import be.autoservplus.catalogue.domain.ChoixPiecesRefuseException;
 import be.autoservplus.common.exception.RefusTraduit;
+import be.autoservplus.common.exception.TransitionRefusee;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.service.AucunePrestationChoisieException;
 import be.autoservplus.reservation.service.CreneauIndisponibleException;
@@ -206,6 +207,9 @@ public class RdvController {
                     new Object[]{rdv.getNumero()}, LocaleContextHolder.getLocale()));
         } catch (RefusTraduit refus) {
             redirection.addFlashAttribute("erreur", traduire(refus, LocaleContextHolder.getLocale()));
+        } catch (TransitionRefusee refus) {
+            redirection.addFlashAttribute("erreur",
+                    messages.getMessage(refus.getCleMessage(), null, LocaleContextHolder.getLocale()));
         }
         return "redirect:/mes-rendez-vous/" + reference;
     }

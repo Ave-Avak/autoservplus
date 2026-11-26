@@ -1,6 +1,6 @@
 package be.autoservplus.vente.service;
 
-import be.autoservplus.common.exception.RegleMetierException;
+import be.autoservplus.common.exception.RefusTraduit;
 
 /**
  * Levée quand un ajout mélangerait pièces et prestations dans un même panier (F12).
@@ -14,11 +14,16 @@ import be.autoservplus.common.exception.RegleMetierException;
  *
  * <p>Le message dit au membre quoi faire, pas ce que le système ne sait pas faire :
  * commander séparément est une action, « natures incompatibles » n'en est pas une.</p>
+ *
+ * <p>Refus traduit : le panier affiche le message dans la langue du membre. Une simple
+ * règle métier, sans clé, n'était rattrapée par aucun contrôleur et finissait en page
+ * d'erreur.</p>
  */
-public class PanierDeNatureMixteException extends RegleMetierException {
+public class PanierDeNatureMixteException extends RefusTraduit {
 
     public PanierDeNatureMixteException(boolean ajoutDUnService) {
-        super("RM-30", ajoutDUnService
+        super("RM-30", ajoutDUnService ? "panier.erreur.mixte-pieces" : "panier.erreur.mixte-prestations",
+                ajoutDUnService
                 ? "Votre panier contient des pièces. Commandez-les d'abord, "
                         + "puis ajoutez vos prestations : les deux se règlent séparément."
                 : "Votre panier contient des prestations. Commandez-les d'abord, "

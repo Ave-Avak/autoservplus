@@ -106,7 +106,10 @@ class PanierServiceLigneTest {
 
             assertThatThrownBy(() -> panier.ajouterService(vidange, 1))
                     .as("une commande mixte imposerait une retractation partielle, remise en V2")
-                    .isInstanceOf(PanierDeNatureMixteException.class)
+                    .isInstanceOfSatisfying(PanierDeNatureMixteException.class, refus -> assertThat(
+                            refus.getCleMessage())
+                            .as("la clé que le panier affiche dans la langue du membre")
+                            .isEqualTo("panier.erreur.mixte-pieces"))
                     .hasMessageContaining("pièces");
         }
 

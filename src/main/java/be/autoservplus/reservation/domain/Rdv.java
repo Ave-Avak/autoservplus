@@ -317,6 +317,12 @@ public class Rdv extends BaseEntity {
      * Le delai est un parametre de l atelier, d ou son passage en argument.
      */
     public void annulerParLeMembre(Instant maintenant, Duration delaiAnnulation) {
+        if (!statut.estEnCours()) {
+            // Distinct du délai : un rendez-vous déjà annulé, refusé ou passé ne redevient
+            // pas annulable en contactant le garage, le message du délai le laisserait croire.
+            throw new TransitionRefusee("rdv.annulation.terminee",
+                    "Ce rendez-vous n'est plus en cours, il ne peut plus être annulé.");
+        }
         if (!peutEtreAnnuleParLeMembre(maintenant, delaiAnnulation)) {
             throw new IllegalStateException(
                     // Phrase des journaux. L'écran affiche la clé que porte le refus du

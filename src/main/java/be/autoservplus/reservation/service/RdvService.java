@@ -13,6 +13,7 @@ import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.exception.TransitionRefusee;
 import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
@@ -388,6 +389,8 @@ public class RdvService {
         Duration delai = parametres.courants().delaiAnnulation();
         try {
             rdv.annulerParLeMembre(horloge.instant(), delai);
+        } catch (TransitionRefusee refus) {
+            throw refus;
         } catch (IllegalStateException e) {
             throw new RefusTraduit("RM-11", "rdv.annulation.delai",
                     new Object[]{delai.toHours()}, e.getMessage());
