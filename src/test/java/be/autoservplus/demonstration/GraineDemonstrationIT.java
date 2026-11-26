@@ -17,6 +17,8 @@ import be.autoservplus.reservation.service.GenerateurNumeroRdv;
 import be.autoservplus.stockage.service.DimensionsImage;
 import be.autoservplus.support.SocleIntegration;
 import be.autoservplus.vente.service.GenerateurNumeroCommande;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -346,6 +348,16 @@ class GraineDemonstrationIT extends SocleIntegration {
         assertThat(fiche).contains("/images/galerie/" + visuel + "/vignette 480w");
         mvc.perform(get("/images/galerie/{p}", visuel)).andExpect(status().isOk());
         mvc.perform(get("/images/galerie/{p}/vignette", visuel)).andExpect(status().isOk());
+
+        // Dans la liste, le visuel de catégorie ne se répète plus de carte en carte : chaque
+        // photo affichée est la photo propre d'un article, les autres cartes ont un pictogramme.
+        String liste = mvc.perform(get("/pieces")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertThat(liste).doesNotContain("/images/galerie/" + visuel);
+        Document cartes = Jsoup.parse(liste);
+        List<String> sources = cartes.select(".carte-article__image").eachAttr("src");
+        assertThat(sources).doesNotHaveDuplicates();
+        assertThat(cartes.select(".carte-article__visuel")).isNotEmpty();
     }
 
     @Test

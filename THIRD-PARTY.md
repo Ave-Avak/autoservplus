@@ -134,7 +134,7 @@ produite avec la police, et le SVG ne dépend plus d'aucune police installée.
 
 ## Heroicons 2.2.0
 
-`src/main/resources/templates/fragments/icones.html` : dix icônes (neuf en contour de 24 px,
+`src/main/resources/templates/fragments/icones.html` : quatorze icônes (treize en contour de 24 px,
 une étoile pleine) recopiées telles quelles, tracés compris, depuis le paquet `heroicons`
 2.2.0 de Tailwind Labs (https://github.com/tailwindlabs/heroicons), licence MIT. Archive
 lue : `heroicons-2.2.0.tgz` du registre npm, SHA-256

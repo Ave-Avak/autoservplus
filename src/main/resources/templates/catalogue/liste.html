@@ -76,6 +76,12 @@
                          th:height="${photo.dimensionsConnues()} ? ${photo.hauteur()} : null"
                          th:attr="loading=${etat.index >= 3} ? 'lazy' : null"
                          decoding="async">
+                    <div th:if="${photo == null}" class="carte-article__visuel" aria-hidden="true">
+                        <svg th:replace="${rayon == null} ? ~{fragments/icones :: cle}
+                                         : (${rayon.name() == 'ACCESSOIRES'} ? ~{fragments/icones :: sac}
+                                         : (${rayon.name() == 'ENTRETIEN'} ? ~{fragments/icones :: eclat}
+                                         : ~{fragments/icones :: outil}))"></svg>
+                    </div>
                     <div class="carte-article__corps">
                         <!--/* Catégorie tue quand elle répète le nom (« Diagnostic électronique »
                              sous « Diagnostic électronique », constat U3 de l'étape 0). */-->

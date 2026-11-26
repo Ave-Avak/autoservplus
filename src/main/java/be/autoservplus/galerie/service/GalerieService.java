@@ -58,32 +58,26 @@ public class GalerieService {
     }
 
     /**
-     * Vignette de chaque prestation d'une liste : sa première photo, à défaut le visuel de
-     * sa catégorie. Deux requêtes pour toute la liste, et non deux par carte.
+     * Vignette de chaque prestation d'une liste : sa première photo propre, en une requête
+     * pour toute la liste. Sans photo propre, rien : le visuel de catégorie, répété de carte
+     * en carte dans une liste, ne disait plus rien de l'article. La carte montre alors un
+     * pictogramme du rayon. La fiche garde le visuel de catégorie, seul à l'écran.
      */
     public Map<UUID, PhotoVue> vignettesDePrestations(Collection<UUID> references) {
-        if (references.isEmpty()) {
-            return Map.of();
-        }
-        return premieres(photos.desPrestations(references), photos.visuelsDesCategoriesDePrestations(references));
+        return references.isEmpty() ? Map.of() : premieres(photos.desPrestations(references));
     }
 
-    /** Vignette de chaque pièce d'une liste, sur la même règle que la fiche. */
+    /** Vignette de chaque pièce d'une liste, sur la même règle. */
     public Map<UUID, PhotoVue> vignettesDePieces(Collection<UUID> references) {
-        if (references.isEmpty()) {
-            return Map.of();
-        }
-        return premieres(photos.desPieces(references), photos.visuelsDesCategoriesDePieces(references));
+        return references.isEmpty() ? Map.of() : premieres(photos.desPieces(references));
     }
 
-    /** La première photo propre de chaque fiche, puis le visuel de catégorie des autres. */
-    private static Map<UUID, PhotoVue> premieres(List<Object[]> propres, List<Object[]> deCategorie) {
+    /** La première photo propre de chaque fiche. */
+    private static Map<UUID, PhotoVue> premieres(List<Object[]> propres) {
         Locale langue = LanguesSupportees.plusProche(LocaleContextHolder.getLocale());
         Map<UUID, PhotoVue> vignettes = new HashMap<>();
-        for (List<Object[]> lignes : List.of(propres, deCategorie)) {
-            for (Object[] ligne : lignes) {
-                vignettes.putIfAbsent((UUID) ligne[0], PhotoVue.de((Photo) ligne[1], langue));
-            }
+        for (Object[] ligne : propres) {
+            vignettes.putIfAbsent((UUID) ligne[0], PhotoVue.de((Photo) ligne[1], langue));
         }
         return vignettes;
     }

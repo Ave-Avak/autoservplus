@@ -106,6 +106,9 @@
                          th:src="${photo.vignette()} ? @{/images/galerie/{p}/vignette(p=${photo.reference()})} : @{/images/galerie/{p}(p=${photo.reference()})}"
                          th:width="${photo.dimensionsConnues()} ? ${photo.largeur()} : null"
                          th:height="${photo.dimensionsConnues()} ? ${photo.hauteur()} : null">
+                    <div th:if="${photo == null}" class="tarif__visuel" aria-hidden="true">
+                        <svg th:replace="~{fragments/icones :: cle}"></svg>
+                    </div>
                     <div class="tarif__corps">
                     <h3 class="tarif__nom">
                         <a th:href="@{${prestation.chemin()}}" th:text="${prestation.libelle()}"
