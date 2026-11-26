@@ -122,11 +122,11 @@ class CatalogueMultilingueIT extends SocleIntegration {
     void ficheAnglaise() throws Exception {
         Document fiche = ouvrir("/pieces/" + traduite.getReference(), Locale.ENGLISH);
 
-        assertThat(fiche.title()).isEqualTo("Oil filter zqx | AutoServ+");
+        assertThat(fiche.title()).isEqualTo("Oil filter zqx | Bielle Bleue");
         assertThat(fiche.selectFirst("h1").text()).isEqualTo("Oil filter zqx");
         assertThat(fiche.selectFirst("h1").hasAttr("lang")).isFalse();
-        assertThat(fiche.selectFirst(".fiche-description").text()).isEqualTo("Cartridge for diesel engines");
-        Element categorie = fiche.selectFirst(".fiche-categorie");
+        assertThat(fiche.selectFirst(".fiche-article__texte p").text()).isEqualTo("Cartridge for diesel engines");
+        Element categorie = fiche.selectFirst(".carte-action__categorie");
         assertThat(categorie.text()).isEqualTo("Filtration zqx");
         assertThat(categorie.attr("lang")).isEqualTo("fr");
         assertThat(fiche.selectFirst("script[type=application/ld+json]").data()).contains("Oil filter zqx");

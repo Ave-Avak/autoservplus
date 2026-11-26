@@ -170,14 +170,14 @@ class PhotosCatalogueIT extends SocleIntegration {
         void visuelDeCategorie() throws Exception {
             UUID visuel = photoDeCategorie("t/visuel.webp", "t/visuel-480.webp", null);
 
-            Element image = fiche(piece, Locale.FRENCH).selectFirst(".galerie img");
+            Element image = fiche(piece, Locale.FRENCH).selectFirst(".fiche-galerie img");
 
             assertThat(image).isNotNull();
             assertThat(image.attr("src")).isEqualTo("/images/galerie/" + visuel);
             assertThat(image.attr("srcset"))
                     .isEqualTo("/images/galerie/" + visuel + "/vignette 480w, /images/galerie/" + visuel + " 1024w");
-            assertThat(image.attr("width")).isEqualTo("300");
-            assertThat(image.attr("height")).as("hauteur affichée déduite des dimensions").isEqualTo("225");
+            assertThat(image.attr("width")).isEqualTo("1024");
+            assertThat(image.attr("height")).as("place réservée d'après les dimensions lues au dépôt").isEqualTo("768");
         }
 
         @Test
@@ -188,7 +188,7 @@ class PhotosCatalogueIT extends SocleIntegration {
             admin.ajouterAPiece(piece, List.of(new MockMultipartFile("fichiers", "vue.png",
                     "image/png", png(8, 8))), "Vue propre");
 
-            var images = fiche(piece, Locale.FRENCH).select(".galerie img");
+            var images = fiche(piece, Locale.FRENCH).select(".fiche-galerie img");
 
             assertThat(images).hasSize(1);
             assertThat(images.getFirst().attr("src")).doesNotContain(visuel.toString());
@@ -200,8 +200,8 @@ class PhotosCatalogueIT extends SocleIntegration {
         void texteAlternatifTraduit() throws Exception {
             photoDeCategorie("t/visuel.webp", null, "Visual van de categorie");
 
-            Element neerlandais = fiche(piece, Locale.forLanguageTag("nl")).selectFirst(".galerie img");
-            Element anglais = fiche(piece, Locale.ENGLISH).selectFirst(".galerie img");
+            Element neerlandais = fiche(piece, Locale.forLanguageTag("nl")).selectFirst(".fiche-galerie img");
+            Element anglais = fiche(piece, Locale.ENGLISH).selectFirst(".fiche-galerie img");
 
             assertThat(neerlandais.attr("alt")).isEqualTo("Visual van de categorie");
             assertThat(neerlandais.hasAttr("lang")).isFalse();
