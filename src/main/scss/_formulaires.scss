@@ -1,0 +1,87 @@
+// Écrans à formulaire du site et de l'espace membre : inscription, connexion, véhicules,
+// rendez-vous, compte. Les champs sont ceux de Bootstrap (form-control, form-select,
+// form-check), mis aux couleurs du thème. Ce fichier ne pose que la colonne, l'espacement
+// et ce que Bootstrap ne connaît pas.
+
+// Une colonne de 36 rem au plus. Un champ qui ne reçoit qu'une adresse ou un nom ne gagne
+// rien à s'étirer sur 1280 px, et l'œil perd le libellé qui est à l'autre bout.
+.page-formulaire {
+  max-width: 36rem;
+  padding-top: 1rem;
+  padding-bottom: 3rem;
+}
+
+.page-formulaire__titre {
+  margin-bottom: .5rem;
+  font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.25rem);
+  font-weight: 700;
+}
+
+.page-formulaire__intro {
+  margin-bottom: 1.5rem;
+  color: $gray-600;
+}
+
+.champ-site {
+  margin-bottom: 1.25rem;
+}
+
+.form-label {
+  font-weight: 600;
+  color: $gray-800;
+}
+
+// Aide sous le champ en gris 600 sur blanc : 7,6:1. Le gris de Bootstrap (secondaire à
+// 75 % d'opacité) descendait sous 4,5:1.
+.form-text {
+  color: $gray-600;
+}
+
+// Le message d'erreur est rendu par le serveur seulement quand le champ est en faute, il
+// s'affiche donc sans attendre la classe is-invalid sur un voisin.
+.invalid-feedback {
+  display: block;
+  font-size: .9375rem;
+}
+
+.form-check-label a {
+  font-weight: 600;
+}
+
+// Bouton principal en fin de formulaire, aligné à gauche, l'action secondaire à côté.
+.actions-formulaire {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .75rem;
+  margin-top: 1.5rem;
+}
+
+// Liens d'aide sous le formulaire (mot de passe oublié, lien d'activation à redemander).
+.liens-formulaire {
+  margin: 1.5rem 0 0;
+  padding: 0;
+  list-style: none;
+
+  li + li {
+    margin-top: .5rem;
+  }
+
+  a {
+    display: inline-block;
+    padding-block: .25rem;
+  }
+}
+
+// Champ piège anti-robot (PiegeAntiBot) : retiré de l'affichage par la feuille, pas par
+// type="hidden", qu'un robot naïf saute.
+.piege {
+  display: none;
+}
+
+// Le widget Turnstile mesure 65 px de haut. La place est réservée avant son chargement
+// pour que le bouton ne descende pas sous le pointeur.
+.cf-turnstile {
+  min-height: 65px;
+  margin-top: 1rem;
+}

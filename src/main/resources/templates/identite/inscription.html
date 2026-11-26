@@ -2,98 +2,110 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title th:text="#{inscription.titre} + ' | AutoServ+'">Créer un compte | AutoServ+</title>
-  <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+  <title th:text="#{inscription.titre} + ' | ' + (${garageSite != null} ? ${garageSite.enseigne()} : 'AutoServ+')">Créer un compte | Bielle Bleue</title>
+  <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
+<main id="contenu" class="container page-formulaire" tabindex="-1">
+  <h1 class="page-formulaire__titre" th:text="#{inscription.titre}">Créer un compte</h1>
+  <p class="page-formulaire__intro">
+    <span th:text="#{inscription.deja-compte}">Déjà un compte ?</span>
+    <a th:href="@{/connexion}" th:text="#{inscription.deja-compte.lien}">Se connecter</a>
+  </p>
 
-<main id="contenu">
-  <h1 th:text="#{inscription.titre}">Créer un compte</h1>
+  <form th:action="@{/inscription}" th:object="${formulaire}" method="post" novalidate>
 
-  <form class="formulaire" th:action="@{/inscription}" th:object="${formulaire}" method="post" novalidate>
-
-    <div class="message message-erreur" th:if="${#fields.hasGlobalErrors()}" role="alert">
-      <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Erreur</p>
+    <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}" role="alert">
+      <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}">Erreur</p>
     </div>
 
-    <div class="champ">
-      <label for="prenom" th:text="#{inscription.prenom}">Prénom</label>
-      <input type="text" id="prenom" th:field="*{prenom}" th:aria-invalid="${#fields.hasErrors('prenom')} ? 'true'" autocomplete="given-name" required
+    <div class="champ-site">
+      <label class="form-label" for="prenom" th:text="#{inscription.prenom}">Prénom</label>
+      <input class="form-control" th:errorclass="is-invalid" type="text" id="prenom" th:field="*{prenom}"
+             th:aria-invalid="${#fields.hasErrors('prenom')} ? 'true'" autocomplete="given-name" required
              th:aria-describedby="${#fields.hasErrors('prenom')} ? 'erreur-prenom'">
-      <p id="erreur-prenom" role="alert" class="texte-erreur" th:if="${#fields.hasErrors('prenom')}" th:errors="*{prenom}"></p>
+      <p id="erreur-prenom" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('prenom')}" th:errors="*{prenom}"></p>
     </div>
 
-    <div class="champ">
-      <label for="nom" th:text="#{inscription.nom}">Nom</label>
-      <input type="text" id="nom" th:field="*{nom}" th:aria-invalid="${#fields.hasErrors('nom')} ? 'true'" autocomplete="family-name" required
+    <div class="champ-site">
+      <label class="form-label" for="nom" th:text="#{inscription.nom}">Nom</label>
+      <input class="form-control" th:errorclass="is-invalid" type="text" id="nom" th:field="*{nom}"
+             th:aria-invalid="${#fields.hasErrors('nom')} ? 'true'" autocomplete="family-name" required
              th:aria-describedby="${#fields.hasErrors('nom')} ? 'erreur-nom'">
-      <p id="erreur-nom" role="alert" class="texte-erreur" th:if="${#fields.hasErrors('nom')}" th:errors="*{nom}"></p>
+      <p id="erreur-nom" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('nom')}" th:errors="*{nom}"></p>
     </div>
 
-    <div class="champ">
-      <label for="email" th:text="#{inscription.email}">Adresse de courriel</label>
-      <input type="email" id="email" th:field="*{email}" th:aria-invalid="${#fields.hasErrors('email')} ? 'true'" autocomplete="email" required
+    <div class="champ-site">
+      <label class="form-label" for="email" th:text="#{inscription.email}">Adresse de courriel</label>
+      <input class="form-control" th:errorclass="is-invalid" type="email" id="email" th:field="*{email}"
+             th:aria-invalid="${#fields.hasErrors('email')} ? 'true'" autocomplete="email" required
              th:aria-describedby="${#fields.hasErrors('email')} ? 'erreur-email'">
-      <p id="erreur-email" role="alert" class="texte-erreur" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
+      <p id="erreur-email" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('email')}" th:errors="*{email}"></p>
     </div>
 
-    <div class="champ">
-      <label for="motDePasse" th:text="#{inscription.motDePasse}">Mot de passe</label>
-      <input type="password" id="motDePasse" th:field="*{motDePasse}" th:aria-invalid="${#fields.hasErrors('motDePasse')} ? 'true'"
+    <!--/* La règle du mot de passe se lit avant le champ, elle n'est pas découverte après un refus. */-->
+    <div class="champ-site">
+      <label class="form-label" for="motDePasse" th:text="#{inscription.motDePasse}">Mot de passe</label>
+      <p id="aide-mot-de-passe" class="form-text mt-0 mb-2" th:text="#{validation.motDePasse.aide}">Au moins 15 caractères. Une phrase que vous seul connaissez convient, espaces compris.</p>
+      <input class="form-control" th:errorclass="is-invalid" type="password" id="motDePasse" th:field="*{motDePasse}"
+             th:aria-invalid="${#fields.hasErrors('motDePasse')} ? 'true'"
              autocomplete="new-password" minlength="15" required
              th:aria-describedby="${#fields.hasErrors('motDePasse')} ? 'aide-mot-de-passe erreur-mot-de-passe' : 'aide-mot-de-passe'">
-      <p id="aide-mot-de-passe" class="texte-info" th:text="#{validation.motDePasse.aide}">Au moins 15 caractères. Une phrase que vous seul connaissez convient, espaces compris.</p>
-      <p id="erreur-mot-de-passe" role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motDePasse')}" th:errors="*{motDePasse}"></p>
+      <p id="erreur-mot-de-passe" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('motDePasse')}" th:errors="*{motDePasse}"></p>
     </div>
 
-    <div class="champ">
-      <label for="confirmationMotDePasse" th:text="#{inscription.confirmation}">Confirmez le mot de passe</label>
-      <input type="password" id="confirmationMotDePasse" th:field="*{confirmationMotDePasse}" th:aria-invalid="${#fields.hasErrors('confirmationMotDePasse')} ? 'true'"
-             autocomplete="new-password" required>
-      <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('confirmationMotDePasse')}"
+    <div class="champ-site">
+      <label class="form-label" for="confirmationMotDePasse" th:text="#{inscription.confirmation}">Confirmez le mot de passe</label>
+      <input class="form-control" th:errorclass="is-invalid" type="password" id="confirmationMotDePasse" th:field="*{confirmationMotDePasse}"
+             th:aria-invalid="${#fields.hasErrors('confirmationMotDePasse')} ? 'true'"
+             autocomplete="new-password" required
+             th:aria-describedby="${#fields.hasErrors('confirmationMotDePasse')} ? 'erreur-confirmation'">
+      <p id="erreur-confirmation" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('confirmationMotDePasse')}"
          th:errors="*{confirmationMotDePasse}"></p>
     </div>
 
-    <div class="champ">
-      <label for="langue" th:text="#{inscription.langue}">Langue</label>
-      <select id="langue" th:field="*{langue}">
-        <option value="fr">Français</option>
-        <option value="nl">Nederlands</option>
-        <option value="en">English</option>
+    <div class="champ-site">
+      <label class="form-label" for="langue" th:text="#{inscription.langue}">Langue</label>
+      <select class="form-select" id="langue" th:field="*{langue}">
+        <option value="fr" lang="fr">Français</option>
+        <option value="nl" lang="nl">Nederlands</option>
+        <option value="en" lang="en">English</option>
       </select>
     </div>
 
     <!--/* Case jamais cochée par le serveur, même après une erreur : l'acceptation doit
          être un geste du visiteur à chaque envoi. D'où l'absence de th:field. */-->
-    <div class="champ champ-case">
-      <input type="checkbox" id="cgv" name="cgv" value="true" required
-             th:attr="aria-describedby=${#fields.hasErrors('cgv')} ? 'cgv-erreur' : null">
-      <label for="cgv">
+    <div class="champ-site form-check" th:with="cgvEnFaute=${#fields.hasErrors('cgv')}">
+      <input class="form-check-input" th:classappend="${cgvEnFaute} ? 'is-invalid'"
+             type="checkbox" id="cgv" name="cgv" value="true" required
+             th:attr="aria-describedby=${cgvEnFaute} ? 'cgv-erreur' : null">
+      <label class="form-check-label" for="cgv">
         <span th:text="#{inscription.cgv.prefixe}">J'ai lu et j'accepte les</span>
         <a th:href="@{/cgv}" target="_blank" rel="noopener"><span th:text="#{inscription.cgv.lien}">conditions générales de vente</span>
-          <span class="visuellement-cache" th:text="#{accessibilite.nouvel-onglet}">(nouvel onglet)</span></a>
+          <span class="visually-hidden" th:text="#{accessibilite.nouvel-onglet}">(nouvel onglet)</span></a>
         <span th:text="#{inscription.cgv.version(${versionCgv})}">(version CGV-2026-03).</span>
       </label>
-      <p id="cgv-erreur" role="alert" class="texte-erreur" th:if="${#fields.hasErrors('cgv')}" th:errors="*{cgv}"></p>
+      <p id="cgv-erreur" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('cgv')}" th:errors="*{cgv}"></p>
     </div>
 
-    <p class="texte-info">
+    <p class="form-text">
       <span th:text="#{inscription.confidentialite.prefixe}">Vos données sont traitées selon notre</span>
       <a th:href="@{/confidentialite}" target="_blank" rel="noopener"><span th:text="#{inscription.confidentialite.lien}">politique de confidentialité</span>
-        <span class="visuellement-cache" th:text="#{accessibilite.nouvel-onglet}">(nouvel onglet)</span></a>.
+        <span class="visually-hidden" th:text="#{accessibilite.nouvel-onglet}">(nouvel onglet)</span></a>.
     </p>
 
-    <button type="submit" class="btn-cta" th:text="#{inscription.envoyer}">Créer mon compte</button>
-      <div th:replace="~{fragments/antibot :: pieges(${horodatageAntiBot})}"></div>
+    <div th:replace="~{fragments/antibot :: pieges(${horodatageAntiBot})}"></div>
     <div th:replace="~{fragments/antibot :: turnstile(${cleTurnstile})}"></div>
-</form>
+
+    <div class="actions-formulaire">
+      <button type="submit" class="btn btn-action btn-lg" th:text="#{inscription.envoyer}">Créer mon compte</button>
+    </div>
+  </form>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>
