@@ -105,6 +105,26 @@ class GenerateurPdfFactureTest {
     }
 
     @Test
+    @DisplayName("au nom du garage, AutoServ+ au bas de la page, milliers séparés par l'espace fine en Inter")
+    void nomDuGarageEtMilliers() throws Exception {
+        DocumentFacture facture = new DocumentFacture("2026-0043", Instant.parse("2026-08-22T14:30:00Z"),
+                "CMD-2026-0108", Instant.parse("2026-08-22T14:28:00Z"), marie(),
+                List.of(new DocumentFacture.LigneFacture("Distribution complète", 1, new BigDecimal("1000.00"),
+                        new BigDecimal("21.00"), new BigDecimal("1210.00"), null)),
+                new VentilationTva(List.of(new VentilationTva.TrancheTva(new BigDecimal("21"),
+                        new BigDecimal("1000.00"), new BigDecimal("210.00")))),
+                new BigDecimal("1000.00"), new BigDecimal("210.00"), new BigDecimal("1210.00"), Locale.FRENCH);
+
+        String texte = texteDu(generateur.engendrer(facture));
+
+        assertThat(texte).contains("Garage de démonstration")
+                .contains("Propulsé par AutoServ+")
+                // Helvetica n'a pas l'espace fine insécable que Java place entre les milliers.
+                // L'extracteur de texte ajoute une espace autour de chaque espace spéciale.
+                .satisfies(t -> assertThat(t.replace(" ", "")).contains("1\u202F210,00\u00A0€"));
+    }
+
+    @Test
     @DisplayName("porte l'identification legale complete du garage : BCE, TVA, siege, IBAN")
     void mentionsDuGarage() throws Exception {
         String texte = texteDu(generateur.engendrer(factureMultiTaux(Locale.FRENCH)));

@@ -29,6 +29,7 @@ import static be.autoservplus.facturation.service.StylePdf.cellule;
 import static be.autoservplus.facturation.service.StylePdf.celluleEntete;
 import static be.autoservplus.facturation.service.StylePdf.celluleInvisible;
 import static be.autoservplus.facturation.service.StylePdf.celluleTotal;
+import static be.autoservplus.facturation.service.StylePdf.mentionDuLogiciel;
 import static be.autoservplus.facturation.service.StylePdf.montant;
 import static be.autoservplus.facturation.service.StylePdf.nonNul;
 import static be.autoservplus.facturation.service.StylePdf.police;
@@ -69,7 +70,7 @@ public class GenerateurPdfDevis {
         ByteArrayOutputStream sortie = new ByteArrayOutputStream();
         Document pdf = new Document(PageSize.A4, 42, 42, 42, 54);
         try {
-            PdfWriter.getInstance(pdf, sortie);
+            PdfWriter.getInstance(pdf, sortie).setPageEvent(mentionDuLogiciel(libelle(langue, "site.propulse")));
             pdf.addTitle(libelle(langue, "devis.pdf.titre") + " " + devis.getNumero());
             pdf.addCreator(garage.raisonSociale());
             pdf.open();

@@ -1,5 +1,6 @@
 package be.autoservplus.legal.service;
 
+import be.autoservplus.common.pdf.PolicesPdf;
 import be.autoservplus.common.temps.FuseauGarage;
 import be.autoservplus.config.MentionsIdentiteGarage;
 import be.autoservplus.legal.domain.TypeDocumentVersionne;
@@ -7,7 +8,6 @@ import be.autoservplus.legal.service.dto.TexteArchiveVue;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Font;
-import com.lowagie.text.FontFactory;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.pdf.PdfWriter;
@@ -70,10 +70,10 @@ public class ConditionsGeneralesPdf {
             PdfWriter.getInstance(document, sortie);
             document.addTitle(lignes[0] + " " + archive.version());
             document.open();
-            Font titre = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, BLEU_MARINE);
-            Font article = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 11, BLEU_MARINE);
-            Font corps = FontFactory.getFont(FontFactory.HELVETICA, 10);
-            Font mention = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 9);
+            Font titre = PolicesPdf.police(14, Font.BOLD, BLEU_MARINE);
+            Font article = PolicesPdf.police(11, Font.BOLD, BLEU_MARINE);
+            Font corps = PolicesPdf.police(10, Font.NORMAL, Color.BLACK);
+            Font mention = PolicesPdf.police(9, Font.ITALIC, Color.BLACK);
             document.add(paragraphe(lignes[0], titre, 4));
             document.add(paragraphe(messages.getMessage("legal.version.mention", new Object[]{
                     archive.version(), DATE.format(archive.dateEffet().atZone(fuseau.zone()))},

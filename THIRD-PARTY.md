@@ -132,6 +132,20 @@ d'Inter ExtraBold (le A et le mot) et d'Inter Bold (le +), tirés des deux fichi
 ci-dessus et convertis en tracés. L'OFL laisse libre l'emploi des glyphes dans une image
 produite avec la police, et le SVG ne dépend plus d'aucune police installée.
 
+Les documents PDF (facture, note de crédit, devis, CGV, formulaire de rétractation)
+incorporent Inter depuis `src/main/resources/polices/pdf` : les TTF statiques Regular, Bold et
+Italic de la même publication 4.1 (`extras/ttf` de l'archive `Inter-4.1.zip`), réduits au jeu
+du français, du néerlandais et de l'anglais (U+0020 à U+007E, U+00A0 à U+017F, U+2019,
+U+201C à U+201E, U+2026, U+202F, U+20AC), fonctions de mise en page gardées. Leurs chiffres
+pointent vers les glyphes tabulaires d'Inter, qu'OpenPDF n'applique pas de lui-même. Même
+licence, texte complet dans `OFL.txt` à côté des fichiers.
+
+| Fichier | SHA-256 |
+|---|---|
+| `inter-regular.ttf` | `af86095c39147680d6da2c7524a86835197cb24d3627333f9d801368e29746d6` |
+| `inter-bold.ttf` | `43593f0c9efc67df7f7e161f1dcc3e5c94d8fa387063d195ccff6d9da2a84952` |
+| `inter-italic.ttf` | `e19ef471314d7433b8b5a2576a31e8d070bdbc43ebc5d9d711d71d69ff91e88f` |
+
 ## Heroicons 2.2.0
 
 `src/main/resources/templates/fragments/icones.html` : dix icônes (neuf en contour de 24 px,
