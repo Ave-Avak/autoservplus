@@ -133,9 +133,11 @@ class RendezVousMultilingueIT extends SocleIntegration {
     @DisplayName("back-office : détail et agenda dans la langue de l'administrateur")
     void ecransDuGarage() throws Exception {
         assertThat(pageDuGarage("/admin/rendez-vous/" + rdv.getReference(), "nl"))
-                .contains("Olie verversen van de test, Géométrie du test");
+                .contains("<li><span>Olie verversen van de test</span>")
+                .contains("<li><span>Géométrie du test</span>");
         assertThat(pageDuGarage("/admin/rendez-vous/" + rdv.getReference(), "fr"))
-                .contains("Vidange du test, Géométrie du test");
+                .contains("<li><span>Vidange du test</span>")
+                .contains("<li><span>Géométrie du test</span>");
 
         String agenda = mvc.perform(get("/admin/rendez-vous/agenda").param("lang", "nl")
                         .param("du", "2026-09-16").param("au", "2026-09-16")
