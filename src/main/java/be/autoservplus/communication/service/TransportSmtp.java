@@ -54,11 +54,11 @@ public class TransportSmtp implements TransportCourriel {
             }
             emetteur.send(message);
         } catch (MailException | MessagingException | UnsupportedEncodingException echec) {
-            // Le type et la cause seulement : ni corps, qui porte parfois un lien à
-            // jeton, ni adresse du destinataire.
+            // Le type et la classe de la cause seulement : ni corps, qui porte parfois un
+            // lien à jeton, ni message du relais, qui cite souvent l'adresse refusée.
             Throwable cause = racine(echec);
-            JOURNAL.warn("Courriel {} non remis au relais SMTP : {} ({})", courriel.type(),
-                    cause.getClass().getSimpleName(), cause.getMessage());
+            JOURNAL.warn("Courriel {} non remis au relais SMTP : {}", courriel.type(),
+                    cause.getClass().getSimpleName());
         }
     }
 

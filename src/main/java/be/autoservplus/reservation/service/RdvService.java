@@ -176,8 +176,10 @@ public class RdvService {
         }
 
         Rdv enregistre = inserer(rdv, poste, debut);
-        log.info("Rendez-vous {} demande par {} sur {} de {} a {}",
-                enregistre.getNumero(), email, poste.getLibelle(), debut, fin);
+        // La référence du compte et non son adresse : une donnée personnelle n'a rien à
+        // faire dans un journal d'exploitation.
+        log.info("Rendez-vous {} demandé par le compte {} sur {} de {} à {}",
+                enregistre.getNumero(), membre.getReference(), poste.getLibelle(), debut, fin);
         Instant maintenant = horloge.instant();
         if (enregistre.confirmationTientLieuDeRappel(maintenant, p.delaiRappel())) {
             rdvs.reserverRappel(enregistre.getId(), maintenant);

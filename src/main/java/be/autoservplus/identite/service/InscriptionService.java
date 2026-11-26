@@ -217,7 +217,9 @@ public class InscriptionService {
             // transactionnel, qui seul marque la transaction rollback-only. Passer un
             // jour par une auto-injection pour appeler renvoyerVerification rendrait
             // ce catch inoperant et ferait echouer le commit.
-            JOURNAL.info("Renvoi de verification sans effet : {}", refus.getMessage());
+            // La classe du refus seulement : le message d'une ressource introuvable porte
+            // l'adresse saisie, celle d'une personne qui n'a peut-être aucun compte.
+            JOURNAL.info("Renvoi de vérification sans effet : {}", refus.getClass().getSimpleName());
         }
     }
 
