@@ -56,6 +56,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @DisplayName("Connexion avec second facteur (integration)")
 class ConnexionSecondFacteurIT extends SocleIntegration {
 
+    /** Repli du code de secours ouvert, quel que soit l'ordre des attributs de la balise. */
+    private static final String REPLI_OUVERT = "(?s).*<details[^>]*\\sopen[\\s=>].*";
+
+
     private static final AtomicInteger COMPTEUR = new AtomicInteger(1);
     private static final String MOT_DE_PASSE = "phrase de passe du test d integration";
     private static final byte[] SECRET = "secret de vingt octs".getBytes();
@@ -464,11 +468,11 @@ class ConnexionSecondFacteurIT extends SocleIntegration {
         mvc.perform(get("/connexion/etape/second-facteur").session(session).locale(Locale.FRENCH))
                 .andExpect(content().string(org.hamcrest.Matchers.containsString("autocomplete=\"off\"")))
                 .andExpect(content().string(org.hamcrest.Matchers.not(
-                        org.hamcrest.Matchers.containsString("<details open"))));
+                        org.hamcrest.Matchers.matchesRegex(REPLI_OUVERT))));
 
         MvcResult refus = mvc.perform(post("/connexion/etape/second-facteur").session(session).with(csrf())
                 .locale(Locale.FRENCH).param("mode", "secours").param("code", "ZZZZ-ZZZZ")).andReturn();
-        assertThat(refus.getResponse().getContentAsString()).contains("<details open");
+        assertThat(refus.getResponse().getContentAsString()).matches(REPLI_OUVERT);
         assertThat(relire(admin).getMfaEchecs()).isEqualTo((short) 1);
 
         MvcResult accepte = mvc.perform(post("/connexion/etape/second-facteur").session(session).with(csrf())
