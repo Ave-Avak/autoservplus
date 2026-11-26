@@ -55,7 +55,7 @@ body:has(.bandeau-cookies) .pied-site {
 .bandeau-cookies__texte {
   flex: 1 1 20rem;
 
-  h2 {
+  .bandeau-cookies__titre {
     position: absolute;
     width: .0625rem;
     height: .0625rem;
@@ -184,7 +184,8 @@ body:has(.bandeau-cookies) .pied-site {
 }
 
 .cookies-categorie__finalite,
-.cookies-categorie__duree {
+.cookies-categorie__duree,
+.cookies-note {
   margin: .5rem 0 0;
   color: $gray-700;
   font-size: .875rem;
