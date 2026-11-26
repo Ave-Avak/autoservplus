@@ -126,7 +126,7 @@ public class GardeConnexion {
      * <p>Le motif refuse tout ce qui n'est pas un littéral : {@code InetAddress.getByName}
      * ne fait alors aucune résolution de nom.</p>
      */
-    static String cleIp(String ip) {
+    public static String cleIp(String ip) {
         if (ip == null || ip.isBlank()) {
             return "?";
         }

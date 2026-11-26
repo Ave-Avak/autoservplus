@@ -1,10 +1,14 @@
 package be.autoservplus.common.web;
 
+import be.autoservplus.common.debit.PlafondDepasseException;
+import org.springframework.http.HttpHeaders;
+
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -48,6 +52,16 @@ public class GestionnaireErreursGlobal {
     public void conflit(ConflitConcurrenceException e, HttpServletResponse reponse) throws IOException {
         log.info("Conflit de concurrence : {}", e.getMessage());
         reponse.sendError(HttpStatus.CONFLICT.value());
+    }
+
+    /**
+     * Plafond de requêtes atteint. {@code Retry-After} est posé avant {@code sendError},
+     * qui garde les en-têtes : la page traduite ou le corps JSON de {@code /error} suit.
+     */
+    @ExceptionHandler(PlafondDepasseException.class)
+    public void plafondAtteint(PlafondDepasseException e, HttpServletResponse reponse) throws IOException {
+        reponse.setHeader(HttpHeaders.RETRY_AFTER, Long.toString(e.secondesAvantNouvelEssai()));
+        reponse.sendError(HttpStatus.TOO_MANY_REQUESTS.value());
     }
 
     /**

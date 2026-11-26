@@ -1,5 +1,6 @@
 package be.autoservplus.rgpd.web;
 
+import be.autoservplus.common.debit.Plafonne;
 import be.autoservplus.rgpd.service.ExportDonneesService;
 import be.autoservplus.rgpd.service.ExportTropRecentException;
 import be.autoservplus.rgpd.service.ReauthentificationEchoueeException;
@@ -84,6 +85,7 @@ public class DonneesPersonnellesController {
      * document est fait pour être archivé par la personne, pas affiché dans
      * l'onglet.
      */
+    @Plafonne("export-rgpd")
     @PostMapping("/export")
     public ResponseEntity<byte[]> exporter(@AuthenticationPrincipal UserDetails membre,
                                            @RequestParam(name = "motDePasse", required = false)

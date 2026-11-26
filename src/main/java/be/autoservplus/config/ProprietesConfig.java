@@ -1,5 +1,6 @@
 package be.autoservplus.config;
 
+import be.autoservplus.common.debit.ProprietesPlafonds;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
@@ -15,6 +16,6 @@ import org.springframework.context.annotation.Configuration;
  */
 @Configuration
 @EnableConfigurationProperties({IdentiteGarage.class, MollieProprietes.class,
-        ProprietesCourriel.class})
+        ProprietesCourriel.class, ProprietesPlafonds.class})
 public class ProprietesConfig {
 }

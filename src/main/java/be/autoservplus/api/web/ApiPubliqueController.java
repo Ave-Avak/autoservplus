@@ -1,6 +1,7 @@
 package be.autoservplus.api.web;
 
 import be.autoservplus.api.web.dto.ArticlePublic;
+import be.autoservplus.common.debit.Plafonne;
 import be.autoservplus.api.web.dto.GaragePublic;
 import be.autoservplus.api.web.dto.Lien;
 import be.autoservplus.api.web.dto.PagePublique;
@@ -54,6 +55,7 @@ import java.util.Locale;
  */
 @RestController
 @RequestMapping("/api/v1")
+@Plafonne("api-publique")
 @Tag(name = "Catalogue public",
         description = "Offre commerciale du garage, en lecture seule et sans authentification.")
 public class ApiPubliqueController {

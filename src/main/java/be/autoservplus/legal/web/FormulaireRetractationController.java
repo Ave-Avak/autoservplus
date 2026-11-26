@@ -1,5 +1,6 @@
 package be.autoservplus.legal.web;
 
+import be.autoservplus.common.debit.Plafonne;
 import be.autoservplus.legal.service.FormulaireRetractation;
 import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.ContentDisposition;
@@ -38,6 +39,7 @@ public class FormulaireRetractationController {
         return "legal/formulaire-retractation";
     }
 
+    @Plafonne("pdf")
     @GetMapping("/pdf")
     public ResponseEntity<byte[]> pdf() {
         Locale langue = LocaleContextHolder.getLocale();

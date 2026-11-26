@@ -1,5 +1,6 @@
 package be.autoservplus.messagerie.web;
 
+import be.autoservplus.common.debit.Plafonne;
 import be.autoservplus.common.web.Rafraichissement;
 import be.autoservplus.messagerie.service.AdminMessagerieService;
 import be.autoservplus.messagerie.web.dto.FormulaireReponse;
@@ -89,6 +90,7 @@ public class AdminMessagerieController {
         return "admin/message-fil";
     }
 
+    @Plafonne("message-garage")
     @PostMapping("/{reference}")
     public String repondre(@AuthenticationPrincipal UserDetails administrateur,
                            @PathVariable UUID reference,

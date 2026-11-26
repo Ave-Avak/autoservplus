@@ -1,5 +1,6 @@
 package be.autoservplus.facturation.web;
 
+import be.autoservplus.common.debit.Plafonne;
 import be.autoservplus.common.web.PeriodeFiltre;
 import be.autoservplus.facturation.domain.Avoir;
 import be.autoservplus.facturation.domain.Facture;
@@ -67,12 +68,14 @@ public class AdminFacturationController {
         return "admin/avoirs";
     }
 
+    @Plafonne("pdf")
     @GetMapping("/factures/{reference}/pdf")
     public ResponseEntity<byte[]> facture(@PathVariable UUID reference) {
         Facture facture = service.facture(reference);
         return document(pdfFactures.pdfDe(facture), pdfFactures.nomDeFichier(facture));
     }
 
+    @Plafonne("pdf")
     @GetMapping("/avoirs/{reference}/pdf")
     public ResponseEntity<byte[]> avoir(@PathVariable UUID reference) {
         Avoir avoir = service.avoir(reference);

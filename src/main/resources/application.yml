@@ -260,6 +260,53 @@ autoservplus:
       profil-id: ${MOLLIE_PROFILE_ID:}
       mode-test: ${MOLLIE_MODE_TEST:true}
 
+  # Plafonds des surfaces coûteuses, appliqués par @Plafonne sur la méthode du contrôleur.
+  # Une surface comptée par compte retombe sur l'IP pour un visiteur anonyme. Toutes les
+  # limites d'une surface s'appliquent. Au-delà : 429 avec Retry-After. Voir SeauxParCle.
+  plafonds:
+    cles-max: 100000
+    surfaces:
+      # API publique en lecture, 60 requêtes par minute et par IP (F39).
+      api-publique:
+        par: ip
+        limites:
+          - { nombre: 60, periode: 1m }
+      # Mollie notifie une fois par changement de statut et rejoue en cas d'échec : le
+      # plafond est large et ne vise qu'un appel automatisé qui viendrait d'ailleurs.
+      webhook-paiement:
+        par: ip
+        limites:
+          - { nombre: 120, periode: 1m }
+      message-membre:
+        par: compte
+        limites:
+          - { nombre: 10, periode: 1m }
+          - { nombre: 60, periode: 1h }
+      message-garage:
+        par: compte
+        limites:
+          - { nombre: 60, periode: 1m }
+      pdf:
+        par: compte
+        limites:
+          - { nombre: 30, periode: 1m }
+      emission-devis:
+        par: compte
+        limites:
+          - { nombre: 20, periode: 1m }
+      depot-fichier:
+        par: compte
+        limites:
+          - { nombre: 60, periode: 1m }
+      export-rgpd:
+        par: compte
+        limites:
+          - { nombre: 3, periode: 1h }
+      import-csv:
+        par: compte
+        limites:
+          - { nombre: 5, periode: 10m }
+
   securite:
     # Cinq mots de passe faux dans les quinze minutes qui suivent le premier verrouillent
     # le compte quinze minutes (F2).

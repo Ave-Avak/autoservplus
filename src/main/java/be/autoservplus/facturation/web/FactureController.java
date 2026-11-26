@@ -1,5 +1,6 @@
 package be.autoservplus.facturation.web;
 
+import be.autoservplus.common.debit.Plafonne;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.service.FactureService;
 import be.autoservplus.facturation.service.PdfFactureService;
@@ -45,6 +46,7 @@ public class FactureController {
         this.pdf = pdf;
     }
 
+    @Plafonne("pdf")
     @GetMapping("/{reference}/pdf")
     public ResponseEntity<byte[]> telecharger(@AuthenticationPrincipal UserDetails membre,
                                               @PathVariable UUID reference) {

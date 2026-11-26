@@ -1,5 +1,7 @@
 package be.autoservplus.vente.web;
 
+import be.autoservplus.common.debit.Plafonne;
+
 import be.autoservplus.vente.service.IssueRelecture;
 import be.autoservplus.vente.service.PaiementService;
 import org.slf4j.Logger;
@@ -9,6 +11,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.regex.Pattern;
 
 /**
  * Notifications entrantes du prestataire de paiement (convention Mollie : un
@@ -52,8 +56,22 @@ public class PaiementWebhookController {
         this.service = service;
     }
 
+    /**
+     * Forme d'un identifiant de paiement Mollie ({@code tr_} suivi de lettres et de chiffres),
+     * soulignés admis pour le prestataire fictif. Vérifiée avant toute lecture en base, et
+     * seule une valeur conforme est recopiée au journal : un retour à la ligne glissé dans
+     * le champ y écrirait sinon une fausse ligne.
+     */
+    static final Pattern FORMAT_IDENTIFIANT = Pattern.compile("tr_[A-Za-z0-9_]{1,64}");
+
+    @Plafonne("webhook-paiement")
     @PostMapping("/paiement")
     public ResponseEntity<Void> notificationPaiement(@RequestParam("id") String id) {
+        if (!FORMAT_IDENTIFIANT.matcher(id).matches()) {
+            // Même réponse qu'une référence inconnue : la forme attendue ne se devine pas.
+            JOURNAL.info("Notification du prestataire refusée, identifiant hors format.");
+            return ResponseEntity.notFound().build();
+        }
         IssueRelecture issue = service.traiterNotification(id);
         // L'identifiant du paiement chez le prestataire, et rien d'autre : ni montant,
         // ni membre. C'est la seule donnée par laquelle cette ligne se rapproche de

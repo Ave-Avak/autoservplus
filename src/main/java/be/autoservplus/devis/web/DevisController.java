@@ -1,5 +1,6 @@
 package be.autoservplus.devis.web;
 
+import be.autoservplus.common.debit.Plafonne;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.devis.service.DevisService;
 import be.autoservplus.devis.service.dto.PdfDevis;
@@ -46,6 +47,7 @@ public class DevisController {
         return "devis/liste";
     }
 
+    @Plafonne("emission-devis")
     @PostMapping
     public String emettre(@AuthenticationPrincipal UserDetails membre,
                           @RequestParam UUID vehicule,
@@ -60,6 +62,7 @@ public class DevisController {
         }
     }
 
+    @Plafonne("pdf")
     @GetMapping("/{reference}/pdf")
     public ResponseEntity<byte[]> telecharger(@AuthenticationPrincipal UserDetails membre,
                                               @PathVariable UUID reference) {

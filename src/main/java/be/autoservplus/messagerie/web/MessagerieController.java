@@ -1,5 +1,6 @@
 package be.autoservplus.messagerie.web;
 
+import be.autoservplus.common.debit.Plafonne;
 import be.autoservplus.common.web.Rafraichissement;
 import be.autoservplus.messagerie.service.MessagerieService;
 import be.autoservplus.messagerie.web.dto.FormulaireFil;
@@ -66,6 +67,7 @@ public class MessagerieController {
         return "messagerie/nouveau";
     }
 
+    @Plafonne("message-membre")
     @PostMapping("/nouveau")
     public String ouvrir(@AuthenticationPrincipal UserDetails membre,
                          @Valid @ModelAttribute("formulaire") FormulaireFil formulaire,
@@ -147,6 +149,7 @@ public class MessagerieController {
         return "fragments/entete :: compteurMessages";
     }
 
+    @Plafonne("message-membre")
     @PostMapping("/{reference}")
     public String repondre(@AuthenticationPrincipal UserDetails membre,
                            @PathVariable UUID reference,

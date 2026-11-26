@@ -1,5 +1,6 @@
 package be.autoservplus.galerie.web;
 
+import be.autoservplus.common.debit.Plafonne;
 import be.autoservplus.galerie.service.AdminGalerieService;
 import be.autoservplus.galerie.service.GalerieService;
 import be.autoservplus.galerie.service.TypeGalerie;
@@ -63,6 +64,7 @@ public class AdminGalerieController {
         return "admin/galerie";
     }
 
+    @Plafonne("depot-fichier")
     @PostMapping("/{type}/{reference}")
     public String ajouter(@PathVariable String type,
                           @PathVariable UUID reference,

@@ -1,5 +1,6 @@
 package be.autoservplus.facturation.web;
 
+import be.autoservplus.common.debit.Plafonne;
 import be.autoservplus.facturation.domain.Avoir;
 import be.autoservplus.facturation.service.AvoirService;
 import be.autoservplus.facturation.service.PdfAvoirService;
@@ -47,6 +48,7 @@ public class AvoirController {
         this.pdf = pdf;
     }
 
+    @Plafonne("pdf")
     @GetMapping("/{reference}/pdf")
     public ResponseEntity<byte[]> telecharger(@AuthenticationPrincipal UserDetails membre,
                                               @PathVariable UUID reference) {

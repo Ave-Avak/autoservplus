@@ -1,5 +1,6 @@
 package be.autoservplus.importcsv.web;
 
+import be.autoservplus.common.debit.Plafonne;
 import be.autoservplus.importcsv.service.ImportCatalogueService;
 import be.autoservplus.importcsv.service.ImportRefuseException;
 import be.autoservplus.importcsv.service.dto.RapportImport;
@@ -51,6 +52,7 @@ public class ImportCatalogueController {
         return VUE;
     }
 
+    @Plafonne("import-csv")
     @PostMapping("/{type}")
     public String importer(@PathVariable String type,
                            @RequestParam("fichier") MultipartFile fichier,
