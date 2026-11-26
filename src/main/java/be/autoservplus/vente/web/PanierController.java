@@ -8,6 +8,7 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.reservation.service.VehiculeService;
 import be.autoservplus.vente.service.PanierService;
 import be.autoservplus.vente.service.PieceInactiveException;
+import be.autoservplus.vente.service.PrestationInactiveException;
 import be.autoservplus.vente.service.StockInsuffisantException;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -142,7 +143,7 @@ public class PanierController {
         } catch (StockInsuffisantException e) {
             redirection.addFlashAttribute("erreur",
                     msg("panier.erreur.stock", e.getQuantiteDisponible()));
-        } catch (PieceInactiveException e) {
+        } catch (PieceInactiveException | PrestationInactiveException e) {
             redirection.addFlashAttribute("erreur", msg("panier.erreur.piece-inactive"));
         } catch (IllegalArgumentException e) {
             redirection.addFlashAttribute("erreur", msg("panier.erreur.quantite"));

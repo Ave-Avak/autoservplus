@@ -2,6 +2,7 @@ package be.autoservplus.vente.service;
 
 import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.Piece;
+import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.PieceRepository;
 import be.autoservplus.common.exception.ConflitConcurrenceException;
@@ -300,6 +301,37 @@ class PanierServiceTest {
             PanierVue vue = service.modifierQuantite(EMAIL, 1L, 1);
             assertThat(vue.lignes().get(0).quantite()).isEqualTo((short) 1);
             assertThat(panier.nombreArticles()).isEqualTo(1);
+        }
+
+        @Test
+        @DisplayName("ligne de prestation : quantité modifiée sans contrôle de stock")
+        void ligneDePrestation() {
+            Panier panier = panierExistant();
+            avecEcriture();
+            Prestation vidange = new Prestation(new Categorie("ENT", "Entretien", TypeCategorie.SERVICE),
+                    "ENT-001", "Vidange", new BigDecimal("80.00"), 60);
+            ReflectionTestUtils.setField(panier.ajouterService(vidange, 1), "id", 2L);
+
+            PanierVue vue = service.modifierQuantite(EMAIL, 2L, 3);
+
+            assertThat(vue.lignes().get(0).quantite()).isEqualTo((short) 3);
+            verifyNoInteractions(pieces);
+        }
+
+        @Test
+        @DisplayName("prestation retirée du catalogue : réduire reste permis, augmenter est refusé")
+        void prestationInactiveNAugmentePas() {
+            Panier panier = panierExistant();
+            avecEcriture();
+            Prestation vidange = new Prestation(new Categorie("ENT", "Entretien", TypeCategorie.SERVICE),
+                    "ENT-001", "Vidange", new BigDecimal("80.00"), 60);
+            ReflectionTestUtils.setField(panier.ajouterService(vidange, 2), "id", 2L);
+            vidange.desactiver();
+
+            assertThatThrownBy(() -> service.modifierQuantite(EMAIL, 2L, 3))
+                    .isInstanceOf(PrestationInactiveException.class);
+            assertThat(service.modifierQuantite(EMAIL, 2L, 1).lignes().get(0).quantite())
+                    .isEqualTo((short) 1);
         }
 
         @Test
