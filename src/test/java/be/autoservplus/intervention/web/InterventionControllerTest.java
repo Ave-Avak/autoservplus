@@ -159,8 +159,8 @@ class InterventionControllerTest {
     @DisplayName("GET /validation rend l'ecran de decision pour le proprietaire")
     void ecranValidation() throws Exception {
         DemandeValidationVue demande = new DemandeValidationVue(REF, "INT-2026-0001",
-                "VW Golf (1-ABC-123)", "49,00 €", "138,00 €", "166,98 €", "89,00 €", null,
-                List.of(new DemandeValidationVue.LigneProposeeVue("Plaquettes", "1", "89,00 €")));
+                "VW Golf (1-ABC-123)", "59,29 €", "49,00 €", "107,69 €", "89,00 €", "166,98 €", "138,00 €", null,
+                List.of(new DemandeValidationVue.LigneProposeeVue("Plaquettes", "1", "107,69 €", "89,00 €")));
         doReturn(demande).when(service).demandeValidation(REF, "marie@exemple.be");
 
         mvc.perform(get("/mes-interventions/{ref}/validation", REF))

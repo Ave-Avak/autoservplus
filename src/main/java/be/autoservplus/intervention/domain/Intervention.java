@@ -557,6 +557,19 @@ public class Intervention extends BaseEntity {
     }
 
     /**
+     * Devis initial taxe comprise, sommé ligne à ligne comme {@link #totalProposeTvac()}, pour
+     * que l'écart annoncé au membre soit la différence de deux montants calculés de la même
+     * façon. Le seuil de RM-15 reste mesuré hors TVA sur {@link #devisReferenceHtva()}.
+     */
+    public BigDecimal totalDevisInitialTvac() {
+        return lignes.stream()
+                .filter(l -> !l.isAjouteeEnCours())
+                .map(LigneIntervention::totalTvac)
+                .reduce(BigDecimal.ZERO, BigDecimal::add)
+                .setScale(2, RoundingMode.HALF_UP);
+    }
+
+    /**
      * Montant de reference de RM-15 : le devis fige, ou a defaut le devis recalcule
      * depuis les lignes d origine. Le repli couvre les interventions creees avant que
      * la colonne ne soit mappee. Sans lui, un {@code null} rendrait tout seuil

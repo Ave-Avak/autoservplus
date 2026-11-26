@@ -826,14 +826,15 @@ public class InterventionService {
                             it.getNumero(),
                             "%s %s (%s)".formatted(vehicule.getMarque(), vehicule.getModele(),
                                     vehicule.getPlaque()),
-                            FormatageRdv.euros(it.devisReferenceHtva(), langue),
-                            FormatageRdv.euros(it.totalProposeHtva(), langue),
+                            FormatageRdv.euros(it.totalDevisInitialTvac(), langue),
+                            FormatageRdv.euros(it.totalDevisInitialHtva(), langue),
                             FormatageRdv.euros(it.totalProposeTvac(), langue),
+                            FormatageRdv.euros(it.totalProposeHtva(), langue),
                             it.lignesEnAttente().stream()
                                     .map(l -> "- %s x%s : %s"
                                             .formatted(l.getLibelleFige(),
                                                     FormatageQuantite.lisible(l.getQuantite(), l.getUnite(), langue),
-                                                    FormatageRdv.euros(l.totalHtva(), langue)))
+                                                    FormatageRdv.euros(l.totalTvac(), langue)))
                                     .toList(),
                             "/mes-interventions/" + it.getReference() + "/validation"));
         } catch (RuntimeException e) {

@@ -308,8 +308,8 @@ public class CourrielSortant implements ServiceCourriel {
                                                     DetailsDepassementCourriel depassement) {
         auCompte("depassement", destinataire, null, depassement.numeroIntervention(),
                 depassement.vehicule(),
-                depassement.montantInitial(), depassement.montantPropose(),
-                depassement.montantAPayer(),
+                depassement.montantInitial(), depassement.montantInitialHtva(),
+                depassement.montantAPayer(), depassement.montantPropose(),
                 String.join("\n", depassement.lignesEnAttente()),
                 liens.vers(depassement.cheminValidation()));
     }

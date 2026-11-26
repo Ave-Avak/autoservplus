@@ -316,8 +316,11 @@ class InterventionServiceTest {
             assertThat(details.getValue().numeroIntervention()).isEqualTo("INT-2026-0001");
             assertThat(details.getValue().vehicule()).isEqualTo("VW Golf (1-ABC-123)");
             // 49,00 et 89,00 hors TVA à 21 % : 59,29 et 107,69, soit 166,98 à payer.
-            assertThat(details.getValue().montantPropose()).startsWith("138,00");
+            assertThat(details.getValue().montantInitial()).startsWith("59,29");
+            assertThat(details.getValue().montantInitialHtva()).startsWith("49,00");
             assertThat(details.getValue().montantAPayer()).startsWith("166,98");
+            assertThat(details.getValue().montantPropose()).startsWith("138,00");
+            assertThat(details.getValue().lignesEnAttente()).singleElement().asString().contains("Plaquettes x1 : 107,69");
             assertThat(details.getValue().cheminValidation())
                     .isEqualTo("/mes-interventions/" + it.getReference() + "/validation");
             // La notification de l'espace membre part de cet événement, après la validation.

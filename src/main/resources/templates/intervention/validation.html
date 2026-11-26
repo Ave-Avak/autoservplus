@@ -34,16 +34,18 @@
     <h2 th:text="#{intervention.validation.soumis}">Travaux soumis à votre accord</h2>
     <div class="defilement" tabindex="0" role="region" aria-labelledby="legende-intervention-validation">
         <table class="tableau">
-            <caption id="legende-intervention-validation" class="texte-info" th:text="#{intervention.validation.legende}">Montants hors TVA, comme votre devis initial.</caption>
+            <caption id="legende-intervention-validation" class="texte-info" th:text="#{intervention.validation.legende}">Montants TVA comprise, montants hors TVA en regard.</caption>
             <thead>
                 <tr><th scope="col" th:text="#{intervention.validation.designation}">Désignation</th>
                     <th scope="col" th:text="#{intervention.suivi.quantite}">Quantité</th>
-                    <th scope="col" th:text="#{intervention.validation.montant}">Montant HTVA</th></tr>
+                    <th scope="col" th:text="#{intervention.validation.montant}">Montant TVA comprise</th>
+                    <th scope="col" th:text="#{intervention.validation.montant-htva}">Hors TVA</th></tr>
             </thead>
             <tbody>
                 <tr th:each="l : ${demande.lignesEnAttente()}">
                     <td th:text="${l.libelle()}">Remplacement plaquettes</td>
                     <td th:text="${l.quantite()}">1</td>
+                    <td th:text="${l.totalTvac()}">107,69 €</td>
                     <td th:text="${l.totalHtva()}">89,00 €</td>
                 </tr>
             </tbody>
@@ -54,19 +56,18 @@
     <dl class="vehicule-details">
         <div>
             <dt th:text="#{intervention.validation.devis-initial}">Devis initial (accepté à la réservation)</dt>
-            <dd th:text="${demande.devisInitial()}">49,00 €</dd>
+            <dd><span th:text="${demande.devisInitialTvac()}">59,29 €</span>
+                <small th:text="#{intervention.validation.hors-tva(${demande.devisInitialHtva()})}">soit 49,00 € hors TVA</small></dd>
         </div>
         <div>
             <dt th:text="#{intervention.validation.supplement}">Supplément proposé</dt>
-            <dd th:text="${demande.ecart()}">89,00 €</dd>
-        </div>
-        <div>
-            <dt th:text="#{intervention.validation.nouveau-total}">Nouveau total si vous acceptez</dt>
-            <dd th:text="${demande.totalPropose()}">138,00 €</dd>
+            <dd><span th:text="${demande.ecartTvac()}">107,69 €</span>
+                <small th:text="#{intervention.validation.hors-tva(${demande.ecartHtva()})}">soit 89,00 € hors TVA</small></dd>
         </div>
         <div>
             <dt th:text="#{intervention.validation.nouveau-total-tvac}">Montant à payer, TVA comprise, si vous acceptez</dt>
-            <dd><strong th:text="${demande.totalProposeTvac()}">166,98 €</strong></dd>
+            <dd><strong th:text="${demande.totalProposeTvac()}">166,98 €</strong>
+                <small th:text="#{intervention.validation.hors-tva(${demande.totalProposeHtva()})}">soit 138,00 € hors TVA</small></dd>
         </div>
     </dl>
 

@@ -246,6 +246,13 @@ class InterventionTemplatesIT extends SocleIntegration {
                 // C'est la seule vue membre qui expose un prix a la ligne : sans lui,
                 // l'accord ne serait pas eclaire.
                 .andExpect(content().string(containsString("89,00")))
+                // Prix annoncés TVA comprise, hors TVA en regard : ligne 107,69, devis initial
+                // 59,29, montant à payer 166,98.
+                .andExpect(content().string(containsString("Montant TVA comprise")))
+                .andExpect(content().string(containsString("107,69")))
+                .andExpect(content().string(containsString("59,29")))
+                .andExpect(content().string(containsString("166,98")))
+                .andExpect(content().string(not(containsString("Montants hors TVA"))))
                 .andExpect(content().string(containsString("J&#39;accepte ces travaux")))
                 .andExpect(content().string(containsString("Je refuse")));
     }
