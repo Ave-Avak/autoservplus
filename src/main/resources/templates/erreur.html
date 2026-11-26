@@ -1,27 +1,35 @@
 <!DOCTYPE html>
-<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org"
+      xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${titre} + ' | AutoServ+'">Erreur | AutoServ+</title>
+    <!--/* Le titre se passe de l'enseigne si l'identité du garage manque : la page d'erreur
+         doit s'afficher même quand la configuration est en cause. */-->
+    <title th:text="${garageSite != null} ? ${titre} + ' | ' + ${garageSite.enseigne()} : ${titre}">Page introuvable | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
-<header th:replace="~{fragments/entete :: entete}"></header>
-<main id="contenu">
-    <h1 th:text="${titre}">Page introuvable</h1>
-    <p th:text="${messageErreur}">La page demandée n'existe pas ou ne vous appartient pas.</p>
-    <p class="actions-page">
-        <a sec:authorize="hasRole('ADMINISTRATEUR')" th:href="@{/admin}"
+
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
+
+<!--/* Ce qui s'est passé en mots simples, puis la suite : jamais d'impasse, et le gabarit
+     du site, pour que le visiteur sache qu'il est toujours chez le garage (NN/g, messages
+     d'erreur). Aucun code ni détail technique. */-->
+<main id="contenu" class="container page-formulaire" tabindex="-1">
+    <h1 class="page-formulaire__titre" th:text="${titre}">Page introuvable</h1>
+    <p class="page-formulaire__intro" th:text="${messageErreur}">La page demandée n'existe pas ou ne vous appartient pas.</p>
+    <div class="actions-formulaire">
+        <a class="btn btn-action btn-lg" sec:authorize="hasRole('ADMINISTRATEUR')" th:href="@{/admin}"
            th:text="#{erreur.retour-back-office}">Retour au back-office</a>
-        <a sec:authorize="isAuthenticated() and !authentication.authorities.isEmpty() and !hasRole('ADMINISTRATEUR')"
+        <a class="btn btn-action btn-lg" sec:authorize="isAuthenticated() and !authentication.authorities.isEmpty() and !hasRole('ADMINISTRATEUR')"
            th:href="@{/mon-compte}" th:text="#{erreur.retour-compte}">Retour à mon compte</a>
-        <a sec:authorize="!isAuthenticated() or authentication.authorities.isEmpty()"
+        <a class="btn btn-action btn-lg" sec:authorize="!isAuthenticated() or authentication.authorities.isEmpty()"
            th:href="@{/}" th:text="#{erreur.retour-accueil}">Retour à l'accueil</a>
-    </p>
+        <a class="btn btn-outline-primary btn-lg" th:href="@{/contact}" th:text="#{nav.contact}">Contact</a>
+    </div>
 </main>
-<div th:replace="~{fragments/pied :: pied}"></div>
+
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>
