@@ -24,11 +24,16 @@ prouverait rien de celle qui part en production : elle validerait la répétitio
   `test_...`, ou un jeton d'organisation `access_...` accompagné de son identifiant de
   profil `pfl_...`.
 
-Le compte Mollie n'est pas indispensable. Sans `MOLLIE_API_KEY`, l'application se
-rabat sur une passerelle bouchonnée qui simule le parcours de bout en bout : on peut
-payer une commande, obtenir sa facture et demander un remboursement sans compte chez
-le prestataire. La page de paiement s'annonce alors comme simulée. Le choix se fait
-sur la présence de la clé, pas sur le profil actif.
+Sous `dev` et `demo`, le compte Mollie n'est pas indispensable. Sans `MOLLIE_API_KEY`,
+l'application se rabat sur une passerelle bouchonnée qui simule le parcours de bout en
+bout : on peut payer une commande, obtenir sa facture et demander un remboursement sans
+compte chez le prestataire. La page de paiement s'annonce alors comme simulée.
+
+Sous `prod`, le démarrage est refusé sans `MOLLIE_API_KEY`, avec une clé `test_...`, ou
+avec un jeton d'accès et `MOLLIE_MODE_TEST=true`. Sur la page de test de Mollie, le payeur
+choisit lui-même l'issue du paiement, et une facture numérotée suivrait sans encaissement.
+Une répétition sous `prod` demande donc un compte Mollie activé en mode réel. Le paiement
+de test s'éprouve sous `demo`.
 
 Ni Java ni Maven n'ont à être installés : la compilation a lieu dans l'image.
 
@@ -722,9 +727,10 @@ démonstration.
   pas de relais, et un serveur de démonstration écrit ses courriels au journal ou les
   remet à Mailtrap.
 
-- Mollie fonctionne en mode test. `MOLLIE_MODE_TEST=true` : aucun mouvement d'argent
-  réel. Clé absente, une passerelle bouchonnée prend le relais et la chaîne marchande
-  reste parcourable de bout en bout.
+- Mollie fonctionne en mode test sur le serveur de démonstration, sous `demo` :
+  `MOLLIE_MODE_TEST=true`, aucun mouvement d'argent réel. Clé absente, une passerelle
+  bouchonnée prend le relais et la chaîne marchande reste parcourable de bout en bout.
+  Sous `prod`, ni la clé absente ni le mode test ne sont admis.
 
 - Aucun webhook de remboursement. Un remboursement Mollie naît `pending` et n'est
   `refunded` qu'après exécution bancaire. Le contrat retenu est synchrone : le

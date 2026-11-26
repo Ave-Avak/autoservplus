@@ -3,6 +3,8 @@ package be.autoservplus.config;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -120,6 +122,29 @@ public record MollieProprietes(
                     (variable MOLLIE_PROFILE_ID), lisible dans le tableau de bord Mollie \
                     sous la forme pfl_..., ou employez une cle API test_/live_, qui \
                     porte le profil elle-meme.""");
+        }
+    }
+
+    /**
+     * Refuse sous {@code prod} tout ce qui laisserait un membre obtenir une facture sans
+     * encaissement réel (RM-20) : aucun identifiant, et le repli simulé prendrait la main,
+     * une clé de test, ou un jeton d'accès en mode test. Dans les deux derniers cas, la page
+     * de test de Mollie laisse le payeur choisir lui-même l'issue du paiement.
+     *
+     * @throws IllegalStateException avec toutes les fautes relevées
+     */
+    public void verifierPourProduction() {
+        List<String> fautes = new ArrayList<>();
+        if (!estConfigure()) {
+            fautes.add("MOLLIE_API_KEY absente ou vide : le paiement simule prendrait le relais");
+        } else if (jeton().startsWith("test_")) {
+            fautes.add("MOLLIE_API_KEY est une cle de test (test_...)");
+        } else if (exigeContexteOrganisation() && modeTest) {
+            fautes.add("MOLLIE_MODE_TEST doit valoir false avec un jeton d acces");
+        }
+        if (!fautes.isEmpty()) {
+            throw new IllegalStateException("Paiement refuse sous le profil prod : "
+                    + String.join(", ", fautes) + ".");
         }
     }
 }
