@@ -74,22 +74,18 @@ $bordure-douce: tint-color($marine, 78%);
   font-weight: 600;
 }
 
-// Heures montrées, pas des boutons : un fond teinté sans bordure d'action.
+// Heures en texte : le formulaire de rendez-vous ne reçoit pas une heure choisie ici, et
+// une pastille qui a l'air d'un bouton sans en être un brouille la lecture de tout ce qui
+// est cliquable sur la page (NN/g, signifiants). Le lien qui suit mène au formulaire.
 .carte-creneaux__heures {
   display: flex;
   flex-wrap: wrap;
-  gap: .5rem;
+  gap: .25rem 1.25rem;
   margin: 0;
   padding: 0;
   list-style: none;
-
-  li {
-    padding: .25rem .75rem;
-    background: tint-color($success, 90%);
-    color: $success;
-    font-weight: 600;
-    border-radius: $border-radius-sm;
-  }
+  color: $gray-900;
+  font-weight: 600;
 }
 
 // Bandeau des engagements, sur le bleu marine.
