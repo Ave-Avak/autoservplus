@@ -111,7 +111,7 @@ class FactureServiceTest {
             List<LignePanier> lignes = lignes(piece("P-1", "12.40", "21.00"), 2);
             Commande commande = commandePayee(new BigDecimal("24.80"), new BigDecimal("5.21"));
             when(factures.findByCommande(commande)).thenReturn(Optional.empty());
-            when(commandes.lignesDe(commande)).thenReturn(lignes);
+            when(commandes.toutesLesLignesDe(commande)).thenReturn(lignes);
             numeroAttribue("2026-0001", (short) 2026, 1);
             when(factures.save(any(Facture.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -129,7 +129,7 @@ class FactureServiceTest {
             List<LignePanier> lignes = lignes(piece("P-1", "12.40", "21.00"), 2);
             Commande commande = commandePayeeAvec(lignes);
             when(factures.findByCommande(commande)).thenReturn(Optional.empty());
-            when(commandes.lignesDe(commande)).thenReturn(lignes);
+            when(commandes.toutesLesLignesDe(commande)).thenReturn(lignes);
             numeroAttribue("2026-0001", (short) 2026, 1);
             when(factures.save(any(Facture.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -147,7 +147,7 @@ class FactureServiceTest {
             List<LignePanier> lignes = lignes(piece("P-1", "19.99", "21.00"), 2);
             Commande commande = commandePayeeAvec(lignes);
             when(factures.findByCommande(commande)).thenReturn(Optional.empty());
-            when(commandes.lignesDe(commande)).thenReturn(lignes);
+            when(commandes.toutesLesLignesDe(commande)).thenReturn(lignes);
             numeroAttribue("2026-0001", (short) 2026, 1);
             when(factures.save(any(Facture.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -176,7 +176,7 @@ class FactureServiceTest {
             List<LignePanier> lignes = lignes(piece("P-1", "19.99", "21.00"), 2);
             Commande commande = commandePayeeAvec(lignes);
             when(factures.findByCommande(commande)).thenReturn(Optional.empty());
-            when(commandes.lignesDe(commande)).thenReturn(lignes);
+            when(commandes.toutesLesLignesDe(commande)).thenReturn(lignes);
             numeroAttribue("2026-0001", (short) 2026, 1);
             when(factures.save(any(Facture.class))).thenAnswer(i -> i.getArgument(0));
 
@@ -192,7 +192,7 @@ class FactureServiceTest {
                     piece("P-2", "50.00", "6.00"), 1);
             Commande commande = commandePayeeAvec(lignes);
             when(factures.findByCommande(commande)).thenReturn(Optional.empty());
-            when(commandes.lignesDe(commande)).thenReturn(lignes);
+            when(commandes.toutesLesLignesDe(commande)).thenReturn(lignes);
             numeroAttribue("2026-0002", (short) 2026, 2);
             when(factures.save(any(Facture.class))).thenAnswer(i -> i.getArgument(0));
 

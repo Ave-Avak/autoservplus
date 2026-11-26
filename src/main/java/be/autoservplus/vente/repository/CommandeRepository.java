@@ -65,7 +65,8 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
      * interne : une ligne de service, dont {@code piece} est nul, en est exclue. C'est
      * voulu : cette requête sert le décrément de stock, qui ne concerne que des pièces,
      * et son tri par identifiant de pièce n'aurait pas de sens autrement. Pour les
-     * prestations, voir {@link #lignesServiceDe}.</p>
+     * prestations, voir {@link #lignesServiceDe}. Pour un document qui doit porter chaque
+     * ligne (facture, note de crédit, détail de la commande), voir {@link #toutesLesLignesDe}.</p>
      */
     @Query("""
             SELECT l FROM LignePanier l
@@ -90,6 +91,24 @@ public interface CommandeRepository extends JpaRepository<Commande, Long> {
             ORDER BY l.id
             """)
     List<LignePanier> lignesServiceDe(@Param("commande") Commande commande);
+
+    /**
+     * Toutes les lignes d'une commande, pièces et prestations, dans l'ordre d'ajout.
+     *
+     * <p>C'est la requête des documents : une facture doit décrire chaque bien et chaque
+     * service avec son prix unitaire hors TVA et sa base par taux. {@link #lignesDe}, qui ne
+     * rend que les pièces, laissait sans ligne ni ventilation la facture d'une commande de
+     * prestations. Jointures externes, puisqu'une ligne porte soit une pièce, soit une
+     * prestation.</p>
+     */
+    @Query("""
+            SELECT l FROM LignePanier l
+            LEFT JOIN FETCH l.piece
+            LEFT JOIN FETCH l.prestation
+            WHERE l.commande = :commande
+            ORDER BY l.id
+            """)
+    List<LignePanier> toutesLesLignesDe(@Param("commande") Commande commande);
 
     /**
      * Commandes payées comportant au moins une ligne de service (F12-b).

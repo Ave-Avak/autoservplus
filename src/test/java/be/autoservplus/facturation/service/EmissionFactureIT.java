@@ -2,9 +2,11 @@ package be.autoservplus.facturation.service;
 
 import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.Piece;
+import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.repository.CategorieRepository;
 import be.autoservplus.catalogue.repository.PieceRepository;
+import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.facturation.domain.Facture;
 import be.autoservplus.facturation.repository.FactureRepository;
 import be.autoservplus.identite.domain.TypeUtilisateur;
@@ -35,7 +37,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.hamcrest.Matchers.containsString;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrlPattern;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -62,6 +67,7 @@ class EmissionFactureIT extends SocleIntegration {
     @Autowired private UtilisateurRepository utilisateurs;
     @Autowired private CategorieRepository categories;
     @Autowired private PieceRepository pieces;
+    @Autowired private PrestationRepository prestations;
     @Autowired private PanierService panierService;
     @Autowired private CommandeRepository commandes;
     @Autowired private FactureRepository factures;
@@ -232,6 +238,41 @@ class EmissionFactureIT extends SocleIntegration {
         assertThat(ventilation.tranches())
                 .extracting(v -> v.taux().toPlainString(), v -> v.montantTva().toPlainString())
                 .containsExactly(tuple6(), tuple21());
+    }
+
+    @Test
+    @DisplayName("commande d'une prestation : la facture, sa ventilation et le détail du membre portent la ligne")
+    void factureDUnePrestation() throws Exception {
+        Prestation vidange = transactions.execute(statut -> {
+            Categorie atelier = categories.findByCode("IT-FAC-ATE").orElseGet(() -> categories.save(
+                    new Categorie("IT-FAC-ATE", "Entretien", TypeCategorie.SERVICE)));
+            return prestations.save(new Prestation(atelier, "IT-FAC-" + COMPTEUR.getAndIncrement(),
+                    "Vidange de test", new BigDecimal("49.00"), 30));
+        });
+        panierService.ajouterService("marie@exemple.be", vidange.getReference(), 1);
+        String redirection = mvc.perform(post("/commande").with(csrf()).param("cgv", "true"))
+                .andExpect(status().is3xxRedirection())
+                .andReturn().getResponse().getRedirectedUrl();
+        UUID referenceCommande = UUID.fromString(
+                redirection.replace("/commande/", "").replace("/confirmation", ""));
+
+        payer(referenceCommande);
+
+        Facture facture = factureDe(referenceCommande);
+        assertThat(facture.getTauxTvaApplique()).isEqualByComparingTo("21.00");
+        assertThat(facture.getMontantTvac()).isEqualByComparingTo("59.29");
+        transactions.executeWithoutResult(statut -> {
+            Facture relue = factures.findByReference(facture.getReference()).orElseThrow();
+            assertThat(factureService.ventilationDe(relue).tranches())
+                    .extracting(v -> v.taux().toPlainString(), v -> v.montantTva().toPlainString())
+                    .containsExactly(org.assertj.core.groups.Tuple.tuple("21", "10.29"));
+            assertThat(factureService.lignesDuDocument(relue))
+                    .singleElement()
+                    .satisfies(ligne -> assertThat(ligne.toString()).contains("Vidange de test").contains("49.00"));
+        });
+        mvc.perform(get("/commandes/{ref}", referenceCommande))
+                .andExpect(status().isOk())
+                .andExpect(content().string(containsString("Vidange de test")));
     }
 
     private static org.assertj.core.groups.Tuple tuple6() {
