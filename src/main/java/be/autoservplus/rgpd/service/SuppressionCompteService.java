@@ -25,6 +25,8 @@ import java.time.Clock;
 import java.time.Instant;
 import java.util.Base64;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 
 /**
  * Suppression de compte par anonymisation (F23, RM-05 : article 17 RGPD).
@@ -66,14 +68,23 @@ public class SuppressionCompteService {
     private static final Logger JOURNAL = LoggerFactory.getLogger(SuppressionCompteService.class);
 
     /**
-     * Mot à recopier pour confirmer. <b>Constante, identique dans les trois langues</b>
-     * et affichée telle quelle par l'écran. Le traduire ferait dépendre une garde de
-     * sécurité d'une chaîne d'interface : le service devrait alors connaître la locale
-     * de la session, et un test ne pourrait plus l'exercer sans contexte web. C'est
-     * l'usage courant des confirmations destructrices, où l'on recopie un jeton exact
-     * plutôt qu'un mot traduit.
+     * Mot à recopier pour confirmer, un par langue de l'interface. Le service les tient
+     * lui-même plutôt que l'i18n : l'écran affiche exactement ce que la garde attend, et
+     * la garde reste testable sans contexte web. Elle accepte les trois mots, quelle que
+     * soit la langue de la session : le mot prouve une intention, pas la langue choisie.
+     * Une saisie en français demandée à un membre néerlandophone freinait l'exercice de
+     * l'article 17 du RGPD.
      */
+    private static final Map<String, String> MOTS_DE_CONFIRMATION =
+            Map.of("fr", "SUPPRIMER", "nl", "VERWIJDEREN", "en", "DELETE");
+
+    /** Mot français, repli de toute langue sans mot propre. */
     public static final String MOT_DE_CONFIRMATION = "SUPPRIMER";
+
+    /** Mot à afficher dans la langue de l'écran. */
+    public static String motDeConfirmation(Locale langue) {
+        return MOTS_DE_CONFIRMATION.getOrDefault(langue.getLanguage(), MOT_DE_CONFIRMATION);
+    }
 
     /**
      * Domaine réservé par la RFC 2606 : aucun serveur de messagerie ne peut l'héberger,
@@ -128,7 +139,7 @@ public class SuppressionCompteService {
      * URL par laquelle un membre viserait le compte d'autrui.</p>
      *
      * @param motDePasse   mot de passe du compte, re-authentification
-     * @param confirmation mot recopié par le membre, doit valoir {@value #MOT_DE_CONFIRMATION}
+     * @param confirmation mot recopié par le membre, l'un des trois de {@link #motDeConfirmation}
      * @throws RessourceIntrouvableException             adresse inconnue
      * @throws ReauthentificationEchoueeException        mot de passe incorrect
      * @throws ConfirmationSuppressionInvalideException  mot de confirmation absent ou faux
@@ -199,12 +210,14 @@ public class SuppressionCompteService {
     }
 
     /**
-     * Refus si le mot de confirmation n'est pas recopié exactement. Comparaison
-     * sensible à la casse et sur la valeur nettoyée de ses espaces : un
-     * « supprimer » minuscule signale une saisie machinale plutôt qu'une intention.
+     * Refus si le mot de confirmation manque ou ne correspond à aucun des trois mots.
+     * Comparaison sur la valeur nettoyée de ses espaces et sans casse : une dictée vocale
+     * ou un clavier de téléphone écrit « Supprimer », et la casse n'ajoute rien à
+     * l'intention que le mot recopié prouve déjà.
      */
     private void exigerConfirmation(Utilisateur membre, String confirmation) {
-        if (confirmation == null || !MOT_DE_CONFIRMATION.equals(confirmation.strip())) {
+        if (confirmation == null || !MOTS_DE_CONFIRMATION.containsValue(
+                confirmation.strip().toUpperCase(Locale.ROOT))) {
             JOURNAL.warn("Suppression de compte refusee : confirmation invalide pour {}",
                     membre.getReference());
             throw new ConfirmationSuppressionInvalideException();

@@ -70,13 +70,16 @@ class SuppressionCompteTemplatesIT extends SocleIntegration {
         mvc.perform(get("/supprimer-mon-compte").locale(Locale.of("nl")))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Mijn account verwijderen")))
-                .andExpect(content().string(containsString("SUPPRIMER")))
+                // Le mot de la langue de l'écran, et plus le mot français.
+                .andExpect(content().string(containsString("Typ VERWIJDEREN om te bevestigen")))
+                .andExpect(content().string(not(containsString("SUPPRIMER"))))
                 .andExpect(content().string(not(containsString("??suppression"))));
 
         mvc.perform(get("/supprimer-mon-compte").locale(Locale.ENGLISH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Delete my account")))
                 .andExpect(content().string(containsString("right to erasure")))
+                .andExpect(content().string(containsString("Type DELETE to confirm")))
                 .andExpect(content().string(not(containsString("??suppression"))));
     }
 
