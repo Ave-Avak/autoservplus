@@ -21,10 +21,10 @@
             <input type="hidden" name="retour" th:value="${uriRetourCookies}">
 
             <div class="bandeau-cookies__texte">
-                <h2 th:text="#{cookies.bandeau.titre}">Nous respectons votre choix</h2>
-                <p th:text="#{cookies.bandeau.texte}">
-                    Ce site dépose des cookies strictement nécessaires à son fonctionnement.
-                </p>
+                <h2 class="bandeau-cookies__titre" th:text="#{cookies.bandeau.titre}">Nous respectons votre choix</h2>
+                <!--/* Deux lignes à 320 px : le détail des finalités est à la page des cookies. */-->
+                <p><span th:text="#{cookies.bandeau.texte}">Seuls les cookies nécessaires sont déposés sans votre accord.</span>
+                    <a th:href="@{/cookies}" th:text="#{cookies.bandeau.lien}">En savoir plus</a></p>
             </div>
 
             <!--/* Les trois actions partagent la même classe, donc les mêmes dimensions,
