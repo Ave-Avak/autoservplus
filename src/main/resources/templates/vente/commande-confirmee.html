@@ -2,24 +2,21 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="(${commande.annulee()} ? #{commande.confirmation.annulee.titre} : #{commande.confirmation.titre}) + ' | AutoServ+'">Commande enregistrée | AutoServ+</title>
+    <title th:text="(${commande.annulee()} ? #{commande.confirmation.annulee.titre} : #{commande.confirmation.titre}) + ' | ' + ${garageSite.enseigne()}">Commande enregistrée | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
+<main id="contenu" class="container page-formulaire page-formulaire--large" tabindex="-1">
+    <h1 class="page-formulaire__titre" th:text="${commande.annulee()} ? #{commande.confirmation.annulee.titre} : #{commande.confirmation.titre}">Commande enregistrée</h1>
 
-<main id="contenu">
-    <h1 th:text="${commande.annulee()} ? #{commande.confirmation.annulee.titre} : #{commande.confirmation.titre}">Commande enregistrée</h1>
+    <div class="alert alert-danger" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+    <div class="alert alert-success" th:if="${succes}" role="status" th:text="${succes}">Succès</div>
 
-    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
-    <div class="message message-succes" th:if="${succes}" role="status" th:text="${succes}">Succès</div>
-
-    <div class="message message-succes" role="status" th:unless="${commande.annulee()}"
+    <div class="alert alert-success" role="status" th:unless="${commande.annulee()}"
          th:text="#{commande.confirmation.numero(${commande.numero()})}">
         Votre commande CMD-2026-0001 est enregistrée.
     </div>
@@ -32,7 +29,7 @@
     <!--/* Commande annulée : plus rien n'est à régler. Le retour d'un paiement arrivé
            après l'annulation aboutit ici, la page reprend ce que dit le détail. */-->
     <th:block th:if="${commande.annulee()}">
-        <div class="message" role="status"
+        <div class="alert alert-info" role="status"
              th:text="${commande.annuleePourDelai()} ? #{commande.confirmation.annulee.delai(${commande.numero()})} : #{commande.confirmation.annulee(${commande.numero()})}">
             Votre commande CMD-2026-0001 est annulée : son délai de paiement est dépassé.
         </div>
@@ -78,10 +75,10 @@
     */-->
     <form th:if="${commande.peutEtrePayee()}"
           th:action="@{/commande/{ref}/payer(ref=${commande.reference()})}" method="post">
-        <p class="actions-page">
-            <button type="submit" class="btn-cta" th:if="${commande.aPayer()}"
+        <p class="actions-formulaire">
+            <button type="submit" class="btn btn-action btn-lg" th:if="${commande.aPayer()}"
                     th:text="#{commande.payer}">Procéder au paiement</button>
-            <button type="submit" class="btn-cta" th:if="${commande.paiementEchoue()}"
+            <button type="submit" class="btn btn-action btn-lg" th:if="${commande.paiementEchoue()}"
                     th:text="#{commande.payer.reessayer}">Réessayer le paiement</button>
             <!--/* Une fois payee, la facture se telecharge depuis l'historique : elle
                    doit rester atteignable des annees apres l'achat, pas seulement ici. */-->
@@ -90,12 +87,12 @@
         </p>
     </form>
 
-    <p class="actions-page" th:unless="${commande.peutEtrePayee()}">
-        <a class="btn-cta" th:href="@{/commandes}" th:text="#{commandes.nav}">Mes commandes</a>
+    <p class="actions-formulaire" th:unless="${commande.peutEtrePayee()}">
+        <a class="btn btn-action btn-lg" th:href="@{/commandes}" th:text="#{commandes.nav}">Mes commandes</a>
         <a th:href="@{/pieces}" th:text="#{panier.continuer}">Continuer mes achats</a>
     </p>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

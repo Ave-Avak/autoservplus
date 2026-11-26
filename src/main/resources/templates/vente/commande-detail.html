@@ -2,26 +2,23 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="${titre} + ' | AutoServ+'">Commande CMD-2026-0001 | AutoServ+</title>
+    <title th:text="${titre} + ' | ' + ${garageSite.enseigne()}">Commande CMD-2026-0001 | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
-
-<main id="contenu">
-    <p class="fil-ariane">
+<main id="contenu" class="container page-membre" tabindex="-1">
+    <p class="page-membre__precedent">
         <a th:href="@{/commandes}" th:text="#{commande.detail.retour}">Retour à mes commandes</a>
     </p>
 
-    <h1 th:text="#{commande.detail.titre(${commande.numero()})}">Commande CMD-2026-0001</h1>
-    <p class="message message-erreur" role="alert" th:if="${erreur}" th:text="${erreur}">Refus</p>
+    <h1 class="page-membre__titre" th:text="#{commande.detail.titre(${commande.numero()})}">Commande CMD-2026-0001</h1>
+    <p class="alert alert-danger" role="alert" th:if="${erreur}" th:text="${erreur}">Refus</p>
 
-    <dl class="fiche-details">
+    <dl class="fiche-rdv">
         <dt th:text="#{commandes.colonne.date}">Date</dt>
         <dd th:text="${#temporals.format(commande.date(), 'EEEE d MMMM yyyy')}">22 août 2026</dd>
 
@@ -45,7 +42,7 @@
             <!--/* Le moyen employe est constate chez le prestataire. Le bouchon de
                  developpement ne le renseigne pas. On le dit plutot que d'afficher un
                  moyen inventé. */-->
-            <dd th:unless="${commande.methodePaiementConnue()}" class="carte-meta"
+            <dd th:unless="${commande.methodePaiementConnue()}" class="texte-discret"
                 th:text="#{commande.detail.mode-paiement.inconnu}">En ligne (moyen non communiqué)</dd>
 
             <th:block th:if="${commande.datePaiement() != null}">
@@ -57,20 +54,20 @@
 
     <!--/* La commande reste annulée : le membre doit lire que son paiement est
            arrivé, qu'il ne vaut pas commande, et ce qu'il devient. */-->
-    <p class="message" role="status"
+    <p class="alert alert-info" role="status"
        th:if="${commande.paiementRecuApresAnnulation() and !commande.paiementApresAnnulationRembourse()}"
        th:text="#{commande.detail.paiement-tardif.a-rembourser(${commande.totalTvac()})}">
         Votre paiement nous est parvenu après l'annulation de cette commande. Il vous sera remboursé.
     </p>
-    <p class="message" role="status" th:if="${commande.paiementApresAnnulationRembourse()}"
+    <p class="alert alert-info" role="status" th:if="${commande.paiementApresAnnulationRembourse()}"
        th:text="#{commande.detail.paiement-tardif.rembourse(${commande.totalTvac()})}">
         Votre paiement, reçu après l'annulation de cette commande, a été remboursé.
     </p>
 
-    <h2 th:text="#{commande.detail.lignes}">Articles commandés</h2>
+    <h2 class="suivi__titre" th:text="#{commande.detail.lignes}">Articles commandés</h2>
 
-    <div class="defilement" tabindex="0" role="region" aria-labelledby="legende-vente-commande-detail">
-        <table class="tableau">
+    <div class="table-responsive tableau-site tableau-site--large" tabindex="0" role="region" aria-labelledby="legende-vente-commande-detail">
+        <table class="table mb-0">
             <caption id="legende-vente-commande-detail" th:text="#{commande.detail.lignes.legende}">
                 Articles de cette commande, aux prix appliqués le jour de l'achat
             </caption>
@@ -114,9 +111,9 @@
         </table>
     </div>
 
-    <h2 th:text="#{commande.detail.documents}">Documents et démarches</h2>
+    <h2 class="suivi__titre" th:text="#{commande.detail.documents}">Documents et démarches</h2>
 
-    <ul class="liste-actions">
+    <ul class="liste-documents">
         <!--/* Reprise du paiement, même raison qu'à la liste : le bouton de la page de
              confirmation ne sert qu'une fois, et une commande non payée reste payable
              pendant tout son délai RM-21. La condition n'est qu'un affichage : la
@@ -136,10 +133,10 @@
             <form th:action="@{/commande/{ref}/payer(ref=${commande.reference()})}" method="post">
                 <!--/* Même aria-label qu'à la liste, par cohérence : le bouton annonce
                        la commande qu'il paie, sans remplacer son libellé visible. */-->
-                <button type="submit" class="btn-cta" th:unless="${commande.paiementEchoue()}"
+                <button type="submit" class="btn btn-action" th:unless="${commande.paiementEchoue()}"
                         th:aria-label="#{commande.payer.aria(${commande.numero()})}"
                         th:text="#{commande.payer}">Procéder au paiement</button>
-                <button type="submit" class="btn-cta" th:if="${commande.paiementEchoue()}"
+                <button type="submit" class="btn btn-action" th:if="${commande.paiementEchoue()}"
                         th:aria-label="#{commande.payer.reessayer.aria(${commande.numero()})}"
                         th:text="#{commande.payer.reessayer}">Réessayer le paiement</button>
             </form>
@@ -162,7 +159,7 @@
         </li>
 
         <li th:if="${retractation != null and retractation.estEnAttente()}">
-            <span class="badge badge-en_attente" th:text="#{commandes.annulation.en-attente}">Demande en cours</span>
+            <span class="badge statut-suivi" data-etat="attente" th:text="#{commandes.annulation.en-attente}">Demande en cours</span>
         </li>
 
         <!--/* Eligibilite calculee par RetractationService, partagee avec la liste :
@@ -179,7 +176,7 @@
                           or (!retractation.demandable()
                               and !retractation.estEnAttente()
                               and !retractation.aUnAvoir()))}"
-            class="carte-meta" th:text="#{commande.detail.aucun-document}">
+            class="texte-discret" th:text="#{commande.detail.aucun-document}">
             Aucun document ni démarche disponible pour cette commande.
         </li>
     </ul>
@@ -188,6 +185,6 @@
     <p th:if="${commande.contientDesPieces()}"><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

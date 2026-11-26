@@ -2,125 +2,124 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{commande.recap.titre} + ' | AutoServ+'">Récapitulatif de commande | AutoServ+</title>
+    <title th:text="#{commande.recap.titre} + ' | ' + ${garageSite.enseigne()}">Récapitulatif de commande | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
+<main id="contenu" class="container page-membre" tabindex="-1">
+    <p class="page-membre__precedent"><a th:href="@{/panier}" th:text="#{commande.recap.retour}">Retour au panier</a></p>
 
-<main id="contenu">
-    <p><a th:href="@{/panier}" th:text="#{commande.recap.retour}">Retour au panier</a></p>
+    <h1 id="titre-vente-recapitulatif" class="page-membre__titre mb-4" th:text="#{commande.recap.titre}">Récapitulatif de commande</h1>
 
-    <h1 id="titre-vente-recapitulatif" th:text="#{commande.recap.titre}">Récapitulatif de commande</h1>
-
-    <!--/* Refus de conversion lies aux lignes (stock, piece inactive) : le message
-         actionnable s affiche au-dessus du tableau concerne. */-->
-    <div class="message message-erreur" th:if="${erreurLignes}" role="alert"
+    <!--/* Refus de conversion liés aux lignes (stock, pièce inactive) : le message
+         actionnable s'affiche au-dessus du tableau concerné. */-->
+    <div class="alert alert-danger" th:if="${erreurLignes}" role="alert"
          th:text="${erreurLignes}">Erreur</div>
 
     <!--/* La facture imprime l'adresse du client (AR n°1, art. 5) : sans elle, la commande
          est refusée au serveur, et l'écran le dit avant l'envoi. */-->
-    <div class="message message-erreur" th:if="${adresseIncomplete}" role="alert">
-        <p th:text="${erreurAdresse} ?: #{commande.recap.adresse-incomplete}">Renseignez votre adresse avant de commander.</p>
-        <p><a th:href="@{/mon-profil(retour='/commande')}" th:text="#{commande.recap.adresse-lien}">Compléter mon adresse</a></p>
+    <div class="alert alert-danger" th:if="${adresseIncomplete}" role="alert">
+        <p class="mb-1" th:text="${erreurAdresse} ?: #{commande.recap.adresse-incomplete}">Renseignez votre adresse avant de commander.</p>
+        <p class="mb-0"><a th:href="@{/mon-profil(retour='/commande')}" th:text="#{commande.recap.adresse-lien}">Compléter mon adresse</a></p>
     </div>
 
-    <div class="message message-erreur" th:if="${panier.contientPieceInactive()}" role="alert"
+    <div class="alert alert-warning" th:if="${panier.contientPieceInactive()}" role="alert"
          th:text="#{panier.avertissement.piece-inactive}">Certains articles ne sont plus vendus.</div>
 
-    <!--/* RM-30 : detail HTVA / TVA / TVAC par ligne et en totaux, valeurs figees. */-->
-    <div class="defilement" tabindex="0" role="region" aria-labelledby="titre-vente-recapitulatif">
-        <table class="tableau">
+    <!--/* RM-30 : détail HTVA, TVA et TVAC par ligne et en totaux, valeurs figées. */-->
+    <div class="table-responsive tableau-site tableau-site--large" tabindex="0" role="region" aria-labelledby="titre-vente-recapitulatif">
+        <table class="table mb-0">
             <thead>
             <tr>
                 <th scope="col" th:text="#{panier.colonne.article}">Article</th>
-                <th scope="col" th:text="#{panier.colonne.quantite}">Quantité</th>
-                <th scope="col" th:text="#{panier.colonne.prix-unitaire}">Prix unitaire TVAC</th>
-                <th scope="col" th:text="#{panier.colonne.total-tvac}">Total TVAC</th>
+                <th scope="col" class="text-end" th:text="#{panier.colonne.quantite}">Quantité</th>
+                <th scope="col" class="text-end" th:text="#{panier.colonne.prix-unitaire}">Prix unitaire TVAC</th>
+                <th scope="col" class="text-end" th:text="#{panier.colonne.total-tvac}">Total TVAC</th>
             </tr>
             </thead>
             <tbody>
             <tr th:each="l : ${panier.lignes()}">
                 <td>
-                    <span th:text="${l.libelle()}">Plaquettes avant</span>
+                    <span class="panier__article" th:text="${l.libelle()}">Plaquettes avant</span>
                     <small th:replace="~{fragments/choix-pieces :: mention(${l.mentionPieces()})}"></small>
-                    <span class="texte-erreur" th:unless="${l.pieceActive()}"
+                    <span class="texte-erreur d-block" th:unless="${l.pieceActive()}"
                           th:text="#{panier.piece-inactive}">N'est plus vendu</span>
                 </td>
-                <td th:text="${l.quantite()}">2</td>
-                <td th:text="${l.prixUnitaireTvac()}">24,19 €</td>
-                <td th:text="${l.totalTvac()}">48,38 €</td>
+                <td class="text-end chiffres" th:text="${l.quantite()}">2</td>
+                <td class="text-end chiffres" th:text="${l.prixUnitaireTvac()}">24,19 €</td>
+                <td class="text-end chiffres" th:text="${l.totalTvac()}">48,38 €</td>
             </tr>
             </tbody>
             <tfoot>
             <tr>
-                <th scope="row" colspan="3" th:text="#{panier.total.htva}">Total HTVA</th>
-                <td th:text="${panier.totalHtva()}">66,29 €</td>
+                <th scope="row" colspan="3" class="text-end" th:text="#{panier.total.htva}">Total HTVA</th>
+                <td class="text-end chiffres" th:text="${panier.totalHtva()}">66,29 €</td>
             </tr>
             <tr th:each="t : ${panier.tvaParTaux()}">
-                <th scope="row" colspan="3" th:text="#{panier.total.tva-taux(${t.taux()})}">TVA 21 %</th>
-                <td th:text="${t.montant()}">13,92 €</td>
+                <th scope="row" colspan="3" class="text-end" th:text="#{panier.total.tva-taux(${t.taux()})}">TVA 21 %</th>
+                <td class="text-end chiffres" th:text="${t.montant()}">13,92 €</td>
             </tr>
-            <tr>
-                <th scope="row" colspan="3" th:text="#{panier.total.tvac}">Total TVAC</th>
-                <td><strong th:text="${panier.totalTvac()}">80,21 €</strong></td>
+            <tr class="tableau-site__total">
+                <th scope="row" colspan="3" class="text-end" th:text="#{panier.total.tvac}">Total TVAC</th>
+                <td class="text-end chiffres"><strong th:text="${panier.totalTvac()}">80,21 €</strong></td>
             </tr>
             </tfoot>
         </table>
     </div>
 
-    <!--/* F24 : acceptation des CGV exigee avant la commande, revalidee cote serveur.
-         Le bouton porte la mention imposee par l'art. VI.45 CDE (cle commande.bouton) :
+    <!--/* F24 : acceptation des CGV exigée avant la commande, revalidée côté serveur.
+         Le bouton porte la mention imposée par l'art. VI.45 CDE (clé commande.bouton) :
          « Commande avec obligation de paiement ». */-->
-    <form th:action="@{/commande}" method="post" class="formulaire" novalidate>
-        <div class="champ champ-case">
-            <input type="checkbox" id="cgv" name="cgv" value="true" required
-                   th:aria-invalid="${erreurCgv != null} ? 'true'"
-                   th:aria-describedby="${erreurCgv != null} ? 'cgv-erreur'">
-            <label for="cgv">
+    <form th:action="@{/commande}" method="post" class="recapitulatif__formulaire" novalidate>
+        <div class="champ-site form-check" th:with="cgvEnFaute=${erreurCgv != null}">
+            <input class="form-check-input" th:classappend="${cgvEnFaute} ? 'is-invalid'"
+                   type="checkbox" id="cgv" name="cgv" value="true" required
+                   th:aria-invalid="${cgvEnFaute} ? 'true'"
+                   th:aria-describedby="${cgvEnFaute} ? 'cgv-erreur'">
+            <label class="form-check-label" for="cgv">
                 <span th:text="#{commande.cgv.prefixe}">J'ai lu et j'accepte les</span>
                 <a th:href="@{/cgv}" th:text="#{commande.cgv.lien}">conditions générales de vente</a>
                 <span th:text="#{commande.cgv.version(${versionCgv})}">(version CGV-2026-04).</span>
             </label>
-            <p id="cgv-erreur" class="texte-erreur" th:if="${erreurCgv}" role="alert"
+            <p id="cgv-erreur" class="invalid-feedback" th:if="${erreurCgv}" role="alert"
                th:text="${erreurCgv}">Erreur</p>
         </div>
 
-        <!--/* F12 / art. VI.53 CDE : présentée UNIQUEMENT si le panier contient un
+        <!--/* F12 et art. VI.53 CDE : présentée UNIQUEMENT si le panier contient un
              service, et JAMAIS pré-cochée, une case pré-cochée vaudrait consentement
              implicite. Elle n'est pas non plus « required » : le client reste libre de
              conserver son droit de rétractation. Son état est enregistré dans les DEUX
              cas, sans quoi l'absence de trace serait ambiguë entre « a refusé » et
              « jamais interrogé ». La présentation est revalidée côté serveur. */-->
-        <div class="champ" th:if="${panier.contientService()}">
-            <input type="checkbox" id="renonciationVi53" name="renonciationVi53" value="true">
-            <label for="renonciationVi53" th:text="#{commande.vi53.libelle}">
+        <div class="champ-site form-check" th:if="${panier.contientService()}">
+            <input class="form-check-input" type="checkbox" id="renonciationVi53" name="renonciationVi53" value="true"
+                   aria-describedby="renonciationVi53-aide">
+            <label class="form-check-label" for="renonciationVi53" th:text="#{commande.vi53.libelle}">
                 Je demande l'exécution immédiate et renonce à mon droit de rétractation.
             </label>
-            <p class="carte-meta" th:text="#{commande.vi53.explication}">
+            <p id="renonciationVi53-aide" class="form-text mb-0" th:text="#{commande.vi53.explication}">
                 Sans cette case, vous conservez 14 jours pour vous rétracter.
             </p>
         </div>
         <!--/* Moyens de paiement et délai annoncés avant que la commande ne lie le membre
              (art. VI.46, § 3, CDE). Le délai est celui qu'applique l'annulation automatique. */-->
-        <p class="texte-info" id="moyens-paiement"
+        <p class="form-text" id="moyens-paiement"
            th:text="#{commande.moyens-paiement(${T(be.autoservplus.vente.service.ExpirationCommandesJob).DELAI_PAIEMENT.toMinutes()})}">
             Paiement en ligne par Bancontact ou carte de crédit, dans les 30 minutes qui suivent la commande.</p>
-        <p class="actions-page">
-            <button type="submit" class="btn-cta"
+        <div class="actions-formulaire">
+            <button type="submit" class="btn btn-action btn-lg"
                     th:text="#{commande.bouton}">Commande avec obligation de paiement</button>
-            <a th:href="@{/panier}" th:text="#{commande.recap.retour}">Retour au panier</a>
-        </p>
+            <a class="btn btn-outline-primary btn-lg" th:href="@{/panier}" th:text="#{commande.recap.retour}">Retour au panier</a>
+        </div>
         <!--/* Près du bouton : la notice est une information due avant que le membre soit lié. */-->
-        <p th:if="${panier.contientDesPieces()}"><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
+        <p class="mt-3" th:if="${panier.contientDesPieces()}"><a th:href="@{/garantie-legale}" th:text="#{garantie-legale.lien}">Vos droits de garantie légale</a></p>
     </form>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

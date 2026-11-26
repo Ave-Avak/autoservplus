@@ -2,28 +2,25 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{commandes.titre} + ' | AutoServ+'">Mes commandes | AutoServ+</title>
+    <title th:text="#{commandes.titre} + ' | ' + ${garageSite.enseigne()}">Mes commandes | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
-
-<main id="contenu">
-    <h1 th:text="#{commandes.titre}">Mes commandes</h1>
-    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
-    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+<main id="contenu" class="container page-membre" tabindex="-1">
+    <h1 class="page-membre__titre" th:text="#{commandes.titre}">Mes commandes</h1>
+    <div class="alert alert-success" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <div class="alert alert-danger" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
 
     <p th:if="${#lists.isEmpty(commandes)}" th:text="#{commandes.aucune}">
         Vous n'avez encore passé aucune commande.
     </p>
 
-    <div class="defilement" th:unless="${#lists.isEmpty(commandes)}" tabindex="0" role="region" aria-labelledby="legende-vente-commandes">
-        <table class="tableau">
+    <div class="table-responsive tableau-site tableau-site--large" th:unless="${#lists.isEmpty(commandes)}" tabindex="0" role="region" aria-labelledby="legende-vente-commandes">
+        <table class="table mb-0">
             <caption id="legende-vente-commandes" th:text="#{commandes.legende}">Historique de vos commandes, de la plus récente à la plus ancienne</caption>
             <thead>
             <tr>
@@ -56,7 +53,7 @@
                        th:text="#{commandes.telecharger(${commande.numeroFacture()})}">
                         Télécharger la facture 2026-0001
                     </a>
-                    <span th:unless="${commande.estFacturee()}" class="carte-meta"
+                    <span th:unless="${commande.estFacturee()}" class="texte-discret"
                           th:text="${commande.statut().name() == 'EN_ATTENTE_PAIEMENT'}
                                    ? #{commandes.facture.apres-paiement} : #{commandes.facture.aucune}">Aucune facture</span>
                 </td>
@@ -72,7 +69,7 @@
                     </a>
                     <!--/* Demande deposee, en attente de la decision du garage. */-->
                     <span th:if="${retractation != null and retractation.estEnAttente()}"
-                          class="badge badge-en_attente"
+                          class="badge statut-suivi" data-etat="attente"
                           th:text="#{commandes.annulation.en-attente}">Demande en cours</span>
                     <!--/* Fonction de rétractation en ligne (VI.61/2), proposée tant que
                            le contrôle d'éligibilité passe : commande payée, aucune
@@ -85,7 +82,7 @@
                                   or (!retractation.demandable()
                                       and !retractation.estEnAttente()
                                       and !retractation.aUnAvoir())}"
-                          class="carte-meta" th:text="#{commandes.annulation.indisponible}">Annulation non disponible</span>
+                          class="texte-discret" th:text="#{commandes.annulation.indisponible}">Annulation non disponible</span>
                 </td>
                 <!--/* Reprise du paiement. Le bouton de la page de confirmation ne sert
                      qu'une fois : onglet fermé, prestataire indisponible au premier essai
@@ -103,28 +100,28 @@
                              aria-label, la liste des boutons d'une page annoncerait
                              autant de « Procéder au paiement » indistinguables. Le
                              libellé visible est complété, jamais remplacé (WCAG 2.5.3). */-->
-                        <span th:if="${commande.paiementEchoue()}" class="carte-meta"
+                        <span th:if="${commande.paiementEchoue()}" class="texte-discret"
                               th:text="#{commandes.paiement.echoue}">Paiement échoué</span>
-                        <button type="submit" class="btn-cta" th:unless="${commande.paiementEchoue()}"
+                        <button type="submit" class="btn btn-action" th:unless="${commande.paiementEchoue()}"
                                 th:aria-label="#{commande.payer.aria(${commande.numero()})}"
                                 th:text="#{commande.payer}">Procéder au paiement</button>
-                        <button type="submit" class="btn-cta" th:if="${commande.paiementEchoue()}"
+                        <button type="submit" class="btn btn-action" th:if="${commande.paiementEchoue()}"
                                 th:aria-label="#{commande.payer.reessayer.aria(${commande.numero()})}"
                                 th:text="#{commande.payer.reessayer}">Réessayer le paiement</button>
                     </form>
-                    <span th:if="${commande.paiementEnCours()}" class="carte-meta"
+                    <span th:if="${commande.paiementEnCours()}" class="texte-discret"
                           th:text="#{commandes.paiement.en-cours}">Paiement en cours de traitement</span>
-                    <span th:if="${commande.delaiDepasse()}" class="carte-meta"
+                    <span th:if="${commande.delaiDepasse()}" class="texte-discret"
                           th:text="#{commandes.paiement.delai-depasse}">Délai de paiement dépassé</span>
                     <!--/* Paiement arrivé après l'annulation : « aucun paiement attendu »
                            laisserait croire au membre que le sien est perdu. */-->
-                    <span th:if="${commande.remboursementEnCours()}" class="carte-meta"
+                    <span th:if="${commande.remboursementEnCours()}" class="texte-discret"
                           th:text="#{commandes.paiement.remboursement-en-cours}">Remboursement en cours</span>
-                    <span th:if="${commande.rembourseApresAnnulation()}" class="carte-meta"
+                    <span th:if="${commande.rembourseApresAnnulation()}" class="texte-discret"
                           th:text="#{commandes.paiement.rembourse}">Remboursé</span>
                     <span th:unless="${commande.peutEtrePayee() or commande.paiementEnCours() or commande.delaiDepasse()
                                        or commande.remboursementEnCours() or commande.rembourseApresAnnulation()}"
-                          class="carte-meta"
+                          class="texte-discret"
                           th:text="#{commandes.paiement.aucun}">Aucun paiement attendu</span>
                 </td>
             </tr>
@@ -132,7 +129,7 @@
         </table>
     </div>
 
-    <p class="actions-page">
+    <p class="actions-formulaire">
         <a th:href="@{/pieces}" th:text="#{panier.continuer}">Continuer mes achats</a>
         <!--/* Lien permanent vers le modèle de formulaire, que l'art. 7 des CGV
                annonce dans l'espace membre. */-->
@@ -140,6 +137,6 @@
     </p>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

@@ -1,0 +1,77 @@
+// Panier, récapitulatif, paiement et commandes du membre.
+
+// Les tableaux de la vente portent cinq colonnes : la colonne de 48 rem du suivi les
+// serrerait, ils prennent la largeur du contenu.
+.tableau-site--large {
+  max-width: none;
+}
+
+.tableau-site__total th,
+.tableau-site__total td {
+  border-top: 2px solid $gray-300;
+  font-size: 1.125rem;
+}
+
+.panier__article {
+  font-weight: 600;
+}
+
+// Quantité et bouton côte à côte : le champ ne garde que la place de cinq chiffres.
+.panier__quantite {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem;
+  margin: 0;
+
+  .form-control {
+    width: 5.5rem;
+  }
+}
+
+.panier__devis {
+  max-width: 36rem;
+  margin-top: 2.5rem;
+  padding-top: .5rem;
+  border-top: 1px solid $gray-200;
+}
+
+.panier__devis-formulaire {
+  margin-bottom: 1rem;
+}
+
+.recapitulatif__formulaire {
+  max-width: 48rem;
+  margin-top: 1.5rem;
+}
+
+// Quatre issues l'une sous l'autre, la réussite en tête : c'est le parcours attendu.
+.issues-paiement {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: .75rem;
+}
+
+// Indication secondaire, gris 600 sur blanc : 7,6:1.
+.texte-discret {
+  color: $gray-600;
+  font-size: .9375rem;
+}
+
+.liste-documents {
+  max-width: 48rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+
+  > li {
+    padding-block: .75rem;
+    border-bottom: 1px solid $gray-200;
+  }
+
+  p,
+  form {
+    margin: 0 0 .5rem;
+  }
+}

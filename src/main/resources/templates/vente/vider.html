@@ -2,35 +2,32 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{panier.vider.titre} + ' | AutoServ+'">Vider le panier | AutoServ+</title>
+    <title th:text="#{panier.vider.titre} + ' | ' + ${garageSite.enseigne()}">Vider le panier | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
+<main id="contenu" class="container page-formulaire" tabindex="-1">
+    <p class="page-membre__precedent"><a th:href="@{/panier}" th:text="#{commande.recap.retour}">Retour au panier</a></p>
 
-<main id="contenu">
-    <p><a th:href="@{/panier}" th:text="#{commande.recap.retour}">Retour au panier</a></p>
-
-    <h1 th:text="#{panier.vider.titre}">Vider le panier</h1>
+    <h1 class="page-formulaire__titre" th:text="#{panier.vider.titre}">Vider le panier</h1>
 
     <!--/* Confirmation explicite : la CSP interdit les scripts en ligne (pas de
-         confirm()), et un geste destructif ne se declenche pas d'un seul clic.
-         Meme patron que les ecrans admin d'annulation et de refus. */-->
-    <p th:text="#{panier.vider.question}">Voulez-vous vraiment retirer tous les articles de votre panier ?</p>
+         confirm()), et un geste destructif ne se déclenche pas d'un seul clic.
+         Même patron que les écrans admin d'annulation et de refus. */-->
+    <p class="page-formulaire__intro" th:text="#{panier.vider.question}">Voulez-vous vraiment retirer tous les articles de votre panier ?</p>
 
     <form th:action="@{/panier/vider}" method="post">
-        <p class="actions-page">
-            <button type="submit" class="btn-cta" th:text="#{panier.vider.confirmer}">Oui, vider le panier</button>
-            <a th:href="@{/panier}" th:text="#{panier.vider.annuler}">Non, revenir au panier</a>
-        </p>
+        <div class="actions-formulaire">
+            <button type="submit" class="btn btn-danger btn-lg" th:text="#{panier.vider.confirmer}">Oui, vider le panier</button>
+            <a class="btn btn-outline-primary btn-lg" th:href="@{/panier}" th:text="#{panier.vider.annuler}">Non, revenir au panier</a>
+        </div>
     </form>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

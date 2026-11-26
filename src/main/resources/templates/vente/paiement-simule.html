@@ -2,14 +2,11 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{paiement.simule.titre} + ' | AutoServ+'">Paiement simulé | AutoServ+</title>
+    <title th:text="#{paiement.simule.titre} + ' | ' + ${garageSite.enseigne()}">Paiement simulé | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
-
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
 
 <!--/*
   En-tête RÉDUIT À LA MARQUE, et c'est délibéré : cette page tient la place de celle
@@ -19,35 +16,36 @@
   langue reste : une page de paiement multilingue est la norme, chez Mollie comme
   ailleurs.
 */-->
-<header th:replace="~{fragments/entete :: entete}"></header>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<main id="contenu">
+<main id="contenu" class="container page-formulaire" tabindex="-1">
 
-    <!--/*
-      Reprend .avis-brouillon plutôt que d'introduire une classe : même rôle
-      sémantique (« ceci n'est pas la chose réelle ») et surtout un contraste déjà
-      CALCULÉ (5.08:1). Une bannière d'avertissement dont le contraste serait choisi
-      à l'œil manquerait sa cible auprès des lecteurs qu'elle vise en premier.
-    */-->
-    <aside class="avis-brouillon" role="note">
-        <h2 th:text="#{paiement.simule.banniere}">Paiement simulé (démonstration)</h2>
-        <p th:text="#{paiement.simule.explication}">
+    <!--/* Bandeau d'avertissement de Bootstrap, texte brun foncé sur jaune pâle, 8,1:1 calculé.
+         Une bannière dont le contraste serait choisi à l'œil manquerait les lecteurs qu'elle
+         vise en premier, ceux qui pourraient croire à un vrai débit. */-->
+    <aside class="alert alert-warning" role="note">
+        <h2 class="alert-heading h5" th:text="#{paiement.simule.banniere}">Paiement simulé (démonstration)</h2>
+        <p class="mb-0" th:text="#{paiement.simule.explication}">
             Aucun prestataire de paiement n'est configuré : aucun débit réel n'a lieu.
         </p>
     </aside>
 
-    <h1 th:text="#{paiement.simule.titre}">Paiement simulé</h1>
+    <h1 class="page-formulaire__titre" th:text="#{paiement.simule.titre}">Paiement simulé</h1>
 
     <!--/*
       Numéro et montant affichés parce que c'est ce que le membre doit confronter à
       son récapitulatif avant de payer : la seule vérification qui compte à cet
       instant, chez un prestataire réel comme ici.
     */-->
-    <dl class="identite-garage">
-        <dt th:text="#{paiement.simule.commande}">Commande</dt>
-        <dd th:text="${paiement.numeroCommande()}">CMD-2026-0001</dd>
-        <dt th:text="#{paiement.simule.montant}">Montant à encaisser</dt>
-        <dd th:text="${paiement.totalTvac()}">80,21 €</dd>
+    <dl class="fiche-rdv">
+        <div>
+            <dt th:text="#{paiement.simule.commande}">Commande</dt>
+            <dd th:text="${paiement.numeroCommande()}">CMD-2026-0001</dd>
+        </div>
+        <div>
+            <dt th:text="#{paiement.simule.montant}">Montant à encaisser</dt>
+            <dd class="chiffres fiche-rdv__montant" th:text="${paiement.totalTvac()}">80,21 €</dd>
+        </div>
     </dl>
 
     <p th:text="#{paiement.simule.choix}">Choisissez l'issue à simuler :</p>
@@ -58,20 +56,18 @@
       dans l'application ne permet de les provoquer depuis l'interface.
     */-->
     <form th:action="@{/paiement-fictif/{ref}(ref=${paiement.referencePrestataire()})}"
-          method="post">
-        <p class="actions-page">
-            <button type="submit" name="issue" value="REUSSITE" class="btn-cta"
-                    th:text="#{paiement.simule.reussir}">Simuler un paiement réussi</button>
-            <button type="submit" name="issue" value="ECHEC" class="lien-bouton"
-                    th:text="#{paiement.simule.echouer}">Simuler un échec de paiement</button>
-            <button type="submit" name="issue" value="ATTENTE" class="lien-bouton"
-                    th:text="#{paiement.simule.attente}">Simuler un paiement en attente de confirmation</button>
-            <button type="submit" name="issue" value="OUVERT_NON_ANNULABLE" class="lien-bouton"
-                    th:text="#{paiement.simule.ouvert}">Laisser le paiement ouvert, sans annulation possible</button>
-        </p>
+          method="post" class="issues-paiement">
+        <button type="submit" name="issue" value="REUSSITE" class="btn btn-action btn-lg"
+                th:text="#{paiement.simule.reussir}">Simuler un paiement réussi</button>
+        <button type="submit" name="issue" value="ECHEC" class="btn btn-outline-primary"
+                th:text="#{paiement.simule.echouer}">Simuler un échec de paiement</button>
+        <button type="submit" name="issue" value="ATTENTE" class="btn btn-outline-primary"
+                th:text="#{paiement.simule.attente}">Simuler un paiement en attente de confirmation</button>
+        <button type="submit" name="issue" value="OUVERT_NON_ANNULABLE" class="btn btn-outline-primary"
+                th:text="#{paiement.simule.ouvert}">Laisser le paiement ouvert, sans annulation possible</button>
     </form>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>
