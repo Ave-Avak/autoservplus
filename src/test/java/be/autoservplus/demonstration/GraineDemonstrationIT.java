@@ -59,6 +59,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
@@ -401,6 +402,41 @@ class GraineDemonstrationIT extends SocleIntegration {
     }
 
     @Test
+    @Order(13)
+    @DisplayName("avis de la graine : note sur les cartes à partir de trois avis, moyenne de 4,5 à l'accueil")
+    void avisDeLaGraine() throws Exception {
+        assertThat(jdbc.queryForList("""
+                SELECT s.code, count(*) FROM avis a
+                JOIN ligne_intervention l ON l.intervention_id = a.intervention_id
+                JOIN service s ON s.id = l.service_id
+                WHERE a.publie GROUP BY s.code ORDER BY s.code""").stream()
+                .collect(Collectors.toMap(l -> (String) l.get("code"), l -> (Long) l.get("count"))))
+                .containsExactlyInAnyOrderEntriesOf(Map.of("VIDANGE_STD", 3L, "REVISION_ANNUELLE", 4L,
+                        "PLAQUETTES_AV", 3L, "RECHARGE_CLIM", 2L, "MONTAGE_PNEU", 1L));
+        // Chaque avis porte sur une intervention terminée de son auteur, règle de dépôt du module.
+        assertThat(jdbc.queryForObject("""
+                SELECT count(*) FROM avis a
+                JOIN intervention i ON i.id = a.intervention_id
+                JOIN vehicule v ON v.id = i.vehicule_id
+                WHERE i.statut <> 'TERMINEE' OR v.membre_id <> a.membre_id""", Long.class)).isZero();
+
+        Document liste = Jsoup.parse(mvc.perform(get("/services").header("Accept-Language", "fr")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8));
+        Map<String, String> notes = new HashMap<>();
+        for (Element carte : liste.select(".carte-article")) {
+            Element note = carte.selectFirst(".carte-article__note");
+            if (note != null) {
+                notes.put(carte.selectFirst(".carte-article__nom").text(), note.text());
+            }
+        }
+        assertThat(notes).hasSize(3).containsValues("4,7 sur 5 (3 avis)", "4,8 sur 5 (4 avis)");
+
+        String accueil = mvc.perform(get("/").header("Accept-Language", "fr")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        assertThat(accueil).contains("4,5 sur 5").contains("13 avis publiés.");
+    }
+
+    @Test
     @Order(12)
     @DisplayName("tarifs de l'accueil : six forfaits rangés de 1 à 6, la vidange en premier")
     void prestationsDeLAccueil() {
@@ -489,7 +525,7 @@ class GraineDemonstrationIT extends SocleIntegration {
 
     private static Map<String, Long> lignesAttendues() {
         Map<String, Long> lignes = new LinkedHashMap<>();
-        lignes.put("avis", 1L);
+        lignes.put("avis", 13L);
         lignes.put("avoir", 0L);
         lignes.put("categorie", 24L);
         lignes.put("clef_api", 0L);
@@ -511,12 +547,12 @@ class GraineDemonstrationIT extends SocleIntegration {
         lignes.put("historique_modification_commande", 0L);
         lignes.put("historique_modification_compte", 0L);
         lignes.put("historique_piece_incluse", 0L);
-        lignes.put("historique_statut_intervention", 13L);
+        lignes.put("historique_statut_intervention", 49L);
         lignes.put("historique_statut_utilisateur", 3L);
         lignes.put("indisponibilite", 0L);
-        lignes.put("intervention", 6L);
+        lignes.put("intervention", 18L);
         lignes.put("ligne_devis", 0L);
-        lignes.put("ligne_intervention", 8L);
+        lignes.put("ligne_intervention", 20L);
         lignes.put("ligne_panier", 2L);
         lignes.put("message", 2L);
         lignes.put("notification", 4L);
@@ -533,8 +569,8 @@ class GraineDemonstrationIT extends SocleIntegration {
         lignes.put("rdv_service", 2L);
         lignes.put("reservation_parking", 0L);
         lignes.put("service", 31L);
-        lignes.put("utilisateur", 3L);
-        lignes.put("vehicule", 2L);
+        lignes.put("utilisateur", 15L);
+        lignes.put("vehicule", 14L);
         lignes.put("version_document", 24L);
         return Collections.unmodifiableMap(lignes);
     }
