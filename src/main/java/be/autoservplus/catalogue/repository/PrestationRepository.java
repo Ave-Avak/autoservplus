@@ -75,15 +75,7 @@ public interface PrestationRepository extends JpaRepository<Prestation, Long> {
     @Query(value = """
             SELECT p FROM Prestation p JOIN FETCH p.categorie c
             WHERE p.actif = true
-              AND ( cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(p.traductions.libelleNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(p.traductions.libelleEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(p.description)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(p.traductions.descriptionNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(p.traductions.descriptionEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(c.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(c.libelleNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(c.libelleEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!')
+            """ + MOTS + """
             ORDER BY CASE WHEN :langue = 'nl' THEN COALESCE(p.traductions.libelleNl, p.libelle)
                           WHEN :langue = 'en' THEN COALESCE(p.traductions.libelleEn, p.libelle)
                           ELSE p.libelle END, p.id
@@ -91,16 +83,30 @@ public interface PrestationRepository extends JpaRepository<Prestation, Long> {
             countQuery = """
             SELECT COUNT(p) FROM Prestation p JOIN p.categorie c
             WHERE p.actif = true
-              AND ( cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(p.traductions.libelleNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(p.traductions.libelleEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(p.description)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(p.traductions.descriptionNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(p.traductions.descriptionEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(c.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(c.libelleNl)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
-                 OR cast(function('unaccent', LOWER(c.libelleEn)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!')
-            """)
-    Page<Prestation> rechercher(@Param("motif") String motif, @Param("langue") String langue,
-                           Pageable pagination);
+            """ + MOTS)
+    Page<Prestation> rechercherParMots(@Param("mot1") String mot1, @Param("mot2") String mot2,
+                                   @Param("mot3") String mot3, @Param("mot4") String mot4,
+                                   @Param("mot5") String mot5, @Param("langue") String langue,
+                                   Pageable pagination);
+
+    /** {@link #rechercherParMots} avec les cinq motifs de {@code MotifRecherche.mots}. */
+    default Page<Prestation> rechercher(List<String> motifs, String langue, Pageable pagination) {
+        return rechercherParMots(motifs.get(0), motifs.get(1), motifs.get(2), motifs.get(3),
+                motifs.get(4), langue, pagination);
+    }
+
+    /** Tout le texte cherché d'un article, en minuscules, champs séparés par une espace. */
+    String TEXTE_CHERCHE = "cast(function('unaccent', LOWER(cast(function('concat_ws', ' ', "
+            + "p.libelle, p.traductions.libelleNl, p.traductions.libelleEn, "
+            + "p.description, p.traductions.descriptionNl, p.traductions.descriptionEn, "
+            + "c.libelle, c.libelleNl, c.libelleEn) as String))) as String)";
+
+    /** Chaque mot présent dans le texte cherché, comme {@code PieceRepository.MOTS}. */
+    String MOTS = ""
+            + "  AND " + TEXTE_CHERCHE + " LIKE cast(function('unaccent', :mot1) as String) ESCAPE '!'\n"
+            + "  AND " + TEXTE_CHERCHE + " LIKE cast(function('unaccent', :mot2) as String) ESCAPE '!'\n"
+            + "  AND " + TEXTE_CHERCHE + " LIKE cast(function('unaccent', :mot3) as String) ESCAPE '!'\n"
+            + "  AND " + TEXTE_CHERCHE + " LIKE cast(function('unaccent', :mot4) as String) ESCAPE '!'\n"
+            + "  AND " + TEXTE_CHERCHE + " LIKE cast(function('unaccent', :mot5) as String) ESCAPE '!'\n";
+
 }

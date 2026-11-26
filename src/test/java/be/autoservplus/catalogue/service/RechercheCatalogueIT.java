@@ -86,6 +86,16 @@ class RechercheCatalogueIT extends SocleIntegration {
     }
 
     @Test
+    @DisplayName("plusieurs mots se cherchent chacun, à des endroits différents de l'article")
+    void motsSepares() {
+        assertThat(libelles(catalogue.rechercherPrestations("parallelisme roulants", 0)))
+                .containsExactly("Réglage zqx du parallélisme");
+        assertThat(libelles(catalogue.rechercherProduits("ampoule eclairage", Rayon.PIECES_AUTO, 0)))
+                .containsExactly("Ampoule zqx");
+        assertThat(libelles(catalogue.rechercherPrestations("parallelisme zqxabsent", 0))).isEmpty();
+    }
+
+    @Test
     @DisplayName("la marque et la référence du fabricant restent cherchées")
     void marqueEtReference() {
         assertThat(libelles(catalogue.rechercherProduits("lumiere doree", Rayon.PIECES_AUTO, 0))).containsExactly("Ampoule zqx");

@@ -69,9 +69,9 @@ class CatalogueServiceTest {
         }
 
         @Test
-        @DisplayName("interroge le dépôt avec un motif en minuscules, encadré de jokers")
+        @DisplayName("interroge le dépôt avec un motif par mot, en minuscules, encadré de jokers")
         void nettoieLeTerme() {
-            when(prestations.rechercher(eq("%vidange%"), eq("nl"), any())).thenReturn(org.springframework.data.domain.Page.empty());
+            when(prestations.rechercher(eq(List.of("%vidange%", "%", "%", "%", "%")), eq("nl"), any())).thenReturn(org.springframework.data.domain.Page.empty());
             // Sans contexte Spring, la langue hors requête serait celle de la machine : le
             // test fixe celle de la requête, que le service transmet pour le tri.
             LocaleContextHolder.setLocale(Locale.forLanguageTag("nl-BE"));
@@ -81,7 +81,7 @@ class CatalogueServiceTest {
                 LocaleContextHolder.resetLocaleContext();
             }
 
-            verify(prestations).rechercher(eq("%vidange%"), eq("nl"), any());
+            verify(prestations).rechercher(eq(List.of("%vidange%", "%", "%", "%", "%")), eq("nl"), any());
         }
     }
 

@@ -149,11 +149,11 @@ public class CatalogueService {
         if (termeTropCourt(terme)) {
             return Page.empty();
         }
-        String motif = MotifRecherche.de(terme);
+        List<String> motifs = MotifRecherche.mots(terme);
         Locale langue = langue();
-        Page<Prestation> page = prestations.rechercher(motif, langue.getLanguage(), pagination(numeroPage));
+        Page<Prestation> page = prestations.rechercher(motifs, langue.getLanguage(), pagination(numeroPage));
         if (page.isEmpty() && page.getTotalElements() > 0) {
-            page = prestations.rechercher(motif, langue.getLanguage(), pagination(page.getTotalPages() - 1));
+            page = prestations.rechercher(motifs, langue.getLanguage(), pagination(page.getTotalPages() - 1));
         }
         return page.map(prestation -> ArticleVue.de(prestation, langue));
     }
@@ -163,11 +163,11 @@ public class CatalogueService {
         if (termeTropCourt(terme)) {
             return Page.empty();
         }
-        String motif = MotifRecherche.de(terme);
+        List<String> motifs = MotifRecherche.mots(terme);
         Locale langue = langue();
-        Page<Piece> page = pieces.rechercher(motif, rayon, langue.getLanguage(), pagination(numeroPage));
+        Page<Piece> page = pieces.rechercher(motifs, rayon, langue.getLanguage(), pagination(numeroPage));
         if (page.isEmpty() && page.getTotalElements() > 0) {
-            page = pieces.rechercher(motif, rayon, langue.getLanguage(), pagination(page.getTotalPages() - 1));
+            page = pieces.rechercher(motifs, rayon, langue.getLanguage(), pagination(page.getTotalPages() - 1));
         }
         return page.map(piece -> ArticleVue.de(piece, langue));
     }
