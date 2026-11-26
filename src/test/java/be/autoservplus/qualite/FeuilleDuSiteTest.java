@@ -43,7 +43,10 @@ class FeuilleDuSiteTest {
         Matcher adresses = ADRESSE.matcher(feuille());
         List<String> cites = adresses.results().map(r -> r.group(1)).distinct().toList();
 
-        assertThat(cites).as("icônes et polices").hasSizeGreaterThanOrEqualTo(24);
+        // Les quatre graisses d'Inter, et les icônes des modules de Bootstrap importés.
+        assertThat(cites).as("icônes et polices").hasSizeGreaterThanOrEqualTo(10)
+                .anyMatch(adresse -> adresse.endsWith("inter-regular.woff2"))
+                .anyMatch(adresse -> adresse.endsWith("menu-replie.svg"));
         assertThat(cites).allSatisfy(adresse -> {
             // Adresse relative à la feuille, servie sous /css.
             String chemin = "/" + URI.create("static/css/").resolve(adresse).getPath();
