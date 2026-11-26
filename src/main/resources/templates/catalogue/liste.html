@@ -81,12 +81,9 @@
                          th:attr="loading=${etat.index > 0} ? 'lazy' : null,
                                   fetchpriority=${etat.index == 0} ? 'high' : null"
                          decoding="async">
-                    <div th:if="${photo == null}" class="carte-article__visuel" aria-hidden="true">
-                        <svg th:replace="${rayon == null} ? ~{fragments/icones :: cle}
-                                         : (${rayon.name() == 'ACCESSOIRES'} ? ~{fragments/icones :: sac}
-                                         : (${rayon.name() == 'ENTRETIEN'} ? ~{fragments/icones :: eclat}
-                                         : ~{fragments/icones :: outil}))"></svg>
-                    </div>
+                    <!--/* Sans photo propre, la carte n'a pas de visuel : un visuel de catégorie ou
+                         un pictogramme se répétait de carte en carte et ne disait rien de l'article.
+                         La catégorie, en texte au-dessus du nom, dit ce qu'est l'article. */-->
                     <div class="carte-article__corps">
                         <!--/* Catégorie tue quand elle répète le nom (« Diagnostic électronique »
                              sous « Diagnostic électronique », constat U3 de l'étape 0). */-->
