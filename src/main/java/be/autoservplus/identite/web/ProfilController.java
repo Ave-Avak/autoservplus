@@ -1,6 +1,7 @@
 package be.autoservplus.identite.web;
 
 import be.autoservplus.common.exception.RegleMetierException;
+import be.autoservplus.common.web.RetourInterne;
 import be.autoservplus.identite.domain.Langue;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.service.ProfilService;
@@ -19,6 +20,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.LocaleResolver;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
@@ -52,7 +54,9 @@ public class ProfilController {
     }
 
     @GetMapping
-    public String afficher(@AuthenticationPrincipal UserDetails membre, Model modele) {
+    public String afficher(@AuthenticationPrincipal UserDetails membre,
+                           @RequestParam(required = false) String retour, Model modele) {
+        RetourInterne.permis(retour).ifPresent(adresse -> modele.addAttribute("retour", adresse));
         Utilisateur profil = service.profilDe(membre.getUsername());
         modele.addAttribute("formulaire", ProfilForm.de(profil));
         preparer(modele, profil);
@@ -63,11 +67,13 @@ public class ProfilController {
     public String enregistrer(@AuthenticationPrincipal UserDetails membre,
                               @Valid @ModelAttribute("formulaire") ProfilForm formulaire,
                               BindingResult erreurs,
+                              @RequestParam(required = false) String retour,
                               Model modele,
                               HttpServletRequest requete,
                               HttpServletResponse reponse,
                               RedirectAttributes redirection) {
 
+        RetourInterne.permis(retour).ifPresent(adresse -> modele.addAttribute("retour", adresse));
         // Erreur GLOBALE et non portee par un champ : la regle lie trois champs, et
         // l accrocher a l un d eux designerait arbitrairement un coupable.
         if (!formulaire.adresseCoherente()) {
@@ -105,7 +111,8 @@ public class ProfilController {
         // fait resoudre la locale a neuf. Il evite par ailleurs qu un rafraichissement
         // rejoue l enregistrement.
         redirection.addFlashAttribute("enregistre", true);
-        return "redirect:/mon-profil";
+        // Adresse complétée depuis le récapitulatif : retour à la commande qu'elle bloquait.
+        return "redirect:" + RetourInterne.permis(retour).orElse("/mon-profil");
     }
 
     private void appliquerLangue(HttpServletRequest requete, HttpServletResponse reponse,

@@ -33,7 +33,11 @@
 
     <p th:if="${vehicules.isEmpty()}" class="message">
         <span th:text="#{rdv.formulaire.sans-vehicule}">Vous devez d'abord enregistrer un véhicule.</span>
-        <a th:href="@{/mes-vehicules/nouveau}" th:text="#{vehicule.liste.ajouter}">Ajouter un véhicule</a>
+        <!--/* Retour au formulaire après l'ajout, avec la prestation déjà choisie. */-->
+        <a th:with="retourRdv=${param.prestation != null}
+                    ? '/mes-rendez-vous/nouveau?prestation=' + ${param.prestation[0]} : '/mes-rendez-vous/nouveau'"
+           th:href="@{/mes-vehicules/nouveau(retour=${retourRdv})}"
+           th:text="#{vehicule.liste.ajouter}">Ajouter un véhicule</a>
     </p>
 
     <form th:unless="${vehicules.isEmpty()}"

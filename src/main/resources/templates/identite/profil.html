@@ -31,6 +31,7 @@
         Si cette adresse peut être utilisée, un lien de confirmation vient d'y être envoyé.</div>
 
     <form class="formulaire" th:action="@{/mon-profil}" th:object="${formulaire}" method="post">
+        <input type="hidden" name="retour" th:if="${retour != null}" th:value="${retour}">
 
         <div class="message message-erreur" th:if="${#fields.hasGlobalErrors()}" role="alert">
             <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Erreur</p>
