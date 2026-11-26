@@ -17,6 +17,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
 import org.mockito.Mock;
@@ -29,6 +31,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -132,7 +135,7 @@ class SuppressionCompteServiceTest {
         void confirmationInvalide() {
             compteExiste();
 
-            for (String saisie : new String[]{null, "", "supprimer", "SUPPRIME", "SUPPRIMER!"}) {
+            for (String saisie : new String[]{null, "", "   ", "SUPPRIME", "SUPPRIMER!", "EFFACER"}) {
                 assertThatThrownBy(() -> service.supprimer(
                         "marie@exemple.be", MOT_DE_PASSE, saisie))
                         .isInstanceOf(ConfirmationSuppressionInvalideException.class);
@@ -142,14 +145,33 @@ class SuppressionCompteServiceTest {
         }
 
         @Test
-        @DisplayName("les espaces autour du mot sont tolerees, la casse ne l'est pas")
+        @DisplayName("les espaces autour du mot et la casse sont tolérés")
         void confirmationNettoyee() {
             compteExiste();
             parcVide();
 
-            service.supprimer("marie@exemple.be", MOT_DE_PASSE, "  SUPPRIMER  ");
+            service.supprimer("marie@exemple.be", MOT_DE_PASSE, "  Supprimer  ");
 
             assertThat(marie.estAnonymise()).isTrue();
+        }
+
+        @ParameterizedTest(name = "{0} : {1}")
+        @CsvSource({"fr, SUPPRIMER", "nl, VERWIJDEREN", "en, DELETE"})
+        @DisplayName("un mot par langue de l'écran, accepté en minuscules")
+        void motDeChaqueLangue(String langue, String mot) {
+            assertThat(SuppressionCompteService.motDeConfirmation(Locale.of(langue))).isEqualTo(mot);
+            compteExiste();
+            parcVide();
+
+            service.supprimer("marie@exemple.be", MOT_DE_PASSE, mot.toLowerCase(Locale.ROOT));
+
+            assertThat(marie.estAnonymise()).isTrue();
+        }
+
+        @Test
+        @DisplayName("langue sans mot propre : repli sur le français")
+        void repliSurLeFrancais() {
+            assertThat(SuppressionCompteService.motDeConfirmation(Locale.GERMAN)).isEqualTo("SUPPRIMER");
         }
 
         @Test

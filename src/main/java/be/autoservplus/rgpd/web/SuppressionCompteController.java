@@ -64,9 +64,10 @@ public class SuppressionCompteController {
     public String page(@RequestParam(name = "erreur", required = false) String codeErreur,
                        Model modele) {
         modele.addAttribute("titre", msg("suppression.titre"));
-        // Le mot à recopier vient du service : l'écran affiche exactement ce que la
-        // garde attend, il n'en tient pas une copie qui pourrait diverger.
-        modele.addAttribute("motDeConfirmation", SuppressionCompteService.MOT_DE_CONFIRMATION);
+        // Le mot à recopier vient du service, dans la langue de l'écran : l'écran affiche
+        // exactement ce que la garde attend, il n'en tient pas une copie qui pourrait diverger.
+        modele.addAttribute("motDeConfirmation",
+                SuppressionCompteService.motDeConfirmation(LocaleContextHolder.getLocale()));
         messageErreur(codeErreur).ifPresent(erreur -> modele.addAttribute("erreur", erreur));
         return "rgpd/supprimer-mon-compte";
     }
