@@ -187,9 +187,13 @@ public class DisponibiliteService {
 
     // --- regles pures, sans acces aux donnees ---------------------------------------
 
-    /** Le départ est-il l'ouverture de la plage plus un multiple du pas ? */
+    /**
+     * Le départ est-il l'ouverture de la plage plus un multiple du pas ? Le calcul se fait
+     * en nanosecondes : l'instant envoyé par le formulaire peut porter une fraction de
+     * seconde, qu'un calcul en secondes tronquerait.
+     */
     static boolean surLaGrille(LocalTime ouverture, LocalTime depart, Duration pas) {
-        return Duration.between(ouverture, depart).toSeconds() % pas.toSeconds() == 0;
+        return Duration.between(ouverture, depart).toNanos() % pas.toNanos() == 0;
     }
 
     static boolean dansLaFenetre(ReglesDeCreneau regles, ParametreAtelier p, Instant maintenant,

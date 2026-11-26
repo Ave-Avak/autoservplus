@@ -382,6 +382,13 @@ class DisponibiliteServiceTest {
         }
 
         @Test
+        @DisplayName("une fraction de seconde suffit à sortir de la grille")
+        void fractionDeSeconde() {
+            assertThat(DisponibiliteService.surLaGrille(LocalTime.of(8, 0), LocalTime.of(9, 0, 0, 500_000_000),
+                    Duration.ofMinutes(30))).isFalse();
+        }
+
+        @Test
         @DisplayName("un depart sous le delai minimal ne l est pas")
         void pasReservableTropTot() {
             LocalDate lundi = LocalDate.of(2026, 9, 14);
