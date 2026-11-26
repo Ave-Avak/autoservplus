@@ -42,13 +42,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class TypographieTest {
 
     private static final List<String> RACINES = List.of(
-            "src", "docs", ".github", "README.md", "CONTRIBUTING.md", "THIRD-PARTY.md",
+            "src", "docs", "outils", ".github", "README.md", "CONTRIBUTING.md", "THIRD-PARTY.md",
             "Dockerfile", "docker-compose.yml", "docker-compose.prod.yml", "pom.xml",
             ".dockerignore", ".env.example");
 
     private static final Set<String> EXTENSIONS = Set.of(
             "java", "js", "css", "html", "properties", "yml", "yaml", "xml", "md", "sql", "sh",
-            "txt", "json", "factories");
+            "txt", "json", "factories", "py");
 
     /** Fichiers ecartes pour de bon, avec leur motif. */
     private static final Map<String, String> EXCLUS = Map.of(

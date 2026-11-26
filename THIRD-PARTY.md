@@ -142,9 +142,9 @@ licence, texte complet dans `OFL.txt` à côté des fichiers.
 
 | Fichier | SHA-256 |
 |---|---|
-| `inter-regular.ttf` | `af86095c39147680d6da2c7524a86835197cb24d3627333f9d801368e29746d6` |
-| `inter-bold.ttf` | `43593f0c9efc67df7f7e161f1dcc3e5c94d8fa387063d195ccff6d9da2a84952` |
-| `inter-italic.ttf` | `e19ef471314d7433b8b5a2576a31e8d070bdbc43ebc5d9d711d71d69ff91e88f` |
+| `inter-regular.ttf` | `2257dc9a11b29a83c0b322e018b8c56f439a4b8d191a586dfa5c7a3aa952133d` |
+| `inter-bold.ttf` | `ce754f69d05710b2eafb7aea0eaf72f12c47be1c81da98742bcee63cccdf4e40` |
+| `inter-italic.ttf` | `ed76a524d01b71748dbf4f641ac6a5f5bbc9ad2e8372b9bdee5d0c8620b9b3ce` |
 
 ## Heroicons 2.2.0
 
