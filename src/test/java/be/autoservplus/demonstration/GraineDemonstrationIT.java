@@ -19,6 +19,7 @@ import be.autoservplus.support.SocleIntegration;
 import be.autoservplus.vente.service.GenerateurNumeroCommande;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
+import org.jsoup.nodes.Element;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.MethodOrderer;
@@ -358,6 +359,24 @@ class GraineDemonstrationIT extends SocleIntegration {
         List<String> sources = cartes.select(".carte-article__image").eachAttr("src");
         assertThat(sources).doesNotHaveDuplicates();
         assertThat(cartes.select(".carte-article__visuel")).isNotEmpty();
+    }
+
+    @Test
+    @Order(14)
+    @DisplayName("liste des prestations : première vignette en priorité, les autres différées, 480 px au téléphone")
+    void vignettesDeLaListe() throws Exception {
+        String liste = mvc.perform(get("/services")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+        List<Element> images = Jsoup.parse(liste).select(".carte-article__image");
+        assertThat(images).hasSizeGreaterThan(3);
+        assertThat(images.get(0).attr("fetchpriority")).isEqualTo("high");
+        assertThat(images.get(0).hasAttr("loading")).isFalse();
+        assertThat(images.subList(1, images.size())).allSatisfy(image ->
+                assertThat(image.attr("loading")).isEqualTo("lazy"));
+        assertThat(images).allSatisfy(image -> {
+            assertThat(image.attr("sizes")).endsWith(" 274px");
+            assertThat(image.hasAttr("width") && image.hasAttr("height")).isTrue();
+        });
     }
 
     @Test
