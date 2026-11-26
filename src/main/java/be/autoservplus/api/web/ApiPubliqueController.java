@@ -224,6 +224,10 @@ public class ApiPubliqueController {
         // Une prestation à l'heure ne se réserve pas en ligne : son prix est un taux, la
         // durée du travail n'est connue qu'à l'atelier.
         if (!vue.aLHeure()) {
+            liens.put("disponibilites", Lien.versApi(UriComponentsBuilder.fromUriString(base)
+                    .path("/api/v1/disponibilites")
+                    .queryParam("prestation", vue.reference())
+                    .toUriString()));
             liens.put("reservation", Lien.versPage(UriComponentsBuilder.fromUriString(base)
                     .path("/mes-rendez-vous/nouveau")
                     .queryParam("prestation", vue.reference())
@@ -247,6 +251,7 @@ public class ApiPubliqueController {
         liens.put("collection", Lien.versApi(api("/garages")));
         liens.put("prestations", Lien.versApi(api("/prestations")));
         liens.put("articles", Lien.versApi(api("/articles")));
+        liens.put("disponibilites", Lien.versApi(api("/disponibilites")));
         liens.put("site", Lien.versPage(site("/")));
         liens.put("contact", Lien.versPage(site("/contact")));
         liens.put("reservation", Lien.versPage(site("/mes-rendez-vous/nouveau")));

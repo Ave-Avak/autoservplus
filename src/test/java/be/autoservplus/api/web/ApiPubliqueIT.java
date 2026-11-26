@@ -353,6 +353,47 @@ class ApiPubliqueIT extends SocleIntegration {
     }
 
     @Nested
+    @DisplayName("Disponibilités (F43)")
+    class Disponibilites {
+
+        @Test
+        @DisplayName("répond en anonyme, en JSON-LD, avec ETag et cache public court")
+        void anonyme() throws Exception {
+            mvc.perform(get("/api/v1/disponibilites"))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentTypeCompatibleWith("application/ld+json"))
+                    .andExpect(header().exists("ETag"))
+                    .andExpect(header().string("Cache-Control", containsString("max-age=60")))
+                    .andExpect(jsonPath("$['@type']").value("ItemList"))
+                    .andExpect(jsonPath("$.itemListElement").isArray());
+        }
+
+        @Test
+        @DisplayName("prestation inconnue : 404, référence mal formée : 400")
+        void prestationInconnue() throws Exception {
+            mvc.perform(get("/api/v1/disponibilites").param("prestation", UUID.randomUUID().toString()))
+                    .andExpect(status().isNotFound());
+            mvc.perform(get("/api/v1/disponibilites").param("prestation", "pas-une-reference"))
+                    .andExpect(status().isBadRequest());
+        }
+
+        @Test
+        @DisplayName("route exacte : rien n'est public sous elle")
+        void routeExacte() throws Exception {
+            mvc.perform(get("/api/v1/disponibilites/postes"))
+                    .andExpect(status().is3xxRedirection());
+        }
+
+        @Test
+        @DisplayName("le garage y mène par ses liens")
+        void lienDuGarage() throws Exception {
+            mvc.perform(get("/api/v1/garages"))
+                    .andExpect(jsonPath("$._embedded.garages[0]._links.disponibilites.href",
+                            endsWith("/api/v1/disponibilites")));
+        }
+    }
+
+    @Nested
     @DisplayName("Surface exposee")
     class Surface {
 

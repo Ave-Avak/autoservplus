@@ -261,8 +261,13 @@ public class SecuriteConfig {
                         // publique devient un geste explicite, vérifiable en revue.
                         // ApiPubliqueIT.surfaceFermeeParDefaut verrouille l'écart entre
                         // les deux écritures (302 attendu, 404 avec le joker).
+                        //
+                        // /api/v1/disponibilites (F43) dit quelles heures sont libres, sans
+                        // poste ni rendez-vous : ce que le formulaire montrerait à tout
+                        // membre. Route exacte, sans « /** » : rien ne naît dessous.
                         .requestMatchers(HttpMethod.GET,
-                                "/api/v1/prestations/**", "/api/v1/articles/**", "/api/v1/garages/**")
+                                "/api/v1/prestations/**", "/api/v1/articles/**", "/api/v1/garages/**",
+                                "/api/v1/disponibilites")
                         .permitAll()
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html")
                         .permitAll()
