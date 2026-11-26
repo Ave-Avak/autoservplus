@@ -3,6 +3,7 @@ package be.autoservplus.avis.service;
 import be.autoservplus.avis.domain.Avis;
 import be.autoservplus.avis.repository.AvisRepository;
 import be.autoservplus.avis.service.dto.AvisVue;
+import be.autoservplus.avis.service.dto.NotePrestation;
 import be.autoservplus.avis.service.dto.SyntheseAvis;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
@@ -25,8 +26,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.ZoneId;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Depot et consultation des avis (BL-4), cote membre et cote public.
@@ -77,6 +81,20 @@ public class AvisService {
     public SyntheseAvis synthese(UUID referencePrestation) {
         SyntheseAvis synthese = avis.syntheseParPrestation(referencePrestation);
         return synthese == null ? SyntheseAvis.vide() : synthese;
+    }
+
+    /**
+     * Notes à montrer sur les cartes de la liste des prestations : seules celles qui ont
+     * atteint le seuil de {@link SyntheseAvis#noteAffichable()}. Une prestation absente de
+     * la table n'affiche pas de note.
+     */
+    public Map<UUID, SyntheseAvis> notesAffichables(Collection<UUID> referencesPrestations) {
+        if (referencesPrestations.isEmpty()) {
+            return Map.of();
+        }
+        return avis.notesParPrestation(referencesPrestations).stream()
+                .filter(note -> note.synthese().noteAffichable())
+                .collect(Collectors.toUnmodifiableMap(NotePrestation::reference, NotePrestation::synthese));
     }
 
     /** Avis publies d une prestation, du plus recent au plus ancien. */

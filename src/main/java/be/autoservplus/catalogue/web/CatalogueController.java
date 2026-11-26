@@ -63,6 +63,9 @@ public class CatalogueController {
         modele.addAttribute("articles", articles);
         modele.addAttribute("tauxHoraires", toutes.stream().filter(ArticleVue::aLHeure).toList());
         modele.addAttribute("vignettes", galerie.vignettesDePrestations(references(articles)));
+        // Note sur la carte à partir de trois avis publiés, jamais sur les produits : un avis
+        // porte sur une intervention, donc sur une prestation.
+        modele.addAttribute("notes", avis.notesAffichables(references(articles)));
         modele.addAttribute("categories", service.categoriesDePrestations());
         modele.addAttribute("categorieActive", categorie);
         modele.addAttribute("typeArticle", "service");

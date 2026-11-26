@@ -2,6 +2,7 @@ package be.autoservplus.avis.service;
 
 import be.autoservplus.avis.domain.Avis;
 import be.autoservplus.avis.repository.AvisRepository;
+import be.autoservplus.avis.service.dto.NotePrestation;
 import be.autoservplus.avis.service.dto.SyntheseAvis;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
@@ -31,6 +32,7 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -226,6 +228,21 @@ class AvisServiceTest {
             assertThat(new SyntheseAvis(4.5, 2L).noteAffichable()).isFalse();
             assertThat(new SyntheseAvis(4.3, 3L).noteAffichable()).isTrue();
             assertThat(SyntheseAvis.vide().noteAffichable()).isFalse();
+        }
+
+        @Test
+        @DisplayName("cartes de la liste : seules les prestations au seuil gardent leur note")
+        void notesDesCartes() {
+            UUID troisAvis = UUID.randomUUID();
+            UUID deuxAvis = UUID.randomUUID();
+            when(avis.notesParPrestation(List.of(troisAvis, deuxAvis))).thenReturn(List.of(
+                    new NotePrestation(troisAvis, 4.67, 3L), new NotePrestation(deuxAvis, 5.0, 2L)));
+
+            Map<UUID, SyntheseAvis> notes = service.notesAffichables(List.of(troisAvis, deuxAvis));
+
+            assertThat(notes).containsOnlyKeys(troisAvis);
+            assertThat(notes.get(troisAvis).moyenneAffichee()).isEqualByComparingTo("4.7");
+            assertThat(service.notesAffichables(List.of())).isEmpty();
         }
     }
 }

@@ -93,6 +93,11 @@
                             <a th:href="@{${article.chemin()}}" th:text="${article.libelle}"
                                th:lang="${article.langueLibelle}">Libellé</a>
                         </h2>
+                        <p class="carte-article__note" th:if="${notes != null and notes.containsKey(article.reference())}"
+                           th:with="note=${notes.get(article.reference())}">
+                            <svg th:replace="~{fragments/icones :: etoile-pleine}"></svg>
+                            <span th:text="#{catalogue.carte.note(${note.moyenneAffichee()}, ${note.nombre()})}">4,7 sur 5 (3 avis)</span>
+                        </p>
                         <p class="carte-article__description" th:text="${article.description}"
                            th:lang="${article.langueDescription}">Description</p>
                         <p class="carte-article__meta" th:if="${(article.dureeMinutes != null and !article.aLHeure()) or article.marque != null}">
