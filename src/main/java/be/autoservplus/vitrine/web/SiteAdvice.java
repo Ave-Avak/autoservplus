@@ -2,6 +2,8 @@ package be.autoservplus.vitrine.web;
 
 import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.vitrine.service.HorairesOuvertureService;
+import be.autoservplus.vitrine.service.EtatDuJourService;
+import be.autoservplus.vitrine.web.dto.EtatDuJour;
 import be.autoservplus.vitrine.web.dto.HorairesGroupesVue;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,7 +17,7 @@ import java.util.List;
 
 /**
  * Ce que le gabarit du site public affiche sur chaque page : le garage, ses horaires en
- * résumé et, sous les profils de démonstration, la mention qui dit que tout y est fictif.
+ * résumé pour le pied, l'état du jour pour le bandeau et, sous les profils de démonstration, la mention qui dit que tout y est fictif.
  *
  * <p>Les horaires viennent de {@code plage_ouverture}, comme sur la page de contact, et
  * sont rendus en variable paresseuse : la requête ne part que si la page affiche le
@@ -34,12 +36,15 @@ public class SiteAdvice {
 
     private final ObjectProvider<IdentiteGarage> garage;
     private final ObjectProvider<HorairesOuvertureService> horaires;
+    private final ObjectProvider<EtatDuJourService> etatDuJour;
     private final boolean mentionDemonstration;
 
     public SiteAdvice(ObjectProvider<IdentiteGarage> garage, ObjectProvider<HorairesOuvertureService> horaires,
+                      ObjectProvider<EtatDuJourService> etatDuJour,
                       @Value("${autoservplus.vitrine.mention-demonstration:false}") boolean mentionDemonstration) {
         this.garage = garage;
         this.horaires = horaires;
+        this.etatDuJour = etatDuJour;
         this.mentionDemonstration = mentionDemonstration;
     }
 
@@ -55,6 +60,13 @@ public class SiteAdvice {
             @Override
             protected List<HorairesGroupesVue> loadValue() {
                 return service == null ? List.of() : service.resume();
+            }
+        });
+        EtatDuJourService etat = etatDuJour.getIfAvailable();
+        modele.addAttribute("etatDuJour", new LazyContextVariable<EtatDuJour>() {
+            @Override
+            protected EtatDuJour loadValue() {
+                return etat == null ? null : etat.maintenant();
             }
         });
     }

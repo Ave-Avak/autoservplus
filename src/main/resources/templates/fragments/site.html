@@ -41,16 +41,18 @@
             <span class="visually-hidden" th:text="#{site.telephone}">Téléphone</span>
             <span th:text="${garageSite.telephone()}">+32 2 000 00 00</span>
         </a>
-        <!--/* Résumé sur grand écran. Sur téléphone il ne tiendrait pas sur une ligne : un
-             lien mène aux horaires complets de la page de contact. */-->
-        <ul class="horaires-resume d-none d-lg-flex" th:unless="${#lists.isEmpty(horairesResume)}"
-            th:attr="aria-label=#{site.horaires.aria}">
-            <li th:each="groupe : ${horairesResume}">
-                <span th:replace="~{fragments/site :: jours(${groupe})}"></span>
-                <span class="chiffres" th:text="${#strings.listJoin(groupe.plages(), ', ')}">08:00 - 12:00</span>
-            </li>
-        </ul>
-        <a class="d-lg-none" th:href="@{/contact}" th:text="#{site.horaires.lien}">Horaires et accès</a>
+        <!--/* État du jour plutôt que le résumé de la semaine : la question du visiteur est
+             « puis-je passer maintenant ». Les horaires complets sont à la page de contact
+             et au pied. */-->
+        <p class="bandeau-garage__etat" th:with="etat=${etatDuJour}">
+            <th:block th:if="${etat != null}">
+                <strong th:if="${etat.exceptionnel()}" th:text="#{site.etat.exceptionnel}">Fermeture exceptionnelle aujourd'hui.</strong>
+                <span class="chiffres" th:text="${etat.dansNJours() > 1}
+                        ? #{${etat.cleMessage()}(${#messages.msg(etat.cleJour())}, ${etat.heure()})}
+                        : #{${etat.cleMessage()}(${etat.heure()})}">Ouvert jusqu'à 18:00</span>
+            </th:block>
+            <a th:href="@{/contact}" th:text="#{site.horaires.lien}">Horaires et accès</a>
+        </p>
     </div>
 </div>
 
