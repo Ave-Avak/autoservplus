@@ -13,14 +13,13 @@ import java.time.Clock;
  * Attribue le numéro d'une facture, format {@code ANNEE-NNNN}, avec la garantie
  * légale d'une suite <b>sans trou</b> par exercice.
  *
- * <p>Rupture assumée avec {@code GenerateurNumeroCommande} et
- * {@code GenerateurNumeroIntervention}, qui appellent {@code nextval} sur une
- * séquence PostgreSQL. Une séquence est délibérément non transactionnelle : elle ne
+ * <p>Séquence PostgreSQL écartée : elle est délibérément non transactionnelle et ne
  * se rejoue pas au rollback, si bien qu'une transaction annulée emporte son numéro
- * et creuse un trou. Acceptable pour un numéro de commande, <b>interdit</b> pour une
- * facture (AR n°1, art. 5 : numérotation ininterrompue). Le compteur vit donc en
- * table, incrémenté sous verrou dans la transaction d'émission, incrément et
- * insertion de la facture partagent le même sort.</p>
+ * et creuse un trou, <b>interdit</b> pour une facture (AR n°1, art. 5 : numérotation
+ * ininterrompue). Le compteur vit donc en table, incrémenté sous verrou dans la
+ * transaction d'émission, incrément et insertion de la facture partagent le même sort.
+ * Rendez-vous, interventions, commandes, devis et fils suivent le même principe par
+ * {@code CompteurAnnuel}, sans que la loi l'impose.</p>
  *
  * <p>{@code Propagation.MANDATORY} verrouille cette règle dans le code : un numéro
  * ne peut pas être tiré hors d'une transaction existante. Un appel isolé échoue

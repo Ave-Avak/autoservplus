@@ -213,10 +213,11 @@ class RdvServiceIT extends SocleIntegration {
     void numeroEnDoubleNEstPasUneCollision() {
         Rdv premier = service.reserver("marie@exemple.be", golf.getReference(),
                 List.of(vidange.getReference()), dimanche10h, null);
-        long suffixe = Long.parseLong(premier.getNumero().substring(premier.getNumero().lastIndexOf('-') + 1));
+        int exercice = Integer.parseInt(premier.getNumero().substring(4, 8));
+        int suffixe = Integer.parseInt(premier.getNumero().substring(9));
         // Le prochain numéro tiré sera celui du premier rendez-vous : uq_rdv_numero, et non
         // la contrainte d'exclusion, rejette le second, posé sur un créneau libre.
-        jdbc.queryForObject("SELECT setval('rdv_numero_seq', ?, false)", Long.class, suffixe);
+        jdbc.update("UPDATE compteur_rdv SET dernier_numero = ? WHERE exercice = ?", suffixe - 1, exercice);
 
         assertThatThrownBy(() -> service.reserver("paul@exemple.be", clio.getReference(),
                 List.of(vidange.getReference()), dimanche10h.plus(Duration.ofMinutes(90)), null))

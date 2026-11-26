@@ -14,7 +14,16 @@ public enum TypeCompteur {
     DEVIS("compteur_devis", "DEV"),
 
     /** Fil de discussion, {@code FIL-AAAA-NNNN} (V71). */
-    FIL("compteur_fil", "FIL");
+    FIL("compteur_fil", "FIL"),
+
+    /** Rendez-vous, {@code RDV-AAAA-NNNN} (V90). */
+    RDV("compteur_rdv", "RDV"),
+
+    /** Intervention, {@code INT-AAAA-NNNN} (V90). */
+    INTERVENTION("compteur_intervention", "INT"),
+
+    /** Commande de la boutique, {@code CMD-AAAA-NNNN} (V90). */
+    COMMANDE("compteur_commande", "CMD");
 
     private final String table;
     private final String prefixe;

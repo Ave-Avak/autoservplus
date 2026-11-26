@@ -544,9 +544,12 @@ class GraineDemonstrationIT extends SocleIntegration {
         lignes.put("code_secours", 0L);
         lignes.put("commande", 1L);
         lignes.put("compteur_avoir", 0L);
+        lignes.put("compteur_commande", 1L);
         lignes.put("compteur_devis", 0L);
         lignes.put("compteur_facture", 1L);
         lignes.put("compteur_fil", 1L);
+        lignes.put("compteur_intervention", 1L);
+        lignes.put("compteur_rdv", 1L);
         lignes.put("composition_prestation", 32L);
         lignes.put("consentement", 3L);
         lignes.put("conversation", 1L);

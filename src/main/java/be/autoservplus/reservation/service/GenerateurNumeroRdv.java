@@ -1,34 +1,27 @@
 package be.autoservplus.reservation.service;
 
-import be.autoservplus.common.temps.FuseauGarage;
-import jakarta.persistence.EntityManager;
+import be.autoservplus.common.numerotation.CompteurAnnuel;
+import be.autoservplus.common.numerotation.TypeCompteur;
 import org.springframework.stereotype.Component;
 
-import java.time.Clock;
-
 /**
- * Attribue le numero fonctionnel d un rendez-vous, format RDV-AAAA-NNNN.
+ * Attribue le numéro fonctionnel d'un rendez-vous, format {@code RDV-AAAA-NNNN}, la
+ * suite repartant à 1 chaque année au garage.
  *
- * <p>L horloge est injectee afin que les tests puissent fixer l annee.</p>
+ * <p>Séquence globale écartée (V90) : préfixée de l'année mais jamais remise à 1, elle
+ * donnait {@code RDV-2027-0451} au premier document d'une année. Le numéro est tiré dans
+ * la transaction de l'appelant, qui doit en ouvrir une.</p>
  */
 @Component
 public class GenerateurNumeroRdv {
 
-    private final EntityManager entityManager;
-    private final Clock horloge;
-    private final FuseauGarage fuseau;
+    private final CompteurAnnuel compteur;
 
-    public GenerateurNumeroRdv(EntityManager entityManager, Clock horloge,
-                               FuseauGarage fuseau) {
-        this.fuseau = fuseau;
-        this.entityManager = entityManager;
-        this.horloge = horloge;
+    public GenerateurNumeroRdv(CompteurAnnuel compteur) {
+        this.compteur = compteur;
     }
 
     public String prochain() {
-        Number sequence = (Number) entityManager
-                .createNativeQuery("SELECT nextval('rdv_numero_seq')")
-                .getSingleResult();
-        return "RDV-%d-%04d".formatted(fuseau.annee(horloge.instant()), sequence.longValue());
+        return compteur.prochainNumero(TypeCompteur.RDV);
     }
 }

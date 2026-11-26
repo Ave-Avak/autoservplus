@@ -1,36 +1,27 @@
 package be.autoservplus.intervention.service;
 
-import be.autoservplus.common.temps.FuseauGarage;
-import jakarta.persistence.EntityManager;
+import be.autoservplus.common.numerotation.CompteurAnnuel;
+import be.autoservplus.common.numerotation.TypeCompteur;
 import org.springframework.stereotype.Component;
 
-import java.time.Clock;
-
 /**
- * Attribue le numero fonctionnel d une intervention, format INT-AAAA-NNNN.
+ * Attribue le numéro fonctionnel d'une intervention, format {@code INT-AAAA-NNNN}, la
+ * suite repartant à 1 chaque année au garage.
  *
- * <p>La sequence {@code seq_numero_intervention} (V9) garantit l unicite entre
- * demandes concurrentes. L horloge est injectee pour rendre les tests
- * deterministes.</p>
+ * <p>Séquence globale écartée (V90) : préfixée de l'année mais jamais remise à 1, elle
+ * donnait {@code INT-2027-0388} au premier document d'une année. Le numéro est tiré dans
+ * la transaction de l'appelant, qui doit en ouvrir une.</p>
  */
 @Component
 public class GenerateurNumeroIntervention {
 
-    private final EntityManager entityManager;
-    private final Clock horloge;
-    private final FuseauGarage fuseau;
+    private final CompteurAnnuel compteur;
 
-    public GenerateurNumeroIntervention(EntityManager entityManager, Clock horloge,
-                                        FuseauGarage fuseau) {
-        this.fuseau = fuseau;
-        this.entityManager = entityManager;
-        this.horloge = horloge;
+    public GenerateurNumeroIntervention(CompteurAnnuel compteur) {
+        this.compteur = compteur;
     }
 
     public String prochain() {
-        Number sequence = (Number) entityManager
-                .createNativeQuery("SELECT nextval('seq_numero_intervention')")
-                .getSingleResult();
-        return "INT-%d-%04d".formatted(fuseau.annee(horloge.instant()), sequence.longValue());
+        return compteur.prochainNumero(TypeCompteur.INTERVENTION);
     }
 }

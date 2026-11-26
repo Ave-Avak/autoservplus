@@ -42,11 +42,33 @@ class SchemaIT extends SocleIntegration {
     void sequencesInutiliseesCommentees() {
         String sql = "SELECT obj_description(?::regclass, 'pg_class')";
         assertThat(jdbc.queryForObject(sql, String.class, "seq_numero_rdv"))
-                .startsWith("Inutilisée").contains("rdv_numero_seq");
+                .startsWith("Inutilisée").contains("compteur_rdv");
+        assertThat(jdbc.queryForObject(sql, String.class, "rdv_numero_seq"))
+                .startsWith("Inutilisée").contains("compteur_rdv");
+        assertThat(jdbc.queryForObject(sql, String.class, "seq_numero_intervention"))
+                .startsWith("Inutilisée").contains("compteur_intervention");
+        assertThat(jdbc.queryForObject(sql, String.class, "seq_numero_commande"))
+                .startsWith("Inutilisée").contains("compteur_commande");
         assertThat(jdbc.queryForObject(sql, String.class, "seq_numero_facture"))
                 .startsWith("Inutilisée").contains("compteur_facture");
         assertThat(jdbc.queryForObject(sql, String.class, "seq_numero_avoir"))
                 .startsWith("Inutilisée").contains("compteur_avoir");
+    }
+
+    @Test
+    @DisplayName("V90 : rendez-vous, interventions et commandes ont chacun leur compteur par année")
+    void compteursAnnuelsDesDocuments() {
+        for (String table : List.of("compteur_rdv", "compteur_intervention", "compteur_commande")) {
+            assertThat(jdbc.queryForObject(
+                    "SELECT count(*) FROM information_schema.columns WHERE table_name = ? "
+                            + "AND column_name IN ('exercice', 'dernier_numero')",
+                    Integer.class, table))
+                    .as(table).isEqualTo(2);
+            assertThatThrownBy(() -> jdbc.update(
+                    "INSERT INTO " + table + " (exercice, dernier_numero) VALUES (2040, 0)"))
+                    .as(table).isInstanceOf(DataIntegrityViolationException.class)
+                    .hasMessageContaining("ck_" + table + "_numero");
+        }
     }
 
     @Test

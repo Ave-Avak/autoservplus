@@ -1,36 +1,27 @@
 package be.autoservplus.vente.service;
 
-import be.autoservplus.common.temps.FuseauGarage;
-import jakarta.persistence.EntityManager;
+import be.autoservplus.common.numerotation.CompteurAnnuel;
+import be.autoservplus.common.numerotation.TypeCompteur;
 import org.springframework.stereotype.Component;
 
-import java.time.Clock;
-
 /**
- * Attribue le numéro fonctionnel d'une commande, format CMD-AAAA-NNNN.
+ * Attribue le numéro fonctionnel d'une commande, format {@code CMD-AAAA-NNNN}, la suite
+ * repartant à 1 chaque année au garage.
  *
- * <p>Même patron que {@code GenerateurNumeroIntervention} : la séquence
- * {@code seq_numero_commande} (V9, déjà présente au socle) garantit l'unicité
- * entre demandes concurrentes, l'horloge injectée rend l'année testable.</p>
+ * <p>Séquence globale écartée (V90) : préfixée de l'année mais jamais remise à 1, elle
+ * donnait {@code CMD-2027-0412} au premier document d'une année. Le numéro est tiré dans
+ * la transaction de l'appelant, qui doit en ouvrir une.</p>
  */
 @Component
 public class GenerateurNumeroCommande {
 
-    private final EntityManager entityManager;
-    private final Clock horloge;
-    private final FuseauGarage fuseau;
+    private final CompteurAnnuel compteur;
 
-    public GenerateurNumeroCommande(EntityManager entityManager, Clock horloge,
-                                    FuseauGarage fuseau) {
-        this.fuseau = fuseau;
-        this.entityManager = entityManager;
-        this.horloge = horloge;
+    public GenerateurNumeroCommande(CompteurAnnuel compteur) {
+        this.compteur = compteur;
     }
 
     public String prochain() {
-        Number sequence = (Number) entityManager
-                .createNativeQuery("SELECT nextval('seq_numero_commande')")
-                .getSingleResult();
-        return "CMD-%d-%04d".formatted(fuseau.annee(horloge.instant()), sequence.longValue());
+        return compteur.prochainNumero(TypeCompteur.COMMANDE);
     }
 }

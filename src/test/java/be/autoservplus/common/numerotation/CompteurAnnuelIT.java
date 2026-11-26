@@ -27,7 +27,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Suites annuelles des devis et des fils de discussion (V69, V71).
+ * Suites annuelles des devis, des fils de discussion (V69, V71), des rendez-vous, des
+ * interventions et des commandes (V90).
  *
  * <p>Sans transaction de classe, comme {@code NumerotationFactureIT} : la concurrence se
  * prouve sur deux transactions réellement validées. Les horloges sont placées en 2031 et
@@ -35,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * effacées : les fils et les devis des autres classes gardent leurs numéros.</p>
  */
 @SpringBootTest
-@DisplayName("Compteur annuel des devis et des fils (intégration)")
+@DisplayName("Compteur annuel des devis, des fils, des rendez-vous, des interventions et des commandes (intégration)")
 class CompteurAnnuelIT extends SocleIntegration {
 
     @Autowired private EntityManager entityManager;
@@ -85,6 +86,19 @@ class CompteurAnnuelIT extends SocleIntegration {
         assertThat(jdbc.queryForObject(
                 "SELECT dernier_numero FROM compteur_fil WHERE exercice = 2031", Integer.class))
                 .isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("chaque type de document a sa suite, repartie à 1 au début de l'année")
+    void chaqueTypeRepartAUn() {
+        CompteurAnnuel compteur = compteurAu("2031-06-01T10:00:00Z");
+
+        assertThat(TypeCompteur.values()).allSatisfy(type -> {
+            assertThat(numeroValide(compteur, type)).isEqualTo(type.prefixe() + "-2031-0001");
+            assertThat(numeroValide(compteur, type)).isEqualTo(type.prefixe() + "-2031-0002");
+        });
+        assertThat(numeroValide(compteurAu("2032-01-02T10:00:00Z"), TypeCompteur.COMMANDE))
+                .isEqualTo("CMD-2032-0001");
     }
 
     @Test
