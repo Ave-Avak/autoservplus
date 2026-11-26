@@ -1,5 +1,6 @@
 package be.autoservplus.catalogue.service;
 
+import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
 import be.autoservplus.catalogue.domain.Rayon;
@@ -24,6 +25,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Stream;
 
 /**
@@ -68,7 +70,8 @@ public class CatalogueService {
 
     public List<ArticleVue> prestationsActives() {
         Locale langue = langue();
-        return prestationsActives(langue);
+        return parCategorie(prestations.findByActifTrueOrderByLibelleAsc().stream(), Prestation::getCategorie,
+                prestation -> ArticleVue.de(prestation, langue), langue);
     }
 
     /** Les prestations actives dans une langue donnée, pour un appelant qui ne suit pas celle de l'écran. */
@@ -122,7 +125,7 @@ public class CatalogueService {
         List<Piece> trouves = (codeCategorie == null || codeCategorie.isBlank())
                 ? pieces.actifsDuRayon(rayon)
                 : pieces.actifsDuRayonEtDeCategorie(rayon, codeCategorie);
-        return triees(trouves.stream().map(piece -> ArticleVue.de(piece, langue)), langue);
+        return parCategorie(trouves.stream(), Piece::getCategorie, piece -> ArticleVue.de(piece, langue), langue);
     }
 
     public ArticleVue vuePrestation(UUID reference) {
@@ -215,6 +218,23 @@ public class CatalogueService {
     private static List<ArticleVue> triees(Stream<ArticleVue> articles, Locale langue) {
         Collator ordre = Collator.getInstance(langue);
         return articles.sorted(Comparator.comparing(ArticleVue::libelle, ordre)).toList();
+    }
+
+    /**
+     * Les articles des listes publiques, rangés comme les catégories du filtre, puis dans
+     * l'ordre alphabétique de la langue affichée. L'ordre alphabétique seul ouvrait la liste
+     * des prestations sur le changement saisonnier des roues et celle des pièces sur les
+     * amortisseurs, loin de l'entretien courant et des filtres.
+     */
+    private static <T> List<ArticleVue> parCategorie(Stream<T> elements, Function<T, Categorie> categorie,
+                                                     Function<T, ArticleVue> vue, Locale langue) {
+        Collator ordre = Collator.getInstance(langue);
+        record Rangee(short rang, ArticleVue vue) {
+        }
+        return elements.map(element -> new Rangee(categorie.apply(element).getOrdre(), vue.apply(element)))
+                .sorted(Comparator.comparingInt(Rangee::rang).thenComparing(rangee -> rangee.vue().libelle(), ordre))
+                .map(Rangee::vue)
+                .toList();
     }
 
     private Pageable pagination(int numeroPage) {
