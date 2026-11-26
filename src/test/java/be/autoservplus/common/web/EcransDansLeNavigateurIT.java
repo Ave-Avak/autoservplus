@@ -302,6 +302,12 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
         if (deborde != null) {
             constats.add(deborde);
         }
+        // WCAG 1.4.10 : aucun élément visible ne passe le bord droit, même quand la page ne
+        // défile pas (overflow coupé sur un ancêtre, élément en position fixe).
+        Object horsCadre = page.evaluate(ELEMENT_HORS_DU_CADRE);
+        if (horsCadre != null) {
+            constats.add("élément coupé au bord droit : " + horsCadre);
+        }
         // Un tabindex positif sort l'élément de l'ordre du document (WCAG 2.4.3).
         int ordreForce = (int) page.evaluate(
                 "() => [...document.querySelectorAll('[tabindex]')].filter(e => e.tabIndex > 0).length");
@@ -382,6 +388,36 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
                             + coupable.textContent.trim().replace(/\\s+/g, ' ').slice(0, 40) + ' »'
                         : 'aucun élément ne dépasse, marge ou défilement du document',
                 };
+            }
+            """;
+
+    /**
+     * Premier élément visible dont le bord droit passe celui de la fenêtre, ou {@code null}.
+     * Un élément logé dans un conteneur qui coupe ou fait défiler son contenu est écarté,
+     * comme pour la mesure du débordement : il défile dans son conteneur.
+     */
+    private static final String ELEMENT_HORS_DU_CADRE = """
+            () => {
+                const bord = document.documentElement.clientWidth + 0.5;
+                const contenu = element => {
+                    for (let parent = element.parentElement; parent && parent !== document.body; parent = parent.parentElement) {
+                        if (getComputedStyle(parent).overflowX !== 'visible') {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+                for (const element of document.body.querySelectorAll('*')) {
+                    const cadre = element.getBoundingClientRect();
+                    // checkVisibility écarte aussi le contenu d'un <details> fermé et d'un
+                    // tiroir caché, que getBoundingClientRect mesure quand même.
+                    if (cadre.width > 0 && cadre.height > 0 && cadre.right > bord
+                            && element.checkVisibility({visibilityProperty: true}) && !contenu(element)) {
+                        return element.tagName.toLowerCase() + [...element.classList].map(c => '.' + c).join('')
+                            + ', bord droit à ' + Math.round(cadre.right) + ' px pour ' + Math.round(bord) + ' px';
+                    }
+                }
+                return null;
             }
             """;
 
