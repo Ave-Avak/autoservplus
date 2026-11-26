@@ -19,6 +19,7 @@
     </p>
 
     <h1 th:text="#{commande.detail.titre(${commande.numero()})}">Commande CMD-2026-0001</h1>
+    <p class="message message-erreur" role="alert" th:if="${erreur}" th:text="${erreur}">Refus</p>
 
     <dl class="fiche-details">
         <dt th:text="#{commandes.colonne.date}">Date</dt>

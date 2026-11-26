@@ -54,7 +54,7 @@ public class SimulationPaiementService {
     @Transactional(readOnly = true)
     @PreAuthorize("isAuthenticated()")
     public SimulationPaiementVue aRegler(String referencePrestataire, String email) {
-        return SimulationPaiementVue.de(paiementDuMembre(referencePrestataire, email));
+        return SimulationPaiementVue.de(paiementARegler(referencePrestataire, email));
     }
 
     /**
@@ -73,7 +73,7 @@ public class SimulationPaiementService {
      */
     @PreAuthorize("isAuthenticated()")
     public UUID simuler(String referencePrestataire, IssueSimulee issue, String email) {
-        Paiement paiement = paiementDuMembre(referencePrestataire, email);
+        Paiement paiement = paiementARegler(referencePrestataire, email);
         UUID referenceCommande = paiement.getCommande().getReference();
         // L'ordre est celui du monde réel : le statut change CHEZ le prestataire,
         // puis la notification survient. L'inverse ferait relire un statut qui n'a
@@ -114,6 +114,19 @@ public class SimulationPaiementService {
         StatutPaiement statut() {
             return statut;
         }
+    }
+
+    /**
+     * Seule une tentative encore ouverte ({@link StatutPaiement#INITIE}) reçoit une issue.
+     * Un paiement en attente de confirmation est compris dans le refus : le prestataire a
+     * reçu l'ordre, le membre ne paie pas une seconde fois.
+     */
+    private Paiement paiementARegler(String referencePrestataire, String email) {
+        Paiement paiement = paiementDuMembre(referencePrestataire, email);
+        if (paiement.getStatut() != StatutPaiement.INITIE) {
+            throw new PaiementDejaTraiteException(paiement.getCommande().getReference());
+        }
+        return paiement;
     }
 
     /**
