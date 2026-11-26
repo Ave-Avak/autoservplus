@@ -230,7 +230,7 @@ public class CommandeService {
      */
     public CommandeDetailVue detail(UUID reference, String email) {
         Commande commande = commandeDuMembre(reference, email);
-        return CommandeDetailVue.de(commande, commandes.lignesDe(commande),
+        return CommandeDetailVue.de(commande, commandes.toutesLesLignesDe(commande),
                 paiementAbouti(commande), situation(commande), fuseau.zone());
     }
 

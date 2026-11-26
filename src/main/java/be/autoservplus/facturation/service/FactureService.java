@@ -179,7 +179,7 @@ public class FactureService {
     }
 
     private Facture emettre(Commande commande) {
-        List<LignePanier> lignes = commandes.lignesDe(commande);
+        List<LignePanier> lignes = commandes.toutesLesLignesDe(commande);
         VentilationTva ventilation = VentilationTva.desLignes(lignes);
         // Taux unique quand il l'est, NULL sinon : la ventilation porte alors le détail.
         BigDecimal tauxApplique = ventilation.tauxUnique().orElse(null);
@@ -234,7 +234,7 @@ public class FactureService {
         if (facture.estDAtelier()) {
             return ventilationDesLignes(interventionFacturee(facture).lignesAFacturer());
         }
-        return VentilationTva.desLignes(commandes.lignesDe(facture.getCommande()));
+        return VentilationTva.desLignes(commandes.toutesLesLignesDe(facture.getCommande()));
     }
 
     /**
@@ -252,7 +252,7 @@ public class FactureService {
                             ChoixPieces.cleMentionDe(ligne.getChoixPieces())))
                     .toList();
         }
-        return commandes.lignesDe(facture.getCommande()).stream()
+        return commandes.toutesLesLignesDe(facture.getCommande()).stream()
                 .map(ligne -> new DocumentFacture.LigneFacture(ligne.getLibelleFige(), ligne.getQuantite(),
                         ligne.getPrixUnitaireHtva(), ligne.getTauxTva(), ligne.totalTvac(),
                         ChoixPieces.cleMentionDe(ligne.getChoixPieces())))
