@@ -172,6 +172,21 @@
   background: $gray-100;
 }
 
+// Article sans photo propre : un pictogramme du rayon sur un fond clair, de la hauteur
+// d'une vignette, pour que la grille garde son rythme.
+.carte-article__visuel {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 4 / 3;
+  color: tint-color($marine, 45%);
+  background: tint-color($marine, 94%);
+
+  .icone {
+    width: 3rem;
+    height: 3rem;
+  }
+}
+
 .carte-article__corps {
   display: flex;
   flex: 1;

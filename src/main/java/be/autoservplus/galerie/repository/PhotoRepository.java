@@ -53,14 +53,6 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
             """)
     List<Object[]> desPrestations(@Param("references") Collection<UUID> references);
 
-    /** Visuels de catégorie des prestations d'une liste, avec la référence de la prestation. */
-    @Query("""
-            SELECT s.reference, p FROM Prestation s, Photo p
-            WHERE p.categorie = s.categorie AND s.reference IN :references
-            ORDER BY p.ordre ASC, p.id ASC
-            """)
-    List<Object[]> visuelsDesCategoriesDePrestations(@Param("references") Collection<UUID> references);
-
     /** Photos propres des pièces d'une liste, avec la référence de leur pièce. */
     @Query("""
             SELECT pc.reference, p FROM Photo p JOIN p.piece pc
@@ -68,14 +60,6 @@ public interface PhotoRepository extends JpaRepository<Photo, Long> {
             ORDER BY p.ordre ASC, p.id ASC
             """)
     List<Object[]> desPieces(@Param("references") Collection<UUID> references);
-
-    /** Visuels de catégorie des pièces d'une liste, avec la référence de la pièce. */
-    @Query("""
-            SELECT pc.reference, p FROM Piece pc, Photo p
-            WHERE p.categorie = pc.categorie AND pc.reference IN :references
-            ORDER BY p.ordre ASC, p.id ASC
-            """)
-    List<Object[]> visuelsDesCategoriesDePieces(@Param("references") Collection<UUID> references);
 
     /**
      * Photo d'une prestation, d'une pièce ou d'une catégorie, seule servie à l'adresse publique. Une photo
