@@ -2,60 +2,54 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{rdv.liste.titre} + ' | AutoServ+'">Mes rendez-vous | AutoServ+</title>
+    <title th:text="#{rdv.liste.titre} + ' | ' + ${garageSite.enseigne()}">Mes rendez-vous | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
+<main id="contenu" class="container page-membre" tabindex="-1">
+    <div class="page-membre__tete">
+        <h1 class="page-membre__titre" th:text="#{rdv.liste.titre}">Mes rendez-vous</h1>
+        <a class="btn btn-action" th:href="@{/mes-rendez-vous/nouveau}" th:text="#{rdv.liste.prendre}">Prendre rendez-vous</a>
+    </div>
 
-<main id="contenu">
-    <h1 th:text="#{rdv.liste.titre}">Mes rendez-vous</h1>
+    <div class="alert alert-success" th:if="${message}" role="status" th:text="${message}">Message</div>
 
-    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <p th:if="${rendezVous.isEmpty()}" class="page-membre__vide" th:text="#{rdv.liste.vide}">
+        Vous n'avez pas encore de rendez-vous.</p>
 
-    <p th:if="${rendezVous.isEmpty()}" class="message" th:text="#{rdv.liste.vide}">
-        Vous n'avez pas encore de rendez-vous.
-    </p>
-
-    <ul class="grille-articles" th:unless="${rendezVous.isEmpty()}">
-        <li class="carte" th:each="r : ${rendezVous}">
-            <p class="carte-categorie">
-                <span th:class="'badge badge-' + ${#strings.toLowerCase(r.statut())}"
+    <!--/* Le jour et l'heure d'abord, puis l'état : c'est ce que le membre vient vérifier
+         (NN/g, suivi d'état). L'état se lit en mots, la couleur ne fait que l'appuyer. */-->
+    <ul class="liste-rdv" th:unless="${rendezVous.isEmpty()}">
+        <li class="carte-rdv" th:each="r : ${rendezVous}">
+            <div class="carte-rdv__tete">
+                <h2 class="carte-rdv__quand">
+                    <span th:text="${#strings.capitalize(#temporals.format(r.jour(), 'EEEE d MMMM yyyy'))}">Mercredi 16 septembre 2026</span>
+                    <span class="carte-rdv__heure chiffres" th:text="${r.heureDebut()} + ' - ' + ${r.heureFin()}">10:00 - 11:00</span>
+                </h2>
+                <span class="badge statut-rdv" th:data-statut="${r.statut()}"
                       th:text="#{'rdv.membre.statut.' + ${r.statut()}}">En attente de confirmation</span>
-            </p>
-            <h2>
-                <span th:text="${#strings.capitalize(#temporals.format(r.jour(), 'EEEE d MMMM yyyy'))}">Mercredi 16 septembre 2026</span><br>
-                <span th:text="${r.heureDebut()} + ' - ' + ${r.heureFin()}">10:00 - 11:00</span>
-            </h2>
-            <p th:text="${r.vehicule()}">VW Golf (1-ABC-123)</p>
-            <p th:text="${#strings.listJoin(r.prestations(), ', ')}">Vidange, Plaquettes</p>
-            <div class="carte-actions">
+            </div>
+            <p class="carte-rdv__vehicule" th:text="${r.vehicule()}">VW Golf (1-ABC-123)</p>
+            <p class="carte-rdv__prestations" th:text="${#strings.listJoin(r.prestations(), ', ')}">Vidange, Plaquettes</p>
+            <div class="carte-rdv__actions">
                 <a th:href="@{/mes-rendez-vous/{ref}(ref=${r.reference()})}"
                    th:aria-label="#{rdv.liste.detail.aria(${r.numero()})}"
                    th:text="#{rdv.liste.detail}">Détail</a>
                 <a th:if="${r.statut()} == 'HONORE'"
                    th:href="@{/mes-interventions/depuis-rdv/{ref}(ref=${r.reference()})}"
-                   class="lien-bouton"
                    th:aria-label="#{rdv.liste.suivre.aria(${r.numero()})}"
-                   th:text="#{rdv.liste.suivre}">
-                    Suivre la réparation
-                </a>
+                   th:text="#{rdv.liste.suivre}">Suivre la réparation</a>
             </div>
         </li>
     </ul>
 
-    <p class="actions-page">
-        <a class="btn-cta" th:href="@{/mes-rendez-vous/nouveau}" th:text="#{rdv.liste.prendre}">Prendre rendez-vous</a>
-    </p>
-
-    <p><a th:href="@{/mon-compte}" th:text="#{erreur.retour-compte}">Retour à mon compte</a></p>
+    <p class="page-membre__retour"><a th:href="@{/mon-compte}" th:text="#{erreur.retour-compte}">Retour à mon compte</a></p>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

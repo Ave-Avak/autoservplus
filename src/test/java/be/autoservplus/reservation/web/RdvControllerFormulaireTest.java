@@ -1,5 +1,6 @@
 package be.autoservplus.reservation.web;
 
+import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.service.CreneauIndisponibleException;
@@ -16,6 +17,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -52,6 +55,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(RdvController.class)
 @DisplayName("RdvController : formulaire")
 class RdvControllerFormulaireTest {
+
+    /**
+     * Le formulaire est rendu au gabarit du site, dont le titre et le pied lisent l'identité
+     * du garage. Un @WebMvcTest ne charge pas la configuration qui la construit.
+     */
+    @TestConfiguration
+    static class Garage {
+        @Bean
+        IdentiteGarage identiteGarage() {
+            return new IdentiteGarage("Garage Test", "Garage de démonstration", "SRL",
+                    "Rue de l'Atelier", "12", "1000", "Bruxelles", "Belgique", "0123.456.789",
+                    "RPM Bruxelles", "BE0123456789", "BE68 5390 0754 7034", "+32 2 000 00 00",
+                    "atelier@exemple.be");
+        }
+    }
 
     @Autowired private MockMvc mvc;
     @MockitoBean private RdvService rdvs;

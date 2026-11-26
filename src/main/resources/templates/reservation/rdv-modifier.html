@@ -2,53 +2,51 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{rdv.modification.titre(${vue.numero()})} + ' | AutoServ+'">Déplacer le rendez-vous | AutoServ+</title>
+    <title th:text="#{rdv.modification.titre(${vue.numero()})} + ' | ' + ${garageSite.enseigne()}">Déplacer le rendez-vous | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
     <!--/* HTMX insère sinon une balise de style pour son indicateur de chargement, que
          la politique de sécurité du contenu (style-src 'self') bloque. */-->
     <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
-
-<main id="contenu">
-    <p><a th:href="@{/mes-rendez-vous/{ref}(ref=${vue.reference()})}"
+<main id="contenu" class="container page-formulaire page-formulaire--large" tabindex="-1">
+    <p class="page-membre__precedent"><a th:href="@{/mes-rendez-vous/{ref}(ref=${vue.reference()})}"
           th:text="#{rdv.modification.retour}">Retour au rendez-vous</a></p>
 
-    <h1 th:text="#{rdv.modification.titre(${vue.numero()})}">Déplacer le rendez-vous RDV-2026-0001</h1>
+    <h1 class="page-formulaire__titre" th:text="#{rdv.modification.titre(${vue.numero()})}">Déplacer le rendez-vous RDV-2026-0001</h1>
 
-    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+    <div class="alert alert-danger" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
 
-    <p th:text="#{rdv.modification.actuel(${#temporals.format(vue.jourActuel(), 'EEEE d MMMM yyyy')}, ${vue.heureDebut()}, ${vue.heureFin()})}">
-        Créneau actuel : mercredi 16 septembre 2026, de 10:00 à 11:00.
-    </p>
-    <p class="aide" th:text="#{rdv.modification.liberation}">L'ancien créneau est libéré dès l'enregistrement.</p>
-    <p class="aide" th:if="${vue.confirmationAutomatique()}" th:text="#{rdv.modification.automatique}">
-        Le nouveau créneau est confirmé dès l'enregistrement.
-    </p>
-    <p class="aide" th:unless="${vue.confirmationAutomatique()}" th:text="#{rdv.modification.manuel}">
-        Le garage doit confirmer le nouveau créneau.
-    </p>
+    <div class="page-formulaire__intro">
+        <p class="rdv-actuel" th:text="#{rdv.modification.actuel(${#temporals.format(vue.jourActuel(), 'EEEE d MMMM yyyy')}, ${vue.heureDebut()}, ${vue.heureFin()})}">
+            Créneau actuel : mercredi 16 septembre 2026, de 10:00 à 11:00.</p>
+        <p th:text="#{rdv.modification.liberation}">L'ancien créneau est libéré dès l'enregistrement.</p>
+        <p th:if="${vue.confirmationAutomatique()}" th:text="#{rdv.modification.automatique}">
+            Le nouveau créneau est confirmé dès l'enregistrement.</p>
+        <p th:unless="${vue.confirmationAutomatique()}" th:text="#{rdv.modification.manuel}">
+            Le garage doit confirmer le nouveau créneau.</p>
+    </div>
 
     <form th:action="@{/mes-rendez-vous/{ref}/modifier(ref=${vue.reference()})}" th:object="${formulaire}"
-          method="post" class="formulaire">
+          method="post">
         <input type="hidden" name="version" th:value="${vue.version()}">
 
-        <div class="champ">
-            <label for="date" th:text="#{rdv.modification.date}">Nouvelle date</label>
-            <input type="date" id="date" name="date"
-                   th:value="${#temporals.format(formulaire.date, 'yyyy-MM-dd')}"
-                   th:min="${#temporals.format(dateMin, 'yyyy-MM-dd')}"
-                   th:max="${#temporals.format(dateMax, 'yyyy-MM-dd')}" required>
+        <div class="etape-rdv">
+            <div class="champ-site">
+                <label class="form-label" for="date" th:text="#{rdv.modification.date}">Nouvelle date</label>
+                <input class="form-control champ-date" type="date" id="date" name="date"
+                       th:value="${#temporals.format(formulaire.date, 'yyyy-MM-dd')}"
+                       th:min="${#temporals.format(dateMin, 'yyyy-MM-dd')}"
+                       th:max="${#temporals.format(dateMax, 'yyyy-MM-dd')}" required>
+            </div>
         </div>
 
-        <fieldset>
-            <legend th:text="#{rdv.modification.heure}">Nouvelle heure</legend>
+        <fieldset class="etape-rdv">
+            <legend class="etape-rdv__titre" th:text="#{rdv.modification.heure}">Nouvelle heure</legend>
             <p role="alert" class="texte-erreur" th:if="${erreurHeure}" th:text="${erreurHeure}">Erreur</p>
             <div id="creneaux"
                  th:hx-get="@{/mes-rendez-vous/{ref}/modifier/creneaux(ref=${vue.reference()})}"
@@ -62,15 +60,19 @@
             <noscript>
                 <button type="submit" formmethod="get"
                         th:formaction="@{/mes-rendez-vous/{ref}/modifier(ref=${vue.reference()})}"
-                        class="lien-bouton" th:text="#{rdv.modification.date}">Nouvelle date</button>
+                        class="btn btn-outline-primary" th:text="#{rdv.modification.date}">Nouvelle date</button>
             </noscript>
         </fieldset>
 
-        <button type="submit" class="btn-cta" th:text="#{rdv.modification.valider}">Déplacer le rendez-vous</button>
+        <div class="actions-formulaire">
+            <button type="submit" class="btn btn-action btn-lg" th:text="#{rdv.modification.valider}">Déplacer le rendez-vous</button>
+            <a class="btn btn-outline-primary btn-lg" th:href="@{/mes-rendez-vous/{ref}(ref=${vue.reference()})}"
+               th:text="#{rdv.formulaire.annuler}">Annuler</a>
+        </div>
     </form>
 </main>
 
 <script th:src="@{/js/htmx.min.js}"></script>
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

@@ -2,62 +2,59 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{rdv.formulaire.titre} + ' | AutoServ+'">Prendre rendez-vous | AutoServ+</title>
+    <title th:text="#{rdv.formulaire.titre} + ' | ' + ${garageSite.enseigne()}">Prendre rendez-vous | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
     <!--/* HTMX injecte par défaut une feuille de style en ligne pour ses indicateurs, ce
          que la politique de sécurité du contenu interdit. Elle est désactivée, et le
          style vient de la feuille du site. */-->
     <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
+<main id="contenu" class="container page-formulaire page-formulaire--large" tabindex="-1">
+    <h1 class="page-formulaire__titre" th:text="#{rdv.formulaire.titre}">Prendre rendez-vous</h1>
 
-<main id="contenu">
-    <h1 th:text="#{rdv.formulaire.titre}">Prendre rendez-vous</h1>
+    <div class="page-formulaire__intro">
+        <p th:unless="${conditions.confirmationAutomatique()}"
+           th:text="#{rdv.formulaire.delai-reponse(${conditions.delaiReponseHeures()})}">
+            Le garage vous répond sous 24 heures. Attendez sa confirmation avant de vous organiser.</p>
+        <p th:if="${conditions.telephoneGarage() != null and !#strings.isEmpty(conditions.telephoneGarage())}">
+            <span th:text="#{rdv.formulaire.telephone}">Pour un rendez-vous plus rapproché, appelez le garage au</span>
+            <a class="chiffres" th:href="'tel:' + ${#strings.replace(conditions.telephoneGarage(), ' ', '')}"
+               th:text="${conditions.telephoneGarage()}">+32 2 000 00 00</a>.
+        </p>
+    </div>
 
-    <p th:unless="${conditions.confirmationAutomatique()}" class="texte-info"
-       th:text="#{rdv.formulaire.delai-reponse(${conditions.delaiReponseHeures()})}">
-        Le garage vous répond sous 24 heures. Attendez sa confirmation avant de vous organiser.
-    </p>
-    <p th:if="${conditions.telephoneGarage() != null and !#strings.isEmpty(conditions.telephoneGarage())}"
-       class="texte-info">
-        <span th:text="#{rdv.formulaire.telephone}">Pour un rendez-vous plus rapproché, appelez le garage au</span>
-        <a th:href="'tel:' + ${#strings.replace(conditions.telephoneGarage(), ' ', '')}"
-           th:text="${conditions.telephoneGarage()}">+32 2 000 00 00</a>.
-    </p>
-
-    <p th:if="${vehicules.isEmpty()}" class="message">
-        <span th:text="#{rdv.formulaire.sans-vehicule}">Vous devez d'abord enregistrer un véhicule.</span>
+    <div class="alert alert-info" th:if="${vehicules.isEmpty()}" role="status">
+        <p class="mb-2" th:text="#{rdv.formulaire.sans-vehicule}">Vous devez d'abord enregistrer un véhicule.</p>
         <!--/* Retour au formulaire après l'ajout, avec la prestation déjà choisie. */-->
-        <a th:with="retourRdv=${param.prestation != null}
+        <a class="btn btn-action" th:with="retourRdv=${param.prestation != null}
                     ? '/mes-rendez-vous/nouveau?prestation=' + ${param.prestation[0]} : '/mes-rendez-vous/nouveau'"
            th:href="@{/mes-vehicules/nouveau(retour=${retourRdv})}"
            th:text="#{vehicule.liste.ajouter}">Ajouter un véhicule</a>
-    </p>
+    </div>
 
     <form th:unless="${vehicules.isEmpty()}"
-          th:action="@{/mes-rendez-vous/nouveau}" th:object="${formulaire}" method="post"
-          class="formulaire formulaire-rdv" novalidate>
+          th:action="@{/mes-rendez-vous/nouveau}" th:object="${formulaire}" method="post" novalidate>
 
         <!--/* Erreurs qui ne visent aucun champ : un plafond de demandes en attente porte
              sur le compte, pas sur le véhicule ni sur les prestations. Les ancrer sous un
              champ dirait au membre de corriger un choix qui n'est pas en cause.
              role=alert : l'erreur survient après coup, un lecteur d'écran doit l'annoncer
              sans qu'on ait à lui redonner le focus. */-->
-        <p class="message message-erreur" role="alert" th:if="${#fields.hasGlobalErrors()}"
-           th:each="erreur : ${#fields.globalErrors()}" th:text="${erreur}">Erreur</p>
+        <div class="alert alert-danger" role="alert" th:if="${#fields.hasGlobalErrors()}">
+            <p class="mb-0" th:each="erreur : ${#fields.globalErrors()}" th:text="${erreur}">Erreur</p>
+        </div>
 
         <!--/* Résumé des erreurs de champ, chacune reliée au champ à corriger. Un choix des
              pièces manquant y figure aussi : le prix retenu doit être celui que le membre a
              choisi, et il doit voir ce qui l'arrête sans parcourir tout le formulaire. */-->
-        <div class="resume-erreurs" role="alert" th:if="${#fields.hasErrors('*')}">
-            <p th:text="#{formulaire.resume-erreurs.titre}">Corrigez les points suivants :</p>
-            <ul>
+        <div class="alert alert-danger" role="alert" th:if="${#fields.hasErrors('*')}">
+            <p class="mb-1" th:text="#{formulaire.resume-erreurs.titre}">Corrigez les points suivants :</p>
+            <ul class="mb-0">
                 <li th:each="e : ${#fields.detailedErrors('*')}" th:unless="${e.global}">
                     <a th:href="${#strings.startsWith(e.fieldName, 'choixPieces[')}
                                 ? '#choix-' + ${#strings.substringBefore(#strings.substringAfter(e.fieldName, '['), ']')}
@@ -67,38 +64,40 @@
             </ul>
         </div>
 
-        <fieldset>
-            <legend th:text="#{rdv.formulaire.etape.vehicule}">1. Votre véhicule</legend>
-            <div class="champ">
-                <label for="vehicule" th:text="#{rdv.detail.vehicule}">Véhicule</label>
-                <select id="vehicule" th:field="*{vehicule}"
-                        th:aria-invalid="${#fields.hasErrors('vehicule')}"
+        <fieldset class="etape-rdv">
+            <legend class="etape-rdv__titre" th:text="#{rdv.formulaire.etape.vehicule}">1. Votre véhicule</legend>
+            <div class="champ-site">
+                <label class="form-label" for="vehicule" th:text="#{rdv.detail.vehicule}">Véhicule</label>
+                <select class="form-select" th:errorclass="is-invalid" id="vehicule" th:field="*{vehicule}"
+                        th:aria-invalid="${#fields.hasErrors('vehicule')} ? 'true'"
                         aria-describedby="vehicule-erreur">
                     <option value="" th:text="#{rdv.formulaire.choisir}">Choisissez</option>
                     <option th:each="v : ${vehicules}" th:value="${v.reference()}"
                             th:text="${v.designation()}">VW Golf (1-ABC-123)</option>
                 </select>
-                <p role="alert" id="vehicule-erreur" class="texte-erreur" th:if="${#fields.hasErrors('vehicule')}"
+                <p role="alert" id="vehicule-erreur" class="invalid-feedback" th:if="${#fields.hasErrors('vehicule')}"
                    th:errors="*{vehicule}">Erreur</p>
             </div>
         </fieldset>
 
-        <fieldset>
-            <legend th:text="#{rdv.formulaire.etape.prestations}">2. Les prestations souhaitées</legend>
+        <fieldset class="etape-rdv">
+            <legend class="etape-rdv__titre" th:text="#{rdv.formulaire.etape.prestations}">2. Les prestations souhaitées</legend>
             <p role="alert" id="prestations-erreur" class="texte-erreur" th:if="${#fields.hasErrors('prestations')}"
                th:errors="*{prestations}">Erreur</p>
 
             <div th:each="entree : ${prestationsParCategorie}" class="groupe-prestations">
-                <h2 th:text="${entree.key.libelle()}" th:lang="${entree.key.langueLibelle()}">Entretien</h2>
-                <ul class="liste-cases">
-                    <li th:each="p : ${entree.value}">
-                        <input type="checkbox" name="prestations"
-                               th:id="'p-' + ${p.reference()}" th:value="${p.reference()}"
-                               th:checked="${formulaire.prestations.contains(p.reference())}">
-                        <label th:for="'p-' + ${p.reference()}">
-                            <span th:text="${p.libelle()}" th:lang="${p.langueLibelle()}">Vidange</span>
-                            <small th:text="#{rdv.formulaire.prestation.detail(${p.dureeMinutes()}, ${#numbers.formatDecimal(p.prixTvac(), 1, 'DEFAULT', 2, 'DEFAULT')}, ${#numbers.formatDecimal(p.prixHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">30 min, 59,29 € TVA comprise, soit 49,00 € hors TVA</small>
-                        </label>
+                <h2 class="groupe-prestations__titre" th:text="${entree.key.libelle()}" th:lang="${entree.key.langueLibelle()}">Entretien</h2>
+                <ul class="groupe-prestations__liste">
+                    <li class="prestation-rdv" th:each="p : ${entree.value}">
+                        <div class="form-check">
+                            <input class="form-check-input" type="checkbox" name="prestations"
+                                   th:id="'p-' + ${p.reference()}" th:value="${p.reference()}"
+                                   th:checked="${formulaire.prestations.contains(p.reference())}">
+                            <label class="form-check-label" th:for="'p-' + ${p.reference()}">
+                                <span class="prestation-rdv__nom" th:text="${p.libelle()}" th:lang="${p.langueLibelle()}">Vidange</span>
+                                <span class="prestation-rdv__detail" th:text="#{rdv.formulaire.prestation.detail(${p.dureeMinutes()}, ${#numbers.formatDecimal(p.prixTvac(), 1, 'DEFAULT', 2, 'DEFAULT')}, ${#numbers.formatDecimal(p.prixHtva(), 1, 'DEFAULT', 2, 'DEFAULT')})}">30 min, 59,29 € TVA comprise, soit 49,00 € hors TVA</span>
+                            </label>
+                        </div>
                         <!--/* Le choix n'est lu que pour une prestation cochée. Aucun bouton n'est
                              coché d'avance : le membre choisit le prix qu'il paiera. */-->
                         <th:block th:if="${p.proposePoseSeule()}"
@@ -116,23 +115,27 @@
             </div>
         </fieldset>
 
-        <fieldset>
-            <legend th:text="#{rdv.formulaire.etape.date}">3. La date</legend>
-            <div class="champ">
-                <label for="date" th:text="#{rdv.formulaire.jour}">Jour souhaité</label>
-                <input type="date" id="date" name="date"
+        <fieldset class="etape-rdv">
+            <legend class="etape-rdv__titre" th:text="#{rdv.formulaire.etape.date}">3. La date</legend>
+            <!--/* La date ne passe pas par th:field, qui la formaterait à la belge : la classe
+                 d'erreur se pose donc à la main, par un drapeau local. */-->
+            <div class="champ-site" th:with="dateEnFaute=${#fields.hasErrors('date')}">
+                <label class="form-label" for="date" th:text="#{rdv.formulaire.jour}">Jour souhaité</label>
+                <input class="form-control champ-date" th:classappend="${dateEnFaute} ? 'is-invalid'"
+                       type="date" id="date" name="date"
                        th:value="${#temporals.format(formulaire.date, 'yyyy-MM-dd')}"
                        th:min="${#temporals.format(dateMin, 'yyyy-MM-dd')}"
-                       th:max="${#temporals.format(dateMax, 'yyyy-MM-dd')}" required>
-                <p role="alert" id="date-erreur" class="texte-erreur" th:if="${#fields.hasErrors('date')}"
+                       th:max="${#temporals.format(dateMax, 'yyyy-MM-dd')}" required
+                       aria-describedby="date-aide">
+                <p role="alert" id="date-erreur" class="invalid-feedback" th:if="${#fields.hasErrors('date')}"
                    th:errors="*{date}">Erreur</p>
-                <p class="aide" th:text="#{rdv.formulaire.jour.aide(${#temporals.format(dateMin, 'd MMMM yyyy')})}">
+                <p id="date-aide" class="form-text" th:text="#{rdv.formulaire.jour.aide(${#temporals.format(dateMin, 'd MMMM yyyy')})}">
                     Réservation possible à partir du 15 septembre 2026.</p>
             </div>
         </fieldset>
 
-        <fieldset>
-            <legend th:text="#{rdv.formulaire.etape.heure}">4. L'heure</legend>
+        <fieldset class="etape-rdv">
+            <legend class="etape-rdv__titre" th:text="#{rdv.formulaire.etape.heure}">4. L'heure</legend>
             <p role="alert" id="debut-erreur" class="texte-erreur" th:if="${#fields.hasErrors('debut')}"
                th:errors="*{debut}">Erreur</p>
 
@@ -150,31 +153,31 @@
             </div>
             <noscript>
                 <button type="submit" formmethod="get"
-                        th:formaction="@{/mes-rendez-vous/nouveau}" class="lien-bouton"
+                        th:formaction="@{/mes-rendez-vous/nouveau}" class="btn btn-outline-primary"
                         th:text="#{rdv.formulaire.actualiser}">
                     Actualiser les heures disponibles
                 </button>
             </noscript>
         </fieldset>
 
-        <fieldset>
-            <legend th:text="#{rdv.formulaire.etape.commentaire}">5. Un mot pour le garage (facultatif)</legend>
-            <div class="champ">
-                <label for="commentaire" th:text="#{rdv.formulaire.commentaire}">Commentaire</label>
-                <textarea id="commentaire" th:field="*{commentaire}" rows="3" maxlength="2000"
+        <fieldset class="etape-rdv">
+            <legend class="etape-rdv__titre" th:text="#{rdv.formulaire.etape.commentaire}">5. Un mot pour le garage (facultatif)</legend>
+            <div class="champ-site">
+                <label class="form-label" for="commentaire" th:text="#{rdv.formulaire.commentaire}">Commentaire</label>
+                <textarea class="form-control" th:errorclass="is-invalid" id="commentaire" th:field="*{commentaire}" rows="3" maxlength="2000"
                           th:placeholder="#{rdv.formulaire.commentaire.exemple}"></textarea>
-                <p role="alert" id="commentaire-erreur" class="texte-erreur" th:if="${#fields.hasErrors('commentaire')}" th:errors="*{commentaire}">Erreur</p>
+                <p role="alert" id="commentaire-erreur" class="invalid-feedback" th:if="${#fields.hasErrors('commentaire')}" th:errors="*{commentaire}">Erreur</p>
             </div>
         </fieldset>
 
-        <p class="actions-page">
-            <button type="submit" class="btn-cta" th:text="#{rdv.formulaire.envoyer}">Demander le rendez-vous</button>
-            <a th:href="@{/mes-rendez-vous}" th:text="#{rdv.formulaire.annuler}">Annuler</a>
-        </p>
+        <div class="actions-formulaire">
+            <button type="submit" class="btn btn-action btn-lg" th:text="#{rdv.formulaire.envoyer}">Demander le rendez-vous</button>
+            <a class="btn btn-outline-primary btn-lg" th:href="@{/mes-rendez-vous}" th:text="#{rdv.formulaire.annuler}">Annuler</a>
+        </div>
     </form>
 </main>
 
 <script th:src="@{/js/htmx.min.js}"></script>
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

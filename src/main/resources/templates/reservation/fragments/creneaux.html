@@ -3,6 +3,8 @@
 <body>
 
 <!--/* Fragment renvoyé par GET /mes-rendez-vous/nouveau/creneaux et inséré dans #creneaux.
+     Partagé avec le déplacement au back-office, qui garde l'ancienne feuille : ses classes
+     gardent leur nom, la feuille du site les reprend sous #creneaux.
      Le modèle fournit : creneaux (List<CreneauVue>), aucunePrestation (boolean),
      erreurCreneaux (String, facultatif). */-->
 <div th:fragment="liste">
@@ -23,7 +25,7 @@
             <label class="creneau">
                 <input type="radio" name="debut" th:value="${c.valeur()}"
                        th:checked="${formulaire != null and formulaire.debut == c.valeur()}" required>
-                <span th:text="${c.libelle()}">10:00 - 11:00</span>
+                <span class="chiffres" th:text="${c.libelle()}">10:00 - 11:00</span>
                 <small th:if="${c.postesLibres() > 1}"
                        th:text="#{rdv.creneaux.places(${c.postesLibres()})}">2 places</small>
             </label>

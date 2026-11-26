@@ -2,38 +2,34 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{rdv.detail.titre(${rdv.numero()})} + ' | AutoServ+'">Rendez-vous | AutoServ+</title>
+    <title th:text="#{rdv.detail.titre(${rdv.numero()})} + ' | ' + ${garageSite.enseigne()}">Rendez-vous | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
+<main id="contenu" class="container page-membre" tabindex="-1">
+    <p class="page-membre__precedent"><a th:href="@{/mes-rendez-vous}" th:text="#{rdv.detail.retour}">Retour à mes rendez-vous</a></p>
 
-<main id="contenu">
-    <p><a th:href="@{/mes-rendez-vous}" th:text="#{rdv.detail.retour}">Retour à mes rendez-vous</a></p>
-
-    <h1 th:text="#{rdv.detail.titre(${rdv.numero()})}">Rendez-vous RDV-2026-0001</h1>
-
-    <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
-    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
-
-    <p>
-        <span th:class="'badge badge-' + ${#strings.toLowerCase(rdv.statut())}"
+    <div class="page-membre__tete">
+        <h1 class="page-membre__titre" th:text="#{rdv.detail.titre(${rdv.numero()})}">Rendez-vous RDV-2026-0001</h1>
+        <span class="badge statut-rdv" th:data-statut="${rdv.statut()}"
               th:text="#{'rdv.membre.statut.' + ${rdv.statut()}}">En attente de confirmation</span>
-    </p>
+    </div>
 
-    <dl class="vehicule-details">
+    <div class="alert alert-success" th:if="${message}" role="status" th:text="${message}">Message</div>
+    <div class="alert alert-danger" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
+
+    <dl class="fiche-rdv">
         <div>
             <dt th:text="#{rdv.detail.date}">Date</dt>
             <dd th:text="${#strings.capitalize(#temporals.format(rdv.jour(), 'EEEE d MMMM yyyy'))}">Mercredi 16 septembre 2026</dd>
         </div>
         <div>
             <dt th:text="#{rdv.detail.heure}">Heure</dt>
-            <dd th:text="${rdv.heureDebut()} + ' - ' + ${rdv.heureFin()}">10:00 - 11:00</dd>
+            <dd class="chiffres" th:text="${rdv.heureDebut()} + ' - ' + ${rdv.heureFin()}">10:00 - 11:00</dd>
         </div>
         <div>
             <dt th:text="#{rdv.detail.vehicule}">Véhicule</dt>
@@ -42,7 +38,7 @@
         <div>
             <dt th:text="#{rdv.detail.prestations}">Prestations</dt>
             <dd>
-                <ul>
+                <ul class="fiche-rdv__prestations">
                     <li th:each="p : ${rdv.lignes()}"><span th:text="${p.libelle()}">Vidange</span>
                         <small th:replace="~{fragments/choix-pieces :: mention(${p.mentionPieces()})}"></small></li>
                 </ul>
@@ -50,7 +46,7 @@
         </div>
         <div>
             <dt th:text="#{rdv.detail.montant}">Montant estimé TVAC</dt>
-            <dd th:text="${rdv.montantTvac()}">59,29 €</dd>
+            <dd class="chiffres fiche-rdv__montant" th:text="${rdv.montantTvac()}">59,29 €</dd>
         </div>
         <div th:if="${rdv.commentaire()}">
             <dt th:text="#{rdv.detail.commentaire}">Votre commentaire</dt>
@@ -62,45 +58,43 @@
         </div>
     </dl>
 
-    <p class="aide" th:if="${rdv.estActif() and !rdv.annulable()}" th:text="#{rdv.detail.annulation-impossible}">
+    <p class="alert alert-warning" role="status" th:if="${rdv.estActif() and !rdv.annulable()}" th:text="#{rdv.detail.annulation-impossible}">
         L'annulation en ligne n'est plus possible aussi près du rendez-vous. Contactez directement le garage.
     </p>
 
-    <!--/* Export iCalendar (F38), proposé sur les seuls rendez-vous confirmés. Une demande
-         encore en attente n'a pas de date arrêtée : déposée dans l'agenda du membre, elle
-         s'y installerait comme un fait et rien ne viendrait l'en retirer si le garage
-         refusait, le fichier vit chez lui, hors de portée du site. Le contrôleur applique
-         la même condition, un accès direct à l'adresse répond 404. */-->
-    <p th:if="${rdv.statut()} == 'CONFIRME'" class="actions-page">
-        <a th:href="@{/mes-rendez-vous/{ref}/agenda.ics(ref=${rdv.reference()})}"
-           th:text="#{rdv.agenda.bouton}">Ajouter à mon agenda</a>
-        <span class="aide" th:text="#{rdv.agenda.aide}">
-            Un fichier de calendrier est téléchargé.
-        </span>
-    </p>
+    <!--/* Un seul bouton plein par état : l'agenda pour un rendez-vous confirmé, le suivi pour
+         un rendez-vous effectué. Déplacer reste un bouton secondaire, annuler un lien rouge
+         derrière la confirmation. */-->
+    <div class="actions-rdv">
+        <!--/* Export iCalendar (F38), proposé sur les seuls rendez-vous confirmés. Une demande
+             encore en attente n'a pas de date arrêtée : déposée dans l'agenda du membre, elle
+             s'y installerait comme un fait et rien ne viendrait l'en retirer si le garage
+             refusait, le fichier vit chez lui, hors de portée du site. Le contrôleur applique
+             la même condition, un accès direct à l'adresse répond 404. */-->
+        <p th:if="${rdv.statut()} == 'CONFIRME'" class="actions-rdv__agenda">
+            <a class="btn btn-action" th:href="@{/mes-rendez-vous/{ref}/agenda.ics(ref=${rdv.reference()})}"
+               aria-describedby="agenda-aide" th:text="#{rdv.agenda.bouton}">Ajouter à mon agenda</a>
+            <span id="agenda-aide" class="form-text" th:text="#{rdv.agenda.aide}">Un fichier de calendrier est téléchargé.</span>
+        </p>
 
-    <p th:if="${rdv.statut()} == 'HONORE'" class="actions-page">
-        <a class="btn-cta"
+        <a th:if="${rdv.statut()} == 'HONORE'" class="btn btn-action"
            th:href="@{/mes-interventions/depuis-rdv/{ref}(ref=${rdv.reference()})}"
-           th:text="#{rdv.detail.suivre}">
-            Suivre l'intervention
-        </a>
-    </p>
+           th:text="#{rdv.detail.suivre}">Suivre l'intervention</a>
 
-    <p th:if="${rdv.modifiable()}" class="actions-page">
-        <a th:href="@{/mes-rendez-vous/{ref}/modifier(ref=${rdv.reference()})}"
+        <a th:if="${rdv.modifiable()}" class="btn btn-outline-primary"
+           th:href="@{/mes-rendez-vous/{ref}/modifier(ref=${rdv.reference()})}"
            th:text="#{rdv.modification.lien}">Déplacer ce rendez-vous</a>
-    </p>
 
-    <form th:if="${rdv.annulable()}"
-          th:action="@{/mes-rendez-vous/{ref}/annuler(ref=${rdv.reference()})}"
-          method="post" class="formulaire-suppression"
-          th:data-message="#{rdv.detail.annuler.confirmation(${rdv.numero()})}">
-        <button type="submit" class="lien-bouton texte-erreur" th:text="#{rdv.detail.annuler}">Annuler ce rendez-vous</button>
-    </form>
+        <form th:if="${rdv.annulable()}"
+              th:action="@{/mes-rendez-vous/{ref}/annuler(ref=${rdv.reference()})}"
+              method="post" class="formulaire-suppression"
+              th:data-message="#{rdv.detail.annuler.confirmation(${rdv.numero()})}">
+            <button type="submit" class="btn btn-link lien-danger" th:text="#{rdv.detail.annuler}">Annuler ce rendez-vous</button>
+        </form>
+    </div>
 </main>
 
 <script th:src="@{/js/confirmation.js}"></script>
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>
