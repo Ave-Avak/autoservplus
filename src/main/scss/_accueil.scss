@@ -173,19 +173,6 @@ $bordure-douce: tint-color($marine, 78%);
   background: $gray-100;
 }
 
-.tarif__visuel {
-  display: grid;
-  place-items: center;
-  aspect-ratio: 16 / 9;
-  color: tint-color($marine, 45%);
-  background: tint-color($marine, 94%);
-
-  .icone {
-    width: 3rem;
-    height: 3rem;
-  }
-}
-
 .tarif__corps {
   display: flex;
   flex: 1;

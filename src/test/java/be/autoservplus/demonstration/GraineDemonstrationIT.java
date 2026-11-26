@@ -350,15 +350,23 @@ class GraineDemonstrationIT extends SocleIntegration {
         mvc.perform(get("/images/galerie/{p}", visuel)).andExpect(status().isOk());
         mvc.perform(get("/images/galerie/{p}/vignette", visuel)).andExpect(status().isOk());
 
-        // Dans la liste, le visuel de catégorie ne se répète plus de carte en carte : chaque
-        // photo affichée est la photo propre d'un article, les autres cartes ont un pictogramme.
+        // Dans la liste, rien ne se répète de carte en carte : chaque photo affichée est la
+        // photo propre d'un article, et une carte sans photo n'a aucun visuel, sa catégorie
+        // en texte au-dessus du nom.
         String liste = mvc.perform(get("/pieces")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
         assertThat(liste).doesNotContain("/images/galerie/" + visuel);
         Document cartes = Jsoup.parse(liste);
         List<String> sources = cartes.select(".carte-article__image").eachAttr("src");
         assertThat(sources).doesNotHaveDuplicates();
-        assertThat(cartes.select(".carte-article__visuel")).isNotEmpty();
+        List<Element> sansPhoto = cartes.select(".carte-article:not(:has(.carte-article__image))");
+        assertThat(sansPhoto).isNotEmpty().allSatisfy(carte -> {
+            assertThat(carte.select("svg, img")).isEmpty();
+            Element corps = carte.selectFirst(".carte-article__corps");
+            assertThat(corps).isNotNull();
+            assertThat(corps.child(0).hasClass("carte-article__categorie")).isTrue();
+            assertThat(corps.child(1).hasClass("carte-article__nom")).isTrue();
+        });
     }
 
     @Test
