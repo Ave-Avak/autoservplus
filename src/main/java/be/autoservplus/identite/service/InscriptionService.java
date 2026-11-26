@@ -5,6 +5,7 @@ import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Consentement;
 import be.autoservplus.identite.domain.Langue;
+import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.TypeDocumentConsentement;
 import be.autoservplus.identite.domain.TypeUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
@@ -239,6 +240,12 @@ public class InscriptionService {
         if (membre.isEmailVerifie()) {
             throw new RegleMetierException("RM-04",
                     "Cette adresse est deja verifiee.");
+        }
+        // Un compte suspendu avant sa vérification ne reçoit pas de lien : le suivre ne
+        // lèverait plus la suspension, mais rien ne justifie de lui écrire.
+        if (membre.getStatut() != StatutUtilisateur.EN_ATTENTE_VALIDATION) {
+            throw new RegleMetierException("RM-04",
+                    "Ce compte n'attend pas de vérification.");
         }
 
         JetonLien jeton = armerVerification(membre);

@@ -233,12 +233,38 @@ public class Utilisateur extends BaseEntity {
      * Active un compte créé déjà vérifié, sans lien reçu : le compte de l'exploitant au
      * démarrage, et les comptes des jeux d'essai. Aucune vérification n'a eu lieu, aucune
      * date n'est donc posée.
+     *
+     * <p>Seul un compte qui attend sa validation devient actif. Un compte suspendu garde
+     * sa suspension (RM-04) : sinon, redemander un lien et le suivre levait une sanction du
+     * back-office, sans ligne au journal des statuts. L'adresse est tout de même tenue pour
+     * vérifiée, le lien n'ayant pu parvenir qu'à elle.</p>
      */
     public void confirmerAdresseEmail() {
         this.emailVerifie = true;
-        this.statut = StatutUtilisateur.ACTIF;
+        if (this.statut == StatutUtilisateur.EN_ATTENTE_VALIDATION) {
+            this.statut = StatutUtilisateur.ACTIF;
+        }
         this.jetonVerificationHache = null;
         this.jetonExpiration = null;
+    }
+
+    /**
+     * Suspend le compte. Le lien de vérification encore valide cesse de valoir : un lien
+     * parti avant la sanction n'a plus rien à confirmer après elle.
+     */
+    public void suspendre() {
+        this.statut = StatutUtilisateur.SUSPENDU;
+        this.jetonVerificationHache = null;
+        this.jetonExpiration = null;
+    }
+
+    /**
+     * Lève une suspension en rendant l'état que le compte aurait sans elle : actif si
+     * l'adresse a été vérifiée, en attente de validation sinon. Rendre actif un compte jamais
+     * vérifié contournerait l'inscription (F1).
+     */
+    public void reactiver() {
+        this.statut = emailVerifie ? StatutUtilisateur.ACTIF : StatutUtilisateur.EN_ATTENTE_VALIDATION;
     }
 
     /** Remplace un jeton précédent : le lien déjà parti cesse de valoir. */

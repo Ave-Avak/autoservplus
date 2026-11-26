@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
+import java.util.function.Consumer;
 
 /**
  * Gestion des comptes depuis le back-office (CdC 5.2.3).
@@ -181,7 +182,7 @@ public class GestionComptesService {
                             + "definitivement la gestion des comptes.");
         }
 
-        Utilisateur suspendu = transiter(cible, StatutUtilisateur.SUSPENDU, auteur,
+        Utilisateur suspendu = transiter(cible, Utilisateur::suspendre, auteur,
                 motif.strip());
 
         // Les sessions deja ouvertes tombent AUSSI. Sans cela, la suspension serait
@@ -207,7 +208,7 @@ public class GestionComptesService {
                     "Seul un compte suspendu se reactive.");
         }
 
-        return transiter(cible, StatutUtilisateur.ACTIF, auteur, null);
+        return transiter(cible, Utilisateur::reactiver, auteur, null);
     }
 
     /**
@@ -254,10 +255,11 @@ public class GestionComptesService {
         return champs;
     }
 
-    private Utilisateur transiter(Utilisateur cible, StatutUtilisateur vers,
+    private Utilisateur transiter(Utilisateur cible, Consumer<Utilisateur> geste,
                                   Utilisateur auteur, String motif) {
         StatutUtilisateur avant = cible.getStatut();
-        cible.setStatut(vers);
+        geste.accept(cible);
+        StatutUtilisateur vers = cible.getStatut();
 
         // Meme transaction que la transition : un journal ecrit apres coup pourrait
         // manquer si la transaction echoue, et un statut sans trace est precisement

@@ -6,6 +6,7 @@ import be.autoservplus.communication.service.LiensCourriel;
 import be.autoservplus.communication.service.OrigineMotDePasse;
 import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.TypeEvenementSecurite;
+import be.autoservplus.identite.domain.StatutUtilisateur;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.repository.UtilisateurRepository;
 import org.slf4j.Logger;
@@ -96,6 +97,12 @@ public class MotDePasseService {
         JetonLien jeton = JetonLien.tirer();
         Instant maintenant = Instant.now(horloge);
 
+        if (!membre.isEmailVerifie() && membre.getStatut() != StatutUtilisateur.EN_ATTENTE_VALIDATION) {
+            // Suspendu avant sa vérification : ni rappel ni réinitialisation, la réponse à
+            // l'écran restant la même que pour toute adresse.
+            JOURNAL.info("Demande de réinitialisation sans effet : compte suspendu avant sa vérification.");
+            return;
+        }
         if (!membre.isEmailVerifie()) {
             membre.enregistrerJetonVerification(jeton.empreinte(),
                     maintenant.plus(InscriptionService.VALIDITE_JETON));
