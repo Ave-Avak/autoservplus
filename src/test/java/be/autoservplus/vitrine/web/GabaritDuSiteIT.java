@@ -51,7 +51,7 @@ class GabaritDuSiteIT extends SocleIntegration {
 
     /** Écrans servis dans le nouveau gabarit, liste qui grandit à chaque écran migré. */
     static final List<String> ECRANS_MIGRES = List.of("/", "/services", "/pieces", "/accessoires", "/entretien", "/contact",
-            "/inscription", "/inscription/confirmee");
+            "/inscription", "/inscription/confirmee", "/connexion");
 
     /** Écrans de la rubrique Catalogue, seuls à marquer son entrée de menu. */
     private static final List<String> LISTES_DU_CATALOGUE = List.of("/services", "/pieces", "/accessoires", "/entretien");
