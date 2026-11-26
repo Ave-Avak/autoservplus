@@ -593,6 +593,29 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
     }
 
     /**
+     * Les libellés néerlandais sont plus longs : les écrans du gabarit du site, en
+     * néerlandais à 320 px, ne débordent pas (un mot composé dans un titre faisait défiler
+     * la page de quatre pixels).
+     */
+    @Test
+    @DisplayName("en néerlandais à 320 px, aucun écran du gabarit du site ne déborde")
+    void neerlandaisSurTelephone() {
+        navigateur.parcourir("neerlandais-320", ETROIT, null, contexte -> {
+            Page page = contexte.newPage();
+            page.navigate("/?lang=nl");
+            List<String> defauts = new ArrayList<>();
+            for (String ecran : List.of("/", "/services", "/pieces", "/accessoires", "/entretien")) {
+                page.navigate(ecran);
+                String deborde = debordement(page);
+                if (deborde != null) {
+                    defauts.add(ecran + " : " + deborde);
+                }
+            }
+            assertThat(defauts).isEmpty();
+        });
+    }
+
+    /**
      * Bandeau des cookies sur un petit téléphone (320 x 720) : au plus un tiers de l'écran,
      * et les trois choix de même taille, refuser aussi simple qu'accepter (APD, check-list
      * cookies).

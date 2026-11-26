@@ -32,3 +32,13 @@
 .chiffres {
   font-variant-numeric: tabular-nums;
 }
+
+// Un mot composé néerlandais (« Onderhoudsproducten ») ne tenait pas à 320 px dans un
+// titre et faisait défiler la page : les titres se coupent, avec un trait d'union quand le
+// navigateur connaît la langue de la page.
+h1,
+h2,
+h3 {
+  overflow-wrap: break-word;
+  hyphens: auto;
+}
