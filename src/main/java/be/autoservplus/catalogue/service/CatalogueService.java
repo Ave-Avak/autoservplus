@@ -77,6 +77,14 @@ public class CatalogueService {
                 .map(prestation -> ArticleVue.de(prestation, langue)), langue);
     }
 
+    /** Prestations que le garage montre à l'accueil, dans son ordre (V80). */
+    public List<ArticleVue> prestationsDeLaVitrine() {
+        Locale langue = langue();
+        return prestations.findByActifTrueAndOrdreVitrineNotNullOrderByOrdreVitrineAsc().stream()
+                .map(prestation -> ArticleVue.de(prestation, langue))
+                .toList();
+    }
+
     public List<ArticleVue> prestationsDeCategorie(String codeCategorie) {
         Locale langue = langue();
         return triees(prestations.findByCategorieCodeAndActifTrueOrderByLibelleAsc(codeCategorie).stream()

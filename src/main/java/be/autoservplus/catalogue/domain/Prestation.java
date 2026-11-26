@@ -88,6 +88,10 @@ public class Prestation extends BaseEntity {
     @Column(name = "prix_pose_seule_htva", precision = 10, scale = 2)
     private BigDecimal prixPoseSeuleHtva;
 
+    /** Rang dans les tarifs de l'accueil (V80), nul hors de l'accueil. Posé par la graine jusqu'à I4. */
+    @Column(name = "ordre_vitrine")
+    private Short ordreVitrine;
+
     /** Pièces consommées quand le garage les fournit (V76), dans l'ordre de leur ajout. */
     @OneToMany(mappedBy = "prestation", cascade = CascadeType.ALL, orphanRemoval = true)
     @OrderBy("id")
@@ -305,6 +309,7 @@ public class Prestation extends BaseEntity {
     }
     public BigDecimal getPrixHtva() { return prixHtva; }
     public BigDecimal getPrixPoseSeuleHtva() { return prixPoseSeuleHtva; }
+    public Short getOrdreVitrine() { return ordreVitrine; }
     public BigDecimal getTauxTva() { return tauxTva; }
     public void setTauxTva(BigDecimal tauxTva) { this.tauxTva = TauxTvaBelge.verifier(tauxTva); }
     public int getDureeMinutes() { return dureeMinutes; }

@@ -349,6 +349,16 @@ class GraineDemonstrationIT extends SocleIntegration {
     }
 
     @Test
+    @Order(12)
+    @DisplayName("tarifs de l'accueil : six forfaits rangés de 1 à 6, la vidange en premier")
+    void prestationsDeLAccueil() {
+        assertThat(jdbc.queryForList(
+                "SELECT code FROM service WHERE ordre_vitrine IS NOT NULL ORDER BY ordre_vitrine", String.class))
+                .containsExactly("VIDANGE_STD", "REVISION_ANNUELLE", "PLAQUETTES_AV", "RECHARGE_CLIM",
+                        "MONTAGE_PNEU", "DIAG_ELEC");
+    }
+
+    @Test
     @Order(11)
     @DisplayName("le plan du quartier est livré en WebP, en deux tailles")
     void planDuQuartier() throws IOException {

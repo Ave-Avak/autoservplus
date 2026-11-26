@@ -49,13 +49,21 @@ public class AccueilService {
     }
 
     /**
-     * Un aperçu du catalogue : la première prestation de chaque catégorie, puis les
+     * Les prestations choisies par le garage pour l'accueil (V80), dans son ordre. Sans
+     * choix, un aperçu du catalogue : la première prestation de chaque catégorie, puis les
      * suivantes si les catégories sont moins nombreuses que les places. Six vidanges
      * d'une même catégorie ne diraient rien de l'étendue de l'atelier. Les prestations à
      * l'heure n'y sont pas : la section annonce des tarifs fixes, et un taux horaire ne dit
      * pas ce que coûtera le travail.
      */
     public List<ArticleVue> prestationsMontrees() {
+        List<ArticleVue> choisies = catalogue.prestationsDeLaVitrine().stream()
+                .filter(prestation -> !prestation.aLHeure())
+                .limit(PRESTATIONS_MONTREES)
+                .toList();
+        if (!choisies.isEmpty()) {
+            return choisies;
+        }
         List<ArticleVue> toutes = catalogue.prestationsActives().stream()
                 .filter(prestation -> !prestation.aLHeure())
                 .toList();

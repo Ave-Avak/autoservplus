@@ -57,6 +57,9 @@ public interface PrestationRepository extends JpaRepository<Prestation, Long> {
     @Query("SELECT p FROM Prestation p JOIN FETCH p.categorie WHERE p.actif = true ORDER BY p.libelle")
     List<Prestation> findByActifTrueOrderByLibelleAsc();
 
+    /** Prestations de l'accueil, dans l'ordre choisi par le garage (V80). */
+    List<Prestation> findByActifTrueAndOrdreVitrineNotNullOrderByOrdreVitrineAsc();
+
     @Query("""
             SELECT p FROM Prestation p JOIN FETCH p.categorie c
             WHERE c.code = :codeCategorie AND p.actif = true
