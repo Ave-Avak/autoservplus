@@ -185,12 +185,15 @@ public class AvisService {
     // --- helpers privees ---------------------------------------------------------------
 
     /**
-     * Le titulaire est celui du rendez-vous. Une intervention creee sans rendez-vous
-     * n a pas de titulaire identifiable : personne ne peut la noter.
+     * Le titulaire est celui que désigne {@link Intervention#titulaire()}, pour les trois
+     * origines : rendez-vous, commande de prestations et entrée directe. Le courriel de
+     * clôture invite ce même titulaire à noter les travaux, l'avis lui est donc ouvert
+     * quelle que soit l'origine. Sans titulaire (véhicule d'un compte anonymisé),
+     * personne ne peut noter.
      */
     private boolean appartientA(Intervention intervention, String email) {
-        return intervention.getRdv() != null
-                && intervention.getRdv().getMembre().getEmail().equals(email);
+        Utilisateur titulaire = intervention.titulaire();
+        return titulaire != null && titulaire.getEmail().equals(email);
     }
 
     private Utilisateur membre(String email) {

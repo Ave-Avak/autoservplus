@@ -16,7 +16,6 @@ import be.autoservplus.intervention.repository.InterventionRepository;
 import be.autoservplus.notification.domain.TypeNotification;
 import be.autoservplus.notification.service.NotificationService;
 import be.autoservplus.reservation.domain.ParametreAtelier;
-import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -85,10 +84,8 @@ class AvisServiceTest {
         Utilisateur proprietaire = emailProprietaire.equals(MARIE) ? marie
                 : new Utilisateur(emailProprietaire, "$2a$12$h", "Martin", "Paul",
                         TypeUtilisateur.MEMBRE);
-        Rdv rdv = org.mockito.Mockito.mock(Rdv.class);
-        when(rdv.getMembre()).thenReturn(proprietaire);
         Intervention intervention = org.mockito.Mockito.mock(Intervention.class);
-        when(intervention.getRdv()).thenReturn(rdv);
+        when(intervention.titulaire()).thenReturn(proprietaire);
         when(intervention.getStatut()).thenReturn(statut);
         when(intervention.getNumero()).thenReturn("ITV-2026-0011");
         when(interventions.findByReference(REFERENCE)).thenReturn(Optional.of(intervention));
@@ -128,6 +125,27 @@ class AvisServiceTest {
             assertThat(service.peutDeposer(MARIE, REFERENCE)).isFalse();
             assertThatThrownBy(() -> service.interventionNotable(MARIE, REFERENCE))
                     .isInstanceOf(RegleMetierException.class);
+        }
+
+        @Test
+        @DisplayName("une intervention sans rendez-vous se note par son titulaire (commande, entrée directe)")
+        void sansRendezVous() {
+            Intervention intervention = interventionDe(MARIE, StatutIntervention.TERMINEE);
+
+            assertThat(intervention.getRdv()).isNull();
+            assertThat(service.peutDeposer(MARIE, REFERENCE)).isTrue();
+            assertThat(service.interventionNotable(MARIE, REFERENCE)).isSameAs(intervention);
+        }
+
+        @Test
+        @DisplayName("sans titulaire, véhicule d'un compte anonymisé, personne ne note")
+        void sansTitulaire() {
+            Intervention intervention = interventionDe(MARIE, StatutIntervention.TERMINEE);
+            when(intervention.titulaire()).thenReturn(null);
+
+            assertThat(service.peutDeposer(MARIE, REFERENCE)).isFalse();
+            assertThatThrownBy(() -> service.interventionNotable(MARIE, REFERENCE))
+                    .isInstanceOf(RessourceIntrouvableException.class);
         }
 
         @Test
