@@ -128,6 +128,21 @@ class CatalogueServiceTest {
             assertThatThrownBy(() -> service.prestationParReference(reference))
                     .isInstanceOf(RessourceIntrouvableException.class);
         }
+
+        @Test
+        @DisplayName("API : une prestation retirée du catalogue répond comme une inconnue")
+        void prestationRetireeIntrouvablePourLApi() {
+            Categorie entretien = new Categorie("ENTRETIEN", "Entretien", TypeCategorie.SERVICE);
+            Prestation vidange = new Prestation(entretien, "VID", "Vidange", new BigDecimal("69.00"), 30);
+            UUID reference = UUID.randomUUID();
+            when(prestations.findByReference(reference)).thenReturn(Optional.of(vidange));
+
+            assertThat(service.prestationActive(reference, Locale.FRENCH).libelle()).isEqualTo("Vidange");
+
+            vidange.desactiver();
+            assertThatThrownBy(() -> service.prestationActive(reference, Locale.FRENCH))
+                    .isInstanceOf(RessourceIntrouvableException.class);
+        }
     }
 
 }

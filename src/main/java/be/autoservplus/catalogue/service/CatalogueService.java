@@ -108,6 +108,26 @@ public class CatalogueService {
         return triees(trouves.stream().map(piece -> ArticleVue.de(piece, langue)), langue);
     }
 
+    /**
+     * Une prestation active dans une langue donnée, pour l'API publique. Une prestation
+     * retirée du catalogue répond comme inconnue : l'API ne montre que ce que ses listes
+     * montrent.
+     */
+    public ArticleVue prestationActive(UUID reference, Locale langue) {
+        return prestations.findByReference(reference)
+                .filter(Prestation::isActif)
+                .map(prestation -> ArticleVue.de(prestation, langue))
+                .orElseThrow(() -> new RessourceIntrouvableException("Prestation", reference));
+    }
+
+    /** Un produit actif dans une langue donnée, pour l'API publique, même règle. */
+    public ArticleVue produitActif(UUID reference, Locale langue) {
+        return pieces.findByReference(reference)
+                .filter(Piece::isActif)
+                .map(piece -> ArticleVue.de(piece, langue))
+                .orElseThrow(() -> new RessourceIntrouvableException("Piece", reference));
+    }
+
     /** Catégories actives d'un rayon, pour le filtre de sa liste. */
     public List<CategorieVue> categoriesDuRayon(Rayon rayon) {
         Locale langue = langue();

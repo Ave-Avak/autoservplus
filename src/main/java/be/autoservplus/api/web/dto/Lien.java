@@ -1,17 +1,27 @@
 package be.autoservplus.api.web.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
+
 /**
- * Un lien hypermedia de l API publique (BL-8).
+ * Un lien HAL de l'API publique (F41), valeur d'une relation dans {@code _links}.
  *
- * <p><b>Ecrit a la main plutot qu avec Spring HATEOAS.</b> Ajouter
- * {@code spring-boot-starter-hateoas} pour deux endpoints en lecture ferait entrer une
- * dependance, son format {@code _links} et sa serialisation HAL dans un projet qui
- * n en a besoin nulle part ailleurs. Le contrat rendu ici est volontairement plus
- * simple : une liste de couples {@code rel} / {@code href}, suffisante pour naviguer,
- * et qu on peut remplacer par HAL le jour ou l API grandit.</p>
+ * <p>Écrit à la main plutôt qu'avec Spring HATEOAS : l'API compte quelques routes en
+ * lecture, et le format HAL tient en trois types. La dépendance aurait apporté sa propre
+ * sérialisation et son propre modèle de ressource, à faire cohabiter avec springdoc, pour
+ * un gain nul ici.</p>
  *
- * @param rel  relation au sens RFC 8288 : {@code self}, {@code next}, {@code prev}...
- * @param href URL absolue, construite depuis la requete courante
+ * @param href adresse absolue, construite depuis la requête courante
+ * @param type type de la cible quand ce n'est pas l'API ({@code text/html} pour une page
+ *             du site), absent sinon
  */
-public record Lien(String rel, String href) {
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public record Lien(String href, String type) {
+
+    public static Lien versApi(String href) {
+        return new Lien(href, null);
+    }
+
+    public static Lien versPage(String href) {
+        return new Lien(href, "text/html");
+    }
 }

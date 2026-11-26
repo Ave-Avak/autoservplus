@@ -2,8 +2,10 @@ package be.autoservplus.api.web.dto;
 
 import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -16,6 +18,8 @@ import java.util.UUID;
  *
  * @param code      référence du fabricant
  * @param categorie libellé de la catégorie dans la langue négociée
+ * @param liens     liens HAL du produit (F41) : lui-même, sa collection, le garage et sa
+ *                  fiche sur le site
  */
 public record ArticlePublic(
         UUID reference,
@@ -27,10 +31,12 @@ public record ArticlePublic(
         String marque,
         BigDecimal prixHtva,
         BigDecimal prixTvac,
-        boolean disponible) {
+        boolean disponible,
+        @JsonProperty("_links") Map<String, Lien> liens) {
 
-    public static ArticlePublic de(ArticleVue vue) {
+    public static ArticlePublic de(ArticleVue vue, Map<String, Lien> liens) {
         return new ArticlePublic(vue.reference(), vue.code(), vue.libelle(), vue.description(),
-                vue.rayon(), vue.categorie(), vue.marque(), vue.prixHtva(), vue.prixTvac(), vue.disponible());
+                vue.rayon(), vue.categorie(), vue.marque(), vue.prixHtva(), vue.prixTvac(), vue.disponible(),
+                liens);
     }
 }

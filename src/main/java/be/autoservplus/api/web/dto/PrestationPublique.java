@@ -1,8 +1,10 @@
 package be.autoservplus.api.web.dto;
 
 import be.autoservplus.catalogue.service.dto.ArticleVue;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -20,6 +22,8 @@ import java.util.UUID;
  *              un taux horaire, et sa durée vaut une heure
  * @param prixPoseSeuleHtva prix quand le client apporte ses pièces (V76), {@code null} quand
  *                          le garage ne propose pas ce choix
+ * @param liens liens HAL de la prestation (F41) : elle-même, sa collection, le garage, sa
+ *              fiche sur le site et la prise de rendez-vous
  */
 public record PrestationPublique(
         UUID reference,
@@ -32,11 +36,12 @@ public record PrestationPublique(
         Integer dureeMinutes,
         String unite,
         BigDecimal prixPoseSeuleHtva,
-        BigDecimal prixPoseSeuleTvac) {
+        BigDecimal prixPoseSeuleTvac,
+        @JsonProperty("_links") Map<String, Lien> liens) {
 
-    public static PrestationPublique de(ArticleVue vue) {
+    public static PrestationPublique de(ArticleVue vue, Map<String, Lien> liens) {
         return new PrestationPublique(vue.reference(), vue.code(), vue.libelle(),
                 vue.description(), vue.categorie(), vue.prixHtva(), vue.prixTvac(),
-                vue.dureeMinutes(), vue.unite(), vue.prixPoseSeuleHtva(), vue.prixPoseSeuleTvac());
+                vue.dureeMinutes(), vue.unite(), vue.prixPoseSeuleHtva(), vue.prixPoseSeuleTvac(), liens);
     }
 }

@@ -8,6 +8,8 @@ import be.autoservplus.api.web.dto.PrestationPublique;
 import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.service.CatalogueService;
 import be.autoservplus.catalogue.service.dto.ArticleVue;
+import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.NumeroPage;
 import be.autoservplus.config.IdentiteGarage;
 import be.autoservplus.i18n.LanguesSupportees;
 import io.swagger.v3.oas.annotations.Operation;
@@ -18,9 +20,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
-import be.autoservplus.common.web.NumeroPage;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -28,43 +31,45 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.time.Duration;
-import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * API REST publique en lecture seule (BL-8), sous {@code /api/v1}.
  *
- * <p><b>Trois endpoints, aucun verbe d ecriture.</b> Ce n est pas une restriction
- * provisoire : l API sert a faire connaitre l offre du garage a des tiers
- * (agregateurs, comparateurs, site vitrine), pas a piloter le systeme. Ouvrir une
- * ecriture demanderait une authentification, une gestion de quotas et un modele
- * d autorisation qui n existent pas, et la table {@code clef_api} du socle reste
- * volontairement inexploitee.</p>
+ * <p><b>Aucun verbe d'écriture.</b> L'API sert à faire connaître l'offre du garage à des
+ * tiers (agrégateurs, comparateurs, site vitrine), pas à piloter le système.</p>
  *
- * <p><b>Aucune authentification, donc aucune donnee privee.</b> Les deux ressources
- * exposees sont deja publiques sur le site : le catalogue des prestations et des
- * produits, et l identite commerciale du garage. Aucun membre, aucune commande, aucun rendez-vous
- * n est joignable par cette API, et les DTO lui sont propres pour qu un champ ajoute
- * a un ecran ne fuite pas ici par accident.</p>
+ * <p><b>Aucune authentification, donc aucune donnée privée.</b> Les ressources exposées
+ * sont déjà publiques sur le site : le catalogue des prestations et des produits, et
+ * l'identité commerciale du garage. Aucun membre, aucune commande, aucun rendez-vous n'est
+ * joignable par cette API, et les DTO lui sont propres pour qu'un champ ajouté à un écran
+ * ne fuite pas ici par accident.</p>
  *
- * <p><b>DTO dedies, jamais d entite ni de vue Thymeleaf.</b> {@code ArticleVue} sert
- * les gabarits et peut changer avec un ecran. Le contrat d une API publique ne le
- * peut pas.</p>
+ * <p><b>Réponses au format HAL (F41).</b> Chaque ressource porte ses liens sous
+ * {@code _links}, une collection range ses éléments sous {@code _embedded}. Un client part
+ * de {@code /api/v1/garages} et découvre le reste en suivant les liens. Le type
+ * {@code application/hal+json} est rendu par défaut, {@code application/json} sur demande
+ * expresse, avec le même corps.</p>
  */
 @RestController
-@RequestMapping("/api/v1")
+@RequestMapping(value = "/api/v1", produces = {ApiPubliqueController.HAL_JSON, MediaType.APPLICATION_JSON_VALUE})
 @Tag(name = "Catalogue public",
         description = "Offre commerciale du garage, en lecture seule et sans authentification.")
 public class ApiPubliqueController {
 
-    /** Taille par defaut, alignee sur la pagination du catalogue web. */
+    static final String HAL_JSON = "application/hal+json";
+
+    /** Taille par défaut, alignée sur la pagination du catalogue web. */
     private static final int TAILLE_DEFAUT = 20;
 
     /**
-     * Plafond de taille de page. Sans borne, un client demandant 100 000 elements
-     * ferait charger tout le catalogue en memoire : l API est publique et anonyme,
-     * elle doit borner ce qu un appelant peut reclamer.
+     * Plafond de taille de page. Sans borne, un client demandant 100 000 éléments ferait
+     * charger tout le catalogue en mémoire : l'API est publique et anonyme, elle doit
+     * borner ce qu'un appelant peut réclamer.
      */
     private static final int TAILLE_MAX = 100;
 
@@ -105,15 +110,23 @@ public class ApiPubliqueController {
         // l'en-tête annoncé par Vary.
         Locale langue = LanguesSupportees.negociee(acceptLanguage);
         List<PrestationPublique> toutes = catalogue.prestationsActives(langue).stream()
-                .map(PrestationPublique::de)
+                .map(this::prestation)
                 .toList();
-        return ResponseEntity.ok()
-                // Catalogue public et peu changeant : une minute de cache suffit a
-                // absorber un pic sans servir un tarif perime.
-                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(1)).cachePublic())
-                .header(HttpHeaders.CONTENT_LANGUAGE, langue.getLanguage())
-                .varyBy(HttpHeaders.ACCEPT_LANGUAGE)
-                .body(paginer(toutes, page, taille));
+        return dansLaLangue(langue).body(paginer("prestations", toutes, page, taille));
+    }
+
+    @Operation(summary = "Décrit une prestation",
+            description = "Prestation active, dans la langue négociée par Accept-Language. Une "
+                    + "prestation retirée du catalogue répond 404, comme une référence inconnue.")
+    @ApiResponse(responseCode = "200", description = "La prestation et ses liens")
+    @ApiResponse(responseCode = "404", description = "Référence inconnue ou prestation retirée")
+    @GetMapping("/prestations/{reference}")
+    public ResponseEntity<PrestationPublique> prestation(
+            @PathVariable UUID reference,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        Locale langue = LanguesSupportees.negociee(acceptLanguage);
+        return dansLaLangue(langue).body(prestation(catalogue.prestationActive(reference, langue)));
     }
 
     @Operation(summary = "Liste les produits du catalogue",
@@ -129,6 +142,7 @@ public class ApiPubliqueController {
                     @Header(name = HttpHeaders.VARY,
                             description = "Accept-Language : la réponse dépend de la langue demandée.",
                             schema = @Schema(type = "string"))})
+    @ApiResponse(responseCode = "400", description = "Rayon inconnu")
     @GetMapping("/articles")
     public ResponseEntity<PagePublique<ArticlePublic>> articles(
             @Parameter(description = "Rayon : PIECES_AUTO, ACCESSOIRES ou ENTRETIEN. Sans rayon, les trois.")
@@ -143,39 +157,107 @@ public class ApiPubliqueController {
 
         Locale langue = LanguesSupportees.negociee(acceptLanguage);
         List<ArticlePublic> tous = catalogue.produitsActifs(langue, rayon).stream()
-                .map(ArticlePublic::de)
+                .map(this::article)
                 .toList();
-        return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(1)).cachePublic())
-                .header(HttpHeaders.CONTENT_LANGUAGE, langue.getLanguage())
-                .varyBy(HttpHeaders.ACCEPT_LANGUAGE)
-                .body(paginer(tous, page, taille));
+        return dansLaLangue(langue).body(paginer("articles", tous, page, taille));
+    }
+
+    @Operation(summary = "Décrit un produit du catalogue",
+            description = "Produit actif, dans la langue négociée par Accept-Language. Un produit "
+                    + "retiré du catalogue répond 404, comme une référence inconnue.")
+    @ApiResponse(responseCode = "200", description = "Le produit et ses liens")
+    @ApiResponse(responseCode = "404", description = "Référence inconnue ou produit retiré")
+    @GetMapping("/articles/{reference}")
+    public ResponseEntity<ArticlePublic> article(
+            @PathVariable UUID reference,
+            @RequestHeader(value = HttpHeaders.ACCEPT_LANGUAGE, required = false) String acceptLanguage) {
+
+        Locale langue = LanguesSupportees.negociee(acceptLanguage);
+        return dansLaLangue(langue).body(article(catalogue.produitActif(reference, langue)));
     }
 
     @Operation(summary = "Liste les garages",
-            description = "La V1 est mono-tenant : la collection contient un seul element. "
-                    + "Le contrat est deja celui de la V2 multi-tenant.")
+            description = "La V1 est mono-tenant : la collection contient un seul élément. "
+                    + "Le contrat est déjà celui de la V2 multi-tenant. Point d'entrée de l'API : "
+                    + "les liens du garage mènent à son catalogue et à ses pages.")
     @GetMapping("/garages")
     public ResponseEntity<PagePublique<GaragePublic>> garages(
             @RequestParam(defaultValue = "0") int page,
             @RequestParam(defaultValue = "" + TAILLE_DEFAUT) int taille) {
 
-        List<GaragePublic> tous = List.of(GaragePublic.de(identite));
         return ResponseEntity.ok()
-                .cacheControl(CacheControl.maxAge(Duration.ofMinutes(1)).cachePublic())
-                .body(paginer(tous, page, taille));
+                .cacheControl(cacheCourt())
+                .body(paginer("garages", List.of(garage()), page, taille));
     }
 
+    @Operation(summary = "Décrit un garage",
+            description = "L'identifiant est le numéro d'entreprise, chiffres seuls.")
+    @ApiResponse(responseCode = "200", description = "Le garage et ses liens")
+    @ApiResponse(responseCode = "404", description = "Identifiant inconnu")
+    @GetMapping("/garages/{identifiant}")
+    public ResponseEntity<GaragePublic> garage(@PathVariable String identifiant) {
+        if (!identifiant.equals(GaragePublic.identifiantDe(identite))) {
+            throw new RessourceIntrouvableException("Garage", identifiant);
+        }
+        return ResponseEntity.ok().cacheControl(cacheCourt()).body(garage());
+    }
+
+    // --- ressources et leurs liens -----------------------------------------------------
+
+    private PrestationPublique prestation(ArticleVue vue) {
+        Map<String, Lien> liens = new LinkedHashMap<>();
+        liens.put("self", Lien.versApi(api("/prestations/{reference}", vue.reference())));
+        liens.put("collection", Lien.versApi(api("/prestations")));
+        liens.put("garage", Lien.versApi(lienGarage()));
+        liens.put("fiche", Lien.versPage(site(vue.chemin())));
+        // Une prestation à l'heure ne se réserve pas en ligne : son prix est un taux, la
+        // durée du travail n'est connue qu'à l'atelier.
+        if (!vue.aLHeure()) {
+            liens.put("reservation", Lien.versPage(ServletUriComponentsBuilder.fromCurrentContextPath()
+                    .path("/mes-rendez-vous/nouveau")
+                    .queryParam("prestation", vue.reference())
+                    .toUriString()));
+        }
+        return PrestationPublique.de(vue, liens);
+    }
+
+    private ArticlePublic article(ArticleVue vue) {
+        Map<String, Lien> liens = new LinkedHashMap<>();
+        liens.put("self", Lien.versApi(api("/articles/{reference}", vue.reference())));
+        liens.put("collection", Lien.versApi(api("/articles")));
+        liens.put("garage", Lien.versApi(lienGarage()));
+        liens.put("fiche", Lien.versPage(site(vue.chemin())));
+        return ArticlePublic.de(vue, liens);
+    }
+
+    private GaragePublic garage() {
+        Map<String, Lien> liens = new LinkedHashMap<>();
+        liens.put("self", Lien.versApi(lienGarage()));
+        liens.put("collection", Lien.versApi(api("/garages")));
+        liens.put("prestations", Lien.versApi(api("/prestations")));
+        liens.put("articles", Lien.versApi(api("/articles")));
+        liens.put("site", Lien.versPage(site("/")));
+        liens.put("contact", Lien.versPage(site("/contact")));
+        liens.put("reservation", Lien.versPage(site("/mes-rendez-vous/nouveau")));
+        return GaragePublic.de(identite, liens);
+    }
+
+    private String lienGarage() {
+        return api("/garages/{identifiant}", GaragePublic.identifiantDe(identite));
+    }
+
+    // --- pagination -------------------------------------------------------------------
+
     /**
-     * Decoupe la liste et compose les liens de navigation.
+     * Découpe la liste et compose les liens de navigation.
      *
-     * <p>Les parametres hors bornes sont <b>ramenes</b> plutot que refuses : une page
-     * negative devient la premiere, une taille excessive est plafonnee. Une API
-     * publique qui renvoie 400 sur un parametre corrigeable complique la vie de ses
-     * clients sans rien proteger. Une page au-dela du dernier element rend, elle, une
-     * liste vide : ce qui est la reponse juste, pas une erreur.</p>
+     * <p>Les paramètres hors bornes sont <b>ramenés</b> plutôt que refusés : une page
+     * négative devient la première, une taille excessive est plafonnée. Une API publique
+     * qui renvoie 400 sur un paramètre corrigeable complique la vie de ses clients sans
+     * rien protéger. Une page au-delà du dernier élément rend une liste vide, ce qui est la
+     * réponse juste, pas une erreur.</p>
      */
-    private <T> PagePublique<T> paginer(List<T> tous, int page, int taille) {
+    private <T> PagePublique<T> paginer(String collection, List<T> tous, int page, int taille) {
         int tailleReelle = Math.clamp(taille, 1, TAILLE_MAX);
         int pageReelle = NumeroPage.borne(page, tailleReelle);
         long total = tous.size();
@@ -185,34 +267,65 @@ public class ApiPubliqueController {
         int fin = Math.min(debut + tailleReelle, tous.size());
         List<T> contenu = tous.subList(debut, fin);
 
-        return new PagePublique<>(contenu, pageReelle, tailleReelle, total, nombreDePages,
-                liens(pageReelle, tailleReelle, nombreDePages));
+        return new PagePublique<>(navigation(pageReelle, tailleReelle, nombreDePages),
+                Map.of(collection, contenu),
+                new PagePublique.Pagination(pageReelle, tailleReelle, total, nombreDePages));
     }
 
-    private List<Lien> liens(int page, int taille, int nombreDePages) {
-        List<Lien> liens = new ArrayList<>();
-        liens.add(new Lien("self", url(page, taille)));
+    private static Map<String, Lien> navigation(int page, int taille, int nombreDePages) {
+        int derniere = Math.max(nombreDePages - 1, 0);
+        Map<String, Lien> liens = new LinkedHashMap<>();
+        liens.put("self", Lien.versApi(pageCourante(page, taille)));
+        liens.put("first", Lien.versApi(pageCourante(0, taille)));
+        liens.put("last", Lien.versApi(pageCourante(derniere, taille)));
         if (page > 0) {
-            liens.add(new Lien("prev", url(page - 1, taille)));
+            liens.put("prev", Lien.versApi(pageCourante(Math.min(page - 1, derniere), taille)));
         }
         if (page + 1 < nombreDePages) {
-            liens.add(new Lien("next", url(page + 1, taille)));
+            liens.put("next", Lien.versApi(pageCourante(page + 1, taille)));
         }
         return liens;
     }
 
+    // --- adresses ---------------------------------------------------------------------
+
     /**
-     * URL absolue de la requete courante, avec la pagination reecrite.
+     * URL absolue de la requête courante, avec la pagination réécrite.
      *
-     * <p>Construite depuis la requete et non depuis une base codee en dur : derriere un
-     * proxy, seul l en-tete de transfert connait le domaine public
-     * ({@code autoservplus.be}), et une URL fabriquee a la main y renverrait vers
-     * l hote interne.</p>
+     * <p>Construite depuis la requête et non depuis une base codée en dur : derrière un
+     * proxy, seul l'en-tête de transfert connaît le domaine public, et une URL fabriquée à
+     * la main y renverrait vers l'hôte interne. Les autres paramètres (le rayon) sont
+     * gardés.</p>
      */
-    private static String url(int page, int taille) {
+    private static String pageCourante(int page, int taille) {
         return ServletUriComponentsBuilder.fromCurrentRequest()
                 .replaceQueryParam("page", page)
                 .replaceQueryParam("taille", taille)
                 .toUriString();
+    }
+
+    private static String api(String chemin, Object... variables) {
+        return ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/v1").path(chemin)
+                .buildAndExpand(variables)
+                .toUriString();
+    }
+
+    private static String site(String chemin) {
+        return ServletUriComponentsBuilder.fromCurrentContextPath().path(chemin).toUriString();
+    }
+
+    // --- en-têtes ---------------------------------------------------------------------
+
+    private static ResponseEntity.BodyBuilder dansLaLangue(Locale langue) {
+        return ResponseEntity.ok()
+                .cacheControl(cacheCourt())
+                .header(HttpHeaders.CONTENT_LANGUAGE, langue.getLanguage())
+                .varyBy(HttpHeaders.ACCEPT_LANGUAGE);
+    }
+
+    /** Catalogue public et peu changeant : une minute de cache absorbe un pic sans servir un tarif périmé. */
+    private static CacheControl cacheCourt() {
+        return CacheControl.maxAge(Duration.ofMinutes(1)).cachePublic();
     }
 }

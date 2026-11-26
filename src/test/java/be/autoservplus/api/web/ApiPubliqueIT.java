@@ -29,6 +29,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.endsWith;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -70,10 +71,10 @@ class ApiPubliqueIT extends SocleIntegration {
             mvc.perform(get("/api/v1/prestations"))
                     .andExpect(status().isOk())
                     .andExpect(content().contentTypeCompatibleWith("application/json"))
-                    .andExpect(jsonPath("$.page").value(0))
-                    .andExpect(jsonPath("$.taille").value(20))
-                    .andExpect(jsonPath("$.total").isNumber())
-                    .andExpect(jsonPath("$.liens[*].rel", hasItem("self")));
+                    .andExpect(jsonPath("$.page.numero").value(0))
+                    .andExpect(jsonPath("$.page.taille").value(20))
+                    .andExpect(jsonPath("$.page.total").isNumber())
+                    .andExpect(jsonPath("$._links.self.href").exists());
         }
 
         @Test
@@ -91,7 +92,7 @@ class ApiPubliqueIT extends SocleIntegration {
         void taillePlafonnee() throws Exception {
             mvc.perform(get("/api/v1/prestations").param("taille", "100000"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.taille").value(100));
+                    .andExpect(jsonPath("$.page.taille").value(100));
         }
 
         @Test
@@ -99,7 +100,7 @@ class ApiPubliqueIT extends SocleIntegration {
         void pageNegative() throws Exception {
             mvc.perform(get("/api/v1/prestations").param("page", "-5"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.page").value(0));
+                    .andExpect(jsonPath("$.page.numero").value(0));
         }
 
         @Test
@@ -107,7 +108,7 @@ class ApiPubliqueIT extends SocleIntegration {
         void pageAuDela() throws Exception {
             mvc.perform(get("/api/v1/prestations").param("page", "9999"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.contenu").isEmpty());
+                    .andExpect(jsonPath("$._embedded.prestations").isEmpty());
         }
 
         @Test
@@ -115,14 +116,14 @@ class ApiPubliqueIT extends SocleIntegration {
         void pageDemesuree() throws Exception {
             mvc.perform(get("/api/v1/prestations").param("page", "2147483647").param("taille", "100"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.contenu").isEmpty());
+                    .andExpect(jsonPath("$._embedded.prestations").isEmpty());
         }
 
         @Test
         @DisplayName("la premiere page ne porte pas de lien prev")
         void pasDePrevSurLaPremiere() throws Exception {
             mvc.perform(get("/api/v1/prestations"))
-                    .andExpect(jsonPath("$.liens[*].rel", not(hasItem("prev"))));
+                    .andExpect(jsonPath("$._links.prev").doesNotExist());
         }
 
         @Test
@@ -130,8 +131,8 @@ class ApiPubliqueIT extends SocleIntegration {
         void paginationEffective() throws Exception {
             mvc.perform(get("/api/v1/prestations").param("taille", "1"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.contenu.length()").value(1))
-                    .andExpect(jsonPath("$.liens[*].rel", hasItem("next")));
+                    .andExpect(jsonPath("$._embedded.prestations.length()").value(1))
+                    .andExpect(jsonPath("$._links.next.href").exists());
         }
     }
 
@@ -164,11 +165,11 @@ class ApiPubliqueIT extends SocleIntegration {
                 }
                 String corps = mvc.perform(requete).andExpect(status().isOk())
                         .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
-                List<Map<String, Object>> trouvees = JsonPath.read(corps, "$.contenu[?(@.code=='" + code + "')]");
+                List<Map<String, Object>> trouvees = JsonPath.read(corps, "$._embedded.prestations[?(@.code=='" + code + "')]");
                 if (!trouvees.isEmpty()) {
                     return trouvees.getFirst();
                 }
-                List<Object> contenu = JsonPath.read(corps, "$.contenu");
+                List<Object> contenu = JsonPath.read(corps, "$._embedded.prestations");
                 assertThat(contenu).as("prestation semée introuvable").isNotEmpty();
             }
         }
@@ -239,18 +240,34 @@ class ApiPubliqueIT extends SocleIntegration {
         void collectionMonoTenant() throws Exception {
             mvc.perform(get("/api/v1/garages"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.total").value(1))
-                    .andExpect(jsonPath("$.contenu[0].raisonSociale").isNotEmpty())
-                    .andExpect(jsonPath("$.contenu[0].localite").isNotEmpty());
+                    .andExpect(jsonPath("$.page.total").value(1))
+                    .andExpect(jsonPath("$._embedded.garages[0].raisonSociale").isNotEmpty())
+                    .andExpect(jsonPath("$._embedded.garages[0].localite").isNotEmpty());
         }
 
         @Test
-        @DisplayName("n expose ni IBAN ni numero BCE")
+        @DisplayName("n'expose pas d'IBAN, et le numéro d'entreprise sert d'identifiant sans champ à son nom")
         void aucuneCoordonneeBancaire() throws Exception {
             mvc.perform(get("/api/v1/garages"))
                     .andExpect(content().string(not(containsString("iban"))))
                     .andExpect(content().string(not(containsString("BE68"))))
                     .andExpect(content().string(not(containsString("numeroBce"))));
+        }
+
+        @Test
+        @DisplayName("le lien self du garage mène à sa ressource, un autre identifiant répond 404")
+        void garageSeul() throws Exception {
+            String corps = mvc.perform(get("/api/v1/garages")).andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString(StandardCharsets.UTF_8);
+            String self = JsonPath.read(corps, "$._embedded.garages[0]._links.self.href");
+            String chemin = self.substring(self.indexOf("/api/v1/"));
+
+            mvc.perform(get(chemin))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.raisonSociale").isNotEmpty())
+                    .andExpect(jsonPath("$._links.prestations.href", endsWith("/api/v1/prestations")));
+            mvc.perform(get("/api/v1/garages/9999999999"))
+                    .andExpect(status().isNotFound());
         }
     }
 
@@ -284,10 +301,10 @@ class ApiPubliqueIT extends SocleIntegration {
         void parRayon() throws Exception {
             mvc.perform(get("/api/v1/articles").param("rayon", "ACCESSOIRES").param("taille", "100"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.contenu[*].rayon", everyItem(is("ACCESSOIRES"))))
-                    .andExpect(jsonPath("$.contenu[?(@.code == 'API-TAPIS')].categorie", hasItem("Intérieur")))
-                    .andExpect(jsonPath("$.contenu[?(@.code == 'API-TAPIS')].disponible", hasItem(true)))
-                    .andExpect(jsonPath("$.contenu[?(@.code == 'API-TAPIS')].prixTvac", hasItem(39.93)))
+                    .andExpect(jsonPath("$._embedded.articles[*].rayon", everyItem(is("ACCESSOIRES"))))
+                    .andExpect(jsonPath("$._embedded.articles[?(@.code == 'API-TAPIS')].categorie", hasItem("Intérieur")))
+                    .andExpect(jsonPath("$._embedded.articles[?(@.code == 'API-TAPIS')].disponible", hasItem(true)))
+                    .andExpect(jsonPath("$._embedded.articles[?(@.code == 'API-TAPIS')].prixTvac", hasItem(39.93)))
                     .andExpect(content().string(not(containsString("quantiteStock"))))
                     .andExpect(content().string(not(containsString("seuilAlerte"))));
 
@@ -302,8 +319,8 @@ class ApiPubliqueIT extends SocleIntegration {
             mvc.perform(get("/api/v1/articles").param("taille", "100").header("Accept-Language", "nl-BE"))
                     .andExpect(status().isOk())
                     .andExpect(header().string("Content-Language", "nl"))
-                    .andExpect(jsonPath("$.contenu[?(@.code == 'API-TAPIS')].libelle", hasItem("Vloermatten")))
-                    .andExpect(jsonPath("$.contenu[?(@.code == 'API-TAPIS')].categorie", hasItem("Interieur")));
+                    .andExpect(jsonPath("$._embedded.articles[?(@.code == 'API-TAPIS')].libelle", hasItem("Vloermatten")))
+                    .andExpect(jsonPath("$._embedded.articles[?(@.code == 'API-TAPIS')].categorie", hasItem("Interieur")));
         }
 
         @Test
@@ -312,6 +329,26 @@ class ApiPubliqueIT extends SocleIntegration {
             mvc.perform(get("/v3/api-docs/public"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.paths./api/v1/articles").exists());
+        }
+
+        @Test
+        @DisplayName("un produit seul, en anonyme, avec ses liens, 404 inconnu ou retiré")
+        void produitSeul() throws Exception {
+            UUID reference = jdbc.queryForObject(
+                    "SELECT reference FROM piece WHERE reference_fabricant = 'API-TAPIS'", UUID.class);
+            mvc.perform(get("/api/v1/articles/{reference}", reference))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.code").value("API-TAPIS"))
+                    .andExpect(jsonPath("$._links.self.href", endsWith("/api/v1/articles/" + reference)))
+                    .andExpect(jsonPath("$._links.fiche.href", endsWith("/accessoires/" + reference)));
+            mvc.perform(get("/api/v1/articles/{reference}", UUID.randomUUID()))
+                    .andExpect(status().isNotFound());
+            mvc.perform(get("/api/v1/articles/pas-une-reference"))
+                    .andExpect(status().isNotFound());
+
+            jdbc.update("UPDATE piece SET actif = false WHERE reference_fabricant = 'API-TAPIS'");
+            mvc.perform(get("/api/v1/articles/{reference}", reference))
+                    .andExpect(status().isNotFound());
         }
     }
 
