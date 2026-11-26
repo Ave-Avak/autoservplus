@@ -25,8 +25,20 @@ public record SyntheseAvis(Double moyenne, Long nombre) {
         nombre = nombre == null ? 0L : nombre;
     }
 
+    /**
+     * Nombre d'avis publiés à partir duquel une note moyenne s'affiche hors de la fiche :
+     * « 5 sur 5 » sur un seul avis ne dit rien, et une note parfaite sur peu d'avis inspire
+     * moins confiance qu'une note autour de 4,3 sur beaucoup (décision du 2026-11-26).
+     */
+    public static final long SEUIL_DE_LA_NOTE = 3;
+
     public boolean aDesAvis() {
         return nombre > 0 && moyenne != null;
+    }
+
+    /** Vrai quand la note moyenne peut s'afficher sur l'accueil et les cartes du catalogue. */
+    public boolean noteAffichable() {
+        return aDesAvis() && nombre >= SEUIL_DE_LA_NOTE;
     }
 
     /**

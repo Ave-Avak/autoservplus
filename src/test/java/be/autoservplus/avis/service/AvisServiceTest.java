@@ -218,5 +218,14 @@ class AvisServiceTest {
             assertThat(service.synthese(REFERENCE).moyenneAffichee())
                     .hasToString("4.3");
         }
+
+        @Test
+        @DisplayName("note affichable hors de la fiche à partir de trois avis publiés")
+        void seuilDeLaNote() {
+            assertThat(new SyntheseAvis(5.0, 1L).noteAffichable()).isFalse();
+            assertThat(new SyntheseAvis(4.5, 2L).noteAffichable()).isFalse();
+            assertThat(new SyntheseAvis(4.3, 3L).noteAffichable()).isTrue();
+            assertThat(SyntheseAvis.vide().noteAffichable()).isFalse();
+        }
     }
 }
