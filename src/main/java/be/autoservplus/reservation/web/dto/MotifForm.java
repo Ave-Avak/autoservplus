@@ -10,8 +10,11 @@ import jakarta.validation.constraints.Size;
  */
 public class MotifForm {
 
+    /** Borne commune aux motifs du garage (refus, annulation, déplacement), repris dans le courriel. */
+    public static final int LONGUEUR_MAX = 500;
+
     @NotBlank(message = "{admin.rdv.motif.obligatoire}")
-    @Size(max = 500, message = "{admin.rdv.motif.longueur}")
+    @Size(max = LONGUEUR_MAX, message = "{admin.rdv.motif.longueur}")
     private String motif;
 
     public String getMotif() { return motif; }

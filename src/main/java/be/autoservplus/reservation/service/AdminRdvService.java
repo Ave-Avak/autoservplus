@@ -276,8 +276,10 @@ public class AdminRdvService {
                     ancien, detailsPour(enregistreRdv), motif.trim(), garage.telephone(),
                     agendaPour(enregistreRdv)));
         });
-        log.info("Rendez-vous {} deplace par le garage de {} a {}, poste {}, motif : {}",
-                enregistre.getNumero(), ancienDebut, nouveauDebut, poste.getLibelle(), motif.trim());
+        // Le motif reste hors du journal : texte libre, adressé au membre, il peut porter
+        // des données personnelles. Le courriel le transmet, le journal n'en a pas besoin.
+        log.info("Rendez-vous {} deplace par le garage de {} a {}, poste {}",
+                enregistre.getNumero(), ancienDebut, nouveauDebut, poste.getLibelle());
         return enregistre;
     }
 

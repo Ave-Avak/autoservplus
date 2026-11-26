@@ -200,6 +200,10 @@ public class AdminRdvController {
             modele.addAttribute("erreurMotif", messages.getMessage("admin.rdv.modification.motif-requis", null, langue));
             return ecranDeplacement(reference, formulaire, modele, langue, redirection);
         }
+        if (formulaire.getMotif().trim().length() > MotifForm.LONGUEUR_MAX) {
+            modele.addAttribute("erreurMotif", messages.getMessage("admin.rdv.motif.longueur", null, langue));
+            return ecranDeplacement(reference, formulaire, modele, langue, redirection);
+        }
         Instant debut;
         try {
             debut = Instant.parse(formulaire.getDebut() == null ? "" : formulaire.getDebut());

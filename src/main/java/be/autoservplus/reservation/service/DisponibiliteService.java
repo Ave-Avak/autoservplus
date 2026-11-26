@@ -155,6 +155,10 @@ public class DisponibiliteService {
     /**
      * Même contrôle selon qui choisit le créneau. Pour le garage, ni délai minimal, ni
      * horizon, ni temps de réponse : le créneau doit seulement être à venir.
+     *
+     * <p>Le départ doit aussi tomber sur la grille de la plage (son ouverture plus un
+     * multiple du pas), comme les candidats que proposent les écrans. Sans ce contrôle,
+     * une requête forgée posait un rendez-vous à 09:07 et morcelait la journée du poste.</p>
      */
     public boolean estReservable(Instant debut, Instant fin, ReglesDeCreneau regles) {
         ParametreAtelier p = parametres.courants();
@@ -177,10 +181,16 @@ public class DisponibiliteService {
         }
         return plages.findByJourSemaineAndActifTrueOrderByHeureDebut((short) local.getDayOfWeek().getValue())
                 .stream()
-                .anyMatch(pl -> !heureDebut.isBefore(pl.getHeureDebut()) && !heureFin.isAfter(pl.getHeureFin()));
+                .anyMatch(pl -> !heureDebut.isBefore(pl.getHeureDebut()) && !heureFin.isAfter(pl.getHeureFin())
+                        && surLaGrille(pl.getHeureDebut(), heureDebut, p.pas()));
     }
 
     // --- regles pures, sans acces aux donnees ---------------------------------------
+
+    /** Le départ est-il l'ouverture de la plage plus un multiple du pas ? */
+    static boolean surLaGrille(LocalTime ouverture, LocalTime depart, Duration pas) {
+        return Duration.between(ouverture, depart).toSeconds() % pas.toSeconds() == 0;
+    }
 
     static boolean dansLaFenetre(ReglesDeCreneau regles, ParametreAtelier p, Instant maintenant,
                                  Instant debut, Instant fin) {

@@ -4,6 +4,7 @@ import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.service.AdminRdvService;
 import be.autoservplus.reservation.service.dto.AgendaAdmin;
+import be.autoservplus.reservation.web.dto.MotifForm;
 import be.autoservplus.reservation.web.dto.RdvVueAdmin;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -28,6 +29,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -314,6 +316,30 @@ class AdminRdvControllerTest {
                     .andExpect(flash().attributeExists("message"));
 
             verify(adminRdvs).refuser(REF, "Piece indisponible");
+        }
+    }
+
+    @Nested
+    @DisplayName("POST /admin/rendez-vous/{ref}/modifier")
+    class Deplacer {
+
+        @Test
+        @DisplayName("motif au-delà de la borne : écran rendu avec l'erreur, aucun déplacement")
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        void motifTropLong() throws Exception {
+            when(adminRdvs.vue(REF)).thenReturn(vueEnAttente);
+            when(adminRdvs.aujourdhui()).thenReturn(LocalDate.of(2026, 9, 1));
+
+            mvc.perform(post("/admin/rendez-vous/{ref}/modifier", REF)
+                            .param("motif", "x".repeat(MotifForm.LONGUEUR_MAX + 1))
+                            .param("debut", "2026-09-14T08:00:00Z")
+                            .param("version", "0")
+                            .with(csrf()))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name("admin/rendez-vous-deplacer"))
+                    .andExpect(model().attributeExists("erreurMotif"));
+
+            verify(adminRdvs, never()).deplacer(any(), any(), any(), anyLong());
         }
     }
 }

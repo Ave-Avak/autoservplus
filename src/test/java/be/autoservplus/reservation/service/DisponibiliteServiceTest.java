@@ -364,6 +364,24 @@ class DisponibiliteServiceTest {
         }
 
         @Test
+        @DisplayName("un départ hors de la grille du pas n'est pas réservable, ni par le membre ni par le garage")
+        void pasReservableHorsGrille() {
+            ouvertLeMercrediDe8a12();
+            assertThat(service.estReservable(local(MERCREDI, 9, 7), local(MERCREDI, 10, 7))).isFalse();
+            assertThat(service.estReservable(local(MERCREDI, 9, 7), local(MERCREDI, 10, 7), ReglesDeCreneau.GARAGE))
+                    .isFalse();
+            assertThat(service.estReservable(local(MERCREDI, 9, 30), local(MERCREDI, 10, 30))).isTrue();
+        }
+
+        @Test
+        @DisplayName("la grille part de l'ouverture de la plage, pas de l'heure pleine")
+        void grilleDepuisLOuverture() {
+            Duration pas = Duration.ofMinutes(30);
+            assertThat(DisponibiliteService.surLaGrille(LocalTime.of(8, 15), LocalTime.of(9, 45), pas)).isTrue();
+            assertThat(DisponibiliteService.surLaGrille(LocalTime.of(8, 15), LocalTime.of(9, 30), pas)).isFalse();
+        }
+
+        @Test
         @DisplayName("un depart sous le delai minimal ne l est pas")
         void pasReservableTropTot() {
             LocalDate lundi = LocalDate.of(2026, 9, 14);
