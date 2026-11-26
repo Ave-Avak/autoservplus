@@ -578,6 +578,16 @@ class SchemaIT extends SocleIntegration {
     // Un refus par méthode : après une erreur, PostgreSQL annule la transaction du test.
     @Test
     @Transactional
+    @DisplayName("un rang de vitrine commence à 1")
+    void rangDeVitrineNul() {
+        assertThatThrownBy(() -> jdbc.update(
+                "UPDATE service SET ordre_vitrine = 0 WHERE id = (SELECT min(id) FROM service)"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ck_service_ordre_vitrine");
+    }
+
+    @Test
+    @Transactional
     @DisplayName("une catégorie de produits exige un rayon")
     void categorieDeProduitsSansRayon() {
         assertThatThrownBy(() -> jdbc.update(

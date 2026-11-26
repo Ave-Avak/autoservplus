@@ -72,6 +72,16 @@ class AccueilServiceTest {
     }
 
     @Test
+    @DisplayName("aperçu : les prestations choisies par le garage, dans son ordre, sans prestation à l'heure")
+    void prestationsChoisies() {
+        when(catalogue.prestationsDeLaVitrine()).thenReturn(List.of(
+                prestation("Vidange", "Entretien", 30), alHeure("Main-d'œuvre"), prestation("Révision", "Entretien", 90)));
+
+        assertThat(service.prestationsMontrees()).extracting(ArticleVue::libelle).containsExactly("Vidange", "Révision");
+        verify(catalogue, never()).prestationsActives();
+    }
+
+    @Test
     @DisplayName("créneaux : la plus courte prestation au forfait, trois jours qui en ont, quatre heures par jour")
     void prochainsCreneaux() {
         ArticleVue courte = prestation("Contrôle", "Diagnostic", 15);
