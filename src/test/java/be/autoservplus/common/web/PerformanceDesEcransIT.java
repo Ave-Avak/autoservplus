@@ -14,7 +14,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.util.FileSystemUtils;
 
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -32,8 +39,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  * <p>La compression gzip est activée dans ce seul contexte : en production, Caddy compresse
  * les réponses ({@code encode gzip}, {@code deploy/Caddyfile}) et l'application ne le fait
  * pas. Mesurer des réponses non compressées jugerait une chaîne qui n'existe pas.</p>
+ *
+ * <p>Les écrans sont mesurés sur la graine de démonstration, sous le profil {@code demo}
+ * posé comme dans {@code GraineDemonstrationIT}. Sans elle, les listes n'ont ni catalogue
+ * ni photos, et le plus grand élément peint est un titre au lieu de la première vignette :
+ * le budget jugerait une page que personne ne verra. L'élément mesuré est nommé dans le
+ * message d'échec. Les photos et les PDF éventuels sont écrits dans un dossier temporaire,
+ * supprimé après la classe.</p>
  */
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
+        "spring.profiles.active=demo",
         "server.compression.enabled=true",
         "server.compression.mime-types=text/html,text/css,application/javascript,image/svg+xml",
         "server.compression.min-response-size=1024"})
@@ -45,6 +60,8 @@ class PerformanceDesEcransIT extends SocleIntegration {
     private static final double BUDGET_LCP_MS = 2500;
     private static final double BUDGET_CLS = 0.1;
 
+    private static final Path DOSSIER = dossierTemporaire();
+
     /** LCP et CLS lus par PerformanceObserver, trois secondes après le chargement. */
     private static final String MESURE = """
             () => new Promise(resolve => {
@@ -54,7 +71,10 @@ class PerformanceDesEcransIT extends SocleIntegration {
                 new PerformanceObserver(liste => {
                     for (const entree of liste.getEntries()) {
                         lcp = entree.startTime;
-                        element = entree.element ? entree.element.tagName.toLowerCase() + '.' + entree.element.className : '';
+                        const cible = entree.element;
+                        element = cible ? cible.tagName.toLowerCase() + '.' + cible.className
+                                + (cible.currentSrc ? ' ' + new URL(cible.currentSrc).pathname
+                                        : ' « ' + cible.textContent.trim().slice(0, 40) + ' »') : 'aucun';
                     }
                 }).observe({type: 'largest-contentful-paint', buffered: true});
                 new PerformanceObserver(liste => {
@@ -75,10 +95,17 @@ class PerformanceDesEcransIT extends SocleIntegration {
     }
 
     @AfterAll
-    void fermer() {
+    void fermer() throws IOException {
         if (navigateur != null) {
             navigateur.close();
         }
+        FileSystemUtils.deleteRecursively(DOSSIER);
+    }
+
+    @DynamicPropertySource
+    static void dossiersTemporaires(DynamicPropertyRegistry registre) {
+        registre.add("autoservplus.facturation.archive", () -> DOSSIER.resolve("factures").toString());
+        registre.add("autoservplus.stockage.racine", () -> DOSSIER.resolve("medias").toString());
     }
 
     @ParameterizedTest(name = "{0}")
@@ -118,7 +145,15 @@ class PerformanceDesEcransIT extends SocleIntegration {
                     + Math.round(((Number) mesure.get("reponse")).doubleValue()) + " ms)";
             assertThat(lcp).as("LCP de " + ecran + " en millisecondes" + detail)
                     .isPositive().isLessThanOrEqualTo(BUDGET_LCP_MS);
-            assertThat(cls).as("CLS de " + ecran).isLessThanOrEqualTo(BUDGET_CLS);
+            assertThat(cls).as("CLS de " + ecran + detail).isLessThanOrEqualTo(BUDGET_CLS);
         });
+    }
+
+    private static Path dossierTemporaire() {
+        try {
+            return Files.createTempDirectory("performance-des-ecrans");
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
     }
 }
