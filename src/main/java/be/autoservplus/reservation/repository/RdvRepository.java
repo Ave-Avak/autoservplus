@@ -2,6 +2,8 @@ package be.autoservplus.reservation.repository;
 
 import be.autoservplus.reservation.domain.Rdv;
 import be.autoservplus.reservation.domain.StatutRdv;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
@@ -112,6 +114,38 @@ public interface RdvRepository extends JpaRepository<Rdv, Long> {
             ORDER BY r.debut
             """)
     List<Rdv> agenda(@Param("depuis") Instant depuis, @Param("avant") Instant avant);
+
+    /**
+     * Historique du back-office : rendez-vous des statuts demandés dont le début tombe dans
+     * [depuis, avant), du plus récent au plus ancien, par page. Les prestations ne sont pas
+     * chargées ici : une jointure de collection dans une requête paginée ferait paginer
+     * Hibernate en mémoire, sur toutes les lignes. {@link #chargerLignes} les lit ensuite
+     * pour la seule page.
+     */
+    @Query(value = """
+            SELECT r FROM Rdv r
+            JOIN FETCH r.membre JOIN FETCH r.vehicule JOIN FETCH r.poste
+            WHERE r.statut IN :statuts AND r.debut >= :depuis AND r.debut < :avant
+            ORDER BY r.debut DESC, r.id DESC
+            """,
+            countQuery = """
+            SELECT count(r) FROM Rdv r JOIN r.membre JOIN r.vehicule JOIN r.poste
+            WHERE r.statut IN :statuts AND r.debut >= :depuis AND r.debut < :avant
+            """)
+    Page<Rdv> historique(@Param("statuts") Collection<StatutRdv> statuts,
+                         @Param("depuis") Instant depuis, @Param("avant") Instant avant,
+                         Pageable pagination);
+
+    /**
+     * Charge les lignes et leurs prestations des rendez-vous donnés, déjà présents dans la
+     * transaction : une seule requête pour toute la page au lieu d'une par rendez-vous.
+     */
+    @Query("""
+            SELECT DISTINCT r FROM Rdv r
+            LEFT JOIN FETCH r.lignes l LEFT JOIN FETCH l.prestation
+            WHERE r IN :rdvs
+            """)
+    List<Rdv> chargerLignes(@Param("rdvs") Collection<Rdv> rdvs);
 
     /**
      * Rendez-vous confirmés dont le rappel est dû : début dans l'avenir, au plus tard à

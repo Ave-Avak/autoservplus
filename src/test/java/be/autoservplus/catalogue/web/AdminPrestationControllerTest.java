@@ -4,7 +4,9 @@ import be.autoservplus.catalogue.service.AdminCatalogueService;
 import be.autoservplus.catalogue.service.DoublonCatalogueException;
 import be.autoservplus.catalogue.service.SuppressionRefuseeException;
 import be.autoservplus.catalogue.service.dto.ArticleVueAdmin;
+import be.autoservplus.catalogue.service.dto.FiltreArticlesAdmin;
 import be.autoservplus.catalogue.service.dto.PropositionSuppression;
+import be.autoservplus.common.web.PagesBackOffice;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -15,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -28,6 +31,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
@@ -50,7 +54,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(controllers = AdminPrestationController.class,
         excludeAutoConfiguration = ThymeleafAutoConfiguration.class)
-@Import({AdminPrestationControllerTest.SecuriteTest.class, AdminPrestationControllerTest.StubViewResolver.class})
+@Import({AdminPrestationControllerTest.SecuriteTest.class, AdminPrestationControllerTest.StubViewResolver.class,
+        PagesBackOffice.class})
 @DisplayName("AdminPrestationController")
 class AdminPrestationControllerTest {
 
@@ -99,12 +104,28 @@ class AdminPrestationControllerTest {
         @WithMockUser(roles = "ADMINISTRATEUR")
         @DisplayName("expose le catalogue complet dans le modele")
         void afficheListe() throws Exception {
-            doReturn(List.of(vueVidange)).when(service).prestationsPourAdmin();
+            doReturn(new PageImpl<>(List.of(vueVidange))).when(service)
+                    .prestationsPourAdmin(eq(FiltreArticlesAdmin.aucun()), any());
 
             mvc.perform(get("/admin/catalogue/prestations"))
                     .andExpect(status().isOk())
                     .andExpect(view().name("admin/catalogue/prestations"))
-                    .andExpect(model().attribute("prestations", List.of(vueVidange)));
+                    .andExpect(model().attribute("prestations", List.of(vueVidange)))
+                    .andExpect(model().attribute("filtreSaisi", false));
+        }
+
+        @Test
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        @DisplayName("catégorie, statut, recherche et page transmis au service")
+        void filtresTransmis() throws Exception {
+            doReturn(new PageImpl<>(List.of(vueVidange))).when(service).prestationsPourAdmin(
+                    eq(new FiltreArticlesAdmin("ENTRETIEN", true, "vid")), argThat(page -> page.getPageNumber() == 2));
+
+            mvc.perform(get("/admin/catalogue/prestations").param("categorie", "ENTRETIEN")
+                            .param("actif", "true").param("recherche", "vid").param("page", "3"))
+                    .andExpect(status().isOk())
+                    .andExpect(model().attribute("prestations", List.of(vueVidange)))
+                    .andExpect(model().attribute("filtreSaisi", true));
         }
 
         @Test

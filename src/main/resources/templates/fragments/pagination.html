@@ -48,5 +48,38 @@
     <p class="texte-info" id="aide-periode" th:text="#{admin.ventes.filtre.periode.aide}">
         Sans date : les trente derniers jours, ou tout l'historique pour une recherche.</p>
 </div>
+
+<!--/* Même période pour une liste sans recherche libre : l'aide ne parle que des trente jours. */-->
+<div th:fragment="periodeSansRecherche" class="filtre-periode">
+    <div class="champ">
+        <label for="du" th:text="#{admin.ventes.filtre.du}">Du</label>
+        <input type="date" id="du" name="du" th:value="${periode.duSaisi()}" aria-describedby="aide-periode">
+    </div>
+    <div class="champ">
+        <label for="au" th:text="#{admin.ventes.filtre.au}">Au</label>
+        <input type="date" id="au" name="au" th:value="${periode.auSaisi()}" aria-describedby="aide-periode">
+    </div>
+    <p class="texte-info" id="aide-periode" th:text="#{admin.filtre.periode.aide-sans-recherche}">
+        Sans date : les trente derniers jours.</p>
+</div>
+
+<!--/* Statut et recherche des listes de prestations et de pièces, mêmes noms dans
+     l'adresse. Le modèle porte un FiltreArticlesAdmin sous le nom « filtre ». */-->
+<th:block th:fragment="actifEtRecherche">
+    <div class="champ">
+        <label for="actif" th:text="#{admin.catalogue.colonne.statut}">Statut</label>
+        <select id="actif" name="actif">
+            <option value="" th:text="#{admin.catalogue.filtre.tous-statuts}">Actifs et inactifs</option>
+            <option value="true" th:selected="${filtre.actif() == true}"
+                    th:text="#{admin.catalogue.statut.actif}">Actif</option>
+            <option value="false" th:selected="${filtre.actif() == false}"
+                    th:text="#{admin.catalogue.statut.inactif}">Inactif</option>
+        </select>
+    </div>
+    <div class="champ">
+        <label for="recherche" th:text="#{admin.catalogue.filtre.recherche}">Nom, code ou référence</label>
+        <input type="search" id="recherche" name="recherche" th:value="${filtre.recherche()}">
+    </div>
+</th:block>
 </body>
 </html>

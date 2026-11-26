@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="#{admin.rdv.historique.titre} + ' | AutoServ+'">Historique des rendez-vous | AutoServ+</title>
+    <meta name="robots" content="noindex, nofollow">
+    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+</head>
+<body>
+
+<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+
+<header th:replace="~{fragments/back-office :: entete}"></header>
+
+<main id="contenu">
+    <h1 th:text="#{admin.rdv.historique.titre}">Historique des rendez-vous</h1>
+    <p class="texte-info" th:text="#{admin.rdv.historique.intro}">Tous les rendez-vous, du plus récent au plus ancien.</p>
+
+    <p class="actions-page">
+        <a class="lien-bouton" th:href="@{/admin/rendez-vous}" th:text="#{admin.rdv.historique.lien-liste}">Rendez-vous à traiter</a>
+        <a class="lien-bouton" th:href="@{/admin/rendez-vous/agenda}" th:text="#{admin.rdv.lien-agenda}">Voir l'agenda</a>
+    </p>
+
+    <form class="formulaire" th:action="@{/admin/rendez-vous/historique}" method="get">
+        <div class="champ">
+            <label for="statut" th:text="#{admin.rdv.colonne.statut}">Statut</label>
+            <select id="statut" name="statut">
+                <option value="" th:text="#{admin.ventes.filtre.tous}">Tous les statuts</option>
+                <option th:each="s : ${statuts}" th:value="${s}" th:selected="${s == statut}"
+                        th:text="#{'rdv.statut.' + ${s}}">Honoré</option>
+            </select>
+        </div>
+        <div th:replace="~{fragments/pagination :: periodeSansRecherche}"></div>
+        <button type="submit" class="btn-cta" th:text="#{admin.ventes.filtre.appliquer}">Afficher</button>
+    </form>
+
+    <p class="message message-erreur" role="alert" th:if="${periode.inversee()}"
+       th:text="#{admin.ventes.periode-inversee}">La date de début suit la date de fin.</p>
+
+    <p th:if="${!periode.inversee() and rendezVous.isEmpty()}" class="message"
+       th:text="#{admin.rdv.historique.vide(${#temporals.format(periode.du(), 'dd/MM/yyyy')}, ${#temporals.format(periode.au(), 'dd/MM/yyyy')})}">
+        Aucun rendez-vous du 27/10/2026 au 25/11/2026.</p>
+
+    <div class="defilement" th:unless="${rendezVous.isEmpty()}" tabindex="0" role="region" aria-labelledby="legende-admin-rendez-vous-historique">
+        <table class="tableau">
+            <caption id="legende-admin-rendez-vous-historique"
+                     th:text="#{admin.rdv.historique.legende(${#temporals.format(periode.du(), 'dd/MM/yyyy')}, ${#temporals.format(periode.au(), 'dd/MM/yyyy')})}">
+                Rendez-vous du 27/10/2026 au 25/11/2026, du plus récent au plus ancien</caption>
+            <thead>
+            <tr>
+                <th scope="col" th:text="#{admin.rdv.colonne.date}">Date</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.heure}">Heure</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.numero}">Numéro</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.membre}">Membre</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.vehicule}">Véhicule</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.prestations}">Prestations</th>
+                <th scope="col" th:text="#{admin.rdv.colonne.statut}">Statut</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:each="r : ${rendezVous}">
+                <td th:text="${#temporals.format(r.debut(), 'dd/MM/yyyy')}">12/11/2026</td>
+                <td th:text="${#temporals.format(r.debut(), 'HH:mm')} + ' - ' + ${#temporals.format(r.fin(), 'HH:mm')}">10:00 - 11:00</td>
+                <td><a th:href="@{/admin/rendez-vous/{ref}(ref=${r.reference()})}" th:text="${r.numero()}"
+                       th:aria-label="#{admin.rdv.action.detail.aria(${r.numero()})}">RDV-2026-0001</a></td>
+                <td th:text="${r.membreNom()}">Marie Dupont</td>
+                <td th:text="${r.vehicule()}">VW Golf (1-ABC-123)</td>
+                <td th:text="${#strings.listJoin(r.prestations(), ', ')}">Vidange</td>
+                <td th:text="#{'rdv.statut.' + ${r.statut()}}">Honoré</td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+    <nav th:replace="~{fragments/pagination :: liensCalcules(${pagination})}"></nav>
+</main>
+
+<div th:replace="~{fragments/pied :: pied}"></div>
+</body>
+</html>

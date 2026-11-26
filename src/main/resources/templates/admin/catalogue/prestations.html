@@ -30,8 +30,25 @@
            th:text="#{admin.catalogue.action.nouvelle-prestation}">Nouvelle prestation</a>
     </p>
 
-    <p th:if="${prestations.isEmpty()}" class="message" th:text="#{admin.catalogue.vide}">
+    <form class="formulaire" th:action="@{/admin/catalogue/prestations}" method="get" role="search">
+        <div class="champ">
+            <label for="categorie" th:text="#{admin.catalogue.filtre.categorie}">Catégorie</label>
+            <select id="categorie" name="categorie">
+                <option value="" th:text="#{admin.catalogue.filtre.toutes-categories}">Toutes les catégories</option>
+                <option th:each="c : ${categories}" th:value="${c.code}" th:selected="${c.code == filtre.categorie()}"
+                        th:text="${c.libelle}">Entretien</option>
+            </select>
+        </div>
+        <th:block th:replace="~{fragments/pagination :: actifEtRecherche}"></th:block>
+        <button type="submit" class="btn-cta" th:text="#{admin.ventes.filtre.appliquer}">Afficher</button>
+        <a th:if="${filtreSaisi}" th:href="@{/admin/catalogue/prestations}" th:text="#{admin.filtre.effacer}">Effacer les filtres</a>
+    </form>
+
+    <p th:if="${prestations.isEmpty() and !filtreSaisi}" class="message" th:text="#{admin.catalogue.vide}">
         Aucun élément dans le catalogue.
+    </p>
+    <p th:if="${prestations.isEmpty() and filtreSaisi}" class="message" th:text="#{admin.catalogue.filtre.aucun}">
+        Aucun article ne correspond à ces filtres.
     </p>
 
     <div class="defilement" th:unless="${prestations.isEmpty()}" tabindex="0" role="region" aria-labelledby="titre-admin-catalogue-prestations">
@@ -89,6 +106,7 @@
             </tbody>
         </table>
     </div>
+    <nav th:replace="~{fragments/pagination :: liensCalcules(${pagination})}"></nav>
 </main>
 
 <div th:replace="~{fragments/pied :: pied}"></div>

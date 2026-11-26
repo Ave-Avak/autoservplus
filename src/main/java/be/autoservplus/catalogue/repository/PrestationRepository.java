@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -30,9 +31,30 @@ public interface PrestationRepository extends JpaRepository<Prestation, Long> {
     /** Variante pour la modification (A2) : la prestation editee ne se bloque pas elle-meme. */
     boolean existsByLibelleIgnoreCaseAndReferenceNot(String libelle, UUID reference);
 
-    /** Catalogue complet pour le back-office, actifs et inactifs confondus. */
-    @Query("SELECT p FROM Prestation p JOIN FETCH p.categorie ORDER BY p.libelle")
-    List<Prestation> catalogueComplet();
+    /**
+     * Liste du back-office, actives et inactives, par page et par libellé. Une catégorie
+     * vide ({@code ''}) les prend toutes : une chaîne vide plutôt que {@code NULL}, dont
+     * PostgreSQL ne sait pas toujours déduire le type dans {@code :p IS NULL}. Le motif
+     * cherche dans le libellé, sans accents, et dans le code.
+     */
+    @Query(value = """
+            SELECT p FROM Prestation p JOIN FETCH p.categorie c
+            WHERE (:categorie = '' OR c.code = :categorie)
+              AND p.actif IN :actifs
+              AND (cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                   OR LOWER(p.code) LIKE :motif ESCAPE '!')
+            ORDER BY p.libelle, p.id
+            """,
+            countQuery = """
+            SELECT count(p) FROM Prestation p JOIN p.categorie c
+            WHERE (:categorie = '' OR c.code = :categorie)
+              AND p.actif IN :actifs
+              AND (cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                   OR LOWER(p.code) LIKE :motif ESCAPE '!')
+            """)
+    Page<Prestation> pourAdmin(@Param("categorie") String categorie,
+                               @Param("actifs") Collection<Boolean> actifs,
+                               @Param("motif") String motif, Pageable pagination);
 
     /**
      * Nombre de lignes d historique referencant la prestation (RM-29) : reservations

@@ -15,7 +15,7 @@
 <header th:replace="~{fragments/back-office :: entete}"></header>
 
 <main id="contenu">
-    <h1 th:text="#{admin.interventions.en-cours}">Interventions en cours</h1>
+    <h1 th:text="#{admin.interventions.titre}">Interventions</h1>
 
     <div class="message message-succes" th:if="${message}" role="status" th:text="${message}">Message</div>
     <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
@@ -32,8 +32,11 @@
         <button type="submit" class="btn-cta" th:text="#{admin.interventions.filtre.appliquer}">Filtrer</button>
     </form>
 
-    <p th:if="${interventions.isEmpty()}" class="message" th:text="#{admin.interventions.vide}">
+    <p th:if="${interventions.isEmpty() and statut == null}" class="message" th:text="#{admin.interventions.vide}">
         Aucune intervention en cours.
+    </p>
+    <p th:if="${interventions.isEmpty() and statut != null}" class="message" th:text="#{admin.interventions.vide.statut}">
+        Aucune intervention dans ce statut.
     </p>
 
     <ul class="grille-articles" th:unless="${interventions.isEmpty()}">

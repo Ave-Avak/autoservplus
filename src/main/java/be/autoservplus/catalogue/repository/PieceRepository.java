@@ -8,6 +8,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,6 +57,35 @@ public interface PieceRepository extends JpaRepository<Piece, Long> {
     /** Catalogue complet pour le back-office, actifs et inactifs confondus. */
     @Query("SELECT p FROM Piece p JOIN FETCH p.categorie ORDER BY p.libelle")
     List<Piece> catalogueComplet();
+
+    /**
+     * Liste du back-office, actives et inactives, par page et par libellé. Même écriture
+     * que {@link PrestationRepository#pourAdmin} : une catégorie vide les prend toutes. Le
+     * motif cherche dans le libellé, sans accents, la référence du fabricant et la marque.
+     */
+    @Query(value = """
+            SELECT p FROM Piece p JOIN FETCH p.categorie c
+            WHERE c.rayon IN :rayons
+              AND (:categorie = '' OR c.code = :categorie)
+              AND p.actif IN :actifs
+              AND (cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                   OR LOWER(p.referenceFabricant) LIKE :motif ESCAPE '!'
+                   OR cast(function('unaccent', LOWER(p.marque)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!')
+            ORDER BY p.libelle, p.id
+            """,
+            countQuery = """
+            SELECT count(p) FROM Piece p JOIN p.categorie c
+            WHERE c.rayon IN :rayons
+              AND (:categorie = '' OR c.code = :categorie)
+              AND p.actif IN :actifs
+              AND (cast(function('unaccent', LOWER(p.libelle)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!'
+                   OR LOWER(p.referenceFabricant) LIKE :motif ESCAPE '!'
+                   OR cast(function('unaccent', LOWER(p.marque)) as String) LIKE cast(function('unaccent', :motif) as String) ESCAPE '!')
+            """)
+    Page<Piece> pourAdmin(@Param("rayons") Collection<Rayon> rayons,
+                          @Param("categorie") String categorie,
+                          @Param("actifs") Collection<Boolean> actifs,
+                          @Param("motif") String motif, Pageable pagination);
 
     /**
      * Nombre de lignes d historique referencant la piece (RM-29) : lignes de panier

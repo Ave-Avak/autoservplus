@@ -90,7 +90,7 @@ class AdminInterventionTemplatesIT extends SocleIntegration {
     void listeInterventions() throws Exception {
         mvc.perform(get("/admin/interventions").locale(java.util.Locale.FRENCH))
                 .andExpect(status().isOk())
-                .andExpect(content().string(containsString("Interventions en cours")));
+                .andExpect(content().string(containsString("<h1>Interventions</h1>")));
     }
 
     @Test

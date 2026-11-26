@@ -17,6 +17,7 @@ import be.autoservplus.catalogue.service.dto.ArticleVueAdmin;
 import be.autoservplus.catalogue.service.dto.ComposantVue;
 import be.autoservplus.catalogue.service.dto.DonneesPiece;
 import be.autoservplus.catalogue.service.dto.DonneesPrestation;
+import be.autoservplus.catalogue.service.dto.FiltreArticlesAdmin;
 import be.autoservplus.catalogue.service.dto.ModificationCatalogueVue;
 import be.autoservplus.catalogue.service.dto.PropositionSuppression;
 import be.autoservplus.common.exception.RegleMetierException;
@@ -24,6 +25,8 @@ import be.autoservplus.common.exception.RessourceIntrouvableException;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.identite.service.AuteurCourant;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,10 +35,12 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Clock;
 import java.time.Instant;
+import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -89,21 +94,25 @@ public class AdminCatalogueService {
 
     // --- vues back-office --------------------------------------------------------------
 
-    /** Catalogue complet des prestations, actives et inactives confondues. */
-    public List<ArticleVueAdmin> prestationsPourAdmin() {
-        return prestations.catalogueComplet().stream().map(ArticleVueAdmin::de).toList();
+    /** Prestations de la liste du back-office, actives et inactives, par page. */
+    public Page<ArticleVueAdmin> prestationsPourAdmin(FiltreArticlesAdmin filtre, Pageable pagination) {
+        return prestations.pourAdmin(filtre.categorieOuToutes(), filtre.actifs(),
+                        MotifRecherche.de(filtre.termeOuVide()), pagination)
+                .map(ArticleVueAdmin::de);
     }
 
-    /** Catalogue complet des pieces, actives et inactives confondues. */
+    /** Catalogue complet des pieces, actives et inactives confondues, pour la composition d'un forfait. */
     public List<ArticleVueAdmin> piecesPourAdmin() {
-        return piecesPourAdmin(null);
+        return pieces.catalogueComplet().stream().map(ArticleVueAdmin::de).toList();
     }
 
-    /** Pièces d'un rayon, ou de tous quand {@code rayonOuTous} est nul. */
-    public List<ArticleVueAdmin> piecesPourAdmin(Rayon rayonOuTous) {
-        return pieces.catalogueComplet().stream()
-                .filter(piece -> rayonOuTous == null || piece.getCategorie().getRayon().orElseThrow() == rayonOuTous)
-                .map(ArticleVueAdmin::de).toList();
+    /** Pièces de la liste du back-office, d'un rayon ou de tous quand {@code rayonOuTous} est nul, par page. */
+    public Page<ArticleVueAdmin> piecesPourAdmin(Rayon rayonOuTous, FiltreArticlesAdmin filtre,
+                                                 Pageable pagination) {
+        Set<Rayon> rayons = rayonOuTous == null ? EnumSet.allOf(Rayon.class) : EnumSet.of(rayonOuTous);
+        return pieces.pourAdmin(rayons, filtre.categorieOuToutes(), filtre.actifs(),
+                        MotifRecherche.de(filtre.termeOuVide()), pagination)
+                .map(ArticleVueAdmin::de);
     }
 
     public ArticleVueAdmin vuePrestation(UUID reference) {

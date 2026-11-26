@@ -1,7 +1,10 @@
 package be.autoservplus.reservation.web;
 
 import be.autoservplus.common.exception.ConflitConcurrenceException;
+import be.autoservplus.common.web.PagesBackOffice;
+import be.autoservplus.common.web.PeriodeFiltre;
 import be.autoservplus.reservation.domain.Rdv;
+import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.service.AdminRdvService;
 import be.autoservplus.reservation.service.dto.AgendaAdmin;
 import be.autoservplus.reservation.web.dto.RdvVueAdmin;
@@ -15,6 +18,8 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -28,6 +33,9 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
@@ -59,7 +67,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(controllers = AdminRdvController.class,
         excludeAutoConfiguration = ThymeleafAutoConfiguration.class)
-@Import({AdminRdvControllerTest.SecuriteTest.class, AdminRdvControllerTest.StubViewResolver.class})
+@Import({AdminRdvControllerTest.SecuriteTest.class, AdminRdvControllerTest.StubViewResolver.class,
+        PagesBackOffice.class})
 @DisplayName("AdminRdvController")
 class AdminRdvControllerTest {
 
@@ -143,6 +152,45 @@ class AdminRdvControllerTest {
         void interditAuxMembres() throws Exception {
             mvc.perform(get("/admin/rendez-vous"))
                     .andExpect(status().isForbidden());
+        }
+    }
+
+    @Nested
+    @DisplayName("historique")
+    class Historique {
+
+        @Test
+        @DisplayName("statut, dates ISO et numéro de page transmis au service")
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        void filtresTransmis() throws Exception {
+            LocalDate du = LocalDate.of(2026, 9, 1);
+            LocalDate au = LocalDate.of(2026, 9, 30);
+            PeriodeFiltre periode = PeriodeFiltre.de(du, au, LocalDate.of(2026, 10, 1));
+            when(adminRdvs.periodeHistorique(du, au)).thenReturn(periode);
+            when(adminRdvs.historique(eq(StatutRdv.HONORE), eq(periode),
+                    argThat(page -> page.getPageNumber() == 1)))
+                    .thenReturn(new PageImpl<>(List.of(vueEnAttente)));
+
+            mvc.perform(get("/admin/rendez-vous/historique")
+                            .param("statut", "HONORE").param("du", "2026-09-01").param("au", "2026-09-30")
+                            .param("page", "2"))
+                    .andExpect(status().isOk())
+                    .andExpect(view().name("admin/rendez-vous-historique"))
+                    .andExpect(model().attribute("rendezVous", List.of(vueEnAttente)))
+                    .andExpect(model().attribute("statut", StatutRdv.HONORE));
+        }
+
+        @Test
+        @DisplayName("statut vide : tous les statuts, sans erreur de conversion")
+        @WithMockUser(roles = "ADMINISTRATEUR")
+        void statutVide() throws Exception {
+            PeriodeFiltre periode = PeriodeFiltre.de(null, null, LocalDate.of(2026, 10, 1));
+            when(adminRdvs.periodeHistorique(null, null)).thenReturn(periode);
+            when(adminRdvs.historique(isNull(), eq(periode), any())).thenReturn(Page.empty());
+
+            mvc.perform(get("/admin/rendez-vous/historique").param("statut", ""))
+                    .andExpect(status().isOk())
+                    .andExpect(model().attribute("rendezVous", List.of()));
         }
     }
 

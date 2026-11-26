@@ -5,7 +5,9 @@ import be.autoservplus.catalogue.service.AdminCatalogueService;
 import be.autoservplus.catalogue.service.DoublonCatalogueException;
 import be.autoservplus.catalogue.service.SuppressionRefuseeException;
 import be.autoservplus.catalogue.service.dto.ArticleVueAdmin;
+import be.autoservplus.catalogue.service.dto.FiltreArticlesAdmin;
 import be.autoservplus.catalogue.service.dto.PropositionSuppression;
+import be.autoservplus.common.web.PagesBackOffice;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -15,6 +17,7 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -28,6 +31,9 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -49,7 +55,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @WebMvcTest(controllers = AdminPieceController.class,
         excludeAutoConfiguration = ThymeleafAutoConfiguration.class)
-@Import({AdminPieceControllerTest.SecuriteTest.class, AdminPieceControllerTest.StubViewResolver.class})
+@Import({AdminPieceControllerTest.SecuriteTest.class, AdminPieceControllerTest.StubViewResolver.class,
+        PagesBackOffice.class})
 @DisplayName("AdminPieceController")
 class AdminPieceControllerTest {
 
@@ -94,12 +101,42 @@ class AdminPieceControllerTest {
     @WithMockUser(roles = "ADMINISTRATEUR")
     @DisplayName("la liste expose le catalogue complet des pieces")
     void afficheListe() throws Exception {
-        doReturn(List.of(vueFiltre)).when(service).piecesPourAdmin((Rayon) null);
+        doReturn(new PageImpl<>(List.of(vueFiltre))).when(service)
+                .piecesPourAdmin(isNull(), eq(FiltreArticlesAdmin.aucun()), any());
 
         mvc.perform(get("/admin/catalogue/pieces"))
                 .andExpect(status().isOk())
                 .andExpect(view().name("admin/catalogue/pieces"))
-                .andExpect(model().attribute("pieces", List.of(vueFiltre)));
+                .andExpect(model().attribute("pieces", List.of(vueFiltre)))
+                .andExpect(model().attribute("filtreSaisi", false));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMINISTRATEUR")
+    @DisplayName("rayon, catégorie, statut, recherche et page transmis au service")
+    void filtresTransmis() throws Exception {
+        FiltreArticlesAdmin attendu = new FiltreArticlesAdmin("P_FILTRES", false, "bosch");
+        doReturn(new PageImpl<>(List.of(vueFiltre))).when(service)
+                .piecesPourAdmin(eq(Rayon.PIECES_AUTO), eq(attendu), argThat(page -> page.getPageNumber() == 1));
+
+        mvc.perform(get("/admin/catalogue/pieces").param("rayon", "PIECES_AUTO")
+                        .param("categorie", "P_FILTRES").param("actif", "false")
+                        .param("recherche", "bosch").param("page", "2"))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("pieces", List.of(vueFiltre)))
+                .andExpect(model().attribute("filtreSaisi", true));
+    }
+
+    @Test
+    @WithMockUser(roles = "ADMINISTRATEUR")
+    @DisplayName("statut vide : actifs et inactifs, sans erreur de conversion")
+    void statutVide() throws Exception {
+        doReturn(new PageImpl<>(List.of())).when(service)
+                .piecesPourAdmin(isNull(), eq(new FiltreArticlesAdmin(null, null, null)), any());
+
+        mvc.perform(get("/admin/catalogue/pieces").param("actif", ""))
+                .andExpect(status().isOk())
+                .andExpect(model().attribute("pieces", List.of()));
     }
 
     @Test

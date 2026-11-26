@@ -7,13 +7,18 @@ import be.autoservplus.catalogue.service.DoublonCatalogueException;
 import be.autoservplus.catalogue.service.SuppressionRefuseeException;
 import be.autoservplus.catalogue.service.dto.ArticleVueAdmin;
 import be.autoservplus.catalogue.service.dto.DonneesPiece;
+import be.autoservplus.catalogue.service.dto.FiltreArticlesAdmin;
 import be.autoservplus.catalogue.service.dto.PropositionSuppression;
 import be.autoservplus.catalogue.web.dto.PieceForm;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.PagesBackOffice;
+import be.autoservplus.common.web.PaginationVue;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
@@ -44,20 +49,34 @@ public class AdminPieceController {
 
     private final AdminCatalogueService service;
     private final MessageSource messages;
+    private final PagesBackOffice pages;
 
-    public AdminPieceController(AdminCatalogueService service, MessageSource messages) {
+    public AdminPieceController(AdminCatalogueService service, MessageSource messages,
+                                PagesBackOffice pages) {
         this.service = service;
         this.messages = messages;
+        this.pages = pages;
     }
 
     // --- liste ------------------------------------------------------------------------
 
     @GetMapping
-    public String liste(@RequestParam(required = false) Rayon rayon, Model modele) {
+    public String liste(@RequestParam(required = false) Rayon rayon,
+                        @RequestParam(required = false) String categorie,
+                        @RequestParam(required = false) Boolean actif,
+                        @RequestParam(required = false) String recherche,
+                        @RequestParam(defaultValue = "1") int page,
+                        HttpServletRequest requete, Model modele) {
+        FiltreArticlesAdmin filtre = new FiltreArticlesAdmin(categorie, actif, recherche);
+        Page<ArticleVueAdmin> resultats = service.piecesPourAdmin(rayon, filtre, pages.demande(page));
         modele.addAttribute("titre", msg("admin.catalogue.pieces.titre"));
-        modele.addAttribute("pieces", service.piecesPourAdmin(rayon));
+        modele.addAttribute("pieces", resultats.getContent());
+        modele.addAttribute("pagination", PaginationVue.de(resultats, requete));
         modele.addAttribute("rayons", Rayon.values());
         modele.addAttribute("rayonActif", rayon);
+        modele.addAttribute("filtre", filtre);
+        modele.addAttribute("filtreSaisi", rayon != null || filtre.saisi());
+        modele.addAttribute("categories", service.categoriesDePieces());
         return "admin/catalogue/pieces";
     }
 

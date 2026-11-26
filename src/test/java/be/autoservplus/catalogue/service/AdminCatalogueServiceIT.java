@@ -121,7 +121,9 @@ class AdminCatalogueServiceIT extends SocleIntegration {
     void rejetteNonAdmin() {
         // @WithMockUser de methode surcharge celui de la classe : le rejet vient du
         // @PreAuthorize(hasRole('ADMINISTRATEUR')) de classe sur AdminCatalogueService.
-        assertThatThrownBy(() -> admin.prestationsPourAdmin())
+        assertThatThrownBy(() -> admin.prestationsPourAdmin(
+                        be.autoservplus.catalogue.service.dto.FiltreArticlesAdmin.aucun(),
+                        org.springframework.data.domain.PageRequest.of(0, 1)))
                 .isInstanceOf(AccessDeniedException.class);
         assertThatThrownBy(() -> admin.supprimerDefinitivementPiece(plaquettes.getReference()))
                 .isInstanceOf(AccessDeniedException.class);

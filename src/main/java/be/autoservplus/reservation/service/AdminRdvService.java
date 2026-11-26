@@ -2,6 +2,7 @@ package be.autoservplus.reservation.service;
 
 import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RessourceIntrouvableException;
+import be.autoservplus.common.web.PeriodeFiltre;
 import be.autoservplus.communication.service.DetailsRdvCourriel;
 import be.autoservplus.communication.service.PieceJointeCourriel;
 import be.autoservplus.communication.service.ServiceCourriel;
@@ -24,6 +25,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +35,9 @@ import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.function.Consumer;
 
@@ -168,6 +173,31 @@ public class AdminRdvService {
                 .map(r -> RdvVueAdmin.de(r, zone, maintenant))
                 .toList();
         return new AgendaAdmin(debut, fin, false, vues);
+    }
+
+    /** Période de l'historique, dans les jours de l'atelier : les trente derniers jours sans date saisie. */
+    public PeriodeFiltre periodeHistorique(LocalDate du, LocalDate au) {
+        return PeriodeFiltre.de(du, au, aujourdhui());
+    }
+
+    /**
+     * Historique des rendez-vous, tous statuts ou un seul, du plus récent au plus ancien,
+     * par page. L'agenda montre une période à venir sans pagination, les listes de travail
+     * ce qui attend une décision : l'historique est la seule liste qui grossit sans fin.
+     * Une période inversée rend une page vide, que l'écran signale.
+     */
+    public Page<RdvVueAdmin> historique(StatutRdv statut, PeriodeFiltre periode, Pageable pagination) {
+        if (periode.inversee()) {
+            return Page.empty(pagination);
+        }
+        ZoneId zone = parametres.courants().zone();
+        Instant maintenant = horloge.instant();
+        Set<StatutRdv> statuts = statut == null ? EnumSet.allOf(StatutRdv.class) : EnumSet.of(statut);
+        Page<Rdv> resultats = rdvs.historique(statuts, periode.debut(zone), periode.finExclue(zone), pagination);
+        if (resultats.hasContent()) {
+            rdvs.chargerLignes(resultats.getContent());
+        }
+        return resultats.map(r -> RdvVueAdmin.de(r, zone, maintenant));
     }
 
     /**

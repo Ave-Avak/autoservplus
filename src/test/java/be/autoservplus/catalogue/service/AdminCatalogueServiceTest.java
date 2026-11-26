@@ -4,6 +4,7 @@ import be.autoservplus.catalogue.domain.Categorie;
 import be.autoservplus.catalogue.domain.HistoriqueModificationCatalogue;
 import be.autoservplus.catalogue.domain.Piece;
 import be.autoservplus.catalogue.domain.Prestation;
+import be.autoservplus.catalogue.domain.Rayon;
 import be.autoservplus.catalogue.domain.TypeCategorie;
 import be.autoservplus.catalogue.domain.TypeEntiteCatalogue;
 import be.autoservplus.catalogue.repository.CategorieRepository;
@@ -13,6 +14,7 @@ import be.autoservplus.catalogue.repository.PrestationRepository;
 import be.autoservplus.catalogue.service.dto.ArticleVueAdmin;
 import be.autoservplus.catalogue.service.dto.DonneesPiece;
 import be.autoservplus.catalogue.service.dto.DonneesPrestation;
+import be.autoservplus.catalogue.service.dto.FiltreArticlesAdmin;
 import be.autoservplus.catalogue.service.dto.ModificationCatalogueVue;
 import be.autoservplus.catalogue.service.dto.PropositionSuppression;
 import be.autoservplus.common.exception.RegleMetierException;
@@ -29,14 +31,19 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneId;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -635,13 +642,38 @@ class AdminCatalogueServiceTest {
             Prestation inactive = new Prestation(entretien, "VID", "Vidange",
                     new BigDecimal("75.00"), 60);
             inactive.desactiver();
-            when(prestations.catalogueComplet()).thenReturn(List.of(inactive));
+            PageRequest page = PageRequest.of(0, 50);
+            when(prestations.pourAdmin("", Set.of(true, false), "%%", page))
+                    .thenReturn(new PageImpl<>(List.of(inactive), page, 1));
 
-            List<ArticleVueAdmin> vues = service.prestationsPourAdmin();
+            List<ArticleVueAdmin> vues = service.prestationsPourAdmin(FiltreArticlesAdmin.aucun(), page).getContent();
 
             assertThat(vues).hasSize(1);
             assertThat(vues.get(0).actif()).isFalse();
             assertThat(vues.get(0).identifiant()).isEqualTo("VID");
+        }
+
+        @Test
+        @DisplayName("filtres des prestations : catégorie, statut et terme échappé passés à la requête")
+        void filtresDesPrestations() {
+            PageRequest page = PageRequest.of(1, 50);
+            when(prestations.pourAdmin("ENTRETIEN", Set.of(false), "%vid!_1%", page)).thenReturn(Page.empty(page));
+
+            assertThat(service.prestationsPourAdmin(new FiltreArticlesAdmin(" ENTRETIEN ", false, " VID_1 "), page))
+                    .isEmpty();
+        }
+
+        @Test
+        @DisplayName("filtres des pièces : sans rayon, tous les rayons")
+        void filtresDesPieces() {
+            PageRequest page = PageRequest.of(0, 50);
+            when(pieces.pourAdmin(EnumSet.allOf(Rayon.class), "", Set.of(true), "%bosch%", page))
+                    .thenReturn(Page.empty(page));
+            when(pieces.pourAdmin(EnumSet.of(Rayon.ACCESSOIRES), "", Set.of(true, false), "%%", page))
+                    .thenReturn(Page.empty(page));
+
+            assertThat(service.piecesPourAdmin(null, new FiltreArticlesAdmin(null, true, "Bosch"), page)).isEmpty();
+            assertThat(service.piecesPourAdmin(Rayon.ACCESSOIRES, FiltreArticlesAdmin.aucun(), page)).isEmpty();
         }
     }
 

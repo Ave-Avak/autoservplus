@@ -4,14 +4,21 @@ import be.autoservplus.common.exception.ConflitConcurrenceException;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.exception.RegleMetierException;
 import be.autoservplus.common.exception.TransitionRefusee;
+import be.autoservplus.common.web.PagesBackOffice;
+import be.autoservplus.common.web.PaginationVue;
+import be.autoservplus.common.web.PeriodeFiltre;
 import be.autoservplus.reservation.domain.Rdv;
+import be.autoservplus.reservation.domain.StatutRdv;
 import be.autoservplus.reservation.service.AdminRdvService;
 import be.autoservplus.reservation.service.CreneauIndisponibleException;
 import be.autoservplus.reservation.web.dto.DeplacementRdvForm;
 import be.autoservplus.reservation.web.dto.MotifForm;
+import be.autoservplus.reservation.web.dto.RdvVueAdmin;
+import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.data.domain.Page;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -58,10 +65,12 @@ public class AdminRdvController {
 
     private final AdminRdvService adminRdvs;
     private final MessageSource messages;
+    private final PagesBackOffice pages;
 
-    public AdminRdvController(AdminRdvService adminRdvs, MessageSource messages) {
+    public AdminRdvController(AdminRdvService adminRdvs, MessageSource messages, PagesBackOffice pages) {
         this.adminRdvs = adminRdvs;
         this.messages = messages;
+        this.pages = pages;
     }
 
     // --- liste ------------------------------------------------------------------------
@@ -84,6 +93,22 @@ public class AdminRdvController {
                          Model modele) {
         modele.addAttribute("agenda", adminRdvs.agenda(du, au));
         return "admin/rendez-vous-agenda";
+    }
+
+    @GetMapping("/historique")
+    public String historique(@RequestParam(required = false) StatutRdv statut,
+                             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate du,
+                             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate au,
+                             @RequestParam(defaultValue = "1") int page,
+                             HttpServletRequest requete, Model modele) {
+        PeriodeFiltre periode = adminRdvs.periodeHistorique(du, au);
+        Page<RdvVueAdmin> resultats = adminRdvs.historique(statut, periode, pages.demande(page));
+        modele.addAttribute("rendezVous", resultats.getContent());
+        modele.addAttribute("pagination", PaginationVue.de(resultats, requete));
+        modele.addAttribute("periode", periode);
+        modele.addAttribute("statut", statut);
+        modele.addAttribute("statuts", StatutRdv.values());
+        return "admin/rendez-vous-historique";
     }
 
     /** Référence inconnue : 404 par GestionnaireErreursGlobal, comme partout. */

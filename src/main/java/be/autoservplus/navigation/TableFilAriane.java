@@ -164,6 +164,7 @@ public class TableFilAriane {
         // Back-office
         fixe("/admin/rendez-vous", "admin.rdv.titre", BACK_OFFICE);
         fixe("/admin/rendez-vous/agenda", "admin.rdv.agenda.titre", "/admin/rendez-vous");
+        fixe("/admin/rendez-vous/historique", "admin.rdv.historique.titre", "/admin/rendez-vous");
         dynamique("/admin/rendez-vous/{reference}", "admin.rdv.detail.titre", "/admin/rendez-vous",
                 attribut("rdv", RdvVueAdmin.class, RdvVueAdmin::numero));
         fixe("/admin/rendez-vous/{reference}/refuser", "admin.rdv.refuser.titre", "/admin/rendez-vous");

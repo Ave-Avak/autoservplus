@@ -24,6 +24,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.OptimisticLockingFailureException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 
 import java.math.BigDecimal;
 import java.time.Clock;
@@ -31,6 +35,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -564,6 +569,56 @@ class AdminRdvServiceTest {
             assertThat(agenda.periodeInversee()).isTrue();
             assertThat(agenda.rendezVous()).isEmpty();
             verify(rdvs, never()).agenda(any(), any());
+        }
+    }
+
+    @Nested
+    @DisplayName("historique")
+    class Historique {
+
+        private final Pageable premierePage = PageRequest.of(0, 50);
+
+        @Test
+        @DisplayName("sans filtre : tous les statuts des trente derniers jours, lignes chargées pour la seule page")
+        void sansFiltre() {
+            stubParametresCourants();
+            Rdv honore = rdvDans(StatutRdv.HONORE);
+            when(rdvs.historique(EnumSet.allOf(StatutRdv.class),
+                    LocalDate.of(2026, 8, 14).atStartOfDay(BRUXELLES).toInstant(),
+                    LocalDate.of(2026, 9, 13).atStartOfDay(BRUXELLES).toInstant(), premierePage))
+                    .thenReturn(new PageImpl<>(List.of(honore), premierePage, 1));
+
+            Page<RdvVueAdmin> resultats = service.historique(null, service.periodeHistorique(null, null), premierePage);
+
+            assertThat(resultats.getContent()).extracting(RdvVueAdmin::numero).containsExactly("RDV-2026-0001");
+            verify(rdvs).chargerLignes(List.of(honore));
+        }
+
+        @Test
+        @DisplayName("un statut demandé restreint la requête, une page vide ne charge aucune ligne")
+        void statutDemande() {
+            stubParametresCourants();
+            LocalDate jour = LocalDate.of(2026, 9, 1);
+            when(rdvs.historique(eq(EnumSet.of(StatutRdv.ANNULE)), any(), any(), eq(premierePage)))
+                    .thenReturn(Page.empty(premierePage));
+
+            Page<RdvVueAdmin> resultats = service.historique(StatutRdv.ANNULE,
+                    service.periodeHistorique(jour, jour), premierePage);
+
+            assertThat(resultats).isEmpty();
+            verify(rdvs, never()).chargerLignes(any());
+        }
+
+        @Test
+        @DisplayName("fin avant début : page vide, aucune requête")
+        void periodeInversee() {
+            stubParametresCourants();
+
+            Page<RdvVueAdmin> resultats = service.historique(null,
+                    service.periodeHistorique(LocalDate.of(2026, 9, 2), LocalDate.of(2026, 9, 1)), premierePage);
+
+            assertThat(resultats).isEmpty();
+            verify(rdvs, never()).historique(any(), any(), any(), any());
         }
     }
 }
