@@ -116,3 +116,23 @@
     margin-top: .75rem;
   }
 }
+
+// Bloc d'un formulaire long : une étape du rendez-vous, une section du profil. Au
+// rendez-vous, la légende numérotée tient lieu d'indicateur de progression sur une seule page.
+.bloc-formulaire {
+  margin: 0 0 1.5rem;
+  padding: 1.25rem 1.25rem .25rem;
+  border: 1px solid $gray-200;
+  border-radius: $border-radius;
+  background: $white;
+}
+
+.bloc-formulaire__titre {
+  float: none;
+  width: auto;
+  margin-bottom: 1rem;
+  padding: 0;
+  color: $marine;
+  font-size: $h5-font-size;
+  font-weight: 700;
+}

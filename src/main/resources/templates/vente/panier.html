@@ -103,7 +103,7 @@
         <!--/* Devis F15 : le panier tel qu'il est, pour un véhicule du membre. Le choix est
              présélectionné quand le membre n'en a qu'un. */-->
         <section class="panier__devis" aria-labelledby="titre-devis">
-            <h2 id="titre-devis" class="suivi__titre" th:text="#{devis.panier.titre}">Obtenir un devis</h2>
+            <h2 id="titre-devis" class="titre-section" th:text="#{devis.panier.titre}">Obtenir un devis</h2>
             <p th:text="#{devis.panier.explication}">Le devis reprend ce panier et ses prix. Il nomme le véhicule concerné.</p>
             <form th:unless="${#lists.isEmpty(vehicules)}" class="panier__devis-formulaire" th:action="@{/mes-devis}" method="post">
                 <div class="champ-site">

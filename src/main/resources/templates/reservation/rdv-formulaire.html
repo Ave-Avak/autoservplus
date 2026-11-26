@@ -64,8 +64,8 @@
             </ul>
         </div>
 
-        <fieldset class="etape-rdv">
-            <legend class="etape-rdv__titre" th:text="#{rdv.formulaire.etape.vehicule}">1. Votre véhicule</legend>
+        <fieldset class="bloc-formulaire">
+            <legend class="bloc-formulaire__titre" th:text="#{rdv.formulaire.etape.vehicule}">1. Votre véhicule</legend>
             <div class="champ-site">
                 <label class="form-label" for="vehicule" th:text="#{rdv.detail.vehicule}">Véhicule</label>
                 <select class="form-select" th:errorclass="is-invalid" id="vehicule" th:field="*{vehicule}"
@@ -80,8 +80,8 @@
             </div>
         </fieldset>
 
-        <fieldset class="etape-rdv">
-            <legend class="etape-rdv__titre" th:text="#{rdv.formulaire.etape.prestations}">2. Les prestations souhaitées</legend>
+        <fieldset class="bloc-formulaire">
+            <legend class="bloc-formulaire__titre" th:text="#{rdv.formulaire.etape.prestations}">2. Les prestations souhaitées</legend>
             <p role="alert" id="prestations-erreur" class="texte-erreur" th:if="${#fields.hasErrors('prestations')}"
                th:errors="*{prestations}">Erreur</p>
 
@@ -115,8 +115,8 @@
             </div>
         </fieldset>
 
-        <fieldset class="etape-rdv">
-            <legend class="etape-rdv__titre" th:text="#{rdv.formulaire.etape.date}">3. La date</legend>
+        <fieldset class="bloc-formulaire">
+            <legend class="bloc-formulaire__titre" th:text="#{rdv.formulaire.etape.date}">3. La date</legend>
             <!--/* La date ne passe pas par th:field, qui la formaterait à la belge : la classe
                  d'erreur se pose donc à la main, par un drapeau local. */-->
             <div class="champ-site" th:with="dateEnFaute=${#fields.hasErrors('date')}">
@@ -134,8 +134,8 @@
             </div>
         </fieldset>
 
-        <fieldset class="etape-rdv">
-            <legend class="etape-rdv__titre" th:text="#{rdv.formulaire.etape.heure}">4. L'heure</legend>
+        <fieldset class="bloc-formulaire">
+            <legend class="bloc-formulaire__titre" th:text="#{rdv.formulaire.etape.heure}">4. L'heure</legend>
             <p role="alert" id="debut-erreur" class="texte-erreur" th:if="${#fields.hasErrors('debut')}"
                th:errors="*{debut}">Erreur</p>
 
@@ -160,8 +160,8 @@
             </noscript>
         </fieldset>
 
-        <fieldset class="etape-rdv">
-            <legend class="etape-rdv__titre" th:text="#{rdv.formulaire.etape.commentaire}">5. Un mot pour le garage (facultatif)</legend>
+        <fieldset class="bloc-formulaire">
+            <legend class="bloc-formulaire__titre" th:text="#{rdv.formulaire.etape.commentaire}">5. Un mot pour le garage (facultatif)</legend>
             <div class="champ-site">
                 <label class="form-label" for="commentaire" th:text="#{rdv.formulaire.commentaire}">Commentaire</label>
                 <textarea class="form-control" th:errorclass="is-invalid" id="commentaire" th:field="*{commentaire}" rows="3" maxlength="2000"

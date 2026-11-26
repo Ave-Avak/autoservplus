@@ -51,3 +51,9 @@
   color: $gray-600;
   font-weight: 400;
 }
+
+// Intertitre d'une page de l'espace membre (suivi, panier, profil, suppression du compte).
+.titre-section {
+  margin: 2rem 0 .75rem;
+  font-size: $h4-font-size;
+}

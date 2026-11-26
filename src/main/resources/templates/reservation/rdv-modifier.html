@@ -35,7 +35,7 @@
           method="post">
         <input type="hidden" name="version" th:value="${vue.version()}">
 
-        <div class="etape-rdv">
+        <div class="bloc-formulaire">
             <div class="champ-site">
                 <label class="form-label" for="date" th:text="#{rdv.modification.date}">Nouvelle date</label>
                 <input class="form-control champ-date" type="date" id="date" name="date"
@@ -45,8 +45,8 @@
             </div>
         </div>
 
-        <fieldset class="etape-rdv">
-            <legend class="etape-rdv__titre" th:text="#{rdv.modification.heure}">Nouvelle heure</legend>
+        <fieldset class="bloc-formulaire">
+            <legend class="bloc-formulaire__titre" th:text="#{rdv.modification.heure}">Nouvelle heure</legend>
             <p role="alert" class="texte-erreur" th:if="${erreurHeure}" th:text="${erreurHeure}">Erreur</p>
             <div id="creneaux"
                  th:hx-get="@{/mes-rendez-vous/{ref}/modifier/creneaux(ref=${vue.reference()})}"

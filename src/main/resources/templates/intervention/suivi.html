@@ -104,7 +104,7 @@
              le DTO a déjà écarté les transitions internes qui ne changent pas le
              statut perçu. */-->
         <section th:if="${not #lists.isEmpty(intervention.chronologie())}">
-            <h2 class="suivi__titre" th:text="#{intervention.chronologie.titre}">Chronologie</h2>
+            <h2 class="titre-section" th:text="#{intervention.chronologie.titre}">Chronologie</h2>
             <ol class="chronologie">
                 <li th:each="e : ${intervention.chronologie()}">
                     <strong th:text="#{${e.statutApres().clePercue()}}">En cours</strong>
@@ -115,7 +115,7 @@
         </section>
     </div>
 
-    <h2 id="titre-intervention-suivi" class="suivi__titre" th:text="#{intervention.suivi.travaux}">Travaux prévus</h2>
+    <h2 id="titre-intervention-suivi" class="titre-section" th:text="#{intervention.suivi.travaux}">Travaux prévus</h2>
     <div class="table-responsive tableau-site" tabindex="0" role="region" aria-labelledby="titre-intervention-suivi">
         <table class="table mb-0">
             <thead>
@@ -148,7 +148,7 @@
     <!--/* La facture d'atelier, son statut et son PDF. Le document est celui de l'émission,
          le statut se lit ici. */-->
     <section class="suivi__facture" th:if="${facture != null}" aria-labelledby="titre-facture-atelier">
-        <h2 id="titre-facture-atelier" class="suivi__titre" th:text="#{intervention.facture.titre}">Votre facture</h2>
+        <h2 id="titre-facture-atelier" class="titre-section" th:text="#{intervention.facture.titre}">Votre facture</h2>
         <p class="suivi__facture-ligne">
             <span th:text="#{intervention.facture.resume(${facture.numero()}, ${facture.montantTvac()})}">
                 Facture 2026-0042, 117,98 € TVAC</span>
