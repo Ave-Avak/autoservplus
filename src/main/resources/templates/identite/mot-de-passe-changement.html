@@ -22,8 +22,6 @@
     <form class="formulaire" th:action="@{/mon-profil/mot-de-passe}" th:object="${formulaire}"
           method="post" novalidate>
 
-        <!--/* Jamais th:field sur un mot de passe : il renverrait la saisie dans la page
-             au retour d'une erreur. */-->
         <div class="champ">
             <label for="actuel" th:text="#{mot-de-passe-changement.actuel}">Mot de passe actuel</label>
             <input type="password" id="actuel" name="actuel" autocomplete="current-password" required

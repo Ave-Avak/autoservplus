@@ -40,8 +40,6 @@
 
         <div class="champ">
             <label for="motDePasse" th:text="#{changement-email.mot-de-passe}">Votre mot de passe</label>
-            <!--/* Jamais th:field sur ce champ : il repeuplerait la valeur au retour
-                 d'erreur, donc renverrait le mot de passe dans la page. */-->
             <input type="password" id="motDePasse" name="motDePasse"
                    autocomplete="current-password" required>
             <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motDePasse')}"
