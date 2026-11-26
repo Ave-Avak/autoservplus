@@ -614,6 +614,24 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
         });
     }
 
+    /** À 320 px, les heures d'un jour ne laissent aucune heure seule sur sa ligne. */
+    @Test
+    @DisplayName("créneaux de l'accueil à 320 px : aucune heure seule sur sa ligne")
+    void heuresSansOrphelin() {
+        navigateur.parcourir("heures-orphelines", ETROIT, null, contexte -> {
+            Page page = contexte.newPage();
+            page.navigate("/");
+            @SuppressWarnings("unchecked")
+            List<Number> derniereLigne = (List<Number>) page.evaluate("""
+                    () => [...document.querySelectorAll('.carte-creneaux__heures')].map(jour => {
+                        const hauts = [...jour.children].map(h => Math.round(h.getBoundingClientRect().top));
+                        const bas = Math.max(...hauts);
+                        return hauts.length === 1 ? 2 : hauts.filter(h => h === bas).length; })""");
+            assertThat(derniereLigne).isNotEmpty().allSatisfy(nombre ->
+                    assertThat(nombre.intValue()).as("heures sur la dernière ligne").isGreaterThanOrEqualTo(2));
+        });
+    }
+
     /**
      * Les libellés néerlandais sont plus longs : les écrans du gabarit du site, en
      * néerlandais à 320 px, ne débordent pas (un mot composé dans un titre faisait défiler
