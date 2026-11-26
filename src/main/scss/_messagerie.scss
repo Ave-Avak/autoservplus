@@ -1,0 +1,109 @@
+// Messagerie du membre : liste des fils, fil de discussion, nouvelle question.
+
+.liste-fils {
+  max-width: 48rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  border-top: 1px solid $gray-200;
+  list-style: none;
+}
+
+.fil-resume {
+  padding-block: .875rem;
+  border-bottom: 1px solid $gray-200;
+
+  p {
+    margin: 0;
+  }
+}
+
+.fil-resume__sujet {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .25rem .75rem;
+
+  a {
+    display: inline-block;
+    padding-block: .25rem;
+    font-size: 1.0625rem;
+  }
+}
+
+// Un fil non lu se repère au gras du sujet en plus de son badge.
+.fil-resume--non-lu .fil-resume__sujet a {
+  font-weight: 700;
+}
+
+.fil-resume__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 1rem;
+}
+
+.fil-discussion {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 48rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+
+  > li {
+    max-width: 85%;
+    padding: .875rem 1rem;
+    border: 1px solid $gray-200;
+    border-radius: $border-radius;
+    background: $white;
+  }
+
+  // Le garage à gauche sur fond pâle, le membre à droite sur blanc. Le nom au-dessus de
+  // chaque message porte l'information, le côté ne fait que l'appuyer.
+  .du-garage {
+    align-self: flex-start;
+    background: $gray-100;
+  }
+
+  .du-membre {
+    align-self: flex-end;
+    border-color: $gray-300;
+  }
+}
+
+.fil-discussion__auteur {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 .75rem;
+  margin-bottom: .25rem;
+  color: $gray-600;
+  font-size: .9375rem;
+
+  strong {
+    color: $gray-900;
+  }
+}
+
+.fil-discussion__corps {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.fil-reponse {
+  max-width: 48rem;
+}
+
+// Pagination partagée avec le back-office, qui garde l'ancienne feuille : la feuille du
+// site ne la reprend que dans l'espace membre.
+.page-membre .pagination {
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem 1.5rem;
+  margin-top: 1rem;
+
+  a {
+    display: inline-block;
+    padding-block: .5rem;
+    font-weight: 600;
+  }
+}

@@ -2,38 +2,40 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="htmx-config" content='{"includeIndicatorStyles": false}'>
-    <title th:text="${fil.sujet()} + ' | AutoServ+'">Fil | AutoServ+</title>
+    <title th:text="${fil.sujet()} + ' | ' + ${garageSite.enseigne()}">Fil | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
-<header th:replace="~{fragments/entete :: entete}"></header>
-<main id="contenu">
-    <h1 th:text="${fil.sujet()}">Question sur ma vidange</h1>
-    <p class="carte-meta">
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
+<main id="contenu" class="container page-membre" tabindex="-1">
+    <p class="page-membre__precedent"><a th:href="@{/mes-messages}" th:text="#{messagerie.retour}">Retour à mes messages</a></p>
+
+    <h1 class="page-membre__titre" th:text="${fil.sujet()}">Question sur ma vidange</h1>
+    <p class="fil-resume__meta texte-discret mb-4">
         <span th:text="#{messagerie.numero(${fil.numero()})}">Fil FIL-2026-0001</span>
         <span th:if="${fil.estRattachee()}" th:text="#{messagerie.rattache(${fil.numeroIntervention()})}">Travaux ITV-2026-0011</span>
     </p>
 
-    <p role="status" class="message" th:if="${message}" th:text="${message}">Message envoyé.</p>
-    <p role="alert" class="message message-erreur" th:if="${erreur}" th:text="${erreur}">Ce fil est clôturé.</p>
+    <p role="status" class="alert alert-success" th:if="${message}" th:text="${message}">Message envoyé.</p>
+    <p role="alert" class="alert alert-danger" th:if="${erreur}" th:text="${erreur}">Ce fil est clôturé.</p>
 
     <!--/* Le fil se complète seul toutes les 10 secondes : le fragment « suite » ne rend
          que les messages postérieurs au dernier affiché, puis un nouveau déclencheur qui
          remplace l'ancien. Rien de nouveau : réponse 204, rien ne bouge. Quinze minutes
          après l'affichage de la page : réponse 286, le rafraîchissement s'arrête. */-->
-    <div class="fil" aria-live="polite">
+    <div aria-live="polite">
         <th:block th:fragment="suite">
+            <!--/* L'auteur et la date au-dessus de chaque message : le côté de la bulle ne
+                 dit pas à lui seul qui parle, ni à un lecteur d'écran ni sur un téléphone. */-->
             <ol class="fil-discussion" th:unless="${#lists.isEmpty(fil.messages())}">
                 <li th:each="m : ${fil.messages()}" th:classappend="${m.duGarage()} ? 'du-garage' : 'du-membre'">
-                    <p class="carte-meta">
+                    <p class="fil-discussion__auteur">
                         <strong th:text="${m.auteur()}">Marie</strong>
                         <span th:text="${#temporals.format(m.date(), 'EEEE d MMMM yyyy')}">23 août 2026</span>
                     </p>
-                    <p th:text="${m.corps()}">Bonjour, ma facture est-elle disponible ?</p>
+                    <p class="fil-discussion__corps" th:text="${m.corps()}">Bonjour, ma facture est-elle disponible ?</p>
                 </li>
             </ol>
             <div id="suite-fil" th:unless="${fil.cloturee()}"
@@ -43,23 +45,21 @@
         </th:block>
     </div>
 
-    <p th:if="${fil.cloturee()}" th:text="#{messagerie.clos.explication}">
+    <p class="alert alert-secondary" th:if="${fil.cloturee()}" th:text="#{messagerie.clos.explication}">
         Ce fil est clôturé : vous ne pouvez plus y répondre. Ouvrez-en un nouveau si besoin.
     </p>
 
-    <form th:unless="${fil.cloturee()}" th:action="@{/mes-messages/{ref}(ref=${fil.reference()})}"
+    <form class="fil-reponse" th:unless="${fil.cloturee()}" th:action="@{/mes-messages/{ref}(ref=${fil.reference()})}"
           th:object="${formulaire}" method="post">
-        <p>
-            <label for="corps" th:text="#{messagerie.reponse}">Votre message</label>
-            <textarea id="corps" th:field="*{corps}" rows="5" maxlength="4000" required></textarea>
-        </p>
-        <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('corps')}" th:errors="*{corps}">Message obligatoire.</p>
-        <p><button type="submit" class="btn-cta" th:text="#{messagerie.envoyer}">Envoyer</button></p>
+        <div class="champ-site">
+            <label class="form-label" for="corps" th:text="#{messagerie.reponse}">Votre message</label>
+            <textarea class="form-control" th:errorclass="is-invalid" id="corps" th:field="*{corps}" rows="5" maxlength="4000" required></textarea>
+            <p role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('corps')}" th:errors="*{corps}">Message obligatoire.</p>
+        </div>
+        <button type="submit" class="btn btn-action" th:text="#{messagerie.envoyer}">Envoyer</button>
     </form>
-
-    <p><a th:href="@{/mes-messages}" th:text="#{messagerie.retour}">Retour à mes messages</a></p>
 </main>
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 <script th:src="@{/js/htmx.min.js}"></script>
 </body>
 </html>

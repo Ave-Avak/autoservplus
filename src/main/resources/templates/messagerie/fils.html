@@ -2,36 +2,34 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{messagerie.titre} + ' | AutoServ+'">Mes messages | AutoServ+</title>
+    <title th:text="#{messagerie.titre} + ' | ' + ${garageSite.enseigne()}">Mes messages | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
-<header th:replace="~{fragments/entete :: entete}"></header>
-<main id="contenu">
-    <h1 th:text="#{messagerie.titre}">Mes messages</h1>
-    <p role="status" class="message" th:if="${message}" th:text="${message}">Message envoyé.</p>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
+<main id="contenu" class="container page-membre" tabindex="-1">
+    <div class="page-membre__tete">
+        <h1 class="page-membre__titre" th:text="#{messagerie.titre}">Mes messages</h1>
+        <a class="btn btn-action" th:href="@{/mes-messages/nouveau}" th:text="#{messagerie.nouveau.titre}">Poser une question</a>
+    </div>
 
-    <p class="actions-page">
-        <a th:href="@{/mes-messages/nouveau}" th:text="#{messagerie.nouveau.titre}">Poser une question</a>
-    </p>
+    <p role="status" class="alert alert-success" th:if="${message}" th:text="${message}">Message envoyé.</p>
 
-    <p th:if="${#lists.isEmpty(fils)}" th:text="#{messagerie.aucun}">
+    <p th:if="${#lists.isEmpty(fils)}" class="page-membre__vide" th:text="#{messagerie.aucun}">
         Vous n'avez encore échangé aucun message avec le garage.
     </p>
 
     <ul class="liste-fils" th:unless="${#lists.isEmpty(fils)}">
-        <li th:each="f : ${fils}">
-            <p>
+        <li class="fil-resume" th:each="f : ${fils}" th:classappend="${f.aDesNonLus()} ? 'fil-resume--non-lu'">
+            <p class="fil-resume__sujet">
                 <a th:href="@{/mes-messages/{ref}(ref=${f.reference()})}" th:text="${f.sujet()}">Question sur ma vidange</a>
                 <!--/* Marqueur textuel et non seulement coloré : un lecteur d'écran doit
-                     percevoir qu'un fil attend une lecture. */-->
-                <span th:if="${f.aDesNonLus()}" class="badge" th:text="#{messagerie.non-lus(${f.nombreNonLus()})}">2 non lus</span>
-                <span th:if="${f.cloturee()}" class="badge" th:text="#{messagerie.clos}">Clôturé</span>
+                     percevoir qu'un fil attend une lecture. Le sujet passe aussi en gras. */-->
+                <span th:if="${f.aDesNonLus()}" class="badge statut-suivi" data-etat="attente" th:text="#{messagerie.non-lus(${f.nombreNonLus()})}">2 non lus</span>
+                <span th:if="${f.cloturee()}" class="badge statut-suivi" data-etat="annulee" th:text="#{messagerie.clos}">Clôturé</span>
             </p>
-            <p class="carte-meta">
+            <p class="fil-resume__meta texte-discret">
                 <span th:text="${f.numero()}">FIL-2026-0001</span>
                 <span th:if="${f.estRattachee()}" th:text="#{messagerie.rattache(${f.numeroIntervention()})}">Travaux ITV-2026-0011</span>
                 <span th:text="${#temporals.format(f.derniereActivite(), 'EEEE d MMMM yyyy')}">23 août 2026</span>
@@ -39,7 +37,9 @@
         </li>
     </ul>
     <nav th:replace="~{fragments/pagination :: liensSimples(${resultats}, '/mes-messages')}"></nav>
+
+    <p class="page-membre__retour"><a th:href="@{/mon-compte}" th:text="#{erreur.retour-compte}">Retour à mon compte</a></p>
 </main>
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

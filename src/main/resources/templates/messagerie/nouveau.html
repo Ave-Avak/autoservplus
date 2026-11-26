@@ -2,42 +2,44 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{messagerie.nouveau.titre} + ' | AutoServ+'">Poser une question | AutoServ+</title>
+    <title th:text="#{messagerie.nouveau.titre} + ' | ' + ${garageSite.enseigne()}">Poser une question | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
-<header th:replace="~{fragments/entete :: entete}"></header>
-<main id="contenu">
-    <h1 th:text="#{messagerie.nouveau.titre}">Poser une question</h1>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
+<main id="contenu" class="container page-formulaire" tabindex="-1">
+    <p class="page-membre__precedent"><a th:href="@{/mes-messages}" th:text="#{messagerie.retour}">Retour à mes messages</a></p>
+
+    <h1 class="page-formulaire__titre" th:text="#{messagerie.nouveau.titre}">Poser une question</h1>
 
     <form th:action="@{/mes-messages/nouveau}" th:object="${formulaire}" method="post">
-        <p>
-            <label for="sujet" th:text="#{messagerie.sujet}">Sujet</label>
-            <input type="text" id="sujet" th:field="*{sujet}" maxlength="150" required>
-        </p>
-        <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('sujet')}" th:errors="*{sujet}">Sujet obligatoire.</p>
+        <div class="champ-site">
+            <label class="form-label" for="sujet" th:text="#{messagerie.sujet}">Sujet</label>
+            <input class="form-control" th:errorclass="is-invalid" type="text" id="sujet" th:field="*{sujet}" maxlength="150" required
+                   th:aria-describedby="${#fields.hasErrors('sujet')} ? 'erreur-sujet'">
+            <p id="erreur-sujet" role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('sujet')}" th:errors="*{sujet}">Sujet obligatoire.</p>
+        </div>
 
-        <p>
-            <label for="corps" th:text="#{messagerie.reponse}">Votre message</label>
-            <textarea id="corps" th:field="*{corps}" rows="6" maxlength="4000" required></textarea>
-        </p>
-        <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('corps')}" th:errors="*{corps}">Message obligatoire.</p>
+        <div class="champ-site">
+            <label class="form-label" for="corps" th:text="#{messagerie.reponse}">Votre message</label>
+            <textarea class="form-control" th:errorclass="is-invalid" id="corps" th:field="*{corps}" rows="6" maxlength="4000" required
+                      aria-describedby="aide-corps"></textarea>
+            <p role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('corps')}" th:errors="*{corps}">Message obligatoire.</p>
+            <!--/* Le socle ne prévoit qu'un rattachement à une intervention. Pour une
+                 question sur une commande, le membre ouvre un fil libre et cite la
+                 référence dans son message. */-->
+            <p id="aide-corps" class="form-text" th:text="#{messagerie.nouveau.aide}">
+                Pour une question sur une commande, citez son numéro dans votre message.
+            </p>
+        </div>
 
-        <!--/* Le socle ne prévoit qu'un rattachement à une intervention. Pour une
-             question sur une commande, le membre ouvre un fil libre et cite la
-             référence dans son message. */-->
-        <p class="carte-meta" th:text="#{messagerie.nouveau.aide}">
-            Pour une question sur une commande, citez son numéro dans votre message.
-        </p>
-
-        <p><button type="submit" class="btn-cta" th:text="#{messagerie.envoyer}">Envoyer</button></p>
+        <div class="actions-formulaire">
+            <button type="submit" class="btn btn-action btn-lg" th:text="#{messagerie.envoyer}">Envoyer</button>
+            <a class="btn btn-outline-primary btn-lg" th:href="@{/mes-messages}" th:text="#{rdv.formulaire.annuler}">Annuler</a>
+        </div>
     </form>
-
-    <p><a th:href="@{/mes-messages}" th:text="#{messagerie.retour}">Retour à mes messages</a></p>
 </main>
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>
