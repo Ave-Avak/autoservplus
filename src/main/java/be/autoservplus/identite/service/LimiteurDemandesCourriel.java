@@ -1,5 +1,8 @@
 package be.autoservplus.identite.service;
 
+import be.autoservplus.common.debit.SeauxParCle;
+import be.autoservplus.common.debit.SeauxParCle.Decision;
+import be.autoservplus.common.debit.SeauxParCle.Limite;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,8 +13,8 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Duration;
-import java.time.Instant;
 import java.util.HexFormat;
+import java.util.List;
 import java.util.Locale;
 
 /**
@@ -68,6 +71,13 @@ import java.util.Locale;
  * donc saturer celle des adresses ne peut pas evincer une entree d IP. Le plafond est
  * un garde-fou contre la pathologie, pas la defense principale.</p>
  *
+ * <h2>Comptage</h2>
+ *
+ * <p>Un seau Bucket4j par clé ({@link SeauxParCle}), rempli en continu : cinq demandes par
+ * quart d'heure rendent une demande toutes les trois minutes. Le rythme tenu sur la durée
+ * est celui de l'ancienne fenêtre glissante, un client patient peut obtenir au plus deux
+ * fois la limite sur un quart d'heure pris à cheval.</p>
+ *
  * <h2>Limites connues</h2>
  *
  * <p>Compteurs <b>en memoire, par instance, perdus au redemarrage</b>. Un redemarrage
@@ -87,24 +97,17 @@ public class LimiteurDemandesCourriel {
      */
     private static final int ENTREES_MAX = 100_000;
 
-    private final FenetresGlissantes parAdresse;
-    private final FenetresGlissantes parIp;
-
-    private final Clock horloge;
-    private final int maxParAdresse;
-    private final int maxParIp;
+    private final SeauxParCle parAdresse;
+    private final SeauxParCle parIp;
 
     public LimiteurDemandesCourriel(
             Clock horloge,
             @Value("${autoservplus.securite.debit.demandes-max-par-adresse:5}") int maxParAdresse,
             @Value("${autoservplus.securite.debit.demandes-max-par-ip:20}") int maxParIp,
             @Value("${autoservplus.securite.debit.fenetre-minutes:15}") long fenetreMinutes) {
-        this.horloge = horloge;
-        this.maxParAdresse = maxParAdresse;
-        this.maxParIp = maxParIp;
         Duration fenetre = Duration.ofMinutes(fenetreMinutes);
-        this.parAdresse = new FenetresGlissantes(fenetre, ENTREES_MAX);
-        this.parIp = new FenetresGlissantes(fenetre, ENTREES_MAX);
+        this.parAdresse = new SeauxParCle(List.of(new Limite(maxParAdresse, fenetre)), ENTREES_MAX, horloge);
+        this.parIp = new SeauxParCle(List.of(new Limite(maxParIp, fenetre)), ENTREES_MAX, horloge);
     }
 
     /**
@@ -119,10 +122,8 @@ public class LimiteurDemandesCourriel {
      *                ({@code server.forward-headers-strategy: native})
      */
     public boolean autoriser(String adresse, String ip) {
-        Instant maintenant = horloge.instant();
-        boolean adresseSousPlafond = consommer(parAdresse, empreinte(adresse), maxParAdresse,
-                maintenant);
-        boolean ipSousPlafond = consommer(parIp, ip == null ? "?" : ip, maxParIp, maintenant);
+        boolean adresseSousPlafond = consommer(parAdresse, empreinte(adresse));
+        boolean ipSousPlafond = consommer(parIp, ip == null ? "?" : ip);
         if (!adresseSousPlafond || !ipSousPlafond) {
             // Ni l adresse ni son empreinte : une trace d exploitation n a pas besoin
             // de porter une donnee personnelle pour etre utile.
@@ -142,20 +143,17 @@ public class LimiteurDemandesCourriel {
      * balayage d adresses depuis une meme source reste borne par le plafond d IP.</p>
      */
     public boolean autoriserParIp(String ip) {
-        boolean sousPlafond = consommer(parIp, ip == null ? "?" : ip, maxParIp,
-                horloge.instant());
+        boolean sousPlafond = consommer(parIp, ip == null ? "?" : ip);
         if (!sousPlafond) {
             JOURNAL.info("Inscription refusee, plafond d inscriptions par IP atteint.");
         }
         return sousPlafond;
     }
 
-    private static boolean consommer(FenetresGlissantes compteurs, String cle, int limite,
-                                     Instant maintenant) {
-        if (compteurs.saturee(cle, maintenant)) {
-            return true; // Voir « Saturation de la carte » : l autre plafond prend le relais.
-        }
-        return compteurs.ajouterSousLimite(cle, limite, maintenant);
+    private static boolean consommer(SeauxParCle compteurs, String cle) {
+        Decision decision = compteurs.consommer(cle);
+        // Voir « Saturation de la carte » : l'autre plafond prend le relais.
+        return decision.acceptee() || decision.saturee();
     }
 
     /**
