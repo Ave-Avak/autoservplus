@@ -1,6 +1,7 @@
 package be.autoservplus.avis.repository;
 
 import be.autoservplus.avis.domain.Avis;
+import be.autoservplus.avis.service.dto.NotePrestation;
 import be.autoservplus.avis.service.dto.SyntheseAvis;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.intervention.domain.Intervention;
@@ -9,6 +10,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -60,6 +62,26 @@ public interface AvisRepository extends JpaRepository<Avis, Long> {
               AND a.publie = true
             """)
     SyntheseAvis syntheseParPrestation(@Param("reference") UUID reference);
+
+    /**
+     * Note moyenne et nombre d'avis publiés de plusieurs prestations en une requête, pour
+     * les cartes de la liste : une requête par carte en ferait trente. Une prestation sans
+     * avis publié n'a pas de ligne.
+     *
+     * <p>Le rattachement passe par une ligne de l'intervention notée, comme
+     * {@link #syntheseParPrestation}, mais en {@code EXISTS} : une intervention qui porte deux
+     * fois la même prestation ne compte son avis qu'une fois.</p>
+     */
+    @Query("""
+            SELECT new be.autoservplus.avis.service.dto.NotePrestation(p.reference, AVG(a.note), COUNT(a))
+            FROM Avis a, Prestation p
+            WHERE a.publie = true
+              AND p.reference IN :references
+              AND EXISTS (SELECT l FROM LigneIntervention l
+                          WHERE l.intervention = a.intervention AND l.prestation = p)
+            GROUP BY p.reference
+            """)
+    List<NotePrestation> notesParPrestation(@Param("references") Collection<UUID> references);
 
     /** Moyenne et nombre de tous les avis publiés, pour l'accueil. */
     @Query("""
