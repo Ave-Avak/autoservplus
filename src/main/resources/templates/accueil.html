@@ -67,7 +67,7 @@
     <section class="accueil-garanties fond-marine" th:attr="aria-label=#{accueil.garanties.aria}">
         <div class="container">
             <ul class="accueil-garanties__liste">
-                <li th:if="${syntheseAvis.aDesAvis()}">
+                <li th:if="${syntheseAvis.noteAffichable()}">
                     <strong th:text="#{accueil.avis.moyenne(${syntheseAvis.moyenneAffichee()})}">4,3 sur 5</strong>
                     <span th:text="#{accueil.garantie.note.texte(${syntheseAvis.nombre()})}">25 avis de clients, après intervention</span>
                 </li>
@@ -149,7 +149,7 @@
     <section class="accueil-section" aria-labelledby="titre-avis">
         <div class="container">
             <div class="accueil-section__entete">
-                <h2 id="titre-avis" th:text="${syntheseAvis.aDesAvis()}
+                <h2 id="titre-avis" th:text="${syntheseAvis.noteAffichable()}
                         ? #{accueil.avis.moyenne(${syntheseAvis.moyenneAffichee()})} : #{accueil.avis.titre}">4,3 sur 5</h2>
                 <p class="accueil-avis__regle">
                     <span th:if="${syntheseAvis.aDesAvis()}" th:text="#{accueil.avis.nombre(${syntheseAvis.nombre()})}">25 avis publiés.</span>
