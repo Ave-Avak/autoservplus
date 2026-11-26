@@ -88,8 +88,12 @@ class RayonsCatalogueIT extends SocleIntegration {
     @Test
     @DisplayName("les onglets se traduisent")
     void ongletsTraduits() throws Exception {
-        assertThat(Jsoup.parse(ouvrir("/entretien", Locale.of("nl"))).select("nav.onglets-catalogue").text())
+        String neerlandais = ouvrir("/entretien", Locale.of("nl"));
+        // Jsoup retire le trait d'union conditionnel de text() : il se lit dans la page servie.
+        assertThat(Jsoup.parse(neerlandais).select("nav.onglets-catalogue").text())
                 .isEqualTo("Diensten Auto-onderdelen Accessoires Onderhoudsproducten");
+        assertThat(neerlandais).as("coupure proposée au navigateur à 320 px")
+                .containsAnyOf("Onderhouds\u00ADproducten", "Onderhouds&shy;producten");
         assertThat(Jsoup.parse(ouvrir("/services", Locale.ENGLISH)).select("nav.onglets-catalogue").text())
                 .isEqualTo("Services Car parts Accessories Car care products");
     }
