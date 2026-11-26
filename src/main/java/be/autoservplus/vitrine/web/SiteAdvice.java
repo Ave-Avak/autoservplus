@@ -5,9 +5,12 @@ import be.autoservplus.vitrine.service.HorairesOuvertureService;
 import be.autoservplus.vitrine.service.EtatDuJourService;
 import be.autoservplus.vitrine.web.dto.EtatDuJour;
 import be.autoservplus.vitrine.web.dto.HorairesGroupesVue;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.dao.DataAccessException;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -30,9 +33,15 @@ import java.util.List;
  * <p>Injection par {@link ObjectProvider}, comme {@code PanierModelAdvice} : les tests
  * {@code @WebMvcTest} instancient tous les advices sans fournir ces deux beans, et le
  * gabarit commun n'y est pas rendu.</p>
+ *
+ * <p>Une panne de la base pendant le rendu ne casse pas la page : le bandeau et le pied
+ * perdent les horaires et l'état du jour, la page s'affiche quand même. C'est d'abord la
+ * page d'erreur qui en dépend, celle qui annonce justement la panne.</p>
  */
 @ControllerAdvice
 public class SiteAdvice {
+
+    private static final Logger JOURNAL = LoggerFactory.getLogger(SiteAdvice.class);
 
     private final ObjectProvider<IdentiteGarage> garage;
     private final ObjectProvider<HorairesOuvertureService> horaires;
@@ -59,14 +68,30 @@ public class SiteAdvice {
         modele.addAttribute("horairesResume", new LazyContextVariable<List<HorairesGroupesVue>>() {
             @Override
             protected List<HorairesGroupesVue> loadValue() {
-                return service == null ? List.of() : service.resume();
+                if (service == null) {
+                    return List.of();
+                }
+                try {
+                    return service.resume();
+                } catch (DataAccessException panne) {
+                    JOURNAL.warn("Horaires du pied indisponibles, page rendue sans eux", panne);
+                    return List.of();
+                }
             }
         });
         EtatDuJourService etat = etatDuJour.getIfAvailable();
         modele.addAttribute("etatDuJour", new LazyContextVariable<EtatDuJour>() {
             @Override
             protected EtatDuJour loadValue() {
-                return etat == null ? null : etat.maintenant();
+                if (etat == null) {
+                    return null;
+                }
+                try {
+                    return etat.maintenant();
+                } catch (DataAccessException panne) {
+                    JOURNAL.warn("État du jour indisponible, bandeau rendu sans lui", panne);
+                    return null;
+                }
             }
         });
     }
