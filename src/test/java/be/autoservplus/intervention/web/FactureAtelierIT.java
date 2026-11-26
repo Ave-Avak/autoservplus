@@ -46,6 +46,7 @@ import java.util.function.Supplier;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.anonymous;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
@@ -182,7 +183,9 @@ class FactureAtelierIT extends SocleIntegration {
         mvc.perform(get("/mes-interventions/{ref}", dossier).with(user(marie.getEmail())).locale(Locale.FRENCH))
                 .andExpect(status().isOk())
                 .andExpect(content().string(containsString("Votre facture")))
-                .andExpect(content().string(containsString("/factures/" + referenceFacture + "/pdf")));
+                .andExpect(content().string(containsString("/factures/" + referenceFacture + "/pdf")))
+                .andExpect(content().string(containsString("Total TVAC</strong>")))
+                .andExpect(content().string(not(containsString("Total TVAC estimé"))));
         mvc.perform(get("/factures/{ref}/pdf", referenceFacture).with(user(marie.getEmail())))
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/pdf"));

@@ -127,10 +127,16 @@
                     <td th:text="${l.quantite()}">1</td>
                 </tr>
             </tbody>
+            <!--/* Avant la facture, le total est une estimation sur les lignes du dossier. Une fois
+                 la facture émise, c'est son montant qui fait foi. */-->
             <tfoot>
-                <tr>
+                <tr th:if="${facture == null}">
                     <td><strong th:text="#{intervention.suivi.total}">Total TVAC estimé</strong></td>
                     <td th:text="${intervention.totalTvac()}">59,29 €</td>
+                </tr>
+                <tr th:unless="${facture == null}">
+                    <td><strong th:text="#{intervention.suivi.total-facture}">Total TVAC</strong></td>
+                    <td th:text="${facture.montantTvac()}">59,29 €</td>
                 </tr>
             </tfoot>
         </table>
