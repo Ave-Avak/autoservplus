@@ -159,8 +159,18 @@ public class PanierService {
         Panier panier = panierExistant(email, ligneId);
         LignePanier ligne = panier.ligne(ligneId)
                 .orElseThrow(() -> new RessourceIntrouvableException("LignePanier", ligneId));
+        boolean hausse = quantite > ligne.getQuantite();
+        // Une ligne de prestation n'a pas de pièce : aucun stock à contrôler, seule une
+        // prestation retirée du catalogue refuse une hausse, comme une pièce retirée (RM-28).
+        if (ligne.estService()) {
+            if (hausse && !ligne.getPrestation().isActif()) {
+                throw new PrestationInactiveException(ligne.getLibelleFige());
+            }
+            panier.modifierQuantite(ligneId, quantite);
+            return PanierVue.de(paniers.saveAndFlush(panier));
+        }
         Piece piece = ligne.getPiece();
-        if (quantite > ligne.getQuantite() && !piece.isActif()) {
+        if (hausse && !piece.isActif()) {
             throw new PieceInactiveException(ligne.getLibelleFige());
         }
         if (quantite > piece.getQuantiteStock()) {
