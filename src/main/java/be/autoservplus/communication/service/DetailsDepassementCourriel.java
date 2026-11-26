@@ -15,19 +15,24 @@ import java.util.List;
  *
  * @param numeroIntervention numéro lisible de l'intervention concernée
  * @param vehicule           véhicule tel que le membre le reconnaît : marque, modèle, plaque
- * @param montantInitial     devis de référence, formaté en euros hors TVA
- * @param montantPropose     total hors TVA si le membre accepte les lignes en attente
- * @param montantAPayer      ce même total taxe comprise : le membre accepte un montant à
- *                           payer, il le lit TVA comprise comme sur l'écran de validation
- * @param lignesEnAttente    désignation et prix de chaque ligne soumise à l'accord
+ * <p>Chaque montant est annoncé taxe comprise, le prix qu'un consommateur paie (RM-30), avec
+ * son équivalent hors TVA : le seuil de RM-15 se mesure hors TVA, mais le membre accepte un
+ * prix à payer, comme sur l'écran de validation.</p>
+ *
+ * @param montantInitial     devis initial taxe comprise, formaté en euros
+ * @param montantInitialHtva ce même devis hors TVA
+ * @param montantAPayer      total taxe comprise si le membre accepte les lignes en attente
+ * @param montantPropose     ce même total hors TVA
+ * @param lignesEnAttente    désignation et prix taxe comprise de chaque ligne soumise à l'accord
  * @param cheminValidation   chemin relatif de l'écran où le membre accepte ou refuse,
  *                           rendu absolu à la rédaction
  */
 public record DetailsDepassementCourriel(String numeroIntervention,
                                          String vehicule,
                                          String montantInitial,
-                                         String montantPropose,
+                                         String montantInitialHtva,
                                          String montantAPayer,
+                                         String montantPropose,
                                          List<String> lignesEnAttente,
                                          String cheminValidation) {
 

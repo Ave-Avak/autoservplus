@@ -20,43 +20,49 @@ import java.util.UUID;
  * {@code RdvVue}. Ici l information tarifaire est l objet meme de la question posee.
  * Un accord donne sans voir le prix de chaque poste ne serait pas un accord expres.</p>
  *
- * <p>Les montants sont hors TVA, comme le seuil qu'ils servent à expliquer, sauf
- * {@code totalProposeTvac} : le membre accepte un montant à payer, il le voit taxe comprise
- * (RM-30).</p>
+ * <p>Chaque montant est donné taxe comprise, le prix qu'un consommateur paie (RM-30), avec
+ * son équivalent hors TVA à côté. Le seuil de 10 % de RM-15 se mesure hors TVA, mais c'est
+ * un prix à payer que le membre accepte ou refuse : l'annoncer hors taxe le lui cacherait.</p>
  */
 public record DemandeValidationVue(
         UUID reference,
         String numero,
         String vehicule,
-        String devisInitial,
-        String totalPropose,
+        String devisInitialTvac,
+        String devisInitialHtva,
+        String ecartTvac,
+        String ecartHtva,
         String totalProposeTvac,
-        String ecart,
+        String totalProposeHtva,
         String commentaireAdmin,
         List<LigneProposeeVue> lignesEnAttente) {
 
     public static DemandeValidationVue de(Intervention it) {
-        BigDecimal initial = it.devisReferenceHtva();
-        BigDecimal propose = it.totalProposeHtva();
+        BigDecimal initialHtva = it.totalDevisInitialHtva();
+        BigDecimal initialTvac = it.totalDevisInitialTvac();
+        BigDecimal proposeHtva = it.totalProposeHtva();
+        BigDecimal proposeTvac = it.totalProposeTvac();
         var vehicule = it.getVehicule();
         return new DemandeValidationVue(
                 it.getReference(),
                 it.getNumero(),
                 vehicule.getMarque() + " " + vehicule.getModele() + " (" + vehicule.getPlaque() + ")",
-                FormatageRdv.eurosEcran(initial),
-                FormatageRdv.eurosEcran(propose),
-                FormatageRdv.eurosEcran(it.totalProposeTvac()),
-                FormatageRdv.eurosEcran(propose.subtract(initial)),
+                FormatageRdv.eurosEcran(initialTvac),
+                FormatageRdv.eurosEcran(initialHtva),
+                FormatageRdv.eurosEcran(proposeTvac.subtract(initialTvac)),
+                FormatageRdv.eurosEcran(proposeHtva.subtract(initialHtva)),
+                FormatageRdv.eurosEcran(proposeTvac),
+                FormatageRdv.eurosEcran(proposeHtva),
                 it.getCommentaireAdmin(),
                 it.lignesEnAttente().stream().map(LigneProposeeVue::de).toList());
     }
 
-    /** Une ligne soumise a l accord du membre, avec son prix : designation, quantite, total HTVA. */
-    public record LigneProposeeVue(String libelle, String quantite, String totalHtva) {
+    /** Une ligne soumise à l'accord du membre, avec son prix taxe comprise et hors TVA. */
+    public record LigneProposeeVue(String libelle, String quantite, String totalTvac, String totalHtva) {
         public static LigneProposeeVue de(LigneIntervention l) {
             return new LigneProposeeVue(l.getLibelleFige(),
                     FormatageQuantite.lisible(l.getQuantite(), l.getUnite(), LanguesSupportees.deLEcran()),
-                    FormatageRdv.eurosEcran(l.totalHtva()));
+                    FormatageRdv.eurosEcran(l.totalTvac()), FormatageRdv.eurosEcran(l.totalHtva()));
         }
     }
 }
