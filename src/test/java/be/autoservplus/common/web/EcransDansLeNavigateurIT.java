@@ -73,6 +73,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.within;
 
 /**
  * Les écrans ouverts dans un vrai navigateur, sur un vrai serveur.
@@ -552,6 +553,31 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
             Locator bouton = page.locator(".bouton-menu");
             assertThat(bouton.isVisible()).isFalse();
             assertThat(page.locator("#" + bouton.getAttribute("aria-controls")).isVisible()).isTrue();
+        });
+    }
+
+    /**
+     * Bandeau des cookies sur un petit téléphone (320 x 720) : au plus un tiers de l'écran,
+     * et les trois choix de même taille, refuser aussi simple qu'accepter (APD, check-list
+     * cookies).
+     */
+    @Test
+    @DisplayName("bandeau des cookies à 320 px : un tiers de l'écran au plus, trois boutons égaux")
+    void bandeauDesCookiesSurTelephone() {
+        navigateur.parcourir("bandeau-cookies", ETROIT, null, contexte -> {
+            Page page = contexte.newPage();
+            page.setViewportSize(ETROIT, 720);
+            page.navigate("/");
+            var bandeau = page.locator(".bandeau-cookies").boundingBox();
+            assertThat(bandeau.height).as("hauteur du bandeau").isLessThanOrEqualTo(720 / 3.0);
+            Locator boutons = page.locator(".bandeau-cookies__actions > button.btn-cookies, .bandeau-cookies__actions summary.btn-cookies");
+            assertThat(boutons.count()).isEqualTo(3);
+            var premier = boutons.nth(0).boundingBox();
+            for (int i = 1; i < 3; i++) {
+                var autre = boutons.nth(i).boundingBox();
+                assertThat(autre.width).as("même largeur").isCloseTo(premier.width, within(1.0));
+                assertThat(autre.height).as("même hauteur").isCloseTo(premier.height, within(1.0));
+            }
         });
     }
 
