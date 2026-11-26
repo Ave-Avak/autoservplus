@@ -1,0 +1,201 @@
+// Suivi d'une intervention par le membre et validation des travaux supplémentaires.
+
+.suivi__vehicule {
+  margin: .25rem 0 1.5rem;
+  color: $gray-700;
+  font-weight: 600;
+}
+
+.suivi {
+  max-width: 48rem;
+  margin-bottom: 2rem;
+}
+
+.suivi__etat {
+  margin-bottom: 1rem;
+}
+
+.suivi__titre {
+  margin: 2rem 0 .75rem;
+  font-size: $h4-font-size;
+}
+
+// Statut perçu (RM-16) : texte foncé sur fond pâle de sa teinte, au moins 6,4:1. Il vient
+// en attribut, le statut technique n'est jamais rendu.
+.statut-suivi {
+  padding: .35em .75em;
+  border-radius: 1rem;
+  font-size: .875rem;
+  font-weight: 600;
+  white-space: normal;
+}
+
+.statut-suivi[data-etat="attente"] { background: #FEF3C7; color: #92400E; } // 6,4:1
+.statut-suivi[data-etat="en_cours"] { background: #E0E7FF; color: #3730A3; } // 8,1:1
+.statut-suivi[data-etat="terminee"] { background: #DCFCE7; color: #166534; } // 6,5:1
+.statut-suivi[data-etat="annulee"] { background: $gray-200; color: $gray-700; } // 8,3:1
+
+// Trois étapes en ligne, reliées par un trait. L'étape courante se lit au rond plein et à
+// la graisse, les passées au rond marqué, la suivante au rond vide : la couleur seule ne
+// porte rien.
+.etapes-suivi {
+  display: flex;
+  gap: .5rem;
+  margin: 0 0 1.5rem;
+  padding: 0;
+  list-style: none;
+  counter-reset: etape;
+}
+
+.etapes-suivi__etape {
+  position: relative;
+  flex: 1 1 0;
+  padding-top: 2.25rem;
+  color: $gray-600;
+  font-size: .9375rem;
+  text-align: center;
+  counter-increment: etape;
+
+  // Rond numéroté.
+  &::before {
+    content: counter(etape);
+    position: absolute;
+    top: 0;
+    left: 50%;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    margin-left: -.875rem;
+    border: 2px solid $gray-400;
+    border-radius: 50%;
+    background: $white;
+    color: $gray-600;
+    font-weight: 700;
+  }
+
+  // Trait vers l'étape suivante.
+  &:not(:last-child)::after {
+    content: "";
+    position: absolute;
+    top: .8125rem;
+    left: calc(50% + 1rem);
+    width: calc(100% - 1.5rem);
+    border-top: 2px solid $gray-300;
+  }
+}
+
+.etapes-suivi__etape--passee {
+  color: $gray-700;
+
+  &::before {
+    content: "\2713";
+    border-color: $marine;
+    color: $marine;
+  }
+
+  &::after {
+    border-top-color: $marine;
+  }
+}
+
+.etapes-suivi__etape--courante {
+  color: $marine;
+  font-weight: 700;
+
+  &::before {
+    border-color: $marine;
+    background: $marine;
+    color: $white;
+  }
+}
+
+.chronologie {
+  margin: 0;
+  padding: 0 0 0 1.25rem;
+  border-left: 2px solid $gray-200;
+  list-style: none;
+
+  > li {
+    position: relative;
+    padding: 0 0 1rem .75rem;
+
+    // Repère sur le trait de la chronologie.
+    &::before {
+      content: "";
+      position: absolute;
+      top: .4rem;
+      left: -1.85rem;
+      width: .75rem;
+      height: .75rem;
+      border: 2px solid $marine;
+      border-radius: 50%;
+      background: $white;
+    }
+  }
+
+  strong {
+    display: block;
+    color: $gray-900;
+  }
+}
+
+.chronologie__quand,
+.chronologie__motif {
+  display: block;
+  color: $gray-600;
+  font-size: .9375rem;
+}
+
+// Tableau qui défile seul sous 576 px. Il reçoit le focus pour se faire défiler au
+// clavier, le contour le montre.
+.tableau-site {
+  max-width: 48rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid $gray-200;
+  border-radius: $border-radius;
+
+  &:focus-visible {
+    outline: 3px solid $orange-action;
+    outline-offset: 2px;
+  }
+
+  caption {
+    padding: .75rem;
+    color: $gray-600;
+    caption-side: top;
+  }
+
+  tfoot th,
+  tfoot td {
+    border-bottom: 0;
+    color: $gray-900;
+  }
+}
+
+.liste-incluses {
+  margin: .25rem 0 0;
+  padding-left: 1rem;
+}
+
+.montant-htva {
+  display: block;
+  color: $gray-600;
+}
+
+.suivi__facture {
+  max-width: 48rem;
+}
+
+.suivi__facture-ligne {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .5rem 1rem;
+}
+
+.suivi__avis {
+  margin-top: 2rem;
+}

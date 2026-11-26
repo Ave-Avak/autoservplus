@@ -2,94 +2,91 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{intervention.validation.titre(${demande.numero()})} + ' | AutoServ+'">Validation | AutoServ+</title>
+    <title th:text="#{intervention.validation.titre(${demande.numero()})} + ' | ' + ${garageSite.enseigne()}">Validation | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
-
-<main id="contenu">
-    <p><a th:href="@{/mes-interventions/{ref}(ref=${demande.reference()})}"
+<main id="contenu" class="container page-membre" tabindex="-1">
+    <p class="page-membre__precedent"><a th:href="@{/mes-interventions/{ref}(ref=${demande.reference()})}"
           th:text="#{intervention.validation.retour}">Retour au suivi</a></p>
 
-    <h1 th:text="#{intervention.validation.entete}">Travaux supplémentaires à valider</h1>
-    <p th:text="#{intervention.validation.contexte(${demande.numero()}, ${demande.vehicule()})}">
+    <h1 class="page-membre__titre" th:text="#{intervention.validation.entete}">Travaux supplémentaires à valider</h1>
+    <p class="suivi__vehicule" th:text="#{intervention.validation.contexte(${demande.numero()}, ${demande.vehicule()})}">
         Intervention INT-2026-0001, VW Golf (1-ABC-123)
     </p>
 
-    <div class="message" role="note" th:text="#{intervention.validation.explication}">
+    <div class="alert alert-warning" role="note" th:text="#{intervention.validation.explication}">
         Le garage a constaté des travaux non prévus à votre devis initial.
     </div>
 
-    <div th:if="${demande.commentaireAdmin() != null}" class="message" role="note">
+    <div th:if="${demande.commentaireAdmin() != null}" class="alert alert-info" role="note">
         <strong th:text="#{intervention.suivi.message-garage}">Message du garage :</strong>
         <span th:text="${demande.commentaireAdmin()}">...</span>
     </div>
 
-    <h2 th:text="#{intervention.validation.soumis}">Travaux soumis à votre accord</h2>
-    <div class="defilement" tabindex="0" role="region" aria-labelledby="legende-intervention-validation">
-        <table class="tableau">
-            <caption id="legende-intervention-validation" class="texte-info" th:text="#{intervention.validation.legende}">Montants TVA comprise, montants hors TVA en regard.</caption>
+    <h2 class="suivi__titre" th:text="#{intervention.validation.soumis}">Travaux soumis à votre accord</h2>
+    <div class="table-responsive tableau-site" tabindex="0" role="region" aria-labelledby="legende-intervention-validation">
+        <table class="table mb-0">
+            <caption id="legende-intervention-validation" th:text="#{intervention.validation.legende}">Montants TVA comprise, montants hors TVA en regard.</caption>
             <thead>
                 <tr><th scope="col" th:text="#{intervention.validation.designation}">Désignation</th>
-                    <th scope="col" th:text="#{intervention.suivi.quantite}">Quantité</th>
-                    <th scope="col" th:text="#{intervention.validation.montant}">Montant TVA comprise</th>
-                    <th scope="col" th:text="#{intervention.validation.montant-htva}">Hors TVA</th></tr>
+                    <th scope="col" class="text-end" th:text="#{intervention.suivi.quantite}">Quantité</th>
+                    <th scope="col" class="text-end" th:text="#{intervention.validation.montant}">Montant TVA comprise</th>
+                    <th scope="col" class="text-end" th:text="#{intervention.validation.montant-htva}">Hors TVA</th></tr>
             </thead>
             <tbody>
                 <tr th:each="l : ${demande.lignesEnAttente()}">
                     <td th:text="${l.libelle()}">Remplacement plaquettes</td>
-                    <td th:text="${l.quantite()}">1</td>
-                    <td th:text="${l.totalTvac()}">107,69 €</td>
-                    <td th:text="${l.totalHtva()}">89,00 €</td>
+                    <td class="text-end chiffres" th:text="${l.quantite()}">1</td>
+                    <td class="text-end chiffres" th:text="${l.totalTvac()}">107,69 €</td>
+                    <td class="text-end chiffres" th:text="${l.totalHtva()}">89,00 €</td>
                 </tr>
             </tbody>
         </table>
     </div>
 
-    <h2 th:text="#{intervention.validation.recapitulatif}">Récapitulatif</h2>
-    <dl class="vehicule-details">
+    <h2 class="suivi__titre" th:text="#{intervention.validation.recapitulatif}">Récapitulatif</h2>
+    <dl class="fiche-rdv">
         <div>
             <dt th:text="#{intervention.validation.devis-initial}">Devis initial (accepté à la réservation)</dt>
-            <dd><span th:text="${demande.devisInitialTvac()}">59,29 €</span>
-                <small th:text="#{intervention.validation.hors-tva(${demande.devisInitialHtva()})}">soit 49,00 € hors TVA</small></dd>
+            <dd><span class="chiffres" th:text="${demande.devisInitialTvac()}">59,29 €</span>
+                <small class="montant-htva" th:text="#{intervention.validation.hors-tva(${demande.devisInitialHtva()})}">soit 49,00 € hors TVA</small></dd>
         </div>
         <div>
             <dt th:text="#{intervention.validation.supplement}">Supplément proposé</dt>
-            <dd><span th:text="${demande.ecartTvac()}">107,69 €</span>
-                <small th:text="#{intervention.validation.hors-tva(${demande.ecartHtva()})}">soit 89,00 € hors TVA</small></dd>
+            <dd><span class="chiffres" th:text="${demande.ecartTvac()}">107,69 €</span>
+                <small class="montant-htva" th:text="#{intervention.validation.hors-tva(${demande.ecartHtva()})}">soit 89,00 € hors TVA</small></dd>
         </div>
         <div>
             <dt th:text="#{intervention.validation.nouveau-total-tvac}">Montant à payer, TVA comprise, si vous acceptez</dt>
-            <dd><strong th:text="${demande.totalProposeTvac()}">166,98 €</strong>
-                <small th:text="#{intervention.validation.hors-tva(${demande.totalProposeHtva()})}">soit 138,00 € hors TVA</small></dd>
+            <dd><strong class="chiffres" th:text="${demande.totalProposeTvac()}">166,98 €</strong>
+                <small class="montant-htva" th:text="#{intervention.validation.hors-tva(${demande.totalProposeHtva()})}">soit 138,00 € hors TVA</small></dd>
         </div>
     </dl>
 
     <!--/* La confirmation du refus passe par confirmation.js : un gestionnaire onsubmit
          écrit dans l'attribut serait bloqué par la politique de sécurité du contenu. */-->
-    <div class="actions-page">
+    <div class="actions-rdv">
         <form th:action="@{/mes-interventions/{ref}/valider(ref=${demande.reference()})}" method="post">
-            <button type="submit" class="btn-cta" th:text="#{intervention.validation.accepter}">J'accepte ces travaux</button>
+            <button type="submit" class="btn btn-action btn-lg" th:text="#{intervention.validation.accepter}">J'accepte ces travaux</button>
         </form>
         <form th:action="@{/mes-interventions/{ref}/refuser(ref=${demande.reference()})}"
               method="post" class="formulaire-suppression"
               th:data-message="#{intervention.validation.refuser.confirmation}">
-            <button type="submit" class="lien-bouton texte-erreur" th:text="#{intervention.validation.refuser}">Je refuse</button>
+            <button type="submit" class="btn btn-link lien-danger" th:text="#{intervention.validation.refuser}">Je refuse</button>
         </form>
     </div>
 
-    <p class="texte-info" th:text="#{intervention.validation.refus-explication}">
+    <p class="form-text mt-3" th:text="#{intervention.validation.refus-explication}">
         En cas de refus, le garage réalisera uniquement les travaux de votre devis initial.
     </p>
 </main>
 
 <script th:src="@{/js/confirmation.js}"></script>
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>
