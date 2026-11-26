@@ -85,3 +85,34 @@
   min-height: 65px;
   margin-top: 1rem;
 }
+
+// Code du second facteur : champ étroit, chiffres espacés, le code se relit d'un coup d'œil.
+.champ-code {
+  max-width: 12rem;
+  letter-spacing: .1em;
+}
+
+// Repli replié sous le formulaire principal (codes de secours).
+.details-formulaire {
+  margin-top: 2rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid $gray-200;
+
+  summary {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.75rem;
+    color: $link-color;
+    font-weight: 600;
+    cursor: pointer;
+
+    &:hover {
+      color: $link-hover-color;
+      text-decoration: underline;
+    }
+  }
+
+  > p {
+    margin-top: .75rem;
+  }
+}
