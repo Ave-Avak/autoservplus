@@ -2,7 +2,7 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <title th:text="#{connexion.etape.second-facteur.titre} + ' | ' + (${garageSite != null} ? ${garageSite.enseigne()} : 'AutoServ+')">Code de vérification | Bielle Bleue</title>
+    <title th:text="#{connexion.etape.second-facteur.titre} + ' | ' + ${garageSite.enseigne()}">Code de vérification | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
     <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>

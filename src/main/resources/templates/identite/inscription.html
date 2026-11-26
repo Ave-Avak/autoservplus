@@ -2,7 +2,7 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8">
-  <title th:text="#{inscription.titre} + ' | ' + (${garageSite != null} ? ${garageSite.enseigne()} : 'AutoServ+')">Créer un compte | Bielle Bleue</title>
+  <title th:text="#{inscription.titre} + ' | ' + ${garageSite.enseigne()}">Créer un compte | Bielle Bleue</title>
   <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>

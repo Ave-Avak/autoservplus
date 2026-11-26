@@ -79,10 +79,10 @@
   display: none;
 }
 
-// Le widget Turnstile mesure 65 px de haut. La place est réservée avant son chargement
+// Le widget Turnstile mesure 65 px de haut (4,0625 rem). La place est réservée avant son chargement
 // pour que le bouton ne descende pas sous le pointeur.
 .cf-turnstile {
-  min-height: 65px;
+  min-height: 4.0625rem;
   margin-top: 1rem;
 }
 
