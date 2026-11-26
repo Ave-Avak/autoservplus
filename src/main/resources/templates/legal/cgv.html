@@ -3,18 +3,15 @@
       xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{legal.cgv.titre} + ' | AutoServ+'">Conditions générales de vente | AutoServ+</title>
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <title th:text="#{legal.cgv.titre} + ' | ' + ${garageSite.enseigne()}">Conditions générales de vente | Bielle Bleue</title>
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
-
-<main id="contenu">
-    <h1 th:text="#{legal.cgv.titre}">Conditions générales de vente</h1>
+<main id="contenu" class="container page-legal" tabindex="-1">
+    <h1 class="page-legal__titre" th:text="#{legal.cgv.titre}">Conditions générales de vente</h1>
 
     <div th:replace="~{fragments/legal :: brouillon}"></div>
 
@@ -125,6 +122,6 @@
     </nav>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

@@ -2,18 +2,15 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{garantie-legale.titre} + ' | AutoServ+'">Garantie légale | AutoServ+</title>
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <title th:text="#{garantie-legale.titre} + ' | ' + ${garageSite.enseigne()}">Garantie légale | Bielle Bleue</title>
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
-
-<main id="contenu">
-    <h1 th:text="#{garantie-legale.titre}">Garantie légale</h1>
+<main id="contenu" class="container page-legal" tabindex="-1">
+    <h1 class="page-legal__titre" th:text="#{garantie-legale.titre}">Garantie légale</h1>
 
     <p th:text="#{garantie-legale.intro}">Les pièces vendues par le garage bénéficient de la garantie légale de conformité.</p>
 
@@ -59,6 +56,6 @@
     </p>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

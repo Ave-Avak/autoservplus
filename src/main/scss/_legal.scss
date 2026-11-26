@@ -1,0 +1,104 @@
+// Pages légales : CGV et garantie légale. Le texte est versionné (F24) et ne se réécrit
+// pas pour la lecture, seule la structure se travaille : colonne d'environ 70 caractères,
+// intertitres qui ressortent, version en tête. Pas d'accordéon, qui cacherait une clause à
+// l'impression et à la recherche dans la page.
+
+.page-legal {
+  max-width: 46rem;
+  padding-top: 1rem;
+  padding-bottom: 3rem;
+
+  section {
+    margin-top: 2rem;
+  }
+
+  h2 {
+    margin-bottom: .75rem;
+    font-size: $h4-font-size;
+  }
+
+  h3 {
+    margin: 1.25rem 0 .5rem;
+    color: $gray-900;
+    font-size: 1.0625rem;
+    font-weight: 700;
+  }
+}
+
+.page-legal__titre {
+  margin-bottom: 1rem;
+  font-size: clamp(1.75rem, 1.4rem + 1.4vw, 2.25rem);
+  font-weight: 700;
+}
+
+.version-document {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem 1rem;
+  padding: .75rem 1rem;
+  border-left: 4px solid $marine;
+  background: $gray-100;
+  color: $gray-800;
+}
+
+// Fragments partagés avec les pages légales pas encore migrées, qui gardent l'ancienne
+// feuille : leurs classes gardent leur nom, la feuille du site les reprend.
+// Bannière de brouillon : brun foncé sur gris pâle, 6,8:1.
+.avis-brouillon {
+  margin-bottom: 1.5rem;
+  padding: 1rem 1.25rem;
+  border: 2px solid #92400E;
+  border-radius: $border-radius;
+  background: $gray-100;
+
+  h2 {
+    margin: 0 0 .5rem;
+    color: #92400E;
+    font-size: 1rem;
+    font-weight: 700;
+  }
+
+  p {
+    margin: 0;
+    color: $gray-700;
+  }
+}
+
+.identite-garage {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: .125rem 1.5rem;
+
+  @include media-breakpoint-up(sm) {
+    grid-template-columns: max-content 1fr;
+  }
+
+  dt {
+    color: $gray-700;
+    font-weight: 600;
+  }
+
+  dd {
+    margin: 0 0 .5rem;
+  }
+}
+
+// La figure reçoit du navigateur 40 px de marge de chaque côté : au téléphone, la notice
+// y perdait un quart de sa largeur.
+.notice-garantie {
+  margin: 1.5rem 0;
+
+  img {
+    display: block;
+    max-width: 100%;
+    height: auto;
+  }
+
+  summary {
+    min-height: 2.75rem;
+    padding-block: .5rem;
+    color: $link-color;
+    font-weight: 600;
+    cursor: pointer;
+  }
+}
