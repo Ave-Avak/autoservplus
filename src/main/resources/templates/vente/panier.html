@@ -93,6 +93,11 @@
             </table>
         </div>
 
+        <!--/* Moyens de paiement et délai annoncés avant que la commande ne lie le membre
+             (art. VI.46, § 3, CDE). Le délai est celui qu'applique l'annulation automatique. */-->
+        <p class="texte-info" id="moyens-paiement"
+           th:text="#{commande.moyens-paiement(${T(be.autoservplus.vente.service.ExpirationCommandesJob).DELAI_PAIEMENT.toMinutes()})}">
+            Paiement en ligne par Bancontact ou carte de crédit, dans les 30 minutes qui suivent la commande.</p>
         <p class="actions-page">
             <a class="btn-cta" th:href="@{/commande}" th:text="#{panier.action.commander}">Passer commande</a>
             <a th:href="@{/panier/vider}" th:text="#{panier.action.vider}">Vider le panier</a>

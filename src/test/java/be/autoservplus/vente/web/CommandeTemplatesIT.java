@@ -131,6 +131,20 @@ class CommandeTemplatesIT extends SocleIntegration {
     }
 
     @Test
+    @DisplayName("moyens de paiement et délai annoncés au panier et au récapitulatif, avant la commande")
+    void moyensDePaiementAnnonces() throws Exception {
+        remplirLePanier();
+        String phrase = "Paiement en ligne par Bancontact ou carte de crédit, dans les 30 minutes";
+
+        mvc.perform(get("/panier").locale(Locale.FRENCH))
+                .andExpect(content().string(containsString(phrase)));
+        mvc.perform(get("/commande").locale(Locale.FRENCH))
+                .andExpect(content().string(containsString(phrase)));
+        mvc.perform(get("/commande").param("lang", "nl"))
+                .andExpect(content().string(containsString("Bancontact of kredietkaart, binnen 30 minuten")));
+    }
+
+    @Test
     @DisplayName("la case des CGV est sur la même ligne que son libellé")
     void caseEnLigne() throws Exception {
         remplirLePanier();

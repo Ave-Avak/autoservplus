@@ -106,6 +106,11 @@
                 Sans cette case, vous conservez 14 jours pour vous rétracter.
             </p>
         </div>
+        <!--/* Moyens de paiement et délai annoncés avant que la commande ne lie le membre
+             (art. VI.46, § 3, CDE). Le délai est celui qu'applique l'annulation automatique. */-->
+        <p class="texte-info" id="moyens-paiement"
+           th:text="#{commande.moyens-paiement(${T(be.autoservplus.vente.service.ExpirationCommandesJob).DELAI_PAIEMENT.toMinutes()})}">
+            Paiement en ligne par Bancontact ou carte de crédit, dans les 30 minutes qui suivent la commande.</p>
         <p class="actions-page">
             <button type="submit" class="btn-cta"
                     th:text="#{commande.bouton}">Commande avec obligation de paiement</button>
