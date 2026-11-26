@@ -50,7 +50,11 @@ class GabaritDuSiteIT extends SocleIntegration {
     enum Etat { VISITEUR, MEMBRE, ADMINISTRATEUR, SUPER_ADMINISTRATEUR }
 
     /** Écrans servis dans le nouveau gabarit, liste qui grandit à chaque écran migré. */
-    static final List<String> ECRANS_MIGRES = List.of("/", "/services", "/pieces", "/accessoires", "/entretien", "/contact");
+    static final List<String> ECRANS_MIGRES = List.of("/", "/services", "/pieces", "/accessoires", "/entretien", "/contact",
+            "/inscription", "/inscription/confirmee");
+
+    /** Écrans de la rubrique Catalogue, seuls à marquer son entrée de menu. */
+    private static final List<String> LISTES_DU_CATALOGUE = List.of("/services", "/pieces", "/accessoires", "/entretien");
 
     private static final List<String> NAVIGATION_PRINCIPALE = List.of("Catalogue", "Prendre rendez-vous", "Contact");
 
@@ -133,17 +137,17 @@ class GabaritDuSiteIT extends SocleIntegration {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("ecrans")
-    @DisplayName("Catalogue marqué sur les quatre listes, Contact sur sa page, rien de marqué à l'accueil")
+    @DisplayName("Catalogue marqué sur les quatre listes, Contact sur sa page, rien de marqué ailleurs")
     void rubriqueMarquee(String ecran) throws Exception {
         Document page = ouvrir(ecran, Etat.VISITEUR);
         Element catalogue = page.selectFirst(".navigation-principale a[href=/catalogue]");
-        if (ecran.equals("/")) {
-            assertThat(page.select(".navigation-principale a[aria-current]")).isEmpty();
-        } else if (ecran.equals("/contact")) {
+        if (ecran.equals("/contact")) {
             assertThat(page.select(".navigation-principale a[aria-current]")).extracting(lien -> lien.attr("href"))
                     .containsExactly("/contact");
-        } else {
+        } else if (LISTES_DU_CATALOGUE.contains(ecran)) {
             assertThat(catalogue.attr("aria-current")).isEqualTo("true");
+        } else {
+            assertThat(page.select(".navigation-principale a[aria-current]")).as("rien de marqué sur " + ecran).isEmpty();
         }
     }
 

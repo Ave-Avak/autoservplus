@@ -2,24 +2,29 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{inscription.confirmee.titre} + ' | AutoServ+'">Vérifiez votre courriel | AutoServ+</title>
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <title th:text="#{inscription.confirmee.titre} + ' | ' + (${garageSite != null} ? ${garageSite.enseigne()} : 'AutoServ+')">Votre compte est presque prêt | Bielle Bleue</title>
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
-<header th:replace="~{fragments/entete :: entete}"></header>
-<main id="contenu">
-    <h1 th:text="#{inscription.confirmee.h1}">Votre compte est presque prêt</h1>
-    <div class="message message-succes" role="status">
+
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
+
+<main id="contenu" class="container page-formulaire" tabindex="-1">
+    <h1 class="page-formulaire__titre" th:text="#{inscription.confirmee.h1}">Votre compte est presque prêt</h1>
+    <div class="alert alert-success" role="status">
         <p th:if="${not #strings.isEmpty(adresse)}"><span th:text="#{inscription.confirmee.envoye}">Un courriel de vérification a été envoyé à</span>
             <strong th:text="${adresse}">adresse@exemple.be</strong>.</p>
         <p th:if="${#strings.isEmpty(adresse)}" th:text="#{inscription.confirmee.generique}">Si vous venez de créer un compte, un courriel de vérification vous a été envoyé.</p>
-        <p th:text="#{inscription.confirmee.lien}">Cliquez sur le lien qu'il contient pour activer votre compte.
+        <p class="mb-0" th:text="#{inscription.confirmee.lien}">Cliquez sur le lien qu'il contient pour activer votre compte.
             Le lien reste valable vingt-quatre heures.</p>
     </div>
-    <p><a th:href="@{/}" th:text="#{inscription.confirmee.accueil}">Retour à l'accueil</a></p>
+    <ul class="liens-formulaire">
+        <li><a th:href="@{/inscription/renvoyer-verification}"
+               th:text="#{verification.renvoi.lien}">Vous n'avez pas reçu l'e-mail de vérification ?</a></li>
+        <li><a th:href="@{/}" th:text="#{inscription.confirmee.accueil}">Retour à l'accueil</a></li>
+    </ul>
 </main>
-<div th:replace="~{fragments/pied :: pied}"></div>
+
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

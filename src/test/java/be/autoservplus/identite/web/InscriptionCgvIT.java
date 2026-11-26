@@ -42,7 +42,7 @@ class InscriptionCgvIT extends SocleIntegration {
 
     private static final AtomicInteger COMPTEUR = new AtomicInteger(1);
     private static final String MOT_DE_PASSE = "phrase de passe de la case des conditions";
-    private static final Pattern CASE_CGV = Pattern.compile("<input type=\"checkbox\" id=\"cgv\"[^>]*>");
+    private static final Pattern CASE_CGV = Pattern.compile("<input [^>]*type=\"checkbox\" id=\"cgv\"[^>]*>");
 
     @Autowired private MockMvc mvc;
     @Autowired private UtilisateurRepository utilisateurs;

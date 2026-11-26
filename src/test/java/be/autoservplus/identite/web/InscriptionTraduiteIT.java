@@ -66,7 +66,7 @@ class InscriptionTraduiteIT extends SocleIntegration {
                 .andExpect(status().isOk())
                 .andExpect(content().string(allOf(
                         containsString("<html lang=\"" + langue + "\""),
-                        containsString("<title>" + titre + " | AutoServ+</title>"),
+                        containsString("<title>" + titre + " | Bielle Bleue</title>"),
                         containsString(">" + prenom + "</label>"))));
     }
 
@@ -78,7 +78,7 @@ class InscriptionTraduiteIT extends SocleIntegration {
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
 
-        assertThat(page).contains("<option value=\"" + langue + "\" selected=\"selected\">");
+        assertThat(page).contains("<option value=\"" + langue + "\" lang=\"" + langue + "\" selected=\"selected\">");
         assertThat(page.split("selected=\"selected\"", -1)).hasSize(2);
     }
 
@@ -107,7 +107,7 @@ class InscriptionTraduiteIT extends SocleIntegration {
                         .flashAttrs(envoiFait.getFlashMap()))
                 .andExpect(status().isOk())
                 .andExpect(content().string(allOf(
-                        containsString("<title>" + titre + " | AutoServ+</title>"),
+                        containsString("<title>" + titre + " | Bielle Bleue</title>"),
                         containsString(envoye),
                         not(containsString("Votre compte est presque prêt")))));
     }
