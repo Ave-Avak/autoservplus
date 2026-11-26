@@ -3,6 +3,8 @@ package be.autoservplus.reservation.web;
 import be.autoservplus.common.exception.RefusTraduit;
 import be.autoservplus.common.web.RetourInterne;
 import be.autoservplus.intervention.service.HistoriqueEntretienService;
+import be.autoservplus.intervention.service.dto.CarnetEntretien;
+import be.autoservplus.intervention.web.CarnetEntretienJsonLd;
 import be.autoservplus.reservation.domain.Motorisation;
 import be.autoservplus.reservation.service.VehiculeService;
 import be.autoservplus.reservation.web.dto.VehiculeForm;
@@ -10,6 +12,10 @@ import be.autoservplus.reservation.web.dto.VehiculeVue;
 import jakarta.validation.Valid;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.ContentDisposition;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Controller;
@@ -18,6 +24,7 @@ import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.Locale;
 import java.util.UUID;
 
 /**
@@ -33,12 +40,14 @@ public class VehiculeController {
 
     private final VehiculeService service;
     private final HistoriqueEntretienService historiques;
+    private final CarnetEntretienJsonLd carnets;
     private final MessageSource messages;
 
     public VehiculeController(VehiculeService service, HistoriqueEntretienService historiques,
-                              MessageSource messages) {
+                              CarnetEntretienJsonLd carnets, MessageSource messages) {
         this.service = service;
         this.historiques = historiques;
+        this.carnets = carnets;
         this.messages = messages;
     }
 
@@ -55,6 +64,23 @@ public class VehiculeController {
                              Model modele) {
         modele.addAttribute("historique", historiques.pourMembre(reference, membre.getUsername()));
         return "reservation/vehicule-historique";
+    }
+
+    /**
+     * Carnet d'entretien du véhicule en JSON-LD (F42), en pièce jointe : le fichier est fait
+     * pour être remis à une autre application, pas lu dans le navigateur. Même règle d'accès
+     * que l'historique, 404 pour un véhicule d'autrui.
+     */
+    @GetMapping("/{reference}/carnet.jsonld")
+    public ResponseEntity<byte[]> carnet(@AuthenticationPrincipal UserDetails membre,
+                                         @PathVariable UUID reference,
+                                         Locale langue) {
+        CarnetEntretien carnet = historiques.carnetPourMembre(reference, membre.getUsername());
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType("application/ld+json;charset=UTF-8"))
+                .header(HttpHeaders.CONTENT_DISPOSITION, ContentDisposition.attachment()
+                        .filename(CarnetEntretienJsonLd.nomFichier(carnet)).build().toString())
+                .body(carnets.rediger(carnet, langue));
     }
 
     @GetMapping("/nouveau")

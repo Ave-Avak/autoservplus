@@ -19,6 +19,12 @@
     <h1 th:text="#{historique.titre}">Historique d'entretien</h1>
     <p><strong th:text="${historique.vehicule()}">VW Golf (1-ABC-123)</strong></p>
 
+    <p th:unless="${historique.interventions().isEmpty()}">
+        <a th:href="@{/mes-vehicules/{ref}/carnet.jsonld(ref=${historique.vehiculeReference()})}" download
+           th:text="#{historique.carnet.telecharger}">Télécharger le carnet d'entretien (JSON-LD)</a>
+        <br><span th:text="#{historique.carnet.aide}">Fichier au format ouvert schema.org.</span>
+    </p>
+
     <p th:if="${historique.interventions().isEmpty()}" class="message"
        th:text="#{historique.vide}">Aucune intervention n'a encore été réalisée sur ce véhicule.</p>
 

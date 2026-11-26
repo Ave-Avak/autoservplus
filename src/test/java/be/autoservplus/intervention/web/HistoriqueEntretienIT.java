@@ -52,6 +52,7 @@ import static org.springframework.security.test.web.servlet.request.SecurityMock
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -200,6 +201,48 @@ class HistoriqueEntretienIT extends SocleIntegration {
             mvc.perform(get("/mes-interventions/{ref}", intervention).with(marie()))
                     .andExpect(status().isOk())
                     .andExpect(content().string(not(containsString("NOTE-ATELIER-7f3c"))));
+        }
+    }
+
+    @Nested
+    @DisplayName("Carnet d'entretien en JSON-LD (F42)")
+    class Carnet {
+
+        @Test
+        @DisplayName("le propriétaire télécharge le carnet, sans la note interne, lien depuis l'historique")
+        void proprietaire() throws Exception {
+            mvc.perform(get("/mes-vehicules/{ref}/historique", golf).with(marie()).locale(Locale.FRENCH))
+                    .andExpect(content().string(containsString("/mes-vehicules/" + golf + "/carnet.jsonld")));
+
+            mvc.perform(get("/mes-vehicules/{ref}/carnet.jsonld", golf).with(marie()).locale(Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().contentTypeCompatibleWith("application/ld+json"))
+                    .andExpect(header().string("Content-Disposition", containsString("attachment")))
+                    .andExpect(content().string(containsString("\"@context\" : \"https://schema.org\"")))
+                    .andExpect(content().string(containsString(numero)))
+                    .andExpect(content().string(containsString("Vidange historique")))
+                    .andExpect(content().string(not(containsString("NOTE-ATELIER-7f3c"))));
+        }
+
+        @Test
+        @DisplayName("véhicule d'autrui ou inconnu : 404, comme l'historique")
+        void autrui() throws Exception {
+            mvc.perform(get("/mes-vehicules/{ref}/carnet.jsonld", clio).with(marie()))
+                    .andExpect(status().isNotFound());
+            mvc.perform(get("/mes-vehicules/{ref}/carnet.jsonld", UUID.randomUUID()).with(marie()))
+                    .andExpect(status().isNotFound());
+        }
+
+        @Test
+        @DisplayName("une intervention annulée sort du carnet")
+        void annuleeAbsente() throws Exception {
+            Intervention it = interventions.findByReference(intervention).orElseThrow();
+            it.annuler();
+            interventions.saveAndFlush(it);
+
+            mvc.perform(get("/mes-vehicules/{ref}/carnet.jsonld", golf).with(marie()))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(not(containsString(numero))));
         }
     }
 

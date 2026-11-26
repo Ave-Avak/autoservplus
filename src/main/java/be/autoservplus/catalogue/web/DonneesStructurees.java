@@ -107,10 +107,13 @@ public final class DonneesStructurees {
     }
 
     /**
-     * Le pays est écrit en code ISO et non repris de la configuration, qui le porte en
-     * toutes lettres pour la facture : la V1 ne sert que des garages belges.
+     * Le garage en nœud schema.org {@code AutoRepair}, sans contexte, pour l'insérer dans
+     * un autre document (le carnet d'entretien du membre, F42).
+     *
+     * <p>Le pays est écrit en code ISO et non repris de la configuration, qui le porte en
+     * toutes lettres pour la facture : la V1 ne sert que des garages belges.</p>
      */
-    private static Map<String, Object> garage(IdentiteGarage garage) {
+    public static Map<String, Object> garage(IdentiteGarage garage) {
         Map<String, Object> adresse = new LinkedHashMap<>();
         adresse.put("@type", "PostalAddress");
         poser(adresse, "streetAddress", joindre(garage.rue(), garage.numeroRue()));
