@@ -2,139 +2,136 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{profil.titre} + ' | AutoServ+'">Mon profil | AutoServ+</title>
+    <title th:text="#{profil.titre} + ' | ' + ${garageSite.enseigne()}">Mon profil | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
+<main id="contenu" class="container page-formulaire" tabindex="-1">
+    <h1 class="page-formulaire__titre" th:text="#{profil.titre}">Mon profil</h1>
 
-<main id="contenu">
-    <h1 th:text="#{profil.titre}">Mon profil</h1>
+    <p class="page-formulaire__intro" th:text="#{profil.connecte(${email})}">Connecté en tant que adresse@exemple.be.</p>
 
-    <p th:text="#{profil.connecte(${email})}">Connecté en tant que adresse@exemple.be.</p>
-
-    <div class="message message-succes" th:if="${enregistre}" role="status"
+    <div class="alert alert-success" th:if="${enregistre}" role="status"
          th:text="#{profil.enregistre}">Vos informations sont enregistrées.</div>
 
-    <div class="message message-succes" th:if="${motDePasseChange}" role="status"
+    <div class="alert alert-success" th:if="${motDePasseChange}" role="status"
          th:text="#{mot-de-passe-changement.enregistre}">Votre mot de passe est changé.</div>
 
     <!--/* Message NEUTRE : identique que l'adresse visée soit libre ou déjà prise. Le
          distinguer ferait du formulaire un oracle d'existence de compte. */-->
-    <div class="message message-succes" th:if="${demandeEnregistree}" role="status"
+    <div class="alert alert-success" th:if="${demandeEnregistree}" role="status"
          th:text="#{changement-email.demande-enregistree}">
         Si cette adresse peut être utilisée, un lien de confirmation vient d'y être envoyé.</div>
 
-    <form class="formulaire" th:action="@{/mon-profil}" th:object="${formulaire}" method="post">
+    <form th:action="@{/mon-profil}" th:object="${formulaire}" method="post">
         <input type="hidden" name="retour" th:if="${retour != null}" th:value="${retour}">
 
-        <div class="message message-erreur" th:if="${#fields.hasGlobalErrors()}" role="alert">
-            <p th:each="err : ${#fields.globalErrors()}" th:text="${err}">Erreur</p>
+        <div class="alert alert-danger" th:if="${#fields.hasGlobalErrors()}" role="alert">
+            <p class="mb-0" th:each="err : ${#fields.globalErrors()}" th:text="${err}">Erreur</p>
         </div>
 
-        <fieldset>
-            <legend th:text="#{profil.section.identite}">Identité</legend>
+        <fieldset class="bloc-formulaire">
+            <legend class="bloc-formulaire__titre" th:text="#{profil.section.identite}">Identité</legend>
 
-            <div class="champ">
-                <label for="prenom" th:text="#{profil.prenom}">Prénom</label>
-                <input type="text" id="prenom" th:field="*{prenom}" autocomplete="given-name" required>
-                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('prenom')}"
+            <div class="champ-site">
+                <label class="form-label" for="prenom" th:text="#{profil.prenom}">Prénom</label>
+                <input class="form-control" th:errorclass="is-invalid" type="text" id="prenom" th:field="*{prenom}" autocomplete="given-name" required>
+                <p role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('prenom')}"
                    th:errors="*{prenom}"></p>
             </div>
 
-            <div class="champ">
-                <label for="nom" th:text="#{profil.nom}">Nom</label>
-                <input type="text" id="nom" th:field="*{nom}" autocomplete="family-name" required>
-                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('nom')}"
+            <div class="champ-site">
+                <label class="form-label" for="nom" th:text="#{profil.nom}">Nom</label>
+                <input class="form-control" th:errorclass="is-invalid" type="text" id="nom" th:field="*{nom}" autocomplete="family-name" required>
+                <p role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('nom')}"
                    th:errors="*{nom}"></p>
             </div>
 
-            <div class="champ">
-                <label for="telephone" th:text="#{profil.telephone}">Téléphone</label>
-                <input type="tel" id="telephone" th:field="*{telephone}" autocomplete="tel">
-                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('telephone')}"
+            <div class="champ-site">
+                <label class="form-label" for="telephone" th:text="#{profil.telephone}">Téléphone</label>
+                <input class="form-control" th:errorclass="is-invalid" type="tel" id="telephone" th:field="*{telephone}" autocomplete="tel">
+                <p role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('telephone')}"
                    th:errors="*{telephone}"></p>
             </div>
         </fieldset>
 
-        <fieldset>
-            <legend th:text="#{profil.section.adresse}">Adresse</legend>
+        <fieldset class="bloc-formulaire">
+            <legend class="bloc-formulaire__titre" th:text="#{profil.section.adresse}">Adresse</legend>
             <!--/* L'adresse est complete ou vide : la facture exige rue, code postal et
                  localite ensemble (AR n°1, art. 5), et n'en imprime aucune si l'un
                  manque. Le dire ici evite une facture non conforme. */-->
-            <p class="texte-info" th:text="#{profil.adresse.aide}">
+            <p class="form-text" th:text="#{profil.adresse.aide}">
                 Rue, code postal et localité vont ensemble : renseignez-les tous les trois, ou aucun.</p>
 
-            <div class="champ">
-                <label for="rue" th:text="#{profil.rue}">Rue</label>
-                <input type="text" id="rue" th:field="*{rue}" autocomplete="address-line1">
-                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('rue')}"
+            <div class="champ-site">
+                <label class="form-label" for="rue" th:text="#{profil.rue}">Rue</label>
+                <input class="form-control" th:errorclass="is-invalid" type="text" id="rue" th:field="*{rue}" autocomplete="address-line1">
+                <p role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('rue')}"
                    th:errors="*{rue}"></p>
             </div>
 
-            <div class="champ">
-                <label for="numeroRue" th:text="#{profil.numero}">Numéro</label>
-                <input type="text" id="numeroRue" th:field="*{numeroRue}">
-                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('numeroRue')}"
+            <div class="champ-site">
+                <label class="form-label" for="numeroRue" th:text="#{profil.numero}">Numéro</label>
+                <input class="form-control" th:errorclass="is-invalid" type="text" id="numeroRue" th:field="*{numeroRue}">
+                <p role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('numeroRue')}"
                    th:errors="*{numeroRue}"></p>
             </div>
 
-            <div class="champ">
-                <label for="codePostal" th:text="#{profil.code-postal}">Code postal</label>
-                <input type="text" id="codePostal" th:field="*{codePostal}" autocomplete="postal-code">
-                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('codePostal')}"
+            <div class="champ-site">
+                <label class="form-label" for="codePostal" th:text="#{profil.code-postal}">Code postal</label>
+                <input class="form-control" th:errorclass="is-invalid" type="text" id="codePostal" th:field="*{codePostal}" autocomplete="postal-code">
+                <p role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('codePostal')}"
                    th:errors="*{codePostal}"></p>
             </div>
 
-            <div class="champ">
-                <label for="localite" th:text="#{profil.localite}">Localité</label>
-                <input type="text" id="localite" th:field="*{localite}" autocomplete="address-level2">
-                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('localite')}"
+            <div class="champ-site">
+                <label class="form-label" for="localite" th:text="#{profil.localite}">Localité</label>
+                <input class="form-control" th:errorclass="is-invalid" type="text" id="localite" th:field="*{localite}" autocomplete="address-level2">
+                <p role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('localite')}"
                    th:errors="*{localite}"></p>
             </div>
 
-            <div class="champ">
-                <label for="pays" th:text="#{profil.pays}">Pays</label>
-                <input type="text" id="pays" th:field="*{pays}" autocomplete="country-name">
-                <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('pays')}"
+            <div class="champ-site">
+                <label class="form-label" for="pays" th:text="#{profil.pays}">Pays</label>
+                <input class="form-control" th:errorclass="is-invalid" type="text" id="pays" th:field="*{pays}" autocomplete="country-name">
+                <p role="alert" class="invalid-feedback" th:if="${#fields.hasErrors('pays')}"
                    th:errors="*{pays}"></p>
             </div>
         </fieldset>
 
-        <fieldset>
-            <legend th:text="#{profil.section.preferences}">Préférences</legend>
+        <fieldset class="bloc-formulaire">
+            <legend class="bloc-formulaire__titre" th:text="#{profil.section.preferences}">Préférences</legend>
             <!--/* Les noms de langue ne sont PAS traduits : « Nederlands » s'ecrit
                  « Nederlands » dans les trois versions. Traduire le nom d'une langue
                  dans une langue qu'on ne comprend pas empeche precisement d'en sortir. */-->
-            <div class="champ">
-                <label for="langue" th:text="#{profil.langue}">Langue</label>
-                <select id="langue" th:field="*{langue}">
+            <div class="champ-site">
+                <label class="form-label" for="langue" th:text="#{profil.langue}">Langue</label>
+                <select class="form-select" id="langue" th:field="*{langue}">
                     <option th:each="l : ${langues}" th:value="${l}"
                             th:text="${l.name() == 'fr'} ? 'Français' : (${l.name() == 'nl'} ? 'Nederlands' : 'English')">Français</option>
                 </select>
-                <p class="texte-info" th:text="#{profil.langue.aide}">
+                <p class="form-text" th:text="#{profil.langue.aide}">
                     Ce choix vaut pour vos prochaines connexions et pour vos documents.</p>
             </div>
         </fieldset>
 
-        <p class="actions-page">
-            <button type="submit" class="btn-cta" th:text="#{profil.enregistrer}">Enregistrer</button>
-            <a th:href="@{/mon-compte}" th:text="#{profil.retour}">Retour à mon compte</a>
+        <p class="actions-formulaire">
+            <button type="submit" class="btn btn-action btn-lg" th:text="#{profil.enregistrer}">Enregistrer</button>
+            <a class="btn btn-outline-primary btn-lg" th:href="@{/mon-compte}" th:text="#{profil.retour}">Retour à mon compte</a>
         </p>
     </form>
 
-    <section>
-        <h2 th:text="#{profil.section.connexion}">Connexion et sécurité</h2>
+    <section class="mt-5">
+        <h2 class="titre-section" th:text="#{profil.section.connexion}">Connexion et sécurité</h2>
         <!--/* L'adresse de courriel n'est PAS un champ de ce formulaire : elle est
          l'identifiant de connexion, et la changer exige de prouver la nouvelle
          avant de basculer. Un parcours distinct, donc, et non un champ de plus
          que l'on enregistrerait avec le reste. */-->
-        <ul>
+        <ul class="liens-formulaire">
             <li><a th:href="@{/mon-profil/adresse}" th:text="#{changement-email.lien}">Changer mon adresse de courriel</a></li>
             <li><a th:href="@{/mon-profil/mot-de-passe}" th:text="#{mot-de-passe-changement.lien}">Changer mon mot de passe</a></li>
             <li><a th:href="@{/mon-profil/securite}" th:text="#{securite.lien}">Vérification en deux étapes</a></li>
@@ -142,6 +139,6 @@
     </section>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

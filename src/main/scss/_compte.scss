@@ -1,0 +1,86 @@
+// Espace du compte : tableau de bord, profil, sécurité et suppression du compte.
+
+// Conséquences de la suppression, lues avant le formulaire : une par ligne, espacées pour
+// qu'aucune ne se perde dans un bloc.
+.effets-suppression {
+  margin: 0 0 1.5rem;
+  padding-left: 1.25rem;
+
+  li + li {
+    margin-top: .375rem;
+  }
+}
+
+// Tableau du compte : une carte par fonction, toute la carte est le lien.
+.grille-compte {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 16rem), 1fr));
+  gap: 1rem;
+  margin: 1.5rem 0 2.5rem;
+  padding: 0;
+  list-style: none;
+}
+
+.carte-compte {
+  display: flex;
+  flex-direction: column;
+  gap: .375rem;
+  height: 100%;
+  padding: 1.25rem;
+  border: 1px solid $gray-200;
+  border-radius: $border-radius;
+  background: $white;
+  color: $gray-700;
+  text-decoration: none;
+
+  &:hover {
+    border-color: $marine;
+    box-shadow: 0 .25rem 1rem rgba($marine, .1);
+  }
+
+  &:hover .carte-compte__titre {
+    text-decoration: underline;
+  }
+}
+
+.carte-compte__titre {
+  display: block;
+  color: $marine;
+  font-size: $h5-font-size;
+  font-weight: 700;
+}
+
+.carte-compte__texte {
+  display: block;
+  font-size: .9375rem;
+}
+
+// Droits sur les données, à part, sous un trait : liens simples, la suppression en rouge.
+.liens-donnees {
+  max-width: 48rem;
+  margin: 0;
+  padding: 1.5rem 0 0;
+  border-top: 1px solid $gray-200;
+  list-style: none;
+
+  li + li {
+    margin-top: 1rem;
+  }
+
+  a {
+    display: block;
+    text-decoration: none;
+
+    &:hover .carte-compte__titre {
+      text-decoration: underline;
+    }
+  }
+
+  .carte-compte__texte {
+    color: $gray-600;
+  }
+
+  .lien-danger .carte-compte__titre {
+    color: inherit;
+  }
+}

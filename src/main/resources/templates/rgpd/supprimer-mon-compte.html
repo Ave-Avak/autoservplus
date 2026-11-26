@@ -2,31 +2,28 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{suppression.titre} + ' | AutoServ+'">Supprimer mon compte | AutoServ+</title>
+    <title th:text="#{suppression.titre} + ' | ' + ${garageSite.enseigne()}">Supprimer mon compte | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
+<main id="contenu" class="container page-formulaire" tabindex="-1">
+    <h1 class="page-formulaire__titre" th:text="#{suppression.titre}">Supprimer mon compte</h1>
 
-<main id="contenu">
-    <h1 th:text="#{suppression.titre}">Supprimer mon compte</h1>
+    <div class="alert alert-danger" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
 
-    <div class="message message-erreur" th:if="${erreur}" role="alert" th:text="${erreur}">Erreur</div>
-
-    <p th:text="#{suppression.explication}">
+    <p class="page-formulaire__intro" th:text="#{suppression.explication}">
         Vous exercez votre droit à l'effacement (article 17 du RGPD).
     </p>
 
     <!--/* Dire ce qui est conservé AVANT l'action, pas après : une confirmation qui
          annoncerait « tout est effacé » serait fausse, et la personne découvrirait
          la conservation comptable au pire moment. */-->
-    <h2 th:text="#{suppression.effets.titre}">Ce qui se passe</h2>
-    <ul>
+    <h2 class="titre-section" th:text="#{suppression.effets.titre}">Ce qui se passe</h2>
+    <ul class="effets-suppression">
         <li th:text="#{suppression.effets.donnees}">Vos données personnelles sont effacées.</li>
         <li th:text="#{suppression.effets.acces}">Votre accès est révoqué immédiatement.</li>
         <li th:text="#{suppression.effets.vehicules}">Vos véhicules sont supprimés ou anonymisés.</li>
@@ -38,43 +35,45 @@
 
     <!--/* Rappel non bloquant de portabilité : proposer l'export F22 avant un
          effacement définitif est la bonne pratique, pas une étape obligatoire. */-->
-    <p class="texte-info">
+    <p class="alert alert-info">
         <span th:text="#{suppression.export.rappel}">Pensez à exporter vos données avant.</span>
         <a th:href="@{/mes-donnees}" th:text="#{suppression.export.lien}">Exporter mes données</a>
     </p>
 
-    <form class="formulaire" th:action="@{/supprimer-mon-compte}" method="post" novalidate>
-        <div class="champ">
-            <label for="motDePasse" th:text="#{suppression.champ.mot-de-passe}">Mot de passe</label>
-            <input type="password" id="motDePasse" name="motDePasse" required
+    <form th:action="@{/supprimer-mon-compte}" method="post" novalidate>
+        <div class="champ-site">
+            <label class="form-label" for="motDePasse" th:text="#{suppression.champ.mot-de-passe}">Mot de passe</label>
+            <input class="form-control" type="password" id="motDePasse" name="motDePasse" required
                    autocomplete="current-password" aria-describedby="aide-mot-de-passe">
-            <p id="aide-mot-de-passe" class="texte-info" th:text="#{suppression.aide.mot-de-passe}">
+            <p id="aide-mot-de-passe" class="form-text" th:text="#{suppression.aide.mot-de-passe}">
                 Votre mot de passe est redemandé : une session ouverte ne suffit pas.
             </p>
         </div>
 
-        <div class="champ">
-            <label for="confirmation"
+        <div class="champ-site">
+            <label class="form-label" for="confirmation"
                    th:text="#{suppression.champ.confirmation(${motDeConfirmation})}">
                 Tapez SUPPRIMER pour confirmer
             </label>
-            <input type="text" id="confirmation" name="confirmation" required
+            <input class="form-control champ-code" type="text" id="confirmation" name="confirmation" required
                    autocomplete="off" spellcheck="false" aria-describedby="aide-confirmation">
-            <p id="aide-confirmation" class="texte-info"
+            <p id="aide-confirmation" class="form-text"
                th:text="#{suppression.aide.confirmation(${motDeConfirmation})}">
                 Recopiez exactement le mot, en majuscules.
             </p>
         </div>
 
-        <p class="actions-page">
-            <button type="submit" class="btn-cta" th:text="#{suppression.bouton}">
+        <p class="actions-formulaire">
+            <!--/* Rouge et non orange : l'orange appelle l'action attendue de la page, celle-ci
+                 est destructive. Blanc sur rouge 600 : 4,8:1. */-->
+            <button type="submit" class="btn btn-danger btn-lg" th:text="#{suppression.bouton}">
                 Supprimer définitivement mon compte
             </button>
-            <a th:href="@{/mon-compte}" th:text="#{suppression.annuler}">Annuler</a>
+            <a class="btn btn-outline-primary btn-lg" th:href="@{/mon-compte}" th:text="#{suppression.annuler}">Annuler</a>
         </p>
     </form>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>

@@ -2,23 +2,20 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{suppression.confirmee.titre} + ' | AutoServ+'">Compte supprimé | AutoServ+</title>
+    <title th:text="#{suppression.confirmee.titre} + ' | ' + ${garageSite.enseigne()}">Compte supprimé | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
-
 <!--/* Navigation publique : la session vient d'être invalidée, il n'y a plus de
      « Mon compte » ni de bouton de déconnexion à proposer. */-->
-<header th:replace="~{fragments/entete :: entete}"></header>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<main id="contenu">
-    <h1 th:text="#{suppression.confirmee.titre}">Votre compte a été supprimé</h1>
+<main id="contenu" class="container page-formulaire" tabindex="-1">
+    <h1 class="page-formulaire__titre" th:text="#{suppression.confirmee.titre}">Votre compte a été supprimé</h1>
 
-    <div class="message message-succes" role="status" th:text="#{suppression.confirmee.message}">
+    <div class="alert alert-success" role="status" th:text="#{suppression.confirmee.message}">
         Vos données personnelles ont été effacées et votre accès révoqué.
     </div>
 
@@ -34,11 +31,11 @@
         Vous pouvez créer un nouveau compte avec la même adresse.
     </p>
 
-    <p class="actions-page">
-        <a th:href="@{/}" th:text="#{suppression.confirmee.accueil}">Retour à l'accueil</a>
+    <p class="actions-formulaire">
+        <a class="btn btn-outline-primary" th:href="@{/}" th:text="#{suppression.confirmee.accueil}">Retour à l'accueil</a>
     </p>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>
