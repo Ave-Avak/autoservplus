@@ -15,6 +15,8 @@ import be.autoservplus.reservation.domain.Vehicule;
 import be.autoservplus.reservation.repository.VehiculeRepository;
 import be.autoservplus.support.MembresDeTest;
 import be.autoservplus.support.SocleIntegration;
+import org.jsoup.Jsoup;
+import org.jsoup.nodes.Document;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -222,6 +224,21 @@ class PrestationALHeureIT extends SocleIntegration {
                     .andExpect(content().string(containsString("Taux horaire appliqué par")))
                     .andExpect(content().string(not(containsString("/mes-rendez-vous/nouveau?prestation="))))
                     .andExpect(content().string(not(containsString("/panier/ajouter-service"))));
+        }
+
+        @Test
+        @DisplayName("la liste publique annonce le taux au-dessus de la grille, sans carte pour lui")
+        void listePublique() throws Exception {
+            Prestation mainDOeuvre = prestation(suffixe + "-MOL", UnitePrestation.HEURE);
+            Prestation vidange = prestation(suffixe + "-VIDL", UnitePrestation.FORFAIT);
+
+            String page = mvc.perform(get("/services").locale(Locale.FRENCH))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            Document liste = Jsoup.parse(page);
+            assertThat(liste.select(".carte-article a[href$=" + mainDOeuvre.getReference() + "]")).isEmpty();
+            assertThat(liste.select(".carte-article a[href$=" + vidange.getReference() + "]")).hasSize(1);
+            assertThat(liste.select(".catalogue__taux").text())
+                    .contains(mainDOeuvre.getLibelle() + " : 78,65 € TVAC de l'heure, soit 65,00 € HTVA");
         }
 
         @Test
