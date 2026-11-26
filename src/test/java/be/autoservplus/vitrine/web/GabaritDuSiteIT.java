@@ -155,7 +155,8 @@ class GabaritDuSiteIT extends SocleIntegration {
         Document page = ouvrir(ecran, Etat.VISITEUR);
         assertThat(page.select(".btn-action")).hasSizeLessThanOrEqualTo(1);
         assertThat(page.select(".bandeau-garage a[href^=tel:]")).hasSize(1);
-        assertThat(page.select(".bandeau-garage .horaires-resume li")).isNotEmpty();
+        assertThat(page.selectFirst(".bandeau-garage__etat span").text())
+                .as("état du jour au bandeau").containsPattern("\\d{2}:\\d{2}");
         assertThat(page.selectFirst(".mention-demonstration")).as("mention des profils de démonstration").isNotNull();
 
         Element pied = page.selectFirst("footer.pied-site");

@@ -80,16 +80,11 @@ a {
   font-variant-numeric: tabular-nums;
 }
 
-.horaires-resume {
-  gap: .25rem 1.25rem;
+.bandeau-garage__etat {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .25rem .75rem;
   margin: 0;
-  padding: 0;
-  list-style: none;
-  color: $pied-texte;
-}
-
-.horaires-resume li {
-  white-space: nowrap;
 }
 
 .horaires-resume__jours {
