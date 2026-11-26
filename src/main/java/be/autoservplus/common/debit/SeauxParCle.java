@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -29,7 +30,8 @@ import java.util.concurrent.TimeUnit;
  * combat. Une clé sans demande depuis la plus longue période de ses limites a un seau plein,
  * donc équivalent à une clé absente : elle est retirée quand la carte atteint son plafond.
  * Si la carte reste pleine, la décision le dit ({@link Decision#saturee()}) et l'appelant
- * choisit ce qu'il protège.</p>
+ * choisit ce qu'il protège. Le balayage parcourt toute la carte : il a lieu au plus une fois
+ * par seconde, sinon une carte pleine coûterait un parcours complet à chaque requête.</p>
  *
  * <p>L'horloge est celle de l'application, pour que les tests avancent le temps sans
  * attendre. Compteurs par instance, perdus au redémarrage : le déploiement ne lance qu'une
@@ -43,6 +45,9 @@ public final class SeauxParCle {
     private final Clock horloge;
     private final TimeMeter mesure;
     private final Map<String, Entree> seaux = new ConcurrentHashMap<>();
+    private final AtomicReference<Instant> prochainBalayage = new AtomicReference<>(Instant.MIN);
+
+    static final Duration INTERVALLE_BALAYAGE = Duration.ofSeconds(1);
 
     public SeauxParCle(List<Limite> limites, int clesMax, Clock horloge) {
         if (limites.isEmpty()) {
@@ -60,7 +65,7 @@ public final class SeauxParCle {
     public Decision consommer(String cle) {
         Instant maintenant = horloge.instant();
         if (!seaux.containsKey(cle) && seaux.size() >= clesMax) {
-            seaux.values().removeIf(entree -> entree.inactiveDepuis(maintenant, retention));
+            balayerSiPermis(maintenant);
             if (seaux.size() >= clesMax) {
                 return Decision.SATUREE;
             }
@@ -71,6 +76,15 @@ public final class SeauxParCle {
         return sonde.isConsumed()
                 ? Decision.ACCEPTEE
                 : Decision.refusee(Duration.ofNanos(sonde.getNanosToWaitForRefill()));
+    }
+
+    private void balayerSiPermis(Instant maintenant) {
+        Instant prevu = prochainBalayage.get();
+        if (maintenant.isBefore(prevu)
+                || !prochainBalayage.compareAndSet(prevu, maintenant.plus(INTERVALLE_BALAYAGE))) {
+            return;
+        }
+        seaux.values().removeIf(entree -> entree.inactiveDepuis(maintenant, retention));
     }
 
     int nombreDeCles() {

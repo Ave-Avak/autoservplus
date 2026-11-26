@@ -101,4 +101,14 @@ class LimiteurDemandesCourrielTest {
             assertThat(limiteur.autoriser("alex@exemple.be", IP)).isTrue();
         }
     }
+
+    @Test
+    @DisplayName("deux IPv6 du même réseau /64 partagent le budget de l'IP")
+    void ipv6ParReseau() {
+        for (int i = 0; i < 20; i++) {
+            limiteur.autoriserParIp("2001:db8:1:2::" + Integer.toHexString(i + 1));
+        }
+        assertThat(limiteur.autoriserParIp("2001:db8:1:2:abcd::1")).isFalse();
+        assertThat(limiteur.autoriserParIp("2001:db8:1:3::1")).isTrue();
+    }
 }

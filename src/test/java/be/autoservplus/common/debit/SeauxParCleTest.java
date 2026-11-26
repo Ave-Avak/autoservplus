@@ -91,4 +91,23 @@ class SeauxParCleTest {
         assertThat(seaux.consommer("c").acceptee()).isTrue();
         assertThat(seaux.nombreDeCles()).isEqualTo(1);
     }
+
+    @Test
+    @DisplayName("carte pleine : un seul balayage par seconde, même sous un flot de clés nouvelles")
+    void balayageEspace() {
+        SeauxParCle seaux = new SeauxParCle(List.of(new Limite(1, Duration.ofMillis(100))), 2, horloge);
+        seaux.consommer("a");
+        seaux.consommer("b");
+        horloge.avancer(Duration.ofMillis(200));
+        assertThat(seaux.consommer("c").acceptee()).as("premier balayage").isTrue();
+        seaux.consommer("d");
+
+        horloge.avancer(Duration.ofMillis(200));
+        assertThat(seaux.consommer("e").saturee())
+                .as("c et d sont inactives, mais le balayage précédent date de moins d'une seconde")
+                .isTrue();
+
+        horloge.avancer(SeauxParCle.INTERVALLE_BALAYAGE);
+        assertThat(seaux.consommer("e").acceptee()).isTrue();
+    }
 }

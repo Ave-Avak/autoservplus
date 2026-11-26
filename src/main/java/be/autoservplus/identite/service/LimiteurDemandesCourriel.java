@@ -51,6 +51,9 @@ import java.util.Locale;
  * deux compteurs sont consommes a chaque demande, meme si le premier refuse deja :
  * sans cela, marteler une seule adresse ne couterait rien au budget de l IP.</p>
  *
+ * <p>Une IPv6 est comptée par /64, comme à la connexion : un abonné en reçoit au moins un,
+ * et changer d'adresse dans son propre réseau ne rouvre pas de budget ni ne remplit la carte.</p>
+ *
  * <p>L adresse n est pas conservee en clair mais sous forme d empreinte : rien ne
  * justifie de tenir en memoire la liste des adresses soumises par des inconnus. Elle
  * est normalisee avant, pour qu une variante de casse ne rouvre pas un quota.</p>
@@ -123,7 +126,7 @@ public class LimiteurDemandesCourriel {
      */
     public boolean autoriser(String adresse, String ip) {
         boolean adresseSousPlafond = consommer(parAdresse, empreinte(adresse));
-        boolean ipSousPlafond = consommer(parIp, ip == null ? "?" : ip);
+        boolean ipSousPlafond = consommer(parIp, GardeConnexion.cleIp(ip));
         if (!adresseSousPlafond || !ipSousPlafond) {
             // Ni l adresse ni son empreinte : une trace d exploitation n a pas besoin
             // de porter une donnee personnelle pour etre utile.
@@ -143,7 +146,7 @@ public class LimiteurDemandesCourriel {
      * balayage d adresses depuis une meme source reste borne par le plafond d IP.</p>
      */
     public boolean autoriserParIp(String ip) {
-        boolean sousPlafond = consommer(parIp, ip == null ? "?" : ip);
+        boolean sousPlafond = consommer(parIp, GardeConnexion.cleIp(ip));
         if (!sousPlafond) {
             JOURNAL.info("Inscription refusee, plafond d inscriptions par IP atteint.");
         }
