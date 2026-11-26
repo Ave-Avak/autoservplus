@@ -2,22 +2,19 @@
 <html th:lang="${#locale.language}" lang="fr" xmlns:th="http://www.thymeleaf.org">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title th:text="#{retractation.confirmer.titre} + ' | AutoServ+'">Confirmer la rétractation | AutoServ+</title>
+    <title th:text="#{retractation.confirmer.titre} + ' | ' + ${garageSite.enseigne()}">Confirmer la rétractation | Bielle Bleue</title>
     <meta name="robots" content="noindex, nofollow">
-    <link rel="stylesheet" th:href="@{/css/autoservplus.css}">
+    <th:block th:replace="~{fragments/site :: ressources}"></th:block>
 </head>
 <body>
 
-<a class="lien-evitement" href="#contenu" th:text="#{accessibilite.evitement}">Aller au contenu principal</a>
+<th:block th:replace="~{fragments/site :: entete}"></th:block>
 
-<header th:replace="~{fragments/entete :: entete}"></header>
+<main id="contenu" class="container page-formulaire" tabindex="-1">
+    <h1 class="page-formulaire__titre" th:text="#{retractation.confirmer.titre}">Confirmer la rétractation</h1>
+    <p class="page-formulaire__intro" th:text="#{retractation.etape.confirmation}">Étape 2 sur 2 : vérifiez votre déclaration, puis confirmez-la.</p>
 
-<main id="contenu">
-    <h1 th:text="#{retractation.confirmer.titre}">Confirmer la rétractation</h1>
-    <p th:text="#{retractation.etape.confirmation}">Étape 2 sur 2 : vérifiez votre déclaration, puis confirmez-la.</p>
-
-    <dl class="vehicule-details">
+    <dl class="fiche-rdv">
         <div>
             <dt th:text="#{retractation.declaration.nom}">Nom</dt>
             <dd th:text="${declaration.nomMembre()}">Marie Dupont</dd>
@@ -40,7 +37,7 @@
         </div>
     </dl>
 
-    <p class="texte-info" th:text="#{retractation.confirmer.effet}">
+    <p class="form-text" th:text="#{retractation.confirmer.effet}">
         Votre rétractation est enregistrée dès que vous la confirmez.
     </p>
 
@@ -49,14 +46,14 @@
            déclaration est relue côté serveur. */-->
     <form th:action="@{/commandes/{ref}/annulation(ref=${declaration.reference()})}" method="post">
         <input type="hidden" name="motif" th:value="${formulaire.motif}">
-        <p class="actions-page">
-            <button type="submit" class="btn-cta" th:text="#{retractation.confirmer}">Confirmer la rétractation</button>
-            <a th:href="@{/commandes/{ref}/annulation(ref=${declaration.reference()})}"
+        <p class="actions-formulaire">
+            <button type="submit" class="btn btn-action btn-lg" th:text="#{retractation.confirmer}">Confirmer la rétractation</button>
+            <a class="btn btn-outline-primary btn-lg" th:href="@{/commandes/{ref}/annulation(ref=${declaration.reference()})}"
                th:text="#{retractation.modifier}">Modifier ma déclaration</a>
         </p>
     </form>
 </main>
 
-<div th:replace="~{fragments/pied :: pied}"></div>
+<th:block th:replace="~{fragments/site :: pied}"></th:block>
 </body>
 </html>
