@@ -593,6 +593,28 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
     }
 
     /**
+     * Heures des prochains créneaux de l'accueil : du texte, ni lien ni apparence de bouton
+     * (fond, bordure), puisque le formulaire ne reçoit pas l'heure choisie.
+     */
+    @Test
+    @DisplayName("créneaux de l'accueil : des heures en texte, sans apparence de bouton")
+    void heuresDeLAccueilEnTexte() {
+        navigateur.parcourir("heures-accueil", LARGE, null, contexte -> {
+            Page page = contexte.newPage();
+            page.navigate("/");
+            Locator heures = page.locator(".carte-creneaux__heures li");
+            assertThat(heures.count()).as("créneaux semés").isGreaterThan(0);
+            @SuppressWarnings("unchecked")
+            Map<String, Object> style = (Map<String, Object>) heures.first().evaluate("""
+                    e => { const s = getComputedStyle(e);
+                           return {fond: s.backgroundColor, bordure: s.borderTopWidth, liens: e.querySelectorAll('a, button').length}; }""");
+            assertThat(style.get("fond")).isEqualTo("rgba(0, 0, 0, 0)");
+            assertThat(style.get("bordure")).isEqualTo("0px");
+            assertThat(((Number) style.get("liens")).intValue()).isZero();
+        });
+    }
+
+    /**
      * Les libellés néerlandais sont plus longs : les écrans du gabarit du site, en
      * néerlandais à 320 px, ne débordent pas (un mot composé dans un titre faisait défiler
      * la page de quatre pixels).
