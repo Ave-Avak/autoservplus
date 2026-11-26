@@ -1,10 +1,66 @@
+@use "sass:map";
+
 // Feuille du site, compilée au build (CompilationFeuilleDeStyle) vers static/css/site.css.
 // Ordre imposé par Bootstrap 5.3 : les variables du thème avant son import, les règles
 // propres après.
+//
+// Bootstrap module par module, dans l'ordre de son propre bootstrap.scss, et seulement les
+// modules que les gabarits emploient ou emploieront en I3 (formulaires, tableaux,
+// pagination, alertes, fenêtre de confirmation). La feuille complète bloquait le premier
+// rendu sur un téléphone : 248 Ko, dont la plus grande part jamais appliquée (Lighthouse
+// du 2026-11-26). Écartés : groupes de boutons, cartes, accordéon, fil d'Ariane, barres de
+// progression, listes, notifications, infobulles, carrousel, indicateurs de chargement,
+// espaces réservés. Un module se rajoute ici le jour où un gabarit l'emploie.
 
 @import "theme";
 @import "icones";
-@import "bootstrap";
+
+@import "functions";
+@import "variables";
+@import "variables-dark";
+@import "maps";
+@import "mixins";
+@import "utilities";
+
+@import "root";
+@import "reboot";
+@import "type";
+@import "images";
+@import "containers";
+@import "grid";
+@import "tables";
+@import "forms";
+@import "buttons";
+@import "transitions";
+@import "dropdown";
+@import "nav";
+@import "navbar";
+@import "pagination";
+@import "badge";
+@import "alert";
+@import "close";
+@import "modal";
+@import "offcanvas";
+
+@import "helpers";
+
+// Utilitaires : affichage, flexbox, marges, espacements, alignement du texte, graisse et
+// largeur, que les gabarits emploient. Les autres familles (couleurs, ombres, bordures,
+// arrondis, opacité, position, débordement, tailles de police) sont retirées avant que
+// l'API ne génère leurs classes, la feuille du site les écrit elle-même.
+$utilities: map.remove($utilities,
+  "align", "opacity", "overflow", "overflow-x", "overflow-y", "shadow", "focus-ring",
+  "focus-ring-color", "position", "top", "bottom", "start", "end", "translate-middle",
+  "border", "border-top", "border-end", "border-bottom", "border-start", "border-color",
+  "subtle-border-color", "border-width", "border-opacity", "max-width", "viewport-width",
+  "min-viewport-width", "max-height", "viewport-height", "min-viewport-height", "object-fit",
+  "font-family", "font-size", "font-style", "line-height", "text-decoration",
+  "text-transform", "white-space", "word-wrap", "color", "text-opacity", "text-color",
+  "background-color", "bg-opacity", "subtle-background-color", "gradient", "user-select",
+  "pointer-events", "rounded", "rounded-top", "rounded-end", "rounded-bottom",
+  "rounded-start", "visibility", "z-index", "link-opacity", "link-offset",
+  "link-underline", "link-underline-opacity");
+@import "utilities/api";
 @import "polices";
 @import "base";
 @import "composants";
