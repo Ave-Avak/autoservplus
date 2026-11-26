@@ -89,14 +89,14 @@ class RayonsCatalogueIT extends SocleIntegration {
     @DisplayName("les onglets se traduisent")
     void ongletsTraduits() throws Exception {
         assertThat(Jsoup.parse(ouvrir("/entretien", Locale.of("nl"))).select("nav.onglets-catalogue").text())
-                .isEqualTo("Diensten Auto-onderdelen Accessoires Onderhoud");
+                .isEqualTo("Diensten Auto-onderdelen Accessoires Onderhoudsproducten");
         assertThat(Jsoup.parse(ouvrir("/services", Locale.ENGLISH)).select("nav.onglets-catalogue").text())
-                .isEqualTo("Services Car parts Accessories Car care");
+                .isEqualTo("Services Car parts Accessories Car care products");
     }
 
     @ParameterizedTest(name = "fiche de {1} : {0}, lien canonique et fil d'Ariane")
     @CsvSource({
-            "ZQY-P, pieces, Pièces détachées",
+            "ZQY-P, pieces, Pièces auto",
             "ZQY-A, accessoires, Accessoires",
             "ZQY-E, entretien, Produits d'entretien"})
     void ficheSousSonRayon(String referenceFabricant, String prefixe, String liste) throws Exception {
@@ -147,7 +147,7 @@ class RayonsCatalogueIT extends SocleIntegration {
         assertThat(page.select("main section")).extracting(section -> section.id())
                 .containsExactly("pieces", "accessoires", "entretien");
         assertThat(page.select("#accessoires a").attr("href")).isEqualTo("/accessoires/" + reference("ZQY-A"));
-        assertThat(page.select("#entretien h2").text()).isEqualTo("Entretien (1)");
+        assertThat(page.select("#entretien h2").text()).isEqualTo("Produits d'entretien (1)");
     }
 
     private String ouvrir(String adresse, Locale langue) throws Exception {
