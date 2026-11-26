@@ -112,6 +112,16 @@
   }
 }
 
+// Taux horaire de l'atelier, au-dessus de la grille des forfaits.
+.catalogue__taux {
+  margin-bottom: 1rem;
+  padding: .75rem 1rem;
+  color: $gray-700;
+  background: $gray-100;
+  border: 1px solid $gray-200;
+  border-radius: $border-radius;
+}
+
 .catalogue__vide {
   padding: 2rem;
   color: $gray-600;

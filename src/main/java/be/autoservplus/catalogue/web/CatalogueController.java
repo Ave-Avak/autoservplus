@@ -53,10 +53,15 @@ public class CatalogueController {
 
     @GetMapping("/services")
     public String listerPrestations(@RequestParam(required = false) String categorie, Model modele) {
-        List<ArticleVue> articles = (categorie == null || categorie.isBlank())
+        List<ArticleVue> toutes = (categorie == null || categorie.isBlank())
                 ? service.prestationsActives()
                 : service.prestationsDeCategorie(categorie);
+        // Une prestation à l'heure n'a ni durée ni prix de travail fini : dans la grille, sa
+        // carte ne ressemblait à aucune autre. Son taux s'annonce sur une ligne au-dessus, la
+        // prestation reste la même au back-office et sur le devis.
+        List<ArticleVue> articles = toutes.stream().filter(article -> !article.aLHeure()).toList();
         modele.addAttribute("articles", articles);
+        modele.addAttribute("tauxHoraires", toutes.stream().filter(ArticleVue::aLHeure).toList());
         modele.addAttribute("vignettes", galerie.vignettesDePrestations(references(articles)));
         modele.addAttribute("categories", service.categoriesDePrestations());
         modele.addAttribute("categorieActive", categorie);
