@@ -1,8 +1,9 @@
 # Ressources tierces
 
 Ce fichier recense les ressources tierces embarquées dans le dépôt et leurs
-licences. Les dépendances Maven ne figurent pas ici : elles sont déclarées dans
-[`pom.xml`](pom.xml), avec leurs licences respectives.
+licences. Les dépendances Maven sont déclarées dans [`pom.xml`](pom.xml), qui fait foi
+pour les versions. Seules celles dont le dépôt fixe lui-même la version sont reprises
+plus bas, avec leur licence.
 
 ## SecLists, liste de mots de passe courants
 
@@ -155,3 +156,20 @@ lue : `heroicons-2.2.0.tgz` du registre npm, SHA-256
 `6c3e9d04b8495c9512a91b0b08804f2c3614a8e5d7df39bbfe02b6450fb7c640`. L'attribut `data-slot` est
 retiré, `class` et `focusable` sont ajoutés. Les icônes sont écrites dans la page, aucune
 requête ne part vers un service tiers.
+
+## Dépendances Maven à version fixée par le dépôt
+
+Les autres versions viennent de la nomenclature de Spring Boot. La branche 3.5 n'a plus de
+support libre depuis le 30 juin 2026, et 3.5.16 en est la dernière version : la montée en
+4.1 est une évolution prévue.
+
+| Dépendance | Version | Licence |
+|---|---|---|
+| Spring Boot (`spring-boot-starter-parent`) | 3.5.16 | Apache 2.0 |
+| springdoc-openapi (`springdoc-openapi-starter-webmvc-ui`) | 2.9.1 | Apache 2.0 |
+| OpenPDF (`com.github.librepdf:openpdf`) | 2.0.5 | LGPL 2.1 ou MPL 2.0, au choix |
+| ZXing (`com.google.zxing:core`) | 3.5.4 | Apache 2.0 |
+| jsoup, tests seulement | 1.18.3 | MIT |
+| Playwright pour Java, tests seulement | 1.65.1 | Apache 2.0 |
+| axe-core pour Playwright, tests seulement | 4.14.1 | MPL 2.0 |
+| JaCoCo (`jacoco-maven-plugin`), build seulement | 0.8.16 | EPL 2.0 |
