@@ -1,12 +1,16 @@
 package be.autoservplus.facturation.service;
 
+import be.autoservplus.common.pdf.PolicesPdf;
+import com.lowagie.text.Document;
 import com.lowagie.text.Element;
 import com.lowagie.text.Font;
-import com.lowagie.text.FontFactory;
 import com.lowagie.text.Phrase;
 import com.lowagie.text.Rectangle;
+import com.lowagie.text.pdf.ColumnText;
 import com.lowagie.text.pdf.PdfPCell;
+import com.lowagie.text.pdf.PdfPageEventHelper;
 import com.lowagie.text.pdf.PdfPTable;
+import com.lowagie.text.pdf.PdfWriter;
 
 import java.awt.Color;
 import java.math.BigDecimal;
@@ -37,11 +41,9 @@ import java.util.Locale;
  * <p>Publiques depuis le devis (F15), composé dans son propre module : un devis
  * remis au client doit ressembler à la facture qui le suivra.</p>
  *
- * <p><b>Écart de charte assumé</b> : les couleurs sont celles de la charte
- * (bleu marine {@code #1F3864}, gris), mais la typographie est Helvetica et non
- * Inter. Inter est une police web. L'embarquer dans un PDF suppose de livrer le
- * fichier de fonte dans le dépôt. Helvetica est une des quatorze polices garanties
- * par le format PDF, donc lisible partout sans embarquement.</p>
+ * <p>Couleurs et police de la charte : bleu marine {@code #1F3864}, gris, et Inter, incorporée
+ * par {@link PolicesPdf}. Le document est au nom du garage, AutoServ+ n'y paraît qu'au bas de
+ * chaque page, comme au pied du site.</p>
  */
 public final class StylePdf {
 
@@ -61,7 +63,28 @@ public final class StylePdf {
     }
 
     public static Font police(float taille, int style, Color couleur) {
-        return FontFactory.getFont(FontFactory.HELVETICA, taille, style, couleur);
+        return PolicesPdf.police(taille, style, couleur);
+    }
+
+    /** Nom du logiciel, qui n'est pas traduit, imprimé après « Propulsé par ». */
+    static final String LOGICIEL = "AutoServ+";
+
+    /**
+     * Mention du logiciel au bas de chaque page, centrée dans la marge du bas : « Propulsé par
+     * AutoServ+ » dans la langue du document. Posée par un événement de page plutôt qu'en fin
+     * de contenu, pour qu'un document de plusieurs pages la porte sur chacune.
+     *
+     * @param propulsePar libellé « Propulsé par » dans la langue du document
+     */
+    public static PdfPageEventHelper mentionDuLogiciel(String propulsePar) {
+        Phrase mention = new Phrase(propulsePar + " " + LOGICIEL, police(7.5f, Font.NORMAL, GRIS_TEXTE));
+        return new PdfPageEventHelper() {
+            @Override
+            public void onEndPage(PdfWriter writer, Document document) {
+                ColumnText.showTextAligned(writer.getDirectContent(), Element.ALIGN_CENTER, mention,
+                        (document.left() + document.right()) / 2, document.bottom() - 26, 0);
+            }
+        };
     }
 
     public static PdfPTable tableauInvisible(float[] largeurs) {

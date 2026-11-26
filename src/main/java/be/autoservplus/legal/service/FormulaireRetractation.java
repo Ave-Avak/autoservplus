@@ -1,10 +1,10 @@
 package be.autoservplus.legal.service;
 
+import be.autoservplus.common.pdf.PolicesPdf;
 import be.autoservplus.config.IdentiteGarage;
 import com.lowagie.text.Document;
 import com.lowagie.text.DocumentException;
 import com.lowagie.text.Font;
-import com.lowagie.text.FontFactory;
 import com.lowagie.text.PageSize;
 import com.lowagie.text.Paragraph;
 import com.lowagie.text.pdf.PdfWriter;
@@ -95,9 +95,9 @@ public class FormulaireRetractation {
             PdfWriter.getInstance(document, sortie);
             document.addTitle(formulaire.titre());
             document.open();
-            Font titre = FontFactory.getFont(FontFactory.HELVETICA_BOLD, 14, BLEU_MARINE);
-            Font corps = FontFactory.getFont(FontFactory.HELVETICA, 11);
-            Font petit = FontFactory.getFont(FontFactory.HELVETICA_OBLIQUE, 10);
+            Font titre = PolicesPdf.police(14, Font.BOLD, BLEU_MARINE);
+            Font corps = PolicesPdf.police(11, Font.NORMAL, Color.BLACK);
+            Font petit = PolicesPdf.police(10, Font.ITALIC, Color.BLACK);
             document.add(paragraphe(formulaire.titre(), titre, 12));
             document.add(paragraphe(formulaire.entete(), petit, 14));
             document.add(paragraphe(formulaire.destinataire(), corps, 14));
