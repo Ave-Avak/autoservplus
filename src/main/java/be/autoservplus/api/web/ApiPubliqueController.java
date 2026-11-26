@@ -18,6 +18,7 @@ import io.swagger.v3.oas.annotations.headers.Header;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.CacheControl;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -29,6 +30,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.web.util.UriComponents;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.time.Duration;
 import java.util.LinkedHashMap;
@@ -54,6 +57,11 @@ import java.util.UUID;
  * de {@code /api/v1/garages} et découvre le reste en suivant les liens. Le type
  * {@code application/hal+json} est rendu par défaut, {@code application/json} sur demande
  * expresse, avec le même corps.</p>
+ *
+ * <p><b>Liens bâtis sur l'adresse publique configurée</b> ({@code autoservplus.url-publique}),
+ * comme les courriels et l'export d'agenda, et jamais sur l'en-tête {@code Host} de la
+ * requête. Les réponses sont en cache public : un hôte forgé par un appelant y serait
+ * servi aux suivants, avec des liens vers la prise de rendez-vous d'un autre site.</p>
  */
 @RestController
 @RequestMapping(value = "/api/v1", produces = {ApiPubliqueController.HAL_JSON, MediaType.APPLICATION_JSON_VALUE})
@@ -75,10 +83,13 @@ public class ApiPubliqueController {
 
     private final CatalogueService catalogue;
     private final IdentiteGarage identite;
+    private final String base;
 
-    public ApiPubliqueController(CatalogueService catalogue, IdentiteGarage identite) {
+    public ApiPubliqueController(CatalogueService catalogue, IdentiteGarage identite,
+                                 @Value("${autoservplus.url-publique}") String urlPublique) {
         this.catalogue = catalogue;
         this.identite = identite;
+        this.base = urlPublique.endsWith("/") ? urlPublique.substring(0, urlPublique.length() - 1) : urlPublique;
     }
 
     @Operation(summary = "Liste les prestations proposées",
@@ -213,7 +224,7 @@ public class ApiPubliqueController {
         // Une prestation à l'heure ne se réserve pas en ligne : son prix est un taux, la
         // durée du travail n'est connue qu'à l'atelier.
         if (!vue.aLHeure()) {
-            liens.put("reservation", Lien.versPage(ServletUriComponentsBuilder.fromCurrentContextPath()
+            liens.put("reservation", Lien.versPage(UriComponentsBuilder.fromUriString(base)
                     .path("/mes-rendez-vous/nouveau")
                     .queryParam("prestation", vue.reference())
                     .toUriString()));
@@ -272,7 +283,7 @@ public class ApiPubliqueController {
                 new PagePublique.Pagination(pageReelle, tailleReelle, total, nombreDePages));
     }
 
-    private static Map<String, Lien> navigation(int page, int taille, int nombreDePages) {
+    private Map<String, Lien> navigation(int page, int taille, int nombreDePages) {
         int derniere = Math.max(nombreDePages - 1, 0);
         Map<String, Lien> liens = new LinkedHashMap<>();
         liens.put("self", Lien.versApi(pageCourante(page, taille)));
@@ -290,29 +301,29 @@ public class ApiPubliqueController {
     // --- adresses ---------------------------------------------------------------------
 
     /**
-     * URL absolue de la requête courante, avec la pagination réécrite.
-     *
-     * <p>Construite depuis la requête et non depuis une base codée en dur : derrière un
-     * proxy, seul l'en-tête de transfert connaît le domaine public, et une URL fabriquée à
-     * la main y renverrait vers l'hôte interne. Les autres paramètres (le rayon) sont
-     * gardés.</p>
+     * Adresse de la requête courante sur la base publique, avec la pagination réécrite. Le
+     * chemin et les autres paramètres (le rayon) viennent de la requête, l'hôte jamais.
      */
-    private static String pageCourante(int page, int taille) {
-        return ServletUriComponentsBuilder.fromCurrentRequest()
+    private String pageCourante(int page, int taille) {
+        UriComponents courante = ServletUriComponentsBuilder.fromCurrentRequest().build();
+        return UriComponentsBuilder.fromUriString(base)
+                .path(courante.getPath())
+                .query(courante.getQuery())
                 .replaceQueryParam("page", page)
                 .replaceQueryParam("taille", taille)
+                .build()
                 .toUriString();
     }
 
-    private static String api(String chemin, Object... variables) {
-        return ServletUriComponentsBuilder.fromCurrentContextPath()
+    private String api(String chemin, Object... variables) {
+        return UriComponentsBuilder.fromUriString(base)
                 .path("/api/v1").path(chemin)
                 .buildAndExpand(variables)
                 .toUriString();
     }
 
-    private static String site(String chemin) {
-        return ServletUriComponentsBuilder.fromCurrentContextPath().path(chemin).toUriString();
+    private String site(String chemin) {
+        return UriComponentsBuilder.fromUriString(base).path(chemin).toUriString();
     }
 
     // --- en-têtes ---------------------------------------------------------------------

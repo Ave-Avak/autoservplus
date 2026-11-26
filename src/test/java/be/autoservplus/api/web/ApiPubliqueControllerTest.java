@@ -16,6 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.endsWith;
+import static org.hamcrest.Matchers.startsWith;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -45,7 +46,7 @@ class ApiPubliqueControllerTest {
 
     @BeforeEach
     void setUp() {
-        mvc = MockMvcBuilders.standaloneSetup(new ApiPubliqueController(catalogue, GARAGE)).build();
+        mvc = MockMvcBuilders.standaloneSetup(new ApiPubliqueController(catalogue, GARAGE, "https://garage.test/")).build();
         when(catalogue.prestationsActives(any())).thenReturn(List.of(vidange, diagnostic));
     }
 
@@ -116,6 +117,15 @@ class ApiPubliqueControllerTest {
                 .andExpect(jsonPath("$._links.self.href", endsWith("/api/v1/garages/0123456789")));
         mvc.perform(get("/api/v1/garages/9999999999"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("les liens partent de l'adresse publique configurée, jamais de l'hôte de la requête")
+    void hoteDeLaRequeteIgnore() throws Exception {
+        mvc.perform(get("/api/v1/prestations").param("taille", "1").header("Host", "pirate.example"))
+                .andExpect(jsonPath("$._links.next.href").value("https://garage.test/api/v1/prestations?page=1&taille=1"))
+                .andExpect(jsonPath("$._embedded.prestations[0]._links.reservation.href",
+                        startsWith("https://garage.test/mes-rendez-vous/nouveau")));
     }
 
     @Test
