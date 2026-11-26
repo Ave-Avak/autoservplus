@@ -1,5 +1,6 @@
 package be.autoservplus.vente.web;
 
+import be.autoservplus.vente.service.PaiementDejaTraiteException;
 import be.autoservplus.vente.service.SiAucunPrestataireConfigure;
 import be.autoservplus.vente.service.SimulationPaiementService;
 import be.autoservplus.vente.service.SimulationPaiementService.IssueSimulee;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.UUID;
 
@@ -52,9 +54,13 @@ public class PaiementSimuleController {
     @GetMapping("/{referencePrestataire}")
     public String page(@AuthenticationPrincipal UserDetails membre,
                        @PathVariable String referencePrestataire,
-                       Model modele) {
-        SimulationPaiementVue vue =
-                simulation.aRegler(referencePrestataire, membre.getUsername());
+                       Model modele, RedirectAttributes redirection) {
+        SimulationPaiementVue vue;
+        try {
+            vue = simulation.aRegler(referencePrestataire, membre.getUsername());
+        } catch (PaiementDejaTraiteException refus) {
+            return versLaCommande(refus, redirection);
+        }
         modele.addAttribute("titre", msg("paiement.simule.titre"));
         modele.addAttribute("paiement", vue);
         return "vente/paiement-simule";
@@ -70,10 +76,20 @@ public class PaiementSimuleController {
     @PostMapping("/{referencePrestataire}")
     public String simuler(@AuthenticationPrincipal UserDetails membre,
                           @PathVariable String referencePrestataire,
-                          @RequestParam(defaultValue = "ECHEC") IssueSimulee issue) {
-        UUID commande =
-                simulation.simuler(referencePrestataire, issue, membre.getUsername());
+                          @RequestParam(defaultValue = "ECHEC") IssueSimulee issue,
+                          RedirectAttributes redirection) {
+        UUID commande;
+        try {
+            commande = simulation.simuler(referencePrestataire, issue, membre.getUsername());
+        } catch (PaiementDejaTraiteException refus) {
+            return versLaCommande(refus, redirection);
+        }
         return "redirect:/commande/" + commande + "/retour";
+    }
+
+    private String versLaCommande(PaiementDejaTraiteException refus, RedirectAttributes redirection) {
+        redirection.addFlashAttribute("erreur", msg(refus.getCleMessage()));
+        return "redirect:/commandes/" + refus.getReferenceCommande();
     }
 
     private String msg(String cle) {
