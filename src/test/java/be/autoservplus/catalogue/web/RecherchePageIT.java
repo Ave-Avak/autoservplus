@@ -57,7 +57,7 @@ class RecherchePageIT extends SocleIntegration {
 
         assertThat(page).contains("<title>Recherche : ecrou zqx | AutoServ+</title>");
         assertThat(page).contains("14 résultats pour « ecrou zqx ».");
-        assertThat(page).contains("Pièces détachées (14)");
+        assertThat(page).contains("Pièces auto (14)");
         assertThat(page).doesNotContain("id=\"prestations\"");
         assertThat(page).contains("Écrou zqx 01").contains("Écrou zqx 12").doesNotContain("Écrou zqx 13");
         assertThat(page).contains("1 493,75 €");
@@ -69,7 +69,7 @@ class RecherchePageIT extends SocleIntegration {
         String neerlandais = ouvrir("/recherche?q=zqx", Locale.of("nl"));
         assertThat(neerlandais).contains("<title>Zoeken: zqx | AutoServ+</title>");
         assertThat(neerlandais).contains("15 resultaten voor &quot;zqx&quot;.");
-        assertThat(neerlandais).contains("Diensten (1)").contains("Onderdelen (14)");
+        assertThat(neerlandais).contains("Diensten (1)").contains("Auto-onderdelen (14)");
         assertThat(neerlandais).contains("1.493,75 €");
         assertThat(neerlandais).doesNotContain("Recherche").doesNotContain("résultat");
 
