@@ -141,6 +141,17 @@ class ChoixPiecesIT extends SocleIntegration {
         }
 
         @Test
+        @DisplayName("chaque prestation du formulaire est annoncée TVA comprise, le prix hors TVA en détail")
+        void prixTvaComprise() throws Exception {
+            vidange(false);
+
+            mvc.perform(get("/mes-rendez-vous/nouveau").with(user(email).roles("MEMBRE")).locale(Locale.FRENCH))
+                    .andExpect(status().isOk())
+                    .andExpect(content().string(containsString("30 min, 83,49 € TVA comprise, soit 69,00 € hors TVA")))
+                    .andExpect(content().string(not(containsString("€ HTVA"))));
+        }
+
+        @Test
         @DisplayName("le formulaire montre les deux prix, sans bouton coché d'avance")
         void sansPreselection() throws Exception {
             Prestation vidange = vidange(true);
