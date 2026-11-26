@@ -6,6 +6,8 @@ import be.autoservplus.communication.service.ServiceCourriel;
 import be.autoservplus.identite.domain.Utilisateur;
 import be.autoservplus.intervention.domain.StatutIntervention;
 import be.autoservplus.intervention.repository.InterventionRepository;
+import be.autoservplus.notification.domain.TypeNotification;
+import be.autoservplus.notification.service.NotificationService;
 import be.autoservplus.reservation.repository.ParametreAtelierRepository;
 import be.autoservplus.retractation.domain.DemandeAnnulation;
 import be.autoservplus.retractation.domain.StatutDemandeAnnulation;
@@ -71,6 +73,7 @@ public class RetractationService {
     private final InterventionRepository interventions;
     private final ServiceCourriel courriel;
     private final ParametreAtelierRepository parametres;
+    private final NotificationService notifications;
     private final Clock horloge;
 
     public RetractationService(CommandeRepository commandes,
@@ -78,12 +81,14 @@ public class RetractationService {
                                InterventionRepository interventions,
                                ServiceCourriel courriel,
                                ParametreAtelierRepository parametres,
+                               NotificationService notifications,
                                Clock horloge) {
         this.commandes = commandes;
         this.demandes = demandes;
         this.interventions = interventions;
         this.courriel = courriel;
         this.parametres = parametres;
+        this.notifications = notifications;
         this.horloge = horloge;
     }
 
@@ -138,6 +143,13 @@ public class RetractationService {
         courriel.envoyerAccuseRetractation(new DetailsAccuseRetractationCourriel(
                 membre.getEmail(), membre.getPrenom(), membre.getLangue(), membre.nomComplet(),
                 commande.getNumero(), motifMembre, demande.getDateDemande()));
+        // Le garage est prévenu par courriel et dans le back-office (F30 : la demande est
+        // « envoyée à l'administrateur pour validation »). Sans signal, la demande n'était
+        // vue qu'en ouvrant la file, et le délai de remboursement courait déjà.
+        courriel.envoyerAvisRetractationAuGarage(commande.getNumero(), membre.nomComplet(),
+                demande.getDateDemande());
+        notifications.deposerAuxAdministrateurs(TypeNotification.RETRACTATION_DEMANDEE,
+                commande.getNumero());
         return demande;
     }
 

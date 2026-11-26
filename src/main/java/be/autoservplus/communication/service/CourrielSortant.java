@@ -458,6 +458,14 @@ public class CourrielSortant implements ServiceCourriel {
     }
 
     @Override
+    public void envoyerAvisRetractationAuGarage(String numeroCommande, String membre, Instant soumiseLe) {
+        ZonedDateTime soumission = soumiseLe.atZone(fuseau.zone());
+        auGarage("retractation-au-garage", numeroCommande, Locale.FRENCH, numeroCommande, membre,
+                jour(soumission, Locale.FRENCH, "d MMMM yyyy"), heure(soumission),
+                liens.vers("/admin/retractations"));
+    }
+
+    @Override
     public void envoyerAvisPaiementARembourserAuGarage(String numeroCommande, String montantTvac,
                                                        String membre) {
         auGarage("paiement-a-rembourser", numeroCommande, Locale.FRENCH,

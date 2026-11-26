@@ -57,7 +57,12 @@ public enum TypeNotification {
      * Paiement encaissé sur une commande déjà annulée, à rembourser depuis le
      * back-office. Adressée à chaque administrateur actif.
      */
-    PAIEMENT_A_REMBOURSER;
+    PAIEMENT_A_REMBOURSER,
+    /**
+     * Demande de rétractation déposée par un membre, à décider dans le délai de
+     * remboursement (F30, VI.50). Adressée à chaque administrateur actif.
+     */
+    RETRACTATION_DEMANDEE;
 
     /** Cle i18n du titre affiche. */
     public String cleTitre() {

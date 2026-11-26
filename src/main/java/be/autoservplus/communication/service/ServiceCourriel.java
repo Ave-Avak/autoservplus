@@ -259,6 +259,13 @@ public interface ServiceCourriel {
     void envoyerAvisRemboursementApresAnnulation(Utilisateur destinataire, String numeroCommande,
                                                  String montantTvac);
 
+    /**
+     * Prévient l'atelier qu'une demande de rétractation attend sa décision (F30). Le
+     * remboursement est dû dans les quatorze jours de la demande (CDE, art. VI.50) : un
+     * garage qui n'ouvre pas la file chaque jour ne doit pas le découvrir trop tard.
+     */
+    void envoyerAvisRetractationAuGarage(String numeroCommande, String membre, Instant soumiseLe);
+
     /** Prévient l'atelier qu'un paiement reçu sur une commande annulée attend son remboursement. */
     void envoyerAvisPaiementARembourserAuGarage(String numeroCommande, String montantTvac,
                                                 String membre);

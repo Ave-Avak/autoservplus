@@ -58,6 +58,7 @@ class RetractationServiceTest {
     @Mock private DemandeAnnulationRepository demandes;
     @Mock private be.autoservplus.intervention.repository.InterventionRepository interventionsRepo;
     @Mock private be.autoservplus.communication.service.ServiceCourriel courriel;
+    @Mock private be.autoservplus.notification.service.NotificationService notifications;
 
     private RetractationService service;
 
@@ -67,7 +68,7 @@ class RetractationServiceTest {
     @BeforeEach
     void setUp() {
         service = new RetractationService(commandes, demandes, interventionsRepo, courriel,
-                parametres, Clock.fixed(MAINTENANT, BRUXELLES));
+                parametres, notifications, Clock.fixed(MAINTENANT, BRUXELLES));
     }
 
     @Nested
@@ -124,6 +125,24 @@ class RetractationServiceTest {
         }
 
         @Test
+        @DisplayName("la demande prévient le garage par courriel et chaque administrateur dans le back-office (F30)")
+        void garagePrevenu() {
+            Commande commande = commandePayeeIlYA(3);
+            commandeExiste(commande);
+            when(demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE))
+                    .thenReturn(false);
+            when(demandes.save(any(DemandeAnnulation.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+
+            service.demander("marie@exemple.be", commande.getReference(), null);
+
+            verify(courriel).envoyerAvisRetractationAuGarage("CMD-2026-0001", "Marie Dupont", MAINTENANT);
+            verify(notifications).deposerAuxAdministrateurs(
+                    be.autoservplus.notification.domain.TypeNotification.RETRACTATION_DEMANDEE,
+                    "CMD-2026-0001");
+        }
+
+        @Test
         @DisplayName("une demande refusée par les gardes n'envoie aucun accusé")
         void aucunAccuseSurRefus() {
             Commande commande = commandePayeeIlYA(15);
@@ -170,7 +189,7 @@ class RetractationServiceTest {
     /** Vrai si la demande est enregistrée à l'instant donné, faux si le délai la refuse. */
     private boolean demandeAcceptee(Commande commande, String instant) {
         RetractationService aLInstant = new RetractationService(commandes, demandes, interventionsRepo,
-                courriel, parametres, Clock.fixed(Instant.parse(instant), ZoneOffset.UTC));
+                courriel, parametres, notifications, Clock.fixed(Instant.parse(instant), ZoneOffset.UTC));
         org.mockito.Mockito.lenient()
                 .when(demandes.existsByCommandeAndStatut(commande, StatutDemandeAnnulation.EN_ATTENTE))
                 .thenReturn(false);
