@@ -24,8 +24,6 @@
 
         <div class="champ">
             <label for="motDePasse" th:text="#{mot-de-passe-a-definir.nouveau}">Nouveau mot de passe</label>
-            <!--/* Jamais th:field : il renverrait le mot de passe dans la page au retour
-                 d'une erreur. */-->
             <input type="password" id="motDePasse" name="motDePasse"
                    autocomplete="new-password" required aria-describedby="aide-mdp" autofocus>
             <p id="aide-mdp" class="texte-info" th:text="#{validation.motDePasse.aide}">

@@ -19,7 +19,7 @@
         <div class="champ">
             <label for="motDePasse" th:text="#{mot-de-passe.nouveau.titre}">Nouveau mot de passe</label>
             <input type="password" id="motDePasse" th:field="*{motDePasse}"
-                   autocomplete="new-password" minlength="12" required
+                   autocomplete="new-password" minlength="15" required
                    aria-describedby="aide-mdp" autofocus>
             <p id="aide-mdp" class="texte-info" th:text="#{validation.motDePasse.aide}">Au moins 15 caractères. Une phrase que vous seul connaissez convient, espaces compris.</p>
             <p role="alert" class="texte-erreur" th:if="${#fields.hasErrors('motDePasse')}" th:errors="*{motDePasse}"></p>
