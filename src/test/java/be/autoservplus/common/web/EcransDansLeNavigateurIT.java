@@ -617,6 +617,30 @@ class EcransDansLeNavigateurIT extends SocleIntegration {
         });
     }
 
+    /**
+     * Anneau de focus visible au clavier sur les composants de Bootstrap, qui le retirent
+     * eux-mêmes : le bouton d'action principale et un lien du menu, contour de 3 px au moins.
+     */
+    @Test
+    @DisplayName("au clavier, le bouton principal et les liens du menu portent l'anneau de focus")
+    void anneauDeFocusSurLesComposants() {
+        navigateur.parcourir("anneau-de-focus", LARGE, null, contexte -> {
+            Page page = contexte.newPage();
+            page.navigate("/");
+            for (String cible : List.of(".navigation-principale .nav-link", ".btn-action")) {
+                for (int i = 0; i < 40 && !(boolean) page.evaluate("s => document.activeElement.matches(s)", cible); i++) {
+                    page.keyboard().press("Tab");
+                }
+                @SuppressWarnings("unchecked")
+                Map<String, Object> contour = (Map<String, Object>) page.evaluate("""
+                        () => { const style = getComputedStyle(document.activeElement);
+                                return {style: style.outlineStyle, largeur: parseFloat(style.outlineWidth)}; }""");
+                assertThat(contour.get("style")).as("contour de " + cible).isEqualTo("solid");
+                assertThat(((Number) contour.get("largeur")).doubleValue()).as("épaisseur").isGreaterThanOrEqualTo(3.0);
+            }
+        });
+    }
+
     // --- 4. scripts --------------------------------------------------------------------
 
     @Test
