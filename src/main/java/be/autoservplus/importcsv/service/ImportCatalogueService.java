@@ -401,7 +401,7 @@ public class ImportCatalogueService {
             if (!be.autoservplus.catalogue.domain.TauxTvaBelge.estAdmis(taux)) {
                 throw new IllegalArgumentException(
                         "Colonne « " + colonne + " » : taux « " + taux.toPlainString()
-                                + " » non admis en Belgique (0, 6, 12 ou 21).");
+                                + " » non admis au catalogue (6, 12 ou 21).");
             }
             return taux;
         }

@@ -77,6 +77,17 @@ class SchemaIT extends SocleIntegration {
         assertThat(definition("ck_facture_langue_document")).contains("'en'");
     }
 
+    @Test
+    @DisplayName("V130 : le catalogue n'admet que les taux de 6, 12 et 21 %")
+    void tauxDuCatalogueSansTauxNul() {
+        assertThat(definition("ck_service_tva")).contains("ARRAY[6.00, 12.00, 21.00]");
+        assertThat(definition("ck_piece_tva")).contains("ARRAY[6.00, 12.00, 21.00]");
+        assertThatThrownBy(() -> jdbc.update(
+                "UPDATE service SET taux_tva = 0 WHERE id = (SELECT min(id) FROM service)"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ck_service_tva");
+    }
+
     private String definition(String contrainte) {
         return jdbc.queryForObject(
                 "SELECT pg_get_constraintdef(oid) FROM pg_constraint WHERE conname = ?", String.class, contrainte);

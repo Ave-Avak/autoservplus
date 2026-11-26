@@ -297,7 +297,7 @@ class ImportCatalogueIT extends SocleIntegration {
                     .hasSize(1)
                     .first()
                     .hasToString("LigneEnErreur[ligne=2, motif=Colonne « taux_tva » : "
-                            + "taux « 17.00 » non admis en Belgique (0, 6, 12 ou 21).]");
+                            + "taux « 17.00 » non admis au catalogue (6, 12 ou 21).]");
         }
 
         @Test

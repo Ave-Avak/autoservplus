@@ -54,8 +54,8 @@ class PrestationTest {
     }
 
     @ParameterizedTest(name = "accepte le taux belge {0} %")
-    @CsvSource({"0.00", "6.00", "12.00", "21.00", "21"})
-    @DisplayName("accepte les quatre taux de TVA belges, quelle que soit l echelle")
+    @CsvSource({"6.00", "12.00", "21.00", "21"})
+    @DisplayName("accepte les trois taux de TVA du catalogue, quelle que soit l'échelle")
     void accepteLesTauxBelges(String taux) {
         Prestation prestation = new Prestation(entretien, "VID", "Vidange",
                 new BigDecimal("75.00"), 60);
@@ -66,8 +66,8 @@ class PrestationTest {
     }
 
     @ParameterizedTest(name = "refuse le taux {0} %")
-    @CsvSource({"19.00", "21.50", "-6.00", "100.00"})
-    @DisplayName("refuse tout taux de TVA hors de la liste belge 0/6/12/21")
+    @CsvSource({"0.00", "0", "19.00", "21.50", "-6.00", "100.00"})
+    @DisplayName("refuse le taux nul et tout taux hors de la liste 6, 12 et 21")
     void refuseUnTauxHorsListe(String taux) {
         Prestation prestation = new Prestation(entretien, "VID", "Vidange",
                 new BigDecimal("75.00"), 60);
