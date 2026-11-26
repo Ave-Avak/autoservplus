@@ -169,6 +169,7 @@ support libre depuis le 30 juin 2026, et 3.5.16 en est la dernière version : la
 | springdoc-openapi (`springdoc-openapi-starter-webmvc-ui`) | 2.9.1 | Apache 2.0 |
 | OpenPDF (`com.github.librepdf:openpdf`) | 2.0.5 | LGPL 2.1 ou MPL 2.0, au choix |
 | ZXing (`com.google.zxing:core`) | 3.5.4 | Apache 2.0 |
+| Bucket4j (`com.bucket4j:bucket4j_jdk17-core`) | 8.23.0 | Apache 2.0 |
 | jsoup, tests seulement | 1.18.3 | MIT |
 | Playwright pour Java, tests seulement | 1.65.1 | Apache 2.0 |
 | axe-core pour Playwright, tests seulement | 4.14.1 | MPL 2.0 |
