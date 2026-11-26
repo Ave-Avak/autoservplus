@@ -62,8 +62,12 @@
                     th:with="photo=${vignettes.get(article.reference())}">
                     <!--/* La vignette illustre la carte, dont le nom suit : texte alternatif vide,
                          pour que le lecteur d'écran n'annonce pas deux fois chaque carte. Le texte
-                         alternatif de la photo est lu sur la fiche. Les trois premières se chargent
-                         tout de suite, les autres au défilement. */-->
+                         alternatif de la photo est lu sur la fiche.
+                         La première est l'image la plus grande du premier écran sur téléphone :
+                         chargée tout de suite, en priorité, les autres au défilement. Sous 576 px,
+                         sizes annonce 274 px pour que le téléphone prenne la vignette de 480 px :
+                         la carte en mesure 296, l'écart (8 % à une densité de 1,75) ne se voit
+                         pas, la photo de 1 024 px pesait jusqu'à dix fois plus (Lighthouse). */-->
                     <img th:if="${photo != null}" class="carte-article__image" alt=""
                          th:with="url=@{/images/galerie/{p}(p=${photo.reference()})},
                                   urlVignette=@{/images/galerie/{p}/vignette(p=${photo.reference()})}"
@@ -71,10 +75,11 @@
                          th:srcset="${photo.vignette() and photo.dimensionsConnues()}
                                     ? ${urlVignette + ' 480w, ' + url + ' ' + photo.largeur() + 'w'} : null"
                          th:sizes="${photo.vignette() and photo.dimensionsConnues()}
-                                   ? '(min-width: 1200px) 280px, (min-width: 768px) 45vw, 100vw' : null"
+                                   ? '(min-width: 1200px) 280px, (min-width: 576px) 45vw, 274px' : null"
                          th:width="${photo.dimensionsConnues()} ? ${photo.largeur()} : null"
                          th:height="${photo.dimensionsConnues()} ? ${photo.hauteur()} : null"
-                         th:attr="loading=${etat.index >= 3} ? 'lazy' : null"
+                         th:attr="loading=${etat.index > 0} ? 'lazy' : null,
+                                  fetchpriority=${etat.index == 0} ? 'high' : null"
                          decoding="async">
                     <div th:if="${photo == null}" class="carte-article__visuel" aria-hidden="true">
                         <svg th:replace="${rayon == null} ? ~{fragments/icones :: cle}
