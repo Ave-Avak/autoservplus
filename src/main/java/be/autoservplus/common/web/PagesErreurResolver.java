@@ -14,7 +14,8 @@ import java.util.Map;
  * Page d erreur du conteneur ({@code /error}) : le gabarit {@code erreur.html} du projet,
  * pour tout statut, a la place de la page Whitelabel de Spring Boot.
  *
- * <p>403, 404, 409 et 500 ont leur titre et leur message. Tout autre statut (400, 405...)
+ * <p>403, 404, 409, 422 et 500 ont leur titre et leur message. Le 422 d'un refus métier
+ * affiche le message de ce refus quand il en porte un. Tout autre statut (400, 405...)
  * recoit un message generique. Le meme gabarit sert deja les erreurs rattrapees par
  * {@code GestionnaireErreursGlobal} : une seule page, un seul retour vers la page
  * d arrivee du role.</p>
@@ -26,6 +27,12 @@ import java.util.Map;
  */
 @Component
 public class PagesErreurResolver implements ErrorViewResolver {
+
+    /**
+     * Attribut de requête posé par {@link GestionnaireErreursGlobal} : le message du
+     * refus métier à afficher à la place du texte générique du 422.
+     */
+    public static final String ATTRIBUT_REFUS = PagesErreurResolver.class.getName() + ".refus";
 
     private static final String VUE = "erreur";
 
@@ -42,15 +49,36 @@ public class PagesErreurResolver implements ErrorViewResolver {
             case FORBIDDEN -> "erreur.403";
             case NOT_FOUND -> "erreur.404";
             case CONFLICT -> "erreur.409";
+            case UNPROCESSABLE_ENTITY -> "erreur.422";
             case INTERNAL_SERVER_ERROR -> "erreur.500";
             default -> "erreur.generique";
         };
+        String message = requete.getAttribute(ATTRIBUT_REFUS) instanceof RefusAffiche refus
+                && statut == HttpStatus.UNPROCESSABLE_ENTITY
+                ? messageDuRefus(refus, prefixe)
+                : msg(prefixe + ".message", null);
         return new ModelAndView(VUE, Map.of(
-                "titre", msg(prefixe + ".titre"),
-                "messageErreur", msg(prefixe + ".message")), statut);
+                "titre", msg(prefixe + ".titre", null),
+                "messageErreur", message), statut);
     }
 
-    private String msg(String cle) {
-        return messages.getMessage(cle, null, LocaleContextHolder.getLocale());
+    /**
+     * Une clé absente des fichiers retombe sur le texte générique : afficher la clé brute
+     * serait pire que le message général, et le défaut se voit au journal du refus.
+     */
+    private String messageDuRefus(RefusAffiche refus, String prefixe) {
+        String generique = msg(prefixe + ".message", null);
+        if (refus.cle() == null) {
+            return generique;
+        }
+        return messages.getMessage(refus.cle(), refus.arguments(), generique, LocaleContextHolder.getLocale());
+    }
+
+    private String msg(String cle, Object[] arguments) {
+        return messages.getMessage(cle, arguments, LocaleContextHolder.getLocale());
+    }
+
+    /** Clé et valeurs du message d'un refus métier, transmises de l'exception à la page. */
+    public record RefusAffiche(String cle, Object[] arguments) {
     }
 }

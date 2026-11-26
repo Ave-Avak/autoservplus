@@ -1,6 +1,9 @@
 package be.autoservplus.common.web;
 
 import be.autoservplus.common.exception.ConflitConcurrenceException;
+import be.autoservplus.common.exception.RefusTraduit;
+import be.autoservplus.common.exception.RegleMetierException;
+import be.autoservplus.common.exception.TransitionRefusee;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
@@ -34,6 +37,11 @@ import java.io.IOException;
  *
  * <p>Un {@code catch} local qui redirige avec un message reste prioritaire : il connaît
  * l'écran où ramener l'utilisateur.</p>
+ *
+ * <p>Les refus métier qu'aucun contrôleur n'attrape sortent en 422 avec leur message
+ * traduit. Sans ce filet, un refus prévu par une règle (panier mixte, prestation retirée,
+ * annulation hors délai) s'affichait comme une panne du site et se journalisait en
+ * ERROR, comme un incident.</p>
  */
 @ControllerAdvice
 public class GestionnaireErreursGlobal {
@@ -65,5 +73,44 @@ public class GestionnaireErreursGlobal {
         boolean dansLeChemin = e.getParameter().hasParameterAnnotation(PathVariable.class);
         log.debug("Valeur non convertible pour {} sur {}", e.getName(), requete.getRequestURI());
         reponse.sendError(dansLeChemin ? HttpStatus.NOT_FOUND.value() : HttpStatus.BAD_REQUEST.value());
+    }
+
+    /**
+     * Refus qui porte sa clé de message. 422 et non 409 : le 409 du projet dit
+     * « modification simultanée », alors qu'ici la demande est lue en entier et refusée
+     * par une règle. La clé passe à {@link PagesErreurResolver} par un attribut de la
+     * requête, que la redistribution vers {@code /error} conserve.
+     */
+    @ExceptionHandler(RefusTraduit.class)
+    public void refusTraduit(RefusTraduit e, HttpServletRequest requete, HttpServletResponse reponse)
+            throws IOException {
+        refuser(requete, reponse, e, new PagesErreurResolver.RefusAffiche(e.getCleMessage(), e.getArguments()));
+    }
+
+    /** Transition interdite par la machine à états d'une entité, même rendu qu'un refus traduit. */
+    @ExceptionHandler(TransitionRefusee.class)
+    public void transitionRefusee(TransitionRefusee e, HttpServletRequest requete, HttpServletResponse reponse)
+            throws IOException {
+        refuser(requete, reponse, e, new PagesErreurResolver.RefusAffiche(e.getCleMessage(), null));
+    }
+
+    /**
+     * Refus sans clé. Son message est une phrase française écrite pour les journaux : la
+     * page affiche le texte générique du refus, traduit, plutôt qu'une phrase dans une
+     * autre langue que celle du visiteur.
+     */
+    @ExceptionHandler(RegleMetierException.class)
+    public void regleMetier(RegleMetierException e, HttpServletRequest requete, HttpServletResponse reponse)
+            throws IOException {
+        refuser(requete, reponse, e, null);
+    }
+
+    private static void refuser(HttpServletRequest requete, HttpServletResponse reponse, RuntimeException e,
+                                PagesErreurResolver.RefusAffiche refus) throws IOException {
+        log.warn("Refus métier non rattrapé sur {} : {}", requete.getRequestURI(), e.toString());
+        if (refus != null) {
+            requete.setAttribute(PagesErreurResolver.ATTRIBUT_REFUS, refus);
+        }
+        reponse.sendError(HttpStatus.UNPROCESSABLE_ENTITY.value());
     }
 }
